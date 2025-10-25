@@ -1,0 +1,47 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# US East Regional Policy Configuration
+# ======================================
+
+region_code: us-east1
+
+policies:
+  # Public scope: Anyone can view these facets
+  - scope: public
+    facet_types:
+      - authenticity
+      - esg
+    allowed: true
+    description: "Public facets visible to all scanners"
+
+  # Friends only scope: Connected users can view additional facets
+  - scope: friends_only
+    facet_types:
+      - authenticity
+      - esg
+      - story
+      - materials
+      - certificates
+    allowed: true
+    description: "Friends can see extended garment information"
+
+  # Private scope: Owner can see everything
+  - scope: private
+    facet_types:
+      - "*"  # All facets including pricing and ownership
+    allowed: true
+    description: "Owner has full access to all data"
+
+# Regional restrictions
+restrictions:
+  - type: export_control
+    enabled: false
+    blocked_countries: []
+
+# Compliance requirements (US-specific)
+compliance:
+  data_retention_days: 2555  # ~7 years
+  audit_required: true
+  pii_redaction: true
+  gdpr_applicable: false
+  ccpa_applicable: true  # California Consumer Privacy Act
