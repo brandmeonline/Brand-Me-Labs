@@ -1,280 +1,207 @@
-"""
-Copyright (c) Brand.Me, Inc. All rights reserved.
-
-AI Brain Hub Service
-====================
-
-Intent resolution and garment lookup service.
-Consumes NATS events and resolves garment_tag -> garment_id.
-"""
-
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import Optional
-import asyncpg
-import asyncio
-import logging
-from contextlib import asynccontextmanager
+# brandme-core/brain/main.py
 import os
-from dotenv import load_dotenv
-import nats
-from nats.js import JetStreamContext
-import json
+import uuid
+from typing import Optional
 
-load_dotenv()
+import asyncpg
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
-# Configure logging
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO"),
-    format='{"time": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}',
-)
-logger = logging.getLogger(__name__)
+from brandme_core.logging import ensure_request_id, get_logger, redact_user_id
 
-# Database pool
-db_pool: Optional[asyncpg.Pool] = None
-
-# NATS connection
-nats_client: Optional[nats.NATS] = None
-jetstream: Optional[JetStreamContext] = None
-
-
-# ==========================================
-# Pydantic Models
-# ==========================================
 
 class IntentResolveRequest(BaseModel):
-    scan_id: str = Field(..., description="Scan ID")
-    scanner_user_id: str = Field(..., description="Scanner user ID")
-    garment_tag: str = Field(..., description="Physical garment tag ID")
-    region_code: str = Field(default="us-east1", description="Region code")
+    scan_id: str
+    scanner_user_id: str
+    garment_tag: str
+    region_code: str
 
 
 class IntentResolveResponse(BaseModel):
-    action: str = Field(default="request_passport_view", description="Resolved action")
-    garment_id: Optional[str] = Field(None, description="Resolved garment ID")
-    scanner_user_id: str = Field(..., description="Scanner user ID")
-    error: Optional[str] = Field(None, description="Error message if any")
+    action: str
+    garment_id: str
+    scanner_user_id: str
+    region_code: str
+    policy_decision: str
+    resolved_scope: str
+    policy_version: str
 
 
-# ==========================================
-# Database Functions
-# ==========================================
+app = FastAPI()
+logger = get_logger("brain")
 
-async def init_db_pool():
-    """Initialize database connection pool"""
-    global db_pool
-    database_url = os.getenv("DATABASE_URL")
-    if not database_url:
-        raise ValueError("DATABASE_URL environment variable not set")
-
-    db_pool = await asyncpg.create_pool(database_url, min_size=5, max_size=20)
-    logger.info("Database pool initialized")
-
-
-async def close_db_pool():
-    """Close database connection pool"""
-    global db_pool
-    if db_pool:
-        await db_pool.close()
-        logger.info("Database pool closed")
-
-
-async def lookup_garment_by_tag(garment_tag: str) -> Optional[str]:
-    """
-    Lookup garment_id by physical_tag_id
-
-    Args:
-        garment_tag: Physical tag ID (NFC/QR code)
-
-    Returns:
-        garment_id if found, None otherwise
-    """
-    async with db_pool.acquire() as conn:
-        row = await conn.fetchrow(
-            "SELECT garment_id FROM garments WHERE physical_tag_id = $1 AND is_active = TRUE",
-            garment_tag
-        )
-        return str(row['garment_id']) if row else None
-
-
-# ==========================================
-# NATS Functions
-# ==========================================
-
-async def init_nats():
-    """Initialize NATS connection and subscribe to events"""
-    global nats_client, jetstream
-
-    nats_url = os.getenv("NATS_URL", "nats://localhost:4222")
-
-    try:
-        nats_client = await nats.connect(nats_url)
-        jetstream = nats_client.jetstream()
-        logger.info(f"Connected to NATS: {nats_url}")
-
-        # Subscribe to scan.requested events
-        await jetstream.subscribe(
-            "scan.requested",
-            cb=handle_scan_requested,
-            durable="brain-hub-consumer",
-            stream="SCANS"
-        )
-        logger.info("Subscribed to scan.requested events")
-
-    except Exception as e:
-        logger.error(f"Failed to connect to NATS: {e}")
-        raise
-
-
-async def close_nats():
-    """Close NATS connection"""
-    global nats_client
-    if nats_client:
-        await nats_client.close()
-        logger.info("NATS connection closed")
-
-
-async def handle_scan_requested(msg):
-    """
-    Handle scan.requested event from NATS
-
-    Event payload:
-    {
-        "scan_id": "uuid",
-        "scanner_user_id": "uuid",
-        "garment_tag": "NFC_TAG_001",
-        "timestamp": "ISO8601",
-        "region_code": "us-east1"
-    }
-    """
-    try:
-        data = json.loads(msg.data.decode())
-        logger.info(f"Received scan.requested event: scan_id={data.get('scan_id')}")
-
-        # Resolve garment_id from garment_tag
-        garment_id = await lookup_garment_by_tag(data.get('garment_tag'))
-
-        if not garment_id:
-            logger.warning(f"Garment not found for tag: {data.get('garment_tag')}")
-            # Publish failure event
-            await publish_intent_resolved({
-                "scan_id": data.get('scan_id'),
-                "scanner_user_id": data.get('scanner_user_id'),
-                "error": "Garment not found",
-                "action": "garment_not_found"
-            })
-            await msg.ack()
-            return
-
-        # Publish intent resolved event
-        await publish_intent_resolved({
-            "scan_id": data.get('scan_id'),
-            "scanner_user_id": data.get('scanner_user_id'),
-            "garment_id": garment_id,
-            "action": "request_passport_view",
-            "region_code": data.get('region_code', 'us-east1')
-        })
-
-        logger.info(f"Intent resolved: scan_id={data.get('scan_id')}, garment_id={garment_id}")
-        await msg.ack()
-
-    except Exception as e:
-        logger.error(f"Error handling scan.requested event: {e}")
-        await msg.nak()
-
-
-async def publish_intent_resolved(data: dict):
-    """Publish intent.resolved event to NATS"""
-    try:
-        await jetstream.publish(
-            "intent.resolved",
-            json.dumps(data).encode()
-        )
-        logger.debug(f"Published intent.resolved event: {data}")
-    except Exception as e:
-        logger.error(f"Failed to publish intent.resolved event: {e}")
-        raise
-
-
-# ==========================================
-# FastAPI App
-# ==========================================
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Lifespan context manager for startup and shutdown"""
-    # Startup
-    await init_db_pool()
-    await init_nats()
-    yield
-    # Shutdown
-    await close_nats()
-    await close_db_pool()
-
-
-app = FastAPI(
-    title="Brand.Me AI Brain Hub",
-    description="Intent resolution and garment lookup service",
-    version="1.0.0",
-    lifespan=lifespan
-)
-
-# CORS middleware
+# CORS middleware for local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["http://localhost:*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# ==========================================
-# API Endpoints
-# ==========================================
+@app.on_event("startup")
+async def startup():
+    """Initialize asyncpg connection pool on startup."""
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        logger.warning("DATABASE_URL not set, using stub connection pool")
+        app.state.db_pool = None
+    else:
+        app.state.db_pool = await asyncpg.create_pool(database_url, min_size=2, max_size=10)
+        logger.info("Database connection pool initialized")
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Close asyncpg connection pool on shutdown."""
+    if app.state.db_pool:
+        await app.state.db_pool.close()
+        logger.info("Database connection pool closed")
+
+
+async def lookup_garment_id(pool: Optional[asyncpg.Pool], garment_tag: str) -> str:
+    """
+    Resolve a physical garment tag (NFC/RFID/QR code) to a garment_id UUID.
+
+    For MLS/stub: returns a generated UUID.
+
+    TODO: Replace stub with real DB query:
+        SELECT garment_id FROM garments
+        WHERE rfid_tag = $1 OR nfc_tag = $1 OR qr_code = $1
+        LIMIT 1
+    """
+    # Stub implementation
+    garment_id = str(uuid.uuid4())
+    logger.debug(
+        "Resolved garment tag to ID (stub)",
+        extra={"garment_tag": garment_tag[:8] + "…", "garment_id": garment_id[:8] + "…"}
+    )
+    return garment_id
+
+
+async def call_policy_gate(payload: dict, request_id: str) -> dict:
+    """
+    Call the Policy service to determine if this scan is allowed.
+
+    POST http://localhost:8001/policy/check
+
+    Request body:
+        {
+            "scanner_user_id": "...",
+            "garment_id": "...",
+            "region_code": "...",
+            "action": "request_passport_view"
+        }
+
+    Response:
+        {
+            "decision": "allow" | "deny" | "escalate",
+            "resolved_scope": "public" | "friends_only" | "private",
+            "policy_version": "policy_v1_us-east1"
+        }
+
+    For MLS/stub: returns hardcoded allow/public response.
+
+    TODO: Replace stub with real HTTP call using httpx:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "http://localhost:8001/policy/check",
+                json=payload,
+                headers={"X-Request-Id": request_id}
+            )
+            return response.json()
+    """
+    # Stub implementation
+    logger.debug(
+        "Calling policy gate (stub)",
+        extra={
+            "scanner_user_id": redact_user_id(payload.get("scanner_user_id")),
+            "garment_id": payload.get("garment_id", "")[:8] + "…",
+            "request_id": request_id
+        }
+    )
+
     return {
-        "status": "ok",
-        "service": "brandme-core-brain",
-        "database": "connected" if db_pool else "disconnected",
-        "nats": "connected" if nats_client else "disconnected"
+        "decision": "allow",
+        "resolved_scope": "public",
+        "policy_version": "policy_v1_us-east1"
     }
 
 
-@app.post("/intent/resolve", response_model=IntentResolveResponse)
-async def resolve_intent(request: IntentResolveRequest):
+@app.post("/intent/resolve")
+async def resolve_intent(request: Request, body: IntentResolveRequest) -> JSONResponse:
     """
-    Resolve intent from scan request
+    AI Brain Hub / Intent Resolver endpoint.
 
-    Maps garment_tag -> garment_id
+    Accepts a scan context (scan_id, garment_tag, scanner_user_id, region_code).
+    Resolves garment_tag -> garment_id.
+    Calls policy service to determine what can be shown.
+    Returns the resolution including policy decision.
+
+    Flow:
+        1. Lookup garment_id from garment_tag
+        2. Call policy service with scanner_user_id, garment_id, region_code
+        3. Return policy decision + resolved scope
+        4. Propagate X-Request-Id for traceability
     """
-    try:
-        # Lookup garment by tag
-        garment_id = await lookup_garment_by_tag(request.garment_tag)
+    pool = app.state.db_pool
 
-        if not garment_id:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Garment not found for tag: {request.garment_tag}"
-            )
+    # Step 1: Resolve garment tag to garment ID
+    garment_id = await lookup_garment_id(pool, body.garment_tag)
 
-        return IntentResolveResponse(
-            action="request_passport_view",
-            garment_id=garment_id,
-            scanner_user_id=request.scanner_user_id
-        )
+    # Step 2: Call policy gate to check if scan is allowed
+    policy_payload = {
+        "scanner_user_id": body.scanner_user_id,
+        "garment_id": garment_id,
+        "region_code": body.region_code,
+        "action": "request_passport_view"
+    }
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error resolving intent: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    # We'll set request_id later from ensure_request_id, but for the policy call we can peek
+    temp_request_id = request.headers.get("X-Request-Id") or str(uuid.uuid4())
+    policy_result = await call_policy_gate(policy_payload, temp_request_id)
 
+    decision = policy_result["decision"]
+    resolved_scope = policy_result["resolved_scope"]
+    policy_version = policy_result["policy_version"]
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Step 3: Build response
+    response_body = {
+        "action": "request_passport_view",
+        "garment_id": garment_id,
+        "scanner_user_id": body.scanner_user_id,
+        "region_code": body.region_code,
+        "policy_decision": decision,
+        "resolved_scope": resolved_scope,
+        "policy_version": policy_version
+    }
+
+    response = JSONResponse(content=response_body)
+
+    # Step 4: Ensure X-Request-Id is propagated
+    request_id = ensure_request_id(request, response)
+
+    # Step 5: Log the resolution with redacted PII
+    logger.info(
+        "Intent resolved",
+        extra={
+            "scan_id": body.scan_id,
+            "scanner_user_id": redact_user_id(body.scanner_user_id),
+            "garment_id": garment_id[:8] + "…",
+            "region_code": body.region_code,
+            "decision": decision,
+            "resolved_scope": resolved_scope,
+            "policy_version": policy_version,
+            "request_id": request_id
+        }
+    )
+
+    # TODO: integrate NATS / JetStream consumer that listens for "scan.requested" events from gateway instead of only HTTP
+    # TODO: forward allow/deny/escalate packets to orchestrator.worker when we go async
+    # TODO: escalate path: if policy_decision == "escalate", this should enqueue human review instead of continuing automatically
+
+    return response
