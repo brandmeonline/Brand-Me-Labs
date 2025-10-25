@@ -155,6 +155,48 @@ Each service requires environment variables. See `.env.example` files in each se
 
 **IMPORTANT**: Never commit secrets or wallet keys. Use Kubernetes secrets in production.
 
+## Testing
+
+### Unit Tests
+
+Run unit tests for all services:
+
+```bash
+# Run all tests
+make test
+
+# Run tests for specific service
+cd brandme-chain && pnpm test
+
+# Run with coverage
+cd brandme-chain && pnpm test:coverage
+
+# Watch mode for development
+cd brandme-chain && pnpm test:watch
+```
+
+### Blockchain Integration Tests
+
+Test against real Cardano testnet:
+
+```bash
+# 1. Set up test wallet (one-time setup)
+cd brandme-chain
+./scripts/setup-test-wallet.sh
+
+# 2. Get Blockfrost API key from https://blockfrost.io
+# 3. Edit .env.integration with your API key
+
+# 4. Fund wallet from testnet faucet
+# Visit: https://docs.cardano.org/cardano-testnet/tools/faucet/
+
+# 5. Run integration tests
+export $(cat .env.integration | xargs)
+INTEGRATION=true pnpm test:integration
+```
+
+See [brandme-chain/TESTING.md](brandme-chain/TESTING.md) for detailed testing documentation.
+
 ## Runtime Flow: Garment Scan
 
 1. **Mobile client** calls `POST /scan` with `garment_tag`
