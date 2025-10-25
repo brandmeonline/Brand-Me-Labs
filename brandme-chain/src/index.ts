@@ -18,6 +18,9 @@ import { errorHandler } from './middleware/errorHandler';
 import { requestLogger} from './middleware/requestLogger';
 import txRouter from './routes/tx';
 import healthRouter from './routes/health';
+import { initCardanoWallet } from './services/cardano-wallet';
+import { initCardanoTxBuilder } from './services/cardano-tx-builder';
+import { initMidnightClient } from './services/midnight-client';
 
 const app = express();
 
@@ -45,10 +48,44 @@ app.use(errorHandler);
 // Start server
 async function start() {
   try {
+    logger.info('Initializing Brand.Me Chain Service...');
+
+    // Initialize Cardano wallet and TX builder
+    if (config.cardanoMnemonicPath || config.cardanoWalletPath) {
+      logger.info('Initializing Cardano wallet...');
+      initCardanoWallet({
+        network: config.cardanoNetwork,
+        mnemonicPath: config.cardanoMnemonicPath,
+        privateKeyPath: config.cardanoWalletPath,
+      });
+
+      if (config.blockfrostApiKey) {
+        logger.info('Initializing Cardano TX Builder with Blockfrost...');
+        initCardanoTxBuilder(config.blockfrostApiKey, config.cardanoNetwork);
+      } else {
+        logger.warn('Blockfrost API key not provided - Cardano transactions will use fallback mode');
+      }
+    } else {
+      logger.warn('Cardano wallet not configured - using fallback mode');
+    }
+
+    // Initialize Midnight client
+    logger.info('Initializing Midnight client...');
+    initMidnightClient({
+      network: config.midnightNetwork,
+      walletPath: config.midnightWalletPath,
+      rpcUrl: config.midnightRpcUrl,
+    });
+
+    // Start HTTP server
     const port = config.port;
     app.listen(port, () => {
       logger.info(`Brand.Me Chain Service listening on port ${port}`);
       logger.info(`Environment: ${config.environment}`);
+      logger.info(`Cardano Network: ${config.cardanoNetwork}`);
+      logger.info(`Midnight Network: ${config.midnightNetwork}`);
+      logger.info(`Cardano Fallback Mode: ${config.cardanoFallbackMode}`);
+      logger.info(`Midnight Fallback Mode: ${config.midnightFallbackMode}`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
