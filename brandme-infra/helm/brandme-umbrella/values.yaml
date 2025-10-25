@@ -1,0 +1,229 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# Brand.Me Umbrella Chart Values
+# ================================
+
+global:
+  # Image registry
+  image:
+    registry: gcr.io/brandme-prod
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+  # Environment
+  environment: production
+
+  # Region
+  region: us-east1
+
+  # Database
+  database:
+    host: "127.0.0.1"  # Cloud SQL Proxy sidecar
+    port: 5432
+    name: "brandme"
+    user: "brandme"
+    # Password from secret
+    existingSecret: "database-secret"
+    secretKey: "password"
+
+  # NATS
+  nats:
+    url: "nats://nats:4222"
+
+  # Monitoring
+  monitoring:
+    enabled: true
+    prometheus:
+      enabled: true
+    grafana:
+      enabled: true
+
+# ==========================================
+# Gateway Service
+# ==========================================
+
+gateway:
+  enabled: true
+  replicaCount: 3
+
+  image:
+    repository: brandme-gateway
+    tag: "1.0.0"
+
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 3000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+  env:
+    - name: PORT
+      value: "3000"
+    - name: OAUTH_CLIENT_ID
+      valueFrom:
+        secretKeyRef:
+          name: oauth-secrets
+          key: client-id
+    - name: OAUTH_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: oauth-secrets
+          key: client-secret
+    - name: JWT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: jwt-secret
+          key: secret
+
+# ==========================================
+# Core Services
+# ==========================================
+
+core:
+  enabled: true
+
+  brain:
+    replicaCount: 2
+    image:
+      repository: brandme-core-brain
+      tag: "1.0.0"
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+  policy:
+    replicaCount: 2
+    image:
+      repository: brandme-core-policy
+      tag: "1.0.0"
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+  orchestrator:
+    replicaCount: 2
+    image:
+      repository: brandme-core-orchestrator
+      tag: "1.0.0"
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+# ==========================================
+# Agent Services
+# ==========================================
+
+agents:
+  enabled: true
+
+  identity:
+    replicaCount: 2
+    image:
+      repository: brandme-agent-identity
+      tag: "1.0.0"
+
+  knowledge:
+    replicaCount: 2
+    image:
+      repository: brandme-agent-knowledge
+      tag: "1.0.0"
+
+  compliance:
+    replicaCount: 2
+    image:
+      repository: brandme-agent-compliance
+      tag: "1.0.0"
+
+# ==========================================
+# Chain Service
+# ==========================================
+
+chain:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: brandme-chain
+    tag: "1.0.0"
+
+  secrets:
+    # Wallet keys mounted from K8s secrets
+    cardanoWallet:
+      secretName: wallet-secrets
+      key: cardano-key
+    midnightWallet:
+      secretName: wallet-secrets
+      key: midnight-key
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# ==========================================
+# Console Service
+# ==========================================
+
+console:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: brandme-console
+    tag: "1.0.0"
+
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 3002
+
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: "nginx"
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: console.brandme.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: console-tls
+        hosts:
+          - console.brandme.com
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
