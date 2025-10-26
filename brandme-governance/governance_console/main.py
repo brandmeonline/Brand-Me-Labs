@@ -9,14 +9,12 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-import asyncpg
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id
+from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
 
 logger = get_logger("governance_console")
 
-# v7 fix: default env for local compose
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://brandme:brandme@postgres:5432/brandme")
 REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
 
 
@@ -28,10 +26,10 @@ class GovernanceDecisionRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=5, max_size=20)
+    app.state.db_pool = await create_pool_from_env(min_size=5, max_size=20)
     logger.info({"event": "governance_console_started"})
     yield
-    await app.state.db_pool.close()
+    await safe_close_pool(app.state.db_pool)
     logger.info({"event": "governance_console_stopped"})
 
 
@@ -137,4 +135,11 @@ async def resolve_escalation(scan_id: str, payload: GovernanceDecisionRequest, r
 
 @app.get("/health")
 async def health():
-    return JSONResponse(content={"status": "ok"})
+    """Health check with database connectivity verification."""
+    if app.state.db_pool:
+        is_healthy = await health_check(app.state.db_pool)
+        if is_healthy:
+            return JSONResponse(content={"status": "ok", "service": "governance"})
+        else:
+            return JSONResponse(content={"status": "degraded", "service": "governance", "database": "unhealthy"}, status_code=503)
+    return JSONResponse(content={"status": "error", "service": "governance", "message": "no_db_pool"}, status_code=503)

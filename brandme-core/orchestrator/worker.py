@@ -10,15 +10,13 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-import asyncpg
 import httpx
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, truncate_id
+from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
 
 logger = get_logger("orchestrator_service")
 
-# v7 fix: default env for local compose
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://brandme:brandme@postgres:5432/brandme")
 REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
 
 
@@ -200,11 +198,11 @@ async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str,
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=5, max_size=20)
+    app.state.db_pool = await create_pool_from_env(min_size=5, max_size=20)
     app.state.http_client = httpx.AsyncClient()
     logger.info({"event": "orchestrator_service_started"})
     yield
-    await app.state.db_pool.close()
+    await safe_close_pool(app.state.db_pool)
     await app.state.http_client.aclose()
     logger.info({"event": "orchestrator_service_stopped"})
 
@@ -248,4 +246,11 @@ async def scan_commit(body: OrchestratorScanPacket, request: Request):
 
 @app.get("/health")
 async def health():
-    return JSONResponse(content={"status": "ok"})
+    """Health check with database connectivity verification."""
+    if app.state.db_pool:
+        is_healthy = await health_check(app.state.db_pool)
+        if is_healthy:
+            return JSONResponse(content={"status": "ok", "service": "orchestrator"})
+        else:
+            return JSONResponse(content={"status": "degraded", "service": "orchestrator", "database": "unhealthy"}, status_code=503)
+    return JSONResponse(content={"status": "error", "service": "orchestrator", "message": "no_db_pool"}, status_code=503)

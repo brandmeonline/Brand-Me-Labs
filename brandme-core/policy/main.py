@@ -11,11 +11,10 @@ from contextlib import asynccontextmanager
 import httpx
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, truncate_id
+from brandme_core.db import safe_close_pool
 
 logger = get_logger("policy_service")
 
-# v7 fix: default env for local compose
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://brandme:brandme@postgres:5432/brandme")
 REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
 
 
@@ -72,7 +71,8 @@ async def lifespan(app: FastAPI):
     app.state.http_client = httpx.AsyncClient()
     logger.info({"event": "policy_service_started"})
     yield
-    await app.state.http_client.aclose()
+    if app.state.http_client:
+        await app.state.http_client.aclose()
     logger.info({"event": "policy_service_stopped"})
 
 
@@ -149,4 +149,5 @@ async def policy_check(payload: PolicyCheckRequest, request: Request):
 
 @app.get("/health")
 async def health():
-    return JSONResponse(content={"status": "ok"})
+    """Health check endpoint."""
+    return JSONResponse(content={"status": "ok", "service": "policy"})

@@ -1,31 +1,24 @@
-# Brand.Me v6 — Stable Integrity Spine
+# Brand.Me v7 — Stable Integrity Spine
 # Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-agents/identity/src/main.py
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
-import asyncpg
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id
+from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
 
 logger = get_logger("identity_service")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(
-        host="postgres",
-        port=5432,
-        database="brandme",
-        user="postgres",
-        password="postgres",
-        min_size=5,
-        max_size=20,
-    )
+    # v7 fix: use shared database utility with retry logic
+    app.state.db_pool = await create_pool_from_env(min_size=5, max_size=20)
     logger.info({"event": "identity_service_started"})
     yield
-    await app.state.db_pool.close()
+    await safe_close_pool(app.state.db_pool)
     logger.info({"event": "identity_service_stopped"})
 
 
@@ -67,4 +60,14 @@ async def get_identity_profile(user_id: str, request: Request):
 
 @app.get("/health")
 async def health():
-    return JSONResponse(content={"status": "ok"})
+    """
+    Health check endpoint that verifies database connectivity.
+    Returns 503 if database is unhealthy.
+    """
+    if app.state.db_pool:
+        is_healthy = await health_check(app.state.db_pool)
+        if is_healthy:
+            return JSONResponse(content={"status": "ok", "service": "identity"})
+        else:
+            return JSONResponse(content={"status": "degraded", "service": "identity", "database": "unhealthy"}, status_code=503)
+    return JSONResponse(content={"status": "error", "service": "identity", "message": "no_db_pool"}, status_code=503)

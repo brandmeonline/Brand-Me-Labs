@@ -9,23 +9,21 @@ from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import asyncpg
 
 from brandme_core.logging import get_logger, ensure_request_id, truncate_id
+from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
 
 logger = get_logger("knowledge_service")
 
-# v7 fix: default env for local compose
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://brandme:brandme@postgres:5432/brandme")
 REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=5, max_size=20)
+    app.state.db_pool = await create_pool_from_env(min_size=5, max_size=20)
     logger.info({"event": "knowledge_service_started"})
     yield
-    await app.state.db_pool.close()
+    await safe_close_pool(app.state.db_pool)
     logger.info({"event": "knowledge_service_stopped"})
 
 
@@ -85,4 +83,11 @@ async def get_garment_passport(garment_id: str, request: Request, scope: Optiona
 
 @app.get("/health")
 async def health():
-    return JSONResponse(content={"status": "ok"})
+    """Health check with database connectivity verification."""
+    if app.state.db_pool:
+        is_healthy = await health_check(app.state.db_pool)
+        if is_healthy:
+            return JSONResponse(content={"status": "ok", "service": "knowledge"})
+        else:
+            return JSONResponse(content={"status": "degraded", "service": "knowledge", "database": "unhealthy"}, status_code=503)
+    return JSONResponse(content={"status": "error", "service": "knowledge", "message": "no_db_pool"}, status_code=503)
