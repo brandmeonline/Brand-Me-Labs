@@ -1,7 +1,8 @@
-# Brand.Me v6 — Stable Integrity Spine
+# Brand.Me v7 — Stable Integrity Spine
 # Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-core/policy/main.py
 
+import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -12,6 +13,10 @@ import httpx
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, truncate_id
 
 logger = get_logger("policy_service")
+
+# v7 fix: default env for local compose
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://brandme:brandme@postgres:5432/brandme")
+REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
 
 
 class PolicyCheckRequest(BaseModel):
@@ -33,6 +38,7 @@ async def fetch_owner_and_consent(scanner_user_id: str, garment_id: str, request
     """
     owner_user_id = "owner-stub-123"
 
+    # v7 fix: docker-compose internal service URL
     try:
         response = await http_client.get(
             f"http://identity:8005/identity/{owner_user_id}/profile",
@@ -72,7 +78,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# v6 fix: CORS for public-facing policy service
+# v7 fix: enable CORS for local frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # TODO tighten in prod

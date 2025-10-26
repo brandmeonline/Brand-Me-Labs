@@ -1,8 +1,9 @@
-# Brand.Me v6 — Stable Integrity Spine
+# Brand.Me v7 — Stable Integrity Spine
 # Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-agents/knowledge/src/main.py
 # v6 fix: removed duplicate FastAPI init / duplicate lifespan definitions
 
+import os
 from typing import Optional
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse
@@ -14,18 +15,14 @@ from brandme_core.logging import get_logger, ensure_request_id, truncate_id
 
 logger = get_logger("knowledge_service")
 
+# v7 fix: default env for local compose
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://brandme:brandme@postgres:5432/brandme")
+REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(
-        host="postgres",
-        port=5432,
-        database="brandme",
-        user="postgres",
-        password="postgres",
-        min_size=5,
-        max_size=20,
-    )
+    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=5, max_size=20)
     logger.info({"event": "knowledge_service_started"})
     yield
     await app.state.db_pool.close()
@@ -34,7 +31,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# v6 fix: CORS for public-facing knowledge service
+# v7 fix: enable CORS for local frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # TODO tighten in prod

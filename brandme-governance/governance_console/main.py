@@ -1,7 +1,8 @@
-# Brand.Me v6 — Stable Integrity Spine
+# Brand.Me v7 — Stable Integrity Spine
 # Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-governance/governance_console/main.py
 
+import os
 from typing import List
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -14,7 +15,9 @@ from brandme_core.logging import get_logger, redact_user_id, ensure_request_id
 
 logger = get_logger("governance_console")
 
-
+# v7 fix: default env for local compose
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://brandme:brandme@postgres:5432/brandme")
+REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
 
 
 class GovernanceDecisionRequest(BaseModel):
@@ -25,26 +28,16 @@ class GovernanceDecisionRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    app.state.db_pool = await asyncpg.create_pool(
-        host="postgres",
-        port=5432,
-        database="brandme",
-        user="postgres",
-        password="postgres",
-        min_size=5,
-        max_size=20,
-    )
+    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=5, max_size=20)
     logger.info({"event": "governance_console_started"})
     yield
-    # Shutdown
     await app.state.db_pool.close()
     logger.info({"event": "governance_console_stopped"})
 
 
 app = FastAPI(lifespan=lifespan)
 
-# v6 fix: CORS for public-facing governance console
+# v7 fix: enable CORS for local frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # TODO tighten in prod
