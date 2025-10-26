@@ -8,6 +8,8 @@ from contextlib import asynccontextmanager
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id
 from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
+from brandme_core.metrics import get_metrics_collector, generate_metrics
+from fastapi.responses import Response
 
 logger = get_logger("identity_service")
 
@@ -60,14 +62,21 @@ async def get_identity_profile(user_id: str, request: Request):
 
 @app.get("/health")
 async def health():
-    """
-    Health check endpoint that verifies database connectivity.
-    Returns 503 if database is unhealthy.
-    """
+    """Health check endpoint that verifies database connectivity."""
     if app.state.db_pool:
         is_healthy = await health_check(app.state.db_pool)
+        metrics.update_health("database", is_healthy)
         if is_healthy:
             return JSONResponse(content={"status": "ok", "service": "identity"})
         else:
             return JSONResponse(content={"status": "degraded", "service": "identity", "database": "unhealthy"}, status_code=503)
     return JSONResponse(content={"status": "error", "service": "identity", "message": "no_db_pool"}, status_code=503)
+
+
+@app.get("/metrics")
+async def metrics_endpoint():
+    """Prometheus metrics endpoint."""
+    return Response(
+        content=generate_metrics(),
+        media_type="text/plain; version=0.0.4"
+    )

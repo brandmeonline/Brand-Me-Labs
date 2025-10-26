@@ -14,8 +14,11 @@ from contextlib import asynccontextmanager
 
 from brandme_core.logging import get_logger, ensure_request_id
 from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
+from brandme_core.metrics import get_metrics_collector, generate_metrics
+from fastapi.responses import Response
 
 logger = get_logger("compliance_service")
+metrics = get_metrics_collector("compliance")
 
 REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
 
@@ -246,8 +249,18 @@ async def health():
     """Health check with database connectivity verification."""
     if app.state.db_pool:
         is_healthy = await health_check(app.state.db_pool)
+        metrics.update_health("database", is_healthy)
         if is_healthy:
             return JSONResponse(content={"status": "ok", "service": "compliance"})
         else:
             return JSONResponse(content={"status": "degraded", "service": "compliance", "database": "unhealthy"}, status_code=503)
     return JSONResponse(content={"status": "error", "service": "compliance", "message": "no_db_pool"}, status_code=503)
+
+
+@app.get("/metrics")
+async def metrics_endpoint():
+    """Prometheus metrics endpoint."""
+    return Response(
+        content=generate_metrics(),
+        media_type="text/plain; version=0.0.4"
+    )
