@@ -1,0 +1,33 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+apiVersion: v2
+name: brandme
+description: Brand.Me Platform - Digital Garment Authentication & Provenance
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - blockchain
+  - authentication
+  - provenance
+  - fashion
+  - nft
+maintainers:
+  - name: Brand.Me Engineering
+    email: engineering@brandme.io
+dependencies:
+  - name: postgresql
+    version: "12.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: prometheus
+    version: "15.x.x"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    condition: prometheus.enabled
+  - name: grafana
+    version: "6.x.x"
+    repository: "https://grafana.github.io/helm-charts"
+    condition: grafana.enabled

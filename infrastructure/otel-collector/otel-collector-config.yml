@@ -1,0 +1,134 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# OpenTelemetry Collector Configuration for Brand.Me Platform
+# ============================================================
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Prometheus receiver for scraping metrics
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:8888']
+
+processors:
+  # Batch processor for better performance
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+  # Memory limiter to prevent OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Resource processor to add service metadata
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: ${env:ENVIRONMENT}
+        action: upsert
+      - key: service.namespace
+        value: brandme
+        action: upsert
+
+  # Filter processor to remove sensitive data
+  filter/pii:
+    metrics:
+      exclude:
+        match_type: strict
+        metric_names:
+          - user.email
+          - user.phone
+    logs:
+      exclude:
+        match_type: regexp
+        record_attributes:
+          - key: message
+            value: '.*(wallet|password|secret|token).*'
+
+  # Attributes processor for enrichment
+  attributes:
+    actions:
+      - key: http.route
+        action: upsert
+        from_attribute: http.target
+      - key: region
+        action: upsert
+        value: ${env:REGION}
+
+exporters:
+  # Export to Prometheus
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: brandme
+
+  # Export to Loki for logs
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    labels:
+      resource:
+        service.name: "service_name"
+        service.namespace: "service_namespace"
+      attributes:
+        level: "level"
+        trace_id: "trace_id"
+
+  # Export traces to Tempo
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # Logging exporter for debugging
+  logging:
+    loglevel: debug
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # File exporter for backup
+  file:
+    path: /data/otel-traces.json
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource, attributes]
+      exporters: [logging, otlp/tempo, file]
+
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch, resource, filter/pii]
+      exporters: [logging, prometheus]
+
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource, filter/pii]
+      exporters: [logging, loki]
+
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888

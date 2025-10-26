@@ -1,0 +1,191 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# Prometheus Alert Rules for Brand.Me Platform
+# =============================================
+
+groups:
+  - name: brandme_service_health
+    interval: 30s
+    rules:
+      # Service down alerts
+      - alert: ServiceDown
+        expr: up{job=~"gateway|brain|policy|identity|knowledge|compliance|chain"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: service
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been down for more than 1 minute."
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(brandme_scans_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: scans
+        annotations:
+          summary: "High scan error rate detected"
+          description: "Scan error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      # Slow response time
+      - alert: SlowResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Slow HTTP response time"
+          description: "95th percentile response time is {{ $value }}s."
+
+  - name: brandme_database
+    interval: 30s
+    rules:
+      # Database connection pool exhaustion
+      - alert: DatabasePoolExhausted
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "PostgreSQL connection pool nearly exhausted"
+          description: "Database connection pool is {{ $value | humanizePercentage }} full."
+
+      # Slow queries
+      - alert: SlowDatabaseQueries
+        expr: rate(brandme_db_query_duration_sum[5m]) / rate(brandme_db_query_duration_count[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query duration is {{ $value }}ms."
+
+  - name: brandme_blockchain
+    interval: 60s
+    rules:
+      # Blockchain transaction failures
+      - alert: BlockchainTxFailures
+        expr: rate(brandme_blockchain_transactions_total{success="false"}[10m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: blockchain
+        annotations:
+          summary: "High blockchain transaction failure rate"
+          description: "Blockchain TX failure rate is {{ $value | humanizePercentage }}."
+
+  - name: brandme_audit
+    interval: 60s
+    rules:
+      # Audit chain integrity violation
+      - alert: AuditChainIntegrityViolation
+        expr: brandme_audit_chain_valid == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: compliance
+        annotations:
+          summary: "CRITICAL: Audit chain integrity violation detected"
+          description: "The hash-chained audit log has been tampered with or corrupted."
+
+      # High escalation rate
+      - alert: HighEscalationRate
+        expr: rate(brandme_audit_entries_total{escalated="true"}[1h]) > 0.05
+        for: 30m
+        labels:
+          severity: info
+          component: compliance
+        annotations:
+          summary: "High human escalation rate"
+          description: "{{ $value | humanizePercentage }} of scans are being escalated to human review."
+
+  - name: brandme_celery
+    interval: 30s
+    rules:
+      # High queue size
+      - alert: CeleryQueueBacklog
+        expr: brandme_celery_queue_size > 1000
+        for: 10m
+        labels:
+          severity: warning
+          component: orchestrator
+        annotations:
+          summary: "Celery queue backlog"
+          description: "Celery queue has {{ $value }} pending tasks."
+
+      # Worker failures
+      - alert: CeleryWorkerDown
+        expr: celery_workers_active == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: orchestrator
+        annotations:
+          summary: "No Celery workers available"
+          description: "All Celery workers are down or unavailable."
+
+  - name: brandme_infrastructure
+    interval: 30s
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.name }}"
+          description: "CPU usage is {{ $value | humanizePercentage }}."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.name }}"
+          description: "Memory usage is {{ $value | humanizePercentage }}."
+
+      # Disk space low
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes / node_filesystem_size_bytes < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Low disk space on {{ $labels.mountpoint }}"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining."
+
+  - name: brandme_redis
+    interval: 30s
+    rules:
+      # Redis memory usage
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis is using {{ $value | humanizePercentage }} of allocated memory."
+
+      # Redis connection errors
+      - alert: RedisConnectionErrors
+        expr: rate(redis_rejected_connections_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis connection errors"
+          description: "Redis is rejecting connections."

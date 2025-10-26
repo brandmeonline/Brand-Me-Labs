@@ -1,0 +1,319 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# Brand.Me Helm Chart Values
+# ===========================
+
+# Global settings
+global:
+  environment: production
+  region: us-east1
+  imagePullPolicy: IfNotPresent
+  serviceAccount:
+    create: true
+    name: brandme
+
+# Gateway Service
+gateway:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: gcr.io/brandme/gateway
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 3000
+    annotations:
+      cloud.google.com/load-balancer-type: "External"
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+    hosts:
+      - host: api.brandme.io
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: brandme-gateway-tls
+        hosts:
+          - api.brandme.io
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: NATS_URL
+      value: "nats://nats:4222"
+    - name: LOG_LEVEL
+      value: "info"
+
+# Brain Service
+brain:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: gcr.io/brandme/core
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+# Policy Service
+policy:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: gcr.io/brandme/core
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 8001
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+
+# Identity Service
+identity:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: gcr.io/brandme/agents
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 8100
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Knowledge Service
+knowledge:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: gcr.io/brandme/agents
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 8101
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+# Compliance Service
+compliance:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: gcr.io/brandme/agents
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 8102
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Chain Service
+chain:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: gcr.io/brandme/chain
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 3001
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+# Orchestrator
+orchestrator:
+  enabled: true
+  worker:
+    replicaCount: 4
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+  beat:
+    replicaCount: 1
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+# PostgreSQL (using Bitnami chart)
+postgresql:
+  enabled: true
+  auth:
+    username: brandme
+    password: "" # Set via secret
+    database: brandme_prod
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: "fast-ssd"
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: "1000m"
+      limits:
+        memory: "4Gi"
+        cpu: "2000m"
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# Redis (using Bitnami chart)
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: "" # Set via secret
+  master:
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# NATS
+nats:
+  enabled: true
+  nats:
+    jetstream:
+      enabled: true
+      memoryStore:
+        enabled: true
+        size: 1Gi
+      fileStore:
+        enabled: true
+        size: 10Gi
+  replicaCount: 3
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Monitoring
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      size: 50Gi
+    retention: "30d"
+
+grafana:
+  enabled: true
+  adminPassword: "" # Set via secret
+  persistence:
+    enabled: true
+    size: 10Gi
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'brandme'
+          folder: 'Brand.Me'
+          type: file
+          options:
+            path: /var/lib/grafana/dashboards/brandme
+
+# Service Mesh (Istio)
+istio:
+  enabled: false
+  mtls:
+    enabled: true
+    mode: STRICT
+
+# Network Policies
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+
+# Pod Security
+podSecurityPolicy:
+  enabled: true
+
+# Secrets Management
+secrets:
+  provider: "external-secrets" # or "sealed-secrets"
+  externalSecrets:
+    backend: "gcpSecretsManager"
+    projectID: "brandme-prod"
