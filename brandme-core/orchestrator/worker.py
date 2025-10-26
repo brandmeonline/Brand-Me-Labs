@@ -1,66 +1,20 @@
-"""
-Brand.Me Orchestrator Service
-==============================
-Coordinates scan processing: knowledge retrieval, blockchain anchoring, compliance logging.
+# brandme-core/orchestrator/worker.py
 
-Features:
-- Resilient HTTP clients with automatic retries
-- Proper error handling for downstream services
-- Health check endpoints
-- Graceful degradation when services are unavailable
-"""
 import datetime as dt
 import hashlib
-import json
 import uuid
-from typing import Dict, List
-from contextlib import asynccontextmanager
-
-from fastapi import FastAPI, Request, HTTPException
+from typing import List, Dict
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
+from contextlib import asynccontextmanager
+import asyncpg
+import httpx
 
-from brandme_core import (
-    get_logger,
-    redact_user_id,
-    ensure_request_id,
-    config,
-    get_http_client,
-    close_all_clients,
-    ServiceUnavailableError,
-)
+from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, truncate_id
 
 logger = get_logger("orchestrator_service")
 
-
-# ============================================================================
-# Lifespan Management
-# ============================================================================
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Manage application startup and shutdown."""
-    logger.info("Orchestrator service startup complete")
-    yield
-    await close_all_clients()
-    logger.info("Orchestrator service shutdown complete")
-
-
-# ============================================================================
-# FastAPI App Setup
-# ============================================================================
-
-app = FastAPI(
-    title="Brand.Me Orchestrator Service",
-    description="Scan processing coordination and blockchain anchoring",
-    version="2.0.0",
-    lifespan=lifespan
-)
-
-
-# ============================================================================
-# Request/Response Models
-# ============================================================================
 
 class OrchestratorScanPacket(BaseModel):
     scan_id: str
@@ -71,285 +25,306 @@ class OrchestratorScanPacket(BaseModel):
     region_code: str
     occurred_at: str
 
-    @validator('*')
-    def validate_not_empty(cls, v):
-        if isinstance(v, str) and (not v or not v.strip()):
-            raise ValueError("Field cannot be empty")
-        return v
 
+async def call_knowledge_service(
+    garment_id: str, scope: str, request_id: str, http_client
+) -> List[Dict[str, object]]:
+    """
+    GET http://knowledge:8003/garment/{garment_id}/passport?scope={scope}
+    Headers: {"X-Request-Id": request_id}
+    Expect: {"garment_id", "facets": [...]}
+    MUST ONLY return the "facets". NEVER access fields not in that shape.
+    TODO: This is where we enforce that orchestrator only ever stores previews, not private payloads.
+    """
+    # TODO: Uncomment for production HTTP call
+    # try:
+    #     response = await http_client.get(
+    #         f"http://knowledge:8003/garment/{garment_id}/passport",
+    #         params={"scope": scope},
+    #         headers={"X-Request-Id": request_id},
+    #         timeout=15.0,
+    #     )
+    #     response.raise_for_status()
+    #     data = response.json()
+    #     return data.get("facets", [])
+    # except Exception as e:
+    #     logger.error({"event": "knowledge_call_failed", "error": str(e), "request_id": request_id})
+    #     return []
 
-# ============================================================================
-# Helper Functions - Service Calls
-# ============================================================================
-
-async def call_knowledge_service(garment_id: str, scope: str, request_id: str) -> List[Dict]:
-    """Query knowledge service for garment facets."""
-    if config.ENABLE_STUB_MODE:
-        return [
-            {
-                "facet_type": "esg_score",
-                "value": {"carbon_g_per_unit": 120, "water_l_per_unit": 45},
-                "visibility": "public"
-            }
-        ]
-
-    try:
-        client = get_http_client("knowledge", config.KNOWLEDGE_SERVICE_URL)
-        response = await client.get(
-            f"/garment/{garment_id}/passport",
-            request_id=request_id,
-            params={"scope": scope}
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("facets", [])
-
-    except ServiceUnavailableError as e:
-        logger.warning("Knowledge service unavailable, using stub", extra={"error": str(e)})
-        return []
+    # MLS stub:
+    return [
+        {
+            "facet_type": "ESG",
+            "facet_payload_preview": {"summary": "Sustainability certified", "rating": "A"},
+        },
+        {
+            "facet_type": "ORIGIN",
+            "facet_payload_preview": {
+                "designer": "Stella McCartney",
+                "cut_and_sewn": "Italy",
+            },
+        },
+        {
+            "facet_type": "MATERIALS",
+            "facet_payload_preview": {"composition": "95% Organic Cotton, 5% Elastane"},
+        },
+    ]
 
 
 async def call_compliance_audit_log(
     scan_id: str,
     decision_summary: str,
-    decision_detail: Dict,
+    decision_detail: Dict[str, object],
     risk_flagged: bool,
     escalated_to_human: bool,
-    request_id: str
+    request_id: str,
+    http_client,
 ) -> None:
-    """Log audit event to compliance service."""
-    if config.ENABLE_STUB_MODE:
-        logger.debug("Stub: would log to compliance", extra={"scan_id": scan_id})
-        return
+    """
+    POST http://compliance:8004/audit/log
+    JSON body: {"scan_id", "decision_summary", "decision_detail", "risk_flagged", "escalated_to_human"}
+    Headers: {"X-Request-Id": request_id}
+    """
+    # TODO: Uncomment for production HTTP call
+    # try:
+    #     response = await http_client.post(
+    #         "http://compliance:8004/audit/log",
+    #         json={
+    #             "scan_id": scan_id,
+    #             "decision_summary": decision_summary,
+    #             "decision_detail": decision_detail,
+    #             "risk_flagged": risk_flagged,
+    #             "escalated_to_human": escalated_to_human,
+    #         },
+    #         headers={"X-Request-Id": request_id},
+    #         timeout=10.0,
+    #     )
+    #     response.raise_for_status()
+    # except Exception as e:
+    #     logger.error({"event": "compliance_audit_log_failed", "error": str(e), "request_id": request_id})
 
-    try:
-        client = get_http_client("compliance", config.COMPLIANCE_SERVICE_URL)
-        await client.post(
-            "/audit/log",
-            request_id=request_id,
-            json={
-                "scan_id": scan_id,
-                "decision_summary": decision_summary,
-                "decision_detail": decision_detail,
-                "risk_flagged": risk_flagged,
-                "escalated_to_human": escalated_to_human
-            }
-        )
-    except ServiceUnavailableError as e:
-        logger.error("Compliance service unavailable for audit log", extra={"error": str(e), "scan_id": scan_id})
-        # Don't fail the scan - audit can be replayed later
+    # MLS stub: no-op
+    pass
 
 
 async def call_compliance_anchor_chain(
-    scan_id: str,
-    tx_hashes: Dict[str, str],
-    request_id: str
+    scan_id: str, tx_hashes: Dict[str, str], request_id: str, http_client
 ) -> None:
-    """Record blockchain anchors in compliance service."""
-    if config.ENABLE_STUB_MODE:
-        logger.debug("Stub: would record anchors", extra={"scan_id": scan_id})
-        return
-
-    try:
-        client = get_http_client("compliance", config.COMPLIANCE_SERVICE_URL)
-        await client.post(
-            "/audit/anchorChain",
-            request_id=request_id,
-            json={
-                "scan_id": scan_id,
-                **tx_hashes
-            }
-        )
-    except ServiceUnavailableError as e:
-        logger.error("Compliance service unavailable for anchor recording", extra={"error": str(e), "scan_id": scan_id})
-
-
-# ============================================================================
-# Helper Functions - Blockchain Anchoring (Stubs)
-# ============================================================================
-
-async def call_cardano_anchor(facets: List[Dict], garment_id: str, scan_id: str) -> str:
-    """Anchor public facets to Cardano."""
-    public_facets = [f for f in facets if f.get("visibility") == "public"]
-    payload = {
-        "garment_id": garment_id,
-        "scan_id": scan_id,
-        "public_facets_count": len(public_facets)
-    }
-    payload_hash = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
-    tx_hash = f"cardano_{payload_hash[:16]}"
-
-    logger.info({
-        "event": "cardano_anchor",
-        "scan_id": scan_id,
-        "tx_hash": tx_hash,
-        "public_facets_count": len(public_facets)
-    })
-    return tx_hash
-
-
-async def call_midnight_anchor(facets: List[Dict], garment_id: str, scan_id: str, scope: str) -> str:
-    """Anchor private facets to Midnight."""
-    private_facets = [f for f in facets if f.get("visibility") in ["private", "friends_only"]]
-    payload = {
-        "garment_id": garment_id,
-        "scan_id": scan_id,
-        "scope": scope,
-        "private_facets_count": len(private_facets)
-    }
-    payload_hash = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
-    tx_hash = f"midnight_{payload_hash[:16]}"
-
-    logger.info({
-        "event": "midnight_anchor",
-        "scan_id": scan_id,
-        "tx_hash": tx_hash,
-        "private_facets_count": len(private_facets)
-    })
-    return tx_hash
-
-
-def compute_crosschain_root(cardano_tx: str, midnight_tx: str) -> str:
-    """Compute deterministic cross-chain root hash."""
-    combined = f"{cardano_tx}|{midnight_tx}"
-    return hashlib.sha256(combined.encode()).hexdigest()
-
-
-# ============================================================================
-# Core Processing Logic
-# ============================================================================
-
-async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str) -> Dict:
     """
-    Orchestrate the allowed scan flow:
-    1. Fetch facets from knowledge service
-    2. Anchor to Cardano and Midnight
-    3. Compute cross-chain root
-    4. Log to compliance
-    5. Return scan result
+    POST http://compliance:8004/audit/anchorChain
+    JSON body: {"scan_id", "cardano_tx_hash", "midnight_tx_hash", "crosschain_root_hash"}
+    Headers: {"X-Request-Id": request_id}
+    """
+    # TODO: Uncomment for production HTTP call
+    # try:
+    #     response = await http_client.post(
+    #         "http://compliance:8004/audit/anchorChain",
+    #         json={
+    #             "scan_id": scan_id,
+    #             "cardano_tx_hash": tx_hashes["cardano_tx_hash"],
+    #             "midnight_tx_hash": tx_hashes["midnight_tx_hash"],
+    #             "crosschain_root_hash": tx_hashes["crosschain_root_hash"],
+    #         },
+    #         headers={"X-Request-Id": request_id},
+    #         timeout=10.0,
+    #     )
+    #     response.raise_for_status()
+    # except Exception as e:
+    #     logger.error({"event": "compliance_anchor_chain_failed", "error": str(e), "request_id": request_id})
+
+    # MLS stub: no-op
+    pass
+
+
+def call_tx_builder(garment_id: str, facets: List[Dict], scope: str) -> Dict[str, str]:
+    """
+    Build transaction hashes for Cardano (public), Midnight (private), and crosschain root.
+    TODO: Replace with real blockchain transaction construction.
+    """
+    facet_hash = hashlib.sha256(str(facets).encode()).hexdigest()
+    cardano_hash = hashlib.sha256((garment_id + scope + facet_hash).encode()).hexdigest()
+    midnight_hash = hashlib.sha256((garment_id + "midnight" + facet_hash).encode()).hexdigest()
+    crosschain_root = hashlib.sha256((cardano_hash + midnight_hash).encode()).hexdigest()
+
+    return {
+        "cardano_tx_hash": "tx_cardano_" + cardano_hash[:16],
+        "midnight_tx_hash": "tx_midnight_" + midnight_hash[:16],
+        "crosschain_root_hash": "root_" + crosschain_root[:16],
+    }
+
+
+async def process_allowed_scan(
+    decision_packet: Dict[str, str],
+    request_id: str,
+    db_pool,
+    http_client,
+) -> Dict[str, object]:
+    """
+    Process allowed scan: fetch facets, persist, anchor, audit.
+    TODO: if decision_packet actually represents an escalated scan, we should NOT anchor.
+    Instead we should call compliance /audit/escalate.
     """
     scan_id = decision_packet["scan_id"]
-    garment_id = decision_packet["garment_id"]
     scanner_user_id = decision_packet["scanner_user_id"]
+    garment_id = decision_packet["garment_id"]
     resolved_scope = decision_packet["resolved_scope"]
     policy_version = decision_packet["policy_version"]
     region_code = decision_packet["region_code"]
-    occurred_at = decision_packet.get("occurred_at", dt.datetime.utcnow().isoformat() + "Z")
+    occurred_at = decision_packet["occurred_at"]
 
-    # 1. Fetch facets
-    facets = await call_knowledge_service(garment_id, resolved_scope, request_id)
+    # Fetch public-safe facets
+    shown_facets = await call_knowledge_service(garment_id, resolved_scope, request_id, http_client)
 
-    # 2. Anchor to blockchains
-    cardano_tx_hash = await call_cardano_anchor(facets, garment_id, scan_id)
-    midnight_tx_hash = await call_midnight_anchor(facets, garment_id, scan_id, resolved_scope)
+    # Persist scan_event
+    async with db_pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO scan_event (
+                scan_id, scanner_user_id, garment_id, resolved_scope,
+                policy_version, region_code, occurred_at, shown_facets
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+            ON CONFLICT (scan_id) DO NOTHING
+            """,
+            scan_id,
+            scanner_user_id,
+            garment_id,
+            resolved_scope,
+            policy_version,
+            region_code,
+            occurred_at,
+            str(shown_facets),  # Convert to JSON string for JSONB
+        )
 
-    # 3. Compute cross-chain root
-    crosschain_root_hash = compute_crosschain_root(cardano_tx_hash, midnight_tx_hash)
+    # Build blockchain tx hashes
+    tx_hashes = call_tx_builder(garment_id, shown_facets, resolved_scope)
 
-    # 4. Log to compliance
-    decision_detail = {
-        "garment_id": garment_id,
-        "scanner_user_id": scanner_user_id,
-        "resolved_scope": resolved_scope,
-        "policy_version": policy_version,
-        "region_code": region_code,
-        "occurred_at": occurred_at,
-        "shown_facets_count": len(facets)
-    }
+    # Persist chain_anchor
+    async with db_pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO chain_anchor (
+                scan_id, cardano_tx_hash, midnight_tx_hash, crosschain_root_hash
+            ) VALUES ($1, $2, $3, $4)
+            ON CONFLICT (scan_id) DO NOTHING
+            """,
+            scan_id,
+            tx_hashes["cardano_tx_hash"],
+            tx_hashes["midnight_tx_hash"],
+            tx_hashes["crosschain_root_hash"],
+        )
 
+    # Audit log
     await call_compliance_audit_log(
-        scan_id=scan_id,
-        decision_summary="scan_allowed",
-        decision_detail=decision_detail,
+        scan_id,
+        "scan_committed",
+        {
+            "garment_id": garment_id,
+            "resolved_scope": resolved_scope,
+            "region_code": region_code,
+            "shown_facets_count": len(shown_facets),
+        },
         risk_flagged=False,
         escalated_to_human=False,
-        request_id=request_id
+        request_id=request_id,
+        http_client=http_client,
     )
 
-    # 5. Record chain anchors
-    tx_hashes = {
-        "cardano_tx_hash": cardano_tx_hash,
-        "midnight_tx_hash": midnight_tx_hash,
-        "crosschain_root_hash": crosschain_root_hash
-    }
+    # Record anchor chain in compliance
+    await call_compliance_anchor_chain(scan_id, tx_hashes, request_id, http_client)
 
-    await call_compliance_anchor_chain(scan_id, tx_hashes, request_id)
+    logger.info(
+        {
+            "event": "scan_processed",
+            "scan_id": scan_id,
+            "scanner_user": redact_user_id(scanner_user_id),
+            "garment_partial": truncate_id(garment_id),
+            "shown_facets_count": len(shown_facets),
+            "request_id": request_id,
+        }
+    )
 
-    # 6. Build result
-    result = {
+    return {
         "status": "ok",
         "scan_id": scan_id,
-        "shown_facets_count": len(facets),
-        "cardano_tx_hash": cardano_tx_hash,
-        "midnight_tx_hash": midnight_tx_hash,
-        "crosschain_root_hash": crosschain_root_hash
+        "shown_facets_count": len(shown_facets),
+        "cardano_tx_hash": tx_hashes["cardano_tx_hash"],
+        "midnight_tx_hash": tx_hashes["midnight_tx_hash"],
+        "crosschain_root_hash": tx_hashes["crosschain_root_hash"],
     }
 
-    logger.info({
-        "event": "scan_orchestrated",
-        "scan_id": scan_id,
-        "garment_partial": garment_id[:8] + "…",
-        "scanner_user_redacted": redact_user_id(scanner_user_id),
-        "shown_facets_count": len(facets),
-        "request_id": request_id
-    })
 
-    return result
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    app.state.db_pool = await asyncpg.create_pool(
+        host="postgres",
+        port=5432,
+        database="brandme",
+        user="postgres",
+        password="postgres",
+        min_size=5,
+        max_size=20,
+    )
+    app.state.http_client = httpx.AsyncClient()
+    logger.info({"event": "orchestrator_service_started"})
+    yield
+    # Shutdown
+    await app.state.db_pool.close()
+    await app.state.http_client.aclose()
+    logger.info({"event": "orchestrator_service_stopped"})
 
 
-# ============================================================================
-# API Endpoints
-# ============================================================================
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return JSONResponse({
-        "service": "orchestrator",
-        "status": "healthy",
-        "timestamp": dt.datetime.utcnow().isoformat() + "Z"
-    })
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/scan/commit")
-async def scan_commit(packet: OrchestratorScanPacket, request: Request):
+async def scan_commit(payload: OrchestratorScanPacket, request: Request):
     """
-    Process and commit an allowed scan.
+    Commit allowed scan: persist, anchor, audit.
+    """
+    response = JSONResponse(content={})
+    request_id = ensure_request_id(request, response)
 
-    This endpoint coordinates:
-    - Knowledge retrieval
-    - Blockchain anchoring
-    - Compliance logging
-    """
+    decision_packet = payload.dict()
+
     try:
-        # Build decision packet
-        decision_packet = packet.dict()
-
-        # Get or generate request ID
-        temp_request_id = request.headers.get("X-Request-Id", str(uuid.uuid4()))
-
-        # Process the scan
-        result = await process_allowed_scan(decision_packet, temp_request_id)
-
-        # Build response
-        response = JSONResponse(result)
-        request_id = ensure_request_id(request, response)
-
-        logger.info({
-            "event": "scan_commit_complete",
-            "scan_id": packet.scan_id,
-            "scanner_user_redacted": redact_user_id(packet.scanner_user_id),
-            "garment_partial": packet.garment_id[:8] + "…",
-            "region_code": packet.region_code,
-            "shown_facets_count": result["shown_facets_count"],
-            "request_id": request_id
-        })
-
+        result = await process_allowed_scan(
+            decision_packet,
+            request_id,
+            app.state.db_pool,
+            app.state.http_client,
+        )
+    except Exception as e:
+        logger.error(
+            {
+                "event": "scan_commit_failed",
+                "scan_id": payload.scan_id,
+                "error": str(e),
+                "request_id": request_id,
+            }
+        )
+        response = JSONResponse(content={"error": "internal_error"}, status_code=500)
+        ensure_request_id(request, response)
         return response
 
-    except Exception as e:
-        logger.error("Error in scan_commit", extra={"error": str(e), "scan_id": packet.scan_id})
-        raise HTTPException(
-            status_code=500,
-            detail={"error": "Scan processing failed", "message": str(e)}
-        )
+    response = JSONResponse(content=result)
+    request_id = ensure_request_id(request, response)
+
+    logger.info(
+        {
+            "event": "scan_committed",
+            "scan_id": payload.scan_id,
+            "scanner_user": redact_user_id(payload.scanner_user_id),
+            "garment_partial": truncate_id(payload.garment_id),
+            "region_code": payload.region_code,
+            "shown_facets_count": result["shown_facets_count"],
+            "request_id": request_id,
+        }
+    )
+
+    return response
+
+
+@app.get("/health")
+async def health():
+    return JSONResponse(content={"status": "ok"})

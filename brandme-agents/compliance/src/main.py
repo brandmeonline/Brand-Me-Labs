@@ -1,86 +1,18 @@
-"""
-Brand.Me Compliance Service
-============================
-Tamper-evident audit logging and regulator view with SHA256 hash chaining.
+# brandme-agents/compliance/src/main.py
 
-Features:
-- Hash-chained audit trail
-- Database connection with retries
-- Health check endpoints
-- Safe JSONB handling for PostgreSQL
-"""
-import datetime as dt
 import hashlib
 import json
 import uuid
 from typing import Optional
-from contextlib import asynccontextmanager
-
-import asyncpg
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
+import asyncpg
 
-from brandme_core import (
-    get_logger,
-    ensure_request_id,
-    config,
-    create_db_pool,
-    safe_close_pool,
-    DatabaseError,
-)
+from brandme_core.logging import get_logger, ensure_request_id
 
 logger = get_logger("compliance_service")
-pool: Optional[asyncpg.Pool] = None
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global pool
-    try:
-        pool = await create_db_pool()
-        async with pool.acquire() as conn:
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS audit_log (
-                    id SERIAL PRIMARY KEY,
-                    scan_id TEXT NOT NULL,
-                    decision_summary TEXT NOT NULL,
-                    decision_detail JSONB NOT NULL,
-                    risk_flagged BOOLEAN DEFAULT FALSE,
-                    escalated_to_human BOOLEAN DEFAULT FALSE,
-                    human_approver_id TEXT,
-                    entry_hash TEXT NOT NULL,
-                    prev_hash TEXT,
-                    created_at TIMESTAMPTZ DEFAULT NOW()
-                )
-            """)
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS chain_anchor (
-                    id SERIAL PRIMARY KEY,
-                    scan_id TEXT NOT NULL UNIQUE,
-                    cardano_tx_hash TEXT,
-                    midnight_tx_hash TEXT,
-                    crosschain_root_hash TEXT,
-                    created_at TIMESTAMPTZ DEFAULT NOW()
-                )
-            """)
-        logger.info("Compliance service startup complete")
-    except DatabaseError as e:
-        logger.error("Database initialization failed", extra={"error": str(e)})
-        if not config.ENABLE_STUB_MODE:
-            raise
-
-    yield
-    await safe_close_pool(pool)
-    logger.info("Compliance service shutdown complete")
-
-
-app = FastAPI(
-    title="Brand.Me Compliance Service",
-    description="Tamper-evident audit logging and regulator view",
-    version="2.0.0",
-    lifespan=lifespan
-)
 
 
 class AuditLogRequest(BaseModel):
@@ -89,6 +21,7 @@ class AuditLogRequest(BaseModel):
     decision_detail: dict
     risk_flagged: bool
     escalated_to_human: bool
+    human_approver_id: Optional[str] = None
 
 
 class AnchorChainRequest(BaseModel):
@@ -98,207 +31,236 @@ class AnchorChainRequest(BaseModel):
     crosschain_root_hash: str
 
 
-class EscalationRequest(BaseModel):
+class EscalateRequest(BaseModel):
     scan_id: str
     region_code: str
     reason: str
     requires_human_approval: bool
 
 
-@app.get("/health")
-async def health_check():
-    health_status = {"service": "compliance", "status": "healthy", "database": "unknown"}
-    if pool:
-        try:
-            async with pool.acquire() as conn:
-                await conn.fetchval("SELECT 1")
-            health_status["database"] = "healthy"
-        except Exception as e:
-            health_status["database"] = "unhealthy"
-            if not config.ENABLE_STUB_MODE:
-                return JSONResponse(health_status, status_code=503)
-    return JSONResponse(health_status)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    app.state.db_pool = await asyncpg.create_pool(
+        host="postgres",
+        port=5432,
+        database="brandme",
+        user="postgres",
+        password="postgres",
+        min_size=5,
+        max_size=20,
+    )
+    logger.info({"event": "compliance_service_started"})
+    yield
+    # Shutdown
+    await app.state.db_pool.close()
+    logger.info({"event": "compliance_service_stopped"})
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/audit/log")
 async def audit_log(payload: AuditLogRequest, request: Request):
-    if not pool:
-        raise HTTPException(503, "Database unavailable")
+    """
+    Log audit entry with hash-chaining for integrity.
+    """
+    async with app.state.db_pool.acquire() as conn:
+        # Get previous hash for this scan_id
+        prev_row = await conn.fetchrow(
+            """
+            SELECT entry_hash FROM audit_log
+            WHERE related_scan_id = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            payload.scan_id,
+        )
+        prev_hash = prev_row["entry_hash"] if prev_row else ""
 
-    try:
-        async with pool.acquire() as conn:
-            prev_row = await conn.fetchrow(
-                "SELECT entry_hash FROM audit_log WHERE scan_id = $1 ORDER BY created_at DESC LIMIT 1",
-                payload.scan_id
-            )
-            prev_hash = prev_row["entry_hash"] if prev_row else ""
+        # Compute entry hash
+        hash_input = (
+            prev_hash + payload.decision_summary + json.dumps(payload.decision_detail)
+        )
+        entry_hash = hashlib.sha256(hash_input.encode()).hexdigest()
 
-            timestamp = dt.datetime.utcnow().isoformat() + "Z"
-            hash_input = prev_hash + payload.decision_summary + json.dumps(payload.decision_detail, sort_keys=True) + timestamp
-            entry_hash = hashlib.sha256(hash_input.encode()).hexdigest()
+        # Insert audit entry
+        await conn.execute(
+            """
+            INSERT INTO audit_log (
+                audit_id, related_scan_id, created_at, decision_summary,
+                decision_detail, risk_flagged, escalated_to_human,
+                human_approver_id, prev_hash, entry_hash
+            ) VALUES ($1, $2, NOW(), $3, $4::jsonb, $5, $6, $7, $8, $9)
+            """,
+            str(uuid.uuid4()),
+            payload.scan_id,
+            payload.decision_summary,
+            json.dumps(payload.decision_detail),
+            payload.risk_flagged,
+            payload.escalated_to_human,
+            payload.human_approver_id,
+            prev_hash,
+            entry_hash,
+        )
 
-            await conn.execute(
-                """
-                INSERT INTO audit_log (scan_id, decision_summary, decision_detail, risk_flagged, escalated_to_human, entry_hash, prev_hash)
-                VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7)
-                """,
-                payload.scan_id,
-                payload.decision_summary,
-                json.dumps(payload.decision_detail),
-                payload.risk_flagged,
-                payload.escalated_to_human,
-                entry_hash,
-                prev_hash
-            )
+    response = JSONResponse(content={"status": "logged"})
+    request_id = ensure_request_id(request, response)
 
-        response = JSONResponse({"status": "logged", "entry_hash": entry_hash})
-        request_id = ensure_request_id(request, response)
-
-        logger.info({
+    logger.info(
+        {
             "event": "audit_logged",
             "scan_id": payload.scan_id,
             "risk_flagged": payload.risk_flagged,
-            "escalated": payload.escalated_to_human,
-            "request_id": request_id
-        })
+            "escalated_to_human": payload.escalated_to_human,
+            "request_id": request_id,
+        }
+    )
 
-        return response
-
-    except Exception as e:
-        logger.error("Audit log failed", extra={"error": str(e)})
-        raise HTTPException(500, f"Audit log failed: {str(e)}")
+    return response
 
 
 @app.post("/audit/anchorChain")
 async def anchor_chain(payload: AnchorChainRequest, request: Request):
-    if not pool:
-        raise HTTPException(503, "Database unavailable")
+    """
+    Record blockchain anchor hashes for a scan.
+    NEVER log private Midnight payloads, only tx hashes.
+    """
+    # For now, just acknowledge. In production, persist reconciliation row.
 
-    try:
-        async with pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO chain_anchor (scan_id, cardano_tx_hash, midnight_tx_hash, crosschain_root_hash)
-                VALUES ($1, $2, $3, $4)
-                ON CONFLICT (scan_id) DO UPDATE SET
-                    cardano_tx_hash = EXCLUDED.cardano_tx_hash,
-                    midnight_tx_hash = EXCLUDED.midnight_tx_hash,
-                    crosschain_root_hash = EXCLUDED.crosschain_root_hash
-                """,
-                payload.scan_id, payload.cardano_tx_hash, payload.midnight_tx_hash, payload.crosschain_root_hash
-            )
+    response = JSONResponse(content={"status": "ok"})
+    request_id = ensure_request_id(request, response)
 
-        response = JSONResponse({"status": "ok"})
-        request_id = ensure_request_id(request, response)
-
-        logger.info({
-            "event": "chain_anchor_recorded",
+    logger.info(
+        {
+            "event": "anchor_chain_recorded",
             "scan_id": payload.scan_id,
-            "request_id": request_id
-        })
+            "cardano_tx_hash": payload.cardano_tx_hash,
+            "midnight_tx_hash": payload.midnight_tx_hash,
+            "request_id": request_id,
+        }
+    )
 
-        return response
+    return response
 
-    except Exception as e:
-        logger.error("Chain anchor failed", extra={"error": str(e)})
-        raise HTTPException(500, f"Chain anchor failed: {str(e)}")
+
+@app.post("/audit/escalate")
+async def escalate(payload: EscalateRequest, request: Request):
+    """
+    Queue escalation for human review.
+    """
+    async with app.state.db_pool.acquire() as conn:
+        # Get previous hash (empty for first entry)
+        prev_row = await conn.fetchrow(
+            """
+            SELECT entry_hash FROM audit_log
+            WHERE related_scan_id = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            payload.scan_id,
+        )
+        prev_hash = prev_row["entry_hash"] if prev_row else ""
+
+        # Compute entry hash
+        decision_detail = {"reason": payload.reason, "region_code": payload.region_code}
+        hash_input = prev_hash + "escalation_request" + json.dumps(decision_detail)
+        entry_hash = hashlib.sha256(hash_input.encode()).hexdigest()
+
+        # Insert escalation entry
+        await conn.execute(
+            """
+            INSERT INTO audit_log (
+                audit_id, related_scan_id, created_at, decision_summary,
+                decision_detail, risk_flagged, escalated_to_human,
+                human_approver_id, prev_hash, entry_hash
+            ) VALUES ($1, $2, NOW(), $3, $4::jsonb, $5, $6, $7, $8, $9)
+            """,
+            str(uuid.uuid4()),
+            payload.scan_id,
+            "escalation_request",
+            json.dumps(decision_detail),
+            True,
+            True,
+            None,
+            prev_hash,
+            entry_hash,
+        )
+
+    response = JSONResponse(content={"status": "queued"})
+    request_id = ensure_request_id(request, response)
+
+    logger.info(
+        {
+            "event": "audit_escalated",
+            "scan_id": payload.scan_id,
+            "region_code": payload.region_code,
+            "request_id": request_id,
+        }
+    )
+
+    return response
 
 
 @app.get("/audit/{scan_id}/explain")
 async def audit_explain(scan_id: str, request: Request):
-    if not pool:
-        raise HTTPException(503, "Database unavailable")
+    """
+    Explain audit trail for a scan.
+    NEVER return facet bodies or user PII here.
+    """
+    async with app.state.db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT
+                se.scan_id,
+                se.occurred_at,
+                se.region_code,
+                se.policy_version,
+                se.resolved_scope,
+                jsonb_array_length(se.shown_facets::jsonb) AS shown_facets_count,
+                ca.cardano_tx_hash,
+                ca.midnight_tx_hash,
+                ca.crosschain_root_hash
+            FROM scan_event se
+            LEFT JOIN chain_anchor ca ON se.scan_id = ca.scan_id
+            WHERE se.scan_id = $1
+            """,
+            scan_id,
+        )
 
-    try:
-        async with pool.acquire() as conn:
-            audit_row = await conn.fetchrow(
-                "SELECT decision_detail, created_at FROM audit_log WHERE scan_id = $1 ORDER BY created_at DESC LIMIT 1",
-                scan_id
-            )
+    if not row:
+        response = JSONResponse(content={"error": "not_found"}, status_code=404)
+        ensure_request_id(request, response)
+        return response
 
-            if not audit_row:
-                raise HTTPException(404, "Scan not found")
+    body = {
+        "scan_id": row["scan_id"],
+        "occurred_at": row["occurred_at"].isoformat() + "Z" if row["occurred_at"] else None,
+        "region_code": row["region_code"],
+        "policy_version": row["policy_version"],
+        "resolved_scope": row["resolved_scope"],
+        "shown_facets_count": row["shown_facets_count"] or 0,
+        "cardano_tx_hash": row["cardano_tx_hash"],
+        "midnight_tx_hash": row["midnight_tx_hash"],
+        "crosschain_root_hash": row["crosschain_root_hash"],
+    }
 
-            chain_row = await conn.fetchrow(
-                "SELECT cardano_tx_hash, midnight_tx_hash, crosschain_root_hash FROM chain_anchor WHERE scan_id = $1",
-                scan_id
-            )
+    response = JSONResponse(content=body)
+    request_id = ensure_request_id(request, response)
 
-            decision_detail = audit_row["decision_detail"]
-            result = {
-                "scan_id": scan_id,
-                "occurred_at": decision_detail.get("occurred_at", audit_row["created_at"].isoformat() + "Z"),
-                "region_code": decision_detail.get("region_code", "unknown"),
-                "policy_version": decision_detail.get("policy_version", "unknown"),
-                "resolved_scope": decision_detail.get("resolved_scope", "unknown"),
-                "shown_facets_count": decision_detail.get("shown_facets_count", 0),
-                "cardano_tx_hash": chain_row["cardano_tx_hash"] if chain_row else None,
-                "midnight_tx_hash": chain_row["midnight_tx_hash"] if chain_row else None,
-                "crosschain_root_hash": chain_row["crosschain_root_hash"] if chain_row else None
-            }
-
-        response = JSONResponse(result)
-        request_id = ensure_request_id(request, response)
-
-        logger.info({
-            "event": "audit_explained",
+    logger.info(
+        {
+            "event": "audit_explain",
             "scan_id": scan_id,
-            "request_id": request_id
-        })
-
-        return response
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Audit explain failed", extra={"error": str(e)})
-        raise HTTPException(500, f"Audit explain failed: {str(e)}")
-
-
-@app.post("/audit/escalate")
-async def audit_escalate(payload: EscalationRequest, request: Request):
-    if not pool:
-        raise HTTPException(503, "Database unavailable")
-
-    try:
-        decision_detail = {
-            "scan_id": payload.scan_id,
-            "region_code": payload.region_code,
-            "reason": payload.reason,
-            "requires_human_approval": payload.requires_human_approval
+            "region_code": row["region_code"],
+            "shown_facets_count": body["shown_facets_count"],
+            "request_id": request_id,
         }
+    )
 
-        async with pool.acquire() as conn:
-            prev_row = await conn.fetchrow(
-                "SELECT entry_hash FROM audit_log WHERE scan_id = $1 ORDER BY created_at DESC LIMIT 1",
-                payload.scan_id
-            )
-            prev_hash = prev_row["entry_hash"] if prev_row else ""
+    return response
 
-            timestamp = dt.datetime.utcnow().isoformat() + "Z"
-            hash_input = prev_hash + "escalation_request" + json.dumps(decision_detail, sort_keys=True) + timestamp
-            entry_hash = hashlib.sha256(hash_input.encode()).hexdigest()
 
-            await conn.execute(
-                """
-                INSERT INTO audit_log (scan_id, decision_summary, decision_detail, risk_flagged, escalated_to_human, entry_hash, prev_hash)
-                VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7)
-                """,
-                payload.scan_id, "escalation_request", json.dumps(decision_detail), True, True, entry_hash, prev_hash
-            )
-
-        response = JSONResponse({"status": "queued"})
-        request_id = ensure_request_id(request, response)
-
-        logger.info({
-            "event": "escalation_queued",
-            "scan_id": payload.scan_id,
-            "region_code": payload.region_code,
-            "request_id": request_id
-        })
-
-        return response
-
-    except Exception as e:
-        logger.error("Escalation failed", extra={"error": str(e)})
-        raise HTTPException(500, f"Escalation failed: {str(e)}")
+@app.get("/health")
+async def health():
+    return JSONResponse(content={"status": "ok"})
