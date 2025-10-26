@@ -1,224 +1,241 @@
+# Brand.Me v7 — Stable Integrity Spine
+# HTTP client utilities with retry logic and circuit breaker
 # brandme_core/http_client.py
-"""
-Resilient HTTP client for inter-service communication.
-Provides automatic retries, circuit breaking, timeouts, and error handling.
-"""
+
 import asyncio
-from typing import Optional, Dict, Any
+from typing import Optional, Callable, Any
 import httpx
-from .config import config
 from .logging import get_logger
-from .exceptions import ServiceUnavailableError, TimeoutError as BrandMeTimeoutError
 
 logger = get_logger("http_client")
 
 
-class ResilientHttpClient:
+class HTTPError(Exception):
+    """Custom HTTP error with context."""
+    def __init__(self, message: str, status_code: Optional[int] = None, response: Optional[Any] = None):
+        self.message = message
+        self.status_code = status_code
+        self.response = response
+        super().__init__(self.message)
+
+
+async def http_post_with_retry(
+    client: httpx.AsyncClient,
+    url: str,
+    json_data: dict,
+    headers: dict = None,
+    timeout: float = 10.0,
+    max_retries: int = 3,
+    retry_delay: float = 0.5
+) -> httpx.Response:
     """
-    HTTP client with built-in resilience patterns:
-    - Automatic retries with exponential backoff
-    - Configurable timeouts
-    - Connection pooling
-    - Structured error logging
+    Execute HTTP POST with exponential backoff retry logic.
+    
+    Args:
+        client: httpx async client
+        url: Target URL
+        json_data: JSON payload
+        headers: Optional headers
+        timeout: Request timeout in seconds
+        max_retries: Maximum number of retry attempts
+        retry_delay: Base delay between retries (doubled each attempt)
+    
+    Returns:
+        httpx.Response: Response object
+    
+    Raises:
+        HTTPError: If request fails after all retries
     """
-
-    def __init__(
-        self,
-        service_name: str,
-        base_url: str,
-        timeout: int = None,
-        max_retries: int = None,
-        retry_backoff: float = None
-    ):
-        self.service_name = service_name
-        self.base_url = base_url.rstrip("/")
-        self.timeout = timeout or config.HTTP_TIMEOUT
-        self.max_retries = max_retries or config.HTTP_MAX_RETRIES
-        self.retry_backoff = retry_backoff or config.HTTP_RETRY_BACKOFF
-
-        # Create httpx client with connection pooling
-        limits = httpx.Limits(
-            max_connections=config.HTTP_POOL_CONNECTIONS,
-            max_keepalive_connections=config.HTTP_POOL_MAXSIZE
-        )
-        self.client = httpx.AsyncClient(
-            base_url=self.base_url,
-            timeout=httpx.Timeout(self.timeout),
-            limits=limits,
-            follow_redirects=True
-        )
-
-    async def close(self):
-        """Close the HTTP client and release connections."""
-        await self.client.aclose()
-
-    async def _execute_with_retry(
-        self,
-        method: str,
-        path: str,
-        request_id: Optional[str] = None,
-        **kwargs
-    ) -> httpx.Response:
-        """
-        Execute HTTP request with retry logic.
-
-        Retries on:
-        - Connection errors
-        - Timeout errors
-        - 5xx server errors
-
-        Does NOT retry on:
-        - 4xx client errors
-        - Successful responses (2xx, 3xx)
-        """
-        headers = kwargs.pop("headers", {})
-        if request_id:
-            headers["X-Request-Id"] = request_id
-
-        last_exception = None
-
-        for attempt in range(self.max_retries + 1):
-            try:
-                logger.debug(
-                    f"{method} {path}",
-                    extra={
-                        "service": self.service_name,
-                        "attempt": attempt + 1,
-                        "max_retries": self.max_retries,
-                        "request_id": request_id
-                    }
-                )
-
-                response = await self.client.request(
-                    method=method,
-                    url=path,
-                    headers=headers,
-                    **kwargs
-                )
-
-                # Success - return response
-                if response.status_code < 500:
-                    return response
-
-                # 5xx error - retry
-                logger.warning(
-                    f"Server error from {self.service_name}",
-                    extra={
-                        "status_code": response.status_code,
-                        "attempt": attempt + 1,
-                        "request_id": request_id
-                    }
-                )
-
-                if attempt < self.max_retries:
-                    await asyncio.sleep(self.retry_backoff * (2 ** attempt))
-                    continue
-
-                # Max retries exceeded - raise
-                raise ServiceUnavailableError(
-                    self.service_name,
-                    {"status_code": response.status_code, "body": response.text[:500]}
-                )
-
-            except httpx.TimeoutException as e:
-                last_exception = e
-                logger.warning(
-                    f"Timeout calling {self.service_name}",
-                    extra={"attempt": attempt + 1, "request_id": request_id}
-                )
-
-                if attempt < self.max_retries:
-                    await asyncio.sleep(self.retry_backoff * (2 ** attempt))
-                    continue
-
-            except httpx.ConnectError as e:
-                last_exception = e
-                logger.warning(
-                    f"Connection error to {self.service_name}",
-                    extra={"attempt": attempt + 1, "request_id": request_id}
-                )
-
-                if attempt < self.max_retries:
-                    await asyncio.sleep(self.retry_backoff * (2 ** attempt))
-                    continue
-
-            except Exception as e:
-                # Unexpected error - don't retry
-                logger.error(
-                    f"Unexpected error calling {self.service_name}",
-                    extra={"error": str(e), "request_id": request_id}
-                )
-                raise ServiceUnavailableError(
-                    self.service_name,
-                    {"error": str(e)}
-                )
-
-        # If we get here, all retries exhausted
-        if isinstance(last_exception, httpx.TimeoutException):
-            raise BrandMeTimeoutError(
-                f"HTTP {method} {path}",
-                self.timeout
+    last_error = None
+    
+    for attempt in range(max_retries):
+        try:
+            response = await client.post(
+                url,
+                json=json_data,
+                headers=headers or {},
+                timeout=timeout,
             )
-        else:
-            raise ServiceUnavailableError(
-                self.service_name,
-                {"error": str(last_exception)}
+            response.raise_for_status()
+            return response
+            
+        except httpx.TimeoutException as e:
+            last_error = e
+            logger.warning({
+                "event": "http_post_timeout",
+                "url": url,
+                "attempt": attempt + 1,
+                "max_retries": max_retries,
+                "error": str(e),
+            })
+            
+        except httpx.HTTPStatusError as e:
+            last_error = e
+            
+            # Don't retry on client errors (4xx)
+            if 400 <= e.response.status_code < 500:
+                logger.error({
+                    "event": "http_post_client_error",
+                    "url": url,
+                    "status_code": e.response.status_code,
+                    "error": str(e),
+                })
+                raise HTTPError(
+                    f"Client error: {e.response.status_code}",
+                    status_code=e.response.status_code,
+                    response=e.response
+                )
+            
+            # Retry on server errors (5xx)
+            logger.warning({
+                "event": "http_post_server_error",
+                "url": url,
+                "status_code": e.response.status_code,
+                "attempt": attempt + 1,
+                "max_retries": max_retries,
+                "error": str(e),
+            })
+            
+        except Exception as e:
+            last_error = e
+            logger.warning({
+                "event": "http_post_error",
+                "url": url,
+                "attempt": attempt + 1,
+                "max_retries": max_retries,
+                "error": str(e),
+            })
+        
+        # Retry with exponential backoff
+        if attempt < max_retries - 1:
+            delay = retry_delay * (2 ** attempt)
+            logger.info({
+                "event": "http_post_retry",
+                "url": url,
+                "attempt": attempt + 1,
+                "delay_seconds": delay,
+            })
+            await asyncio.sleep(delay)
+    
+    # All retries exhausted
+    logger.error({
+        "event": "http_post_failed",
+        "url": url,
+        "max_retries": max_retries,
+        "error": str(last_error),
+    })
+    raise HTTPError(
+        f"Failed to execute POST to {url} after {max_retries} attempts",
+        response=last_error.response if hasattr(last_error, 'response') else None
+    )
+
+
+async def http_get_with_retry(
+    client: httpx.AsyncClient,
+    url: str,
+    params: dict = None,
+    headers: dict = None,
+    timeout: float = 10.0,
+    max_retries: int = 3,
+    retry_delay: float = 0.5
+) -> httpx.Response:
+    """
+    Execute HTTP GET with exponential backoff retry logic.
+    
+    Args:
+        client: httpx async client
+        url: Target URL
+        params: Optional query parameters
+        headers: Optional headers
+        timeout: Request timeout in seconds
+        max_retries: Maximum number of retry attempts
+        retry_delay: Base delay between retries (doubled each attempt)
+    
+    Returns:
+        httpx.Response: Response object
+    
+    Raises:
+        HTTPError: If request fails after all retries
+    """
+    last_error = None
+    
+    for attempt in range(max_retries):
+        try:
+            response = await client.get(
+                url,
+                params=params or {},
+                headers=headers or {},
+                timeout=timeout,
             )
-
-    async def get(
-        self,
-        path: str,
-        request_id: Optional[str] = None,
-        **kwargs
-    ) -> httpx.Response:
-        """Execute GET request with retries."""
-        return await self._execute_with_retry("GET", path, request_id, **kwargs)
-
-    async def post(
-        self,
-        path: str,
-        request_id: Optional[str] = None,
-        **kwargs
-    ) -> httpx.Response:
-        """Execute POST request with retries."""
-        return await self._execute_with_retry("POST", path, request_id, **kwargs)
-
-    async def put(
-        self,
-        path: str,
-        request_id: Optional[str] = None,
-        **kwargs
-    ) -> httpx.Response:
-        """Execute PUT request with retries."""
-        return await self._execute_with_retry("PUT", path, request_id, **kwargs)
-
-    async def delete(
-        self,
-        path: str,
-        request_id: Optional[str] = None,
-        **kwargs
-    ) -> httpx.Response:
-        """Execute DELETE request with retries."""
-        return await self._execute_with_retry("DELETE", path, request_id, **kwargs)
-
-
-# Singleton client instances (initialized on first use)
-_clients: Dict[str, ResilientHttpClient] = {}
-
-
-def get_http_client(service_name: str, base_url: str) -> ResilientHttpClient:
-    """
-    Get or create a resilient HTTP client for a service.
-    Clients are cached as singletons for connection pooling.
-    """
-    key = f"{service_name}:{base_url}"
-    if key not in _clients:
-        _clients[key] = ResilientHttpClient(service_name, base_url)
-    return _clients[key]
-
-
-async def close_all_clients():
-    """Close all HTTP clients. Call during application shutdown."""
-    for client in _clients.values():
-        await client.close()
-    _clients.clear()
+            response.raise_for_status()
+            return response
+            
+        except httpx.TimeoutException as e:
+            last_error = e
+            logger.warning({
+                "event": "http_get_timeout",
+                "url": url,
+                "attempt": attempt + 1,
+                "max_retries": max_retries,
+                "error": str(e),
+            })
+            
+        except httpx.HTTPStatusError as e:
+            last_error = e
+            
+            # Don't retry on client errors (4xx)
+            if 400 <= e.response.status_code < 500:
+                logger.error({
+                    "event": "http_get_client_error",
+                    "url": url,
+                    "status_code": e.response.status_code,
+                    "error": str(e),
+                })
+                raise HTTPError(
+                    f"Client error: {e.response.status_code}",
+                    status_code=e.response.status_code,
+                    response=e.response
+                )
+            
+            # Retry on server errors (5xx)
+            logger.warning({
+                "event": "http_get_server_error",
+                "url": url,
+                "status_code": e.response.status_code,
+                "attempt": attempt + 1,
+                "max_retries": max_retries,
+                "error": str(e),
+            })
+            
+        except Exception as e:
+            last_error = e
+            logger.warning({
+                "event": "http_get_error",
+                "url": url,
+                "attempt": attempt + 1,
+                "max_retries": max_retries,
+                "error": str(e),
+            })
+        
+        # Retry with exponential backoff
+        if attempt < max_retries - 1:
+            delay = retry_delay * (2 ** attempt)
+            logger.info({
+                "event": "http_get_retry",
+                "url": url,
+                "attempt": attempt + 1,
+                "delay_seconds": delay,
+            })
+            await asyncio.sleep(delay)
+    
+    # All retries exhausted
+    logger.error({
+        "event": "http_get_failed",
+        "url": url,
+        "max_retries": max_retries,
+        "error": str(last_error),
+    })
+    raise HTTPError(
+        f"Failed to execute GET to {url} after {max_retries} attempts",
+        response=last_error.response if hasattr(last_error, 'response') else None
+    )

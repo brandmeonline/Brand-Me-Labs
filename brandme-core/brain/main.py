@@ -48,13 +48,18 @@ async def lookup_garment_id(pool, garment_tag: str) -> str:
 
 async def call_policy_gate(scanner_user_id: str, garment_id: str, region_code: str, request_id: str, http_client) -> dict:
     """
-    POST http://policy:8001/policy/check
+    POST http://policy:8001/policy/check with retry logic
     Headers: {"X-Request-Id": request_id}
     """
-    # v7 fix: docker-compose internal service URL
+    from brandme_core.http_client import http_post_with_retry
+    from brandme_core.env import get_service_url
+    
+    policy_url = f"{get_service_url('policy')}/policy/check"
+    
     try:
-        response = await http_client.post(
-            "http://policy:8001/policy/check",
+        response = await http_post_with_retry(
+            http_client,
+            policy_url,
             json={
                 "scanner_user_id": scanner_user_id,
                 "garment_id": garment_id,
@@ -63,8 +68,8 @@ async def call_policy_gate(scanner_user_id: str, garment_id: str, region_code: s
             },
             headers={"X-Request-Id": request_id},
             timeout=10.0,
+            max_retries=3,
         )
-        response.raise_for_status()
         return response.json()
     except Exception as e:
         logger.error({"event": "policy_call_failed", "error": str(e), "request_id": request_id})
@@ -77,18 +82,23 @@ async def call_policy_gate(scanner_user_id: str, garment_id: str, region_code: s
 
 async def call_orchestrator_commit(scan_packet: dict, request_id: str, http_client) -> dict:
     """
-    POST http://orchestrator:8002/scan/commit
+    POST http://orchestrator:8002/scan/commit with retry logic
     Headers: {"X-Request-Id": request_id}
     """
-    # v7 fix: docker-compose internal service URL
+    from brandme_core.http_client import http_post_with_retry
+    from brandme_core.env import get_service_url
+    
+    orchestrator_url = f"{get_service_url('orchestrator')}/scan/commit"
+    
     try:
-        response = await http_client.post(
-            "http://orchestrator:8002/scan/commit",
+        response = await http_post_with_retry(
+            http_client,
+            orchestrator_url,
             json=scan_packet,
             headers={"X-Request-Id": request_id},
             timeout=30.0,
+            max_retries=3,
         )
-        response.raise_for_status()
         return response.json()
     except Exception as e:
         logger.error({"event": "orchestrator_call_failed", "error": str(e), "request_id": request_id})
@@ -104,13 +114,18 @@ async def call_orchestrator_commit(scan_packet: dict, request_id: str, http_clie
 
 async def call_compliance_escalate(scan_id: str, region_code: str, request_id: str, http_client) -> None:
     """
-    POST http://compliance:8004/audit/escalate
+    POST http://compliance:8004/audit/escalate with retry logic
     Headers: {"X-Request-Id": request_id}
     """
-    # v7 fix: docker-compose internal service URL
+    from brandme_core.http_client import http_post_with_retry
+    from brandme_core.env import get_service_url
+    
+    compliance_url = f"{get_service_url('compliance')}/audit/escalate"
+    
     try:
-        await http_client.post(
-            "http://compliance:8004/audit/escalate",
+        await http_post_with_retry(
+            http_client,
+            compliance_url,
             json={
                 "scan_id": scan_id,
                 "region_code": region_code,
@@ -119,6 +134,7 @@ async def call_compliance_escalate(scan_id: str, region_code: str, request_id: s
             },
             headers={"X-Request-Id": request_id},
             timeout=10.0,
+            max_retries=3,
         )
     except Exception as e:
         logger.error({"event": "compliance_escalate_failed", "error": str(e), "request_id": request_id})

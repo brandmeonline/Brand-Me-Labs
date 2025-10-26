@@ -30,21 +30,26 @@ async def fetch_owner_and_consent(scanner_user_id: str, garment_id: str, request
     1. Resolve garment owner.
     TODO: SELECT owner_user_id FROM garments WHERE garment_id=$1
     TEMP: owner_user_id = "owner-stub-123"
-    2. GET http://identity:8005/identity/{owner_user_id}/profile
+    2. GET http://identity:8005/identity/{owner_user_id}/profile with retry logic
     Headers: {"X-Request-Id": request_id}
     3. Return owner_user_id, owner_region_code, trust_score, friends_allowed, consent_version
     # v6 fix: Ensures friends_allowed and trust_score defaults are returned
     """
+    from brandme_core.http_client import http_get_with_retry
+    from brandme_core.env import get_service_url
+    
     owner_user_id = "owner-stub-123"
+    identity_url = f"{get_service_url('identity')}/identity/{owner_user_id}/profile"
 
-    # v7 fix: docker-compose internal service URL
+    # v7 fix: use retry logic for service-to-service calls
     try:
-        response = await http_client.get(
-            f"http://identity:8005/identity/{owner_user_id}/profile",
+        response = await http_get_with_retry(
+            http_client,
+            identity_url,
             headers={"X-Request-Id": request_id},
             timeout=10.0,
+            max_retries=3,
         )
-        response.raise_for_status()
         profile = response.json()
         # v6 fix: explicit defaults for friends_allowed and trust_score
         return {

@@ -33,18 +33,24 @@ class OrchestratorScanPacket(BaseModel):
 
 async def call_knowledge_service(garment_id: str, scope: str, request_id: str, http_client) -> List[Dict[str, object]]:
     """
-    GET http://knowledge:8003/garment/{garment_id}/passport?scope={scope}
+    GET http://knowledge:8003/garment/{garment_id}/passport?scope={scope} with retry logic
     Headers: {"X-Request-Id": request_id}
     """
-    # v7 fix: docker-compose internal service URL
+    from brandme_core.http_client import http_get_with_retry
+    from brandme_core.env import get_service_url
+    
+    knowledge_url = f"{get_service_url('knowledge')}/garment/{garment_id}/passport"
+    
+    # v7 fix: use retry logic for service-to-service calls
     try:
-        response = await http_client.get(
-            f"http://knowledge:8003/garment/{garment_id}/passport",
+        response = await http_get_with_retry(
+            http_client,
+            knowledge_url,
             params={"scope": scope},
             headers={"X-Request-Id": request_id},
             timeout=15.0,
+            max_retries=3,
         )
-        response.raise_for_status()
         data = response.json()
         return data.get("facets", [])
     except Exception as e:
@@ -54,13 +60,19 @@ async def call_knowledge_service(garment_id: str, scope: str, request_id: str, h
 
 async def call_compliance_audit_log(scan_id: str, decision_summary: str, decision_detail: Dict[str, object], risk_flagged: bool, escalated_to_human: bool, request_id: str, http_client) -> None:
     """
-    POST http://compliance:8004/audit/log
+    POST http://compliance:8004/audit/log with retry logic
     Headers: {"X-Request-Id": request_id}
     """
-    # v7 fix: docker-compose internal service URL
+    from brandme_core.http_client import http_post_with_retry
+    from brandme_core.env import get_service_url
+    
+    compliance_url = f"{get_service_url('compliance')}/audit/log"
+    
+    # v7 fix: use retry logic for service-to-service calls
     try:
-        await http_client.post(
-            "http://compliance:8004/audit/log",
+        await http_post_with_retry(
+            http_client,
+            compliance_url,
             json={
                 "scan_id": scan_id,
                 "decision_summary": decision_summary,
@@ -70,6 +82,7 @@ async def call_compliance_audit_log(scan_id: str, decision_summary: str, decisio
             },
             headers={"X-Request-Id": request_id},
             timeout=10.0,
+            max_retries=3,
         )
     except Exception as e:
         logger.error({"event": "compliance_audit_log_failed", "error": str(e), "request_id": request_id})
@@ -77,13 +90,19 @@ async def call_compliance_audit_log(scan_id: str, decision_summary: str, decisio
 
 async def call_compliance_anchor_chain(scan_id: str, tx_hashes: Dict[str, str], request_id: str, http_client) -> None:
     """
-    POST http://compliance:8004/audit/anchorChain
+    POST http://compliance:8004/audit/anchorChain with retry logic
     Headers: {"X-Request-Id": request_id}
     """
-    # v7 fix: docker-compose internal service URL
+    from brandme_core.http_client import http_post_with_retry
+    from brandme_core.env import get_service_url
+    
+    compliance_url = f"{get_service_url('compliance')}/audit/anchorChain"
+    
+    # v7 fix: use retry logic for service-to-service calls
     try:
-        await http_client.post(
-            "http://compliance:8004/audit/anchorChain",
+        await http_post_with_retry(
+            http_client,
+            compliance_url,
             json={
                 "scan_id": scan_id,
                 "cardano_tx_hash": tx_hashes["cardano_tx_hash"],
@@ -92,6 +111,7 @@ async def call_compliance_anchor_chain(scan_id: str, tx_hashes: Dict[str, str], 
             },
             headers={"X-Request-Id": request_id},
             timeout=10.0,
+            max_retries=3,
         )
     except Exception as e:
         logger.error({"event": "compliance_anchor_chain_failed", "error": str(e), "request_id": request_id})
