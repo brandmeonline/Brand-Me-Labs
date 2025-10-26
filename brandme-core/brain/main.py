@@ -14,6 +14,8 @@ import httpx
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, truncate_id
 from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
+from brandme_core.metrics import get_metrics_collector, generate_metrics
+from fastapi.responses import Response
 
 logger = get_logger("brain_service")
 
@@ -153,6 +155,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Initialize metrics collector
+metrics = get_metrics_collector("brain")
+
 # v7 fix: enable CORS with secure configuration
 from brandme_core.cors_config import get_cors_config
 cors_config = get_cors_config()
@@ -251,8 +256,18 @@ async def health():
     """Health check with database connectivity verification."""
     if app.state.db_pool:
         is_healthy = await health_check(app.state.db_pool)
+        metrics.update_health("database", is_healthy)
         if is_healthy:
             return JSONResponse(content={"status": "ok", "service": "brain"})
         else:
             return JSONResponse(content={"status": "degraded", "service": "brain", "database": "unhealthy"}, status_code=503)
     return JSONResponse(content={"status": "error", "service": "brain", "message": "no_db_pool"}, status_code=503)
+
+
+@app.get("/metrics")
+async def metrics_endpoint():
+    """Prometheus metrics endpoint."""
+    return Response(
+        content=generate_metrics(),
+        media_type="text/plain; version=0.0.4"
+    )
