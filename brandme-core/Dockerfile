@@ -62,11 +62,11 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
 FROM base as orchestrator
 WORKDIR /app/orchestrator
 ENV SERVICE_NAME=orchestrator
-ENV C_FORCE_ROOT=true
-CMD ["celery", "-A", "celery_app", "worker", "--loglevel=info", "--concurrency=4", "-Q", "default,scans,blockchain,audit"]
+ENV PORT=8002
+CMD ["uvicorn", "worker:app", "--host", "0.0.0.0", "--port", "8002", "--reload"]
 
 
-# Orchestrator beat scheduler stage
+# Orchestrator beat scheduler stage (kept for compatibility, not used in new arch)
 FROM base as orchestrator-beat
 WORKDIR /app/orchestrator
 ENV SERVICE_NAME=orchestrator-beat

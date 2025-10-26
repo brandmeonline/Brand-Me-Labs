@@ -40,7 +40,6 @@ class EscalateRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     app.state.db_pool = await asyncpg.create_pool(
         host="postgres",
         port=5432,
@@ -52,7 +51,6 @@ async def lifespan(app: FastAPI):
     )
     logger.info({"event": "compliance_service_started"})
     yield
-    # Shutdown
     await app.state.db_pool.close()
     logger.info({"event": "compliance_service_stopped"})
 
@@ -64,9 +62,9 @@ app = FastAPI(lifespan=lifespan)
 async def audit_log(payload: AuditLogRequest, request: Request):
     """
     Log audit entry with hash-chaining for integrity.
+    NEVER store or return wallet seeds / private Midnight payloads / facet bodies.
     """
     async with app.state.db_pool.acquire() as conn:
-        # Get previous hash for this scan_id
         prev_row = await conn.fetchrow(
             """
             SELECT entry_hash FROM audit_log
@@ -78,13 +76,9 @@ async def audit_log(payload: AuditLogRequest, request: Request):
         )
         prev_hash = prev_row["entry_hash"] if prev_row else ""
 
-        # Compute entry hash
-        hash_input = (
-            prev_hash + payload.decision_summary + json.dumps(payload.decision_detail)
-        )
+        hash_input = prev_hash + payload.decision_summary + json.dumps(payload.decision_detail)
         entry_hash = hashlib.sha256(hash_input.encode()).hexdigest()
 
-        # Insert audit entry
         await conn.execute(
             """
             INSERT INTO audit_log (
@@ -107,15 +101,13 @@ async def audit_log(payload: AuditLogRequest, request: Request):
     response = JSONResponse(content={"status": "logged"})
     request_id = ensure_request_id(request, response)
 
-    logger.info(
-        {
-            "event": "audit_logged",
-            "scan_id": payload.scan_id,
-            "risk_flagged": payload.risk_flagged,
-            "escalated_to_human": payload.escalated_to_human,
-            "request_id": request_id,
-        }
-    )
+    logger.info({
+        "event": "audit_logged",
+        "scan_id": payload.scan_id,
+        "risk_flagged": payload.risk_flagged,
+        "escalated_to_human": payload.escalated_to_human,
+        "request_id": request_id,
+    })
 
     return response
 
@@ -126,20 +118,16 @@ async def anchor_chain(payload: AnchorChainRequest, request: Request):
     Record blockchain anchor hashes for a scan.
     NEVER log private Midnight payloads, only tx hashes.
     """
-    # For now, just acknowledge. In production, persist reconciliation row.
-
     response = JSONResponse(content={"status": "ok"})
     request_id = ensure_request_id(request, response)
 
-    logger.info(
-        {
-            "event": "anchor_chain_recorded",
-            "scan_id": payload.scan_id,
-            "cardano_tx_hash": payload.cardano_tx_hash,
-            "midnight_tx_hash": payload.midnight_tx_hash,
-            "request_id": request_id,
-        }
-    )
+    logger.info({
+        "event": "anchor_chain_recorded",
+        "scan_id": payload.scan_id,
+        "cardano_tx_hash": payload.cardano_tx_hash,
+        "midnight_tx_hash": payload.midnight_tx_hash,
+        "request_id": request_id,
+    })
 
     return response
 
@@ -150,7 +138,6 @@ async def escalate(payload: EscalateRequest, request: Request):
     Queue escalation for human review.
     """
     async with app.state.db_pool.acquire() as conn:
-        # Get previous hash (empty for first entry)
         prev_row = await conn.fetchrow(
             """
             SELECT entry_hash FROM audit_log
@@ -162,12 +149,10 @@ async def escalate(payload: EscalateRequest, request: Request):
         )
         prev_hash = prev_row["entry_hash"] if prev_row else ""
 
-        # Compute entry hash
         decision_detail = {"reason": payload.reason, "region_code": payload.region_code}
         hash_input = prev_hash + "escalation_request" + json.dumps(decision_detail)
         entry_hash = hashlib.sha256(hash_input.encode()).hexdigest()
 
-        # Insert escalation entry
         await conn.execute(
             """
             INSERT INTO audit_log (
@@ -190,14 +175,12 @@ async def escalate(payload: EscalateRequest, request: Request):
     response = JSONResponse(content={"status": "queued"})
     request_id = ensure_request_id(request, response)
 
-    logger.info(
-        {
-            "event": "audit_escalated",
-            "scan_id": payload.scan_id,
-            "region_code": payload.region_code,
-            "request_id": request_id,
-        }
-    )
+    logger.info({
+        "event": "audit_escalated",
+        "scan_id": payload.scan_id,
+        "region_code": payload.region_code,
+        "request_id": request_id,
+    })
 
     return response
 
@@ -207,6 +190,8 @@ async def audit_explain(scan_id: str, request: Request):
     """
     Explain audit trail for a scan.
     NEVER return facet bodies or user PII here.
+    NEVER include purchase history or ownership lineage.
+    NEVER include PII.
     """
     async with app.state.db_pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -248,15 +233,13 @@ async def audit_explain(scan_id: str, request: Request):
     response = JSONResponse(content=body)
     request_id = ensure_request_id(request, response)
 
-    logger.info(
-        {
-            "event": "audit_explain",
-            "scan_id": scan_id,
-            "region_code": row["region_code"],
-            "shown_facets_count": body["shown_facets_count"],
-            "request_id": request_id,
-        }
-    )
+    logger.info({
+        "event": "audit_explain",
+        "scan_id": scan_id,
+        "region_code": row["region_code"],
+        "shown_facets_count": body["shown_facets_count"],
+        "request_id": request_id,
+    })
 
     return response
 

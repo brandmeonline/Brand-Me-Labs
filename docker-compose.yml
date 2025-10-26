@@ -23,7 +23,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./brandme-data/schemas:/docker-entrypoint-initdb.d:ro
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -307,6 +307,8 @@ services:
       dockerfile: Dockerfile
       target: orchestrator
     container_name: brandme-orchestrator
+    ports:
+      - "8002:8002"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379/0
@@ -427,6 +429,36 @@ services:
         condition: service_healthy
     volumes:
       - ./brandme-agents/compliance:/app/compliance
+      - ./brandme_core:/app/brandme_core
+    restart: unless-stopped
+    networks:
+      - brandme
+
+  # ============================================
+  # Governance Services
+  # ============================================
+
+  # Governance Console
+  governance:
+    build:
+      context: ./brandme-governance
+      dockerfile: Dockerfile
+      target: governance
+    container_name: brandme-governance
+    ports:
+      - "8006:8006"
+    environment:
+      - PORT=8006
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - OTEL_ENABLED=true
+      - OTEL_ENDPOINT=http://otel-collector:4317
+      - SERVICE_NAME=governance
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./brandme-governance/governance_console:/app/governance_console
       - ./brandme_core:/app/brandme_core
     restart: unless-stopped
     networks:

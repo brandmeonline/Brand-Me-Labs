@@ -1,6 +1,5 @@
 # brandme-governance/governance_console/main.py
 
-from typing import List
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -20,7 +19,6 @@ class GovernanceDecisionRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     app.state.db_pool = await asyncpg.create_pool(
         host="postgres",
         port=5432,
@@ -32,7 +30,6 @@ async def lifespan(app: FastAPI):
     )
     logger.info({"event": "governance_console_started"})
     yield
-    # Shutdown
     await app.state.db_pool.close()
     logger.info({"event": "governance_console_stopped"})
 
@@ -45,16 +42,18 @@ async def get_escalations(request: Request):
     """
     List pending escalations requiring human review.
     NEVER expose facet bodies, only high-level escalation metadata.
+    NEVER log PII.
     """
     async with app.state.db_pool.acquire() as conn:
         rows = await conn.fetch(
             """
             SELECT
                 al.related_scan_id AS scan_id,
+                se.region_code AS region_code,
                 (al.decision_detail->>'reason') AS reason,
-                (al.decision_detail->>'region_code') AS region_code,
-                al.created_at
+                al.created_at AS created_at
             FROM audit_log al
+            JOIN scan_event se ON se.scan_id = al.related_scan_id
             WHERE al.escalated_to_human = TRUE
               AND al.human_approver_id IS NULL
             ORDER BY al.created_at DESC
@@ -74,13 +73,11 @@ async def get_escalations(request: Request):
     response = JSONResponse(content=escalations)
     request_id = ensure_request_id(request, response)
 
-    logger.info(
-        {
-            "event": "governance_list_escalations",
-            "pending_count": len(escalations),
-            "request_id": request_id,
-        }
-    )
+    logger.info({
+        "event": "governance_list_escalations",
+        "pending_count": len(escalations),
+        "request_id": request_id,
+    })
 
     return response
 
@@ -89,7 +86,8 @@ async def get_escalations(request: Request):
 async def resolve_escalation(scan_id: str, payload: GovernanceDecisionRequest, request: Request):
     """
     Approve or deny an escalated scan.
-    TODO: if approved == True, in future tell orchestrator to finalize anchoring for this scan_id.
+    TODO: if approved == True, future: trigger orchestrator to finalize anchoring with /scan/commit replay
+    NEVER log PII, only redacted reviewer_user_id.
     """
     async with app.state.db_pool.acquire() as conn:
         await conn.execute(
@@ -113,20 +111,16 @@ async def resolve_escalation(scan_id: str, payload: GovernanceDecisionRequest, r
             scan_id,
         )
 
-    # TODO: if approved == True, finalize anchoring in orchestrator
-
     response = JSONResponse(content={"status": "resolved"})
     request_id = ensure_request_id(request, response)
 
-    logger.info(
-        {
-            "event": "governance_resolved_escalation",
-            "scan_id": scan_id,
-            "approved": payload.approved,
-            "reviewer_user": redact_user_id(payload.reviewer_user_id),
-            "request_id": request_id,
-        }
-    )
+    logger.info({
+        "event": "governance_resolved_escalation",
+        "scan_id": scan_id,
+        "approved": payload.approved,
+        "reviewer_user": redact_user_id(payload.reviewer_user_id),
+        "request_id": request_id,
+    })
 
     return response
 
