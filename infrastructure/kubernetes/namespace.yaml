@@ -1,0 +1,23 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: brandme
+  labels:
+    name: brandme
+    environment: production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: brandme-staging
+  labels:
+    name: brandme-staging
+    environment: staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    name: observability

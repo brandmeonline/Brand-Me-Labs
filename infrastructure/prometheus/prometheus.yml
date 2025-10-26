@@ -1,0 +1,151 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# Prometheus Configuration for Brand.Me Platform
+# ===============================================
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'brandme-dev'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Gateway service
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['gateway:3000']
+        labels:
+          service: 'gateway'
+          tier: 'edge'
+    metrics_path: '/metrics'
+
+  # Brain service
+  - job_name: 'brain'
+    static_configs:
+      - targets: ['brain:8000']
+        labels:
+          service: 'brain'
+          tier: 'core'
+    metrics_path: '/metrics'
+
+  # Policy service
+  - job_name: 'policy'
+    static_configs:
+      - targets: ['policy:8001']
+        labels:
+          service: 'policy'
+          tier: 'core'
+    metrics_path: '/metrics'
+
+  # Identity service
+  - job_name: 'identity'
+    static_configs:
+      - targets: ['identity:8100']
+        labels:
+          service: 'identity'
+          tier: 'agents'
+    metrics_path: '/metrics'
+
+  # Knowledge service
+  - job_name: 'knowledge'
+    static_configs:
+      - targets: ['knowledge:8101']
+        labels:
+          service: 'knowledge'
+          tier: 'agents'
+    metrics_path: '/metrics'
+
+  # Compliance service
+  - job_name: 'compliance'
+    static_configs:
+      - targets: ['compliance:8102']
+        labels:
+          service: 'compliance'
+          tier: 'agents'
+    metrics_path: '/metrics'
+
+  # Chain service
+  - job_name: 'chain'
+    static_configs:
+      - targets: ['chain:3001']
+        labels:
+          service: 'chain'
+          tier: 'blockchain'
+    metrics_path: '/metrics'
+
+  # PostgreSQL exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'postgres'
+          tier: 'database'
+
+  # Redis exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'redis'
+          tier: 'cache'
+
+  # NATS exporter
+  - job_name: 'nats'
+    static_configs:
+      - targets: ['nats:7777']
+        labels:
+          service: 'nats'
+          tier: 'messaging'
+
+  # Celery exporter
+  - job_name: 'celery'
+    static_configs:
+      - targets: ['celery-exporter:9808']
+        labels:
+          service: 'celery'
+          tier: 'orchestrator'
+
+  # Node exporter (host metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node'
+          tier: 'infrastructure'
+
+  # cAdvisor (container metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'cadvisor'
+          tier: 'infrastructure'
+
+  # OpenTelemetry Collector
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8888']
+        labels:
+          service: 'otel-collector'
+          tier: 'observability'
