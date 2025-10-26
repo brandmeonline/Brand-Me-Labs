@@ -1,15 +1,49 @@
-# brandme-core/brain/main.py
-import os
+import datetime as dt
 import uuid
 from typing import Optional
+from contextlib import asynccontextmanager
 
 import asyncpg
+import httpx
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from brandme_core.logging import ensure_request_id, get_logger, redact_user_id
+from brandme_core.logging import get_logger, redact_user_id, ensure_request_id
+
+logger = get_logger("brain_service")
+
+pool: Optional[asyncpg.Pool] = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global pool
+    pool = await asyncpg.create_pool(
+        host="postgres",
+        port=5432,
+        database="brandme",
+        user="brandme_user",
+        password="brandme_pass",
+        min_size=2,
+        max_size=10,
+    )
+    logger.info({"event": "brain_startup", "pool_ready": True})
+    yield
+    await pool.close()
+    logger.info({"event": "brain_shutdown"})
+
+
+app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:*", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class IntentResolveRequest(BaseModel):
@@ -27,181 +61,201 @@ class IntentResolveResponse(BaseModel):
     policy_decision: str
     resolved_scope: str
     policy_version: str
+    escalated: bool
 
 
-app = FastAPI()
-logger = get_logger("brain")
-
-# CORS middleware for local development
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.on_event("startup")
-async def startup():
-    """Initialize asyncpg connection pool on startup."""
-    database_url = os.getenv("DATABASE_URL")
-    if not database_url:
-        logger.warning("DATABASE_URL not set, using stub connection pool")
-        app.state.db_pool = None
-    else:
-        app.state.db_pool = await asyncpg.create_pool(database_url, min_size=2, max_size=10)
-        logger.info("Database connection pool initialized")
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    """Close asyncpg connection pool on shutdown."""
-    if app.state.db_pool:
-        await app.state.db_pool.close()
-        logger.info("Database connection pool closed")
-
-
-async def lookup_garment_id(pool: Optional[asyncpg.Pool], garment_tag: str) -> str:
+async def lookup_garment_id(pool: asyncpg.Pool, garment_tag: str) -> str:
     """
-    Resolve a physical garment tag (NFC/RFID/QR code) to a garment_id UUID.
-
-    For MLS/stub: returns a generated UUID.
-
-    TODO: Replace stub with real DB query:
-        SELECT garment_id FROM garments
-        WHERE rfid_tag = $1 OR nfc_tag = $1 OR qr_code = $1
-        LIMIT 1
+    For MLS: return str(uuid.uuid4()).
+    TODO: SELECT garment_id FROM garments WHERE nfc_tag=$1 OR rfid_tag=$1.
     """
-    # Stub implementation
+    # MLS stub:
     garment_id = str(uuid.uuid4())
-    logger.debug(
-        "Resolved garment tag to ID (stub)",
-        extra={"garment_tag": garment_tag[:8] + "…", "garment_id": garment_id[:8] + "…"}
-    )
+
+    # Production:
+    # async with pool.acquire() as conn:
+    #     row = await conn.fetchrow(
+    #         "SELECT garment_id FROM garments WHERE nfc_tag = $1 OR rfid_tag = $1",
+    #         garment_tag
+    #     )
+    #     if row:
+    #         garment_id = row["garment_id"]
+    #     else:
+    #         raise ValueError("garment_tag not found")
+
     return garment_id
 
 
-async def call_policy_gate(payload: dict, request_id: str) -> dict:
+async def call_policy_gate(
+    scanner_user_id: str, garment_id: str, region_code: str, request_id: str
+) -> dict:
     """
-    Call the Policy service to determine if this scan is allowed.
+    Use httpx.AsyncClient to POST to http://policy:8001/policy/check
 
-    POST http://localhost:8001/policy/check
+    Body: {
+        "scanner_user_id": scanner_user_id,
+        "garment_id": garment_id,
+        "region_code": region_code,
+        "action": "request_passport_view"
+    }
+    Headers: X-Request-Id: request_id
 
-    Request body:
-        {
-            "scanner_user_id": "...",
-            "garment_id": "...",
-            "region_code": "...",
-            "action": "request_passport_view"
-        }
+    Expect response JSON: {
+        "decision": "allow"|"deny"|"escalate",
+        "resolved_scope": "public"|"friends_only"|"private",
+        "policy_version": "policy_v1_us-east1"
+    }
 
-    Response:
-        {
-            "decision": "allow" | "deny" | "escalate",
-            "resolved_scope": "public" | "friends_only" | "private",
-            "policy_version": "policy_v1_us-east1"
-        }
-
-    For MLS/stub: returns hardcoded allow/public response.
-
-    TODO: Replace stub with real HTTP call using httpx:
-        import httpx
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "http://localhost:8001/policy/check",
-                json=payload,
-                headers={"X-Request-Id": request_id}
-            )
-            return response.json()
+    Return that dict.
     """
-    # Stub implementation
-    logger.debug(
-        "Calling policy gate (stub)",
-        extra={
-            "scanner_user_id": redact_user_id(payload.get("scanner_user_id")),
-            "garment_id": payload.get("garment_id", "")[:8] + "…",
-            "request_id": request_id
-        }
-    )
-
+    # MLS stub:
     return {
         "decision": "allow",
         "resolved_scope": "public",
         "policy_version": "policy_v1_us-east1"
     }
 
+    # Production:
+    # async with httpx.AsyncClient() as client:
+    #     resp = await client.post(
+    #         "http://policy:8001/policy/check",
+    #         json={
+    #             "scanner_user_id": scanner_user_id,
+    #             "garment_id": garment_id,
+    #             "region_code": region_code,
+    #             "action": "request_passport_view"
+    #         },
+    #         headers={"X-Request-Id": request_id}
+    #     )
+    #     resp.raise_for_status()
+    #     return resp.json()
 
-@app.post("/intent/resolve")
-async def resolve_intent(request: Request, body: IntentResolveRequest) -> JSONResponse:
+
+async def call_orchestrator(scan_packet: dict, request_id: str) -> dict:
     """
-    AI Brain Hub / Intent Resolver endpoint.
+    Use httpx.AsyncClient to POST to http://orchestrator:8002/scan/commit
 
-    Accepts a scan context (scan_id, garment_tag, scanner_user_id, region_code).
-    Resolves garment_tag -> garment_id.
-    Calls policy service to determine what can be shown.
-    Returns the resolution including policy decision.
-
-    Flow:
-        1. Lookup garment_id from garment_tag
-        2. Call policy service with scanner_user_id, garment_id, region_code
-        3. Return policy decision + resolved scope
-        4. Propagate X-Request-Id for traceability
-    """
-    pool = app.state.db_pool
-
-    # Step 1: Resolve garment tag to garment ID
-    garment_id = await lookup_garment_id(pool, body.garment_tag)
-
-    # Step 2: Call policy gate to check if scan is allowed
-    policy_payload = {
-        "scanner_user_id": body.scanner_user_id,
-        "garment_id": garment_id,
-        "region_code": body.region_code,
-        "action": "request_passport_view"
+    scan_packet looks like: {
+        "scan_id": ...,
+        "scanner_user_id": ...,
+        "garment_id": ...,
+        "resolved_scope": ...,
+        "policy_version": ...,
+        "region_code": ...,
+        "occurred_at": "<iso8601Z>"
     }
 
-    # We'll set request_id later from ensure_request_id, but for the policy call we can peek
-    temp_request_id = request.headers.get("X-Request-Id") or str(uuid.uuid4())
-    policy_result = await call_policy_gate(policy_payload, temp_request_id)
+    Headers: X-Request-Id: request_id
+
+    Expect orchestrator response JSON: {
+        "status": "ok",
+        "scan_id": "...",
+        "shown_facets_count": <int>,
+        "cardano_tx_hash": "...",
+        "midnight_tx_hash": "...",
+        "crosschain_root_hash": "..."
+    }
+    """
+    # MLS stub:
+    return {
+        "status": "ok",
+        "scan_id": scan_packet["scan_id"],
+        "shown_facets_count": 3,
+        "cardano_tx_hash": "cardano_stub_" + str(uuid.uuid4()),
+        "midnight_tx_hash": "midnight_stub_" + str(uuid.uuid4()),
+        "crosschain_root_hash": "root_stub_" + str(uuid.uuid4())
+    }
+
+    # Production:
+    # async with httpx.AsyncClient() as client:
+    #     resp = await client.post(
+    #         "http://orchestrator:8002/scan/commit",
+    #         json=scan_packet,
+    #         headers={"X-Request-Id": request_id}
+    #     )
+    #     resp.raise_for_status()
+    #     return resp.json()
+
+
+@app.post("/intent/resolve")
+async def intent_resolve(payload: IntentResolveRequest, request: Request):
+    """
+    Scan entrypoint and flow coordinator.
+    """
+    # Resolve garment_id
+    garment_id = await lookup_garment_id(pool, payload.garment_tag)
+
+    # Generate temporary request_id for internal calls
+    temp_request_id = request.headers.get("X-Request-Id", str(uuid.uuid4()))
+
+    # Call policy gate
+    policy_result = await call_policy_gate(
+        payload.scanner_user_id,
+        garment_id,
+        payload.region_code,
+        temp_request_id
+    )
 
     decision = policy_result["decision"]
     resolved_scope = policy_result["resolved_scope"]
     policy_version = policy_result["policy_version"]
+    escalated = False
 
-    # Step 3: Build response
+    if decision == "allow":
+        # Build scan packet
+        scan_packet = {
+            "scan_id": payload.scan_id,
+            "scanner_user_id": payload.scanner_user_id,
+            "garment_id": garment_id,
+            "resolved_scope": resolved_scope,
+            "policy_version": policy_version,
+            "region_code": payload.region_code,
+            "occurred_at": dt.datetime.utcnow().isoformat() + "Z"
+        }
+
+        # Call orchestrator
+        await call_orchestrator(scan_packet, temp_request_id)
+        escalated = False
+
+    elif decision == "deny":
+        escalated = False
+        # Do NOT call orchestrator
+
+    elif decision == "escalate":
+        escalated = True
+        # Do NOT call orchestrator
+        # TODO: push escalation to compliance/governance queue
+
+    # Build final response body
     response_body = {
         "action": "request_passport_view",
         "garment_id": garment_id,
-        "scanner_user_id": body.scanner_user_id,
-        "region_code": body.region_code,
+        "scanner_user_id": payload.scanner_user_id,
+        "region_code": payload.region_code,
         "policy_decision": decision,
         "resolved_scope": resolved_scope,
-        "policy_version": policy_version
+        "policy_version": policy_version,
+        "escalated": escalated
     }
 
-    response = JSONResponse(content=response_body)
+    # Wrap in JSONResponse
+    response = JSONResponse(response_body)
 
-    # Step 4: Ensure X-Request-Id is propagated
+    # Ensure request_id and propagate
     request_id = ensure_request_id(request, response)
 
-    # Step 5: Log the resolution with redacted PII
-    logger.info(
-        "Intent resolved",
-        extra={
-            "scan_id": body.scan_id,
-            "scanner_user_id": redact_user_id(body.scanner_user_id),
-            "garment_id": garment_id[:8] + "…",
-            "region_code": body.region_code,
-            "decision": decision,
-            "resolved_scope": resolved_scope,
-            "policy_version": policy_version,
-            "request_id": request_id
-        }
-    )
-
-    # TODO: integrate NATS / JetStream consumer that listens for "scan.requested" events from gateway instead of only HTTP
-    # TODO: forward allow/deny/escalate packets to orchestrator.worker when we go async
-    # TODO: escalate path: if policy_decision == "escalate", this should enqueue human review instead of continuing automatically
+    # Log
+    logger.info({
+        "event": "intent_resolve",
+        "scan_id": payload.scan_id,
+        "scanner_user_redacted": redact_user_id(payload.scanner_user_id),
+        "garment_partial": garment_id[:8] + "…",
+        "region_code": payload.region_code,
+        "policy_decision": decision,
+        "resolved_scope": resolved_scope,
+        "policy_version": policy_version,
+        "escalated": escalated,
+        "request_id": request_id
+    })
 
     return response
