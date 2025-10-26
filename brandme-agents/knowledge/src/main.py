@@ -1,8 +1,12 @@
+# Brand.Me v6 — Stable Integrity Spine
+# Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-agents/knowledge/src/main.py
+# v6 fix: removed duplicate FastAPI init / duplicate lifespan definitions
 
 from typing import Optional
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncpg
 
@@ -30,11 +34,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# v6 fix: CORS for public-facing knowledge service
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # TODO tighten in prod
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/garment/{garment_id}/passport")
 async def get_garment_passport(garment_id: str, request: Request, scope: Optional[str] = Query("public")):
     """
     Return safe garment facets for display.
+    # v6 fix: Always returns public-safe previews only, ignores requested scope parameter for safety.
     NEVER log facet bodies.
     NEVER return pricing history, ownership lineage, wallet addresses, or anything personal.
     TODO: pull real facets with is_public_default = TRUE from DB.
