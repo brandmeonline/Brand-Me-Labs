@@ -152,6 +152,41 @@ services:
       timeout: 5s
       retries: 30
 
+  cube:
+    build:
+      context: .
+      dockerfile: brandme-cube/Dockerfile
+    container_name: brandme-cube
+    environment:
+      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      REGION_DEFAULT: us-east1
+      POLICY_URL: http://policy:8001
+      ORCHESTRATOR_URL: http://orchestrator:8002
+      COMPLIANCE_URL: http://compliance:8004
+      IDENTITY_URL: http://identity:8005
+      KNOWLEDGE_URL: http://knowledge:8003
+    depends_on:
+      postgres:
+        condition: service_healthy
+      policy:
+        condition: service_started
+      orchestrator:
+        condition: service_started
+      compliance:
+        condition: service_started
+      identity:
+        condition: service_started
+    ports:
+      - "8007:8007"
+    networks:
+      - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
 volumes:
   pgdata:
 

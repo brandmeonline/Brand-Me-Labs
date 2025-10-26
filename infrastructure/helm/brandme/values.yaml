@@ -161,6 +161,30 @@ compliance:
       memory: "512Mi"
       cpu: "500m"
 
+# Cube Service (Product Cube storage and serving)
+cube:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: gcr.io/brandme/cube
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8007
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
 # Chain Service
 chain:
   enabled: true
