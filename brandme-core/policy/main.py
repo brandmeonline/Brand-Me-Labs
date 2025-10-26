@@ -20,6 +20,39 @@ class PolicyCheckRequest(BaseModel):
     action: str
 
 
+async def fetch_owner_and_consent(scanner_user_id: str, garment_id: str, request_id: str, http_client) -> dict:
+    """
+    1. Resolve garment owner.
+    TODO: SELECT owner_user_id FROM garments WHERE garment_id=$1
+    2. GET http://identity:8005/identity/{owner_user_id}/profile
+    3. Return owner_user_id, owner_region_code, trust_score, friends_allowed, consent_version
+    """
+    owner_user_id = "owner-stub-123"
+    
+    try:
+        response = await http_client.get(
+            f"http://identity:8005/identity/{owner_user_id}/profile",
+            headers={"X-Request-Id": request_id},
+            timeout=10.0,
+        )
+        response.raise_for_status()
+        profile = response.json()
+        return {
+            "owner_user_id": owner_user_id,
+            "owner_region_code": profile.get("region_code", "unknown"),
+            "trust_score": profile.get("trust_score", 0.5),
+            "friends_allowed": profile.get("friends_allowed", []),
+            "consent_version": profile.get("consent_version", "consent_v1_alpha"),
+        }
+    except Exception as e:
+        logger.error({"event": "identity_call_failed", "error": str(e), "request_id": request_id})
+        return {
+            "owner_user_id": owner_user_id,
+            "owner_region_code": "unknown",
+            "trust_score": 0.5,
+            "friends_allowed": [],
+            "consent_version": "consent_v1_alpha",
+        }
 class PolicyCheckResponse(BaseModel):
     decision: str  # "allow" | "deny" | "escalate"
     resolved_scope: str  # "public" | "friends_only" | "private"
@@ -68,6 +101,9 @@ def is_allowed(region_code: str) -> bool:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.http_client = httpx.AsyncClient()
+    logger.info({"event": "policy_service_started"})
+    yield
     # Startup
     app.state.http_client = httpx.AsyncClient()
     logger.info({"event": "policy_service_started"})
@@ -88,6 +124,18 @@ async def policy_check(payload: PolicyCheckRequest, request: Request):
     response = JSONResponse(content={})
     request_id = ensure_request_id(request, response)
 
+    consent_data = await fetch_owner_and_consent(
+        payload.scanner_user_id,
+        payload.garment_id,
+        request_id,
+        app.state.http_client,
+    )
+
+    owner_user_id = consent_data["owner_user_id"]
+    trust_score = consent_data["trust_score"]
+    friends_allowed = consent_data["friends_allowed"]
+
+    if payload.scanner_user_id == owner_user_id:
     # For MLS, assume garment owner is same as scanner (self-scan) or a synthetic owner
     # TODO: lookup garment_owner_user_id from garment_id in garments table
     garment_owner_user_id = payload.scanner_user_id  # MLS stub
@@ -107,6 +155,11 @@ async def policy_check(payload: PolicyCheckRequest, request: Request):
     else:
         resolved_scope = "public"
 
+    blocked_regions = {"BLOCKED_REGION"}
+    if payload.region_code in blocked_regions:
+        decision = "deny"
+    else:
+        if resolved_scope != "public" and trust_score < 0.75:
     # Check region rules
     if not is_allowed(payload.region_code):
         decision = "deny"
@@ -128,6 +181,16 @@ async def policy_check(payload: PolicyCheckRequest, request: Request):
     response = JSONResponse(content=response_body)
     request_id = ensure_request_id(request, response)
 
+    logger.info({
+        "event": "policy_decision",
+        "scanner_user": redact_user_id(payload.scanner_user_id),
+        "garment_owner": redact_user_id(owner_user_id),
+        "garment_partial": truncate_id(payload.garment_id),
+        "region_code": payload.region_code,
+        "decision": decision,
+        "resolved_scope": resolved_scope,
+        "request_id": request_id,
+    })
     logger.info(
         {
             "event": "policy_checked",

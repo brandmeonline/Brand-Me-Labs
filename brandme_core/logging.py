@@ -11,6 +11,8 @@ SENSITIVE_KEYS = {
     "purchase_history",
     "ownership_lineage",
     "private_payload",
+    "did_secret",
+    "wallet_keys",
     "wallet_keys",
     "did_secrets",
     "midnight_private_payload",

@@ -52,6 +52,64 @@ async def lifespan(app: FastAPI):
     )
     logger.info({"event": "compliance_service_started"})
     yield
+    await app.state.db_pool.close()
+    logger.info({"event": "compliance_service_stopped"})
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.post("/audit/log")
+async def audit_log(payload: AuditLogRequest, request: Request):
+    """
+    Log audit entry with hash-chaining for integrity.
+    NEVER store or return wallet seeds / private Midnight payloads / facet bodies.
+    """
+    async with app.state.db_pool.acquire() as conn:
+        prev_row = await conn.fetchrow(
+            """
+            SELECT entry_hash FROM audit_log
+            WHERE related_scan_id = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            payload.scan_id,
+        )
+        prev_hash = prev_row["entry_hash"] if prev_row else ""
+
+        hash_input = prev_hash + payload.decision_summary + json.dumps(payload.decision_detail)
+        entry_hash = hashlib.sha256(hash_input.encode()).hexdigest()
+
+        await conn.execute(
+            """
+            INSERT INTO audit_log (
+                audit_id, related_scan_id, created_at, decision_summary,
+                decision_detail, risk_flagged, escalated_to_human,
+                human_approver_id, prev_hash, entry_hash
+            ) VALUES ($1, $2, NOW(), $3, $4::jsonb, $5, $6, $7, $8, $9)
+            """,
+            str(uuid.uuid4()),
+            payload.scan_id,
+            payload.decision_summary,
+            json.dumps(payload.decision_detail),
+            payload.risk_flagged,
+            payload.escalated_to_human,
+            payload.human_approver_id,
+            prev_hash,
+            entry_hash,
+        )
+
+    response = JSONResponse(content={"status": "logged"})
+    request_id = ensure_request_id(request, response)
+
+    logger.info({
+        "event": "audit_logged",
+        "scan_id": payload.scan_id,
+        "risk_flagged": payload.risk_flagged,
+        "escalated_to_human": payload.escalated_to_human,
+        "request_id": request_id,
+    })
+
     # Shutdown
     await app.state.db_pool.close()
     logger.info({"event": "compliance_service_stopped"})
@@ -126,6 +184,19 @@ async def anchor_chain(payload: AnchorChainRequest, request: Request):
     Record blockchain anchor hashes for a scan.
     NEVER log private Midnight payloads, only tx hashes.
     """
+    response = JSONResponse(content={"status": "ok"})
+    request_id = ensure_request_id(request, response)
+
+    logger.info({
+        "event": "anchor_chain_recorded",
+        "scan_id": payload.scan_id,
+        "cardano_tx_hash": payload.cardano_tx_hash,
+        "midnight_tx_hash": payload.midnight_tx_hash,
+        "request_id": request_id,
+    })
+
+    return response
+
     # For now, just acknowledge. In production, persist reconciliation row.
 
     response = JSONResponse(content={"status": "ok"})
@@ -190,6 +261,12 @@ async def escalate(payload: EscalateRequest, request: Request):
     response = JSONResponse(content={"status": "queued"})
     request_id = ensure_request_id(request, response)
 
+    logger.info({
+        "event": "audit_escalated",
+        "scan_id": payload.scan_id,
+        "region_code": payload.region_code,
+        "request_id": request_id,
+    })
     logger.info(
         {
             "event": "audit_escalated",
@@ -207,6 +284,8 @@ async def audit_explain(scan_id: str, request: Request):
     """
     Explain audit trail for a scan.
     NEVER return facet bodies or user PII here.
+    NEVER include purchase history or ownership lineage.
+    NEVER include PII.
     """
     async with app.state.db_pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -247,6 +326,17 @@ async def audit_explain(scan_id: str, request: Request):
 
     response = JSONResponse(content=body)
     request_id = ensure_request_id(request, response)
+
+    logger.info({
+        "event": "audit_explain",
+        "scan_id": scan_id,
+        "region_code": row["region_code"],
+        "shown_facets_count": body["shown_facets_count"],
+        "request_id": request_id,
+    })
+
+    return response
+
 
     logger.info(
         {

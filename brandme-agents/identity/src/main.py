@@ -38,6 +38,9 @@ async def get_identity_profile(user_id: str, request: Request):
     """
     Get user identity profile including consent graph.
     Returns synthetic record if user not found (prevents 500s during scanning).
+    TODO: persist friends_allowed in a consent graph table.
+    TODO: expose consent_version history for audit/transparency.
+    """
     """
     # TODO: persist and retrieve friends_allowed and consent_version from consent graph tables.
 
@@ -55,6 +58,14 @@ async def get_identity_profile(user_id: str, request: Request):
     response = JSONResponse(content=payload)
     request_id = ensure_request_id(request, response)
 
+    logger.info({
+        "event": "identity_profile_lookup",
+        "user_redacted": redact_user_id(user_id),
+        "region_code": payload["region_code"],
+        "trust_score": payload["trust_score"],
+        "friends_allowed_count": len(payload["friends_allowed"]),
+        "request_id": request_id,
+    })
     logger.info(
         {
             "event": "identity_profile_lookup",
