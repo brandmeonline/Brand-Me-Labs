@@ -1,5 +1,6 @@
 # brandme-agents/identity/src/main.py
 
+from typing import List
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
@@ -12,6 +13,7 @@ logger = get_logger("identity_service")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup
     app.state.db_pool = await asyncpg.create_pool(
         host="postgres",
         port=5432,
@@ -23,6 +25,7 @@ async def lifespan(app: FastAPI):
     )
     logger.info({"event": "identity_service_started"})
     yield
+    # Shutdown
     await app.state.db_pool.close()
     logger.info({"event": "identity_service_stopped"})
 
@@ -38,6 +41,10 @@ async def get_identity_profile(user_id: str, request: Request):
     TODO: persist friends_allowed in a consent graph table.
     TODO: expose consent_version history for audit/transparency.
     """
+    """
+    # TODO: persist and retrieve friends_allowed and consent_version from consent graph tables.
+
+    # MLS stub: return synthetic profile
     payload = {
         "user_id": user_id,
         "display_name": "unknown",
@@ -59,6 +66,16 @@ async def get_identity_profile(user_id: str, request: Request):
         "friends_allowed_count": len(payload["friends_allowed"]),
         "request_id": request_id,
     })
+    logger.info(
+        {
+            "event": "identity_profile_lookup",
+            "user_redacted": redact_user_id(user_id),
+            "region_code": payload["region_code"],
+            "trust_score": payload["trust_score"],
+            "friends_allowed_count": len(payload["friends_allowed"]),
+            "request_id": request_id,
+        }
+    )
 
     return response
 

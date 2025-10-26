@@ -4,6 +4,7 @@ import logging
 import json
 import uuid
 from typing import Any, Dict
+from datetime import datetime
 
 SENSITIVE_KEYS = {
     "wallet_key",
@@ -12,6 +13,8 @@ SENSITIVE_KEYS = {
     "private_payload",
     "did_secret",
     "wallet_keys",
+    "wallet_keys",
+    "did_secrets",
     "midnight_private_payload",
 }
 
