@@ -142,7 +142,8 @@ app = FastAPI(lifespan=lifespan)
 # v6 fix: CORS for public-facing brain service
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO tighten in prod
+    allow_origins=["http://localhost:3000", "http://localhost:3002"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
