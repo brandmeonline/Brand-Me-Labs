@@ -65,6 +65,7 @@ export async function buildCardanoTx(data: {
     return txHash;
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error({ error, scan_id: data.scanId }, 'Failed to build Cardano transaction');
 
     // Fallback to simulated tx for development/testing
@@ -73,7 +74,7 @@ export async function buildCardanoTx(data: {
       return simulateCardanoTx(data);
     }
 
-    throw new Error(`Cardano transaction failed: ${error.message}`);
+    throw new Error(`Cardano transaction failed: ${errorMessage}`);
   }
 }
 
@@ -127,6 +128,7 @@ export async function buildMidnightTx(data: {
     return txHash;
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error({ error, scan_id: data.scanId }, 'Failed to build Midnight transaction');
 
     // Fallback to simulated tx for development/testing
@@ -135,7 +137,7 @@ export async function buildMidnightTx(data: {
       return simulateMidnightTx(data);
     }
 
-    throw new Error(`Midnight transaction failed: ${error.message}`);
+    throw new Error(`Midnight transaction failed: ${errorMessage}`);
   }
 }
 
@@ -333,20 +335,22 @@ function simulateMidnightTx(data: any): string {
 
 async function healthCheckCardano(): Promise<boolean> {
   try {
-    const txBuilder = getCardanoTxBuilder();
+    const _txBuilder = getCardanoTxBuilder();
+    void _txBuilder; // Reserved for future health check queries
     // Simple check to see if we can query the blockchain
     return true; // Would query actual chain status
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
 
 async function healthCheckMidnight(): Promise<boolean> {
   try {
-    const midnightClient = getMidnightClient();
+    const _midnightClient = getMidnightClient();
+    void _midnightClient; // Reserved for future health check queries
     // Simple check to see if we can connect to Midnight
     return true; // Would query actual chain status
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

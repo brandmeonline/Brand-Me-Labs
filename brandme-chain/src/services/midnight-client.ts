@@ -59,12 +59,16 @@ export interface MidnightConfig {
  */
 export class MidnightClient {
   private network: string;
-  private rpcUrl: string;
-  private wallet: any; // Will be replaced with actual Midnight wallet type
+  private _rpcUrl: string; // Reserved for future Midnight SDK integration
+  private _wallet: any; // Will be replaced with actual Midnight wallet type
 
   constructor(config: MidnightConfig) {
     this.network = config.network;
-    this.rpcUrl = config.rpcUrl || this.getDefaultRpcUrl(config.network);
+    this._rpcUrl = config.rpcUrl || this.getDefaultRpcUrl(config.network);
+
+    // Mark as intentionally unused (reserved for future SDK integration)
+    void this._rpcUrl;
+    void this._wallet;
 
     logger.info({ network: this.network }, 'Midnight client initialized (stub)');
 
@@ -132,8 +136,9 @@ export class MidnightClient {
       return txHash;
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error({ error, scan_id: data.scanId }, 'Failed to build Midnight transaction');
-      throw new Error(`Midnight transaction failed: ${error.message}`);
+      throw new Error(`Midnight transaction failed: ${errorMessage}`);
     }
   }
 
@@ -156,8 +161,10 @@ export class MidnightClient {
    * Generate Zero-Knowledge Proof
    *
    * TODO: Implement actual ZK proof generation when SDK is available
+   * Reserved for future Midnight SDK integration
    */
-  private async generateZKProof(data: MidnightTxData): Promise<any> {
+  // @ts-expect-error - Reserved for future use when Midnight SDK is integrated
+  private async _generateZKProof(data: MidnightTxData): Promise<any> {
     // STUB: Placeholder for ZK proof generation
     logger.debug('Generating ZK proof (stub)');
 

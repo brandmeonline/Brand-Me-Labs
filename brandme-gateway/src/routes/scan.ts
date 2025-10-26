@@ -5,6 +5,7 @@
  */
 
 import { Router, Response } from 'express';
+import type { Router as IRouter } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
@@ -13,7 +14,7 @@ import { publishEvent } from '../services/nats';
 import { logger } from '../config/logger';
 import { config } from '../config';
 
-const router = Router();
+const router: IRouter = Router();
 
 // Rate limiting for scan endpoint
 const scanRateLimiter = rateLimit({

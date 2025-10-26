@@ -34,7 +34,7 @@ pnpm-debug.log*
 .pnpm-store/
 package-lock.json
 yarn.lock
-pnpm-lock.yaml
+# pnpm-lock.yaml should be committed for reproducible builds
 
 # Python
 __pycache__/

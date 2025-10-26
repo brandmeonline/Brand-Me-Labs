@@ -23,8 +23,7 @@ export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction
+  _next: NextFunction
 ): void {
   // Log error (but not PII)
   logger.error({
