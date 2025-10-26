@@ -4,10 +4,16 @@
 
 Brand.Me is a symbiotic intelligence platform that merges digital fashion, identity expression, and verifiable trust on the Cardano blockchain. It is designed to redefine ownership, authenticity, and culture through agentic intelligence—where autonomous systems handle precision and scale, and humans govern intent, empathy, and ethics.
 
-## 📋 Enterprise Assessment
+## 📋 Documentation
 
-**Latest Assessment**: See [ENTERPRISE_GRADE_ASSESSMENT.md](./ENTERPRISE_GRADE_ASSESSMENT.md) for comprehensive review  
-**Current Status**: See [STATUS_UPDATE_2025_01_27.md](./STATUS_UPDATE_2025_01_27.md) for latest changes and roadmap
+**Quick Links**:
+- 📖 [Architecture](./docs/architecture/OVERVIEW.md) - System architecture
+- 🚀 [Deployment Guide](./docs/deployment/DEPLOYMENT_GUIDE.md) - How to deploy
+- 📊 [Current Status](./docs/status/CURRENT_STATUS.md) - Platform status
+- 🎯 [Roadmap](./docs/next_steps/ROADMAP.md) - Next steps
+- 📈 [Observability](./docs/infrastructure/OBSERVABILITY.md) - Monitoring & metrics
+
+**Complete Documentation**: See [docs/](./docs/) directory
 
 ## v6 Release: Stable Integrity Spine
 
