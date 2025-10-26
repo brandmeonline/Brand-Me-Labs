@@ -43,9 +43,9 @@ export async function connectNATS(): Promise<void> {
       await jsm.streams.add({
         name: 'SCANS',
         subjects: ['scan.*'],
-        retention: 'workqueue',
+        retention: 'workqueue' as any, // RetentionPolicy enum
         max_age: 7 * 24 * 60 * 60 * 1_000_000_000, // 7 days in nanoseconds
-        storage: 'file',
+        storage: 'file' as any, // StorageType enum
       });
       logger.info('Created JetStream stream "SCANS"');
     }

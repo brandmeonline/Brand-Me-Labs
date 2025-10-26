@@ -1,0 +1,55 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# EU West Regional Policy Configuration
+# ======================================
+
+region_code: eu-west1
+
+policies:
+  # Public scope: Anyone can view these facets
+  - scope: public
+    facet_types:
+      - authenticity
+      - esg
+    allowed: true
+    description: "Public facets visible to all scanners"
+
+  # Friends only scope: Connected users can view additional facets
+  - scope: friends_only
+    facet_types:
+      - authenticity
+      - esg
+      - story
+      - materials
+      - certificates
+    allowed: true
+    description: "Friends can see extended garment information"
+
+  # Private scope: Owner can see everything, but requires additional consent checks
+  - scope: private
+    facet_types:
+      - "*"  # All facets including pricing and ownership
+    allowed: escalate  # Requires human review under GDPR
+    description: "Owner access requires GDPR consent verification"
+
+# Regional restrictions (EU/GDPR-specific)
+restrictions:
+  - type: export_control
+    enabled: true
+    blocked_countries: []  # EU allows transfers within EEA
+
+  - type: data_localization
+    enabled: true
+    description: "Data must remain within EU for GDPR compliance"
+
+# Compliance requirements (GDPR)
+compliance:
+  data_retention_days: 730  # 2 years default, subject to legal basis
+  audit_required: true
+  pii_redaction: true
+  gdpr_applicable: true
+  ccpa_applicable: false
+  requires_explicit_consent: true
+  right_to_erasure: true  # GDPR Article 17
+  right_to_portability: true  # GDPR Article 20
+  consent_withdrawal: true  # Must allow easy consent withdrawal

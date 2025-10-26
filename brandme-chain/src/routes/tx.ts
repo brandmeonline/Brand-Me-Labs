@@ -5,11 +5,12 @@
  */
 
 import { Router, Request, Response } from 'express';
+import type { Router as IRouter } from 'express';
 import { z } from 'zod';
 import { logger } from '../config/logger';
 import { buildCardanoTx, buildMidnightTx, computeCrossChainRootHash } from '../services/blockchain';
 
-const router = Router();
+const router: IRouter = Router();
 
 // Request schemas
 const anchorScanSchema = z.object({
