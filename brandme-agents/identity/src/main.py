@@ -35,8 +35,8 @@ async def get_identity_profile(user_id: str, request: Request):
     """
     Get user identity profile including consent graph.
     Returns synthetic record if user not found (prevents 500s during scanning).
-    TODO: persist friends_allowed + consent_version in DB.
-    TODO: expose DID issuance status.
+    TODO: persist friends_allowed and consent_version in DB graph
+    TODO: expose DID issuance/rotation lifecycle
     """
     payload = {
         "user_id": user_id,

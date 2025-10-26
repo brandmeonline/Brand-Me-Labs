@@ -1,6 +1,5 @@
 # brandme-core/policy/main.py
 
-import datetime as dt
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -23,7 +22,9 @@ async def fetch_owner_and_consent(scanner_user_id: str, garment_id: str, request
     """
     1. Resolve garment owner.
     TODO: SELECT owner_user_id FROM garments WHERE garment_id=$1
+    TEMP: owner_user_id = "owner-stub-123"
     2. GET http://identity:8005/identity/{owner_user_id}/profile
+    Headers: {"X-Request-Id": request_id}
     3. Return owner_user_id, owner_region_code, trust_score, friends_allowed, consent_version
     """
     owner_user_id = "owner-stub-123"
@@ -74,16 +75,16 @@ async def policy_check(payload: PolicyCheckRequest, request: Request):
     response = JSONResponse(content={})
     request_id = ensure_request_id(request, response)
 
-    consent_data = await fetch_owner_and_consent(
+    consent = await fetch_owner_and_consent(
         payload.scanner_user_id,
         payload.garment_id,
         request_id,
         app.state.http_client,
     )
 
-    owner_user_id = consent_data["owner_user_id"]
-    trust_score = consent_data["trust_score"]
-    friends_allowed = consent_data["friends_allowed"]
+    owner_user_id = consent["owner_user_id"]
+    trust_score = consent["trust_score"]
+    friends_allowed = consent["friends_allowed"]
 
     if payload.scanner_user_id == owner_user_id:
         resolved_scope = "private"
@@ -103,14 +104,14 @@ async def policy_check(payload: PolicyCheckRequest, request: Request):
 
     policy_version = f"policy_v1_{payload.region_code}"
 
-    response_body = {
+    resp_body = {
         "decision": decision,
         "resolved_scope": resolved_scope,
         "policy_version": policy_version,
     }
 
-    response = JSONResponse(content=response_body)
-    request_id = ensure_request_id(request, response)
+    json_resp = JSONResponse(content=resp_body)
+    request_id = ensure_request_id(request, json_resp)
 
     logger.info({
         "event": "policy_decision",
@@ -123,7 +124,7 @@ async def policy_check(payload: PolicyCheckRequest, request: Request):
         "request_id": request_id,
     })
 
-    return response
+    return json_resp
 
 
 @app.get("/health")

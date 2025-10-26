@@ -54,11 +54,6 @@ async def get_escalations(request: Request):
             """
             SELECT
                 al.related_scan_id AS scan_id,
-                se.region_code AS region_code,
-                (al.decision_detail->>'reason') AS reason,
-                al.created_at AS created_at
-            FROM audit_log al
-            JOIN scan_event se ON se.scan_id = al.related_scan_id
                 (al.decision_detail->>'reason') AS reason,
                 (al.decision_detail->>'region_code') AS region_code,
                 al.created_at
@@ -87,13 +82,6 @@ async def get_escalations(request: Request):
         "pending_count": len(escalations),
         "request_id": request_id,
     })
-    logger.info(
-        {
-            "event": "governance_list_escalations",
-            "pending_count": len(escalations),
-            "request_id": request_id,
-        }
-    )
 
     return response
 
@@ -139,19 +127,6 @@ async def resolve_escalation(scan_id: str, payload: GovernanceDecisionRequest, r
         "request_id": request_id,
     })
     # TODO: if approved == True, finalize anchoring in orchestrator
-
-    response = JSONResponse(content={"status": "resolved"})
-    request_id = ensure_request_id(request, response)
-
-    logger.info(
-        {
-            "event": "governance_resolved_escalation",
-            "scan_id": scan_id,
-            "approved": payload.approved,
-            "reviewer_user": redact_user_id(payload.reviewer_user_id),
-            "request_id": request_id,
-        }
-    )
 
     return response
 
