@@ -1,541 +1,160 @@
-# Brand.Me v6 — Stable Integrity Spine
-# Implements: Request tracing, human escalation guardrails, safe facet previews.
-#
-# Brand.Me - Full Stack Docker Compose
-# =====================================
-# Complete production-ready deployment with 9 Python services
+# Brand.Me v7 — Stable Integrity Spine
+# Docker Compose for local development and testing
 
-version: '3.8'
+version: "3.9"
 
 services:
-  # ============================================
-  # Infrastructure Services
-  # ============================================
-
-  # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16
     container_name: brandme-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-brandme}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: brandme
+      POSTGRES_PASSWORD: brandme
+      POSTGRES_DB: brandme
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U brandme"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-    networks:
-      - brandme
-
-  # Redis Cache & Broker
-  redis:
-    image: redis:7-alpine
-    container_name: brandme-redis
-    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD:-redis_dev_password}
-    ports:
-      - "6379:6379"
+      retries: 20
     volumes:
-      - redis_data:/data
-      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - pgdata:/var/lib/postgresql/data
     networks:
-      - brandme
+      - brandme_net
 
-  # NATS JetStream
-  nats:
-    image: nats:2.10-alpine
-    container_name: brandme-nats
-    command: ["-js", "-sd", "/data", "-m", "8222"]
-    ports:
-      - "4222:4222"  # Client
-      - "8222:8222"  # HTTP monitoring
-      - "7777:7777"  # Metrics
-    volumes:
-      - nats_data:/data
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - brandme
-
-  # ============================================
-  # Observability Stack
-  # ============================================
-
-  # Prometheus Metrics
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: brandme-prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./infrastructure/prometheus/rules:/etc/prometheus/rules:ro
-      - prometheus_data:/prometheus
-    depends_on:
-      - otel-collector
-    networks:
-      - brandme
-
-  # Grafana Dashboards
-  grafana:
-    image: grafana/grafana:latest
-    container_name: brandme-grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
-    ports:
-      - "3030:3000"
-    volumes:
-      - ./infrastructure/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./infrastructure/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-      - grafana_data:/var/lib/grafana
-    depends_on:
-      - prometheus
-      - loki
-    networks:
-      - brandme
-
-  # Loki Log Aggregation
-  loki:
-    image: grafana/loki:latest
-    container_name: brandme-loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./infrastructure/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
-      - loki_data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - brandme
-
-  # Tempo Distributed Tracing
-  tempo:
-    image: grafana/tempo:latest
-    container_name: brandme-tempo
-    command: ["-config.file=/etc/tempo.yaml"]
-    ports:
-      - "3200:3200"   # Tempo
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-    volumes:
-      - ./infrastructure/tempo/tempo.yaml:/etc/tempo.yaml:ro
-      - tempo_data:/tmp/tempo
-    networks:
-      - brandme
-
-  # OpenTelemetry Collector
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    container_name: brandme-otel-collector
-    command: ["--config=/etc/otel-collector-config.yml"]
-    ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "8889:8889"   # Prometheus exporter
-      - "13133:13133" # Health check
-    volumes:
-      - ./infrastructure/otel-collector/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
-    depends_on:
-      - loki
-      - tempo
-    networks:
-      - brandme
-
-  # Alertmanager
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: brandme-alertmanager
-    ports:
-      - "9093:9093"
-    volumes:
-      - ./infrastructure/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
-      - alertmanager_data:/alertmanager
-    command:
-      - '--config.file=/etc/alertmanager/config.yml'
-      - '--storage.path=/alertmanager'
-    networks:
-      - brandme
-
-  # ============================================
-  # Exporters for Monitoring
-  # ============================================
-
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: brandme-postgres-exporter
-    environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}?sslmode=disable"
-    ports:
-      - "9187:9187"
-    depends_on:
-      - postgres
-    networks:
-      - brandme
-
-  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: brandme-redis-exporter
-    environment:
-      REDIS_ADDR: redis:6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_dev_password}
-    ports:
-      - "9121:9121"
-    depends_on:
-      - redis
-    networks:
-      - brandme
-
-  # ============================================
-  # Core Services
-  # ============================================
-
-  # Gateway Service
-  gateway:
-    build:
-      context: ./brandme-gateway
-      dockerfile: Dockerfile
-    container_name: brandme-gateway
-    ports:
-      - "3000:3000"
-    environment:
-      - PORT=3000
-      - NODE_ENV=${ENVIRONMENT:-development}
-      - NATS_URL=nats://nats:4222
-      - DEFAULT_REGION=${DEFAULT_REGION:-us-east1}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
-      - OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
-      - JWT_SECRET=${JWT_SECRET}
-      - OAUTH_ISSUER=${OAUTH_ISSUER}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3002}
-      - OTEL_ENABLED=true
-      - OTEL_ENDPOINT=http://otel-collector:4317
-      - SERVICE_NAME=gateway
-    depends_on:
-      nats:
-        condition: service_healthy
-      otel-collector:
-        condition: service_started
-    volumes:
-      - ./brandme-gateway/src:/app/src
-    restart: unless-stopped
-    networks:
-      - brandme
-
-  # Brain Service
   brain:
     build:
-      context: ./brandme-core
-      dockerfile: Dockerfile
-      target: brain
+      context: .
+      dockerfile: brandme-core/brain/Dockerfile
     container_name: brandme-brain
+    environment:
+      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      REGION_DEFAULT: us-east1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      policy:
+        condition: service_started
+      orchestrator:
+        condition: service_started
     ports:
       - "8000:8000"
-    environment:
-      - PORT=8000
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
-      - NATS_URL=nats://nats:4222
-      - REGION_DEFAULT=${DEFAULT_REGION:-us-east1}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OTEL_ENABLED=true
-      - OTEL_ENDPOINT=http://otel-collector:4317
-      - SERVICE_NAME=brain
-      - POLICY_SERVICE_URL=http://policy:8001
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - ./brandme-core/brain:/app/brain
-      - ./brandme_core:/app/brandme_core
-    restart: unless-stopped
     networks:
-      - brandme
+      - brandme_net
 
-  # Policy Service
   policy:
     build:
-      context: ./brandme-core
-      dockerfile: Dockerfile
-      target: policy
+      context: .
+      dockerfile: brandme-core/policy/Dockerfile
     container_name: brandme-policy
+    environment:
+      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      REGION_DEFAULT: us-east1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity:
+        condition: service_started
     ports:
       - "8001:8001"
-    environment:
-      - PORT=8001
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OTEL_ENABLED=true
-      - OTEL_ENDPOINT=http://otel-collector:4317
-      - SERVICE_NAME=policy
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./brandme-core/policy:/app/policy
-      - ./brandme_core:/app/brandme_core
-    restart: unless-stopped
     networks:
-      - brandme
+      - brandme_net
 
-  # Orchestrator Worker
   orchestrator:
     build:
-      context: ./brandme-core
-      dockerfile: Dockerfile
-      target: orchestrator
+      context: .
+      dockerfile: brandme-core/orchestrator/Dockerfile
     container_name: brandme-orchestrator
+    environment:
+      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      REGION_DEFAULT: us-east1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      knowledge:
+        condition: service_started
+      compliance:
+        condition: service_started
     ports:
       - "8002:8002"
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379/1
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OTEL_ENABLED=true
-      - OTEL_ENDPOINT=http://otel-collector:4317
-      - SERVICE_NAME=orchestrator
-      - KNOWLEDGE_SERVICE_URL=http://knowledge:8101
-      - CHAIN_SERVICE_URL=http://chain:3001
-      - COMPLIANCE_SERVICE_URL=http://compliance:8102
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - ./brandme-core/orchestrator:/app/orchestrator
-      - ./brandme_core:/app/brandme_core
-    restart: unless-stopped
     networks:
-      - brandme
+      - brandme_net
 
-  # Orchestrator Beat Scheduler
-  orchestrator-beat:
-    build:
-      context: ./brandme-core
-      dockerfile: Dockerfile
-      target: orchestrator-beat
-    container_name: brandme-orchestrator-beat
-    environment:
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379/0
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - SERVICE_NAME=orchestrator-beat
-    depends_on:
-      - redis
-      - orchestrator
-    volumes:
-      - ./brandme-core/orchestrator:/app/orchestrator
-    restart: unless-stopped
-    networks:
-      - brandme
-
-  # ============================================
-  # Agent Services
-  # ============================================
-
-  # Identity Service (v6: port 8005)
-  identity:
-    build:
-      context: ./brandme-agents
-      dockerfile: Dockerfile
-      target: identity
-    container_name: brandme-identity
-    ports:
-      - "8005:8005"
-    environment:
-      - PORT=8005
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OTEL_ENABLED=true
-      - OTEL_ENDPOINT=http://otel-collector:4317
-      - SERVICE_NAME=identity
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./brandme-agents/identity:/app/identity
-      - ./brandme_core:/app/brandme_core
-    restart: unless-stopped
-    networks:
-      - brandme
-
-  # Knowledge Service (v6: port 8003, CORS enabled)
   knowledge:
     build:
-      context: ./brandme-agents
-      dockerfile: Dockerfile
-      target: knowledge
+      context: .
+      dockerfile: brandme-agents/knowledge/Dockerfile
     container_name: brandme-knowledge
+    environment:
+      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      REGION_DEFAULT: us-east1
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "8003:8003"
-    environment:
-      - PORT=8003
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OTEL_ENABLED=true
-      - OTEL_ENDPOINT=http://otel-collector:4317
-      - SERVICE_NAME=knowledge
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./brandme-agents/knowledge:/app/knowledge
-      - ./brandme_core:/app/brandme_core
-    restart: unless-stopped
     networks:
-      - brandme
+      - brandme_net
 
-  # Compliance Service (v6: port 8004, hash-chained audit log)
   compliance:
     build:
-      context: ./brandme-agents
-      dockerfile: Dockerfile
-      target: compliance
+      context: .
+      dockerfile: brandme-agents/compliance/Dockerfile
     container_name: brandme-compliance
-    ports:
-      - "8004:8004"
     environment:
-      - PORT=8004
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OTEL_ENABLED=true
-      - OTEL_ENDPOINT=http://otel-collector:4317
-      - SERVICE_NAME=compliance
+      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      REGION_DEFAULT: us-east1
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./brandme-agents/compliance:/app/compliance
-      - ./brandme_core:/app/brandme_core
-    restart: unless-stopped
-    networks:
-      - brandme
-
-  # ============================================
-  # Governance Services
-  # ============================================
-
-  # Governance Console (v6: CORS enabled, human escalation review)
-  governance:
-    build:
-      context: ./brandme-governance
-      dockerfile: Dockerfile
-      target: governance
-    container_name: brandme-governance
     ports:
-      - "8006:8006"
+      - "8004:8004"
+    networks:
+      - brandme_net
+
+  identity:
+    build:
+      context: .
+      dockerfile: brandme-agents/identity/Dockerfile
+    container_name: brandme-identity
     environment:
-      - PORT=8006
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OTEL_ENABLED=true
-      - OTEL_ENDPOINT=http://otel-collector:4317
-      - SERVICE_NAME=governance
+      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      REGION_DEFAULT: us-east1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8005:8005"
+    networks:
+      - brandme_net
+
+  governance_console:
+    build:
+      context: .
+      dockerfile: brandme-governance/governance_console/Dockerfile
+    container_name: brandme-governance
+    environment:
+      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      REGION_DEFAULT: us-east1
     depends_on:
       postgres:
         condition: service_healthy
       compliance:
         condition: service_started
+    ports:
+      - "8006:8006"
+    networks:
+      - brandme_net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    volumes:
-      - ./brandme-governance/governance_console:/app/governance_console
-      - ./brandme_core:/app/brandme_core
-    restart: unless-stopped
-    networks:
-      - brandme
-
-  # ============================================
-  # Blockchain Service
-  # ============================================
-
-  chain:
-    build:
-      context: ./brandme-chain
-      dockerfile: Dockerfile
-      target: development
-    container_name: brandme-chain
-    ports:
-      - "3001:3001"
-    environment:
-      - PORT=3001
-      - NODE_ENV=${ENVIRONMENT:-development}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OTEL_ENABLED=true
-      - OTEL_ENDPOINT=http://otel-collector:4317
-      - SERVICE_NAME=chain
-      - CARDANO_NETWORK=${CARDANO_NETWORK:-testnet}
-      - MIDNIGHT_NETWORK=${MIDNIGHT_NETWORK:-testnet}
-    depends_on:
-      - otel-collector
-    volumes:
-      - ./brandme-chain/src:/app/src
-    restart: unless-stopped
-    networks:
-      - brandme
-
-  # ============================================
-  # Frontend Console
-  # ============================================
-
-  console:
-    build:
-      context: ./brandme-console
-      dockerfile: Dockerfile
-      target: development
-    container_name: brandme-console
-    ports:
-      - "3002:3002"
-    environment:
-      - PORT=3002
-      - NEXT_PUBLIC_GATEWAY_URL=${GATEWAY_URL:-http://localhost:3000}
-      - NEXT_PUBLIC_ENVIRONMENT=${ENVIRONMENT:-development}
-      - NODE_ENV=${ENVIRONMENT:-development}
-    volumes:
-      - ./brandme-console:/app
-      - /app/node_modules
-      - /app/.next
-    restart: unless-stopped
-    networks:
-      - brandme
-
-networks:
-  brandme:
-    driver: bridge
+      interval: 10s
+      timeout: 5s
+      retries: 30
 
 volumes:
-  postgres_data:
-  redis_data:
-  nats_data:
-  prometheus_data:
-  grafana_data:
-  loki_data:
-  tempo_data:
-  alertmanager_data:
+  pgdata:
+
+networks:
+  brandme_net:
+    driver: bridge

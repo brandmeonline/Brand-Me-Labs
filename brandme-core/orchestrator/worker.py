@@ -1,9 +1,10 @@
-# Brand.Me v6 — Stable Integrity Spine
+# Brand.Me v7 — Stable Integrity Spine
 # Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-core/orchestrator/worker.py
 
 import hashlib
 import json
+import os
 from typing import List, Dict
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -16,6 +17,10 @@ from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, 
 
 logger = get_logger("orchestrator_service")
 
+# v7 fix: default env for local compose
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://brandme:brandme@postgres:5432/brandme")
+REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
+
 
 class OrchestratorScanPacket(BaseModel):
     scan_id: str
@@ -23,6 +28,7 @@ class OrchestratorScanPacket(BaseModel):
     garment_id: str
     resolved_scope: str
     policy_version: str
+    policy_decision: str  # v7 fix: added to contract
     region_code: str
     occurred_at: str
 
@@ -32,6 +38,7 @@ async def call_knowledge_service(garment_id: str, scope: str, request_id: str, h
     GET http://knowledge:8003/garment/{garment_id}/passport?scope={scope}
     Headers: {"X-Request-Id": request_id}
     """
+    # v7 fix: docker-compose internal service URL
     try:
         response = await http_client.get(
             f"http://knowledge:8003/garment/{garment_id}/passport",
@@ -52,6 +59,7 @@ async def call_compliance_audit_log(scan_id: str, decision_summary: str, decisio
     POST http://compliance:8004/audit/log
     Headers: {"X-Request-Id": request_id}
     """
+    # v7 fix: docker-compose internal service URL
     try:
         await http_client.post(
             "http://compliance:8004/audit/log",
@@ -74,6 +82,7 @@ async def call_compliance_anchor_chain(scan_id: str, tx_hashes: Dict[str, str], 
     POST http://compliance:8004/audit/anchorChain
     Headers: {"X-Request-Id": request_id}
     """
+    # v7 fix: docker-compose internal service URL
     try:
         await http_client.post(
             "http://compliance:8004/audit/anchorChain",
@@ -110,9 +119,7 @@ def call_tx_builder(garment_id: str, facets: List[Dict], scope: str) -> Dict[str
 async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str, db_pool, http_client) -> Dict[str, object]:
     """
     Process allowed scan: fetch facets, persist, anchor, audit.
-    TODO: if policy_decision == "escalate", do NOT call process_allowed_scan;
-    instead call compliance /audit/escalate and wait for governance human approval.
-    /scan/commit currently assumes "allow".
+    Only allowed scans reach here (escalated scans are blocked upstream).
     """
     scan_id = decision_packet["scan_id"]
     scanner_user_id = decision_packet["scanner_user_id"]
@@ -193,15 +200,7 @@ async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str,
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(
-        host="postgres",
-        port=5432,
-        database="brandme",
-        user="postgres",
-        password="postgres",
-        min_size=5,
-        max_size=20,
-    )
+    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=5, max_size=20)
     app.state.http_client = httpx.AsyncClient()
     logger.info({"event": "orchestrator_service_started"})
     yield
@@ -214,24 +213,25 @@ app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/scan/commit")
-async def scan_commit(payload: OrchestratorScanPacket, request: Request):
+async def scan_commit(body: OrchestratorScanPacket, request: Request):
     """
     Commit allowed scan: persist, anchor, audit.
     """
     response = JSONResponse(content={})
     request_id = ensure_request_id(request, response)
 
-    decision_packet = payload.dict()
-
-    # v6 fix: explicit escalation check before anchoring
-    if decision_packet.get("policy_decision") == "escalate":
-        logger.info({"event": "scan_escalated_skip_anchor", "scan_id": decision_packet.get("scan_id"), "request_id": request_id})
+    # v7 fix: escalated scans do not anchor
+    if body.policy_decision == "escalate":
+        logger.info({
+            "event": "scan_escalated_skip_anchor",
+            "scan_id": body.scan_id,
+            "request_id": request_id
+        })
         response = JSONResponse(content={"status": "escalated_pending_human"})
         ensure_request_id(request, response)
         return response
 
-    # TODO: After governance_console approves via POST /governance/escalations/{scan_id}/decision,
-    # governance should callback to orchestrator to finalize anchoring for approved scans.
+    decision_packet = body.dict()
 
     result = await process_allowed_scan(
         decision_packet,

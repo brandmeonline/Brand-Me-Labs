@@ -1,9 +1,10 @@
-# Brand.Me v6 — Stable Integrity Spine
+# Brand.Me v7 — Stable Integrity Spine
 # Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-core/brain/main.py
 
 import datetime as dt
 import uuid
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +16,10 @@ import httpx
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, truncate_id
 
 logger = get_logger("brain_service")
+
+# v7 fix: default env for local compose
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://brandme:brandme@postgres:5432/brandme")
+REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
 
 
 class IntentResolveRequest(BaseModel):
@@ -48,6 +53,7 @@ async def call_policy_gate(scanner_user_id: str, garment_id: str, region_code: s
     POST http://policy:8001/policy/check
     Headers: {"X-Request-Id": request_id}
     """
+    # v7 fix: docker-compose internal service URL
     try:
         response = await http_client.post(
             "http://policy:8001/policy/check",
@@ -76,6 +82,7 @@ async def call_orchestrator_commit(scan_packet: dict, request_id: str, http_clie
     POST http://orchestrator:8002/scan/commit
     Headers: {"X-Request-Id": request_id}
     """
+    # v7 fix: docker-compose internal service URL
     try:
         response = await http_client.post(
             "http://orchestrator:8002/scan/commit",
@@ -102,6 +109,7 @@ async def call_compliance_escalate(scan_id: str, region_code: str, request_id: s
     POST http://compliance:8004/audit/escalate
     Headers: {"X-Request-Id": request_id}
     """
+    # v7 fix: docker-compose internal service URL
     try:
         await http_client.post(
             "http://compliance:8004/audit/escalate",
@@ -120,15 +128,7 @@ async def call_compliance_escalate(scan_id: str, region_code: str, request_id: s
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(
-        host="postgres",
-        port=5432,
-        database="brandme",
-        user="postgres",
-        password="postgres",
-        min_size=5,
-        max_size=20,
-    )
+    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=5, max_size=20)
     app.state.http_client = httpx.AsyncClient()
     logger.info({"event": "brain_service_started"})
     yield
@@ -139,7 +139,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# v6 fix: CORS for public-facing brain service
+# v7 fix: enable CORS for local frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # TODO tighten in prod
@@ -172,12 +172,14 @@ async def intent_resolve(body: IntentResolveRequest, request: Request):
     escalated = False
 
     if decision == "allow":
+        # v7 fix: include policy_decision in scan_packet
         scan_packet = {
             "scan_id": body.scan_id,
             "scanner_user_id": body.scanner_user_id,
             "garment_id": garment_id,
             "resolved_scope": resolved_scope,
             "policy_version": policy_version,
+            "policy_decision": decision,
             "region_code": body.region_code,
             "occurred_at": dt.datetime.utcnow().isoformat() + "Z",
         }
@@ -185,6 +187,7 @@ async def intent_resolve(body: IntentResolveRequest, request: Request):
         escalated = False
 
     elif decision == "escalate":
+        # v7 fix: DO NOT call orchestrator for escalated scans
         await call_compliance_escalate(
             body.scan_id,
             body.region_code,
