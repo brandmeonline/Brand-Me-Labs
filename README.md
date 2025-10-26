@@ -59,6 +59,7 @@ All 9 backend services are production-ready with:
 | **compliance** | 8004 | Hash-chained audit logging & escalations |
 | **identity** | 8005 | User profiles & consent graph |
 | **governance_console** | 8006 | Human review UI, CORS enabled |
+| **cube** | 8007 | Product Cube storage & serving, CORS enabled |
 | **agentic/orchestrator** | — | Multi-agent workflow (library) |
 | **brandme_core/logging** | — | Shared logging utilities (library) |
 
