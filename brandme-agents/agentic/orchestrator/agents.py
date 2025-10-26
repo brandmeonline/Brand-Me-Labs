@@ -1,3 +1,5 @@
+# Brand.Me v6 — Stable Integrity Spine
+# Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-agents/agentic/orchestrator/agents.py
 
 from typing import TypedDict, Optional

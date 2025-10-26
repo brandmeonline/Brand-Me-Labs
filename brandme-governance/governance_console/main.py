@@ -1,8 +1,11 @@
+# Brand.Me v6 — Stable Integrity Spine
+# Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-governance/governance_console/main.py
 
 from typing import List
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 import asyncpg
@@ -40,6 +43,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# v6 fix: CORS for public-facing governance console
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # TODO tighten in prod
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/governance/escalations")

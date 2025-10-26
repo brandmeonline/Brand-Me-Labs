@@ -1,8 +1,9 @@
-# Copyright (c) Brand.Me, Inc. All rights reserved.
+# Brand.Me v6 — Stable Integrity Spine
+# Implements: Request tracing, human escalation guardrails, safe facet previews.
 #
 # Brand.Me - Full Stack Docker Compose
 # =====================================
-# Complete production-ready deployment
+# Complete production-ready deployment with 9 Python services
 
 version: '3.8'
 
@@ -356,7 +357,7 @@ services:
   # Agent Services
   # ============================================
 
-  # Identity Service
+  # Identity Service (v6: port 8005)
   identity:
     build:
       context: ./brandme-agents
@@ -364,9 +365,9 @@ services:
       target: identity
     container_name: brandme-identity
     ports:
-      - "8100:8100"
+      - "8005:8005"
     environment:
-      - PORT=8100
+      - PORT=8005
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - OTEL_ENABLED=true
@@ -382,7 +383,7 @@ services:
     networks:
       - brandme
 
-  # Knowledge Service
+  # Knowledge Service (v6: port 8003, CORS enabled)
   knowledge:
     build:
       context: ./brandme-agents
@@ -390,9 +391,9 @@ services:
       target: knowledge
     container_name: brandme-knowledge
     ports:
-      - "8101:8101"
+      - "8003:8003"
     environment:
-      - PORT=8101
+      - PORT=8003
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - OTEL_ENABLED=true
@@ -408,7 +409,7 @@ services:
     networks:
       - brandme
 
-  # Compliance Service
+  # Compliance Service (v6: port 8004, hash-chained audit log)
   compliance:
     build:
       context: ./brandme-agents
@@ -416,9 +417,9 @@ services:
       target: compliance
     container_name: brandme-compliance
     ports:
-      - "8102:8102"
+      - "8004:8004"
     environment:
-      - PORT=8102
+      - PORT=8004
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-brandme}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - OTEL_ENABLED=true
@@ -438,7 +439,7 @@ services:
   # Governance Services
   # ============================================
 
-  # Governance Console
+  # Governance Console (v6: CORS enabled, human escalation review)
   governance:
     build:
       context: ./brandme-governance
@@ -457,6 +458,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      compliance:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     volumes:
       - ./brandme-governance/governance_console:/app/governance_console
       - ./brandme_core:/app/brandme_core

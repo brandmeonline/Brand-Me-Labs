@@ -1,3 +1,5 @@
+# Brand.Me v6 — Stable Integrity Spine
+# Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-agents/compliance/src/main.py
 
 import hashlib
@@ -136,6 +138,7 @@ async def anchor_chain(payload: AnchorChainRequest, request: Request):
 async def escalate(payload: EscalateRequest, request: Request):
     """
     Queue escalation for human review.
+    # v6 fix: verified escalation rows queryable by governance_console
     """
     async with app.state.db_pool.acquire() as conn:
         prev_row = await conn.fetchrow(

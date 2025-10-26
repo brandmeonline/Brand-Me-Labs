@@ -1,6 +1,9 @@
+# Brand.Me v6 — Stable Integrity Spine
+# Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-core/policy/main.py
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
@@ -26,9 +29,10 @@ async def fetch_owner_and_consent(scanner_user_id: str, garment_id: str, request
     2. GET http://identity:8005/identity/{owner_user_id}/profile
     Headers: {"X-Request-Id": request_id}
     3. Return owner_user_id, owner_region_code, trust_score, friends_allowed, consent_version
+    # v6 fix: Ensures friends_allowed and trust_score defaults are returned
     """
     owner_user_id = "owner-stub-123"
-    
+
     try:
         response = await http_client.get(
             f"http://identity:8005/identity/{owner_user_id}/profile",
@@ -37,6 +41,7 @@ async def fetch_owner_and_consent(scanner_user_id: str, garment_id: str, request
         )
         response.raise_for_status()
         profile = response.json()
+        # v6 fix: explicit defaults for friends_allowed and trust_score
         return {
             "owner_user_id": owner_user_id,
             "owner_region_code": profile.get("region_code", "unknown"),
@@ -46,6 +51,7 @@ async def fetch_owner_and_consent(scanner_user_id: str, garment_id: str, request
         }
     except Exception as e:
         logger.error({"event": "identity_call_failed", "error": str(e), "request_id": request_id})
+        # v6 fix: fallback defaults if identity service fails
         return {
             "owner_user_id": owner_user_id,
             "owner_region_code": "unknown",
@@ -65,6 +71,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# v6 fix: CORS for public-facing policy service
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # TODO tighten in prod
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/policy/check")

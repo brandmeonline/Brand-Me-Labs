@@ -1,3 +1,5 @@
+# Brand.Me v6 — Stable Integrity Spine
+# Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-core/orchestrator/worker.py
 
 import hashlib
@@ -220,6 +222,16 @@ async def scan_commit(payload: OrchestratorScanPacket, request: Request):
     request_id = ensure_request_id(request, response)
 
     decision_packet = payload.dict()
+
+    # v6 fix: explicit escalation check before anchoring
+    if decision_packet.get("policy_decision") == "escalate":
+        logger.info({"event": "scan_escalated_skip_anchor", "scan_id": decision_packet.get("scan_id"), "request_id": request_id})
+        response = JSONResponse(content={"status": "escalated_pending_human"})
+        ensure_request_id(request, response)
+        return response
+
+    # TODO: After governance_console approves via POST /governance/escalations/{scan_id}/decision,
+    # governance should callback to orchestrator to finalize anchoring for approved scans.
 
     result = await process_allowed_scan(
         decision_packet,
