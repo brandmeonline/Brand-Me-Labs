@@ -1,8 +1,7 @@
 # brandme-core/orchestrator/worker.py
 
-import datetime as dt
 import hashlib
-import uuid
+import json
 from typing import List, Dict
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -29,6 +28,7 @@ class OrchestratorScanPacket(BaseModel):
 async def call_knowledge_service(garment_id: str, scope: str, request_id: str, http_client) -> List[Dict[str, object]]:
     """
     GET http://knowledge:8003/garment/{garment_id}/passport?scope={scope}
+    Headers: {"X-Request-Id": request_id}
     """
     try:
         response = await http_client.get(
@@ -48,6 +48,7 @@ async def call_knowledge_service(garment_id: str, scope: str, request_id: str, h
 async def call_compliance_audit_log(scan_id: str, decision_summary: str, decision_detail: Dict[str, object], risk_flagged: bool, escalated_to_human: bool, request_id: str, http_client) -> None:
     """
     POST http://compliance:8004/audit/log
+    Headers: {"X-Request-Id": request_id}
     """
     try:
         await http_client.post(
@@ -69,6 +70,7 @@ async def call_compliance_audit_log(scan_id: str, decision_summary: str, decisio
 async def call_compliance_anchor_chain(scan_id: str, tx_hashes: Dict[str, str], request_id: str, http_client) -> None:
     """
     POST http://compliance:8004/audit/anchorChain
+    Headers: {"X-Request-Id": request_id}
     """
     try:
         await http_client.post(
@@ -91,7 +93,6 @@ def call_tx_builder(garment_id: str, facets: List[Dict], scope: str) -> Dict[str
     Build transaction hashes for Cardano (public), Midnight (private), and crosschain root.
     TODO: Replace with real blockchain transaction construction.
     """
-    import json
     facet_hash = hashlib.sha256(json.dumps(facets, sort_keys=True).encode()).hexdigest()
     cardano_hash = hashlib.sha256((garment_id + scope + facet_hash).encode()).hexdigest()
     midnight_hash = hashlib.sha256((garment_id + "midnight" + facet_hash).encode()).hexdigest()
@@ -107,7 +108,9 @@ def call_tx_builder(garment_id: str, facets: List[Dict], scope: str) -> Dict[str
 async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str, db_pool, http_client) -> Dict[str, object]:
     """
     Process allowed scan: fetch facets, persist, anchor, audit.
-    TODO: if decision_packet represents escalated scan (policy_decision == "escalate"), DO NOT anchor. Call compliance /audit/escalate instead.
+    TODO: if policy_decision == "escalate", do NOT call process_allowed_scan;
+    instead call compliance /audit/escalate and wait for governance human approval.
+    /scan/commit currently assumes "allow".
     """
     scan_id = decision_packet["scan_id"]
     scanner_user_id = decision_packet["scanner_user_id"]
@@ -135,7 +138,7 @@ async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str,
             resolved_scope,
             policy_version,
             region_code,
-            str(shown_facets),
+            json.dumps(shown_facets),
         )
 
     tx_hashes = call_tx_builder(garment_id, shown_facets, resolved_scope)

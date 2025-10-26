@@ -75,12 +75,12 @@ def policy_agent(state: AgentState) -> AgentState:
     """
     PolicyAgent: determine policy decision and resolved_scope.
 
-    NEVER reveal full facet bodies, pricing lineage, or ownership chain from inside the agent.
-
-    If policy_decision == "escalate" OR requires_human_approval == True:
-    - STOP automation, queue /audit/escalate, and DO NOT call orchestrator anchoring.
-    - A human in governance_console will review.
-    - This prevents silent auto-leak of private data.
+    TODO: NEVER expose facet bodies, pricing history, or ownership lineage in agent messages.
+    TODO: If policy_decision == "escalate" OR requires_human_approval == True:
+    - STOP automation,
+    - queue /audit/escalate via compliance,
+    - DO NOT anchor to chain,
+    - wait for governance_console human approval.
     """
     logger.debug({
         "event": "policy_agent_started",
@@ -120,8 +120,8 @@ def compliance_agent(state: AgentState) -> AgentState:
     """
     ComplianceAgent: fetch facets, anchor, audit.
 
-    NEVER log or return facet bodies, pricing history, or ownership lineage.
-    If policy_decision == "escalate" or requires_human_approval == True:
+    TODO: NEVER log or return facet bodies, pricing history, or ownership lineage.
+    TODO: If policy_decision == "escalate" or requires_human_approval == True:
     - DO NOT call orchestrator anchoring automatically.
     - Human must approve in governance_console.
     """
