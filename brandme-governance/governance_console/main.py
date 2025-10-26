@@ -35,12 +35,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# v7 fix: enable CORS for local frontend
+# v7 fix: enable CORS with secure configuration
+from brandme_core.cors_config import get_cors_config
+cors_config = get_cors_config()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO tighten in prod
-    allow_methods=["*"],
-    allow_headers=["*"],
+    **cors_config
 )
 
 
