@@ -10,15 +10,15 @@ from contextlib import asynccontextmanager
 import os
 from typing import Optional
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import asyncpg
 import httpx
 
 # Import shared Brand.Me utilities (from brandme_core/)
 from brandme_core.logging import get_logger, ensure_request_id, redact_user_id, truncate_id
-from brandme_core.health import create_health_router, HealthChecker
 from brandme_core.metrics import get_metrics_collector
-from brandme_core.telemetry import setup_telemetry
+from brandme_core.cors_config import get_cors_config
 
 # Local imports
 from .api import cubes, faces
@@ -124,12 +124,10 @@ app = FastAPI(
 )
 
 # CORS middleware (cube is public-facing like brain, policy, knowledge, governance_console)
+cors_config = get_cors_config()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    **cors_config
 )
 
 # Request ID middleware (ensure X-Request-Id propagation)
@@ -142,15 +140,46 @@ async def request_id_middleware(request: Request, call_next):
     response.headers["X-Request-Id"] = request_id
     return response
 
-# Health checks
-health_checker = HealthChecker("cube")
-health_checker.add_check("database", lambda: db_pool is not None)
-health_checker.add_check("http_client", lambda: http_client is not None)
-app.include_router(create_health_router(health_checker))
-
 # API routes
 app.include_router(cubes.router, prefix="/cubes", tags=["cubes"])
 app.include_router(faces.router, prefix="/cubes", tags=["faces"])
+
+# Health check endpoints
+@app.get("/health")
+async def health():
+    """Health check endpoint with database verification"""
+    if db_pool is None:
+        return JSONResponse(
+            content={"status": "unhealthy", "service": "cube", "reason": "no_db_pool"},
+            status_code=503
+        )
+
+    # Try database connection
+    try:
+        async with db_pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return JSONResponse(content={"status": "ok", "service": "cube"})
+    except Exception as e:
+        logger.error({"event": "health_check_failed", "error": str(e)})
+        return JSONResponse(
+            content={"status": "degraded", "service": "cube", "database": "unhealthy"},
+            status_code=503
+        )
+
+@app.get("/health/live")
+async def liveness():
+    """Kubernetes liveness probe"""
+    return JSONResponse(content={"status": "alive"})
+
+@app.get("/health/ready")
+async def readiness():
+    """Kubernetes readiness probe"""
+    if db_pool is None or http_client is None:
+        return JSONResponse(
+            content={"status": "not_ready", "reason": "dependencies_not_initialized"},
+            status_code=503
+        )
+    return JSONResponse(content={"status": "ready"})
 
 # Metrics endpoint (Prometheus)
 @app.get("/metrics")
@@ -158,9 +187,6 @@ async def metrics_endpoint():
     """Prometheus metrics endpoint"""
     from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
-# Setup OpenTelemetry tracing
-setup_telemetry("cube", app)
 
 # Root endpoint
 @app.get("/")
