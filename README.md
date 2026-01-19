@@ -193,7 +193,6 @@ Brand-Me-Labs/
 ### Database Libraries
 - **Spanner**: `google-cloud-spanner` with PingingPool
 - **Firestore**: `google-cloud-firestore` with async client
-- **Legacy**: `asyncpg` (deprecated, kept for migration)
 
 ## Getting Started
 
@@ -218,7 +217,6 @@ docker-compose up -d
 # This starts:
 # - Spanner Emulator (ports 9010, 9020)
 # - Firestore Emulator (port 8080)
-# - PostgreSQL (port 5432, legacy)
 # - All 8 backend services
 
 # Wait for Spanner schema initialization
@@ -254,9 +252,6 @@ SPANNER_MAX_SESSIONS=100
 # Firestore Configuration
 FIRESTORE_EMULATOR_HOST=localhost:8080  # For local dev
 FIRESTORE_PROJECT_ID=brandme-dev
-
-# Legacy PostgreSQL (deprecated)
-DATABASE_URL=postgresql://brandme:brandme@postgres:5432/brandme
 ```
 
 ## Runtime Flow: Garment Scan (v8)

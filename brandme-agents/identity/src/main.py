@@ -12,7 +12,6 @@ from pydantic import BaseModel
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id
 from brandme_core.metrics import get_metrics_collector, generate_metrics
-from brandme_core.spanner import create_spanner_client, SpannerClient
 from brandme_core.spanner.consent_graph import ConsentGraphClient
 from brandme_core.spanner.pool import create_pool_manager, SpannerPoolManager
 from brandme_core.spanner.pii_redactor import PIIRedactingClient

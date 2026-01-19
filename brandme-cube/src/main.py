@@ -1,11 +1,11 @@
 """
-Brand.Me Cube Service
-Port 8007 - Product Cube storage and serving with Integrity Spine
+Brand.Me v8 — Global Integrity Spine
+Cube Service: Port 8007 - Product Cube storage and serving
 
 This service stores and serves Product Cube data (6 faces per garment).
 CRITICAL: Every face access is policy-gated. Never return face without policy check.
 
-v8: Migrated from PostgreSQL to Spanner
+v8: Uses Spanner for persistence, Firestore for real-time state
 """
 
 from contextlib import asynccontextmanager
@@ -21,6 +21,7 @@ from brandme_core.health import create_health_router, HealthChecker
 from brandme_core.metrics import get_metrics_collector
 from brandme_core.telemetry import setup_telemetry
 from brandme_core.spanner.pool import create_pool_manager
+from brandme_core.cors_config import get_cors_config
 
 # Local imports
 from .api import cubes, faces
@@ -121,18 +122,16 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(
     title="Brand.Me Cube Service",
-    description="Product Cube storage and serving with Integrity Spine (v6)",
-    version="1.0.0",
+    description="Product Cube storage and serving with Integrity Spine (v8)",
+    version="2.0.0",
     lifespan=lifespan
 )
 
-# CORS middleware (cube is public-facing like brain, policy, knowledge, governance_console)
+# CORS middleware - use centralized configuration
+cors_config = get_cors_config()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    **cors_config
 )
 
 # Request ID middleware (ensure X-Request-Id propagation)
