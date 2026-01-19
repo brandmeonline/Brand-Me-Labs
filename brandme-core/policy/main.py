@@ -1,21 +1,26 @@
-# Brand.Me v7 — Stable Integrity Spine
-# Implements: Request tracing, human escalation guardrails, safe facet previews.
+# Brand.Me v8 — Global Integrity Spine with Spanner + Firestore
+# Policy Service: Consent graph enforcement via Spanner
 # brandme-core/policy/main.py
 
 import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-import httpx
+from typing import Optional
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, truncate_id
-from brandme_core.db import safe_close_pool
+from brandme_core.metrics import get_metrics_collector, generate_metrics
+from brandme_core.spanner.pool import create_pool_manager, SpannerPoolManager
+from brandme_core.spanner.consent_graph import ConsentGraphClient
+from brandme_core.spanner.provenance import ProvenanceClient
 
 logger = get_logger("policy_service")
+metrics = get_metrics_collector("policy")
 
 REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
+BLOCKED_REGIONS = {"BLOCKED_REGION", "SANCTIONED_REGION"}
 
 
 class PolicyCheckRequest(BaseModel):
@@ -25,174 +30,207 @@ class PolicyCheckRequest(BaseModel):
     action: str
 
 
-async def fetch_owner_and_consent(scanner_user_id: str, garment_id: str, request_id: str, http_client) -> dict:
-    """
-    1. Resolve garment owner.
-    TODO: SELECT owner_user_id FROM garments WHERE garment_id=$1
-    TEMP: owner_user_id = "owner-stub-123"
-    2. GET http://identity:8005/identity/{owner_user_id}/profile with retry logic
-    Headers: {"X-Request-Id": request_id}
-    3. Return owner_user_id, owner_region_code, trust_score, friends_allowed, consent_version
-    # v6 fix: Ensures friends_allowed and trust_score defaults are returned
-    """
-    from brandme_core.http_client import http_get_with_retry
-    from brandme_core.env import get_service_url
-    
-    owner_user_id = "owner-stub-123"
-    identity_url = f"{get_service_url('identity')}/identity/{owner_user_id}/profile"
+class FaceCheckRequest(BaseModel):
+    viewer_id: str
+    owner_id: str
+    cube_id: str
+    face_name: str
 
-    # v7 fix: use retry logic for service-to-service calls
-    try:
-        response = await http_get_with_retry(
-            http_client,
-            identity_url,
-            headers={"X-Request-Id": request_id},
-            timeout=10.0,
-            max_retries=3,
-        )
-        profile = response.json()
-        # v6 fix: explicit defaults for friends_allowed and trust_score
-        return {
-            "owner_user_id": owner_user_id,
-            "owner_region_code": profile.get("region_code", "unknown"),
-            "trust_score": profile.get("trust_score", 0.5),
-            "friends_allowed": profile.get("friends_allowed", []),
-            "consent_version": profile.get("consent_version", "consent_v1_alpha"),
-        }
-    except Exception as e:
-        logger.error({"event": "identity_call_failed", "error": str(e), "request_id": request_id})
-        # v6 fix: fallback defaults if identity service fails
-        return {
-            "owner_user_id": owner_user_id,
-            "owner_region_code": "unknown",
-            "trust_score": 0.5,
-            "friends_allowed": [],
-            "consent_version": "consent_v1_alpha",
-        }
+
+class TransferCheckRequest(BaseModel):
+    from_owner_id: str
+    to_owner_id: str
+    cube_id: str
+    price: Optional[float] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.http_client = httpx.AsyncClient()
-    logger.info({"event": "policy_service_started"})
+    # Initialize Spanner pool manager
+    pool_manager = create_pool_manager()
+    await pool_manager.initialize()
+    app.state.spanner_pool = pool_manager
+
+    # Initialize consent graph client
+    app.state.consent_graph = ConsentGraphClient(pool_manager)
+
+    # Initialize provenance client
+    app.state.provenance = ProvenanceClient(pool_manager)
+
+    logger.info({
+        "event": "policy_service_started",
+        "database": "spanner",
+        "project": os.getenv('SPANNER_PROJECT_ID', 'brandme-project')
+    })
+
     yield
-    if app.state.http_client:
-        await app.state.http_client.aclose()
+
+    await pool_manager.close()
     logger.info({"event": "policy_service_stopped"})
 
 
 app = FastAPI(lifespan=lifespan)
 
-# v7 fix: enable CORS with secure configuration
+# CORS configuration
 from brandme_core.cors_config import get_cors_config
 cors_config = get_cors_config()
-app.add_middleware(
-    CORSMiddleware,
-    **cors_config
-)
+app.add_middleware(CORSMiddleware, **cors_config)
 
 
 @app.post("/policy/check")
 async def policy_check(payload: PolicyCheckRequest, request: Request):
     """
     Check policy: consent graph + region rules -> decision + resolved_scope + policy_version.
+
+    Uses Spanner consent graph for O(1) consent lookups.
     """
     response = JSONResponse(content={})
     request_id = ensure_request_id(request, response)
 
-    consent = await fetch_owner_and_consent(
-        payload.scanner_user_id,
-        payload.garment_id,
-        request_id,
-        app.state.http_client,
-    )
+    consent_graph: ConsentGraphClient = app.state.consent_graph
+    provenance: ProvenanceClient = app.state.provenance
 
-    owner_user_id = consent["owner_user_id"]
-    trust_score = consent["trust_score"]
-    friends_allowed = consent["friends_allowed"]
+    # Check region first (fast fail)
+    if payload.region_code in BLOCKED_REGIONS:
+        logger.info({
+            "event": "policy_decision_blocked_region",
+            "region": payload.region_code,
+            "request_id": request_id
+        })
 
-    if payload.scanner_user_id == owner_user_id:
-        resolved_scope = "private"
-    elif payload.scanner_user_id in friends_allowed:
-        resolved_scope = "friends_only"
-    else:
-        resolved_scope = "public"
+        metrics.increment_counter("policy_decisions", {"decision": "deny", "reason": "blocked_region"})
 
-    blocked_regions = {"BLOCKED_REGION"}
-    if payload.region_code in blocked_regions:
-        decision = "deny"
-    else:
-        if resolved_scope != "public" and trust_score < 0.75:
+        return JSONResponse(content={
+            "decision": "deny",
+            "resolved_scope": "blocked",
+            "policy_version": f"policy_v1_{payload.region_code}",
+            "reason": "region_blocked"
+        })
+
+    try:
+        # Get current owner from provenance
+        ownership = await provenance.get_current_owner(payload.garment_id)
+
+        if not ownership:
+            # Asset not found - allow public access only
+            logger.warning({
+                "event": "asset_not_found",
+                "garment_id": truncate_id(payload.garment_id),
+                "request_id": request_id
+            })
+
+            return JSONResponse(content={
+                "decision": "allow",
+                "resolved_scope": "public",
+                "policy_version": f"policy_v1_{payload.region_code}",
+                "reason": "asset_not_found_public_only"
+            })
+
+        owner_id = ownership.owner_id
+
+        # Check consent using Spanner graph
+        consent_decision = await consent_graph.check_consent(
+            viewer_id=payload.scanner_user_id,
+            owner_id=owner_id,
+            asset_id=payload.garment_id
+        )
+
+        # Determine decision
+        if consent_decision.allowed:
+            decision = "allow"
+        elif consent_decision.visibility == "private":
+            # Private data, not owner - escalate
             decision = "escalate"
         else:
-            decision = "allow"
+            # Not allowed by consent settings
+            decision = "escalate"
 
-    policy_version = f"policy_v1_{payload.region_code}"
+        resolved_scope = consent_decision.visibility
+        policy_version = f"policy_v1_{payload.region_code}_{consent_decision.policy_version or 'default'}"
 
-    resp_body = {
-        "decision": decision,
-        "resolved_scope": resolved_scope,
-        "policy_version": policy_version,
-    }
+        resp_body = {
+            "decision": decision,
+            "resolved_scope": resolved_scope,
+            "policy_version": policy_version,
+            "consent_scope": consent_decision.scope,
+            "reason": consent_decision.reason
+        }
 
-    json_resp = JSONResponse(content=resp_body)
-    request_id = ensure_request_id(request, json_resp)
+        metrics.increment_counter("policy_decisions", {
+            "decision": decision,
+            "scope": resolved_scope
+        })
 
-    logger.info({
-        "event": "policy_decision",
-        "scanner_user": redact_user_id(payload.scanner_user_id),
-        "garment_owner": redact_user_id(owner_user_id),
-        "garment_partial": truncate_id(payload.garment_id),
-        "region_code": payload.region_code,
-        "decision": decision,
-        "resolved_scope": resolved_scope,
-        "request_id": request_id,
-    })
+        logger.info({
+            "event": "policy_decision",
+            "scanner_user": redact_user_id(payload.scanner_user_id),
+            "garment_owner": redact_user_id(owner_id),
+            "garment_partial": truncate_id(payload.garment_id),
+            "region_code": payload.region_code,
+            "decision": decision,
+            "resolved_scope": resolved_scope,
+            "request_id": request_id,
+        })
 
-    return json_resp
+        return JSONResponse(content=resp_body)
+
+    except Exception as e:
+        logger.error({
+            "event": "policy_check_failed",
+            "error": str(e),
+            "request_id": request_id
+        })
+
+        # Fail safe - escalate on error
+        metrics.increment_counter("policy_decisions", {"decision": "escalate", "reason": "error"})
+
+        return JSONResponse(content={
+            "decision": "escalate",
+            "resolved_scope": "unknown",
+            "policy_version": f"policy_v1_{payload.region_code}",
+            "reason": "policy_check_error"
+        })
 
 
 @app.post("/policy/canViewFace")
-async def can_view_face(payload: dict, request: Request):
+async def can_view_face(payload: FaceCheckRequest, request: Request):
     """
     Check if viewer can access a specific cube face.
-    Used by cube-service for per-face policy decisions.
 
-    Payload:
-        viewer_id: str - User requesting access
-        owner_id: str - Cube owner
-        cube_id: str - Cube identifier
-        face_name: str - Face being requested
-
-    Returns:
-        {"decision": "allow" | "escalate" | "deny"}
+    Uses Spanner consent graph for O(1) lookups with face-level granularity.
     """
     response = JSONResponse(content={})
     request_id = ensure_request_id(request, response)
 
-    viewer_id = payload.get("viewer_id")
-    owner_id = payload.get("owner_id")
-    cube_id = payload.get("cube_id")
-    face_name = payload.get("face_name")
+    consent_graph: ConsentGraphClient = app.state.consent_graph
+
+    viewer_id = payload.viewer_id
+    owner_id = payload.owner_id
+    cube_id = payload.cube_id
+    face_name = payload.face_name
 
     # Same owner always gets full access
     if viewer_id == owner_id:
-        decision = "allow"
-        resolved_scope = "private"
-    else:
-        # Fetch owner consent settings
-        consent = await fetch_owner_and_consent(
-            viewer_id,
-            cube_id,
-            request_id,
-            app.state.http_client
+        metrics.increment_counter("face_policy_decisions", {
+            "decision": "allow",
+            "face": face_name,
+            "reason": "owner"
+        })
+
+        return JSONResponse(content={
+            "decision": "allow",
+            "resolved_scope": "private",
+            "reason": "viewer_is_owner"
+        })
+
+    try:
+        # Check consent via Spanner graph
+        consent_decision = await consent_graph.check_consent(
+            viewer_id=viewer_id,
+            owner_id=owner_id,
+            asset_id=cube_id,
+            facet_type=face_name
         )
-
-        trust_score = consent["trust_score"]
-        friends_allowed = consent["friends_allowed"]
-
-        # Check if viewer is in friends list
-        is_friend = viewer_id in friends_allowed
 
         # Face-specific rules
         public_faces = {"product_details", "provenance", "social_layer", "esg_impact"}
@@ -200,96 +238,346 @@ async def can_view_face(payload: dict, request: Request):
         authenticated_faces = {"lifecycle"}
 
         if face_name in public_faces:
+            # Public faces always allowed
             decision = "allow"
             resolved_scope = "public"
+            reason = "public_face"
+
         elif face_name in private_faces:
-            # Ownership face requires escalation for non-owners
-            if is_friend and trust_score >= 0.75:
+            # Private faces require owner consent or friendship
+            if consent_decision.allowed and consent_decision.visibility in ("friends_only", "custom"):
                 decision = "allow"
-                resolved_scope = "friends_only"
+                resolved_scope = consent_decision.visibility
+                reason = "consent_granted"
             else:
                 decision = "escalate"
                 resolved_scope = "private"
+                reason = "private_face_escalate"
+
         elif face_name in authenticated_faces:
-            # Lifecycle requires authentication
+            # Authenticated faces require authentication
             if viewer_id == "anonymous":
                 decision = "deny"
                 resolved_scope = "public"
-            elif is_friend:
+                reason = "anonymous_denied"
+            elif consent_decision.allowed:
                 decision = "allow"
-                resolved_scope = "friends_only"
+                resolved_scope = consent_decision.visibility
+                reason = "authenticated_access"
             else:
                 decision = "escalate"
                 resolved_scope = "authenticated"
+                reason = "authenticated_escalate"
+
         else:
-            # Unknown face, escalate
+            # Unknown face - escalate for safety
             decision = "escalate"
             resolved_scope = "unknown"
+            reason = "unknown_face"
 
-    logger.info({
-        "event": "face_policy_decision",
-        "viewer": redact_user_id(viewer_id),
-        "owner": redact_user_id(owner_id),
-        "cube_partial": truncate_id(cube_id),
-        "face": face_name,
-        "decision": decision,
-        "request_id": request_id,
-    })
+        metrics.increment_counter("face_policy_decisions", {
+            "decision": decision,
+            "face": face_name,
+            "reason": reason
+        })
 
-    resp = JSONResponse(content={"decision": decision, "resolved_scope": resolved_scope})
-    ensure_request_id(request, resp)
-    return resp
+        logger.info({
+            "event": "face_policy_decision",
+            "viewer": redact_user_id(viewer_id),
+            "owner": redact_user_id(owner_id),
+            "cube_partial": truncate_id(cube_id),
+            "face": face_name,
+            "decision": decision,
+            "resolved_scope": resolved_scope,
+            "reason": reason,
+            "request_id": request_id,
+        })
+
+        return JSONResponse(content={
+            "decision": decision,
+            "resolved_scope": resolved_scope,
+            "reason": reason
+        })
+
+    except Exception as e:
+        logger.error({
+            "event": "face_policy_check_failed",
+            "error": str(e),
+            "request_id": request_id
+        })
+
+        # Fail safe - escalate on error
+        metrics.increment_counter("face_policy_decisions", {
+            "decision": "escalate",
+            "face": face_name,
+            "reason": "error"
+        })
+
+        return JSONResponse(content={
+            "decision": "escalate",
+            "resolved_scope": "unknown",
+            "reason": "policy_check_error"
+        })
 
 
 @app.post("/policy/canTransferOwnership")
-async def can_transfer_ownership(payload: dict, request: Request):
+async def can_transfer_ownership(payload: TransferCheckRequest, request: Request):
     """
     Check if ownership transfer is allowed.
-    Used by cube-service for ownership transfer operations.
 
-    Payload:
-        from_owner_id: str - Current owner
-        to_owner_id: str - Prospective new owner
-        cube_id: str - Cube identifier
-        price: float - Transfer price (optional)
-
-    Returns:
-        {"decision": "allow" | "escalate" | "deny"}
+    Validates:
+    - High-value transfers require human approval
+    - Sender must be current owner
+    - Receiver must be valid user
     """
     response = JSONResponse(content={})
     request_id = ensure_request_id(request, response)
 
-    from_owner_id = payload.get("from_owner_id")
-    to_owner_id = payload.get("to_owner_id")
-    cube_id = payload.get("cube_id")
-    price = payload.get("price")
+    provenance: ProvenanceClient = app.state.provenance
+    pool: SpannerPoolManager = app.state.spanner_pool
 
-    # High-value transfers require human approval
-    if price and price > 10000:
-        decision = "escalate"
-        reason = "high_value_transaction"
-    else:
-        # Allow standard transfers
-        decision = "allow"
-        reason = "standard_transfer"
+    from_owner_id = payload.from_owner_id
+    to_owner_id = payload.to_owner_id
+    cube_id = payload.cube_id
+    price = payload.price
 
-    logger.info({
-        "event": "ownership_transfer_policy",
-        "from_owner": redact_user_id(from_owner_id),
-        "to_owner": redact_user_id(to_owner_id),
-        "cube_partial": truncate_id(cube_id),
-        "price": price,
-        "decision": decision,
-        "reason": reason,
-        "request_id": request_id,
-    })
+    try:
+        # Verify current ownership
+        ownership = await provenance.get_current_owner(cube_id)
 
-    resp = JSONResponse(content={"decision": decision, "reason": reason})
-    ensure_request_id(request, resp)
-    return resp
+        if not ownership:
+            logger.warning({
+                "event": "transfer_asset_not_found",
+                "cube_id": truncate_id(cube_id),
+                "request_id": request_id
+            })
+
+            metrics.increment_counter("transfer_policy_decisions", {
+                "decision": "deny",
+                "reason": "asset_not_found"
+            })
+
+            return JSONResponse(content={
+                "decision": "deny",
+                "reason": "asset_not_found"
+            })
+
+        if ownership.owner_id != from_owner_id:
+            logger.warning({
+                "event": "transfer_not_owner",
+                "claimed_owner": redact_user_id(from_owner_id),
+                "actual_owner": redact_user_id(ownership.owner_id),
+                "request_id": request_id
+            })
+
+            metrics.increment_counter("transfer_policy_decisions", {
+                "decision": "deny",
+                "reason": "not_owner"
+            })
+
+            return JSONResponse(content={
+                "decision": "deny",
+                "reason": "sender_not_owner"
+            })
+
+        # Verify receiver exists
+        from google.cloud.spanner_v1 import param_types
+
+        async with pool.session() as snapshot:
+            result = snapshot.execute_sql(
+                "SELECT user_id FROM Users WHERE user_id = @user_id",
+                params={'user_id': to_owner_id},
+                param_types={'user_id': param_types.STRING}
+            )
+            receiver_exists = len(list(result)) > 0
+
+        if not receiver_exists:
+            metrics.increment_counter("transfer_policy_decisions", {
+                "decision": "deny",
+                "reason": "invalid_receiver"
+            })
+
+            return JSONResponse(content={
+                "decision": "deny",
+                "reason": "receiver_not_found"
+            })
+
+        # High-value transfers require human approval
+        HIGH_VALUE_THRESHOLD = 10000.0
+
+        if price and price > HIGH_VALUE_THRESHOLD:
+            decision = "escalate"
+            reason = "high_value_transaction"
+        else:
+            decision = "allow"
+            reason = "standard_transfer"
+
+        metrics.increment_counter("transfer_policy_decisions", {
+            "decision": decision,
+            "reason": reason
+        })
+
+        logger.info({
+            "event": "ownership_transfer_policy",
+            "from_owner": redact_user_id(from_owner_id),
+            "to_owner": redact_user_id(to_owner_id),
+            "cube_partial": truncate_id(cube_id),
+            "price": price,
+            "decision": decision,
+            "reason": reason,
+            "request_id": request_id,
+        })
+
+        return JSONResponse(content={
+            "decision": decision,
+            "reason": reason
+        })
+
+    except Exception as e:
+        logger.error({
+            "event": "transfer_policy_check_failed",
+            "error": str(e),
+            "request_id": request_id
+        })
+
+        metrics.increment_counter("transfer_policy_decisions", {
+            "decision": "escalate",
+            "reason": "error"
+        })
+
+        return JSONResponse(content={
+            "decision": "escalate",
+            "reason": "policy_check_error"
+        })
+
+
+@app.get("/policy/provenance/{asset_id}")
+async def get_provenance(asset_id: str, request: Request):
+    """
+    Get full provenance chain for an asset.
+
+    O(n) where n = number of transfers.
+    """
+    response = JSONResponse(content={})
+    request_id = ensure_request_id(request, response)
+
+    provenance: ProvenanceClient = app.state.provenance
+
+    try:
+        prov = await provenance.get_full_provenance(asset_id)
+
+        if not prov:
+            return JSONResponse(
+                content={"error": "asset_not_found"},
+                status_code=404
+            )
+
+        # Convert to JSON-serializable format
+        chain = []
+        for entry in prov.chain:
+            chain.append({
+                "sequence": entry.sequence_num,
+                "from_user_id": entry.from_user_id,
+                "to_user_id": entry.to_user_id,
+                "transfer_type": entry.transfer_type,
+                "price": entry.price,
+                "currency": entry.currency,
+                "blockchain_tx_hash": entry.blockchain_tx_hash,
+                "transfer_at": entry.transfer_at.isoformat() if entry.transfer_at else None
+            })
+
+        return JSONResponse(content={
+            "asset_id": prov.asset_id,
+            "creator_id": prov.creator_id,
+            "creator_name": prov.creator_name,
+            "current_owner_id": prov.current_owner_id,
+            "current_owner_name": prov.current_owner_name,
+            "created_at": prov.created_at.isoformat() if prov.created_at else None,
+            "transfer_count": prov.transfer_count,
+            "chain": chain
+        })
+
+    except Exception as e:
+        logger.error({
+            "event": "get_provenance_failed",
+            "asset_id": truncate_id(asset_id),
+            "error": str(e),
+            "request_id": request_id
+        })
+        return JSONResponse(
+            content={"error": "failed_to_retrieve_provenance"},
+            status_code=500
+        )
+
+
+@app.get("/policy/provenance/{asset_id}/verify")
+async def verify_provenance(asset_id: str, request: Request):
+    """
+    Verify the integrity of an asset's provenance chain.
+    """
+    response = JSONResponse(content={})
+    request_id = ensure_request_id(request, response)
+
+    provenance: ProvenanceClient = app.state.provenance
+
+    try:
+        result = await provenance.verify_provenance_chain(asset_id)
+        return JSONResponse(content=result)
+
+    except Exception as e:
+        logger.error({
+            "event": "verify_provenance_failed",
+            "asset_id": truncate_id(asset_id),
+            "error": str(e),
+            "request_id": request_id
+        })
+        return JSONResponse(
+            content={"error": "verification_failed"},
+            status_code=500
+        )
 
 
 @app.get("/health")
 async def health():
-    """Health check endpoint."""
-    return JSONResponse(content={"status": "ok", "service": "policy"})
+    """Health check endpoint that verifies Spanner connectivity."""
+    pool: SpannerPoolManager = app.state.spanner_pool
+
+    try:
+        is_healthy = await pool.refresh_health()
+        stats = await pool.get_stats()
+
+        if is_healthy:
+            return JSONResponse(content={
+                "status": "ok",
+                "service": "policy",
+                "database": "spanner",
+                "pool_utilization": stats.utilization
+            })
+        else:
+            return JSONResponse(
+                content={
+                    "status": "degraded",
+                    "service": "policy",
+                    "database": "unhealthy"
+                },
+                status_code=503
+            )
+    except Exception as e:
+        logger.error({"event": "health_check_failed", "error": str(e)})
+        return JSONResponse(
+            content={
+                "status": "error",
+                "service": "policy",
+                "message": str(e)
+            },
+            status_code=503
+        )
+
+
+@app.get("/metrics")
+async def metrics_endpoint():
+    """Prometheus metrics endpoint."""
+    return Response(
+        content=generate_metrics(),
+        media_type="text/plain; version=0.0.4"
+    )

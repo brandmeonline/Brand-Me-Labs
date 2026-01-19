@@ -1,9 +1,14 @@
-# Brand.Me v7 — Stable Integrity Spine
+# Brand.Me v8 — Global Integrity Spine with Spanner + Firestore
 # Docker Compose for local development and testing
 
 version: "3.9"
 
 services:
+  # ===========================================
+  # DATABASE SERVICES
+  # ===========================================
+
+  # PostgreSQL (legacy, kept for backward compatibility)
   postgres:
     image: postgres:16
     container_name: brandme-postgres
@@ -23,16 +28,108 @@ services:
     networks:
       - brandme_net
 
+  # Google Cloud Spanner Emulator
+  spanner-emulator:
+    image: gcr.io/cloud-spanner-emulator/emulator:latest
+    container_name: brandme-spanner-emulator
+    ports:
+      - "9010:9010"  # gRPC
+      - "9020:9020"  # REST
+    networks:
+      - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9020/v1/projects/test-project/instances"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Spanner Schema Initialization
+  spanner-init:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
+    container_name: brandme-spanner-init
+    depends_on:
+      spanner-emulator:
+        condition: service_healthy
+    environment:
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+    volumes:
+      - ./brandme-data/spanner:/schemas
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        echo "Configuring gcloud for emulator..."
+        gcloud config configurations create emulator 2>/dev/null || true
+        gcloud config set auth/disable_credentials true
+        gcloud config set project test-project
+        gcloud config set api_endpoint_overrides/spanner http://spanner-emulator:9020/
+
+        echo "Creating Spanner instance..."
+        gcloud spanner instances create brandme-instance \
+          --config=emulator-config \
+          --description="BrandMe Dev Instance" \
+          --nodes=1 2>/dev/null || echo "Instance already exists"
+
+        echo "Creating Spanner database..."
+        gcloud spanner databases create brandme-db \
+          --instance=brandme-instance 2>/dev/null || echo "Database already exists"
+
+        echo "Applying schema..."
+        gcloud spanner databases ddl update brandme-db \
+          --instance=brandme-instance \
+          --ddl-file=/schemas/schema.sql || echo "Schema already applied"
+
+        echo "Spanner initialization complete!"
+    networks:
+      - brandme_net
+
+  # Google Cloud Firestore Emulator
+  firestore-emulator:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:emulators
+    container_name: brandme-firestore-emulator
+    command: gcloud emulators firestore start --host-port=0.0.0.0:8080
+    ports:
+      - "8080:8080"
+    environment:
+      FIRESTORE_PROJECT_ID: brandme-dev
+    networks:
+      - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ===========================================
+  # CORE SERVICES
+  # ===========================================
+
   brain:
     build:
       context: .
       dockerfile: brandme-core/brain/Dockerfile
     container_name: brandme-brain
     environment:
+      # Legacy PostgreSQL
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      # Spanner
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      # Firestore
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
+      # General
       REGION_DEFAULT: us-east1
     depends_on:
       postgres:
+        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
         condition: service_healthy
       policy:
         condition: service_started
@@ -50,9 +147,18 @@ services:
     container_name: brandme-policy
     environment:
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
       REGION_DEFAULT: us-east1
+      IDENTITY_URL: http://identity:8005
     depends_on:
-      postgres:
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
         condition: service_healthy
       identity:
         condition: service_started
@@ -60,6 +166,12 @@ services:
       - "8001:8001"
     networks:
       - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
 
   orchestrator:
     build:
@@ -68,10 +180,16 @@ services:
     container_name: brandme-orchestrator
     environment:
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
-        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
       knowledge:
         condition: service_started
       compliance:
@@ -80,6 +198,16 @@ services:
       - "8002:8002"
     networks:
       - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # AGENT SERVICES
+  # ===========================================
 
   knowledge:
     build:
@@ -88,6 +216,10 @@ services:
     container_name: brandme-knowledge
     environment:
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
       REGION_DEFAULT: us-east1
     depends_on:
       postgres:
@@ -104,6 +236,10 @@ services:
     container_name: brandme-compliance
     environment:
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
       REGION_DEFAULT: us-east1
     depends_on:
       postgres:
@@ -120,14 +256,28 @@ services:
     container_name: brandme-identity
     environment:
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
         condition: service_healthy
     ports:
       - "8005:8005"
     networks:
       - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
 
   governance_console:
     build:
@@ -136,6 +286,10 @@ services:
     container_name: brandme-governance
     environment:
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
       REGION_DEFAULT: us-east1
     depends_on:
       postgres:
@@ -152,6 +306,10 @@ services:
       timeout: 5s
       retries: 30
 
+  # ===========================================
+  # CUBE SERVICE (Product Cube with Firestore)
+  # ===========================================
+
   cube:
     build:
       context: .
@@ -159,6 +317,12 @@ services:
     container_name: brandme-cube
     environment:
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
       REGION_DEFAULT: us-east1
       POLICY_URL: http://policy:8001
       ORCHESTRATOR_URL: http://orchestrator:8002
@@ -166,7 +330,9 @@ services:
       IDENTITY_URL: http://identity:8005
       KNOWLEDGE_URL: http://knowledge:8003
     depends_on:
-      postgres:
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
         condition: service_healthy
       policy:
         condition: service_started
