@@ -11,10 +11,12 @@ import os
 from typing import Optional
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 
 from brandme_core.logging import get_logger, ensure_request_id
+from brandme_core.cors_config import get_cors_config
 from brandme_core.spanner.pool import create_pool_manager
 from brandme_core.metrics import get_metrics_collector, generate_metrics
 from google.cloud.spanner_v1 import param_types
@@ -67,6 +69,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# CORS configuration - centralized
+cors_config = get_cors_config()
+app.add_middleware(
+    CORSMiddleware,
+    **cors_config
+)
 
 
 @app.post("/audit/log")
