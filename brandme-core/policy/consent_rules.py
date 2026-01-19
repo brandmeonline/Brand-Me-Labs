@@ -1,8 +1,27 @@
 """
 Copyright (c) Brand.Me, Inc. All rights reserved.
 
-Consent Rules Module
-====================
+Consent Rules Module (DEPRECATED)
+=================================
+
+.. deprecated:: v8
+    This module is deprecated and will be removed in a future version.
+    Use :mod:`brandme_core.spanner.consent_graph` instead, which provides:
+
+    - O(1) consent lookups via Spanner Graph
+    - Global revocation in single operation
+    - Friendship graph traversal
+    - Driver-level PII redaction
+
+    Example migration::
+
+        # Old (deprecated):
+        from brandme_core.policy.consent_rules import get_scope, are_friends
+
+        # New (v8):
+        from brandme_core.spanner.consent_graph import ConsentGraphClient
+        consent_graph = ConsentGraphClient(spanner_pool)
+        decision = await consent_graph.check_consent(viewer_id, owner_id, asset_id)
 
 Determines what data can be shown based on consent and relationship between
 scanner and garment owner.
@@ -14,11 +33,16 @@ Scope levels:
 """
 
 import os
+import warnings
 from typing import Literal, Optional
 
-# For MVP, we use a simple stub implementation
-# TODO: Replace with database-backed consent policies from PostgreSQL
-# TODO: Integrate with knowledge graph to determine user relationships
+# DEPRECATED: This module uses stub implementations
+# Replaced by brandme_core.spanner.consent_graph in v8
+warnings.warn(
+    "consent_rules module is deprecated. Use brandme_core.spanner.consent_graph instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 
 ScopeLevel = Literal["public", "friends_only", "private"]

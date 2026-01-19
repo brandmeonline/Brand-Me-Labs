@@ -1,12 +1,28 @@
 # Brand.Me v7 — Stable Integrity Spine
 # Database utilities using DATABASE_URL environment variable
 # brandme_core/db.py
+#
+# DEPRECATED in v8: This module uses asyncpg for PostgreSQL connections.
+# For new code, use the Spanner client library instead:
+#
+#   from brandme_core.spanner.pool import create_pool_manager
+#   pool = create_pool_manager(project_id, instance_id, database_id)
+#   await pool.initialize()
+#
+# See brandme_core/spanner/ for the v8 database layer.
 
 import os
 import asyncio
+import warnings
 from typing import Optional
 import asyncpg
 from .logging import get_logger
+
+warnings.warn(
+    "brandme_core.db is deprecated. Use brandme_core.spanner.pool for Spanner connections.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 logger = get_logger("db_utils")
 
