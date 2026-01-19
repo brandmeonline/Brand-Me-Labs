@@ -8,26 +8,6 @@ services:
   # DATABASE SERVICES
   # ===========================================
 
-  # PostgreSQL (legacy, kept for backward compatibility)
-  postgres:
-    image: postgres:16
-    container_name: brandme-postgres
-    environment:
-      POSTGRES_USER: brandme
-      POSTGRES_PASSWORD: brandme
-      POSTGRES_DB: brandme
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U brandme"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - brandme_net
-
   # Google Cloud Spanner Emulator
   spanner-emulator:
     image: gcr.io/cloud-spanner-emulator/emulator:latest
@@ -112,21 +92,17 @@ services:
       dockerfile: brandme-core/brain/Dockerfile
     container_name: brandme-brain
     environment:
-      # Legacy PostgreSQL
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
-      # Spanner
+      # Spanner (v8 primary database)
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
       SPANNER_DATABASE_ID: brandme-db
-      # Firestore
+      # Firestore (real-time state)
       FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
       FIRESTORE_PROJECT_ID: brandme-dev
       # General
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
-        condition: service_healthy
       spanner-init:
         condition: service_completed_successfully
       firestore-emulator:
@@ -146,7 +122,6 @@ services:
       dockerfile: brandme-core/policy/Dockerfile
     container_name: brandme-policy
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
@@ -179,7 +154,6 @@ services:
       dockerfile: brandme-core/orchestrator/Dockerfile
     container_name: brandme-orchestrator
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
@@ -215,15 +189,14 @@ services:
       dockerfile: brandme-agents/knowledge/Dockerfile
     container_name: brandme-knowledge
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
       SPANNER_DATABASE_ID: brandme-db
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
-        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
     ports:
       - "8003:8003"
     networks:
@@ -235,15 +208,14 @@ services:
       dockerfile: brandme-agents/compliance/Dockerfile
     container_name: brandme-compliance
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
       SPANNER_DATABASE_ID: brandme-db
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
-        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
     ports:
       - "8004:8004"
     networks:
@@ -255,7 +227,6 @@ services:
       dockerfile: brandme-agents/identity/Dockerfile
     container_name: brandme-identity
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
@@ -285,15 +256,14 @@ services:
       dockerfile: brandme-governance/governance_console/Dockerfile
     container_name: brandme-governance
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
       SPANNER_DATABASE_ID: brandme-db
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
-        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
       compliance:
         condition: service_started
     ports:
@@ -316,7 +286,6 @@ services:
       dockerfile: brandme-cube/Dockerfile
     container_name: brandme-cube
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
@@ -352,9 +321,6 @@ services:
       timeout: 3s
       retries: 3
       start_period: 40s
-
-volumes:
-  pgdata:
 
 networks:
   brandme_net:
