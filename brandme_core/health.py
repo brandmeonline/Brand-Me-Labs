@@ -4,12 +4,13 @@ Health Check Utilities
 ======================
 
 Standardized health check endpoints for all Brand.Me services.
+v8: Updated to support Spanner instead of PostgreSQL.
 
 Features:
 - Liveness probes (is service running?)
 - Readiness probes (can service accept traffic?)
 - Startup probes (has service fully initialized?)
-- Dependency health checks (database, redis, NATS)
+- Dependency health checks (Spanner, redis, NATS)
 """
 
 import asyncio
@@ -17,7 +18,6 @@ from typing import Dict, Any, Optional, List, Callable
 from datetime import datetime, timezone
 from enum import Enum
 
-import asyncpg
 import redis.asyncio as aioredis
 from nats.aio.client import Client as NATS
 from fastapi import FastAPI, Response, status
@@ -38,13 +38,13 @@ class HealthCheck:
         self.service_name = service_name
         self.start_time = datetime.now(timezone.utc)
         self.custom_checks: List[Callable] = []
-        self.db_pool: Optional[asyncpg.Pool] = None
+        self.spanner_pool = None  # v8: Spanner pool instead of asyncpg
         self.redis_client: Optional[aioredis.Redis] = None
         self.nats_client: Optional[NATS] = None
 
-    def register_db_pool(self, pool: asyncpg.Pool):
-        """Register database connection pool."""
-        self.db_pool = pool
+    def register_spanner_pool(self, pool):
+        """Register Spanner connection pool (v8)."""
+        self.spanner_pool = pool
 
     def register_redis_client(self, client: aioredis.Redis):
         """Register Redis client."""
@@ -59,19 +59,24 @@ class HealthCheck:
         self.custom_checks.append(check_func)
 
     async def check_database(self) -> Dict[str, Any]:
-        """Check database connectivity."""
-        if not self.db_pool:
+        """Check Spanner database connectivity (v8)."""
+        if not self.spanner_pool:
             return {"status": "not_configured", "healthy": True}
 
         try:
-            async with self.db_pool.acquire() as conn:
-                result = await conn.fetchval("SELECT 1")
-                if result == 1:
+            def _health_check(transaction):
+                results = transaction.execute_sql("SELECT 1")
+                for row in results:
+                    return True
+                return False
+
+            if self.spanner_pool.database:
+                is_healthy = self.spanner_pool.database.run_in_transaction(_health_check)
+                if is_healthy:
                     return {
                         "status": "healthy",
                         "healthy": True,
-                        "pool_size": self.db_pool.get_size(),
-                        "idle_connections": self.db_pool.get_idle_size(),
+                        "database": "spanner",
                     }
         except Exception as e:
             return {

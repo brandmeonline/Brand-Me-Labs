@@ -1,28 +1,65 @@
 # Copyright (c) Brand.Me, Inc. All rights reserved.
 #
-# Brand.Me - Development Docker Compose
-# ======================================
+# Brand.Me v8 - Development Docker Compose
+# ========================================
+# Uses Spanner + Firestore emulators (PostgreSQL removed in v8)
 
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: brandme-postgres
-    environment:
-      POSTGRES_DB: brandme_dev
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+  # Google Cloud Spanner Emulator (v8 primary database)
+  spanner-emulator:
+    image: gcr.io/cloud-spanner-emulator/emulator:latest
+    container_name: brandme-spanner-emulator
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "9010:9010"  # gRPC
+      - "9020:9020"  # REST
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD", "curl", "-f", "http://localhost:9020/v1/projects/test-project/instances"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
+
+  # Spanner Schema Initialization
+  spanner-init:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
+    container_name: brandme-spanner-init
+    depends_on:
+      spanner-emulator:
+        condition: service_healthy
+    environment:
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+    volumes:
+      - ./brandme-data/spanner:/schemas
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        gcloud config configurations create emulator 2>/dev/null || true
+        gcloud config set auth/disable_credentials true
+        gcloud config set project test-project
+        gcloud config set api_endpoint_overrides/spanner http://spanner-emulator:9020/
+        gcloud spanner instances create brandme-instance --config=emulator-config --description="BrandMe Dev Instance" --nodes=1 2>/dev/null || true
+        gcloud spanner databases create brandme-db --instance=brandme-instance 2>/dev/null || true
+        gcloud spanner databases ddl update brandme-db --instance=brandme-instance --ddl-file=/schemas/schema.sql || true
+        echo "Spanner initialization complete!"
+
+  # Google Cloud Firestore Emulator (real-time state)
+  firestore-emulator:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:emulators
+    container_name: brandme-firestore-emulator
+    command: gcloud emulators firestore start --host-port=0.0.0.0:8080
+    ports:
+      - "8080:8080"
+    environment:
+      FIRESTORE_PROJECT_ID: brandme-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   # NATS JetStream
   nats:
@@ -75,11 +112,17 @@ services:
   #   ports:
   #     - "8000:8000"
   #   environment:
-  #     - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/brandme_dev
+  #     - SPANNER_EMULATOR_HOST=spanner-emulator:9010
+  #     - SPANNER_PROJECT_ID=test-project
+  #     - SPANNER_INSTANCE_ID=brandme-instance
+  #     - SPANNER_DATABASE_ID=brandme-db
+  #     - FIRESTORE_EMULATOR_HOST=firestore-emulator:8080
+  #     - FIRESTORE_PROJECT_ID=brandme-dev
   #     - NATS_URL=nats://nats:4222
   #     - REGION_DEFAULT=us-east1
   #   depends_on:
-  #     - postgres
+  #     - spanner-init
+  #     - firestore-emulator
   #     - nats
   #   volumes:
   #     - ./brandme-core/src:/app/src
@@ -95,10 +138,13 @@ services:
   #   ports:
   #     - "8001:8001"
   #   environment:
-  #     - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/brandme_dev
+  #     - SPANNER_EMULATOR_HOST=spanner-emulator:9010
+  #     - SPANNER_PROJECT_ID=test-project
+  #     - SPANNER_INSTANCE_ID=brandme-instance
+  #     - SPANNER_DATABASE_ID=brandme-db
   #     - NATS_URL=nats://nats:4222
   #   depends_on:
-  #     - postgres
+  #     - spanner-init
   #   volumes:
   #     - ./brandme-agents/src:/app/src
   #   restart: unless-stopped
@@ -138,5 +184,4 @@ services:
   #   restart: unless-stopped
 
 volumes:
-  postgres_data:
   nats_data:

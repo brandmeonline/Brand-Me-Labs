@@ -1,6 +1,8 @@
-# Brand.Me v7 — Stable Integrity Spine
+# Brand.Me v8 — Global Integrity Spine
 # Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-core/brain/main.py
+#
+# v8: Migrated from PostgreSQL to Spanner
 
 import datetime as dt
 import uuid
@@ -13,13 +15,17 @@ from contextlib import asynccontextmanager
 import httpx
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, truncate_id
-from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
+from brandme_core.spanner.pool import create_pool_manager
 from brandme_core.metrics import get_metrics_collector, generate_metrics
+from google.cloud.spanner_v1 import param_types
 from fastapi.responses import Response
 
 logger = get_logger("brain_service")
 
 REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
+SPANNER_PROJECT = os.getenv("SPANNER_PROJECT_ID", "test-project")
+SPANNER_INSTANCE = os.getenv("SPANNER_INSTANCE_ID", "brandme-instance")
+SPANNER_DATABASE = os.getenv("SPANNER_DATABASE_ID", "brandme-db")
 
 
 class IntentResolveRequest(BaseModel):
@@ -40,11 +46,13 @@ class IntentResolveResponse(BaseModel):
     escalated: bool
 
 
-async def lookup_garment_id(pool, garment_tag: str) -> str:
+def lookup_garment_id(spanner_pool, garment_tag: str) -> str:
     """
-    TEMP: return str(uuid.uuid4())
-    TODO: SELECT garment_id FROM garments WHERE nfc_tag=$1 OR rfid_tag=$1
+    Look up garment_id from NFC/RFID tag.
+    v8: Uses Spanner Assets table.
+    TODO: Implement actual tag lookup from Assets table.
     """
+    # Stub implementation - in production would query Assets table
     return str(uuid.uuid4())
 
 
@@ -144,11 +152,16 @@ async def call_compliance_escalate(scan_id: str, region_code: str, request_id: s
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await create_pool_from_env(min_size=5, max_size=20)
+    app.state.spanner_pool = create_pool_manager(
+        project_id=SPANNER_PROJECT,
+        instance_id=SPANNER_INSTANCE,
+        database_id=SPANNER_DATABASE
+    )
+    await app.state.spanner_pool.initialize()
     app.state.http_client = httpx.AsyncClient()
-    logger.info({"event": "brain_service_started"})
+    logger.info({"event": "brain_service_started", "database": "spanner"})
     yield
-    await safe_close_pool(app.state.db_pool)
+    await app.state.spanner_pool.close()
     await app.state.http_client.aclose()
     logger.info({"event": "brain_service_stopped"})
 
@@ -175,7 +188,7 @@ async def intent_resolve(body: IntentResolveRequest, request: Request):
     response = JSONResponse(content={})
     request_id = ensure_request_id(request, response)
 
-    garment_id = await lookup_garment_id(app.state.db_pool, body.garment_tag)
+    garment_id = lookup_garment_id(app.state.spanner_pool, body.garment_tag)
 
     policy_result = await call_policy_gate(
         body.scanner_user_id,
@@ -253,15 +266,26 @@ async def intent_resolve(body: IntentResolveRequest, request: Request):
 
 @app.get("/health")
 async def health():
-    """Health check with database connectivity verification."""
-    if app.state.db_pool:
-        is_healthy = await health_check(app.state.db_pool)
-        metrics.update_health("database", is_healthy)
-        if is_healthy:
-            return JSONResponse(content={"status": "ok", "service": "brain"})
-        else:
-            return JSONResponse(content={"status": "degraded", "service": "brain", "database": "unhealthy"}, status_code=503)
-    return JSONResponse(content={"status": "error", "service": "brain", "message": "no_db_pool"}, status_code=503)
+    """Health check with Spanner connectivity verification."""
+    try:
+        if app.state.spanner_pool and app.state.spanner_pool.database:
+            def _health_check(transaction):
+                results = transaction.execute_sql("SELECT 1")
+                for row in results:
+                    return True
+                return False
+
+            is_healthy = app.state.spanner_pool.database.run_in_transaction(_health_check)
+            metrics.update_health("database", is_healthy)
+            if is_healthy:
+                return JSONResponse(content={"status": "ok", "service": "brain", "database": "spanner"})
+            else:
+                return JSONResponse(content={"status": "degraded", "service": "brain", "database": "unhealthy"}, status_code=503)
+    except Exception as e:
+        logger.error({"event": "health_check_failed", "error": str(e)})
+        metrics.update_health("database", False)
+        return JSONResponse(content={"status": "degraded", "service": "brain", "database": "error"}, status_code=503)
+    return JSONResponse(content={"status": "error", "service": "brain", "message": "no_spanner_pool"}, status_code=503)
 
 
 @app.get("/metrics")

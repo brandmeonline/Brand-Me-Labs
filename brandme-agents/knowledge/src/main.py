@@ -1,7 +1,8 @@
-# Brand.Me v7 — Stable Integrity Spine
+# Brand.Me v8 — Global Integrity Spine
 # Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-agents/knowledge/src/main.py
-# v6 fix: removed duplicate FastAPI init / duplicate lifespan definitions
+#
+# v8: Migrated from PostgreSQL to Spanner
 
 import os
 from typing import Optional
@@ -11,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from brandme_core.logging import get_logger, ensure_request_id, truncate_id
-from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
+from brandme_core.spanner.pool import create_pool_manager
 from brandme_core.metrics import get_metrics_collector, generate_metrics
 from fastapi.responses import Response
 
@@ -19,14 +20,22 @@ logger = get_logger("knowledge_service")
 metrics = get_metrics_collector("knowledge")
 
 REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
+SPANNER_PROJECT = os.getenv("SPANNER_PROJECT_ID", "test-project")
+SPANNER_INSTANCE = os.getenv("SPANNER_INSTANCE_ID", "brandme-instance")
+SPANNER_DATABASE = os.getenv("SPANNER_DATABASE_ID", "brandme-db")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await create_pool_from_env(min_size=5, max_size=20)
-    logger.info({"event": "knowledge_service_started"})
+    app.state.spanner_pool = create_pool_manager(
+        project_id=SPANNER_PROJECT,
+        instance_id=SPANNER_INSTANCE,
+        database_id=SPANNER_DATABASE
+    )
+    await app.state.spanner_pool.initialize()
+    logger.info({"event": "knowledge_service_started", "database": "spanner"})
     yield
-    await safe_close_pool(app.state.db_pool)
+    await app.state.spanner_pool.close()
     logger.info({"event": "knowledge_service_stopped"})
 
 
@@ -86,15 +95,26 @@ async def get_garment_passport(garment_id: str, request: Request, scope: Optiona
 
 @app.get("/health")
 async def health():
-    """Health check with database connectivity verification."""
-    if app.state.db_pool:
-        is_healthy = await health_check(app.state.db_pool)
-        metrics.update_health("database", is_healthy)
-        if is_healthy:
-            return JSONResponse(content={"status": "ok", "service": "knowledge"})
-        else:
-            return JSONResponse(content={"status": "degraded", "service": "knowledge", "database": "unhealthy"}, status_code=503)
-    return JSONResponse(content={"status": "error", "service": "knowledge", "message": "no_db_pool"}, status_code=503)
+    """Health check with Spanner connectivity verification."""
+    try:
+        if app.state.spanner_pool and app.state.spanner_pool.database:
+            def _health_check(transaction):
+                results = transaction.execute_sql("SELECT 1")
+                for row in results:
+                    return True
+                return False
+
+            is_healthy = app.state.spanner_pool.database.run_in_transaction(_health_check)
+            metrics.update_health("database", is_healthy)
+            if is_healthy:
+                return JSONResponse(content={"status": "ok", "service": "knowledge", "database": "spanner"})
+            else:
+                return JSONResponse(content={"status": "degraded", "service": "knowledge", "database": "unhealthy"}, status_code=503)
+    except Exception as e:
+        logger.error({"event": "health_check_failed", "error": str(e)})
+        metrics.update_health("database", False)
+        return JSONResponse(content={"status": "degraded", "service": "knowledge", "database": "error"}, status_code=503)
+    return JSONResponse(content={"status": "error", "service": "knowledge", "message": "no_spanner_pool"}, status_code=503)
 
 
 @app.get("/metrics")

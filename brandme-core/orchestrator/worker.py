@@ -1,10 +1,13 @@
-# Brand.Me v7 — Stable Integrity Spine
+# Brand.Me v8 — Global Integrity Spine
 # Implements: Request tracing, human escalation guardrails, safe facet previews.
 # brandme-core/orchestrator/worker.py
+#
+# v8: Migrated from PostgreSQL to Spanner
 
 import hashlib
 import json
 import os
+import uuid
 from typing import List, Dict
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -13,14 +16,19 @@ from contextlib import asynccontextmanager
 import httpx
 
 from brandme_core.logging import get_logger, redact_user_id, ensure_request_id, truncate_id
-from brandme_core.db import create_pool_from_env, safe_close_pool, health_check
+from brandme_core.spanner.pool import create_pool_manager
 from brandme_core.metrics import get_metrics_collector, generate_metrics
+from google.cloud.spanner_v1 import param_types
+from google.cloud import spanner
 from fastapi.responses import Response
 
 logger = get_logger("orchestrator_service")
 metrics = get_metrics_collector("orchestrator")
 
 REGION_DEFAULT = os.getenv("REGION_DEFAULT", "us-east1")
+SPANNER_PROJECT = os.getenv("SPANNER_PROJECT_ID", "test-project")
+SPANNER_INSTANCE = os.getenv("SPANNER_INSTANCE_ID", "brandme-instance")
+SPANNER_DATABASE = os.getenv("SPANNER_DATABASE_ID", "brandme-db")
 
 
 class OrchestratorScanPacket(BaseModel):
@@ -137,10 +145,11 @@ def call_tx_builder(garment_id: str, facets: List[Dict], scope: str) -> Dict[str
     }
 
 
-async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str, db_pool, http_client) -> Dict[str, object]:
+async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str, spanner_pool, http_client) -> Dict[str, object]:
     """
     Process allowed scan: fetch facets, persist, anchor, audit.
     Only allowed scans reach here (escalated scans are blocked upstream).
+    v8: Uses Spanner for persistence.
     """
     scan_id = decision_packet["scan_id"]
     scanner_user_id = decision_packet["scanner_user_id"]
@@ -152,40 +161,49 @@ async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str,
 
     shown_facets = await call_knowledge_service(garment_id, resolved_scope, request_id, http_client)
 
-    async with db_pool.acquire() as conn:
-        await conn.execute(
-            """
-            INSERT INTO scan_event (
-                scan_id, scanner_user_id, garment_id, occurred_at,
-                resolved_scope, policy_version, region_code, shown_facets
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
-            ON CONFLICT (scan_id) DO NOTHING
-            """,
-            scan_id,
-            scanner_user_id,
-            garment_id,
-            occurred_at,
-            resolved_scope,
-            policy_version,
-            region_code,
-            json.dumps(shown_facets),
+    # v8: Insert audit log entry for the scan event
+    def _insert_scan_audit(transaction):
+        audit_id = str(uuid.uuid4())
+        transaction.insert(
+            table="AuditLog",
+            columns=[
+                "audit_id", "related_asset_id", "actor_type", "action_type",
+                "action_summary", "decision_summary", "risk_flagged",
+                "escalated_to_human", "policy_version", "region_code",
+                "prev_hash", "entry_hash", "created_at"
+            ],
+            values=[(
+                audit_id, scan_id, "system", "scan",
+                f"scan_event_{resolved_scope}", f"scope_{resolved_scope}",
+                False, False, policy_version, region_code,
+                "", hashlib.sha256(scan_id.encode()).hexdigest(),
+                spanner.COMMIT_TIMESTAMP
+            )]
         )
+
+    spanner_pool.database.run_in_transaction(_insert_scan_audit)
 
     tx_hashes = call_tx_builder(garment_id, shown_facets, resolved_scope)
 
-    async with db_pool.acquire() as conn:
-        await conn.execute(
-            """
-            INSERT INTO chain_anchor (
-                scan_id, cardano_tx_hash, midnight_tx_hash, crosschain_root_hash, anchored_at
-            ) VALUES ($1, $2, $3, $4, NOW())
-            ON CONFLICT (scan_id) DO NOTHING
-            """,
-            scan_id,
-            tx_hashes["cardano_tx_hash"],
-            tx_hashes["midnight_tx_hash"],
-            tx_hashes["crosschain_root_hash"],
+    # v8: Insert chain anchor
+    def _insert_chain_anchor(transaction):
+        anchor_id = str(uuid.uuid4())
+        transaction.insert(
+            table="ChainAnchor",
+            columns=[
+                "anchor_id", "scan_id", "cardano_tx_hash", "midnight_tx_hash",
+                "crosschain_root_hash", "anchored_at"
+            ],
+            values=[(
+                anchor_id, scan_id,
+                tx_hashes["cardano_tx_hash"],
+                tx_hashes["midnight_tx_hash"],
+                tx_hashes["crosschain_root_hash"],
+                spanner.COMMIT_TIMESTAMP
+            )]
         )
+
+    spanner_pool.database.run_in_transaction(_insert_chain_anchor)
 
     await call_compliance_audit_log(
         scan_id,
@@ -221,11 +239,16 @@ async def process_allowed_scan(decision_packet: Dict[str, str], request_id: str,
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await create_pool_from_env(min_size=5, max_size=20)
+    app.state.spanner_pool = create_pool_manager(
+        project_id=SPANNER_PROJECT,
+        instance_id=SPANNER_INSTANCE,
+        database_id=SPANNER_DATABASE
+    )
+    await app.state.spanner_pool.initialize()
     app.state.http_client = httpx.AsyncClient()
-    logger.info({"event": "orchestrator_service_started"})
+    logger.info({"event": "orchestrator_service_started", "database": "spanner"})
     yield
-    await safe_close_pool(app.state.db_pool)
+    await app.state.spanner_pool.close()
     await app.state.http_client.aclose()
     logger.info({"event": "orchestrator_service_stopped"})
 
@@ -257,7 +280,7 @@ async def scan_commit(body: OrchestratorScanPacket, request: Request):
     result = await process_allowed_scan(
         decision_packet,
         request_id,
-        app.state.db_pool,
+        app.state.spanner_pool,
         app.state.http_client,
     )
 
@@ -269,15 +292,26 @@ async def scan_commit(body: OrchestratorScanPacket, request: Request):
 
 @app.get("/health")
 async def health():
-    """Health check with database connectivity verification."""
-    if app.state.db_pool:
-        is_healthy = await health_check(app.state.db_pool)
-        metrics.update_health("database", is_healthy)
-        if is_healthy:
-            return JSONResponse(content={"status": "ok", "service": "orchestrator"})
-        else:
-            return JSONResponse(content={"status": "degraded", "service": "orchestrator", "database": "unhealthy"}, status_code=503)
-    return JSONResponse(content={"status": "error", "service": "orchestrator", "message": "no_db_pool"}, status_code=503)
+    """Health check with Spanner connectivity verification."""
+    try:
+        if app.state.spanner_pool and app.state.spanner_pool.database:
+            def _health_check(transaction):
+                results = transaction.execute_sql("SELECT 1")
+                for row in results:
+                    return True
+                return False
+
+            is_healthy = app.state.spanner_pool.database.run_in_transaction(_health_check)
+            metrics.update_health("database", is_healthy)
+            if is_healthy:
+                return JSONResponse(content={"status": "ok", "service": "orchestrator", "database": "spanner"})
+            else:
+                return JSONResponse(content={"status": "degraded", "service": "orchestrator", "database": "unhealthy"}, status_code=503)
+    except Exception as e:
+        logger.error({"event": "health_check_failed", "error": str(e)})
+        metrics.update_health("database", False)
+        return JSONResponse(content={"status": "degraded", "service": "orchestrator", "database": "error"}, status_code=503)
+    return JSONResponse(content={"status": "error", "service": "orchestrator", "message": "no_spanner_pool"}, status_code=503)
 
 
 @app.get("/metrics")
