@@ -1,17 +1,22 @@
 """
-Brand.Me v8 — Global Integrity Spine
+Brand.Me v9 — 2030 Agentic & Circular Economy
 Cube Service: Port 8007 - Product Cube storage and serving
 
-This service stores and serves Product Cube data (6 faces per garment).
+This service stores and serves Product Cube data (7 faces per garment).
 CRITICAL: Every face access is policy-gated. Never return face without policy check.
 
-v8: Uses Spanner for persistence, Firestore for real-time state
+v9 Features:
+- 7 faces: product_details, provenance, ownership, social_layer, esg_impact, lifecycle, molecular_data
+- DPP Lifecycle State Machine (PRODUCED→ACTIVE→REPAIR→DISSOLVE→REPRINT)
+- Biometric Sync for AR glasses (<100ms Active Facet)
+- Molecular data tracking for circular economy
 """
 
 from contextlib import asynccontextmanager
 import os
 from typing import Optional
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 
@@ -32,14 +37,28 @@ from .clients import (
     OrchestratorClient,
     IdentityClient
 )
+from .models import (
+    LifecycleTransitionRequest,
+    LifecycleTransitionResponse,
+    DissolveAuthorizationRequest,
+    DissolveAuthorizationResponse,
+    BiometricSyncRequest,
+    LifecycleState,
+    FaceName
+)
 
 logger = get_logger("cube")
 metrics = get_metrics_collector("cube")
 
-# Environment variables for Spanner (v8)
+# Environment variables for Spanner (v9)
 SPANNER_PROJECT = os.getenv("SPANNER_PROJECT_ID", "test-project")
 SPANNER_INSTANCE = os.getenv("SPANNER_INSTANCE_ID", "brandme-instance")
 SPANNER_DATABASE = os.getenv("SPANNER_DATABASE_ID", "brandme-db")
+
+# v9: Molecular data and AR sync configuration
+ENABLE_MOLECULAR_DATA = os.getenv("ENABLE_MOLECULAR_DATA", "true").lower() == "true"
+AR_SYNC_ENABLED = os.getenv("AR_SYNC_ENABLED", "true").lower() == "true"
+AR_SYNC_LATENCY_TARGET_MS = int(os.getenv("AR_SYNC_LATENCY_TARGET_MS", "100"))
 
 # Global resources (initialized in lifespan)
 spanner_pool = None
@@ -103,7 +122,14 @@ async def lifespan(app: FastAPI):
             metrics=metrics
         )
 
-        logger.info("cube_service_initialized", database="spanner")
+        logger.info({
+            "event": "cube_service_initialized",
+            "version": "v9",
+            "database": "spanner",
+            "molecular_data_enabled": ENABLE_MOLECULAR_DATA,
+            "ar_sync_enabled": AR_SYNC_ENABLED,
+            "ar_sync_latency_target_ms": AR_SYNC_LATENCY_TARGET_MS
+        })
 
         yield
 
@@ -122,8 +148,8 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(
     title="Brand.Me Cube Service",
-    description="Product Cube storage and serving with Integrity Spine (v8)",
-    version="2.0.0",
+    description="Product Cube storage and serving with Integrity Spine (v9 - 2030 Agentic & Circular Economy)",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -169,10 +195,225 @@ setup_telemetry("cube", app)
 async def root():
     return {
         "service": "cube",
-        "version": "1.0.0",
-        "description": "Product Cube storage and serving",
-        "port": 8007
+        "version": "3.0.0",
+        "description": "Product Cube storage and serving (v9 - 7 faces, circular economy)",
+        "port": 8007,
+        "features": {
+            "molecular_data": ENABLE_MOLECULAR_DATA,
+            "ar_sync": AR_SYNC_ENABLED,
+            "ar_sync_latency_target_ms": AR_SYNC_LATENCY_TARGET_MS
+        }
     }
+
+
+# ===========================================
+# v9: LIFECYCLE & CIRCULAR ECONOMY ENDPOINTS
+# ===========================================
+
+@app.post("/cubes/{cube_id}/lifecycle/transition")
+async def transition_lifecycle(
+    cube_id: str,
+    req: LifecycleTransitionRequest,
+    request: Request
+):
+    """
+    v9: Transition cube lifecycle state.
+
+    Valid transitions:
+    - PRODUCED → ACTIVE
+    - ACTIVE → REPAIR, DISSOLVE
+    - REPAIR → ACTIVE, DISSOLVE
+    - DISSOLVE → REPRINT
+    - REPRINT → PRODUCED
+    """
+    request_id = ensure_request_id(request)
+    cube_service: CubeService = request.app.state.cube_service
+
+    try:
+        # Call compliance service for state machine validation
+        result = await cube_service.transition_lifecycle(
+            cube_id=cube_id,
+            new_state=req.new_state,
+            triggered_by=req.triggered_by,
+            notes=req.notes,
+            esg_verification_required=req.esg_verification_required,
+            request_id=request_id
+        )
+
+        return JSONResponse(content=result)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error({
+            "event": "lifecycle_transition_failed",
+            "cube_id": cube_id[:8] + "...",
+            "error": str(e),
+            "request_id": request_id
+        })
+        raise HTTPException(status_code=500, detail="Failed to transition lifecycle")
+
+
+@app.post("/cubes/{cube_id}/lifecycle/dissolve/authorize")
+async def authorize_dissolve(
+    cube_id: str,
+    req: DissolveAuthorizationRequest,
+    request: Request
+):
+    """
+    v9: Authorize dissolve for circular economy.
+
+    Returns an auth key hash that the owner must use to confirm the dissolve.
+    After dissolve, materials can be reprinted into new products.
+    """
+    request_id = ensure_request_id(request)
+    cube_service: CubeService = request.app.state.cube_service
+
+    try:
+        result = await cube_service.authorize_dissolve(
+            cube_id=cube_id,
+            owner_id=req.owner_id,
+            reason=req.reason,
+            target_materials=req.target_materials,
+            request_id=request_id
+        )
+
+        return JSONResponse(content=result)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error({
+            "event": "dissolve_authorization_failed",
+            "cube_id": cube_id[:8] + "...",
+            "error": str(e),
+            "request_id": request_id
+        })
+        raise HTTPException(status_code=500, detail="Failed to authorize dissolve")
+
+
+@app.get("/cubes/{cube_id}/molecular")
+async def get_molecular_data(cube_id: str, request: Request):
+    """
+    v9: Get molecular data face for a cube.
+
+    Returns material composition, lifecycle state, and circular economy tracking.
+    """
+    if not ENABLE_MOLECULAR_DATA:
+        raise HTTPException(
+            status_code=503,
+            detail="Molecular data feature is disabled"
+        )
+
+    request_id = ensure_request_id(request)
+    viewer_id = getattr(request.state, "user_id", "anonymous")
+    cube_service: CubeService = request.app.state.cube_service
+
+    try:
+        face = await cube_service.get_face(
+            cube_id=cube_id,
+            face_name=FaceName.MOLECULAR_DATA,
+            viewer_id=viewer_id,
+            request_id=request_id
+        )
+        return face
+
+    except Exception as e:
+        logger.error({
+            "event": "molecular_data_fetch_failed",
+            "cube_id": cube_id[:8] + "...",
+            "error": str(e),
+            "request_id": request_id
+        })
+        raise HTTPException(status_code=500, detail="Failed to fetch molecular data")
+
+
+@app.post("/cubes/{cube_id}/biometric-sync")
+async def update_biometric_sync(
+    cube_id: str,
+    req: BiometricSyncRequest,
+    request: Request
+):
+    """
+    v9: Update biometric sync for AR glasses.
+
+    Used to track the latest sync timestamp and latency for the Active Facet.
+    Target latency: <100ms for real-time AR display.
+    """
+    if not AR_SYNC_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail="AR sync feature is disabled"
+        )
+
+    request_id = ensure_request_id(request)
+    cube_service: CubeService = request.app.state.cube_service
+
+    try:
+        result = await cube_service.update_biometric_sync(
+            cube_id=cube_id,
+            device_id=req.device_id,
+            sync_timestamp=req.sync_timestamp,
+            latency_ms=req.latency_ms,
+            request_id=request_id
+        )
+
+        # Check if latency is within target
+        latency_ok = req.latency_ms <= AR_SYNC_LATENCY_TARGET_MS
+
+        metrics.observe_histogram(
+            "ar_sync_latency_ms",
+            req.latency_ms,
+            {"cube_id_prefix": cube_id[:4]}
+        )
+
+        return JSONResponse(content={
+            "status": "synced",
+            "cube_id": cube_id,
+            "device_id": req.device_id,
+            "latency_ms": req.latency_ms,
+            "latency_target_ms": AR_SYNC_LATENCY_TARGET_MS,
+            "latency_within_target": latency_ok
+        })
+
+    except Exception as e:
+        logger.error({
+            "event": "biometric_sync_failed",
+            "cube_id": cube_id[:8] + "...",
+            "error": str(e),
+            "request_id": request_id
+        })
+        raise HTTPException(status_code=500, detail="Failed to update biometric sync")
+
+
+@app.get("/cubes/{cube_id}/lineage")
+async def get_reprint_lineage(cube_id: str, request: Request):
+    """
+    v9: Get reprint lineage for a cube.
+
+    Traces the ancestry of reprinted products back to their original materials.
+    Returns the DerivedFrom chain with burn proof verification.
+    """
+    request_id = ensure_request_id(request)
+    cube_service: CubeService = request.app.state.cube_service
+
+    try:
+        lineage = await cube_service.get_reprint_lineage(
+            cube_id=cube_id,
+            request_id=request_id
+        )
+
+        return JSONResponse(content=lineage)
+
+    except Exception as e:
+        logger.error({
+            "event": "lineage_fetch_failed",
+            "cube_id": cube_id[:8] + "...",
+            "error": str(e),
+            "request_id": request_id
+        })
+        raise HTTPException(status_code=500, detail="Failed to fetch lineage")
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,13 +1,14 @@
 """
-Brand.Me Wardrobe Manager
-========================
+Brand.Me Wardrobe Manager v9
+============================
 
 Manages wardrobe state in Firestore for real-time frontend updates.
+v9: Added Biometric Sync for AR glasses (<100ms Active Facet display)
 """
 
 from typing import Optional, Dict, Any, List
-from datetime import datetime
-from dataclasses import dataclass, asdict
+from datetime import datetime, timedelta
+from dataclasses import dataclass, asdict, field
 from enum import Enum
 
 from google.cloud import firestore
@@ -32,6 +33,76 @@ class FaceVisibility(Enum):
     FRIENDS_ONLY = "friends_only"
     PRIVATE = "private"
     AUTHENTICATED = "authenticated"
+    AGENT_ONLY = "agent_only"
+
+
+class LifecycleState(Enum):
+    """DPP Lifecycle states for circular economy."""
+    PRODUCED = "PRODUCED"
+    ACTIVE = "ACTIVE"
+    REPAIR = "REPAIR"
+    DISSOLVE = "DISSOLVE"
+    REPRINT = "REPRINT"
+
+
+class ARPriority(Enum):
+    """Rendering priority for AR glasses."""
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    BACKGROUND = "background"
+
+
+@dataclass
+class BiometricSync:
+    """
+    Biometric Sync state for AR glasses (<100ms response).
+    Enables real-time Active Facet display on AR devices.
+    """
+    active_facet: str = "esg_impact"              # Currently displayed face
+    ar_priority: str = "high"                      # Rendering priority
+    last_gaze_timestamp: Optional[datetime] = None # Eye tracking sync
+    ar_device_session: Optional[str] = None        # Device session ID
+    render_hints: Dict[str, Any] = field(default_factory=lambda: {
+        "highlight_esg": True,
+        "show_provenance_trail": False,
+        "show_material_composition": True,
+        "enable_haptic_feedback": False
+    })
+    gaze_duration_ms: int = 0                      # How long user has gazed
+    last_interaction_type: Optional[str] = None    # "gaze", "gesture", "voice"
+
+
+@dataclass
+class MolecularData:
+    """
+    Molecular data for circularity tracking.
+    Stored in the molecular_data face.
+    """
+    material_type: str
+    tensile_strength_mpa: Optional[float] = None
+    dissolve_auth_key_hash: Optional[str] = None   # Hash only, key in Midnight
+    material_composition: List[Dict[str, Any]] = field(default_factory=list)
+    esg_score: Optional[float] = None
+    carbon_footprint_kg: Optional[float] = None
+    water_usage_liters: Optional[float] = None
+    recyclability_pct: Optional[float] = None
+    certifications: List[str] = field(default_factory=list)
+
+
+@dataclass
+class LifecycleData:
+    """
+    Lifecycle tracking for DPP state machine.
+    """
+    current_state: str = "ACTIVE"
+    state_history: List[Dict[str, Any]] = field(default_factory=list)
+    repair_count: int = 0
+    reprint_generation: int = 0
+    reprint_eligible: bool = True
+    parent_asset_id: Optional[str] = None
+    dissolve_authorized: bool = False
+    last_state_change: Optional[datetime] = None
 
 
 @dataclass
@@ -48,7 +119,7 @@ class CubeFaceState:
 
 @dataclass
 class CubeState:
-    """Full state of a product cube."""
+    """Full state of a product cube with v9 enhancements."""
     cube_id: str
     owner_id: str
     agentic_state: str = "idle"
@@ -56,6 +127,11 @@ class CubeState:
     last_agent_action: Optional[datetime] = None
     faces: Dict[str, CubeFaceState] = None
     visibility_settings: Dict[str, str] = None
+    # v9: Biometric Sync for AR
+    biometric_sync: Optional[BiometricSync] = None
+    # v9: Lifecycle state
+    lifecycle_state: str = "ACTIVE"
+    # Timestamps
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -63,13 +139,30 @@ class CubeState:
 class WardrobeManager:
     """
     Manages wardrobe state in Firestore.
+    v9: Enhanced for AR glasses biometric sync and circular economy.
 
     Collection structure:
         /wardrobes/{user_id}/
-            metadata: {owner_id, display_name, total_cubes, last_updated}
+            metadata: {
+                owner_id, display_name, total_cubes, last_updated,
+                ar_sync_enabled, last_biometric_ping, active_ar_device_id
+            }
             /cubes/{cube_id}/
-                cube_id, owner_id, agentic_state, faces, ...
+                cube_id, owner_id, agentic_state, faces,
+                biometric_sync: { active_facet, ar_priority, render_hints, ... }
+                lifecycle_state, molecular_data, ...
     """
+
+    # v9: Face names now include molecular_data
+    FACE_NAMES = [
+        'product_details',
+        'provenance',
+        'ownership',
+        'social_layer',
+        'esg_impact',
+        'lifecycle',
+        'molecular_data'  # v9: New face for circularity
+    ]
 
     def __init__(self, firestore_client):
         self.db = firestore_client
@@ -89,10 +182,12 @@ class WardrobeManager:
     async def initialize_wardrobe(
         self,
         user_id: str,
-        display_name: Optional[str] = None
+        display_name: Optional[str] = None,
+        ar_sync_enabled: bool = True
     ):
         """
         Initialize a user's wardrobe if it doesn't exist.
+        v9: Added AR sync configuration.
         """
         wardrobe_ref = self._wardrobe_ref(user_id)
         doc = await wardrobe_ref.get()
@@ -102,13 +197,24 @@ class WardrobeManager:
                 'owner_id': user_id,
                 'display_name': display_name,
                 'total_cubes': 0,
+                # v9: AR Biometric Sync settings
+                'ar_sync_enabled': ar_sync_enabled,
+                'last_biometric_ping': None,
+                'active_ar_device_id': None,
+                'ar_preferences': {
+                    'default_active_facet': 'esg_impact',
+                    'haptic_feedback': True,
+                    'gaze_threshold_ms': 500
+                },
+                # Timestamps
                 'last_updated': firestore.SERVER_TIMESTAMP,
                 'created_at': firestore.SERVER_TIMESTAMP
             })
 
             logger.info({
                 "event": "wardrobe_initialized",
-                "user_id": user_id[:8] + "..."
+                "user_id": user_id[:8] + "...",
+                "ar_sync_enabled": ar_sync_enabled
             })
 
     async def add_cube(
@@ -116,15 +222,18 @@ class WardrobeManager:
         user_id: str,
         cube_id: str,
         faces: Dict[str, Dict[str, Any]],
-        visibility_settings: Optional[Dict[str, str]] = None
+        visibility_settings: Optional[Dict[str, str]] = None,
+        molecular_data: Optional[Dict[str, Any]] = None,
+        lifecycle_state: str = "ACTIVE"
     ):
         """
         Add a cube to user's wardrobe.
+        v9: Added molecular_data face and lifecycle state.
         """
         # Ensure wardrobe exists
         await self.initialize_wardrobe(user_id)
 
-        # Default visibility settings
+        # Default visibility settings (v9: includes molecular_data)
         if not visibility_settings:
             visibility_settings = {
                 'product_details': 'public',
@@ -132,7 +241,8 @@ class WardrobeManager:
                 'ownership': 'private',
                 'social_layer': 'public',
                 'esg_impact': 'public',
-                'lifecycle': 'authenticated'
+                'lifecycle': 'authenticated',
+                'molecular_data': 'authenticated'  # v9: Default to authenticated
             }
 
         # Prepare face states
@@ -147,6 +257,39 @@ class WardrobeManager:
                 'updated_at': firestore.SERVER_TIMESTAMP
             }
 
+        # v9: Add molecular_data face if provided
+        if molecular_data:
+            face_states['molecular_data'] = {
+                'face_name': 'molecular_data',
+                'visibility': visibility_settings.get('molecular_data', 'authenticated'),
+                'data': molecular_data,
+                'agentic_state': 'idle',
+                'pending_sync': False,
+                'updated_at': firestore.SERVER_TIMESTAMP
+            }
+
+        # v9: Add lifecycle face
+        face_states['lifecycle'] = {
+            'face_name': 'lifecycle',
+            'visibility': visibility_settings.get('lifecycle', 'authenticated'),
+            'data': {
+                'current_state': lifecycle_state,
+                'state_history': [
+                    {
+                        'state': lifecycle_state,
+                        'at': firestore.SERVER_TIMESTAMP,
+                        'by': 'system'
+                    }
+                ],
+                'repair_count': 0,
+                'reprint_generation': 0,
+                'reprint_eligible': True
+            },
+            'agentic_state': 'idle',
+            'pending_sync': False,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        }
+
         cube_doc = {
             'cube_id': cube_id,
             'owner_id': user_id,
@@ -155,6 +298,24 @@ class WardrobeManager:
             'last_agent_action': None,
             'faces': face_states,
             'visibility_settings': visibility_settings,
+            # v9: Biometric Sync for AR glasses
+            'biometric_sync': {
+                'active_facet': 'esg_impact',
+                'ar_priority': 'high',
+                'last_gaze_timestamp': None,
+                'ar_device_session': None,
+                'render_hints': {
+                    'highlight_esg': True,
+                    'show_provenance_trail': False,
+                    'show_material_composition': True,
+                    'enable_haptic_feedback': False
+                },
+                'gaze_duration_ms': 0,
+                'last_interaction_type': None
+            },
+            # v9: Lifecycle state
+            'lifecycle_state': lifecycle_state,
+            # Timestamps
             'created_at': firestore.SERVER_TIMESTAMP,
             'updated_at': firestore.SERVER_TIMESTAMP
         }
@@ -173,6 +334,184 @@ class WardrobeManager:
         logger.info({
             "event": "cube_added_to_wardrobe",
             "user_id": user_id[:8] + "...",
+            "cube_id": cube_id[:8] + "...",
+            "lifecycle_state": lifecycle_state
+        })
+
+    async def update_biometric_sync(
+        self,
+        user_id: str,
+        cube_id: str,
+        active_facet: str,
+        ar_device_session: str,
+        gaze_duration_ms: int = 0,
+        interaction_type: str = "gaze"
+    ):
+        """
+        Update biometric sync state for AR glasses.
+        v9: Enables <100ms Active Facet display.
+        """
+        cube_ref = self._cube_ref(user_id, cube_id)
+
+        await cube_ref.update({
+            'biometric_sync.active_facet': active_facet,
+            'biometric_sync.ar_device_session': ar_device_session,
+            'biometric_sync.last_gaze_timestamp': firestore.SERVER_TIMESTAMP,
+            'biometric_sync.gaze_duration_ms': gaze_duration_ms,
+            'biometric_sync.last_interaction_type': interaction_type,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+
+        logger.debug({
+            "event": "biometric_sync_updated",
+            "user_id": user_id[:8] + "...",
+            "cube_id": cube_id[:8] + "...",
+            "active_facet": active_facet,
+            "device": ar_device_session[:8] + "..." if ar_device_session else None
+        })
+
+    async def set_ar_priority(
+        self,
+        user_id: str,
+        cube_id: str,
+        priority: str,
+        render_hints: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Set AR rendering priority and hints for a cube.
+        v9: Controls how cube is rendered on AR glasses.
+        """
+        update_data = {
+            'biometric_sync.ar_priority': priority,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        }
+
+        if render_hints:
+            for key, value in render_hints.items():
+                update_data[f'biometric_sync.render_hints.{key}'] = value
+
+        cube_ref = self._cube_ref(user_id, cube_id)
+        await cube_ref.update(update_data)
+
+    async def update_lifecycle_state(
+        self,
+        user_id: str,
+        cube_id: str,
+        new_state: str,
+        triggered_by: str,
+        notes: Optional[str] = None
+    ):
+        """
+        Update lifecycle state (DPP state machine transition).
+        v9: Implements PRODUCED -> ACTIVE -> REPAIR -> DISSOLVE -> REPRINT flow.
+        """
+        cube_ref = self._cube_ref(user_id, cube_id)
+        cube_doc = await cube_ref.get()
+
+        if not cube_doc.exists:
+            raise ValueError(f"Cube {cube_id} not found")
+
+        cube_data = cube_doc.to_dict()
+        current_state = cube_data.get('lifecycle_state', 'ACTIVE')
+
+        # Validate state transition
+        valid_transitions = {
+            'PRODUCED': ['ACTIVE'],
+            'ACTIVE': ['REPAIR', 'DISSOLVE'],
+            'REPAIR': ['ACTIVE', 'DISSOLVE'],
+            'DISSOLVE': ['REPRINT'],
+            'REPRINT': ['PRODUCED']  # Reprint creates new item in PRODUCED state
+        }
+
+        if new_state not in valid_transitions.get(current_state, []):
+            raise ValueError(
+                f"Invalid transition: {current_state} -> {new_state}. "
+                f"Valid: {valid_transitions.get(current_state, [])}"
+            )
+
+        # Build state history entry
+        state_entry = {
+            'state': new_state,
+            'from_state': current_state,
+            'at': firestore.SERVER_TIMESTAMP,
+            'by': triggered_by,
+            'notes': notes
+        }
+
+        # Update repair count if transitioning to REPAIR
+        repair_increment = 1 if new_state == 'REPAIR' else 0
+
+        # Update reprint generation if completing reprint
+        reprint_increment = 1 if current_state == 'REPRINT' and new_state == 'PRODUCED' else 0
+
+        await cube_ref.update({
+            'lifecycle_state': new_state,
+            'faces.lifecycle.data.current_state': new_state,
+            'faces.lifecycle.data.state_history': firestore.ArrayUnion([state_entry]),
+            'faces.lifecycle.data.repair_count': firestore.Increment(repair_increment),
+            'faces.lifecycle.data.reprint_generation': firestore.Increment(reprint_increment),
+            'faces.lifecycle.data.last_state_change': firestore.SERVER_TIMESTAMP,
+            'faces.lifecycle.pending_sync': True,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+
+        logger.info({
+            "event": "lifecycle_state_updated",
+            "user_id": user_id[:8] + "...",
+            "cube_id": cube_id[:8] + "...",
+            "from_state": current_state,
+            "to_state": new_state,
+            "triggered_by": triggered_by
+        })
+
+    async def update_molecular_data(
+        self,
+        user_id: str,
+        cube_id: str,
+        molecular_data: Dict[str, Any]
+    ):
+        """
+        Update molecular data face for circularity tracking.
+        v9: Stores material composition, tensile strength, dissolve auth.
+        """
+        cube_ref = self._cube_ref(user_id, cube_id)
+
+        await cube_ref.update({
+            'faces.molecular_data.data': molecular_data,
+            'faces.molecular_data.updated_at': firestore.SERVER_TIMESTAMP,
+            'faces.molecular_data.pending_sync': True,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+
+        logger.info({
+            "event": "molecular_data_updated",
+            "user_id": user_id[:8] + "...",
+            "cube_id": cube_id[:8] + "...",
+            "material_type": molecular_data.get('material_type')
+        })
+
+    async def authorize_dissolve(
+        self,
+        user_id: str,
+        cube_id: str,
+        dissolve_auth_key_hash: str
+    ):
+        """
+        Authorize dissolution for circular economy.
+        v9: Marks cube as ready for DISSOLVE state transition.
+        """
+        cube_ref = self._cube_ref(user_id, cube_id)
+
+        await cube_ref.update({
+            'faces.lifecycle.data.dissolve_authorized': True,
+            'faces.molecular_data.data.dissolve_auth_key_hash': dissolve_auth_key_hash,
+            'faces.lifecycle.pending_sync': True,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+
+        logger.info({
+            "event": "dissolve_authorized",
+            "user_id": user_id[:8] + "...",
             "cube_id": cube_id[:8] + "..."
         })
 
@@ -189,6 +528,32 @@ class WardrobeManager:
         """Get all cubes in a user's wardrobe."""
         cubes_ref = self._cubes_collection(user_id)
         docs = await cubes_ref.get()
+
+        return [doc.to_dict() for doc in docs]
+
+    async def get_cubes_by_lifecycle_state(
+        self,
+        user_id: str,
+        lifecycle_state: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get cubes by lifecycle state.
+        v9: Filter cubes in specific DPP state.
+        """
+        cubes_ref = self._cubes_collection(user_id)
+        query = cubes_ref.where('lifecycle_state', '==', lifecycle_state)
+        docs = await query.get()
+
+        return [doc.to_dict() for doc in docs]
+
+    async def get_reprint_eligible_cubes(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        Get cubes eligible for reprint.
+        v9: Returns cubes that can be dissolved and reprinted.
+        """
+        cubes_ref = self._cubes_collection(user_id)
+        query = cubes_ref.where('faces.lifecycle.data.reprint_eligible', '==', True)
+        docs = await query.get()
 
         return [doc.to_dict() for doc in docs]
 
@@ -259,6 +624,22 @@ class WardrobeManager:
         # Update owner in cube data
         cube_data['owner_id'] = to_user_id
         cube_data['updated_at'] = firestore.SERVER_TIMESTAMP
+
+        # Reset biometric sync for new owner
+        cube_data['biometric_sync'] = {
+            'active_facet': 'esg_impact',
+            'ar_priority': 'high',
+            'last_gaze_timestamp': None,
+            'ar_device_session': None,
+            'render_hints': {
+                'highlight_esg': True,
+                'show_provenance_trail': False,
+                'show_material_composition': True,
+                'enable_haptic_feedback': False
+            },
+            'gaze_duration_ms': 0,
+            'last_interaction_type': None
+        }
 
         # Use batch for atomic transfer
         batch = self.db.client.batch()
@@ -339,4 +720,26 @@ class WardrobeManager:
 
         await cube_ref.update({
             f'faces.{face_name}.pending_sync': False
+        })
+
+    async def ping_ar_device(
+        self,
+        user_id: str,
+        ar_device_id: str
+    ):
+        """
+        Update last biometric ping from AR device.
+        v9: Tracks AR device connection state.
+        """
+        wardrobe_ref = self._wardrobe_ref(user_id)
+
+        await wardrobe_ref.update({
+            'last_biometric_ping': firestore.SERVER_TIMESTAMP,
+            'active_ar_device_id': ar_device_id
+        })
+
+        logger.debug({
+            "event": "ar_device_ping",
+            "user_id": user_id[:8] + "...",
+            "device": ar_device_id[:8] + "..."
         })
