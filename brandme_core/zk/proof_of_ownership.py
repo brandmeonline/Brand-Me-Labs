@@ -428,6 +428,11 @@ class ZKProofManager:
                     WHERE user_id = @user_id
                         AND asset_id = @asset_id
                         AND device_session_id = @device_session_id
+                    SELECT proof_id, proof_data, public_signals, expires_at, device_id
+                    FROM ZKProofCache
+                    WHERE user_id = @user_id
+                        AND asset_id = @asset_id
+                        AND device_id = @device_id
                         AND expires_at > CURRENT_TIMESTAMP()
                     ORDER BY created_at DESC
                     LIMIT 1
@@ -436,6 +441,7 @@ class ZKProofManager:
                     "user_id": user_id,
                     "asset_id": asset_id,
                     "device_session_id": device_id
+                    "device_id": device_id
                 }
                 param_types_map = {
                     "user_id": param_types.STRING,
@@ -445,6 +451,11 @@ class ZKProofManager:
             else:
                 query = """
                     SELECT proof_id, proof_data, public_signals, expires_at, device_session_id
+                    "device_id": param_types.STRING
+                }
+            else:
+                query = """
+                    SELECT proof_id, proof_data, public_signals, expires_at, device_id
                     FROM ZKProofCache
                     WHERE user_id = @user_id
                         AND asset_id = @asset_id
@@ -517,6 +528,11 @@ class ZKProofManager:
                 WHERE owner_id = @user_id
                     AND asset_id = @asset_id
                     AND is_current = true
+                SELECT owner_id, acquired_at, share_pct, is_active
+                FROM Owns
+                WHERE owner_id = @user_id
+                    AND asset_id = @asset_id
+                    AND is_active = true
                 """,
                 params={
                     "user_id": user_id,
@@ -534,6 +550,8 @@ class ZKProofManager:
                     "acquired_at": row[1],
                     "transfer_method": row[2],
                     "is_current": row[3]
+                    "share_pct": row[2],
+                    "is_active": row[3]
                 }
             return None
 
@@ -556,6 +574,7 @@ class ZKProofManager:
                 columns=[
                     "proof_id", "user_id", "asset_id", "proof_type",
                     "proof_hash", "proof_data", "public_signals", "device_session_id",
+                    "proof_data", "public_signals", "device_id",
                     "created_at", "expires_at"
                 ],
                 values=[(

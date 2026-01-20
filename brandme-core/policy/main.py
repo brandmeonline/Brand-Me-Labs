@@ -537,6 +537,143 @@ async def verify_provenance(asset_id: str, request: Request):
         )
 
 
+@app.post("/policy/canViewFace")
+async def can_view_face(payload: dict, request: Request):
+    """
+    Check if viewer can access a specific cube face.
+    Used by cube-service for per-face policy decisions.
+
+    Payload:
+        viewer_id: str - User requesting access
+        owner_id: str - Cube owner
+        cube_id: str - Cube identifier
+        face_name: str - Face being requested
+
+    Returns:
+        {"decision": "allow" | "escalate" | "deny"}
+    """
+    response = JSONResponse(content={})
+    request_id = ensure_request_id(request, response)
+
+    viewer_id = payload.get("viewer_id")
+    owner_id = payload.get("owner_id")
+    cube_id = payload.get("cube_id")
+    face_name = payload.get("face_name")
+
+    # Same owner always gets full access
+    if viewer_id == owner_id:
+        decision = "allow"
+        resolved_scope = "private"
+    else:
+        # Fetch owner consent settings
+        consent = await fetch_owner_and_consent(
+            viewer_id,
+            cube_id,
+            request_id,
+            app.state.http_client
+        )
+
+        trust_score = consent["trust_score"]
+        friends_allowed = consent["friends_allowed"]
+
+        # Check if viewer is in friends list
+        is_friend = viewer_id in friends_allowed
+
+        # Face-specific rules
+        public_faces = {"product_details", "provenance", "social_layer", "esg_impact"}
+        private_faces = {"ownership"}
+        authenticated_faces = {"lifecycle"}
+
+        if face_name in public_faces:
+            decision = "allow"
+            resolved_scope = "public"
+        elif face_name in private_faces:
+            # Ownership face requires escalation for non-owners
+            if is_friend and trust_score >= 0.75:
+                decision = "allow"
+                resolved_scope = "friends_only"
+            else:
+                decision = "escalate"
+                resolved_scope = "private"
+        elif face_name in authenticated_faces:
+            # Lifecycle requires authentication
+            if viewer_id == "anonymous":
+                decision = "deny"
+                resolved_scope = "public"
+            elif is_friend:
+                decision = "allow"
+                resolved_scope = "friends_only"
+            else:
+                decision = "escalate"
+                resolved_scope = "authenticated"
+        else:
+            # Unknown face, escalate
+            decision = "escalate"
+            resolved_scope = "unknown"
+
+    logger.info({
+        "event": "face_policy_decision",
+        "viewer": redact_user_id(viewer_id),
+        "owner": redact_user_id(owner_id),
+        "cube_partial": truncate_id(cube_id),
+        "face": face_name,
+        "decision": decision,
+        "request_id": request_id,
+    })
+
+    resp = JSONResponse(content={"decision": decision, "resolved_scope": resolved_scope})
+    ensure_request_id(request, resp)
+    return resp
+
+
+@app.post("/policy/canTransferOwnership")
+async def can_transfer_ownership(payload: dict, request: Request):
+    """
+    Check if ownership transfer is allowed.
+    Used by cube-service for ownership transfer operations.
+
+    Payload:
+        from_owner_id: str - Current owner
+        to_owner_id: str - Prospective new owner
+        cube_id: str - Cube identifier
+        price: float - Transfer price (optional)
+
+    Returns:
+        {"decision": "allow" | "escalate" | "deny"}
+    """
+    response = JSONResponse(content={})
+    request_id = ensure_request_id(request, response)
+
+    from_owner_id = payload.get("from_owner_id")
+    to_owner_id = payload.get("to_owner_id")
+    cube_id = payload.get("cube_id")
+    price = payload.get("price")
+
+    # High-value transfers require human approval
+    if price and price > 10000:
+        decision = "escalate"
+        reason = "high_value_transaction"
+    else:
+        # Allow standard transfers
+        decision = "allow"
+        reason = "standard_transfer"
+
+    logger.info({
+        "event": "ownership_transfer_policy",
+        "from_owner": redact_user_id(from_owner_id),
+        "to_owner": redact_user_id(to_owner_id),
+        "cube_partial": truncate_id(cube_id),
+        "price": price,
+        "decision": decision,
+        "reason": reason,
+        "request_id": request_id,
+    })
+
+    resp = JSONResponse(content={"decision": decision, "reason": reason})
+    ensure_request_id(request, resp)
+    return resp
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint that verifies Spanner connectivity."""

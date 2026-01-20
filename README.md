@@ -67,6 +67,46 @@ All transaction tools require ESG verification from Cardano oracle.
 
 ## Architecture Overview
 
+Brand.Me uses a dual-blockchain architecture for privacy-preserving garment provenance:
+
+- **Cardano**: Public provenance, creator attribution, and ESG anchors
+- **Midnight**: Private ownership lineage, pricing history, and consent snapshots
+- **Cross-Chain Verification**: Cryptographic linking between chains
+
+### v6 Service Architecture
+
+All 9 backend services are production-ready with:
+- ✅ X-Request-Id tracing propagation
+- ✅ PII redaction with `redact_user_id()` and `truncate_id()`
+- ✅ CORS middleware on public-facing services
+- ✅ Consent graph integration
+- ✅ Hash-chained audit logging
+- ✅ Human escalation guardrails
+- ✅ Safe facet previews only
+
+#### Service Ports
+| Service | Port | Description |
+|---------|------|-------------|
+| **brain** | 8000 | Intent resolver, scan entrypoint, CORS enabled |
+| **policy** | 8001 | Consent graph & policy decisions, CORS enabled |
+| **orchestrator** | 8002 | Scan processing & blockchain anchoring |
+| **knowledge** | 8003 | Safe facet retrieval, CORS enabled |
+| **compliance** | 8004 | Hash-chained audit logging & escalations |
+| **identity** | 8005 | User profiles & consent graph |
+| **governance_console** | 8006 | Human review UI, CORS enabled |
+| **cube** | 8007 | Product Cube storage & serving, CORS enabled |
+| **agentic/orchestrator** | — | Multi-agent workflow (library) |
+| **brandme_core/logging** | — | Shared logging utilities (library) |
+
+### Key Components
+Brand.Me uses a **triple-layer architecture** for global consistency and real-time updates:
+
+- **Spanner**: Source of truth for users, assets, consent graph, provenance chain
+- **Firestore**: Real-time wardrobe state, agentic modifications, frontend sync
+- **Cardano + Midnight**: Blockchain anchoring for immutable provenance
+
+### v8 Database Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Client Layer                                 │

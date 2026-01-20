@@ -1169,4 +1169,64 @@ class MCPToolExecutor:
             "status": "pending_authorization",
             "dissolution_method": dissolution_method,
             "message": "Owner must provide dissolve auth key to proceed"
+    # Tool Handlers (stubs - would connect to actual services)
+
+    async def _handle_search_wardrobe(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
+        """Handle wardrobe search."""
+        # Stub implementation - would query Firestore wardrobe
+        return {
+            "items": [],
+            "total_count": 0,
+            "message": "Search functionality via MCP"
+        }
+
+    async def _handle_get_cube_details(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
+        """Handle cube details request."""
+        return {
+            "cube_id": params.get("cube_id"),
+            "display_name": "Sample Garment",
+            "lifecycle_state": "ACTIVE",
+            "faces": {}
+        }
+
+    async def _handle_suggest_outfit(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
+        """Handle outfit suggestion."""
+        return {
+            "outfits": [],
+            "message": "Outfit suggestion via MCP"
+        }
+
+    async def _handle_initiate_rental(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
+        """Handle rental initiation."""
+        return {
+            "rental_id": str(uuid.uuid4()),
+            "status": "pending_human_approval",
+            "requires_human_approval": True,
+            "esg_verified": True
+        }
+
+    async def _handle_list_for_resale(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
+        """Handle resale listing."""
+        return {
+            "listing_id": str(uuid.uuid4()),
+            "status": "pending_human_approval",
+            "requires_human_approval": True,
+            "esg_verified": True
+        }
+
+    async def _handle_request_repair(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
+        """Handle repair request."""
+        return {
+            "repair_request_id": str(uuid.uuid4()),
+            "estimated_esg_improvement": 0.1,
+            "status": "submitted"
+        }
+
+    async def _handle_request_dissolve(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
+        """Handle dissolve request."""
+        return {
+            "dissolve_request_id": str(uuid.uuid4()),
+            "requires_auth_key": True,
+            "estimated_material_recovery_pct": 85.0,
+            "status": "pending_authorization"
         }

@@ -399,6 +399,13 @@ services:
       AR_SYNC_ENABLED: "true"
       AR_SYNC_LATENCY_TARGET_MS: "100"
     depends_on:
+      postgres:
+      # v9: Molecular data face
+      ENABLE_MOLECULAR_DATA: "true"
+      # v9: Biometric sync for AR
+      AR_SYNC_ENABLED: "true"
+      AR_SYNC_LATENCY_TARGET_MS: "100"
+    depends_on:
       spanner-init:
         condition: service_completed_successfully
       firestore-emulator:
@@ -422,6 +429,8 @@ services:
       retries: 3
       start_period: 40s
 
+volumes:
+  pgdata:
   # ===========================================
   # v9: MCP SERVER (Model Context Protocol)
   # ===========================================

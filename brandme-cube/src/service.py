@@ -1,6 +1,6 @@
 """
+Cube Service - Business Logic
 Brand.Me v9 — Cube Service Business Logic
-==========================================
 
 CRITICAL INTEGRITY SPINE PATTERN:
 1. NEVER return face data without calling Policy first
@@ -8,6 +8,15 @@ CRITICAL INTEGRITY SPINE PATTERN:
 3. If Policy returns "escalate" → call Compliance, return escalation response
 4. If Policy returns "deny" → return 403
 5. Log EVERY action to Compliance service
+
+v9 Features:
+- 7 faces including molecular_data
+- DPP Lifecycle State Machine (PRODUCED→ACTIVE→REPAIR→DISSOLVE→REPRINT)
+- Biometric Sync for AR glasses
+- Reprint lineage tracking
+"""
+
+from typing import Optional, Dict, Any
 
 v9 Features:
 - 7 faces including molecular_data
@@ -61,6 +70,21 @@ class CubeService:
 
     def __init__(
         self,
+        db_pool,
+# v9: Valid lifecycle transitions
+VALID_TRANSITIONS = {
+    LifecycleState.PRODUCED: [LifecycleState.ACTIVE],
+    LifecycleState.ACTIVE: [LifecycleState.REPAIR, LifecycleState.DISSOLVE],
+    LifecycleState.REPAIR: [LifecycleState.ACTIVE, LifecycleState.DISSOLVE],
+    LifecycleState.DISSOLVE: [LifecycleState.REPRINT],
+    LifecycleState.REPRINT: [LifecycleState.PRODUCED],
+}
+
+class CubeService:
+    """Product Cube business logic with Integrity Spine enforcement (v9)"""
+
+    def __init__(
+        self,
         spanner_pool,
         policy_client: PolicyClient,
         compliance_client: ComplianceClient,
@@ -68,6 +92,7 @@ class CubeService:
         identity_client: IdentityClient,
         metrics: MetricsCollector
     ):
+        self.db = db_pool
         self.spanner_pool = spanner_pool
         self.policy = policy_client
         self.compliance = compliance_client
@@ -457,6 +482,41 @@ class CubeService:
                 params={"asset_id": cube_id},
                 param_types={"asset_id": param_types.STRING}
             )
+
+            if not row:
+                return None
+
+            return {
+                "cube_id": str(row["cube_id"]),
+                "owner_id": str(row["owner_id"]),
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "faces": {
+                    "product_details": row["product_details"] or {},
+                    "provenance": row["provenance"] or {},
+                    "ownership": row["ownership"] or {},
+                    "social_layer": row["social_layer"] or {},
+                    "esg_impact": row["esg_impact"] or {},
+                    "lifecycle": row["lifecycle"] or {}
+                },
+                "visibility_settings": row["visibility_settings"] or {}
+            }
+        """Fetch cube from Spanner database (v9: includes molecular_data)"""
+        from google.cloud.spanner_v1 import param_types
+        import json
+
+        def _fetch(transaction):
+            results = transaction.execute_sql(
+                """
+                SELECT asset_id, owner_id, created_at, updated_at,
+                       display_name, asset_type, lifecycle_state,
+                       public_esg_score, reprint_generation, parent_asset_id
+                FROM Assets
+                WHERE asset_id = @asset_id
+                """,
+                params={"asset_id": cube_id},
+                param_types={"asset_id": param_types.STRING}
+            )
             for row in results:
                 return row
             return None
@@ -514,6 +574,343 @@ class CubeService:
                 columns=["owner_id", "asset_id", "acquired_at", "transfer_method", "is_current"],
                 values=[
                     (transfer_data.get("new_owner_id"), cube_id, spanner.COMMIT_TIMESTAMP, transfer_data.get("transfer_method", "transfer"), True)
+                ]
+            )
+
+        self.spanner_pool.database.run_in_transaction(_update)
+
+    # ===========================================
+    # v9: LIFECYCLE & CIRCULAR ECONOMY METHODS
+    # ===========================================
+
+    async def transition_lifecycle(
+        self,
+        cube_id: str,
+        new_state: LifecycleState,
+        triggered_by: str,
+        notes: Optional[str],
+        esg_verification_required: bool,
+        request_id: str
+    ) -> Dict[str, Any]:
+        """
+        v9: Transition cube lifecycle state.
+
+        Validates transition against state machine and records event.
+        """
+        # Fetch current state
+        cube_data = await self._fetch_cube_from_db(cube_id)
+        if not cube_data:
+            raise ValueError(f"Cube {cube_id} not found")
+
+        current_state_str = cube_data.get("lifecycle_state", "PRODUCED")
+        try:
+            current_state = LifecycleState(current_state_str)
+        except ValueError:
+            current_state = LifecycleState.PRODUCED
+
+        # Validate transition
+        valid_next_states = VALID_TRANSITIONS.get(current_state, [])
+        if new_state not in valid_next_states:
+            raise ValueError(
+                f"Invalid transition from {current_state.value} to {new_state.value}. "
+                f"Valid transitions: {[s.value for s in valid_next_states]}"
+            )
+
+        # ESG verification for DISSOLVE transitions
+        if new_state == LifecycleState.DISSOLVE and esg_verification_required:
+            esg_result = await self.compliance.verify_esg(
+                asset_id=cube_id,
+                transaction_type="dissolve",
+                request_id=request_id
+            )
+            if not esg_result.get("approved", False):
+                return {
+                    "status": "escalated",
+                    "cube_id": cube_id,
+                    "previous_state": current_state.value,
+                    "new_state": new_state.value,
+                    "esg_verified": False,
+                    "message": esg_result.get("reason", "ESG verification failed"),
+                    "escalation_id": esg_result.get("escalation_id")
+                }
+
+        # Update state in Spanner
+        await self._update_lifecycle_state(cube_id, new_state, triggered_by, notes)
+
+        # Log to compliance
+        await self.compliance.log_event(
+            cube_id=cube_id,
+            face_name="molecular_data",
+            action="lifecycle_transition",
+            actor_id=triggered_by,
+            policy_decision="allow",
+            context={
+                "from_state": current_state.value,
+                "to_state": new_state.value,
+                "notes": notes
+            },
+            request_id=request_id
+        )
+
+        self.metrics.increment_counter(
+            "lifecycle_transitions_total",
+            {"from_state": current_state.value, "to_state": new_state.value}
+        )
+
+        logger.info({
+            "event": "lifecycle_transition_complete",
+            "cube_id": cube_id[:8] + "...",
+            "from_state": current_state.value,
+            "to_state": new_state.value,
+            "triggered_by": triggered_by[:8] + "...",
+            "request_id": request_id
+        })
+
+        return {
+            "status": "success",
+            "cube_id": cube_id,
+            "previous_state": current_state.value,
+            "new_state": new_state.value,
+            "transition_timestamp": datetime.utcnow().isoformat(),
+            "esg_verified": esg_verification_required
+        }
+
+    async def _update_lifecycle_state(
+        self,
+        cube_id: str,
+        new_state: LifecycleState,
+        triggered_by: str,
+        notes: Optional[str]
+    ):
+        """Update lifecycle state in Spanner"""
+        from google.cloud import spanner
+
+        def _update(transaction):
+            # Update Assets table
+            transaction.update(
+                table="Assets",
+                columns=["asset_id", "lifecycle_state", "updated_at"],
+                values=[(cube_id, new_state.value, spanner.COMMIT_TIMESTAMP)]
+            )
+
+            # Insert lifecycle event
+            event_id = str(uuid4())
+            transaction.insert(
+                table="LifecycleEvents",
+                columns=[
+                    "event_id", "asset_id", "from_state", "to_state",
+                    "triggered_by", "notes", "event_timestamp"
+                ],
+                values=[(
+                    event_id, cube_id, None, new_state.value,
+                    triggered_by, notes, spanner.COMMIT_TIMESTAMP
+                )]
+            )
+
+        self.spanner_pool.database.run_in_transaction(_update)
+
+    async def authorize_dissolve(
+        self,
+        cube_id: str,
+        owner_id: str,
+        reason: str,
+        target_materials: Optional[List[str]],
+        request_id: str
+    ) -> Dict[str, Any]:
+        """
+        v9: Authorize dissolve for circular economy.
+
+        Generates an auth key that the owner must use to confirm dissolve.
+        """
+        # Verify ownership
+        cube_data = await self._fetch_cube_from_db(cube_id)
+        if not cube_data:
+            raise ValueError(f"Cube {cube_id} not found")
+
+        if cube_data["owner_id"] != owner_id:
+            raise ValueError("Only owner can authorize dissolve")
+
+        # Check lifecycle state (must be ACTIVE or REPAIR)
+        current_state = cube_data.get("lifecycle_state", "PRODUCED")
+        if current_state not in ["ACTIVE", "REPAIR"]:
+            raise ValueError(f"Cannot authorize dissolve from state {current_state}")
+
+        # Generate auth key
+        auth_key = secrets.token_hex(32)
+        auth_key_hash = hashlib.sha256(auth_key.encode()).hexdigest()
+
+        # Store auth key hash in Spanner
+        await self._store_dissolve_auth(cube_id, auth_key_hash)
+
+        # Get recoverable materials
+        materials = await self._get_cube_materials(cube_id)
+
+        # Log to compliance
+        await self.compliance.log_event(
+            cube_id=cube_id,
+            face_name="molecular_data",
+            action="dissolve_authorized",
+            actor_id=owner_id,
+            policy_decision="allow",
+            context={"reason": reason, "target_materials": target_materials},
+            request_id=request_id
+        )
+
+        logger.info({
+            "event": "dissolve_authorized",
+            "cube_id": cube_id[:8] + "...",
+            "owner_id": owner_id[:8] + "...",
+            "request_id": request_id
+        })
+
+        return {
+            "status": "authorized",
+            "cube_id": cube_id,
+            "auth_key": auth_key,  # Return plaintext to owner (only time)
+            "auth_key_hash": auth_key_hash,
+            "recoverable_materials": materials,
+            "estimated_value_usd": sum(m.get("estimated_value", 0) for m in materials)
+        }
+
+    async def _store_dissolve_auth(self, cube_id: str, auth_key_hash: str):
+        """Store dissolve authorization in Spanner"""
+        from google.cloud import spanner
+
+        def _store(transaction):
+            transaction.update(
+                table="Assets",
+                columns=["asset_id", "dissolve_auth_key_hash", "updated_at"],
+                values=[(cube_id, auth_key_hash, spanner.COMMIT_TIMESTAMP)]
+            )
+
+        self.spanner_pool.database.run_in_transaction(_store)
+
+    async def _get_cube_materials(self, cube_id: str) -> List[Dict[str, Any]]:
+        """Get materials for a cube from Spanner"""
+        from google.cloud.spanner_v1 import param_types
+
+        def _fetch(transaction):
+            results = transaction.execute_sql(
+                """
+                SELECT m.material_id, m.material_type, m.esg_score,
+                       c.weight_pct
+                FROM ComposedOf c
+                JOIN Materials m ON c.material_id = m.material_id
+                WHERE c.asset_id = @asset_id
+                """,
+                params={"asset_id": cube_id},
+                param_types={"asset_id": param_types.STRING}
+            )
+            materials = []
+            for row in results:
+                materials.append({
+                    "material_id": row[0],
+                    "material_type": row[1],
+                    "esg_score": row[2],
+                    "weight_pct": row[3],
+                    "estimated_value": 10.0  # Placeholder
+                })
+            return materials
+
+        return self.spanner_pool.database.run_in_transaction(_fetch)
+
+    async def update_biometric_sync(
+        self,
+        cube_id: str,
+        device_id: str,
+        sync_timestamp: datetime,
+        latency_ms: float,
+        request_id: str
+    ) -> Dict[str, Any]:
+        """
+        v9: Update biometric sync for AR glasses.
+
+        Tracks sync latency for Active Facet performance monitoring.
+        """
+        from google.cloud import spanner
+
+        def _update(transaction):
+            transaction.update(
+                table="Assets",
+                columns=[
+                    "asset_id", "last_biometric_sync",
+                    "ar_sync_latency_ms", "updated_at"
+                ],
+                values=[(cube_id, sync_timestamp, latency_ms, spanner.COMMIT_TIMESTAMP)]
+            )
+
+        self.spanner_pool.database.run_in_transaction(_update)
+
+        logger.info({
+            "event": "biometric_sync_updated",
+            "cube_id": cube_id[:8] + "...",
+            "device_id": device_id[:8] + "...",
+            "latency_ms": latency_ms,
+            "request_id": request_id
+        })
+
+        return {
+            "status": "synced",
+            "cube_id": cube_id,
+            "device_id": device_id,
+            "sync_timestamp": sync_timestamp.isoformat(),
+            "latency_ms": latency_ms
+        }
+
+    async def get_reprint_lineage(
+        self,
+        cube_id: str,
+        request_id: str
+    ) -> Dict[str, Any]:
+        """
+        v9: Get reprint lineage for a cube.
+
+        Traces ancestry through DerivedFrom edges.
+        """
+        from google.cloud.spanner_v1 import param_types
+
+        def _fetch_lineage(transaction):
+            # Get current cube info
+            current = transaction.execute_sql(
+                """
+                SELECT asset_id, display_name, lifecycle_state,
+                       reprint_generation, created_at
+                FROM Assets
+                WHERE asset_id = @asset_id
+                """,
+                params={"asset_id": cube_id},
+                param_types={"asset_id": param_types.STRING}
+            )
+        """Update ownership in Spanner after transfer"""
+        from google.cloud import spanner
+
+        def _update(transaction):
+            # Mark previous ownership as ended
+            transaction.update(
+                table="Owns",
+                columns=["owner_id", "asset_id", "is_current", "ended_at"],
+                values=[
+                    (transfer_data.get("from_owner_id"), cube_id, False, spanner.COMMIT_TIMESTAMP),
+                ]
+            )
+            # Create new ownership record
+            transaction.insert(
+                table="Owns",
+                columns=["owner_id", "asset_id", "acquired_at", "transfer_method", "is_current"],
+                values=[
+                    (transfer_data.get("new_owner_id"), cube_id, spanner.COMMIT_TIMESTAMP, transfer_data.get("transfer_method", "transfer"), True)
+            transaction.update(
+                table="Owns",
+                columns=["owner_id", "asset_id", "is_active"],
+                values=[
+                    (transfer_data.get("from_owner_id"), cube_id, False),
+                ]
+            )
+            transaction.insert(
+                table="Owns",
+                columns=["owner_id", "asset_id", "acquired_at", "share_pct", "is_active"],
+                values=[
+                    (transfer_data.get("new_owner_id"), cube_id, spanner.COMMIT_TIMESTAMP, 100.0, True)
                 ]
             )
 
