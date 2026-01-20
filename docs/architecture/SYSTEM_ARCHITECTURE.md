@@ -1,6 +1,28 @@
-# Brand.Me Architecture Specification
+# Brand.Me Architecture Specification (v9)
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
+
+## v9 Release: 2030 Agentic & Circular Economy
+
+**Version 9** builds on the Global Integrity Spine with features for the 2030 circular economy:
+
+- **Google Cloud Spanner**: Native Property Graph (GQL), O(1) consent lookups, Material tracking
+- **Firestore**: Real-time wardrobe state, Biometric Sync for AR glasses (<100ms)
+- **Model Context Protocol (MCP)**: External agent access to Style Vault
+- **DPP Lifecycle State Machine**: PRODUCED → ACTIVE → REPAIR → DISSOLVE → REPRINT
+- **Zero-Knowledge Proofs**: Proof of ownership for AR glasses without exposing private keys
+- **ESG Verification**: Cardano oracle for ethical oversight of agentic transactions
+- **Midnight Integration**: Burn proofs for circular economy material verification
+# Brand.Me Architecture Specification (v8)
+
+**Copyright (c) Brand.Me, Inc. All rights reserved.**
+
+## v8 Release: Global Integrity Spine
+
+**Version 8** introduces a dual-database production stack replacing PostgreSQL:
+
+- **Google Cloud Spanner**: Global consistency, Consent Graph, O(1) provenance lookups
+- **Firestore**: Real-time wardrobe state, edge caching, agentic state broadcasting
 
 ## Table of Contents
 
@@ -50,7 +72,7 @@
 
 ## System Architecture
 
-### High-Level Components
+### High-Level Components (v8)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -75,21 +97,39 @@
 │ - AI Brain Hub      │      │ - Identity Service │   │ - TX Builder         │
 │ - Policy & Safety   │      │ - Knowledge/RAG    │   │   (Cardano+Midnight) │
 │ - Orchestrator      │      │ - Compliance/Audit │   │ - Cross-Chain        │
-│                     │──────►                    │   │   Verifier           │
+│ - Cube Service      │──────►                    │   │   Verifier           │
 └─────────────────────┘      └────────────────────┘   └──────────┬───────────┘
-         │                            │                           │
          │                            │                           │
          ▼                            ▼                           ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                     Data & Blockchain Layer                         │
-│                                                                     │
-│  ┌──────────────────┐  ┌──────────────┐  ┌────────────────────┐  │
-│  │ Cloud SQL        │  │   Cardano    │  │     Midnight       │  │
-│  │ (PostgreSQL)     │  │ (Public L1)  │  │  (Private Chain)   │  │
-│  └──────────────────┘  └──────────────┘  └────────────────────┘  │
+│                      DATA LAYER (v8)                                │
+│  ┌──────────────────────────┐  ┌──────────────────────────┐       │
+│  │    Google Cloud Spanner  │  │       Firestore          │       │
+│  │                          │  │                          │       │
+│  │  • Users (node)          │  │  • /wardrobes/{user_id}  │       │
+│  │  • Assets (node)         │  │    └─ /cubes/{cube_id}   │       │
+│  │  • Owns (edge)           │  │       └─ faces, state    │       │
+│  │  • Created (edge)        │  │                          │       │
+│  │  • FriendsWith (edge)    │  │  • /agent_sessions/      │       │
+│  │  • ConsentPolicies       │  │                          │       │
+│  │  • ProvenanceChain       │  │  Real-time listeners     │       │
+│  │                          │  │  for frontend updates    │       │
+│  │  O(1) consent lookups    │  │  Agentic state sync      │       │
+│  └──────────────────────────┘  └──────────────────────────┘       │
+└─────────────────────────────────────────────────────────────────────┘
+         │                                    │
+         ▼                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    BLOCKCHAIN LAYER                                 │
+│  ┌──────────────────────┐  ┌──────────────────────┐               │
+│  │      Cardano         │  │      Midnight        │               │
+│  │   (Public Chain)     │  │   (Private Chain)    │               │
+│  │  • Provenance        │  │  • Ownership         │               │
+│  │  • ESG anchors       │  │  • Pricing history   │               │
+│  │  • Creator credits   │  │  • Consent proofs    │               │
+│  └──────────────────────┘  └──────────────────────┘               │
 └─────────────────────────────────────────────────────────────────────┘
          ▲
-         │
          │
 ┌────────┴──────────────────────────────────────────────────────┐
 │                    brandme-console                            │
@@ -514,113 +554,171 @@
 
 ---
 
-## Data Model
+## Data Model (v8)
 
-### Database: Cloud SQL (PostgreSQL)
+### Primary Database: Google Cloud Spanner
 
-#### Tables
+v8 uses Spanner Graph DDL for O(1) consent lookups. See `brandme-data/spanner/schema.sql` for full DDL.
 
-##### users
+#### Node Tables
+
+
+### Primary Database: Google Cloud Spanner
+
+v8 uses Spanner Graph DDL for O(1) consent lookups. See `brandme-data/spanner/schema.sql` for full DDL.
+
+#### Node Tables
+
+##### Users
 ```sql
-CREATE TABLE users (
-  user_id UUID PRIMARY KEY,
-  handle TEXT UNIQUE NOT NULL,
-  display_name TEXT,
-  did_cardano TEXT NULL, -- Future: Cardano DID
-  region_code TEXT,
-  persona_warm_cold NUMERIC(3,2),
-  persona_sport_couture NUMERIC(3,2),
-  trust_score NUMERIC(6,2),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+CREATE TABLE Users (
+  user_id STRING(36) NOT NULL,
+  handle STRING(64) NOT NULL,
+  display_name STRING(256),
+  region_code STRING(16),
+  trust_score FLOAT64,
+  consent_version STRING(64),
+  is_active BOOL NOT NULL DEFAULT (true),
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  updated_at TIMESTAMP OPTIONS (allow_commit_timestamp=true),
+) PRIMARY KEY (user_id);
 ```
 
-##### garments
+##### Assets
 ```sql
-CREATE TABLE garments (
-  garment_id UUID PRIMARY KEY,
-  creator_id UUID REFERENCES users(user_id),
-  current_owner_id UUID REFERENCES users(user_id),
-  display_name TEXT NOT NULL,
-  category TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  cardano_asset_ref TEXT,
-  authenticity_hash TEXT,
-  public_esg_score TEXT,
-  public_story_snippet TEXT
-);
+CREATE TABLE Assets (
+  asset_id STRING(36) NOT NULL,
+  asset_type STRING(32) NOT NULL,  -- 'cube', 'garment', etc.
+  display_name STRING(256) NOT NULL,
+  creator_user_id STRING(36) NOT NULL,
+  current_owner_id STRING(36) NOT NULL,
+  authenticity_hash STRING(128),
+  is_active BOOL NOT NULL DEFAULT (true),
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+) PRIMARY KEY (asset_id);
 ```
 
-##### garment_passport_facets
+#### Edge Tables (Graph Relationships)
+
+##### Owns (Owner → Asset)
 ```sql
-CREATE TABLE garment_passport_facets (
-  facet_id UUID PRIMARY KEY,
-  garment_id UUID REFERENCES garments(garment_id),
-  facet_type TEXT, -- e.g., 'authenticity', 'esg', 'ownership', 'pricing'
-  facet_payload JSONB,
-  is_public_default BOOLEAN NOT NULL DEFAULT FALSE,
-  midnight_ref TEXT, -- Reference to Midnight chain data
-  cardano_ref TEXT, -- Reference to Cardano chain data
-  last_updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+CREATE TABLE Owns (
+  owner_id STRING(36) NOT NULL,
+  asset_id STRING(36) NOT NULL,
+  acquired_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  transfer_method STRING(32),  -- 'mint', 'purchase', 'gift', 'transfer'
+  is_current BOOL NOT NULL DEFAULT (true),
+  FOREIGN KEY (owner_id) REFERENCES Users(user_id),
+  FOREIGN KEY (asset_id) REFERENCES Assets(asset_id),
+) PRIMARY KEY (owner_id, asset_id);
 ```
 
-##### consent_policies
+##### FriendsWith (User ↔ User)
 ```sql
-CREATE TABLE consent_policies (
-  policy_id UUID PRIMARY KEY,
-  garment_id UUID REFERENCES garments(garment_id),
-  visibility_scope TEXT, -- 'public', 'friends_only', 'private'
-  facet_type TEXT, -- Which facet this policy applies to
-  allowed BOOLEAN,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+CREATE TABLE FriendsWith (
+  user_id_1 STRING(36) NOT NULL,
+  user_id_2 STRING(36) NOT NULL,
+  status STRING(16) NOT NULL DEFAULT 'pending',  -- 'pending', 'accepted', 'blocked'
+  initiated_by STRING(36),
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  FOREIGN KEY (user_id_1) REFERENCES Users(user_id),
+  FOREIGN KEY (user_id_2) REFERENCES Users(user_id),
+) PRIMARY KEY (user_id_1, user_id_2);
 ```
 
-##### scan_event
+#### Supporting Tables
+
+##### ConsentPolicies
 ```sql
-CREATE TABLE scan_event (
-  scan_id UUID PRIMARY KEY,
-  scanner_user_id UUID REFERENCES users(user_id),
-  garment_id UUID REFERENCES garments(garment_id),
-  occurred_at TIMESTAMPTZ DEFAULT NOW(),
-  resolved_scope TEXT, -- 'public', 'friends_only', 'private'
-  policy_version TEXT, -- SHA256 hash of policy used
-  region_code TEXT,
-  shown_facets JSONB -- Array of facets shown to scanner
-);
+CREATE TABLE ConsentPolicies (
+  consent_id STRING(36) NOT NULL,
+  user_id STRING(36) NOT NULL,
+  asset_id STRING(36),  -- NULL = global policy
+  scope STRING(32) NOT NULL,  -- 'global', 'asset', 'facet'
+  visibility STRING(32) NOT NULL,  -- 'public', 'friends_only', 'private'
+  is_revoked BOOL NOT NULL DEFAULT (false),
+  revoked_at TIMESTAMP,
+  revoke_reason STRING(256),
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  FOREIGN KEY (user_id) REFERENCES Users(user_id),
+) PRIMARY KEY (consent_id);
 ```
 
-##### chain_anchor
+##### ProvenanceChain (Interleaved)
 ```sql
-CREATE TABLE chain_anchor (
-  anchor_id UUID PRIMARY KEY,
-  scan_id UUID REFERENCES scan_event(scan_id),
-  cardano_tx_hash TEXT,
-  cardano_payload_ref TEXT,
-  midnight_tx_hash TEXT,
-  midnight_payload_ref TEXT,
-  crosschain_root_hash TEXT, -- Links Cardano and Midnight
-  anchored_at TIMESTAMPTZ DEFAULT NOW()
-);
+CREATE TABLE ProvenanceChain (
+  provenance_id STRING(36) NOT NULL,
+  asset_id STRING(36) NOT NULL,
+  sequence_num INT64 NOT NULL,
+  from_user_id STRING(36),
+  to_user_id STRING(36) NOT NULL,
+  transfer_type STRING(32) NOT NULL,  -- 'mint', 'purchase', 'gift', 'transfer'
+  price FLOAT64,
+  currency STRING(8),
+  transfer_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  tx_hash STRING(128),
+  FOREIGN KEY (asset_id) REFERENCES Assets(asset_id),
+) PRIMARY KEY (asset_id, sequence_num),
+  INTERLEAVE IN PARENT Assets ON DELETE CASCADE;
 ```
 
-##### audit_log
+#### Graph Definition
+
 ```sql
-CREATE TABLE audit_log (
-  audit_id UUID PRIMARY KEY,
-  related_scan_id UUID REFERENCES scan_event(scan_id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  actor_type TEXT, -- 'system', 'governance_human', 'compliance_agent'
-  decision_summary TEXT,
-  decision_detail JSONB,
-  risk_flagged BOOLEAN DEFAULT FALSE,
-  escalated_to_human BOOLEAN DEFAULT FALSE,
-  human_approver_id UUID NULL REFERENCES users(user_id),
-  prev_hash TEXT NULL, -- Hash-chain: previous audit_log entry_hash
-  entry_hash TEXT NOT NULL -- Hash of current entry
-);
+CREATE OR REPLACE PROPERTY GRAPH IntegritySpineGraph
+  NODE TABLES (
+    Users,
+    Assets
+  )
+  EDGE TABLES (
+    Owns
+      SOURCE KEY (owner_id) REFERENCES Users(user_id)
+      DESTINATION KEY (asset_id) REFERENCES Assets(asset_id)
+      LABEL OWNS,
+    FriendsWith
+      SOURCE KEY (user_id_1) REFERENCES Users(user_id)
+      DESTINATION KEY (user_id_2) REFERENCES Users(user_id)
+      LABEL FRIENDS_WITH
+  );
+```
+
+### Real-Time State: Firestore
+
+#### Collections
+
+- `/wardrobes/{user_id}` - User wardrobe metadata
+  - `/cubes/{cube_id}` - Cube state, faces, visibility
+- `/agent_sessions/{session_id}` - Agentic modification tracking
+
+#### Wardrobe Document Schema
+```json
+{
+  "owner_id": "uuid",
+  "display_name": "User's Wardrobe",
+  "total_cubes": 5,
+  "last_modified": "timestamp",
+  "settings": {
+    "default_visibility": "friends_only"
+  }
+}
+```
+
+#### Cube Document Schema
+```json
+{
+  "cube_id": "uuid",
+  "owner_id": "uuid",
+  "agentic_state": "idle|processing|modified|syncing|error",
+  "faces": {
+    "product_details": {
+      "data": {...},
+      "visibility": "public",
+      "pending_sync": false
+    }
+  },
+  "visibility_settings": {...},
+  "spanner_synced_at": "timestamp"
+}
 ```
 
 ---
@@ -766,17 +864,24 @@ CREATE TABLE audit_log (
 
 ---
 
-## Infrastructure
+## Infrastructure (v8)
 
 ### Google Cloud Platform (GCP)
 
 #### Core Services
 
 - **GKE (Kubernetes)**: Container orchestration
-- **Cloud SQL (PostgreSQL)**: Relational database
+- **Google Cloud Spanner**: Global consistency database (source of truth)
+- **Firestore**: Real-time wardrobe state, edge caching
 - **GCS**: Object storage for garment passport blobs
 - **VPC**: Network isolation
 - **Workload Identity**: Service account management
+
+#### Database Libraries
+
+- **Spanner**: `google-cloud-spanner` with PingingPool
+- **Firestore**: `google-cloud-firestore` with async client
+- **Legacy**: `asyncpg` (deprecated, kept for migration)
 
 #### Observability
 
@@ -789,14 +894,29 @@ CREATE TABLE audit_log (
 
 - **NATS JetStream**: Event streaming on GKE
 
+### Local Development with Emulators
+
+```bash
+# Start local development environment
+docker-compose up -d
+
+# This starts:
+# - Spanner Emulator (ports 9010, 9020)
+# - Firestore Emulator (port 8080)
+# - All 8 backend services
+
+# Run tests against emulators
+pytest tests/ -v
+```
+
 ### Deployment Regions
 
 - **Primary**: `us-east1`
-- **Future**: Multi-region (extensible)
+- **Future**: Multi-region via Spanner
 
 ### Scaling Goal
 
-**Planetary billion-user scale**
+**Planetary billion-user scale** via Spanner global consistency
 
 ---
 
@@ -925,6 +1045,190 @@ jobs:
 
 ---
 
-**Document Version**: 1.0.0
-**Last Updated**: 2025-10-25
+---
+
+## v8 Production Readiness
+
+### Idempotency (Spanner Commit Timestamps)
+
+```python
+# All writes are idempotent via MutationLog table
+result = await idempotent_writer.execute_idempotent(
+    operation_name="transfer_ownership",
+    params={"cube_id": "abc", "new_owner": "xyz"},
+    mutations=[...]
+)
+# Returns 'executed' or 'duplicate'
+```
+
+### PII Redaction (Driver Level)
+
+```python
+# PII is redacted at the database driver level
+client = PIIRedactingClient(pool_manager)
+results = await client.execute_sql(
+    "SELECT * FROM Users WHERE user_id = @id",
+    params={"id": user_id},
+    redact_results=True  # For external APIs
+)
+# Logs show: user_id=11111111...1111
+```
+
+### Connection Pooling (NATS High-Concurrency)
+
+```python
+# PingingPool keeps sessions warm for NATS JetStream
+pool = SpannerPoolManager(
+    min_sessions=10,
+    max_sessions=100,
+    ping_interval=300  # 5 minutes
+)
+```
+
+### Real-time Updates (Firestore)
+
+```typescript
+// Frontend receives live updates when agents modify cubes
+const { cubes, isConnected } = useWardrobeRealtime(userId);
+
+// Toast notification when agent modifies
+if (cube.agentic_state === 'modified') {
+  toast({ title: 'Wardrobe Updated', ... });
+}
+```
+
+---
+
+**Document Version**: 9.0.0
+**Document Version**: 8.0.0
+**Last Updated**: January 2026
 **Maintained By**: Brand.Me Engineering
+
+---
+
+## v9 New Features
+
+### 1. Product Cube (7 Faces)
+
+v9 adds a seventh face to the Product Cube:
+
+| Face | Purpose | v9 Changes |
+|------|---------|------------|
+| product_details | Immutable product info | - |
+| provenance | Append-only journey | - |
+| ownership | Current owner | - |
+| social_layer | Ratings, reviews | - |
+| esg_impact | ESG scores | Cardano oracle verification |
+| lifecycle | Durability, repair | DPP state machine |
+| **molecular_data** | **NEW: Material tracking** | Material composition, dissolve auth |
+
+### 2. DPP Lifecycle State Machine
+
+```
+PRODUCED → ACTIVE → REPAIR → ACTIVE
+                  ↘ DISSOLVE → REPRINT → PRODUCED
+```
+
+Valid transitions:
+- PRODUCED → ACTIVE (item enters circulation)
+- ACTIVE → REPAIR (item needs repair)
+- ACTIVE → DISSOLVE (owner authorizes material recovery)
+- REPAIR → ACTIVE (repair complete)
+- REPAIR → DISSOLVE (beyond repair)
+- DISSOLVE → REPRINT (materials used in new product)
+- REPRINT → PRODUCED (new product enters circulation)
+
+### 3. MCP (Model Context Protocol)
+
+External agents can access the Style Vault through MCP tools:
+
+```json
+{
+  "tools": [
+    {"name": "search_wardrobe", "category": "search"},
+    {"name": "get_cube_details", "category": "view"},
+    {"name": "suggest_outfit", "category": "style"},
+    {"name": "initiate_rental", "category": "transaction", "requires_esg_check": true},
+    {"name": "list_for_resale", "category": "transaction", "requires_esg_check": true},
+    {"name": "request_repair", "category": "lifecycle"},
+    {"name": "request_dissolve", "category": "lifecycle", "requires_esg_check": true}
+  ]
+}
+```
+
+All transaction tools require:
+- User consent (stored in ConsentedByAgent table)
+- ESG verification from Cardano oracle
+- Optional human approval for high-value transactions
+
+### 4. ZK Proof of Ownership
+
+AR glasses verify ownership without exposing private keys:
+
+```
+User Phone                    AR Glasses
+     │                             │
+     ├───── Generate ZK Proof ─────►
+     │      (ownership proof)      │
+     │                             ├── Verify locally
+     │                             │   (no private key)
+     │                             ▼
+     │                        Display overlay
+```
+
+Endpoints:
+- `POST /identity/{user_id}/zk/generate` - Generate proof
+- `POST /identity/{user_id}/zk/verify` - Verify proof
+- `GET /identity/{user_id}/zk/proofs` - List active proofs
+- `DELETE /identity/{user_id}/zk/proofs` - Invalidate after transfer
+
+### 5. Biometric Sync
+
+Firestore collection for AR glasses real-time sync (<100ms target):
+
+```json
+{
+  "user_id": "uuid",
+  "cube_id": "uuid",
+  "active_facet": {
+    "face_name": "product_details",
+    "display_mode": "overlay",
+    "sync_timestamp": "2026-01-20T12:00:00Z"
+  },
+  "biometric_data": {
+    "device_id": "ar_glasses_123",
+    "last_sync": "2026-01-20T12:00:00Z",
+    "sync_latency_ms": 45
+  }
+}
+```
+
+### 6. Material Tracking
+
+Spanner tables for circular economy:
+
+```sql
+-- Materials table
+CREATE TABLE Materials (
+  material_id STRING(36) NOT NULL,
+  material_type STRING(64) NOT NULL,
+  esg_score FLOAT64,
+  tensile_strength_mpa FLOAT64,
+  dissolve_auth_key STRING(128),
+  is_recyclable BOOL DEFAULT (true)
+);
+
+-- ComposedOf edge (Asset → Material)
+CREATE TABLE ComposedOf (
+  asset_id STRING(36) NOT NULL,
+  material_id STRING(36) NOT NULL,
+  weight_pct FLOAT64
+);
+
+-- DerivedFrom edge (Asset → Asset for reprint lineage)
+CREATE TABLE DerivedFrom (
+  child_asset_id STRING(36) NOT NULL,
+  parent_asset_id STRING(36) NOT NULL,
+  burn_proof_tx_hash STRING(128)
+);
+```

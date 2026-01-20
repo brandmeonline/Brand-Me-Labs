@@ -1,9 +1,26 @@
-# Brand.Me v7 — Stable Integrity Spine
+# Brand.Me v9 — 2030 Agentic & Circular Economy
 # Docker Compose for local development and testing
+#
+# v9 Features:
+#   - Native Property Graph (Spanner GQL)
+#   - DPP Lifecycle State Machine (PRODUCED→ACTIVE→REPAIR→DISSOLVE→REPRINT)
+#   - MCP (Model Context Protocol) for external agent access
+#   - Biometric Sync for AR glasses (<100ms Active Facet)
+#   - Midnight integration for burn proofs (stub for local dev)
+#   - Cardano ESG verification (stub for local dev)
 
 version: "3.9"
 
 services:
+  # ===========================================
+  # DATABASE SERVICES
+  # ===========================================
+
+  # Google Cloud Spanner Emulator
+  spanner-emulator:
+    image: gcr.io/cloud-spanner-emulator/emulator:latest
+    container_name: brandme-spanner-emulator
+  # PostgreSQL (legacy, kept for backward compatibility)
   postgres:
     image: postgres:16
     container_name: brandme-postgres
@@ -12,16 +29,134 @@ services:
       POSTGRES_PASSWORD: brandme
       POSTGRES_DB: brandme
     ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U brandme"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+      - "9010:9010"  # gRPC
+      - "9020:9020"  # REST
     networks:
       - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9020/v1/projects/test-project/instances"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Spanner Schema Initialization
+  spanner-init:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
+    container_name: brandme-spanner-init
+    depends_on:
+      spanner-emulator:
+        condition: service_healthy
+    environment:
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+    volumes:
+      - ./brandme-data/spanner:/schemas
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        echo "Configuring gcloud for emulator..."
+        gcloud config configurations create emulator 2>/dev/null || true
+        gcloud config set auth/disable_credentials true
+        gcloud config set project test-project
+        gcloud config set api_endpoint_overrides/spanner http://spanner-emulator:9020/
+
+        echo "Creating Spanner instance..."
+        gcloud spanner instances create brandme-instance \
+          --config=emulator-config \
+          --description="BrandMe Dev Instance" \
+          --nodes=1 2>/dev/null || echo "Instance already exists"
+
+        echo "Creating Spanner database..."
+        gcloud spanner databases create brandme-db \
+          --instance=brandme-instance 2>/dev/null || echo "Database already exists"
+
+        echo "Applying schema..."
+        gcloud spanner databases ddl update brandme-db \
+          --instance=brandme-instance \
+          --ddl-file=/schemas/schema.sql || echo "Schema already applied"
+
+        echo "Spanner initialization complete!"
+    networks:
+      - brandme_net
+
+  # Google Cloud Spanner Emulator
+  spanner-emulator:
+    image: gcr.io/cloud-spanner-emulator/emulator:latest
+    container_name: brandme-spanner-emulator
+    ports:
+      - "9010:9010"  # gRPC
+      - "9020:9020"  # REST
+    networks:
+      - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9020/v1/projects/test-project/instances"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Spanner Schema Initialization (v9 GQL schema)
+  spanner-init:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
+    container_name: brandme-spanner-init
+    depends_on:
+      spanner-emulator:
+        condition: service_healthy
+    environment:
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+    volumes:
+      - ./brandme-data/spanner:/schemas
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        echo "Configuring gcloud for emulator..."
+        gcloud config configurations create emulator 2>/dev/null || true
+        gcloud config set auth/disable_credentials true
+        gcloud config set project test-project
+        gcloud config set api_endpoint_overrides/spanner http://spanner-emulator:9020/
+
+        echo "Creating Spanner instance..."
+        gcloud spanner instances create brandme-instance \
+          --config=emulator-config \
+          --description="BrandMe Dev Instance" \
+          --nodes=1 2>/dev/null || echo "Instance already exists"
+
+        echo "Creating Spanner database..."
+        gcloud spanner databases create brandme-db \
+          --instance=brandme-instance 2>/dev/null || echo "Database already exists"
+
+        echo "Applying v9 GQL schema..."
+        gcloud spanner databases ddl update brandme-db \
+          --instance=brandme-instance \
+          --ddl-file=/schemas/schema.sql || echo "Schema already applied"
+
+        echo "Spanner initialization complete!"
+    networks:
+      - brandme_net
+
+  # Google Cloud Firestore Emulator (v9: Biometric Sync)
+  firestore-emulator:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:emulators
+    container_name: brandme-firestore-emulator
+    command: gcloud emulators firestore start --host-port=0.0.0.0:8080
+    ports:
+      - "8080:8080"
+    environment:
+      FIRESTORE_PROJECT_ID: brandme-dev
+    networks:
+      - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ===========================================
+  # CORE SERVICES
+  # ===========================================
 
   brain:
     build:
@@ -29,10 +164,33 @@ services:
       dockerfile: brandme-core/brain/Dockerfile
     container_name: brandme-brain
     environment:
+      # Spanner (v9 GQL database)
+      # Spanner (v8 primary database)
+      # Legacy PostgreSQL
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      # Spanner
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      # Firestore (real-time state + biometric sync)
+      # Firestore (real-time state)
+      # Firestore
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
+      # v9: MCP configuration
+      MCP_ENABLED: "true"
+      MCP_ESG_VERIFICATION: "true"
+      # General
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
+        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
         condition: service_healthy
       policy:
         condition: service_started
@@ -49,10 +207,18 @@ services:
       dockerfile: brandme-core/policy/Dockerfile
     container_name: brandme-policy
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
       REGION_DEFAULT: us-east1
+      IDENTITY_URL: http://identity:8005
     depends_on:
-      postgres:
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
         condition: service_healthy
       identity:
         condition: service_started
@@ -60,6 +226,12 @@ services:
       - "8001:8001"
     networks:
       - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
 
   orchestrator:
     build:
@@ -67,11 +239,16 @@ services:
       dockerfile: brandme-core/orchestrator/Dockerfile
     container_name: brandme-orchestrator
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
-        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
       knowledge:
         condition: service_started
       compliance:
@@ -80,6 +257,16 @@ services:
       - "8002:8002"
     networks:
       - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # AGENT SERVICES
+  # ===========================================
 
   knowledge:
     build:
@@ -87,47 +274,76 @@ services:
       dockerfile: brandme-agents/knowledge/Dockerfile
     container_name: brandme-knowledge
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
-        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
     ports:
       - "8003:8003"
     networks:
       - brandme_net
 
+  # v9: Compliance with DPP Lifecycle State Machine
   compliance:
     build:
       context: .
       dockerfile: brandme-agents/compliance/Dockerfile
     container_name: brandme-compliance
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
       REGION_DEFAULT: us-east1
+      # v9: Midnight integration (stub for local dev)
+      MIDNIGHT_API_URL: http://midnight-stub:9000
+      MIDNIGHT_ENABLED: "false"
+      # v9: ESG verification
+      ESG_MIN_THRESHOLD: "0.5"
     depends_on:
-      postgres:
-        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
     ports:
       - "8004:8004"
     networks:
       - brandme_net
 
+  # v9: Identity with ZK Proof of Ownership
   identity:
     build:
       context: .
       dockerfile: brandme-agents/identity/Dockerfile
     container_name: brandme-identity
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
       REGION_DEFAULT: us-east1
+      # v9: ZK proof configuration
+      ZK_PROOF_ENABLED: "true"
+      ZK_PROOF_CACHE_TTL_MINUTES: "60"
     depends_on:
-      postgres:
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
         condition: service_healthy
     ports:
       - "8005:8005"
     networks:
       - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
 
   governance_console:
     build:
@@ -135,11 +351,14 @@ services:
       dockerfile: brandme-governance/governance_console/Dockerfile
     container_name: brandme-governance
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
       REGION_DEFAULT: us-east1
     depends_on:
-      postgres:
-        condition: service_healthy
+      spanner-init:
+        condition: service_completed_successfully
       compliance:
         condition: service_started
     ports:
@@ -152,6 +371,10 @@ services:
       timeout: 5s
       retries: 30
 
+  # ===========================================
+  # CUBE SERVICE (v9: 7 faces + molecular_data)
+  # ===========================================
+
   cube:
     build:
       context: .
@@ -159,6 +382,12 @@ services:
     container_name: brandme-cube
     environment:
       DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+      SPANNER_PROJECT_ID: test-project
+      SPANNER_INSTANCE_ID: brandme-instance
+      SPANNER_DATABASE_ID: brandme-db
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      FIRESTORE_PROJECT_ID: brandme-dev
       REGION_DEFAULT: us-east1
       POLICY_URL: http://policy:8001
       ORCHESTRATOR_URL: http://orchestrator:8002
@@ -167,6 +396,15 @@ services:
       KNOWLEDGE_URL: http://knowledge:8003
     depends_on:
       postgres:
+      # v9: Molecular data face
+      ENABLE_MOLECULAR_DATA: "true"
+      # v9: Biometric sync for AR
+      AR_SYNC_ENABLED: "true"
+      AR_SYNC_LATENCY_TARGET_MS: "100"
+    depends_on:
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
         condition: service_healthy
       policy:
         condition: service_started
@@ -189,6 +427,64 @@ services:
 
 volumes:
   pgdata:
+  # ===========================================
+  # v9: MCP SERVER (Model Context Protocol)
+  # ===========================================
+
+  # MCP Server exposes Brand.Me tools to external agents
+  # Includes Style Vault search, rental/resale, lifecycle tools
+  # mcp-server:
+  #   build:
+  #     context: .
+  #     dockerfile: brandme-core/mcp/Dockerfile
+  #   container_name: brandme-mcp
+  #   environment:
+  #     SPANNER_EMULATOR_HOST: spanner-emulator:9010
+  #     SPANNER_PROJECT_ID: test-project
+  #     SPANNER_INSTANCE_ID: brandme-instance
+  #     SPANNER_DATABASE_ID: brandme-db
+  #     BRAIN_URL: http://brain:8000
+  #     CUBE_URL: http://cube:8007
+  #     IDENTITY_URL: http://identity:8005
+  #     COMPLIANCE_URL: http://compliance:8004
+  #     # ESG verification
+  #     CARDANO_NODE_URL: http://cardano-stub:3001
+  #     ESG_MIN_THRESHOLD: "0.5"
+  #   depends_on:
+  #     - brain
+  #     - cube
+  #     - identity
+  #     - compliance
+  #   ports:
+  #     - "8010:8010"
+  #   networks:
+  #     - brandme_net
+
+  # ===========================================
+  # v9: BLOCKCHAIN STUBS (for local development)
+  # ===========================================
+
+  # Midnight Stub (burn proof verification)
+  # In production, connects to actual Midnight network
+  # midnight-stub:
+  #   image: python:3.11-slim
+  #   container_name: brandme-midnight-stub
+  #   command: python -m http.server 9000
+  #   ports:
+  #     - "9000:9000"
+  #   networks:
+  #     - brandme_net
+
+  # Cardano Stub (ESG oracle)
+  # In production, connects to actual Cardano node
+  # cardano-stub:
+  #   image: python:3.11-slim
+  #   container_name: brandme-cardano-stub
+  #   command: python -m http.server 3001
+  #   ports:
+  #     - "3001:3001"
+  #   networks:
+  #     - brandme_net
 
 networks:
   brandme_net:

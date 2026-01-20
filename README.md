@@ -1,4 +1,4 @@
-# Brand.Me Labs — v6 Stable Integrity Spine
+# Brand.Me Labs — v8 Global Integrity Spine
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
 
@@ -15,9 +15,24 @@ Brand.Me is a symbiotic intelligence platform that merges digital fashion, ident
 
 **Complete Documentation**: See [docs/](./docs/) directory
 
-## v6 Release: Stable Integrity Spine
+## v8 Release: Global Integrity Spine with Spanner + Firestore
 
-**Version 6** implements the core integrity spine with request tracing, human escalation guardrails, and safe facet previews across all 9 backend services.
+**Version 8** introduces a dual-database production stack replacing PostgreSQL:
+
+- **Google Cloud Spanner**: Global consistency, Consent Graph, O(1) provenance lookups
+- **Firestore**: Real-time wardrobe state, edge caching, agentic state broadcasting
+
+### What's New in v8
+
+| Feature | v6/v7 (PostgreSQL) | v8 (Spanner + Firestore) |
+|---------|-------------------|--------------------------|
+| Consent lookup | O(n) FK joins | O(1) graph query |
+| Global revocation | Per-item update | Single row update |
+| Provenance chain | JSONB blob | Interleaved table |
+| Real-time state | HTTP polling | Firestore listeners |
+| Idempotency | Application-level | Commit timestamps |
+| PII protection | Manual | Driver-level redaction |
+| Connection pool | asyncpg 20 max | PingingPool 100 max |
 
 ## North Star Mission
 
@@ -64,73 +79,139 @@ All 9 backend services are production-ready with:
 | **brandme_core/logging** | — | Shared logging utilities (library) |
 
 ### Key Components
+Brand.Me uses a **triple-layer architecture** for global consistency and real-time updates:
+
+- **Spanner**: Source of truth for users, assets, consent graph, provenance chain
+- **Firestore**: Real-time wardrobe state, agentic modifications, frontend sync
+- **Cardano + Midnight**: Blockchain anchoring for immutable provenance
+
+### v8 Database Architecture
 
 ```
-┌─────────────────┐
-│  Mobile Client  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    brandme-gateway                          │
-│              (OAuth, NATS Publisher, API)                   │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼ NATS JetStream
-         ┌───────────────┴───────────────┐
-         │                               │
-         ▼                               ▼
-┌────────────────────┐         ┌──────────────────────┐
-│   brandme-core     │         │  brandme-agents      │
-│  - AI Brain Hub    │◄────────┤  - Identity Service  │
-│  - Policy & Safety │         │  - Knowledge/RAG     │
-│  - Orchestrator    │         │  - Compliance/Audit  │
-└────────┬───────────┘         └──────────────────────┘
-         │
-         ▼
-┌──────────────────────┐       ┌──────────────────────┐
-│   brandme-chain      │       │   brandme-console    │
-│  - TX Builder        │       │  - Governance UI     │
-│  - Cross-Chain       │       │  - Transparency      │
-│    Verifier          │       │    Portal            │
-└──────────────────────┘       └──────────────────────┘
-         │
-         ▼
-┌────────────────────────────────────────┐
-│  Cardano          │      Midnight      │
-│  (Public Chain)   │   (Private Chain)  │
-└────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                     APPLICATION LAYER                            │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐            │
+│  │ Brain   │  │ Policy  │  │Identity │  │  Cube   │            │
+│  │ (8000)  │  │ (8001)  │  │ (8005)  │  │ (8007)  │            │
+│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘            │
+└───────┼────────────┼────────────┼────────────┼──────────────────┘
+        │            │            │            │
+        ▼            ▼            ▼            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      DATA LAYER                                  │
+│  ┌──────────────────────────┐  ┌──────────────────────────┐    │
+│  │    Google Cloud Spanner  │  │       Firestore          │    │
+│  │                          │  │                          │    │
+│  │  • Users (node)          │  │  • /wardrobes/{user_id}  │    │
+│  │  • Assets (node)         │  │    └─ /cubes/{cube_id}   │    │
+│  │  • Owns (edge)           │  │       └─ faces, state    │    │
+│  │  • Created (edge)        │  │                          │    │
+│  │  • FriendsWith (edge)    │  │  • /agent_sessions/      │    │
+│  │  • ConsentPolicies       │  │                          │    │
+│  │  • ProvenanceChain       │  │  Real-time listeners     │    │
+│  │  • AuditLog              │  │  for frontend updates    │    │
+│  │                          │  │                          │    │
+│  │  O(1) consent lookups    │  │  Agentic state sync      │    │
+│  │  Global revocation       │  │  Edge caching            │    │
+│  └──────────────────────────┘  └──────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+        │                                    │
+        ▼                                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    BLOCKCHAIN LAYER                              │
+│  ┌──────────────────────┐  ┌──────────────────────┐            │
+│  │      Cardano         │  │      Midnight        │            │
+│  │   (Public Chain)     │  │   (Private Chain)    │            │
+│  │                      │  │                      │            │
+│  │  • Provenance        │  │  • Ownership         │            │
+│  │  • ESG anchors       │  │  • Pricing history   │            │
+│  │  • Creator credits   │  │  • Consent proofs    │            │
+│  └──────────────────────┘  └──────────────────────┘            │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### Consent Graph Model (Spanner)
+
+```sql
+-- O(1) consent check via graph traversal
+GRAPH IntegritySpineGraph
+MATCH (viewer:Users)-[:FRIENDS_WITH*0..1]-(owner:Users)-[:OWNS]->(asset:Assets)
+WHERE asset.asset_id = @asset_id
+  AND NOT EXISTS {
+    MATCH (owner)-[:HAS_CONSENT]->(consent:ConsentPolicies)
+    WHERE consent.is_revoked = true
+  }
+RETURN owner.user_id, viewer.user_id;
+```
+
+### Service Ports
+
+| Service | Port | Description | Database |
+|---------|------|-------------|----------|
+| **brain** | 8000 | Intent resolver, scan entrypoint | Spanner |
+| **policy** | 8001 | Consent graph & policy decisions | Spanner |
+| **orchestrator** | 8002 | Scan processing & blockchain anchoring | Spanner |
+| **knowledge** | 8003 | Safe facet retrieval | Spanner |
+| **compliance** | 8004 | Hash-chained audit logging | Spanner |
+| **identity** | 8005 | User profiles, friends, consent | Spanner |
+| **governance_console** | 8006 | Human review UI | Spanner |
+| **cube** | 8007 | Product Cube with real-time state | Spanner + Firestore |
 
 ## Repository Structure
 
 This monorepo contains all Brand.Me services:
 
-- **brandme-gateway**: Edge API gateway (Node/TypeScript)
-- **brandme-core**: AI Brain Hub, Policy Engine, Orchestrator (Python/FastAPI)
-  - `brain/main.py` - Intent resolver (port 8000)
-  - `policy/main.py` - Consent graph & policy decisions (port 8001)
-  - `orchestrator/worker.py` - Scan processing & anchoring (port 8002)
-- **brandme-agents**: Supporting agent services (Python/FastAPI)
-  - `identity/src/main.py` - User profiles (port 8005)
-  - `knowledge/src/main.py` - Safe facet retrieval (port 8003)
-  - `compliance/src/main.py` - Audit logging (port 8004)
-  - `agentic/orchestrator/agents.py` - Multi-agent workflow
-- **brandme-governance**: Human review console (Python/FastAPI)
-  - `governance_console/main.py` - Escalation review UI (port 8006)
-- **brandme_core**: Shared utilities
-  - `logging.py` - Structured logging, PII redaction, request tracing
-- **brandme-data**: Database schema and migrations (SQL/Python)
-- **brandme-chain**: Blockchain integration (Node/TypeScript)
-- **brandme-console**: Web interfaces (Next.js/React)
-- **brandme-infra**: Infrastructure as Code (Terraform/Helm)
+```
+Brand-Me-Labs/
+├── brandme-gateway/          # Edge API gateway (Node/TypeScript)
+├── brandme-core/             # Core services (Python/FastAPI)
+│   ├── brain/                # Intent resolver (port 8000)
+│   ├── policy/               # Consent graph & policy (port 8001)
+│   └── orchestrator/         # Scan processing (port 8002)
+├── brandme-agents/           # Agent services (Python/FastAPI)
+│   ├── identity/             # User profiles, friends (port 8005)
+│   ├── knowledge/            # Safe facet retrieval (port 8003)
+│   ├── compliance/           # Audit logging (port 8004)
+│   └── agentic/              # Multi-agent workflow (library)
+├── brandme-governance/       # Human review console (port 8006)
+├── brandme-cube/             # Product Cube service (port 8007)
+├── brandme_core/             # Shared utilities
+│   ├── spanner/              # Spanner client library
+│   │   ├── client.py         # Core Spanner client
+│   │   ├── pool.py           # PingingPool for NATS
+│   │   ├── consent_graph.py  # O(1) consent lookups
+│   │   ├── provenance.py     # Interleaved provenance
+│   │   ├── idempotent.py     # Commit timestamp dedup
+│   │   └── pii_redactor.py   # Driver-level PII redaction
+│   ├── firestore/            # Firestore client library
+│   │   ├── client.py         # Async Firestore client
+│   │   ├── wardrobe.py       # Wardrobe state manager
+│   │   ├── realtime.py       # Real-time listeners
+│   │   ├── agentic.py        # Agentic state manager
+│   │   └── sync.py           # Spanner ↔ Firestore sync
+│   └── logging.py            # Structured logging, PII redaction
+├── brandme-data/             # Database schema
+│   ├── spanner/              # Spanner DDL
+│   │   └── schema.sql        # Full Spanner Graph schema
+│   └── schemas/              # Legacy PostgreSQL (deprecated)
+├── brandme-chain/            # Blockchain integration (Node/TypeScript)
+├── brandme-console/          # Web interfaces (Next.js/React)
+├── brandme-infra/            # Infrastructure as Code (Terraform/Helm)
+├── tests/                    # Integration tests
+│   ├── conftest.py           # Emulator fixtures
+│   ├── test_consent_graph.py # Consent graph tests
+│   ├── test_provenance.py    # Provenance tests
+│   └── test_wardrobe.py      # Firestore tests
+└── docker-compose.yml        # Local dev with emulators
+```
 
 ## Tech Stack
 
 ### Infrastructure
 - **Cloud**: Google Cloud Platform (GCP)
 - **Kubernetes**: GKE
-- **Database**: Cloud SQL (PostgreSQL)
+- **Primary Database**: Google Cloud Spanner (global consistency)
+- **Real-time Cache**: Firestore (wardrobe state)
 - **Event Bus**: NATS JetStream
 - **Storage**: Google Cloud Storage (GCS)
 - **Observability**: OpenTelemetry, Prometheus, Grafana, Loki
@@ -141,25 +222,9 @@ This monorepo contains all Brand.Me services:
 - **Blockchain**: Cardano, Midnight
 - **Infrastructure**: Terraform, Helm
 
-## Privacy & Compliance Model
-
-### Privacy Layers
-- **Public Chain (Cardano)**: Provenance, ESG, creator attribution
-- **Private Chain (Midnight)**: Ownership, pricing, consent policies
-- **Cross-Chain Proof**: Cryptographic link via Cross-Chain Verifier
-
-### Access Control
-- **Midnight Decrypt Policy**: governance_humans_and_compliance_agent
-- **Transparency Portal**: Public (sanitized data only)
-- **Governance Console**: RBAC-protected (ROLE_GOVERNANCE, ROLE_COMPLIANCE)
-- **Regulator View**: Read-only, auditable trail
-
-### Security Guarantees
-1. Policy & Safety MUST run before any reveal
-2. TX Builder is the ONLY path to blockchain writes
-3. Compliance & Audit MUST hash-chain every decision
-4. Governance Console MUST enforce dual approval for Midnight reveals
-5. Transparency Portal MUST NOT leak private data
+### Database Libraries
+- **Spanner**: `google-cloud-spanner` with PingingPool
+- **Firestore**: `google-cloud-firestore` with async client
 
 ## Getting Started
 
@@ -171,26 +236,23 @@ This monorepo contains all Brand.Me services:
 - gcloud CLI
 - Terraform 1.5+
 
-### Local Development
+### Local Development with Emulators
 
 ```bash
 # Clone the repository
 git clone https://github.com/brandme-labs/Brand-Me-Labs.git
 cd Brand-Me-Labs
 
-# Install dependencies for all services
-make install
-
-# Start local development environment (requires Docker)
-make dev-up
-# OR use docker-compose directly:
+# Start local development environment with emulators
 docker-compose up -d
 
-# Run database migrations
-make db-migrate
+# This starts:
+# - Spanner Emulator (ports 9010, 9020)
+# - Firestore Emulator (port 8080)
+# - All 8 backend services
 
-# Seed development data
-make db-seed
+# Wait for Spanner schema initialization
+docker-compose logs -f spanner-init
 
 # Verify all services are running
 curl http://localhost:8000/health  # brain
@@ -200,113 +262,101 @@ curl http://localhost:8003/health  # knowledge
 curl http://localhost:8004/health  # compliance
 curl http://localhost:8005/health  # identity
 curl http://localhost:8006/health  # governance
+curl http://localhost:8007/health  # cube
 
-# Run tests
-make test
-```
-
-### v6 Service Validation
-
-All 9 Python services have been validated:
-```bash
-python3 -m py_compile brandme_core/logging.py
-python3 -m py_compile brandme-core/brain/main.py
-python3 -m py_compile brandme-core/policy/main.py
-python3 -m py_compile brandme-core/orchestrator/worker.py
-python3 -m py_compile brandme-agents/identity/src/main.py
-python3 -m py_compile brandme-agents/knowledge/src/main.py
-python3 -m py_compile brandme-agents/compliance/src/main.py
-python3 -m py_compile brandme-agents/agentic/orchestrator/agents.py
-python3 -m py_compile brandme-governance/governance_console/main.py
+# Run tests against emulators
+pytest tests/ -v
 ```
 
 ### Environment Configuration
 
-Each service requires environment variables. See `.env.example` files in each service directory:
-
-- `brandme-gateway/.env.example`
-- `brandme-core/.env.example`
-- `brandme-agents/.env.example`
-- `brandme-chain/.env.example`
-- `brandme-console/.env.example`
-
-**IMPORTANT**: Never commit secrets or wallet keys. Use Kubernetes secrets in production.
-
-## Testing
-
-### Unit Tests
-
-Run unit tests for all services:
+Key environment variables for Spanner + Firestore:
 
 ```bash
-# Run all tests
-make test
+# Spanner Configuration
+SPANNER_EMULATOR_HOST=localhost:9010  # For local dev
+SPANNER_PROJECT_ID=brandme-project
+SPANNER_INSTANCE_ID=brandme-instance
+SPANNER_DATABASE_ID=brandme-db
+SPANNER_POOL_SIZE=10
+SPANNER_MAX_SESSIONS=100
 
-# Run tests for specific service
-cd brandme-chain && pnpm test
-
-# Run with coverage
-cd brandme-chain && pnpm test:coverage
-
-# Watch mode for development
-cd brandme-chain && pnpm test:watch
+# Firestore Configuration
+FIRESTORE_EMULATOR_HOST=localhost:8080  # For local dev
+FIRESTORE_PROJECT_ID=brandme-dev
 ```
 
-### Blockchain Integration Tests
-
-Test against real Cardano testnet:
-
-```bash
-# 1. Set up test wallet (one-time setup)
-cd brandme-chain
-./scripts/setup-test-wallet.sh
-
-# 2. Get Blockfrost API key from https://blockfrost.io
-# 3. Edit .env.integration with your API key
-
-# 4. Fund wallet from testnet faucet
-# Visit: https://docs.cardano.org/cardano-testnet/tools/faucet/
-
-# 5. Run integration tests
-export $(cat .env.integration | xargs)
-INTEGRATION=true pnpm test:integration
-```
-
-See [brandme-chain/TESTING.md](brandme-chain/TESTING.md) for detailed testing documentation.
-
-## Runtime Flow: Garment Scan (v6)
+## Runtime Flow: Garment Scan (v8)
 
 1. **Mobile client** calls `POST /scan` with `garment_tag`
 2. **Gateway** publishes `scan.requested` event to NATS
 3. **Brain** (port 8000) resolves intent and `garment_id`
-   - Calls `POST /policy/check` with X-Request-Id forwarding
-4. **Policy** (port 8001) checks consent graph, returns decision + scope
-   - Fetches owner consent from Identity service (port 8005)
+4. **Policy** (port 8001) checks consent via **Spanner Graph**:
+   - O(1) consent lookup using graph traversal
+   - Checks friendship status via `FriendsWith` edge table
    - Resolves scope: `private` | `friends_only` | `public`
-   - If trust_score < 0.75 for non-public scopes → `escalate`
-5. **Brain** routes based on policy decision:
-   - **If `allow`**: Calls `POST /scan/commit` on Orchestrator
-   - **If `escalate`**: Calls `POST /audit/escalate` on Compliance
-   - **If `deny`**: Returns empty response
-6. **Orchestrator** (port 8002) processes allowed scans:
-   - **v6 fix**: Checks if `policy_decision == "escalate"` → returns `escalated_pending_human` WITHOUT anchoring
-   - Fetches allowed facets from Knowledge Service (port 8003)
-   - Writes `scan_event` row to database
-   - Builds blockchain transactions (Cardano + Midnight + crosschain root)
-   - Writes `chain_anchor` row to database
-   - Calls Compliance `/audit/log` and `/audit/anchorChain`
-7. **Knowledge** (port 8003) returns public-safe facets only
-   - **v6 fix**: Always ignores requested scope, returns public previews only
-   - NEVER returns pricing history, ownership lineage, or PII
-8. **Compliance** (port 8004) logs with hash-chaining
-   - **v6 fix**: Escalations are queryable by governance_console
-   - Each audit log entry hashes: `prev_hash + decision_summary + decision_detail`
-9. **Governance Console** (port 8006) allows human review
-   - `GET /governance/escalations` - List pending escalations
-   - `POST /governance/escalations/{scan_id}/decision` - Approve/deny
-   - **TODO**: After approval, callback to Orchestrator to finalize anchoring
-10. **Mobile client** receives allowed facets only (never private data)
-11. **Transparency Portal** shows public proof without leaking private data
+5. **Orchestrator** (port 8002) processes allowed scans:
+   - **Idempotent writes** using Spanner commit timestamps
+   - Records provenance in interleaved `ProvenanceChain` table
+   - Builds blockchain transactions
+6. **Cube** (port 8007) serves product data:
+   - **Real-time state** from Firestore
+   - Agents modify faces → Firestore broadcasts to frontend
+   - Background sync to Spanner (source of truth)
+7. **Identity** (port 8005) provides user profiles:
+   - Friends list from `FriendsWith` table
+   - Consent policies from `ConsentPolicies` table
+   - **Global revocation** in single operation
+
+## Production Readiness
+
+### Idempotency (Spanner Commit Timestamps)
+
+```python
+# All writes are idempotent via MutationLog table
+result = await idempotent_writer.execute_idempotent(
+    operation_name="transfer_ownership",
+    params={"cube_id": "abc", "new_owner": "xyz"},
+    mutations=[...]
+)
+# Returns 'executed' or 'duplicate'
+```
+
+### PII Redaction (Driver Level)
+
+```python
+# PII is redacted at the database driver level
+client = PIIRedactingClient(pool_manager)
+results = await client.execute_sql(
+    "SELECT * FROM Users WHERE user_id = @id",
+    params={"id": user_id},
+    redact_results=True  # For external APIs
+)
+# Logs show: user_id=11111111...1111
+```
+
+### Connection Pooling (NATS High-Concurrency)
+
+```python
+# PingingPool keeps sessions warm for NATS JetStream
+pool = SpannerPoolManager(
+    min_sessions=10,
+    max_sessions=100,
+    ping_interval=300  # 5 minutes
+)
+```
+
+### Real-time Updates (Firestore)
+
+```typescript
+// Frontend receives live updates when agents modify cubes
+const { cubes, isConnected } = useWardrobeRealtime(userId);
+
+// Toast notification when agent modifies
+if (cube.agentic_state === 'modified') {
+  toast({ title: 'Wardrobe Updated', ... });
+}
+```
 
 ## Deployment
 
@@ -316,7 +366,18 @@ See [brandme-chain/TESTING.md](brandme-chain/TESTING.md) for detailed testing do
 # Configure GCP project
 gcloud config set project YOUR_PROJECT_ID
 
-# Provision infrastructure
+# Create Spanner instance
+gcloud spanner instances create brandme-instance \
+  --config=regional-us-central1 \
+  --description="Brand.Me Production" \
+  --nodes=3
+
+# Create database with schema
+gcloud spanner databases create brandme-db \
+  --instance=brandme-instance \
+  --ddl-file=brandme-data/spanner/schema.sql
+
+# Provision remaining infrastructure
 cd brandme-infra/terraform
 terraform init
 terraform apply
@@ -329,15 +390,15 @@ helm upgrade --install brandme ./brandme-umbrella \
   --create-namespace
 ```
 
-### CI/CD
+## Security Guarantees (v8)
 
-GitHub Actions automatically:
-- Builds Docker images for all services
-- Runs tests and linters
-- Pushes images to registry
-- Deploys to GKE on tagged releases
-
-See `.github/workflows/` for pipeline definitions.
+1. ✅ **O(1) Consent Checks**: Spanner graph queries for instant policy decisions
+2. ✅ **Global Revocation**: Single operation revokes all consent policies
+3. ✅ **Idempotent Writes**: Commit timestamps prevent duplicate operations
+4. ✅ **PII Redaction**: Driver-level redaction for all database operations
+5. ✅ **Real-time Sync**: Firestore broadcasts state changes to frontends
+6. ✅ **Connection Pooling**: PingingPool handles NATS high-concurrency
+7. ✅ **Hash-Chained Audit**: Every compliance log entry cryptographically linked
 
 ## Contributing
 
@@ -346,45 +407,18 @@ See `.github/workflows/` for pipeline definitions.
 - Python: Black + Ruff + MyPy
 - All services must emit OpenTelemetry traces
 - **No PII in logs** - Use `redact_user_id()` and `truncate_id()`
-- Hash-chain all audit logs (SHA256 with UTF-8 encoding)
-- **NEVER log sensitive data**: wallet_keys, purchase_history, ownership_lineage, facet bodies, DID secrets
-- All FastAPI services use lifespan context managers for db_pool and http_client
-- Every route must call `ensure_request_id()` for X-Request-Id propagation
-- CORS middleware on public-facing services (brain, policy, knowledge, governance_console)
-
-### v6 Security Guarantees
-1. ✅ **Request Tracing**: X-Request-Id propagated across all service calls
-2. ✅ **PII Redaction**: All user IDs truncated to 8 chars in logs
-3. ✅ **Escalation Guardrails**: Orchestrator skips anchoring if policy_decision == "escalate"
-4. ✅ **Safe Facet Previews**: Knowledge service always returns public-safe data only
-5. ✅ **Hash-Chained Audit**: Every compliance log entry cryptographically linked
-6. ✅ **Consent Graph**: Policy service enforces owner consent via Identity service
-7. ✅ **Human Review**: Governance console provides escalation approval workflow
+- Use Spanner for writes, Firestore for real-time reads
+- All database operations must be idempotent
 
 ### Git Workflow
 1. Create feature branch from `main`
 2. Make changes with clear commit messages
-3. Ensure all tests pass
+3. Ensure all tests pass (including emulator tests)
 4. Submit PR with description
 5. Require 2 approvals for merge
-
-## Organization
-
-- **GitHub Org**: brandme-labs
-- **Subsidiaries**:
-  - brandme-intelligence
-  - brandme-augmentation
-  - brandme-chaintech
 
 ## License
 
 Copyright (c) Brand.Me, Inc. All rights reserved.
 
 Proprietary and confidential. Unauthorized copying or distribution is prohibited.
-
-## Support
-
-For questions or issues:
-- Internal team: Slack #brandme-engineering
-- Documentation: [docs/](./docs/)
-- Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)

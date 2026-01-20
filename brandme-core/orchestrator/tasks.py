@@ -4,50 +4,78 @@ Celery Tasks for Brand.Me Orchestrator
 =======================================
 
 Async tasks for scan processing, blockchain integration, and audit logging.
+v8: Updated to use Spanner instead of PostgreSQL.
 """
 
 import os
 import json
 import asyncio
+import uuid
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 from uuid import UUID
 
 import httpx
-import asyncpg
 from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded, Retry
 
 from brandme.orchestrator.celery_app import app
 from brandme_core.logging import get_logger, redact_user_id
+from brandme_core.spanner.pool import create_pool_manager
+from google.cloud import spanner
 
 logger = get_logger("orchestrator")
 
 
-# Database connection pool (lazy initialization)
-_db_pool: Optional[asyncpg.Pool] = None
+# Spanner connection pool (lazy initialization, v8)
+_spanner_pool = None
+
+SPANNER_PROJECT = os.getenv("SPANNER_PROJECT_ID", "test-project")
+SPANNER_INSTANCE = os.getenv("SPANNER_INSTANCE_ID", "brandme-instance")
+SPANNER_DATABASE = os.getenv("SPANNER_DATABASE_ID", "brandme-db")
 
 
-async def get_db_pool() -> asyncpg.Pool:
-    """Get or create database connection pool."""
-    global _db_pool
-    if _db_pool is None:
-        database_url = os.getenv("DATABASE_URL")
-        if not database_url:
-            raise ValueError("DATABASE_URL environment variable not set")
-        _db_pool = await asyncpg.create_pool(database_url, min_size=2, max_size=10)
-    return _db_pool
+def get_spanner_pool():
+    """Get or create Spanner connection pool (v8)."""
+    global _spanner_pool
+    if _spanner_pool is None:
+        _spanner_pool = create_pool_manager(
+            project_id=SPANNER_PROJECT,
+            instance_id=SPANNER_INSTANCE,
+            database_id=SPANNER_DATABASE
+        )
+        # Note: For sync Celery tasks, we use the synchronous Spanner client
+    return _spanner_pool
 
 
 class AsyncTask(Task):
-    """Base task that supports async/await."""
+    """
+    Base task that supports async/await.
+
+    Uses the decorated function as the async implementation.
+    The `run` method is the actual task function, and we wrap it
+    to run in an event loop.
+    """
+    _is_async = True
 
     def __call__(self, *args, **kwargs):
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(self.run_async(*args, **kwargs))
+        """Execute the async task in an event loop."""
+        # Get or create event loop
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
 
-    async def run_async(self, *args, **kwargs):
-        raise NotImplementedError
+        # The decorated function becomes self.run
+        if asyncio.iscoroutinefunction(self.run):
+            return loop.run_until_complete(self.run(*args, **kwargs))
+        else:
+            # Fallback for synchronous tasks
+            return self.run(*args, **kwargs)
 
 
 @app.task(
@@ -90,41 +118,29 @@ async def persist_scan_event(
         Status dictionary
     """
     try:
-        pool = await get_db_pool()
+        # v8: Use Spanner instead of PostgreSQL
+        spanner_pool = get_spanner_pool()
 
-        async with pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO scan_event (
-                    scan_id,
-                    scanner_user_id,
-                    garment_id,
-                    occurred_at,
-                    resolved_scope,
-                    policy_version,
-                    decision_summary,
-                    region_code,
-                    shown_facets,
-                    risk_flagged,
-                    escalated_to_human,
-                    client_type,
-                    client_version
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-                """,
-                UUID(scan_id),
-                UUID(scanner_user_id),
-                UUID(garment_id),
-                datetime.now(timezone.utc),
-                resolved_scope,
-                policy_version,
-                decision_summary,
-                region_code,
-                json.dumps(shown_facets),
-                risk_flagged,
-                escalated_to_human,
-                kwargs.get("client_type", "mobile_app"),
-                kwargs.get("client_version"),
+        def _insert_scan_event(transaction):
+            audit_id = str(uuid.uuid4())
+            transaction.insert(
+                table="AuditLog",
+                columns=[
+                    "audit_id", "related_asset_id", "actor_type", "action_type",
+                    "action_summary", "decision_summary", "risk_flagged",
+                    "escalated_to_human", "policy_version", "region_code",
+                    "prev_hash", "entry_hash", "created_at"
+                ],
+                values=[(
+                    audit_id, scan_id, "user", "scan",
+                    f"scan_by_{scanner_user_id[:8]}", decision_summary,
+                    risk_flagged, escalated_to_human, policy_version, region_code,
+                    "", "",  # Hash chaining done by compliance service
+                    spanner.COMMIT_TIMESTAMP
+                )]
             )
+
+        spanner_pool.database.run_in_transaction(_insert_scan_event)
 
         logger.info(
             "Scan event persisted",
@@ -278,8 +294,8 @@ async def submit_blockchain_tx(
             response.raise_for_status()
             tx_result = response.json()
 
-        # Log blockchain anchor
-        await log_blockchain_anchor(
+        # Log blockchain anchor (v8: now synchronous with Spanner)
+        log_blockchain_anchor(
             scan_id=scan_id,
             cardano_tx_hash=tx_result.get("tx_hash") if network == "cardano" else None,
             midnight_tx_hash=tx_result.get("tx_hash") if network == "midnight" else None,
@@ -408,30 +424,29 @@ async def log_audit_entry(
         raise self.retry(exc=exc, countdown=60)
 
 
-async def log_blockchain_anchor(
+def log_blockchain_anchor(
     scan_id: str,
     cardano_tx_hash: Optional[str] = None,
     midnight_tx_hash: Optional[str] = None,
 ) -> None:
-    """Helper to log blockchain anchor to database."""
-    pool = await get_db_pool()
+    """Helper to log blockchain anchor to Spanner (v8)."""
+    spanner_pool = get_spanner_pool()
 
-    async with pool.acquire() as conn:
-        await conn.execute(
-            """
-            INSERT INTO chain_anchor (
-                anchor_id,
-                scan_id,
-                cardano_tx_hash,
-                midnight_tx_hash,
-                anchored_at
-            ) VALUES (gen_random_uuid(), $1, $2, $3, $4)
-            """,
-            UUID(scan_id),
-            cardano_tx_hash,
-            midnight_tx_hash,
-            datetime.now(timezone.utc),
+    def _insert_anchor(transaction):
+        anchor_id = str(uuid.uuid4())
+        transaction.insert(
+            table="ChainAnchor",
+            columns=[
+                "anchor_id", "scan_id", "cardano_tx_hash",
+                "midnight_tx_hash", "anchored_at"
+            ],
+            values=[(
+                anchor_id, scan_id, cardano_tx_hash,
+                midnight_tx_hash, spanner.COMMIT_TIMESTAMP
+            )]
         )
+
+    spanner_pool.database.run_in_transaction(_insert_anchor)
 
 
 @app.task(
