@@ -74,6 +74,7 @@ class ESGVerifier:
         spanner_pool=None,
         allow_stub_fallback: bool = False,
         require_cardano: bool = True
+        timeout: int = 30
     ):
         """
         Initialize the ESG verifier.
@@ -205,6 +206,12 @@ class ESGVerifier:
                 return self._stub_esg_score(material_id)
 
             return None
+            # Cardano not available - use stub
+            logger.warning({
+                "event": "cardano_unavailable_stub_esg",
+                "material_id": material_id[:8] + "..."
+            })
+            return self._stub_esg_score(material_id)
 
         except Exception as e:
             logger.error({

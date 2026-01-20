@@ -62,6 +62,7 @@ class BurnProofVerifier:
         spanner_pool=None,
         allow_stub_fallback: bool = False,
         require_midnight: bool = True
+        timeout: int = 30
     ):
         """
         Initialize the burn proof verifier.
@@ -78,6 +79,9 @@ class BurnProofVerifier:
         self.spanner_pool = spanner_pool
         self.allow_stub_fallback = allow_stub_fallback
         self.require_midnight = require_midnight
+        """
+        self.midnight_api_url = midnight_api_url
+        self.timeout = timeout
         self._client: Optional[httpx.AsyncClient] = None
 
     async def _get_client(self) -> httpx.AsyncClient:
@@ -140,6 +144,7 @@ class BurnProofVerifier:
             if response.status_code == 200:
                 data = response.json()
                 result = BurnProofVerificationResult(
+                return BurnProofVerificationResult(
                     is_valid=data.get("valid", False),
                     proof_hash=burn_proof_hash,
                     parent_asset_id=parent_asset_id,
@@ -209,6 +214,13 @@ class BurnProofVerifier:
                 error="Midnight network unavailable",
                 midnight_confirmed=False
             )
+            # Midnight not available - use stub verification
+            logger.warning({
+                "event": "midnight_unavailable_stub_verify",
+                "proof_hash": burn_proof_hash[:16] + "...",
+                "parent_asset_id": parent_asset_id[:8] + "..."
+            })
+            return await self._stub_verify(burn_proof_hash, parent_asset_id)
 
         except Exception as e:
             logger.error({
