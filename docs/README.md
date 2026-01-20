@@ -1,105 +1,75 @@
-# Brand.Me Documentation
+# Brand.Me Documentation (v9)
 
-Welcome to the Brand.Me platform documentation. This directory contains comprehensive documentation organized by topic.
+Welcome to the Brand.Me platform documentation. This directory contains comprehensive documentation for the v9 Agentic & Circular Economy release.
 
 ---
 
-## 📁 Documentation Structure
+## Documentation Structure
 
 ### [Architecture](./architecture/)
 System architecture, design decisions, and technical specifications.
 
-- **OVERVIEW.md** - Complete architecture overview
-- **SERVICES.md** - Service specifications (to be created)
-- **DATABASE_SCHEMA.md** - Database schema (to be created)
-- **FLOWS.md** - System flow diagrams (to be created)
+- **[SYSTEM_ARCHITECTURE.md](./architecture/SYSTEM_ARCHITECTURE.md)** - Complete v9 architecture
+- **[AGENTIC_ARCHITECTURE.md](./architecture/AGENTIC_ARCHITECTURE.md)** - Agent system design
+- **[OVERVIEW.md](./architecture/OVERVIEW.md)** - Quick reference
 
 ### [Infrastructure](./infrastructure/)
 Infrastructure setup, observability, and operational concerns.
 
-- **OBSERVABILITY.md** - Metrics, tracing, logging
-- **SETUP.md** - Infrastructure setup (to be created)
+- **[OBSERVABILITY.md](./infrastructure/OBSERVABILITY.md)** - Metrics, tracing, logging
+- **[INFRASTRUCTURE.md](./infrastructure/INFRASTRUCTURE.md)** - Infrastructure setup
 
 ### [Deployment](./deployment/)
-Deployment guides, Docker Compose, Kubernetes, and operational procedures.
+Deployment guides and operational procedures.
 
-- **DEPLOYMENT_GUIDE.md** - Complete deployment guide
-- **QUICK_START.md** - Quick start guide (reference from root)
+- **[DEPLOYMENT_GUIDE.md](./deployment/DEPLOYMENT_GUIDE.md)** - Complete deployment guide
+- **[QUICK_START.md](./deployment/QUICK_START.md)** - Quick start guide
 
 ### [Status](./status/)
-Current status, progress tracking, and assessments.
+Current status and progress tracking.
 
-- **CURRENT_STATUS.md** - Current platform status
+- **[CURRENT_STATUS.md](./status/CURRENT_STATUS.md)** - Current platform status
 
 ### [Next Steps](./next_steps/)
-Execution roadmap, remaining work, and future phases.
+Execution roadmap and future phases.
 
-- **ROADMAP.md** - Execution roadmap and next steps
+- **[ROADMAP.md](./next_steps/ROADMAP.md)** - Execution roadmap
 
 ---
 
-## 🚀 Quick Links
+## Quick Links
 
 ### Getting Started
 - [README.md](../README.md) - Main repository README
+- [System Architecture](./architecture/SYSTEM_ARCHITECTURE.md) - v9 architecture
 - [Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md) - How to deploy
-- [Quick Start](../QUICK_START.md) - Local development setup
 
-### Understanding the System
-- [Architecture Overview](./architecture/OVERVIEW.md) - System architecture
-- [Current Status](./status/CURRENT_STATUS.md) - Platform status
-- [Observability](./infrastructure/OBSERVABILITY.md) - Monitoring & metrics
+### Key Concepts
+- **Product Cube**: 7-face digital passport for physical assets
+- **DPP Lifecycle**: PRODUCED → ACTIVE → REPAIR → DISSOLVE → REPRINT
+- **MCP Tools**: 7 tools for external agent access to Style Vault
+- **ESG Verification**: Cardano oracle for ethical oversight
+- **Burn Proofs**: Midnight ZK proofs for circular economy
 
-### Planning & Execution
-- [Roadmap](./next_steps/ROADMAP.md) - Execution plan
-- [Enterprise Assessment](../ENTERPRISE_GRADE_ASSESSMENT.md) - Assessment (root level)
-
----
-
-## 📊 Documentation Status
-
-### ✅ Complete
-- Architecture overview
-- Observability infrastructure
-- Deployment guide
-- Current status
-- Roadmap
-- Enterprise assessment
-
-### 🟡 In Progress
-- Service specifications
-- Database schema details
-- Flow diagrams
-- Infrastructure setup guide
-
-### ⬜ Planned
-- API documentation
-- Runbooks
-- Troubleshooting guides
-- ADRs (Architecture Decision Records)
+### Core Technologies
+- Google Cloud Spanner (Native Property Graph)
+- Firestore (Real-time sync, AR glasses <100ms)
+- Model Context Protocol (External agent access)
+- Cardano (Public provenance, ESG)
+- Midnight (Private ownership, ZK burn proofs)
 
 ---
 
-## 📝 Document Naming Convention
+## Finding Information
 
-- `OVERVIEW.md` - High-level overview documents
-- `SERVICES.md` - Service specifications
-- `DEPLOYMENT_GUIDE.md` - Deployment instructions
-- `CURRENT_STATUS.md` - Status documentation
-- `ROADMAP.md` - Planning documents
-
----
-
-## 🔍 Finding Information
-
-**Want to deploy?** → [Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)  
-**Want to understand architecture?** → [Architecture Overview](./architecture/OVERVIEW.md)  
-**Want to check status?** → [Current Status](./status/CURRENT_STATUS.md)  
-**Want to know what's next?** → [Roadmap](./next_steps/ROADMAP.md)  
+**Want to understand architecture?** → [System Architecture](./architecture/SYSTEM_ARCHITECTURE.md)
+**Want to understand agents?** → [Agentic Architecture](./architecture/AGENTIC_ARCHITECTURE.md)
+**Want to deploy?** → [Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)
+**Want to check status?** → [Current Status](./status/CURRENT_STATUS.md)
+**Want to know what's next?** → [Roadmap](./next_steps/ROADMAP.md)
 **Want to see metrics?** → [Observability](./infrastructure/OBSERVABILITY.md)
 
 ---
 
-*Documentation: Complete*  
-*Last Updated: January 27, 2025*
-
+**Document Version**: 9.0.0
+**Last Updated**: January 2026

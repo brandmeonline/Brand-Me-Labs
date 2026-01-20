@@ -1,5 +1,6 @@
 """
-Product Cube Data Models
+Brand.Me v9 — Product Cube Data Models
+=======================================
 
 Defines the six faces of a Product Cube:
 Brand.Me v9 — Product Cube Data Models

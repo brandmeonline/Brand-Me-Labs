@@ -381,7 +381,6 @@ services:
       dockerfile: brandme-cube/Dockerfile
     container_name: brandme-cube
     environment:
-      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
@@ -394,6 +393,11 @@ services:
       COMPLIANCE_URL: http://compliance:8004
       IDENTITY_URL: http://identity:8005
       KNOWLEDGE_URL: http://knowledge:8003
+      # v9: Molecular data face
+      ENABLE_MOLECULAR_DATA: "true"
+      # v9: Biometric sync for AR
+      AR_SYNC_ENABLED: "true"
+      AR_SYNC_LATENCY_TARGET_MS: "100"
     depends_on:
       postgres:
       # v9: Molecular data face

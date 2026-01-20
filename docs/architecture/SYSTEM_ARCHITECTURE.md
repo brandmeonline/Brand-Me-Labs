@@ -17,23 +17,31 @@
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
 
-## v8 Release: Global Integrity Spine
+## 2030 Agentic & Circular Economy
 
-**Version 8** introduces a dual-database production stack replacing PostgreSQL:
+Version 9 is the production-ready architecture for planetary-scale fashion identity, provenance, and circular economy operations.
 
-- **Google Cloud Spanner**: Global consistency, Consent Graph, O(1) provenance lookups
-- **Firestore**: Real-time wardrobe state, edge caching, agentic state broadcasting
+**Core Technologies:**
+- **Google Cloud Spanner**: Native Property Graph (GQL), O(1) consent lookups, Material tracking
+- **Firestore**: Real-time wardrobe sync, Biometric sync for AR glasses (<100ms)
+- **Model Context Protocol (MCP)**: External agent access to Style Vault
+- **Cardano**: Public provenance, ESG oracle verification
+- **Midnight**: Private ownership, ZK burn proofs for circular economy
+
+---
 
 ## Table of Contents
 
 1. [Mission & Compliance](#mission--compliance)
 2. [System Architecture](#system-architecture)
-3. [Service Specifications](#service-specifications)
-4. [Data Model](#data-model)
-5. [Runtime Flows](#runtime-flows)
-6. [Security & Privacy](#security--privacy)
-7. [Infrastructure](#infrastructure)
-8. [Deployment](#deployment)
+3. [Data Model](#data-model)
+4. [Product Cube](#product-cube)
+5. [MCP Integration](#mcp-integration)
+6. [DPP Lifecycle](#dpp-lifecycle)
+7. [ZK Proof System](#zk-proof-system)
+8. [Runtime Flows](#runtime-flows)
+9. [Security & Privacy](#security--privacy)
+10. [Infrastructure](#infrastructure)
 
 ---
 
@@ -45,14 +53,12 @@
 
 ### Integrity Definition
 
-1. **Immutable provenance** for garments and creators
+1. **Immutable provenance** for assets and creators
 2. **Consent-driven visibility** for owners
 3. **Auditability** for regulators
 4. **No silent exposure** of private data
 
-### Compliance Model
-
-#### Privacy Layers
+### Privacy Layers
 
 | Layer | Blockchain | Purpose | Data Types |
 |-------|-----------|---------|------------|
@@ -62,503 +68,99 @@
 
 **Rule**: Public provenance and ESG anchors go to Cardano. Ownership lineage, pricing history, and consent snapshots go to Midnight.
 
-#### Access Control Policies
-
-- **Midnight Decrypt Policy**: `governance_humans_and_compliance_agent`
-- **Transparency Portal**: Live, public (sanitized data only)
-- **Default Region**: `us-east1` (extensible to other regions)
-
 ---
 
 ## System Architecture
 
-### High-Level Components (v8)
-
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                          Client Layer                               │
-│                  (Mobile App, Web Browsers)                         │
+│                          CLIENT LAYER                                │
+│         (Mobile App, Web, AR Glasses via Biometric Sync)             │
 └──────────────────────────────┬──────────────────────────────────────┘
-                               │ HTTPS
+                               │ HTTPS / MCP
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                      brandme-gateway                                │
-│        OAuth Authentication, Rate Limiting, NATS Publishing         │
-└────────────────────────┬────────────────────────────────────────────┘
-                         │
-                         │ NATS JetStream (Event Bus)
-                         │
-         ┌───────────────┴────────────────┬──────────────────────┐
-         │                                │                      │
-         ▼                                ▼                      ▼
-┌─────────────────────┐      ┌────────────────────┐   ┌──────────────────────┐
-│   brandme-core      │      │  brandme-agents    │   │   brandme-chain      │
-│                     │◄─────┤                    │   │                      │
-│ - AI Brain Hub      │      │ - Identity Service │   │ - TX Builder         │
-│ - Policy & Safety   │      │ - Knowledge/RAG    │   │   (Cardano+Midnight) │
-│ - Orchestrator      │      │ - Compliance/Audit │   │ - Cross-Chain        │
-│ - Cube Service      │──────►                    │   │   Verifier           │
-└─────────────────────┘      └────────────────────┘   └──────────┬───────────┘
-         │                            │                           │
-         ▼                            ▼                           ▼
+│                      brandme-gateway                                 │
+│     OAuth Authentication, Rate Limiting, MCP Server, NATS Pub       │
+└────────────────────────┬───────────────────┬────────────────────────┘
+                         │                   │
+         ┌───────────────┴───────────────────┴───────────────────┐
+         │                   NATS JetStream                       │
+         └───────────┬───────────────┬───────────────┬───────────┘
+                     ▼               ▼               ▼
+┌─────────────────────────┐ ┌─────────────────┐ ┌─────────────────────┐
+│     brandme-core        │ │ brandme-agents  │ │   brandme-chain     │
+│                         │ │                 │ │                     │
+│ • Brain (8000)          │ │ • Identity      │ │ • TX Builder        │
+│ • Policy (8001)         │ │   (8005)        │ │   Cardano+Midnight  │
+│ • Orchestrator (8002)   │ │ • Knowledge     │ │ • Cross-Chain       │
+│ • Cube (8007)           │ │   (8003)        │ │   Verifier          │
+│                         │ │ • Compliance    │ │                     │
+│                         │ │   (8004)        │ │                     │
+│                         │ │ • Agentic       │ │                     │
+│                         │ │   Orchestrator  │ │                     │
+└───────────┬─────────────┘ └────────┬────────┘ └──────────┬──────────┘
+            │                        │                      │
+            └────────────────────────┼──────────────────────┘
+                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                      DATA LAYER (v8)                                │
-│  ┌──────────────────────────┐  ┌──────────────────────────┐       │
-│  │    Google Cloud Spanner  │  │       Firestore          │       │
-│  │                          │  │                          │       │
-│  │  • Users (node)          │  │  • /wardrobes/{user_id}  │       │
-│  │  • Assets (node)         │  │    └─ /cubes/{cube_id}   │       │
-│  │  • Owns (edge)           │  │       └─ faces, state    │       │
-│  │  • Created (edge)        │  │                          │       │
-│  │  • FriendsWith (edge)    │  │  • /agent_sessions/      │       │
-│  │  • ConsentPolicies       │  │                          │       │
-│  │  • ProvenanceChain       │  │  Real-time listeners     │       │
-│  │                          │  │  for frontend updates    │       │
-│  │  O(1) consent lookups    │  │  Agentic state sync      │       │
-│  └──────────────────────────┘  └──────────────────────────┘       │
+│                          DATA LAYER                                  │
+│  ┌──────────────────────────┐  ┌──────────────────────────┐        │
+│  │    Google Cloud Spanner  │  │       Firestore          │        │
+│  │                          │  │                          │        │
+│  │  • Users (node)          │  │  • /wardrobes/{user_id}  │        │
+│  │  • Assets (node)         │  │    └─ /cubes/{cube_id}   │        │
+│  │  • Materials (node)      │  │       └─ faces, state    │        │
+│  │  • Owns (edge)           │  │                          │        │
+│  │  • ComposedOf (edge)     │  │  • /biometric_sync/      │        │
+│  │  • DerivedFrom (edge)    │  │    └─ AR glasses <100ms  │        │
+│  │  • ConsentPolicies       │  │                          │        │
+│  │  • ProvenanceChain       │  │  • /agent_sessions/      │        │
+│  │  • AgentTransaction      │  │    └─ MCP state tracking │        │
+│  │  • ZKProofCache          │  │                          │        │
+│  │  • MaterialESGCache      │  │                          │        │
+│  │  • BurnProofCache        │  │                          │        │
+│  │                          │  │                          │        │
+│  │  O(1) consent lookups    │  │  Real-time listeners     │        │
+│  │  Native Property Graph   │  │  Agentic state sync      │        │
+│  └──────────────────────────┘  └──────────────────────────┘        │
 └─────────────────────────────────────────────────────────────────────┘
-         │                                    │
-         ▼                                    ▼
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    BLOCKCHAIN LAYER                                 │
-│  ┌──────────────────────┐  ┌──────────────────────┐               │
-│  │      Cardano         │  │      Midnight        │               │
-│  │   (Public Chain)     │  │   (Private Chain)    │               │
-│  │  • Provenance        │  │  • Ownership         │               │
-│  │  • ESG anchors       │  │  • Pricing history   │               │
-│  │  • Creator credits   │  │  • Consent proofs    │               │
-│  └──────────────────────┘  └──────────────────────┘               │
+│                       BLOCKCHAIN LAYER                               │
+│  ┌──────────────────────┐  ┌──────────────────────┐                │
+│  │      Cardano         │  │      Midnight        │                │
+│  │   (Public Chain)     │  │   (Private Chain)    │                │
+│  │                      │  │                      │                │
+│  │  • Provenance        │  │  • Ownership         │                │
+│  │  • ESG oracle        │  │  • Pricing history   │                │
+│  │  • Creator credits   │  │  • Consent proofs    │                │
+│  │                      │  │  • Burn proofs (ZK)  │                │
+│  └──────────────────────┘  └──────────────────────┘                │
 └─────────────────────────────────────────────────────────────────────┘
-         ▲
-         │
-┌────────┴──────────────────────────────────────────────────────┐
-│                    brandme-console                            │
-│                                                               │
-│  ┌─────────────────────────┐  ┌──────────────────────────┐  │
-│  │ Governance Console      │  │ Transparency Portal      │  │
-│  │ (Internal, RBAC)        │  │ (Public)                 │  │
-│  └─────────────────────────┘  └──────────────────────────┘  │
-└───────────────────────────────────────────────────────────────┘
 ```
 
-### Communication Patterns
+### Service Ports
 
-1. **Synchronous HTTP/REST**: Client → Gateway, Service-to-Service
-2. **Asynchronous Events**: Gateway → NATS → Core Services
-3. **Database Access**: Services → Cloud SQL via connection pools
-4. **Blockchain Transactions**: Services → brandme-chain → Cardano/Midnight
+| Service | Port | Description | Database |
+|---------|------|-------------|----------|
+| **brain** | 8000 | Intent resolver, scan entrypoint | Spanner |
+| **policy** | 8001 | Consent graph & policy decisions | Spanner |
+| **orchestrator** | 8002 | Scan processing & blockchain anchoring | Spanner |
+| **knowledge** | 8003 | Safe facet retrieval | Spanner |
+| **compliance** | 8004 | Hash-chained audit logging, ESG verification | Spanner |
+| **identity** | 8005 | User profiles, ZK proofs, consent | Spanner |
+| **governance** | 8006 | Human review UI, escalations | Spanner |
+| **cube** | 8007 | Product Cube with real-time state | Spanner + Firestore |
 
 ---
 
-## Service Specifications
+## Data Model
 
-### 1. brandme-gateway
+### Google Cloud Spanner (Source of Truth)
 
-**Language**: Node.js + TypeScript
-**Role**: Edge API gateway, OAuth intake, NATS event publisher
-
-#### Endpoints
-
-##### POST /scan
-
-**Authentication**: OAuth JWT
-**Request Body**:
-```json
-{
-  "garment_tag": "string"
-}
-```
-
-**Behavior**:
-1. Extract `scanner_user_id` from JWT
-2. Attach `region_code` (default: `us-east1`)
-3. Generate `scan_id` (UUID)
-4. Publish event to NATS subject `scan.requested`:
-   ```json
-   {
-     "scan_id": "uuid",
-     "scanner_user_id": "uuid",
-     "garment_tag": "string",
-     "timestamp": "ISO8601",
-     "region_code": "us-east1"
-   }
-   ```
-5. Return `202 Accepted` with `scan_id`
-
-**Response**:
-```json
-{
-  "scan_id": "uuid",
-  "status": "processing"
-}
-```
-
-##### GET /healthz
-
-**Authentication**: None
-**Response**:
-```json
-{
-  "status": "ok"
-}
-```
-
-#### Infrastructure
-
-- **Proxy Layer**: Nginx or Envoy (config in `/gateway/`)
-- **Helm Chart**: `brandme-gateway`
-- **Rate Limiting**: Enabled
-- **Environment Variables**:
-  - `OAUTH_CLIENT_ID`
-  - `OAUTH_CLIENT_SECRET`
-  - `DEFAULT_REGION`
-  - `NATS_URL`
-- **Headers**: Attach `X-Region` to downstream calls
-
----
-
-### 2. brandme-core
-
-**Language**: Python + FastAPI (API) + Celery (workers)
-**Role**: AI Brain Hub, Policy & Safety, Task Orchestrator
-
-#### 2.1 AI Brain Hub
-
-**Endpoint**: `POST /intent/resolve`
-
-**Input**:
-```json
-{
-  "scan_id": "uuid",
-  "scanner_user_id": "uuid",
-  "garment_tag": "string",
-  "region_code": "us-east1"
-}
-```
-
-**Output**:
-```json
-{
-  "action": "request_passport_view",
-  "garment_id": "uuid",
-  "scanner_user_id": "uuid"
-}
-```
-
-**Logic**:
-- Lookup `garment_id` by `garment_tag` via knowledge service or cache
-- Return normalized intent struct
-
-**Logging Rule**: Trace ID only, no PII
-
----
-
-#### 2.2 Policy & Safety
-
-**Endpoint**: `POST /policy/check`
-
-**Input**:
-```json
-{
-  "scanner_user_id": "uuid",
-  "garment_id": "uuid",
-  "region_code": "us-east1",
-  "action": "request_passport_view"
-}
-```
-
-**Output**:
-```json
-{
-  "decision": "allow|deny|escalate",
-  "resolved_scope": "public|friends_only|private",
-  "policy_version": "sha256_hash"
-}
-```
-
-**Logic**:
-1. Fetch `current_owner_id` and `consent_policies` for `garment_id`
-2. Map `scanner_user_id` → `current_owner_id` to relationship scope:
-   - `public`: Anyone can view
-   - `friends_only`: Only connected users
-   - `private`: Only owner
-3. Check `region_code` for legal restrictions
-4. If unclear or risky → `decision: 'escalate'`
-
-**Requirements**:
-- Hash policy version
-- Write audit stub
-
----
-
-#### 2.3 Orchestrator (Celery Worker)
-
-**Input Queue**: Events from Policy & Safety when `decision == 'allow'`
-
-**Responsibilities**:
-1. Insert row into `scan_event` table
-2. Call `knowledge_service` to fetch allowed facets for `resolved_scope`
-3. Call `brandme-chain` `/tx/anchor-scan`
-4. Call `compliance_audit_service` `/audit/log` and `/audit/anchorChain`
-5. Update `chain_anchor` with transaction hashes
-
-#### Infrastructure
-
-- **Helm Charts**: Separate charts for each service
-- **Environment Variables**:
-  - `DATABASE_URL`
-  - `NATS_URL`
-  - `REGION_DEFAULT`
-- **Policy Storage**: `policies/region/*.yaml` (committed in repo)
-- **Telemetry**: OpenTelemetry tracing on all endpoints
-
----
-
-### 3. brandme-agents
-
-**Language**: Python + FastAPI
-**Role**: Supporting agent services (Identity, Knowledge/RAG, Compliance & Audit)
-
-#### 3.1 Identity Service
-
-**Endpoint**: `GET /user/{user_id}/persona`
-
-**Output**:
-```json
-{
-  "persona_warm_cold": 0.75,
-  "persona_sport_couture": 0.60,
-  "trust_score": 95.50,
-  "region_code": "us-east1",
-  "did_cardano": "did:cardano:abc123" // nullable
-}
-```
-
-**DB Reads**: `users`
-
----
-
-#### 3.2 Knowledge Service
-
-**Endpoint**: `GET /garment/{garment_id}/passport?scope=public|friends_only|private`
-
-**Output**:
-```json
-[
-  {
-    "facet_type": "authenticity",
-    "facet_payload_preview": { "status": "verified", "hash": "..." }
-  },
-  {
-    "facet_type": "esg_score",
-    "facet_payload_preview": { "score": "A+", "details": "..." }
-  }
-]
-```
-
-**Logic**:
-- Join `garments` + `garment_passport_facets` + `consent_policies`
-- Filter facets by `resolved_scope`
-- **NEVER** include Midnight-private `facet_payload` when scope is `public`
-
-**DB Reads**: `garments`, `garment_passport_facets`, `consent_policies`
-
----
-
-#### 3.3 Compliance & Audit Service
-
-##### POST /audit/log
-
-**Input**:
-```json
-{
-  "scan_id": "uuid",
-  "decision_summary": "string",
-  "decision_detail": {},
-  "risk_flagged": false,
-  "escalated_to_human": false
-}
-```
-
-**Behavior**:
-- Insert `audit_log` row
-- **Hash-chain**: Each new row's `entry_hash` references `prev_hash`
-
----
-
-##### POST /audit/anchorChain
-
-**Input**:
-```json
-{
-  "scan_id": "uuid",
-  "cardano_tx_hash": "string",
-  "midnight_tx_hash": "string",
-  "crosschain_root_hash": "string"
-}
-```
-
-**Behavior**:
-- Create or update `chain_anchor` row
-- Update `audit_log` for `scan_id` with chain linkage
-
----
-
-##### GET /audit/{scan_id}/explain
-
-**Output**:
-```json
-{
-  "human_readable_explanation": "User A scanned garment B...",
-  "cardano_tx_hash": "string",
-  "midnight_tx_hash": "string",
-  "crosschain_root_hash": "string",
-  "policy_version": "sha256_hash",
-  "resolved_scope": "public"
-}
-```
-
-**Visibility**:
-- **Governance Console**: Full access (RBAC)
-- **Regulator Portal**: Read-only, sanitized
-
-#### Infrastructure
-
-- **Helm Charts**: Separate per service
-- **DB Access**: Cloud SQL via `DATABASE_URL`
-- **Telemetry**: OpenTelemetry auto-instrumentation
-- **RBAC Roles**: `ROLE_GOVERNANCE`, `ROLE_COMPLIANCE`, `ROLE_REGULATOR_VIEW`
-
----
-
-### 4. brandme-chain
-
-**Language**: Node.js + TypeScript
-**Role**: TX Builder (Cardano + Midnight), Cross-Chain Verifier
-
-#### Endpoints
-
-##### POST /tx/anchor-scan
-
-**Input**:
-```json
-{
-  "scan_id": "uuid",
-  "garment_id": "uuid",
-  "allowed_facets": [],
-  "resolved_scope": "public",
-  "policy_version": "sha256_hash"
-}
-```
-
-**Output**:
-```json
-{
-  "cardano_tx_hash": "string",
-  "midnight_tx_hash": "string",
-  "crosschain_root_hash": "string"
-}
-```
-
-**Behavior**:
-1. Build **Cardano payload**: Creator attribution, authenticity hash, ESG proof
-2. Build **Midnight payload**: Ownership lineage ref, pricing ref, consent snapshot
-3. Generate `crosschain_root_hash` linking both chains
-4. **DO NOT** log private keys
-5. Return transaction hashes
-
----
-
-##### POST /tx/verify-root
-
-**Input**:
-```json
-{
-  "crosschain_root_hash": "string"
-}
-```
-
-**Output**:
-```json
-{
-  "is_consistent": true
-}
-```
-
-#### Infrastructure
-
-- **Helm Chart**: `brandme-chain`
-- **Secrets**: Kubernetes secret mounts (not in repo)
-  - `CARDANO_WALLET_KEY`
-  - `MIDNIGHT_WALLET_KEY`
-- **CI/CD**: GitHub Actions → Build → Push container
-- **Notes**:
-  - Include TODO for DID mint step at account creation
-  - Never expose Midnight-private facet contents
-
----
-
-### 5. brandme-console
-
-**Language**: Next.js + React + Tailwind CSS
-**Role**: Governance Console (internal) + Transparency Portal (public)
-
-#### 5.1 Governance Console
-
-**Authentication**: RBAC (`ROLE_GOVERNANCE`, `ROLE_COMPLIANCE`)
-
-**Pages**:
-- `/dashboard/scans` - List all scans
-- `/dashboard/scan/[scan_id]` - Detailed scan view
-- `/dashboard/escalations` - Flagged scans requiring human review
-- `/dashboard/reveal` - Controlled Midnight facet reveal
-
-**Data Sources**:
-- `GET /audit/{scan_id}/explain` from compliance_audit_service
-- `scan_event` table via internal API
-- `chain_anchor` table via internal API
-
-**Requirements**:
-- Display `decision_summary` and `policy_version` for each scan
-- Show `cardano_tx_hash`, `midnight_tx_hash`, `crosschain_root_hash`
-- Support controlled Midnight facet reveal with **dual approval**:
-  - Governance human + Compliance agent
-- Every reveal action POSTs back to `compliance_audit_service`
-- Writes hash-chained `audit_log`
-
----
-
-#### 5.2 Transparency Portal (Public)
-
-**Authentication**: Public (no login required)
-
-**Pages**:
-- `/proof/[scan_id]` - Public proof view
-
-**Output**:
-- Authenticity status (real/counterfeit)
-- Creator attribution
-- ESG proof hash summary
-- Policy version used
-- **NO** private Midnight data
-
-#### Infrastructure
-
-- **Helm Chart**: `brandme-console`
-- **Ingress**:
-  - Public ingress for Transparency Portal
-  - Private ingress for Governance Console
-- **Environment Variables**:
-  - `COMPLIANCE_AUDIT_SERVICE_URL`
-  - `IDENTITY_SERVICE_URL`
-
----
-
-## Data Model (v8)
-
-### Primary Database: Google Cloud Spanner
-
-v8 uses Spanner Graph DDL for O(1) consent lookups. See `brandme-data/spanner/schema.sql` for full DDL.
+Full schema: `brandme-data/spanner/schema.sql`
 
 #### Node Tables
 
@@ -580,86 +182,71 @@ CREATE TABLE Users (
   consent_version STRING(64),
   is_active BOOL NOT NULL DEFAULT (true),
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
-  updated_at TIMESTAMP OPTIONS (allow_commit_timestamp=true),
 ) PRIMARY KEY (user_id);
 ```
 
-##### Assets
+**Assets**
 ```sql
 CREATE TABLE Assets (
   asset_id STRING(36) NOT NULL,
-  asset_type STRING(32) NOT NULL,  -- 'cube', 'garment', etc.
+  asset_type STRING(32) NOT NULL,  -- 'cube', 'garment'
   display_name STRING(256) NOT NULL,
   creator_user_id STRING(36) NOT NULL,
   current_owner_id STRING(36) NOT NULL,
+  physical_tag_id STRING(128),     -- NFC/RFID tag
   authenticity_hash STRING(128),
+  dpp_state STRING(32) DEFAULT 'PRODUCED',  -- PRODUCED, ACTIVE, REPAIR, DISSOLVE, REPRINT
   is_active BOOL NOT NULL DEFAULT (true),
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
 ) PRIMARY KEY (asset_id);
 ```
 
+**Materials**
+```sql
+CREATE TABLE Materials (
+  material_id STRING(36) NOT NULL,
+  material_type STRING(64) NOT NULL,
+  esg_score FLOAT64,
+  tensile_strength_mpa FLOAT64,
+  dissolve_auth_key STRING(128),
+  is_recyclable BOOL DEFAULT (true),
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+) PRIMARY KEY (material_id);
+```
+
 #### Edge Tables (Graph Relationships)
 
-##### Owns (Owner → Asset)
+**Owns** (User → Asset)
 ```sql
 CREATE TABLE Owns (
   owner_id STRING(36) NOT NULL,
   asset_id STRING(36) NOT NULL,
+  device_session_id STRING(128),
   acquired_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
-  transfer_method STRING(32),  -- 'mint', 'purchase', 'gift', 'transfer'
+  transfer_method STRING(32),  -- 'mint', 'purchase', 'gift', 'rental', 'reprint'
   is_current BOOL NOT NULL DEFAULT (true),
-  FOREIGN KEY (owner_id) REFERENCES Users(user_id),
-  FOREIGN KEY (asset_id) REFERENCES Assets(asset_id),
 ) PRIMARY KEY (owner_id, asset_id);
 ```
 
-##### FriendsWith (User ↔ User)
+**ComposedOf** (Asset → Material)
 ```sql
-CREATE TABLE FriendsWith (
-  user_id_1 STRING(36) NOT NULL,
-  user_id_2 STRING(36) NOT NULL,
-  status STRING(16) NOT NULL DEFAULT 'pending',  -- 'pending', 'accepted', 'blocked'
-  initiated_by STRING(36),
-  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
-  FOREIGN KEY (user_id_1) REFERENCES Users(user_id),
-  FOREIGN KEY (user_id_2) REFERENCES Users(user_id),
-) PRIMARY KEY (user_id_1, user_id_2);
-```
-
-#### Supporting Tables
-
-##### ConsentPolicies
-```sql
-CREATE TABLE ConsentPolicies (
-  consent_id STRING(36) NOT NULL,
-  user_id STRING(36) NOT NULL,
-  asset_id STRING(36),  -- NULL = global policy
-  scope STRING(32) NOT NULL,  -- 'global', 'asset', 'facet'
-  visibility STRING(32) NOT NULL,  -- 'public', 'friends_only', 'private'
-  is_revoked BOOL NOT NULL DEFAULT (false),
-  revoked_at TIMESTAMP,
-  revoke_reason STRING(256),
-  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
-  FOREIGN KEY (user_id) REFERENCES Users(user_id),
-) PRIMARY KEY (consent_id);
-```
-
-##### ProvenanceChain (Interleaved)
-```sql
-CREATE TABLE ProvenanceChain (
-  provenance_id STRING(36) NOT NULL,
+CREATE TABLE ComposedOf (
   asset_id STRING(36) NOT NULL,
-  sequence_num INT64 NOT NULL,
-  from_user_id STRING(36),
-  to_user_id STRING(36) NOT NULL,
-  transfer_type STRING(32) NOT NULL,  -- 'mint', 'purchase', 'gift', 'transfer'
-  price FLOAT64,
-  currency STRING(8),
-  transfer_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
-  tx_hash STRING(128),
-  FOREIGN KEY (asset_id) REFERENCES Assets(asset_id),
-) PRIMARY KEY (asset_id, sequence_num),
-  INTERLEAVE IN PARENT Assets ON DELETE CASCADE;
+  material_id STRING(36) NOT NULL,
+  weight_pct FLOAT64 NOT NULL,
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+) PRIMARY KEY (asset_id, material_id);
+```
+
+**DerivedFrom** (Asset → Asset for reprint lineage)
+```sql
+CREATE TABLE DerivedFrom (
+  child_asset_id STRING(36) NOT NULL,
+  parent_asset_id STRING(36) NOT NULL,
+  burn_proof_tx_hash STRING(128) NOT NULL,
+  material_recovery_pct FLOAT64,
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+) PRIMARY KEY (child_asset_id, parent_asset_id);
 ```
 
 #### Graph Definition
@@ -668,7 +255,8 @@ CREATE TABLE ProvenanceChain (
 CREATE OR REPLACE PROPERTY GRAPH IntegritySpineGraph
   NODE TABLES (
     Users,
-    Assets
+    Assets,
+    Materials
   )
   EDGE TABLES (
     Owns
@@ -678,61 +266,275 @@ CREATE OR REPLACE PROPERTY GRAPH IntegritySpineGraph
     FriendsWith
       SOURCE KEY (user_id_1) REFERENCES Users(user_id)
       DESTINATION KEY (user_id_2) REFERENCES Users(user_id)
-      LABEL FRIENDS_WITH
+      LABEL FRIENDS_WITH,
+    ComposedOf
+      SOURCE KEY (asset_id) REFERENCES Assets(asset_id)
+      DESTINATION KEY (material_id) REFERENCES Materials(material_id)
+      LABEL COMPOSED_OF,
+    DerivedFrom
+      SOURCE KEY (child_asset_id) REFERENCES Assets(asset_id)
+      DESTINATION KEY (parent_asset_id) REFERENCES Assets(asset_id)
+      LABEL DERIVED_FROM
   );
 ```
 
-### Real-Time State: Firestore
+#### O(1) Consent Query
+
+```sql
+GRAPH IntegritySpineGraph
+MATCH (viewer:Users)-[:FRIENDS_WITH*0..1]-(owner:Users)-[:OWNS]->(asset:Assets)
+WHERE asset.asset_id = @asset_id
+  AND NOT EXISTS {
+    MATCH (owner)-[:HAS_CONSENT]->(consent:ConsentPolicies)
+    WHERE consent.is_revoked = true
+  }
+RETURN owner.user_id, viewer.user_id;
+```
+
+### Firestore (Real-Time State)
 
 #### Collections
 
-- `/wardrobes/{user_id}` - User wardrobe metadata
+- `/wardrobes/{user_id}` - Wardrobe metadata
   - `/cubes/{cube_id}` - Cube state, faces, visibility
-- `/agent_sessions/{session_id}` - Agentic modification tracking
+- `/biometric_sync/{user_id}` - AR glasses sync (<100ms)
+- `/agent_sessions/{session_id}` - MCP agent tracking
 
-#### Wardrobe Document Schema
+#### Biometric Sync Document
+
 ```json
 {
-  "owner_id": "uuid",
-  "display_name": "User's Wardrobe",
-  "total_cubes": 5,
-  "last_modified": "timestamp",
-  "settings": {
-    "default_visibility": "friends_only"
+  "user_id": "uuid",
+  "cube_id": "uuid",
+  "active_facet": {
+    "face_name": "product_details",
+    "display_mode": "overlay",
+    "sync_timestamp": "2026-01-20T12:00:00Z"
+  },
+  "biometric_data": {
+    "device_session_id": "ar_glasses_123",
+    "last_sync": "2026-01-20T12:00:00Z",
+    "sync_latency_ms": 45
   }
 }
 ```
 
-#### Cube Document Schema
+---
+
+## Product Cube
+
+The Product Cube is a 7-face digital passport for physical assets.
+
+### Faces
+
+| Face | Purpose | Visibility | Blockchain |
+|------|---------|------------|------------|
+| product_details | Immutable product info | Public | Cardano |
+| provenance | Append-only ownership journey | Public | Cardano |
+| ownership | Current owner reference | Private | Midnight |
+| social_layer | Ratings, reviews, stories | Friends/Public | - |
+| esg_impact | ESG scores from Cardano oracle | Public | Cardano |
+| lifecycle | DPP state, repair history | Public | Cardano |
+| molecular_data | Material composition, dissolve auth | Private | Midnight |
+
+### Cube Document (Firestore)
+
 ```json
 {
   "cube_id": "uuid",
   "owner_id": "uuid",
   "agentic_state": "idle|processing|modified|syncing|error",
+  "dpp_state": "PRODUCED|ACTIVE|REPAIR|DISSOLVE|REPRINT",
   "faces": {
     "product_details": {
       "data": {...},
       "visibility": "public",
       "pending_sync": false
+    },
+    "molecular_data": {
+      "data": {...},
+      "visibility": "private",
+      "pending_sync": false
     }
   },
-  "visibility_settings": {...},
   "spanner_synced_at": "timestamp"
 }
 ```
 
 ---
 
+## MCP Integration
+
+Model Context Protocol enables external AI agents to access the Style Vault.
+
+### MCP Tools
+
+```json
+{
+  "tools": [
+    {"name": "search_wardrobe", "category": "search"},
+    {"name": "get_cube_details", "category": "view"},
+    {"name": "suggest_outfit", "category": "style"},
+    {"name": "initiate_rental", "category": "transaction", "requires_esg_check": true},
+    {"name": "list_for_resale", "category": "transaction", "requires_esg_check": true},
+    {"name": "request_repair", "category": "lifecycle"},
+    {"name": "request_dissolve", "category": "lifecycle", "requires_esg_check": true}
+  ]
+}
+```
+
+### Transaction Requirements
+
+All transaction tools require:
+1. **User consent** stored in `ConsentedByAgent` table
+2. **ESG verification** from Cardano oracle (via `ESGVerifier`)
+3. **Optional human approval** for high-value transactions
+4. **AgentTransaction** record in Spanner for audit trail
+
+### Agent Transaction Table
+
+```sql
+CREATE TABLE AgentTransaction (
+  transaction_id STRING(36) NOT NULL,
+  agent_id STRING(64) NOT NULL,
+  user_id STRING(36) NOT NULL,
+  asset_id STRING(36),
+  action_type STRING(32) NOT NULL,
+  esg_verified BOOL DEFAULT (false),
+  esg_score FLOAT64,
+  human_approved BOOL,
+  status STRING(32) DEFAULT 'pending',
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+) PRIMARY KEY (transaction_id);
+```
+
+---
+
+## DPP Lifecycle
+
+Digital Product Passport state machine for circular economy.
+
+### State Machine
+
+```
+PRODUCED → ACTIVE → REPAIR → ACTIVE
+                  ↘ DISSOLVE → REPRINT → PRODUCED
+```
+
+### Valid Transitions
+
+| From | To | Trigger | Blockchain |
+|------|----|---------|------------|
+| PRODUCED | ACTIVE | Item enters circulation | Cardano anchor |
+| ACTIVE | REPAIR | Repair requested | Cardano anchor |
+| ACTIVE | DISSOLVE | Owner authorizes dissolution | Midnight burn proof |
+| REPAIR | ACTIVE | Repair complete | Cardano anchor |
+| REPAIR | DISSOLVE | Beyond repair | Midnight burn proof |
+| DISSOLVE | REPRINT | Materials used in new product | Midnight ZK proof |
+| REPRINT | PRODUCED | New product enters circulation | Cardano anchor + lineage |
+
+### Burn Proof Verification
+
+For DISSOLVE→REPRINT transitions:
+
+```python
+verifier = BurnProofVerifier(
+    midnight_api_url="http://midnight-devnet:9000",
+    spanner_pool=pool,
+    require_midnight=True,  # Production mode
+    allow_stub_fallback=False
+)
+
+result = await verifier.verify_detailed(
+    burn_proof_hash="sha256_proof_hash",
+    parent_asset_id="dissolved_asset_id"
+)
+
+if result.is_valid and result.midnight_confirmed:
+    # Proceed with reprint
+    pass
+```
+
+### ESG Verification
+
+For rental, resale, and dissolve transactions:
+
+```python
+verifier = ESGVerifier(
+    cardano_node_url="http://cardano-node:3001",
+    spanner_pool=pool,
+    require_cardano=True,  # Production mode
+    allow_stub_fallback=False
+)
+
+result = await verifier.verify_transaction(
+    asset_id="asset_123",
+    material_id="material_456",
+    transaction_type="rental",  # threshold: 0.5
+    agent_id="agent_789"
+)
+
+if result.is_approved:
+    # Proceed with transaction
+    pass
+```
+
+---
+
+## ZK Proof System
+
+Zero-knowledge proofs enable AR glasses to verify ownership without exposing private keys.
+
+### Proof Flow
+
+```
+User Phone                    AR Glasses
+     │                             │
+     ├───── Generate ZK Proof ─────►
+     │      (ownership proof)      │
+     │                             ├── Verify locally
+     │                             │   (no private key)
+     │                             ▼
+     │                        Display overlay
+```
+
+### Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /identity/{user_id}/zk/generate` | Generate ownership proof |
+| `POST /identity/{user_id}/zk/verify` | Verify proof |
+| `GET /identity/{user_id}/zk/proofs` | List active proofs |
+| `DELETE /identity/{user_id}/zk/proofs` | Invalidate after transfer |
+
+### ZK Proof Cache (Spanner)
+
+```sql
+CREATE TABLE ZKProofCache (
+  proof_id STRING(36) NOT NULL,
+  user_id STRING(36) NOT NULL,
+  asset_id STRING(36) NOT NULL,
+  proof_type STRING(32) NOT NULL,
+  proof_hash STRING(128) NOT NULL,
+  proof_data BYTES(MAX),
+  public_signals JSON,
+  device_session_id STRING(128),
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  expires_at TIMESTAMP NOT NULL,
+) PRIMARY KEY (proof_id);
+```
+
+---
+
 ## Runtime Flows
 
-### Garment Scan Flow
+### Asset Scan Flow
 
 ```
 ┌─────────┐
-│ Mobile  │
 │ Client  │
 └────┬────┘
-     │ POST /scan {garment_tag}
+     │ POST /scan {physical_tag_id}
      ▼
 ┌─────────────────┐
 │ brandme-gateway │
@@ -743,78 +545,72 @@ CREATE OR REPLACE PROPERTY GRAPH IntegritySpineGraph
      │ NATS: scan.requested
      ▼
 ┌──────────────────────┐
-│ brandme-core         │
-│  AI Brain Hub        │
-│  - Resolve garment_id│
+│ Brain (8000)         │
+│  - Resolve asset_id  │
+│    via physical_tag  │
 └────┬─────────────────┘
      │
      ▼
 ┌──────────────────────┐
-│ Policy & Safety      │
-│  - Check consent     │
-│  - Check region      │
-│  - Return decision   │
+│ Policy (8001)        │
+│  - O(1) consent check│
+│  - Resolve scope     │
 └────┬─────────────────┘
      │ decision: allow
      ▼
 ┌──────────────────────┐
-│ Orchestrator         │
-│  - Write scan_event  │
+│ Orchestrator (8002)  │
+│  - Idempotent write  │
 │  - Fetch facets      │
-│  - Call TX Builder   │
-│  - Log audit         │
+│  - Build TX          │
 └────┬─────────────────┘
      │
      ├─────────────────────┐
-     │                     │
      ▼                     ▼
 ┌─────────────────┐  ┌────────────────┐
 │ brandme-chain   │  │ Compliance     │
-│  - Anchor       │  │ & Audit        │
-│    Cardano      │  │  - Hash-chain  │
-│  - Anchor       │  │    audit_log   │
-│    Midnight     │  └────────────────┘
-│  - Gen root hash│
-└─────────────────┘
-     │
-     ▼
-┌─────────────────────────┐
-│ Return allowed facets   │
-│ to Mobile Client        │
-│ (NO private data)       │
-└─────────────────────────┘
+│  - Cardano TX   │  │ (8004)         │
+│  - Midnight TX  │  │  - Hash-chain  │
+│  - Root hash    │  │    audit_log   │
+└─────────────────┘  └────────────────┘
 ```
 
-### Escalation & Reveal Flow
+### MCP Agent Transaction Flow
 
 ```
-┌──────────────────────┐
-│ Governance Console   │
-│  - View flagged scan │
-│  - Request reveal    │
-└────┬─────────────────┘
+┌─────────────────┐
+│ External Agent  │
+│ (via MCP)       │
+└────┬────────────┘
+     │ search_wardrobe / initiate_rental
+     ▼
+┌─────────────────────────────────────────┐
+│ MCP Server (Gateway)                    │
+│  - Verify agent consent                 │
+│  - Check user consent for agent access  │
+└────┬────────────────────────────────────┘
      │
      ▼
-┌──────────────────────┐
-│ Dual Approval Check  │
-│  - Governance human  │
-│  - Compliance agent  │
-└────┬─────────────────┘
-     │ Both approved
-     ▼
-┌──────────────────────┐
-│ Compliance & Audit   │
-│  - Decrypt Midnight  │
-│    facet (controlled)│
-│  - Write audit_log   │
-│  - Hash-chain entry  │
-└────┬─────────────────┘
+┌─────────────────────────────────────────┐
+│ Agentic Orchestrator                    │
+│  - ScanAgent: resolve asset             │
+│  - IdentityAgent: verify relationships  │
+│  - PolicyAgent: check consent + region  │
+│  - ComplianceAgent: ESG verification    │
+└────┬────────────────────────────────────┘
+     │
+     ├── If requires_human_approval ──────►┌──────────────┐
+     │                                      │ Governance   │
+     │                                      │ Console      │
+     │◄── approval_granted ────────────────┘              │
      │
      ▼
-┌──────────────────────┐
-│ Display private data │
-│ to authorized user   │
-└──────────────────────┘
+┌─────────────────────────────────────────┐
+│ Transaction Execution                    │
+│  - Record AgentTransaction              │
+│  - Update DPP state if applicable       │
+│  - Anchor to blockchain                 │
+└─────────────────────────────────────────┘
 ```
 
 ---
@@ -823,278 +619,121 @@ CREATE OR REPLACE PROPERTY GRAPH IntegritySpineGraph
 
 ### Hard Guarantees
 
-1. **Policy & Safety MUST run before any reveal**
-   - No data is shown without explicit consent check
-   - Region-specific compliance rules enforced
+1. **Policy check before any data reveal** - No data shown without consent verification
+2. **TX Builder is the only blockchain write path** - Centralized wallet management
+3. **Hash-chained audit logs** - Tamper-evident compliance trail
+4. **Dual approval for Midnight reveals** - Human + Compliance agent
+5. **No private data in public endpoints** - Transparency Portal shows only Cardano data
+6. **ESG verification for all agent transactions** - Ethical oversight enforced
 
-2. **TX Builder is the ONLY path to blockchain writes**
-   - No direct blockchain access from other services
-   - Centralized wallet management
-
-3. **Compliance & Audit MUST hash-chain every decision**
-   - Every audit log entry references previous entry's hash
-   - Tamper-evident audit trail
-
-4. **Governance Console MUST enforce dual approval for Midnight reveals**
-   - Human governance approval required
-   - Compliance agent verification required
-   - Both must agree before decrypt
-
-5. **Transparency Portal MUST NOT leak private data**
-   - Only public Cardano data shown
-   - No Midnight references exposed
-
-### Secrets Management
-
-- **Wallet Keys**: Stored ONLY in Kubernetes secrets
-- **No Plaintext in Repo**: Use `.env.example` templates only
-- **No Logging of Secrets**: Sanitize all logs
-- **No PII in Logs**: Trace IDs only, never personal data
-
-### Data Privacy Layers
+### Data Classification
 
 | Data Type | Storage | Visibility | Blockchain |
 |-----------|---------|------------|------------|
-| Creator Attribution | PostgreSQL + Cardano | Public | Cardano |
-| Authenticity Hash | PostgreSQL + Cardano | Public | Cardano |
-| ESG Score | PostgreSQL + Cardano | Public | Cardano |
-| Ownership Lineage | PostgreSQL + Midnight | Private | Midnight |
-| Pricing History | PostgreSQL + Midnight | Private | Midnight |
-| Consent Policies | PostgreSQL + Midnight | Private | Midnight |
+| Creator Attribution | Spanner | Public | Cardano |
+| Authenticity Hash | Spanner | Public | Cardano |
+| ESG Score | Spanner + Cache | Public | Cardano |
+| Ownership Lineage | Spanner | Private | Midnight |
+| Pricing History | Spanner | Private | Midnight |
+| Consent Policies | Spanner | Private | Midnight |
+| Material Composition | Spanner | Private | Midnight |
+| Burn Proofs | Spanner + Cache | Private | Midnight |
+
+### Secrets Management
+
+- **Wallet Keys**: Kubernetes secrets only
+- **No plaintext secrets in repo**: Use `.env.example` templates
+- **No PII in logs**: Use `redact_user_id()` and `truncate_id()`
 
 ---
 
-## Infrastructure (v8)
+## Infrastructure
 
-### Google Cloud Platform (GCP)
+### Google Cloud Platform
 
-#### Core Services
+| Service | Purpose |
+|---------|---------|
+| **GKE** | Container orchestration |
+| **Spanner** | Global consistency database |
+| **Firestore** | Real-time state, AR glasses sync |
+| **GCS** | Passport blob storage |
+| **VPC** | Network isolation |
+| **Workload Identity** | Service account management |
 
-- **GKE (Kubernetes)**: Container orchestration
-- **Google Cloud Spanner**: Global consistency database (source of truth)
-- **Firestore**: Real-time wardrobe state, edge caching
-- **GCS**: Object storage for garment passport blobs
-- **VPC**: Network isolation
-- **Workload Identity**: Service account management
-
-#### Database Libraries
+### Database Libraries
 
 - **Spanner**: `google-cloud-spanner` with PingingPool
 - **Firestore**: `google-cloud-firestore` with async client
-- **Legacy**: `asyncpg` (deprecated, kept for migration)
 
-#### Observability
+### Observability
 
 - **OpenTelemetry**: Distributed tracing
 - **Prometheus**: Metrics collection
 - **Grafana**: Visualization
 - **Loki**: Log aggregation
 
-#### Event Bus
-
-- **NATS JetStream**: Event streaming on GKE
-
-### Local Development with Emulators
+### Local Development
 
 ```bash
-# Start local development environment
+# Start emulators
 docker-compose up -d
 
-# This starts:
-# - Spanner Emulator (ports 9010, 9020)
-# - Firestore Emulator (port 8080)
+# Services started:
+# - Spanner Emulator (9010, 9020)
+# - Firestore Emulator (8080)
 # - All 8 backend services
 
-# Run tests against emulators
+# Run tests
 pytest tests/ -v
 ```
 
-### Deployment Regions
+### Environment Variables
 
-- **Primary**: `us-east1`
-- **Future**: Multi-region via Spanner
+```bash
+# Spanner
+SPANNER_EMULATOR_HOST=localhost:9010
+SPANNER_PROJECT_ID=brandme-project
+SPANNER_INSTANCE_ID=brandme-instance
+SPANNER_DATABASE_ID=brandme-db
+SPANNER_POOL_SIZE=10
 
-### Scaling Goal
+# Firestore
+FIRESTORE_EMULATOR_HOST=localhost:8080
+FIRESTORE_PROJECT_ID=brandme-dev
 
-**Planetary billion-user scale** via Spanner global consistency
-
----
-
-## Deployment
-
-### Terraform (Infrastructure)
-
-```hcl
-# brandme-infra/terraform/main.tf
-
-module "gke_cluster" {
-  source = "./modules/gke"
-  region = "us-east1"
-}
-
-module "cloud_sql" {
-  source = "./modules/cloudsql"
-  region = "us-east1"
-}
-
-module "gcs_bucket" {
-  source = "./modules/gcs"
-  bucket_name = "brandme-passport-blobs"
-}
-
-module "vpc" {
-  source = "./modules/vpc"
-}
-```
-
-### Helm (Services)
-
-```yaml
-# brandme-infra/helm/brandme-umbrella/values.yaml
-
-gateway:
-  image: gcr.io/brandme/gateway:latest
-  replicas: 3
-  env:
-    OAUTH_CLIENT_ID: "..."
-    NATS_URL: "nats://nats:4222"
-
-core:
-  brain:
-    image: gcr.io/brandme/core-brain:latest
-  policy:
-    image: gcr.io/brandme/core-policy:latest
-  orchestrator:
-    image: gcr.io/brandme/core-orchestrator:latest
-
-agents:
-  identity:
-    image: gcr.io/brandme/agent-identity:latest
-  knowledge:
-    image: gcr.io/brandme/agent-knowledge:latest
-  compliance:
-    image: gcr.io/brandme/agent-compliance:latest
-
-chain:
-  image: gcr.io/brandme/chain:latest
-  secrets:
-    - CARDANO_WALLET_KEY
-    - MIDNIGHT_WALLET_KEY
-
-console:
-  governance:
-    image: gcr.io/brandme/console-governance:latest
-  portal:
-    image: gcr.io/brandme/console-portal:latest
-```
-
-### CI/CD (GitHub Actions)
-
-```yaml
-# .github/workflows/deploy.yml
-
-name: Build and Deploy
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build Docker images
-        run: make build-all
-      - name: Push to registry
-        run: make push-all
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to GKE
-        run: |
-          helm upgrade --install brandme \
-            ./brandme-infra/helm/brandme-umbrella \
-            --namespace brandme
+# Blockchain (Production)
+CARDANO_NODE_URL=http://cardano-node:3001
+MIDNIGHT_API_URL=http://midnight-devnet:9000
 ```
 
 ---
 
-## Future Enhancements
+## Repository Structure
 
-### Identity & Auth
-
-- **Cardano DID**: Mint DIDs at account creation
-- **Magic Link**: Passwordless authentication
-- **Multi-Factor Auth**: Enhanced security for governance roles
-
-### Regional Expansion
-
-- **EU Region**: GDPR compliance
-- **APAC Region**: Data residency
-- **Multi-Cloud**: AWS, Azure fallbacks
-
-### AI & ML
-
-- **Persona Learning**: Adaptive warm/cold, sport/couture scoring
-- **Fraud Detection**: ML models for counterfeit detection
-- **Recommendation Engine**: Personalized garment suggestions
-
----
-
----
-
-## v8 Production Readiness
-
-### Idempotency (Spanner Commit Timestamps)
-
-```python
-# All writes are idempotent via MutationLog table
-result = await idempotent_writer.execute_idempotent(
-    operation_name="transfer_ownership",
-    params={"cube_id": "abc", "new_owner": "xyz"},
-    mutations=[...]
-)
-# Returns 'executed' or 'duplicate'
 ```
-
-### PII Redaction (Driver Level)
-
-```python
-# PII is redacted at the database driver level
-client = PIIRedactingClient(pool_manager)
-results = await client.execute_sql(
-    "SELECT * FROM Users WHERE user_id = @id",
-    params={"id": user_id},
-    redact_results=True  # For external APIs
-)
-# Logs show: user_id=11111111...1111
-```
-
-### Connection Pooling (NATS High-Concurrency)
-
-```python
-# PingingPool keeps sessions warm for NATS JetStream
-pool = SpannerPoolManager(
-    min_sessions=10,
-    max_sessions=100,
-    ping_interval=300  # 5 minutes
-)
-```
-
-### Real-time Updates (Firestore)
-
-```typescript
-// Frontend receives live updates when agents modify cubes
-const { cubes, isConnected } = useWardrobeRealtime(userId);
-
-// Toast notification when agent modifies
-if (cube.agentic_state === 'modified') {
-  toast({ title: 'Wardrobe Updated', ... });
-}
+Brand-Me-Labs/
+├── brandme-gateway/          # Edge gateway, MCP server
+├── brandme-core/             # Core services
+│   ├── brain/                # Intent resolver (8000)
+│   ├── policy/               # Consent graph (8001)
+│   └── orchestrator/         # Scan processing (8002)
+├── brandme-agents/           # Agent services
+│   ├── identity/             # User profiles, ZK proofs (8005)
+│   ├── knowledge/            # Safe facet retrieval (8003)
+│   ├── compliance/           # Audit, ESG, burn proofs (8004)
+│   └── agentic/              # Multi-agent orchestrator
+├── brandme-governance/       # Human review console (8006)
+├── brandme-cube/             # Product Cube service (8007)
+├── brandme_core/             # Shared utilities
+│   ├── spanner/              # Spanner client, consent graph
+│   ├── firestore/            # Firestore client, realtime
+│   ├── mcp/                  # MCP tools and handlers
+│   └── zk/                   # ZK proof generation/verification
+├── brandme-data/             # Database schemas
+│   └── spanner/              # Spanner DDL
+├── brandme-chain/            # Blockchain integration
+├── brandme-console/          # Web interfaces
+└── brandme-infra/            # Infrastructure as Code
 ```
 
 ---

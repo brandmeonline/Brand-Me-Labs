@@ -267,9 +267,14 @@ setup_telemetry("cube", app)
 async def root():
     return {
         "service": "cube",
-        "version": "1.0.0",
-        "description": "Product Cube storage and serving",
-        "port": 8007
+        "version": "3.0.0",
+        "description": "Product Cube storage and serving (v9 - 7 faces, circular economy)",
+        "port": 8007,
+        "features": {
+            "molecular_data": ENABLE_MOLECULAR_DATA,
+            "ar_sync": AR_SYNC_ENABLED,
+            "ar_sync_latency_target_ms": AR_SYNC_LATENCY_TARGET_MS
+        }
     }
 
         "version": "3.0.0",
