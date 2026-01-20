@@ -1,3 +1,18 @@
+# Brand.Me Architecture Specification (v9)
+
+**Copyright (c) Brand.Me, Inc. All rights reserved.**
+
+## v9 Release: 2030 Agentic & Circular Economy
+
+**Version 9** builds on the Global Integrity Spine with features for the 2030 circular economy:
+
+- **Google Cloud Spanner**: Native Property Graph (GQL), O(1) consent lookups, Material tracking
+- **Firestore**: Real-time wardrobe state, Biometric Sync for AR glasses (<100ms)
+- **Model Context Protocol (MCP)**: External agent access to Style Vault
+- **DPP Lifecycle State Machine**: PRODUCED → ACTIVE → REPAIR → DISSOLVE → REPRINT
+- **Zero-Knowledge Proofs**: Proof of ownership for AR glasses without exposing private keys
+- **ESG Verification**: Cardano oracle for ethical oversight of agentic transactions
+- **Midnight Integration**: Burn proofs for circular economy material verification
 # Brand.Me Architecture Specification (v8)
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
@@ -547,6 +562,13 @@ v8 uses Spanner Graph DDL for O(1) consent lookups. See `brandme-data/spanner/sc
 
 #### Node Tables
 
+
+### Primary Database: Google Cloud Spanner
+
+v8 uses Spanner Graph DDL for O(1) consent lookups. See `brandme-data/spanner/schema.sql` for full DDL.
+
+#### Node Tables
+
 ##### Users
 ```sql
 CREATE TABLE Users (
@@ -1077,6 +1099,136 @@ if (cube.agentic_state === 'modified') {
 
 ---
 
+**Document Version**: 9.0.0
 **Document Version**: 8.0.0
 **Last Updated**: January 2026
 **Maintained By**: Brand.Me Engineering
+
+---
+
+## v9 New Features
+
+### 1. Product Cube (7 Faces)
+
+v9 adds a seventh face to the Product Cube:
+
+| Face | Purpose | v9 Changes |
+|------|---------|------------|
+| product_details | Immutable product info | - |
+| provenance | Append-only journey | - |
+| ownership | Current owner | - |
+| social_layer | Ratings, reviews | - |
+| esg_impact | ESG scores | Cardano oracle verification |
+| lifecycle | Durability, repair | DPP state machine |
+| **molecular_data** | **NEW: Material tracking** | Material composition, dissolve auth |
+
+### 2. DPP Lifecycle State Machine
+
+```
+PRODUCED → ACTIVE → REPAIR → ACTIVE
+                  ↘ DISSOLVE → REPRINT → PRODUCED
+```
+
+Valid transitions:
+- PRODUCED → ACTIVE (item enters circulation)
+- ACTIVE → REPAIR (item needs repair)
+- ACTIVE → DISSOLVE (owner authorizes material recovery)
+- REPAIR → ACTIVE (repair complete)
+- REPAIR → DISSOLVE (beyond repair)
+- DISSOLVE → REPRINT (materials used in new product)
+- REPRINT → PRODUCED (new product enters circulation)
+
+### 3. MCP (Model Context Protocol)
+
+External agents can access the Style Vault through MCP tools:
+
+```json
+{
+  "tools": [
+    {"name": "search_wardrobe", "category": "search"},
+    {"name": "get_cube_details", "category": "view"},
+    {"name": "suggest_outfit", "category": "style"},
+    {"name": "initiate_rental", "category": "transaction", "requires_esg_check": true},
+    {"name": "list_for_resale", "category": "transaction", "requires_esg_check": true},
+    {"name": "request_repair", "category": "lifecycle"},
+    {"name": "request_dissolve", "category": "lifecycle", "requires_esg_check": true}
+  ]
+}
+```
+
+All transaction tools require:
+- User consent (stored in ConsentedByAgent table)
+- ESG verification from Cardano oracle
+- Optional human approval for high-value transactions
+
+### 4. ZK Proof of Ownership
+
+AR glasses verify ownership without exposing private keys:
+
+```
+User Phone                    AR Glasses
+     │                             │
+     ├───── Generate ZK Proof ─────►
+     │      (ownership proof)      │
+     │                             ├── Verify locally
+     │                             │   (no private key)
+     │                             ▼
+     │                        Display overlay
+```
+
+Endpoints:
+- `POST /identity/{user_id}/zk/generate` - Generate proof
+- `POST /identity/{user_id}/zk/verify` - Verify proof
+- `GET /identity/{user_id}/zk/proofs` - List active proofs
+- `DELETE /identity/{user_id}/zk/proofs` - Invalidate after transfer
+
+### 5. Biometric Sync
+
+Firestore collection for AR glasses real-time sync (<100ms target):
+
+```json
+{
+  "user_id": "uuid",
+  "cube_id": "uuid",
+  "active_facet": {
+    "face_name": "product_details",
+    "display_mode": "overlay",
+    "sync_timestamp": "2026-01-20T12:00:00Z"
+  },
+  "biometric_data": {
+    "device_id": "ar_glasses_123",
+    "last_sync": "2026-01-20T12:00:00Z",
+    "sync_latency_ms": 45
+  }
+}
+```
+
+### 6. Material Tracking
+
+Spanner tables for circular economy:
+
+```sql
+-- Materials table
+CREATE TABLE Materials (
+  material_id STRING(36) NOT NULL,
+  material_type STRING(64) NOT NULL,
+  esg_score FLOAT64,
+  tensile_strength_mpa FLOAT64,
+  dissolve_auth_key STRING(128),
+  is_recyclable BOOL DEFAULT (true)
+);
+
+-- ComposedOf edge (Asset → Material)
+CREATE TABLE ComposedOf (
+  asset_id STRING(36) NOT NULL,
+  material_id STRING(36) NOT NULL,
+  weight_pct FLOAT64
+);
+
+-- DerivedFrom edge (Asset → Asset for reprint lineage)
+CREATE TABLE DerivedFrom (
+  child_asset_id STRING(36) NOT NULL,
+  parent_asset_id STRING(36) NOT NULL,
+  burn_proof_tx_hash STRING(128)
+);
+```
