@@ -1,15 +1,11 @@
 """
-Brand.Me v9 — 2030 Agentic & Circular Economy
+Brand.Me v8 — Global Integrity Spine
 Cube Service: Port 8007 - Product Cube storage and serving
 
 This service stores and serves Product Cube data (7 faces per garment).
 CRITICAL: Every face access is policy-gated. Never return face without policy check.
 
-v9 Features:
-- 7 faces: product_details, provenance, ownership, social_layer, esg_impact, lifecycle, molecular_data
-- DPP Lifecycle State Machine (PRODUCED→ACTIVE→REPAIR→DISSOLVE→REPRINT)
-- Biometric Sync for AR glasses (<100ms Active Facet)
-- Molecular data tracking for circular economy
+v8: Uses Spanner for persistence, Firestore for real-time state
 """
 
 from contextlib import asynccontextmanager
@@ -50,15 +46,10 @@ from .models import (
 logger = get_logger("cube")
 metrics = get_metrics_collector("cube")
 
-# Environment variables for Spanner (v9)
+# Environment variables for Spanner (v8)
 SPANNER_PROJECT = os.getenv("SPANNER_PROJECT_ID", "test-project")
 SPANNER_INSTANCE = os.getenv("SPANNER_INSTANCE_ID", "brandme-instance")
 SPANNER_DATABASE = os.getenv("SPANNER_DATABASE_ID", "brandme-db")
-
-# v9: Molecular data and AR sync configuration
-ENABLE_MOLECULAR_DATA = os.getenv("ENABLE_MOLECULAR_DATA", "true").lower() == "true"
-AR_SYNC_ENABLED = os.getenv("AR_SYNC_ENABLED", "true").lower() == "true"
-AR_SYNC_LATENCY_TARGET_MS = int(os.getenv("AR_SYNC_LATENCY_TARGET_MS", "100"))
 
 # Global resources (initialized in lifespan)
 spanner_pool = None
@@ -130,6 +121,7 @@ async def lifespan(app: FastAPI):
             "ar_sync_enabled": AR_SYNC_ENABLED,
             "ar_sync_latency_target_ms": AR_SYNC_LATENCY_TARGET_MS
         })
+        logger.info("cube_service_initialized", database="spanner")
 
         yield
 
@@ -150,6 +142,8 @@ app = FastAPI(
     title="Brand.Me Cube Service",
     description="Product Cube storage and serving with Integrity Spine (v9 - 2030 Agentic & Circular Economy)",
     version="3.0.0",
+    description="Product Cube storage and serving with Integrity Spine (v8)",
+    version="2.0.0",
     lifespan=lifespan
 )
 

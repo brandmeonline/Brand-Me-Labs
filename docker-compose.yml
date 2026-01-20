@@ -20,6 +20,70 @@ services:
   spanner-emulator:
     image: gcr.io/cloud-spanner-emulator/emulator:latest
     container_name: brandme-spanner-emulator
+  # PostgreSQL (legacy, kept for backward compatibility)
+  postgres:
+    image: postgres:16
+    container_name: brandme-postgres
+    environment:
+      POSTGRES_USER: brandme
+      POSTGRES_PASSWORD: brandme
+      POSTGRES_DB: brandme
+    ports:
+      - "9010:9010"  # gRPC
+      - "9020:9020"  # REST
+    networks:
+      - brandme_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9020/v1/projects/test-project/instances"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Spanner Schema Initialization
+  spanner-init:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
+    container_name: brandme-spanner-init
+    depends_on:
+      spanner-emulator:
+        condition: service_healthy
+    environment:
+      SPANNER_EMULATOR_HOST: spanner-emulator:9010
+    volumes:
+      - ./brandme-data/spanner:/schemas
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        echo "Configuring gcloud for emulator..."
+        gcloud config configurations create emulator 2>/dev/null || true
+        gcloud config set auth/disable_credentials true
+        gcloud config set project test-project
+        gcloud config set api_endpoint_overrides/spanner http://spanner-emulator:9020/
+
+        echo "Creating Spanner instance..."
+        gcloud spanner instances create brandme-instance \
+          --config=emulator-config \
+          --description="BrandMe Dev Instance" \
+          --nodes=1 2>/dev/null || echo "Instance already exists"
+
+        echo "Creating Spanner database..."
+        gcloud spanner databases create brandme-db \
+          --instance=brandme-instance 2>/dev/null || echo "Database already exists"
+
+        echo "Applying schema..."
+        gcloud spanner databases ddl update brandme-db \
+          --instance=brandme-instance \
+          --ddl-file=/schemas/schema.sql || echo "Schema already applied"
+
+        echo "Spanner initialization complete!"
+    networks:
+      - brandme_net
+
+  # Google Cloud Spanner Emulator
+  spanner-emulator:
+    image: gcr.io/cloud-spanner-emulator/emulator:latest
+    container_name: brandme-spanner-emulator
     ports:
       - "9010:9010"  # gRPC
       - "9020:9020"  # REST
@@ -101,11 +165,17 @@ services:
     container_name: brandme-brain
     environment:
       # Spanner (v9 GQL database)
+      # Spanner (v8 primary database)
+      # Legacy PostgreSQL
+      DATABASE_URL: postgresql://brandme:brandme@postgres:5432/brandme
+      # Spanner
       SPANNER_EMULATOR_HOST: spanner-emulator:9010
       SPANNER_PROJECT_ID: test-project
       SPANNER_INSTANCE_ID: brandme-instance
       SPANNER_DATABASE_ID: brandme-db
       # Firestore (real-time state + biometric sync)
+      # Firestore (real-time state)
+      # Firestore
       FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
       FIRESTORE_PROJECT_ID: brandme-dev
       # v9: MCP configuration
@@ -114,6 +184,10 @@ services:
       # General
       REGION_DEFAULT: us-east1
     depends_on:
+      spanner-init:
+        condition: service_completed_successfully
+      firestore-emulator:
+        condition: service_healthy
       spanner-init:
         condition: service_completed_successfully
       firestore-emulator:

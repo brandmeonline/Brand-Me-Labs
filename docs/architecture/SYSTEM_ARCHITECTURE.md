@@ -13,6 +13,16 @@
 - **Zero-Knowledge Proofs**: Proof of ownership for AR glasses without exposing private keys
 - **ESG Verification**: Cardano oracle for ethical oversight of agentic transactions
 - **Midnight Integration**: Burn proofs for circular economy material verification
+# Brand.Me Architecture Specification (v8)
+
+**Copyright (c) Brand.Me, Inc. All rights reserved.**
+
+## v8 Release: Global Integrity Spine
+
+**Version 8** introduces a dual-database production stack replacing PostgreSQL:
+
+- **Google Cloud Spanner**: Global consistency, Consent Graph, O(1) provenance lookups
+- **Firestore**: Real-time wardrobe state, edge caching, agentic state broadcasting
 
 ## Table of Contents
 
@@ -552,6 +562,13 @@ v8 uses Spanner Graph DDL for O(1) consent lookups. See `brandme-data/spanner/sc
 
 #### Node Tables
 
+
+### Primary Database: Google Cloud Spanner
+
+v8 uses Spanner Graph DDL for O(1) consent lookups. See `brandme-data/spanner/schema.sql` for full DDL.
+
+#### Node Tables
+
 ##### Users
 ```sql
 CREATE TABLE Users (
@@ -1083,6 +1100,7 @@ if (cube.agentic_state === 'modified') {
 ---
 
 **Document Version**: 9.0.0
+**Document Version**: 8.0.0
 **Last Updated**: January 2026
 **Maintained By**: Brand.Me Engineering
 
