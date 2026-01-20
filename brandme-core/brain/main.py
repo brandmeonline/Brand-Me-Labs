@@ -48,12 +48,47 @@ class IntentResolveResponse(BaseModel):
 
 def lookup_garment_id(spanner_pool, garment_tag: str) -> str:
     """
-    Look up garment_id from NFC/RFID tag.
-    v8: Uses Spanner Assets table.
-    TODO: Implement actual tag lookup from Assets table.
+    Look up garment_id (asset_id) from NFC/RFID tag.
+    v9: Uses Spanner Assets table with physical_tag_id column.
+
+    Args:
+        spanner_pool: Spanner connection pool
+        garment_tag: NFC/RFID tag identifier
+
+    Returns:
+        asset_id if found, raises ValueError if not found
     """
-    # Stub implementation - in production would query Assets table
-    return str(uuid.uuid4())
+    def _lookup(transaction):
+        results = transaction.execute_sql(
+            """
+            SELECT asset_id
+            FROM Assets
+            WHERE physical_tag_id = @tag_id
+            LIMIT 1
+            """,
+            params={"tag_id": garment_tag},
+            param_types={"tag_id": param_types.STRING}
+        )
+        for row in results:
+            return row[0]
+        return None
+
+    asset_id = spanner_pool.database.run_in_transaction(_lookup)
+
+    if not asset_id:
+        logger.warning({
+            "event": "tag_lookup_not_found",
+            "garment_tag": garment_tag[:8] + "..." if len(garment_tag) > 8 else garment_tag
+        })
+        raise ValueError(f"No asset found for tag: {garment_tag}")
+
+    logger.info({
+        "event": "tag_lookup_success",
+        "garment_tag": garment_tag[:8] + "...",
+        "asset_id": asset_id[:8] + "..."
+    })
+
+    return asset_id
 
 
 async def call_policy_gate(scanner_user_id: str, garment_id: str, region_code: str, request_id: str, http_client) -> dict:
@@ -188,7 +223,24 @@ async def intent_resolve(body: IntentResolveRequest, request: Request):
     response = JSONResponse(content={})
     request_id = ensure_request_id(request, response)
 
-    garment_id = lookup_garment_id(app.state.spanner_pool, body.garment_tag)
+    try:
+        garment_id = lookup_garment_id(app.state.spanner_pool, body.garment_tag)
+    except ValueError as e:
+        logger.warning({
+            "event": "intent_resolve_tag_not_found",
+            "scan_id": body.scan_id,
+            "garment_tag": body.garment_tag[:8] + "..." if len(body.garment_tag) > 8 else body.garment_tag,
+            "request_id": request_id,
+        })
+        return JSONResponse(
+            status_code=404,
+            content={
+                "action": "scan_failed",
+                "error": "garment_not_found",
+                "message": str(e),
+                "garment_tag": body.garment_tag,
+            }
+        )
 
     policy_result = await call_policy_gate(
         body.scanner_user_id,

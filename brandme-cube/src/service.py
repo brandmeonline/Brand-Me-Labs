@@ -500,6 +500,20 @@ class CubeService:
         from google.cloud import spanner
 
         def _update(transaction):
+            # Mark previous ownership as ended
+            transaction.update(
+                table="Owns",
+                columns=["owner_id", "asset_id", "is_current", "ended_at"],
+                values=[
+                    (transfer_data.get("from_owner_id"), cube_id, False, spanner.COMMIT_TIMESTAMP),
+                ]
+            )
+            # Create new ownership record
+            transaction.insert(
+                table="Owns",
+                columns=["owner_id", "asset_id", "acquired_at", "transfer_method", "is_current"],
+                values=[
+                    (transfer_data.get("new_owner_id"), cube_id, spanner.COMMIT_TIMESTAMP, transfer_data.get("transfer_method", "transfer"), True)
             transaction.update(
                 table="Owns",
                 columns=["owner_id", "asset_id", "is_active"],
