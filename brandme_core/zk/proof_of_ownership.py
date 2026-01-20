@@ -423,11 +423,11 @@ class ZKProofManager:
             # Build query based on device binding
             if device_id and self.enable_device_binding:
                 query = """
-                    SELECT proof_id, proof_data, public_signals, expires_at, device_id
+                    SELECT proof_id, proof_data, public_signals, expires_at, device_session_id
                     FROM ZKProofCache
                     WHERE user_id = @user_id
                         AND asset_id = @asset_id
-                        AND device_id = @device_id
+                        AND device_session_id = @device_session_id
                         AND expires_at > CURRENT_TIMESTAMP()
                     ORDER BY created_at DESC
                     LIMIT 1
@@ -435,16 +435,16 @@ class ZKProofManager:
                 params = {
                     "user_id": user_id,
                     "asset_id": asset_id,
-                    "device_id": device_id
+                    "device_session_id": device_id
                 }
                 param_types_map = {
                     "user_id": param_types.STRING,
                     "asset_id": param_types.STRING,
-                    "device_id": param_types.STRING
+                    "device_session_id": param_types.STRING
                 }
             else:
                 query = """
-                    SELECT proof_id, proof_data, public_signals, expires_at, device_id
+                    SELECT proof_id, proof_data, public_signals, expires_at, device_session_id
                     FROM ZKProofCache
                     WHERE user_id = @user_id
                         AND asset_id = @asset_id
@@ -512,11 +512,11 @@ class ZKProofManager:
         def _check_ownership(transaction):
             results = transaction.execute_sql(
                 """
-                SELECT owner_id, acquired_at, share_pct, is_active
+                SELECT owner_id, acquired_at, transfer_method, is_current
                 FROM Owns
                 WHERE owner_id = @user_id
                     AND asset_id = @asset_id
-                    AND is_active = true
+                    AND is_current = true
                 """,
                 params={
                     "user_id": user_id,
@@ -532,8 +532,8 @@ class ZKProofManager:
                 return {
                     "owner_id": row[0],
                     "acquired_at": row[1],
-                    "share_pct": row[2],
-                    "is_active": row[3]
+                    "transfer_method": row[2],
+                    "is_current": row[3]
                 }
             return None
 
@@ -555,7 +555,7 @@ class ZKProofManager:
                 table="ZKProofCache",
                 columns=[
                     "proof_id", "user_id", "asset_id", "proof_type",
-                    "proof_data", "public_signals", "device_id",
+                    "proof_hash", "proof_data", "public_signals", "device_session_id",
                     "created_at", "expires_at"
                 ],
                 values=[(
@@ -563,6 +563,7 @@ class ZKProofManager:
                     user_id,
                     asset_id,
                     proof.proof_type.value,
+                    hashlib.sha256(proof.proof_data).hexdigest() if isinstance(proof.proof_data, bytes) else hashlib.sha256(proof.proof_data.encode()).hexdigest(),
                     proof.proof_data.decode() if isinstance(proof.proof_data, bytes) else proof.proof_data,
                     json.dumps(proof.public_signals),
                     proof.device_bound,

@@ -49,14 +49,33 @@ def get_spanner_pool():
 
 
 class AsyncTask(Task):
-    """Base task that supports async/await."""
+    """
+    Base task that supports async/await.
+
+    Uses the decorated function as the async implementation.
+    The `run` method is the actual task function, and we wrap it
+    to run in an event loop.
+    """
+    _is_async = True
 
     def __call__(self, *args, **kwargs):
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(self.run_async(*args, **kwargs))
+        """Execute the async task in an event loop."""
+        # Get or create event loop
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
 
-    async def run_async(self, *args, **kwargs):
-        raise NotImplementedError
+        # The decorated function becomes self.run
+        if asyncio.iscoroutinefunction(self.run):
+            return loop.run_until_complete(self.run(*args, **kwargs))
+        else:
+            # Fallback for synchronous tasks
+            return self.run(*args, **kwargs)
 
 
 @app.task(

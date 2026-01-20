@@ -58,7 +58,10 @@ class BurnProofVerifier:
     def __init__(
         self,
         midnight_api_url: str = "http://midnight-devnet:9000",
-        timeout: int = 30
+        timeout: int = 30,
+        spanner_pool=None,
+        allow_stub_fallback: bool = False,
+        require_midnight: bool = True
     ):
         """
         Initialize the burn proof verifier.
@@ -66,9 +69,15 @@ class BurnProofVerifier:
         Args:
             midnight_api_url: URL of Midnight API
             timeout: Request timeout in seconds
+            spanner_pool: Spanner connection pool for caching verified proofs
+            allow_stub_fallback: If True, allow stub verification when Midnight unavailable
+            require_midnight: If True, fail when Midnight is unavailable (production mode)
         """
         self.midnight_api_url = midnight_api_url
         self.timeout = timeout
+        self.spanner_pool = spanner_pool
+        self.allow_stub_fallback = allow_stub_fallback
+        self.require_midnight = require_midnight
         self._client: Optional[httpx.AsyncClient] = None
 
     async def _get_client(self) -> httpx.AsyncClient:
@@ -130,7 +139,7 @@ class BurnProofVerifier:
 
             if response.status_code == 200:
                 data = response.json()
-                return BurnProofVerificationResult(
+                result = BurnProofVerificationResult(
                     is_valid=data.get("valid", False),
                     proof_hash=burn_proof_hash,
                     parent_asset_id=parent_asset_id,
@@ -138,6 +147,10 @@ class BurnProofVerifier:
                     midnight_confirmed=True,
                     verification_timestamp=datetime.utcnow()
                 )
+                # Cache successful verification
+                if result.is_valid:
+                    await self._cache_verification(result)
+                return result
             else:
                 logger.warning({
                     "event": "midnight_verification_failed",
@@ -152,13 +165,50 @@ class BurnProofVerifier:
                 )
 
         except httpx.ConnectError:
-            # Midnight not available - use stub verification
             logger.warning({
-                "event": "midnight_unavailable_stub_verify",
+                "event": "midnight_unavailable",
                 "proof_hash": burn_proof_hash[:16] + "...",
-                "parent_asset_id": parent_asset_id[:8] + "..."
+                "parent_asset_id": parent_asset_id[:8] + "...",
+                "require_midnight": self.require_midnight,
+                "allow_stub": self.allow_stub_fallback
             })
-            return await self._stub_verify(burn_proof_hash, parent_asset_id)
+
+            # Check cached verification in Spanner first
+            cached_result = await self._check_cached_verification(burn_proof_hash)
+            if cached_result:
+                logger.info({
+                    "event": "burn_proof_cached_verification",
+                    "proof_hash": burn_proof_hash[:16] + "..."
+                })
+                return cached_result
+
+            # Production mode: fail if Midnight is required
+            if self.require_midnight and not self.allow_stub_fallback:
+                return BurnProofVerificationResult(
+                    is_valid=False,
+                    proof_hash=burn_proof_hash,
+                    parent_asset_id=parent_asset_id,
+                    error="Midnight network unavailable - burn proof cannot be verified in production mode",
+                    midnight_confirmed=False
+                )
+
+            # Development mode: use stub verification
+            if self.allow_stub_fallback:
+                logger.warning({
+                    "event": "midnight_unavailable_stub_verify",
+                    "proof_hash": burn_proof_hash[:16] + "...",
+                    "parent_asset_id": parent_asset_id[:8] + "..."
+                })
+                return await self._stub_verify(burn_proof_hash, parent_asset_id)
+
+            # Default: fail verification
+            return BurnProofVerificationResult(
+                is_valid=False,
+                proof_hash=burn_proof_hash,
+                parent_asset_id=parent_asset_id,
+                error="Midnight network unavailable",
+                midnight_confirmed=False
+            )
 
         except Exception as e:
             logger.error({
@@ -172,6 +222,99 @@ class BurnProofVerifier:
                 parent_asset_id=parent_asset_id,
                 error=str(e)
             )
+
+    async def _check_cached_verification(
+        self,
+        burn_proof_hash: str
+    ) -> Optional[BurnProofVerificationResult]:
+        """
+        Check for cached verification result in Spanner.
+
+        Returns cached result if found and still valid, None otherwise.
+        """
+        if not self.spanner_pool:
+            return None
+
+        try:
+            from google.cloud.spanner_v1 import param_types
+
+            def _check_cache(transaction):
+                results = transaction.execute_sql(
+                    """
+                    SELECT parent_asset_id, material_recovery_pct, verified_at, is_valid
+                    FROM BurnProofCache
+                    WHERE proof_hash = @proof_hash
+                        AND verified_at > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
+                    LIMIT 1
+                    """,
+                    params={"proof_hash": burn_proof_hash},
+                    param_types={"proof_hash": param_types.STRING}
+                )
+                for row in results:
+                    return {
+                        "parent_asset_id": row[0],
+                        "material_recovery_pct": row[1],
+                        "verified_at": row[2],
+                        "is_valid": row[3]
+                    }
+                return None
+
+            cached = self.spanner_pool.database.run_in_transaction(_check_cache)
+
+            if cached:
+                return BurnProofVerificationResult(
+                    is_valid=cached["is_valid"],
+                    proof_hash=burn_proof_hash,
+                    parent_asset_id=cached["parent_asset_id"],
+                    material_recovery_pct=cached["material_recovery_pct"],
+                    midnight_confirmed=True,  # Was confirmed when cached
+                    verification_timestamp=cached["verified_at"]
+                )
+            return None
+
+        except Exception as e:
+            logger.warning({
+                "event": "burn_proof_cache_check_failed",
+                "error": str(e)
+            })
+            return None
+
+    async def _cache_verification(
+        self,
+        result: BurnProofVerificationResult
+    ):
+        """Cache successful verification result in Spanner."""
+        if not self.spanner_pool or not result.midnight_confirmed:
+            return
+
+        try:
+            from google.cloud import spanner
+            import uuid
+
+            def _cache(transaction):
+                transaction.insert_or_update(
+                    table="BurnProofCache",
+                    columns=[
+                        "cache_id", "proof_hash", "parent_asset_id",
+                        "material_recovery_pct", "is_valid", "verified_at"
+                    ],
+                    values=[(
+                        str(uuid.uuid4()),
+                        result.proof_hash,
+                        result.parent_asset_id,
+                        result.material_recovery_pct,
+                        result.is_valid,
+                        spanner.COMMIT_TIMESTAMP
+                    )]
+                )
+
+            self.spanner_pool.database.run_in_transaction(_cache)
+
+        except Exception as e:
+            logger.warning({
+                "event": "burn_proof_cache_write_failed",
+                "error": str(e)
+            })
 
     async def _stub_verify(
         self,

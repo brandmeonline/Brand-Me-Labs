@@ -538,6 +538,68 @@ CREATE INDEX MCPInvocationsByTool ON MCPInvocations(tool_id, invoked_at DESC);
 CREATE INDEX MCPInvocationsByAgent ON MCPInvocations(agent_id, invoked_at DESC);
 CREATE INDEX MCPInvocationsPending ON MCPInvocations(human_approval_required) WHERE human_approval_required = true;
 
+-- v9: Agent Transaction Tracking (rentals, resales, repairs, dissolves)
+CREATE TABLE AgentTransaction (
+  transaction_id STRING(36) NOT NULL,
+  agent_id STRING(36) NOT NULL,
+  user_id STRING(36) NOT NULL,
+  transaction_type STRING(50) NOT NULL,           -- "rental", "resale_listing", "repair_request", "dissolve_request"
+  asset_id STRING(36) NOT NULL,
+  counterparty_id STRING(36),                     -- e.g., renter_id for rentals
+  transaction_value_usd FLOAT64,
+  status STRING(30) NOT NULL,                     -- "pending_approval", "submitted", "approved", "rejected", "completed"
+  requires_human_review BOOL DEFAULT (true),
+  human_reviewed_by STRING(36),
+  human_review_at TIMESTAMP,
+  review_notes STRING(500),
+  esg_verified BOOL DEFAULT (false),
+  initiated_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  completed_at TIMESTAMP,
+  CONSTRAINT FK_AgentTx_Agent FOREIGN KEY (agent_id) REFERENCES Users(user_id),
+  CONSTRAINT FK_AgentTx_User FOREIGN KEY (user_id) REFERENCES Users(user_id),
+  CONSTRAINT FK_AgentTx_Asset FOREIGN KEY (asset_id) REFERENCES Assets(asset_id),
+  CONSTRAINT CHK_AgentTx_Type CHECK (transaction_type IN ('rental', 'resale_listing', 'repair_request', 'dissolve_request', 'transfer'))
+) PRIMARY KEY (transaction_id);
+
+CREATE INDEX AgentTxByUser ON AgentTransaction(user_id, initiated_at DESC);
+CREATE INDEX AgentTxByAgent ON AgentTransaction(agent_id, initiated_at DESC);
+CREATE INDEX AgentTxByAsset ON AgentTransaction(asset_id);
+CREATE INDEX AgentTxPending ON AgentTransaction(status) WHERE status = 'pending_approval';
+
+-- v9: Burn Proof Verification Cache (Midnight)
+CREATE TABLE BurnProofCache (
+  cache_id STRING(36) NOT NULL,
+  proof_hash STRING(64) NOT NULL,
+  parent_asset_id STRING(36) NOT NULL,
+  material_recovery_pct FLOAT64,
+  is_valid BOOL NOT NULL,
+  verified_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  CONSTRAINT FK_BurnProof_Asset FOREIGN KEY (parent_asset_id) REFERENCES Assets(asset_id)
+) PRIMARY KEY (cache_id);
+
+CREATE UNIQUE INDEX BurnProofByHash ON BurnProofCache(proof_hash);
+CREATE INDEX BurnProofByAsset ON BurnProofCache(parent_asset_id);
+
+-- v9: Material ESG Score Cache (Cardano Oracle)
+CREATE TABLE MaterialESGCache (
+  cache_id STRING(36) NOT NULL,
+  material_id STRING(36) NOT NULL,
+  overall_score FLOAT64 NOT NULL,
+  environmental FLOAT64,
+  social FLOAT64,
+  governance FLOAT64,
+  carbon_footprint_kg FLOAT64,
+  water_usage_liters FLOAT64,
+  recyclability_pct FLOAT64,
+  certifications ARRAY<STRING(100)>,
+  cardano_tx_hash STRING(255),
+  oracle_timestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  CONSTRAINT FK_ESGCache_Material FOREIGN KEY (material_id) REFERENCES Materials(material_id)
+) PRIMARY KEY (cache_id);
+
+CREATE UNIQUE INDEX ESGCacheByMaterial ON MaterialESGCache(material_id);
+CREATE INDEX ESGCacheByTimestamp ON MaterialESGCache(oracle_timestamp DESC);
+
 -- ============================================
 -- ZK PROOF CACHE (for AR glasses)
 -- ============================================
@@ -548,6 +610,8 @@ CREATE TABLE ZKProofCache (
   asset_id STRING(36) NOT NULL,
   proof_type STRING(50) NOT NULL,               -- "ownership", "consent", "age_verification"
   proof_hash STRING(64) NOT NULL,
+  proof_data STRING(MAX),                       -- Serialized ZK proof data (JSON)
+  public_signals STRING(MAX),                   -- Public signals from proof (JSON)
   challenge_nonce STRING(64),
   device_session_id STRING(100),
   is_valid BOOL DEFAULT (true),
