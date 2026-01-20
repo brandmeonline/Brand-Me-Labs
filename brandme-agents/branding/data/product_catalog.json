@@ -1,0 +1,127 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-01-20T00:00:00Z",
+  "description": "Fallback product catalog for circuit breaker scenarios",
+  "products": [
+    {
+      "product_id": "PKG-PERSONAL-001",
+      "name": "Personal Brand Starter Kit",
+      "category": "branding_package",
+      "description": "Complete starter package for building your personal brand from scratch. Includes brand strategy session, visual identity guidelines, and LinkedIn optimization.",
+      "price_usd": 499.00,
+      "required_skills": [],
+      "develops_skills": ["personal_branding", "social_media", "networking"],
+      "ideal_for_goals": ["career_transition", "networking"]
+    },
+    {
+      "product_id": "PKG-PERSONAL-002",
+      "name": "Personal Brand Accelerator",
+      "category": "branding_package",
+      "description": "Intensive 4-week program to fast-track your personal brand development. Includes weekly coaching, content calendar, and engagement strategy.",
+      "price_usd": 1299.00,
+      "required_skills": ["basic_social_media"],
+      "develops_skills": ["content_creation", "thought_leadership", "public_speaking"],
+      "ideal_for_goals": ["thought_leadership", "content_creation"]
+    },
+    {
+      "product_id": "PKG-EXECUTIVE-001",
+      "name": "Executive Presence Package",
+      "category": "branding_package",
+      "description": "Premium package for senior leaders looking to establish thought leadership. Includes media training, keynote development, and PR strategy.",
+      "price_usd": 4999.00,
+      "required_skills": ["leadership", "public_speaking"],
+      "develops_skills": ["executive_presence", "media_relations", "keynote_speaking"],
+      "ideal_for_goals": ["executive_presence", "thought_leadership"]
+    },
+    {
+      "product_id": "PKG-CREATOR-001",
+      "name": "Content Creator Launchpad",
+      "category": "branding_package",
+      "description": "Everything you need to start your content creation journey. Video production basics, content strategy, and platform optimization.",
+      "price_usd": 799.00,
+      "required_skills": [],
+      "develops_skills": ["video_production", "content_strategy", "platform_optimization"],
+      "ideal_for_goals": ["content_creation", "entrepreneurship"]
+    },
+    {
+      "product_id": "SVC-HEADSHOT-001",
+      "name": "Professional Headshot Session",
+      "category": "individual_service",
+      "description": "Professional photography session with retouching. Includes 3 final edited images optimized for LinkedIn and professional use.",
+      "price_usd": 299.00,
+      "required_skills": [],
+      "develops_skills": [],
+      "ideal_for_goals": ["career_transition", "executive_presence"]
+    },
+    {
+      "product_id": "SVC-STYLING-001",
+      "name": "Personal Styling Consultation",
+      "category": "individual_service",
+      "description": "One-on-one styling session to develop your professional wardrobe. Includes color analysis and shopping recommendations.",
+      "price_usd": 399.00,
+      "required_skills": [],
+      "develops_skills": ["professional_image"],
+      "ideal_for_goals": ["executive_presence", "career_transition"]
+    },
+    {
+      "product_id": "SVC-COACHING-001",
+      "name": "Personal Brand Coaching (4 sessions)",
+      "category": "individual_service",
+      "description": "Four 60-minute coaching sessions to develop and refine your personal brand strategy.",
+      "price_usd": 599.00,
+      "required_skills": [],
+      "develops_skills": ["personal_branding", "self_awareness", "communication"],
+      "ideal_for_goals": ["career_transition", "thought_leadership", "entrepreneurship"]
+    },
+    {
+      "product_id": "SVC-LINKEDIN-001",
+      "name": "LinkedIn Profile Optimization",
+      "category": "individual_service",
+      "description": "Complete LinkedIn profile overhaul including headline, summary, experience sections, and keyword optimization.",
+      "price_usd": 249.00,
+      "required_skills": [],
+      "develops_skills": ["linkedin", "professional_writing"],
+      "ideal_for_goals": ["career_transition", "networking"]
+    },
+    {
+      "product_id": "DIG-TEMPLATE-001",
+      "name": "Personal Brand Playbook Template",
+      "category": "digital_product",
+      "description": "Comprehensive Notion template with frameworks for defining your brand, content planning, and networking strategy.",
+      "price_usd": 49.00,
+      "required_skills": [],
+      "develops_skills": ["personal_branding", "organization"],
+      "ideal_for_goals": ["career_transition", "content_creation"]
+    },
+    {
+      "product_id": "DIG-COURSE-001",
+      "name": "LinkedIn Mastery Course",
+      "category": "digital_product",
+      "description": "Self-paced online course covering advanced LinkedIn strategies, content creation, and network building.",
+      "price_usd": 199.00,
+      "required_skills": ["basic_linkedin"],
+      "develops_skills": ["linkedin", "content_creation", "networking"],
+      "ideal_for_goals": ["thought_leadership", "networking", "career_transition"]
+    },
+    {
+      "product_id": "SUB-STARTER-001",
+      "name": "Brand Builder Starter (Monthly)",
+      "category": "subscription",
+      "description": "Monthly subscription with access to templates, monthly group coaching, and community forum.",
+      "price_usd": 29.00,
+      "required_skills": [],
+      "develops_skills": ["personal_branding", "networking"],
+      "ideal_for_goals": ["career_transition", "networking"]
+    },
+    {
+      "product_id": "SUB-PRO-001",
+      "name": "Brand Builder Pro (Monthly)",
+      "category": "subscription",
+      "description": "Professional tier with weekly office hours, 1-on-1 monthly coaching, and premium content library.",
+      "price_usd": 99.00,
+      "required_skills": ["personal_branding"],
+      "develops_skills": ["thought_leadership", "content_creation", "public_speaking"],
+      "ideal_for_goals": ["thought_leadership", "entrepreneurship"]
+    }
+  ]
+}
