@@ -165,13 +165,13 @@ Full schema: `brandme-data/spanner/schema.sql`
 #### Node Tables
 
 
-### Primary Database: Google Cloud Spanner
+### Google Cloud Spanner (Source of Truth)
 
-v8 uses Spanner Graph DDL for O(1) consent lookups. See `brandme-data/spanner/schema.sql` for full DDL.
+Full schema: `brandme-data/spanner/schema.sql`
 
 #### Node Tables
 
-##### Users
+**Users**
 ```sql
 CREATE TABLE Users (
   user_id STRING(36) NOT NULL,
