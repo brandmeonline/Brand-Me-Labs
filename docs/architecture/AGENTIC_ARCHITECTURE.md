@@ -1,10 +1,10 @@
-# Brand.Me Agentic Architecture
+# Brand.Me Agentic Architecture (v9)
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
 
 ## Vision: Agentic Company with Human-in-the-Loop
 
-Transform Brand.Me into an AI-native company where intelligent agents handle operations with strategic human oversight.
+Transform Brand.Me into an AI-native company where intelligent agents handle operations with strategic human oversight. External agents access the Style Vault through Model Context Protocol (MCP).
 
 ---
 
@@ -13,14 +13,21 @@ Transform Brand.Me into an AI-native company where intelligent agents handle ope
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Human-in-the-Loop Layer                      │
-│  (Governance Console with Approval Workflows & Oversight)        │
+│          (Governance Console with Approval Workflows)            │
 └─────────────────────────────────────────────────────────────────┘
                                 ▲
                                 │ Escalations & Approvals
                                 │
 ┌─────────────────────────────────────────────────────────────────┐
+│                  External Agent Layer (MCP)                      │
+│         Claude, GPT, Gemini, Custom AI Assistants               │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                │ MCP Tools (7 tools)
+                                │
+┌─────────────────────────────────────────────────────────────────┐
 │                    Agent Orchestration Layer                     │
-│  (LangGraph Multi-Agent System with Tool Calling)                │
+│            (LangGraph Multi-Agent with ESG Verification)         │
 │                                                                   │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
 │  │   Scan       │  │  Compliance  │  │  Blockchain  │          │
@@ -28,631 +35,547 @@ Transform Brand.Me into an AI-native company where intelligent agents handle ope
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
 │                                                                   │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │  Identity    │  │  Knowledge   │  │  Analytics   │          │
-│  │  Agent       │  │  Agent       │  │  Agent       │          │
+│  │  Identity    │  │   Policy     │  │  Knowledge   │          │
+│  │  Agent       │  │   Agent      │  │  Agent       │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
 └─────────────────────────────────────────────────────────────────┘
-                                ▲
-                                │ Context & Tools
+                                │
+                                │ Graph Queries + ESG Verification
                                 │
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Knowledge Graph Layer                         │
-│  (Neo4j Graph Database + Vector Embeddings)                      │
+│                   Data & Verification Layer                      │
 │                                                                   │
-│  Entities: Users, Garments, Creators, Brands, Scans,            │
-│           Relationships, Policies, Transactions                  │
+│  ┌──────────────────────────┐  ┌──────────────────────────┐    │
+│  │ Google Cloud Spanner     │  │ Cardano ESG Oracle       │    │
+│  │ Native Property Graph    │  │ ESGVerifier              │    │
+│  │ O(1) Consent Lookups     │  │                          │    │
+│  └──────────────────────────┘  └──────────────────────────┘    │
 │                                                                   │
-│  Graph RAG: Semantic search + Graph traversal + LLM synthesis    │
-└─────────────────────────────────────────────────────────────────┘
-                                ▲
-                                │ Data Integration
-                                │
-┌─────────────────────────────────────────────────────────────────┐
-│                    Existing Services Layer                       │
-│  (PostgreSQL, NATS, Cardano, Midnight)                          │
+│  ┌──────────────────────────┐  ┌──────────────────────────┐    │
+│  │ Firestore Real-time      │  │ Midnight Burn Proofs     │    │
+│  │ AR Glasses <100ms        │  │ BurnProofVerifier        │    │
+│  └──────────────────────────┘  └──────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 1. Knowledge Graph Layer
+## 1. MCP Integration Layer
 
-### 1.1 Graph Schema
+### 1.1 Available Tools
 
-**Entities (Nodes):**
-```
-User {
-  user_id: UUID
-  handle: string
-  did_cardano: string
-  trust_score: float
-  persona_vector: vector(512)  // Embedding for semantic search
-}
+External agents access Brand.Me through 7 MCP tools:
 
-Garment {
-  garment_id: UUID
-  garment_tag: string
-  creator_id: UUID
-  authenticity_hash: string
-  embedding: vector(512)  // Visual + text embedding
-}
+| Tool | Category | ESG Check | Description |
+|------|----------|-----------|-------------|
+| `search_wardrobe` | search | No | Search user's Style Vault |
+| `get_cube_details` | view | No | Get Product Cube details |
+| `suggest_outfit` | style | No | AI outfit suggestions |
+| `initiate_rental` | transaction | Yes | Start rental process |
+| `list_for_resale` | transaction | Yes | List item for resale |
+| `request_repair` | lifecycle | No | Request repair service |
+| `request_dissolve` | lifecycle | Yes | Request material dissolution |
 
-Creator {
-  creator_id: UUID
-  creator_name: string
-  brand: string
-  reputation_score: float
-  style_embedding: vector(512)
-}
+### 1.2 Tool Definitions
 
-Brand {
-  brand_id: UUID
-  brand_name: string
-  esg_score: string
-  region_codes: [string]
-}
+```python
+# brandme_core/mcp/tools.py
 
-Scan {
-  scan_id: UUID
-  timestamp: datetime
-  decision: string
-  policy_version: string
-  cardano_tx_hash: string
-}
-
-Policy {
-  policy_id: UUID
-  version: string
-  region_code: string
-  rules_embedding: vector(512)
-}
-```
-
-**Relationships (Edges):**
-```
-(User)-[:OWNS]->(Garment)
-(User)-[:SCANNED]->(Garment)
-(User)-[:FRIENDS_WITH]->(User)
-(Garment)-[:CREATED_BY]->(Creator)
-(Creator)-[:WORKS_FOR]->(Brand)
-(Garment)-[:VERIFIED_BY]->(Scan)
-(Scan)-[:ANCHORED_TO]->(BlockchainTx)
-(Scan)-[:ENFORCED_BY]->(Policy)
-(User)-[:TRUSTS]->(User) {trust_weight: float}
-(Garment)-[:SIMILAR_TO]->(Garment) {similarity: float}
+MCP_TOOLS = [
+    {
+        "name": "search_wardrobe",
+        "description": "Search user's Style Vault by category, color, or brand",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "string"},
+                "query": {"type": "string"},
+                "filters": {
+                    "type": "object",
+                    "properties": {
+                        "category": {"type": "string"},
+                        "color": {"type": "string"},
+                        "brand": {"type": "string"}
+                    }
+                }
+            },
+            "required": ["user_id"]
+        }
+    },
+    {
+        "name": "initiate_rental",
+        "description": "Initiate rental of an item (requires ESG verification)",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "string"},
+                "asset_id": {"type": "string"},
+                "rental_duration_days": {"type": "integer"},
+                "price_per_day": {"type": "number"}
+            },
+            "required": ["user_id", "asset_id", "rental_duration_days"]
+        }
+    }
+]
 ```
 
-### 1.2 Graph RAG Implementation
+### 1.3 Transaction Requirements
 
-**Query Pipeline:**
-1. **Natural Language → Cypher**: LLM converts questions to graph queries
-2. **Vector Search**: Find semantically similar entities
-3. **Graph Traversal**: Navigate relationships
-4. **Context Assembly**: Gather relevant subgraph
-5. **LLM Synthesis**: Generate answer from graph context
+All transaction tools enforce:
 
-**Example Queries:**
-- "Show me all garments by creators the user trusts"
-- "Find similar garments with better ESG scores"
-- "What's the provenance chain for this garment?"
-- "Which policies apply to this scan in EU region?"
+1. **User Consent**: Verified via `ConsentedByAgent` table
+2. **ESG Verification**: Cardano oracle check via `ESGVerifier`
+3. **Human Approval**: Optional for high-value transactions
+4. **Audit Trail**: `AgentTransaction` record in Spanner
+
+```python
+# Transaction flow for MCP tools
+async def handle_mcp_transaction(tool_name: str, params: dict):
+    # 1. Verify agent has user consent
+    consent = await check_agent_consent(params["user_id"], agent_id)
+    if not consent.is_valid:
+        return {"error": "Agent not authorized by user"}
+
+    # 2. ESG verification for transaction tools
+    if tool_name in ["initiate_rental", "list_for_resale", "request_dissolve"]:
+        esg_result = await esg_verifier.verify_transaction(
+            asset_id=params["asset_id"],
+            material_id=asset.primary_material_id,
+            transaction_type=tool_name,
+            agent_id=agent_id
+        )
+        if not esg_result.is_approved:
+            return {"error": esg_result.reason, "requires_human_review": True}
+
+    # 3. Record transaction
+    await record_agent_transaction(agent_id, params, esg_result)
+
+    # 4. Execute action
+    return await execute_tool(tool_name, params)
+```
 
 ---
 
 ## 2. Agent System Architecture
 
-### 2.1 Agent Orchestration (LangGraph)
+### 2.1 Agent State Model
 
-**Core Framework:**
 ```python
-# brandme-agents/agentic/orchestrator.py
-
-from langgraph.graph import StateGraph, END
-from langchain_anthropic import ChatAnthropic
-from typing import TypedDict, Annotated, Sequence
-import operator
+# brandme-agents/agentic/orchestrator/agents.py
 
 class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], operator.add]
-    scan_id: str
-    garment_id: str
-    user_id: str
-    decision: str
-    escalation_reason: str | None
-    requires_human_approval: bool
-    graph_context: dict
-
-# Define agent workflow
-workflow = StateGraph(AgentState)
-
-workflow.add_node("scan_agent", scan_agent_node)
-workflow.add_node("identity_agent", identity_agent_node)
-workflow.add_node("policy_agent", policy_agent_node)
-workflow.add_node("knowledge_agent", knowledge_agent_node)
-workflow.add_node("blockchain_agent", blockchain_agent_node)
-workflow.add_node("human_approval", human_approval_node)
-
-# Define edges (workflow)
-workflow.set_entry_point("scan_agent")
-workflow.add_edge("scan_agent", "identity_agent")
-workflow.add_edge("identity_agent", "knowledge_agent")
-workflow.add_edge("knowledge_agent", "policy_agent")
-
-# Conditional routing
-workflow.add_conditional_edges(
-    "policy_agent",
-    should_escalate,  # Function that checks if human approval needed
-    {
-        True: "human_approval",
-        False: "blockchain_agent"
-    }
-)
+    """State model for agent graph."""
+    request_id: Optional[str]
+    scan_id: Optional[str]
+    scanner_user_id: Optional[str]
+    garment_id: Optional[str]
+    garment_tag: Optional[str]
+    region_code: Optional[str]
+    policy_decision: Optional[str]
+    resolved_scope: Optional[str]
+    policy_version: Optional[str]
+    requires_human_approval: Optional[bool]
+    facets: Optional[list]
+    cardano_tx_hash: Optional[str]
+    midnight_tx_hash: Optional[str]
+    error: Optional[str]
+    escalation_id: Optional[str]
 ```
 
-### 2.2 Individual Agent Definitions
+### 2.2 Agent Workflow
 
-#### Scan Agent
-**Purpose**: Coordinate garment scan workflow
-**Tools**:
-- `lookup_garment_by_tag(tag: str) -> UUID`
-- `get_scan_history(garment_id: UUID) -> list[Scan]`
-- `create_scan_event(data: dict) -> UUID`
+```python
+async def run_agent_workflow(
+    initial_state: AgentState,
+    http_client: Optional[httpx.AsyncClient] = None
+) -> AgentState:
+    """
+    Execute agent workflow with proper escalation handling.
 
-**Behavior**: Orchestrates scan initiation and context gathering
+    Workflow:
+    1. ScanAgent: Resolve asset_id from physical_tag_id
+    2. IdentityAgent: Fetch user profile and consent graph
+    3. PolicyAgent: Check consent and region policies
+    4. ComplianceAgent: ESG verification, fetch facets, audit log
+    """
+    state = initial_state.copy()
+
+    # Step 1: Scan Agent
+    state = scan_agent(state)
+
+    # Step 2: Identity Agent
+    state = identity_agent(state)
+
+    # Step 3: Policy Agent
+    state = policy_agent(state)
+
+    # Step 4: Check if escalation required
+    if should_escalate(state) == "escalate":
+        # Register escalation, halt automation
+        state = await compliance_agent(state, http_client)
+        return state  # Wait for human approval
+
+    # Step 5: Compliance Agent (only if not escalated)
+    state = await compliance_agent(state, http_client)
+
+    return state
+```
+
+### 2.3 Escalation Logic
+
+```python
+def should_escalate(state: AgentState) -> str:
+    """
+    Conditional routing: determine if escalation is required.
+
+    Escalate when:
+    - policy_decision == "escalate"
+    - requires_human_approval == True
+    - Trust score below threshold
+    - High-value transaction
+    - Counterfeit detected
+    """
+    if state.get("requires_human_approval"):
+        return "escalate"
+    if state.get("policy_decision") == "escalate":
+        return "escalate"
+    return "continue"
+```
 
 ---
 
-#### Identity Agent
+## 3. Individual Agent Definitions
+
+### 3.1 Scan Agent
+
+**Purpose**: Resolve physical tag to asset ID
+
+**Implementation**:
+```python
+def scan_agent(state: AgentState) -> AgentState:
+    """Resolve garment_tag -> asset_id via Spanner."""
+    # Query Spanner for asset by physical_tag_id
+    asset_id = lookup_asset_by_tag(state.get("garment_tag"))
+    state["garment_id"] = asset_id
+    return state
+```
+
+**Tools**:
+- `lookup_asset_by_tag(tag: str) -> str` - Spanner query
+- `get_scan_history(asset_id: str) -> list` - Previous scans
+
+---
+
+### 3.2 Identity Agent
+
 **Purpose**: User identity and relationship verification
-**Tools**:
-- `get_user_profile(user_id: UUID) -> User`
-- `check_relationship(user1: UUID, user2: UUID) -> Relationship`
-- `calculate_trust_score(user_id: UUID) -> float`
-- `query_social_graph(user_id: UUID, depth: int) -> Graph`
 
-**Behavior**: Determines scanner's relationship to garment owner
+**Implementation**:
+```python
+def identity_agent(state: AgentState) -> AgentState:
+    """Fetch user profile and consent graph."""
+    # O(1) Spanner graph query for relationships
+    return state
+```
+
+**Tools**:
+- `get_user_profile(user_id: str) -> User` - Spanner query
+- `check_relationship(user1: str, user2: str) -> str` - Graph traversal
+- `calculate_trust_score(user_id: str) -> float` - Trust calculation
 
 ---
 
-#### Knowledge Agent
-**Purpose**: Garment information retrieval with Graph RAG
+### 3.3 Policy Agent
+
+**Purpose**: Consent and policy enforcement
+
+**Implementation**:
+```python
+def policy_agent(state: AgentState) -> AgentState:
+    """Determine policy decision and resolved_scope."""
+    # O(1) consent lookup via Spanner Graph
+    # Check region-specific policies
+    state["policy_decision"] = "allow"
+    state["resolved_scope"] = "public"
+    state["requires_human_approval"] = False
+    return state
+```
+
 **Tools**:
-- `graph_rag_query(question: str) -> dict`
-- `get_garment_passport(garment_id: UUID, scope: str) -> dict`
-- `find_similar_garments(garment_id: UUID, threshold: float) -> list`
-- `get_creator_attribution(creator_id: UUID) -> dict`
-- `get_provenance_chain(garment_id: UUID) -> list[dict]`
-
-**Behavior**: Intelligent information retrieval using knowledge graph
-
----
-
-#### Policy Agent
-**Purpose**: Compliance and policy enforcement with reasoning
-**Tools**:
-- `evaluate_policy(scan_data: dict) -> PolicyDecision`
+- `evaluate_consent(scan_data: dict) -> str` - Graph query
+- `check_regional_compliance(region: str) -> bool`
 - `explain_policy_decision(decision: dict) -> str`
-- `check_regional_compliance(region: str, action: str) -> bool`
-- `graph_query_applicable_policies(context: dict) -> list[Policy]`
-
-**Behavior**: Makes policy decisions with explainability
 
 ---
 
-#### Blockchain Agent
-**Purpose**: Transaction building and verification
+### 3.4 Compliance Agent
+
+**Purpose**: ESG verification, audit logging, blockchain anchoring
+
+**Implementation**:
+```python
+async def compliance_agent(
+    state: AgentState,
+    http_client: Optional[httpx.AsyncClient] = None
+) -> AgentState:
+    """Fetch facets, verify ESG, anchor, audit."""
+
+    # Check if escalation required
+    if state.get("requires_human_approval"):
+        # Register escalation via compliance service
+        await register_escalation(state, http_client)
+        return state
+
+    # Fetch facets (safe previews only)
+    state["facets"] = await fetch_safe_facets(state, http_client)
+
+    # Log compliance event
+    await log_audit_event(state, http_client)
+
+    return state
+```
+
 **Tools**:
-- `build_cardano_tx(data: dict) -> str`
-- `build_midnight_tx(data: dict) -> str`
-- `verify_tx(tx_hash: str, chain: str) -> bool`
-- `compute_cross_chain_hash(cardano_tx: str, midnight_tx: str) -> str`
-- `query_blockchain_history(garment_id: UUID) -> list[Tx]`
-
-**Behavior**: Anchors data to blockchain with verification
+- `verify_esg(material_id: str, tx_type: str) -> ESGResult` - Cardano oracle
+- `verify_burn_proof(proof_hash: str, parent_id: str) -> bool` - Midnight
+- `log_audit_event(scan_data: dict)` - Hash-chained audit
 
 ---
 
-#### Analytics Agent
-**Purpose**: Pattern detection and insights
-**Tools**:
-- `detect_counterfeit_patterns() -> list[Alert]`
-- `analyze_esg_trends(timeframe: str) -> dict`
-- `identify_trust_network_anomalies() -> list[Anomaly]`
-- `generate_compliance_report(period: str) -> Report`
+## 4. Graph Queries (Spanner)
 
-**Behavior**: Proactive monitoring and insights
+### 4.1 O(1) Consent Check
+
+```sql
+GRAPH IntegritySpineGraph
+MATCH (viewer:Users)-[:FRIENDS_WITH*0..1]-(owner:Users)-[:OWNS]->(asset:Assets)
+WHERE asset.asset_id = @asset_id
+  AND NOT EXISTS {
+    MATCH (owner)-[:HAS_CONSENT]->(consent:ConsentPolicies)
+    WHERE consent.is_revoked = true
+  }
+RETURN owner.user_id, viewer.user_id;
+```
+
+### 4.2 Trust Path Query
+
+```sql
+GRAPH IntegritySpineGraph
+MATCH path = (user1:Users)-[:FRIENDS_WITH*1..3]-(user2:Users)
+WHERE user1.user_id = @user1_id AND user2.user_id = @user2_id
+RETURN path
+ORDER BY LENGTH(path)
+LIMIT 1;
+```
+
+### 4.3 Material Lineage Query
+
+```sql
+GRAPH IntegritySpineGraph
+MATCH (child:Assets)-[:DERIVED_FROM]->(parent:Assets)
+WHERE child.asset_id = @asset_id
+RETURN parent.asset_id, child.burn_proof_tx_hash;
+```
+
+### 4.4 Asset Composition Query
+
+```sql
+GRAPH IntegritySpineGraph
+MATCH (asset:Assets)-[:COMPOSED_OF]->(material:Materials)
+WHERE asset.asset_id = @asset_id
+RETURN material.material_id, material.esg_score, asset.weight_pct;
+```
 
 ---
 
-### 2.3 Human-in-the-Loop Integration
+## 5. ESG & Burn Proof Verification
 
-**Approval Workflows:**
+### 5.1 ESG Verifier
 
 ```python
-# When to escalate to human:
-1. Policy decision is "escalate"
-2. Trust score below threshold
-3. Counterfeit detected
-4. Controlled reveal requested
-5. High-value garment (above $X)
-6. First-time user
-7. Anomaly detected by analytics agent
+class ESGVerifier:
+    """Verify ESG scores from Cardano oracle."""
+
+    THRESHOLDS = {
+        "rental": 0.5,
+        "resale": 0.6,
+        "dissolve": 0.4,
+        "reprint": 0.7
+    }
+
+    async def verify_transaction(
+        self,
+        asset_id: str,
+        material_id: str,
+        transaction_type: str,
+        agent_id: Optional[str] = None
+    ) -> ESGVerificationResult:
+        """
+        Verify ESG score for a transaction.
+
+        Production mode: Requires Cardano oracle response
+        Development mode: Falls back to stub if configured
+        """
+        threshold = self.THRESHOLDS.get(transaction_type, 0.5)
+        esg_score = await self.get_material_esg(material_id)
+
+        if esg_score is None:
+            return ESGVerificationResult(
+                is_approved=False,
+                requires_human_review=True,
+                reason="Could not retrieve ESG score"
+            )
+
+        return ESGVerificationResult(
+            is_approved=esg_score.overall_score >= threshold,
+            esg_score=esg_score,
+            cardano_verified=esg_score.cardano_tx_hash is not None
+        )
 ```
 
-**Approval UI:**
-- Show agent's reasoning
-- Display graph context (related entities)
-- Present recommendations
-- Allow override with justification
-- Log decision to audit trail
-
----
-
-## 3. Agent Tools & Capabilities
-
-### 3.1 Tool Definitions
+### 5.2 Burn Proof Verifier
 
 ```python
-# brandme-agents/agentic/tools/graph_tools.py
+class BurnProofVerifier:
+    """Verify Midnight burn proofs for circular economy."""
 
-from langchain.tools import tool
+    async def verify_detailed(
+        self,
+        burn_proof_hash: str,
+        parent_asset_id: str
+    ) -> BurnProofVerificationResult:
+        """
+        Verify burn proof for DISSOLVE→REPRINT transition.
 
-@tool
-def graph_rag_query(question: str) -> dict:
-    """
-    Answer questions using the knowledge graph with RAG.
+        Production mode: Requires Midnight confirmation
+        Development mode: Falls back to stub if configured
+        """
+        # Query Midnight API
+        response = await self._client.post(
+            f"{self.midnight_api_url}/v1/verify-burn-proof",
+            json={"proof_hash": burn_proof_hash, "asset_id": parent_asset_id}
+        )
 
-    Args:
-        question: Natural language question about garments, users, or relationships
+        if response.status_code == 200:
+            data = response.json()
+            return BurnProofVerificationResult(
+                is_valid=data.get("valid", False),
+                midnight_confirmed=True,
+                material_recovery_pct=data.get("material_recovery_pct")
+            )
 
-    Returns:
-        dict with answer, context, and source entities
-    """
-    # 1. Generate embedding for question
-    # 2. Vector search for relevant entities
-    # 3. Expand to subgraph
-    # 4. Synthesize answer with LLM
-    pass
-
-@tool
-def find_trust_path(user1: str, user2: str) -> list[dict]:
-    """
-    Find trust path between two users in social graph.
-
-    Args:
-        user1: First user ID
-        user2: Second user ID
-
-    Returns:
-        Shortest path with trust scores
-    """
-    # Use graph algorithms (Dijkstra, etc.)
-    pass
-
-@tool
-def get_provenance_chain(garment_id: str) -> list[dict]:
-    """
-    Get full provenance chain from creator to current owner.
-
-    Args:
-        garment_id: Garment UUID
-
-    Returns:
-        Ordered list of ownership events with blockchain proofs
-    """
-    # Traverse ownership relationships
-    pass
-```
-
-### 3.2 Tool Categories
-
-**Graph Query Tools:**
-- `graph_rag_query()`: Natural language to graph query
-- `find_trust_path()`: Social graph navigation
-- `get_provenance_chain()`: Ownership history
-- `find_similar_entities()`: Semantic similarity search
-
-**Blockchain Tools:**
-- `verify_cardano_tx()`: Verify Cardano transaction
-- `verify_midnight_tx()`: Verify Midnight transaction
-- `compute_merkle_proof()`: Generate cryptographic proof
-- `anchor_to_chains()`: Dual-chain anchoring
-
-**Policy Tools:**
-- `evaluate_consent()`: Check user consent policies
-- `check_regional_law()`: Verify regional compliance
-- `explain_decision()`: Policy explainability
-- `suggest_policy_update()`: Recommend policy changes
-
-**Analytics Tools:**
-- `detect_anomalies()`: Pattern detection
-- `predict_counterfeit_risk()`: Risk scoring
-- `analyze_trust_network()`: Graph analysis
-- `generate_insights()`: Business intelligence
-
----
-
-## 4. Agent Commands & CLI
-
-### 4.1 Command System
-
-```bash
-# brandme-agents/agentic/cli.py
-
-# Scan workflow
-brandme scan --tag "garment-xyz" --scanner-id "user-123"
-
-# Policy evaluation
-brandme policy evaluate --scan-id "scan-456" --explain
-
-# Graph queries
-brandme graph query "Show me all garments by creators Alice trusts"
-brandme graph path --from user-1 --to user-2 --type trust
-
-# Blockchain operations
-brandme blockchain verify --tx-hash "abc123..." --chain cardano
-brandme blockchain anchor --scan-id "scan-789"
-
-# Analytics
-brandme analytics detect-counterfeits --timeframe "7d"
-brandme analytics trust-network --user-id "user-123" --depth 3
-
-# Human approval
-brandme approval list --status pending
-brandme approval approve --scan-id "scan-456" --approver-id "gov-1"
-
-# Agent management
-brandme agent status  # Show all agents
-brandme agent logs --agent scan_agent --tail 100
-brandme agent restart --agent policy_agent
-```
-
-### 4.2 Agent API Endpoints
-
-```typescript
-// brandme-gateway/src/routes/agent.ts
-
-// Trigger agent workflow
-POST /agent/workflow/scan
-{
-  "garment_tag": "garment-xyz",
-  "scanner_user_id": "user-123",
-  "context": {...}
-}
-
-// Query via Graph RAG
-POST /agent/query
-{
-  "question": "Show me the provenance chain for garment-xyz",
-  "include_reasoning": true
-}
-
-// Human approval
-POST /agent/approval/request
-{
-  "scan_id": "scan-456",
-  "reason": "Policy escalation",
-  "agent_reasoning": "..."
-}
-
-POST /agent/approval/respond
-{
-  "approval_id": "approval-789",
-  "decision": "approve",
-  "justification": "..."
-}
+        # Check Spanner cache if Midnight unavailable
+        return await self._check_cached_verification(burn_proof_hash)
 ```
 
 ---
 
-## 5. Memory Systems
+## 6. Human-in-the-Loop Integration
 
-### 5.1 Agent Memory Architecture
+### 6.1 Escalation Triggers
+
+| Trigger | Threshold | Action |
+|---------|-----------|--------|
+| Policy escalate | `decision == "escalate"` | Queue for human review |
+| Trust score | `trust_score < 0.3` | Require approval |
+| High-value | `value_usd > 1000` | Require approval |
+| Counterfeit | `authenticity_failed` | Block + alert |
+| First-time user | `scan_count == 0` | Soft escalate |
+| ESG failed | `esg_score < threshold` | Require approval |
+
+### 6.2 Governance Console Integration
 
 ```python
-# Short-term Memory (per conversation)
-class ConversationMemory:
-    messages: list[Message]
-    context: dict
-    entities_mentioned: set[str]
-
-# Long-term Memory (persistent)
-class LongTermMemory:
-    user_preferences: dict
-    historical_decisions: list[Decision]
-    learned_patterns: dict
-
-# Graph Memory (knowledge graph)
-class GraphMemory:
-    entity_embeddings: dict[str, vector]
-    relationship_weights: dict[tuple, float]
-    pattern_templates: list[Pattern]
+# When escalation is triggered
+async def register_escalation(state: AgentState, http_client):
+    """Register escalation with compliance service."""
+    await http_client.post(
+        f"{COMPLIANCE_URL}/audit/escalate",
+        json={
+            "scan_id": state.get("scan_id"),
+            "region_code": state.get("region_code"),
+            "reason": "policy_escalate",
+            "requires_human_approval": True
+        }
+    )
 ```
 
-### 5.2 Memory Integration
+### 6.3 Approval Workflow
 
-**Per-Agent Memory:**
-- Scan Agent: Recent scans, common patterns
-- Policy Agent: Historical decisions, regional nuances
-- Knowledge Agent: Frequently queried entities
-- Blockchain Agent: Transaction patterns
-
-**Shared Memory:**
-- Cross-agent learnings
-- User interaction patterns
-- System-wide insights
-
----
-
-## 6. Implementation Roadmap
-
-### Phase 1: Knowledge Graph Foundation (Week 1-2)
-- [ ] Set up Neo4j database
-- [ ] Define graph schema
-- [ ] Build data pipeline from PostgreSQL → Neo4j
-- [ ] Implement vector embeddings
-- [ ] Create basic Cypher queries
-
-### Phase 2: Graph RAG (Week 2-3)
-- [ ] Implement vector search
-- [ ] Build NL → Cypher translation
-- [ ] Create graph traversal algorithms
-- [ ] Implement RAG pipeline
-- [ ] Test with example queries
-
-### Phase 3: Agent Framework (Week 3-4)
-- [ ] Set up LangGraph orchestration
-- [ ] Define agent state machines
-- [ ] Implement individual agents
-- [ ] Create tool functions
-- [ ] Build agent communication
-
-### Phase 4: Human-in-the-Loop (Week 4-5)
-- [ ] Design approval workflows
-- [ ] Build approval UI in console
-- [ ] Implement escalation logic
-- [ ] Add audit logging
-- [ ] Test approval flows
-
-### Phase 5: CLI & Commands (Week 5-6)
-- [ ] Create CLI framework
-- [ ] Implement commands
-- [ ] Add agent management
-- [ ] Build monitoring dashboard
-- [ ] Documentation
-
-### Phase 6: Memory & Learning (Week 6-7)
-- [ ] Implement memory systems
-- [ ] Add pattern learning
-- [ ] Build feedback loops
-- [ ] Create analytics
-- [ ] Performance optimization
+```
+1. Agent workflow triggers escalation
+2. Compliance service creates escalation record
+3. Governance Console displays pending approvals
+4. Human reviews agent reasoning + graph context
+5. Human approves/denies with justification
+6. Workflow resumes or terminates
+7. Audit log records decision
+```
 
 ---
 
-## 7. Technology Stack
+## 7. Agent Performance Metrics
 
-### LLM & Agents
-- **LangChain**: Agent framework and tools
-- **LangGraph**: Multi-agent orchestration
-- **Anthropic Claude**: Primary LLM (supports tool use)
-- **OpenAI GPT-4**: Alternative LLM
+### 7.1 Operational Metrics
 
-### Knowledge Graph
-- **Neo4j**: Graph database
-- **neo4j-python-driver**: Python integration
-- **GDS Library**: Graph data science algorithms
+| Metric | Target | Description |
+|--------|--------|-------------|
+| Scan latency | <200ms | End-to-end scan processing |
+| ESG verification | <500ms | Cardano oracle round-trip |
+| Burn proof verification | <1s | Midnight verification |
+| Consent lookup | <50ms | Spanner graph query |
+| Escalation rate | <5% | Human intervention needed |
 
-### Vector Search
-- **OpenAI Embeddings**: Text embeddings
-- **CLIP**: Image + text embeddings
-- **Neo4j Vector Index**: Native vector search
+### 7.2 Business Metrics
+
+| Metric | Description |
+|--------|-------------|
+| Agent transactions/day | MCP tool invocations |
+| ESG approval rate | % passing ESG threshold |
+| Human approval rate | % escalations approved |
+| Counterfeit detection | Blocked scans |
+
+---
+
+## 8. Technology Stack
+
+### Core Technologies
+
+| Component | Technology |
+|-----------|------------|
+| **Graph Database** | Google Cloud Spanner (Native Property Graph) |
+| **Real-time State** | Firestore |
+| **Agent Framework** | LangGraph + LangChain |
+| **LLM Provider** | Anthropic Claude |
+| **External Access** | Model Context Protocol (MCP) |
+| **ESG Oracle** | Cardano |
+| **Burn Proofs** | Midnight (ZK) |
 
 ### Agent Tools
-- **LangChain Tools**: Standard tool interfaces
-- **Custom Tools**: Brand.Me-specific operations
+
+| Tool Type | Implementation |
+|-----------|----------------|
+| Graph queries | Spanner GQL via `google-cloud-spanner` |
+| ESG verification | `ESGVerifier` class |
+| Burn proof verification | `BurnProofVerifier` class |
+| Audit logging | Hash-chained `AuditLog` table |
 
 ---
 
-## 8. Example: Complete Agentic Scan Workflow
+## 9. Security Guarantees
 
-```
-1. User scans garment tag
-   └─> Scan Agent receives request
-
-2. Scan Agent queries knowledge graph
-   └─> Graph RAG: "What do we know about this garment?"
-   └─> Returns: Creator, previous scans, ownership history
-
-3. Identity Agent evaluates scanner
-   └─> Checks trust score
-   └─> Finds trust path to owner via social graph
-   └─> Returns: relationship="friend", trust_score=0.85
-
-4. Knowledge Agent gathers context
-   └─> Graph query: Find similar garments, ESG data
-   └─> Returns: Full passport with consent-filtered data
-
-5. Policy Agent makes decision
-   └─> Evaluates regional policies
-   └─> Checks consent rules
-   └─> LLM reasons about edge cases
-   └─> Decision: "allow" with scope="friends_only"
-
-6. Blockchain Agent anchors data
-   └─> Builds Cardano tx with metadata
-   └─> Builds Midnight tx with private data
-   └─> Submits to chains
-   └─> Returns: tx hashes
-
-7. Analytics Agent learns
-   └─> Updates trust network weights
-   └─> Records scan pattern
-   └─> Checks for anomalies
-   └─> Returns: no_anomalies_detected
-
-8. Response to user
-   └─> Allowed facets returned
-   └─> Blockchain proof provided
-   └─> Agent reasoning logged
-```
-
-**If Escalation Needed:**
-```
-5a. Policy Agent escalates
-    └─> Reason: "High-value garment + first-time scanner"
-    └─> Creates approval request
-
-5b. Human approver notified
-    └─> Console shows: Agent reasoning, graph context, recommendation
-    └─> Human decides: Approve/Deny/Request more info
-
-5c. Workflow resumes
-    └─> Continue to step 6 if approved
-```
+1. **NEVER expose facet bodies, pricing history, or ownership lineage** in agent messages
+2. **If policy_decision == "escalate" or requires_human_approval == True**:
+   - STOP automation
+   - Queue `/audit/escalate` via compliance
+   - DO NOT anchor to chain
+   - Wait for governance_console human approval
+3. **All agent transactions require ESG verification** for ethical oversight
+4. **Production mode** fails closed when oracles unavailable
+5. **Audit trail** is hash-chained and tamper-evident
 
 ---
 
-## 9. Governance & Oversight
-
-### Human-in-the-Loop Principles
-1. **Transparent Reasoning**: Always show agent logic
-2. **Explainable Decisions**: Natural language explanations
-3. **Audit Trail**: Every agent action logged
-4. **Override Capability**: Humans can override any decision
-5. **Feedback Loop**: Human decisions improve agent learning
-
-### Governance Roles
-- **Governance Team**: Strategic oversight, policy updates
-- **Compliance Team**: Approve escalations, audit reviews
-- **Operations Team**: Monitor agents, handle exceptions
-- **Data Team**: Improve graph, tune embeddings
-
----
-
-## 10. Metrics & Monitoring
-
-### Agent Performance
-- Decision accuracy
-- Escalation rate
-- Response time
-- Graph query efficiency
-- Human approval rate
-
-### Business Metrics
-- Scans per day
-- Counterfeit detection rate
-- User trust score trends
-- ESG compliance rate
-- Blockchain verification success
-
-### Agent Health
-- Memory usage
-- Graph query latency
-- LLM token usage
-- Tool execution time
-- Error rates
-
----
-
-**Next Steps**: Begin Phase 1 implementation of Knowledge Graph foundation.
+**Document Version**: 9.0.0
+**Last Updated**: January 2026
+**Maintained By**: Brand.Me Engineering
