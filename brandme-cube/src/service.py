@@ -514,6 +514,18 @@ class CubeService:
                 columns=["owner_id", "asset_id", "acquired_at", "transfer_method", "is_current"],
                 values=[
                     (transfer_data.get("new_owner_id"), cube_id, spanner.COMMIT_TIMESTAMP, transfer_data.get("transfer_method", "transfer"), True)
+            transaction.update(
+                table="Owns",
+                columns=["owner_id", "asset_id", "is_active"],
+                values=[
+                    (transfer_data.get("from_owner_id"), cube_id, False),
+                ]
+            )
+            transaction.insert(
+                table="Owns",
+                columns=["owner_id", "asset_id", "acquired_at", "share_pct", "is_active"],
+                values=[
+                    (transfer_data.get("new_owner_id"), cube_id, spanner.COMMIT_TIMESTAMP, 100.0, True)
                 ]
             )
 
