@@ -1,6 +1,8 @@
 """
+Product Cube Data Models
+
+Defines the six faces of a Product Cube:
 Brand.Me v9 — Product Cube Data Models
-=======================================
 
 Defines the seven faces of a Product Cube:
 1. Product Details (immutable, public)
@@ -21,6 +23,7 @@ from uuid import UUID
 # Enums
 
 class FaceName(str, Enum):
+    """Six faces of the Product Cube"""
     """Seven faces of the Product Cube (v9: added molecular_data)"""
     PRODUCT_DETAILS = "product_details"
     PROVENANCE = "provenance"

@@ -1,4 +1,9 @@
 """
+Brand.Me Cube Service
+Port 8007 - Product Cube storage and serving with Integrity Spine
+
+This service stores and serves Product Cube data (6 faces per garment).
+CRITICAL: Every face access is policy-gated. Never return face without policy check.
 Brand.Me v8 — Global Integrity Spine
 Cube Service: Port 8007 - Product Cube storage and serving
 
@@ -11,6 +16,10 @@ v8: Uses Spanner for persistence, Firestore for real-time state
 from contextlib import asynccontextmanager
 import os
 from typing import Optional
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+import asyncpg
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +27,7 @@ import httpx
 
 # Import shared Brand.Me utilities (from brandme_core/)
 from brandme_core.logging import get_logger, ensure_request_id, redact_user_id, truncate_id
+from brandme_core.metrics import get_metrics_collector
 from brandme_core.health import create_health_router, HealthChecker
 from brandme_core.metrics import get_metrics_collector
 from brandme_core.telemetry import setup_telemetry
@@ -46,6 +56,8 @@ from .models import (
 logger = get_logger("cube")
 metrics = get_metrics_collector("cube")
 
+# Global resources (initialized in lifespan)
+db_pool: Optional[asyncpg.Pool] = None
 # Environment variables for Spanner (v8)
 SPANNER_PROJECT = os.getenv("SPANNER_PROJECT_ID", "test-project")
 SPANNER_INSTANCE = os.getenv("SPANNER_INSTANCE_ID", "brandme-instance")
@@ -58,6 +70,10 @@ http_client: Optional[httpx.AsyncClient] = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
+    Lifespan context manager for database pool and HTTP client.
+    Pattern from brandme-core/brain/main.py
+    """
+    global db_pool, http_client
     Lifespan context manager for Spanner pool and HTTP client.
     v8: Uses Spanner instead of PostgreSQL.
     """
@@ -66,6 +82,18 @@ async def lifespan(app: FastAPI):
     logger.info("cube_service_starting", port=8007)
 
     try:
+        # Initialize database pool
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            raise ValueError("DATABASE_URL environment variable is required")
+
+        db_pool = await asyncpg.create_pool(
+            database_url,
+            min_size=2,
+            max_size=10,
+            command_timeout=60
+        )
+        logger.info("database_pool_created")
         # Initialize Spanner pool (v8)
         spanner_pool = create_pool_manager(
             project_id=SPANNER_PROJECT,
@@ -103,6 +131,9 @@ async def lifespan(app: FastAPI):
             http_client=http_client
         )
 
+        # Initialize cube service
+        app.state.cube_service = CubeService(
+            db_pool=db_pool,
         # Initialize cube service (v8: uses spanner_pool)
         app.state.cube_service = CubeService(
             spanner_pool=spanner_pool,
@@ -113,6 +144,7 @@ async def lifespan(app: FastAPI):
             metrics=metrics
         )
 
+        logger.info("cube_service_initialized")
         logger.info({
             "event": "cube_service_initialized",
             "version": "v9",
@@ -131,6 +163,9 @@ async def lifespan(app: FastAPI):
             await http_client.aclose()
             logger.info("http_client_closed")
 
+        if db_pool:
+            await db_pool.close()
+            logger.info("database_pool_closed")
         if spanner_pool:
             await spanner_pool.close()
             logger.info("spanner_pool_closed")
@@ -140,6 +175,12 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(
     title="Brand.Me Cube Service",
+    description="Product Cube storage and serving with Integrity Spine (v6)",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# CORS middleware (cube is public-facing like brain, policy, knowledge, governance_console)
     description="Product Cube storage and serving with Integrity Spine (v9 - 2030 Agentic & Circular Economy)",
     version="3.0.0",
     description="Product Cube storage and serving with Integrity Spine (v8)",
@@ -174,6 +215,43 @@ app.include_router(create_health_router(health_checker))
 app.include_router(cubes.router, prefix="/cubes", tags=["cubes"])
 app.include_router(faces.router, prefix="/cubes", tags=["faces"])
 
+# Health check endpoints
+@app.get("/health")
+async def health():
+    """Health check endpoint with database verification"""
+    if db_pool is None:
+        return JSONResponse(
+            content={"status": "unhealthy", "service": "cube", "reason": "no_db_pool"},
+            status_code=503
+        )
+
+    # Try database connection
+    try:
+        async with db_pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return JSONResponse(content={"status": "ok", "service": "cube"})
+    except Exception as e:
+        logger.error({"event": "health_check_failed", "error": str(e)})
+        return JSONResponse(
+            content={"status": "degraded", "service": "cube", "database": "unhealthy"},
+            status_code=503
+        )
+
+@app.get("/health/live")
+async def liveness():
+    """Kubernetes liveness probe"""
+    return JSONResponse(content={"status": "alive"})
+
+@app.get("/health/ready")
+async def readiness():
+    """Kubernetes readiness probe"""
+    if db_pool is None or http_client is None:
+        return JSONResponse(
+            content={"status": "not_ready", "reason": "dependencies_not_initialized"},
+            status_code=503
+        )
+    return JSONResponse(content={"status": "ready"})
+
 # Metrics endpoint (Prometheus)
 @app.get("/metrics")
 async def metrics_endpoint():
@@ -189,6 +267,11 @@ setup_telemetry("cube", app)
 async def root():
     return {
         "service": "cube",
+        "version": "1.0.0",
+        "description": "Product Cube storage and serving",
+        "port": 8007
+    }
+
         "version": "3.0.0",
         "description": "Product Cube storage and serving (v9 - 7 faces, circular economy)",
         "port": 8007,

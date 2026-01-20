@@ -1,6 +1,6 @@
 """
+Cube Service - Business Logic
 Brand.Me v9 — Cube Service Business Logic
-==========================================
 
 CRITICAL INTEGRITY SPINE PATTERN:
 1. NEVER return face data without calling Policy first
@@ -8,6 +8,9 @@ CRITICAL INTEGRITY SPINE PATTERN:
 3. If Policy returns "escalate" → call Compliance, return escalation response
 4. If Policy returns "deny" → return 403
 5. Log EVERY action to Compliance service
+"""
+
+from typing import Optional, Dict, Any
 
 v9 Features:
 - 7 faces including molecular_data
@@ -35,6 +38,7 @@ from .models import (
     PolicyDecision,
     CreateCubeRequest,
     TransferOwnershipRequest,
+    TransferResponse
     TransferResponse,
     LifecycleState
 )
@@ -47,6 +51,12 @@ from .clients import (
 
 logger = get_logger("cube.service")
 
+class CubeService:
+    """Product Cube business logic with Integrity Spine enforcement"""
+
+    def __init__(
+        self,
+        db_pool,
 # v9: Valid lifecycle transitions
 VALID_TRANSITIONS = {
     LifecycleState.PRODUCED: [LifecycleState.ACTIVE],
@@ -68,6 +78,7 @@ class CubeService:
         identity_client: IdentityClient,
         metrics: MetricsCollector
     ):
+        self.db = db_pool
         self.spanner_pool = spanner_pool
         self.policy = policy_client
         self.compliance = compliance_client
@@ -441,6 +452,38 @@ class CubeService:
     # Helper methods
 
     async def _fetch_cube_from_db(self, cube_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch cube from database"""
+        async with self.db.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT cube_id, owner_id, created_at, updated_at,
+                       product_details, provenance, ownership,
+                       social_layer, esg_impact, lifecycle,
+                       visibility_settings
+                FROM cubes
+                WHERE cube_id = $1
+                """,
+                cube_id
+            )
+
+            if not row:
+                return None
+
+            return {
+                "cube_id": str(row["cube_id"]),
+                "owner_id": str(row["owner_id"]),
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "faces": {
+                    "product_details": row["product_details"] or {},
+                    "provenance": row["provenance"] or {},
+                    "ownership": row["ownership"] or {},
+                    "social_layer": row["social_layer"] or {},
+                    "esg_impact": row["esg_impact"] or {},
+                    "lifecycle": row["lifecycle"] or {}
+                },
+                "visibility_settings": row["visibility_settings"] or {}
+            }
         """Fetch cube from Spanner database (v9: includes molecular_data)"""
         from google.cloud.spanner_v1 import param_types
         import json
@@ -496,6 +539,21 @@ class CubeService:
         cube_id: str,
         transfer_data: Dict[str, Any]
     ):
+        """Update ownership face after transfer"""
+        async with self.db.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE cubes
+                SET ownership = $1,
+                    owner_id = $2,
+                    updated_at = $3
+                WHERE cube_id = $4
+                """,
+                transfer_data.get("ownership_face"),
+                transfer_data.get("new_owner_id"),
+                datetime.utcnow(),
+                cube_id
+            )
         """Update ownership in Spanner after transfer"""
         from google.cloud import spanner
 
