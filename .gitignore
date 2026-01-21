@@ -6,13 +6,27 @@
 .env
 .env.local
 .env.*.local
+.env.development
+.env.staging
+.env.production
+**/.env
+**/.env.local
+**/.env.development
+**/.env.staging
+**/.env.production
+
+# Allow example files to be committed
+!.env.*.example
+!**/.env.*.example
+!.env.example
+!**/.env.example
+
+# Keys and certificates
 *.pem
 *.key
 *.cert
 secrets/
 **/secrets/
-**/.env
-**/.env.local
 
 # Wallet keys (NEVER commit these)
 *wallet*.key

@@ -1,0 +1,159 @@
+version: 2
+updates:
+  # ===========================================
+  # Node.js / npm / pnpm dependencies
+  # ===========================================
+
+  # Root monorepo
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    groups:
+      production-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier*"
+          - "vitest*"
+          - "typescript"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Gateway service
+  - package-ecosystem: "npm"
+    directory: "/brandme-gateway"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-gateway)"
+
+  # Chain service
+  - package-ecosystem: "npm"
+    directory: "/brandme-chain"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-chain)"
+
+  # Console
+  - package-ecosystem: "npm"
+    directory: "/brandme-console"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-console)"
+
+  # Frontend
+  - package-ecosystem: "npm"
+    directory: "/brandme-frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-frontend)"
+
+  # ===========================================
+  # Python dependencies
+  # ===========================================
+
+  # Core library
+  - package-ecosystem: "pip"
+    directory: "/brandme_core"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-python)"
+
+  # Core services
+  - package-ecosystem: "pip"
+    directory: "/brandme-core"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-core)"
+
+  # Cube service
+  - package-ecosystem: "pip"
+    directory: "/brandme-cube"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-cube)"
+
+  # Agents
+  - package-ecosystem: "pip"
+    directory: "/brandme-agents"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-agents)"
+
+  # Governance
+  - package-ecosystem: "pip"
+    directory: "/brandme-governance"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-governance)"
+
+  # ===========================================
+  # Docker images
+  # ===========================================
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-docker)"
+
+  # ===========================================
+  # GitHub Actions
+  # ===========================================
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-actions)"
+
+  # ===========================================
+  # Terraform
+  # ===========================================
+
+  - package-ecosystem: "terraform"
+    directory: "/brandme-infra/terraform"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps-terraform)"

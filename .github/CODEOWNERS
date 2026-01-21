@@ -1,0 +1,93 @@
+# Brand.Me Labs Code Owners
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Order matters - later rules override earlier ones
+
+# ===========================================
+# Default owners for everything
+# ===========================================
+* @brandmeonline/core-team
+
+# ===========================================
+# Infrastructure & DevOps
+# ===========================================
+/brandme-infra/ @brandmeonline/devops
+/infrastructure/ @brandmeonline/devops
+Dockerfile @brandmeonline/devops
+docker-compose*.yml @brandmeonline/devops
+Makefile @brandmeonline/devops
+*.tf @brandmeonline/devops
+*.yaml @brandmeonline/devops
+*.yml @brandmeonline/devops
+
+# Helm charts
+**/helm/** @brandmeonline/devops
+**/kubernetes/** @brandmeonline/devops
+
+# Observability
+**/prometheus/** @brandmeonline/devops
+**/loki/** @brandmeonline/devops
+**/otel-collector/** @brandmeonline/devops
+
+# ===========================================
+# Frontend Applications
+# ===========================================
+/brandme-console/ @brandmeonline/frontend
+/brandme-frontend/ @brandmeonline/frontend
+*.tsx @brandmeonline/frontend
+*.jsx @brandmeonline/frontend
+tailwind.config.* @brandmeonline/frontend
+
+# ===========================================
+# Backend Services
+# ===========================================
+/brandme-core/ @brandmeonline/backend
+/brandme-cube/ @brandmeonline/backend
+/brandme_core/ @brandmeonline/backend
+/brandme-governance/ @brandmeonline/backend
+
+# ===========================================
+# Blockchain Integration
+# ===========================================
+/brandme-chain/ @brandmeonline/blockchain
+**/zk/** @brandmeonline/blockchain
+
+# ===========================================
+# AI & Agent Services
+# ===========================================
+/brandme-agents/ @brandmeonline/ai-team
+**/agentic/** @brandmeonline/ai-team
+
+# ===========================================
+# Database & Data
+# ===========================================
+/brandme-data/ @brandmeonline/backend @brandmeonline/devops
+**/schemas/** @brandmeonline/backend
+**/spanner/** @brandmeonline/backend
+*.sql @brandmeonline/backend
+
+# ===========================================
+# Security-Sensitive Files
+# ===========================================
+SECURITY.md @brandmeonline/security
+.github/workflows/ @brandmeonline/devops @brandmeonline/security
+.github/dependabot.yml @brandmeonline/devops @brandmeonline/security
+**/middleware/auth* @brandmeonline/security
+**/middleware/rateLimiter* @brandmeonline/security
+
+# ===========================================
+# Documentation
+# ===========================================
+/docs/ @brandmeonline/docs-team
+*.md @brandmeonline/docs-team
+README.md @brandmeonline/core-team
+
+# ===========================================
+# Root Configuration
+# ===========================================
+package.json @brandmeonline/core-team
+pnpm-workspace.yaml @brandmeonline/core-team
+tsconfig*.json @brandmeonline/core-team
+.editorconfig @brandmeonline/core-team
+.nvmrc @brandmeonline/core-team
+.python-version @brandmeonline/core-team
