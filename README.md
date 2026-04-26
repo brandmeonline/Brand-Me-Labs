@@ -225,6 +225,21 @@ CARDANO_NODE_URL=http://cardano-node:3001
 MIDNIGHT_API_URL=http://midnight-devnet:9000
 ```
 
+## Claude Code Setup
+
+This repo ships with two project-scoped Claude Code integrations:
+
+- **UI/UX Pro Max skill** at `.claude/skills/ui-ux-pro-max/` — design-system reasoning (typography, color, components, per-stack patterns). Loads automatically.
+- **21st.dev Magic MCP server** declared in `.mcp.json` — generates UI components on demand.
+
+The Magic server requires an API key. To enable it (local CLI or Claude Code on the web):
+
+1. Get a key at https://21st.dev/magic/console
+2. `cp .claude/.env.local.example .claude/.env.local` and set `MAGIC_API_KEY`
+3. Start a new Claude Code session — the SessionStart hook at `.claude/hooks/session-start.sh` exports the key into the session so the MCP server in `.mcp.json` picks it up.
+
+`.claude/.env.local` is gitignored. Never commit real API keys.
+
 ## Security Guarantees
 
 1. **O(1) Consent Checks** - Spanner graph queries for instant policy decisions

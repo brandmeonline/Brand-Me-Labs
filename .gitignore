@@ -193,6 +193,9 @@ gcloud-config/
 !package.json
 !tsconfig.json
 !manifest.json
+!.mcp.json
+!.claude/**/*.json
+.claude/settings.local.json
 
 # Service account keys (NEVER commit)
 *-service-account.json
