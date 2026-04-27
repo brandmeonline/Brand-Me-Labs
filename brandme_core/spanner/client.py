@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Brand.Me Spanner Client
 ======================

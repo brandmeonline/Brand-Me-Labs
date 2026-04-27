@@ -20,19 +20,14 @@ import { initCardanoTxBuilder, getCardanoTxBuilder } from '@/services/cardano-tx
 import { sampleCardanoTxData } from '../mocks/cardano-mocks';
 
 const INTEGRATION_ENABLED = process.env.INTEGRATION === 'true';
-const SKIP_MESSAGE = 'Skipping integration test (set INTEGRATION=true to run)';
+const HAS_REQUIRED_CREDS = Boolean(process.env.CARDANO_MNEMONIC_PATH && process.env.BLOCKFROST_API_KEY);
+const SKIP_MESSAGE = 'Skipping integration test (set INTEGRATION=true and provide CARDANO_MNEMONIC_PATH + BLOCKFROST_API_KEY)';
 
-describe.skipIf(!INTEGRATION_ENABLED)('Cardano Testnet Integration', () => {
+describe.skipIf(!INTEGRATION_ENABLED || !HAS_REQUIRED_CREDS)('Cardano Testnet Integration', () => {
   beforeAll(() => {
     const mnemonicPath = process.env.CARDANO_MNEMONIC_PATH;
     const blockfrostKey = process.env.BLOCKFROST_API_KEY;
     const network = (process.env.CARDANO_NETWORK as any) || 'preprod';
-
-    if (!mnemonicPath || !blockfrostKey) {
-      throw new Error(
-        'Integration tests require CARDANO_MNEMONIC_PATH and BLOCKFROST_API_KEY'
-      );
-    }
 
     // Initialize wallet and transaction builder
     initCardanoWallet({

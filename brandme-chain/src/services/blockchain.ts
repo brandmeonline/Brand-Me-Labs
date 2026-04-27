@@ -308,11 +308,10 @@ function simulateCardanoTx(data: any): string {
       type: f.facet_type,
       hash: createHash('sha256').update(JSON.stringify(f)).digest('hex'),
     })),
-    timestamp: new Date().toISOString(),
   };
 
   return createHash('sha256')
-    .update(`cardano:${JSON.stringify(payload)}:${Date.now()}`)
+    .update(`cardano:${JSON.stringify(payload)}`)
     .digest('hex');
 }
 
@@ -321,11 +320,10 @@ function simulateMidnightTx(data: any): string {
     scan_id: data.scanId,
     garment_id: data.garmentId,
     encrypted_data: createHash('sha256').update(JSON.stringify(data)).digest('hex'),
-    timestamp: new Date().toISOString(),
   };
 
   return createHash('sha256')
-    .update(`midnight:${JSON.stringify(payload)}:${Date.now()}`)
+    .update(`midnight:${JSON.stringify(payload)}`)
     .digest('hex');
 }
 

@@ -9,6 +9,13 @@ import os
 import pytest
 import asyncio
 from typing import Generator, AsyncGenerator
+import sys
+from pathlib import Path
+
+# Ensure repository root is importable for `brandme_core` package imports
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 # Configure emulator hosts before importing clients
 os.environ.setdefault('SPANNER_EMULATOR_HOST', 'localhost:9010')

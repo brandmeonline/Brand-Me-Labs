@@ -21,16 +21,14 @@ interface RateLimiterConfig {
 class TokenBucketRateLimiter {
   private clients: Map<string, ClientInfo> = new Map();
   private maxRequests: number;
-  private windowMs: number;
   private refillRate: number; // tokens per second
 
   constructor(config: RateLimiterConfig) {
     this.maxRequests = config.maxRequests;
-    this.windowMs = config.windowMs;
     this.refillRate = config.maxRequests / (config.windowMs / 1000);
   }
 
-  private getClientKey(req: Request): string {
+  getClientKey(req: Request): string {
     // Use user ID if authenticated, otherwise use IP
     const userId = (req as any).user?.userId;
     return userId || req.ip || req.socket.remoteAddress || 'unknown';
@@ -130,6 +128,11 @@ export function rateLimiterMiddleware(
   next();
 }
 
+const strictLimiter = new TokenBucketRateLimiter({
+  maxRequests: 10, // Lower limit
+  windowMs: 60000,
+});
+
 /**
  * Strict rate limiter for sensitive endpoints
  */
@@ -138,10 +141,6 @@ export function strictRateLimiterMiddleware(
   res: Response,
   next: NextFunction
 ): void {
-  const strictLimiter = new TokenBucketRateLimiter({
-    maxRequests: 10, // Lower limit
-    windowMs: 60000,
-  });
 
   const clientKey = strictLimiter.getClientKey(req);
   const { allowed, remaining, reset } = strictLimiter.check(clientKey);
