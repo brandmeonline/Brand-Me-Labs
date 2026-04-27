@@ -9,6 +9,12 @@ export interface GarmentPassport {
   escalated: boolean
   cardano_hash?: string
   midnight_hash?: string
+  // backward-compatible aliases used by scan page
+  cardano_tx_hash?: string
+  midnight_tx_hash?: string
+  request_id?: string
+  region_code?: string
+  resolved_scope?: string
   facets: Array<{
     facet_type: string
     facet_payload_preview: Record<string, any>
@@ -30,6 +36,7 @@ export interface EscalationItem {
   reason: string
   created_at: string
   status: 'pending' | 'approved' | 'denied'
+  region_code?: string
 }
 
 /**

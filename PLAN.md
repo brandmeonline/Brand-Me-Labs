@@ -620,3 +620,52 @@ Cross-cutting verification:
 - **Honesty**: each phase's exit criteria translate into a one-line bullet
   added to `CLAUDE.md` so the per-service status table flips REAL only
   when there's a passing test behind it.
+
+## 10. Active restoration flags (Cube-first execution)
+
+### Completed now (Cube-first)
+
+- ✅ Restored the v9 Cube API surface in `brandme-cube/src/main.py` with lifecycle, dissolve authorization,
+  molecular, biometric sync, and lineage endpoints (while keeping compile/runtime green).
+- ✅ Restored richer Cube business logic in `brandme-cube/src/service.py` (including lifecycle transition
+  orchestration and dissolve/reprint support) and verified module checks.
+- ✅ Endpoint-level manual verification checklist added below (best-practice runbook).
+
+### Manual endpoint verification checklist (best practices)
+
+Run these against a local stack with request IDs and auth headers where required:
+
+1. `GET /health`, `GET /metrics`, `GET /` baseline availability.
+2. `POST /cubes/{id}/lifecycle/transition` valid and invalid transition matrix.
+3. `POST /cubes/{id}/lifecycle/dissolve/authorize` owner/non-owner path.
+4. `GET /cubes/{id}/molecular` with feature flag on/off.
+5. `POST /cubes/{id}/biometric-sync` latency threshold both above/below target.
+6. `GET /cubes/{id}/lineage` for root and derived cubes.
+
+For each endpoint, verify:
+- request/response schema conformance,
+- policy/compliance side effects,
+- error mapping (4xx vs 5xx),
+- request-id propagation and structured logs.
+
+### Flags and questions to resolve before MCP restoration
+
+- ⚑ `brandme_core/mcp/tools.py` still has stubbed handlers for key flows and does **not** yet implement
+  AP2 mandate creation/verification or ACP cart/checkout path end-to-end.
+- ⚑ Intent from previous richer implementation should be reintroduced in small slices with tests,
+  not as a monolithic revert.
+
+Questions (must-answer before MCP implementation lock):
+1. Should MCP restoration target only pre-existing tool behavior, or include AP2/ACP phase targets now?
+2. For transactional tools, do we require hard-fail when governance endpoint is unavailable,
+   or soft-escalation with queued approval?
+3. Should `acp.checkout.complete` directly emit Cart Mandates or call a dedicated mandate service boundary?
+
+### Next execution request (MCP)
+
+After Cube manual verification passes, run the **MCP build/restore track** next:
+
+- Implement AP2 mandate tools (`ap2.mandate.create_intent`, `ap2.mandate.confirm_cart`,
+  `ap2.mandate.issue_payment`) with tests.
+- Implement ACP tool adapters (`acp.cart.create`, `acp.cart.update`, `acp.checkout.complete`).
+- Add endpoint-level manual verification checklist for MCP transport and auth scopes.

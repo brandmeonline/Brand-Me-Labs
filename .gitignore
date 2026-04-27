@@ -219,3 +219,7 @@ kubeconfig*
 prometheus-data/
 grafana-data/
 loki-data/
+
+# Regression artifacts
+scripts/regression/.last-run-report.md
+!brandme-chain/src/services/cardano-wallet.ts

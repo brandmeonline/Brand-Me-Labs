@@ -38,7 +38,7 @@ app.use(helmet({
 }));
 
 // CORS configuration - secure and configurable
-const allowedOrigins = config.corsOrigins.split(',').filter(Boolean);
+const allowedOrigins = config.corsOrigins;
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
