@@ -381,36 +381,23 @@ Notes:
   the rest of the schema.
 - Interleave `agent_carts` under `users` so cart cleanup follows user
   deletion (GDPR).
-## 7. Open questions for the maintainer
+## 7. Decisions (locked in 2026-04-27)
 
-These are decisions only you can make; flag any that should change the plan.
+| Question | Decision | Implication |
+|---|---|---|
+| Real money in scope? | **Testnet first, decide later** | Cardano preprod + Midnight devnet only. No KYC/AML, no licensed acquirer. Skip compliance scope until after Phase 6 ships. |
+| ACP role | **Merchant + Marketplace** | Two mandate hops (owner-agent → broker → buyer-agent) for marketplace flows. Adds ~2 weeks to Phase 5 and a `dispute_records` table to schema. |
+| DID method | **did:cardano + did:web** | Users → `did:cardano` (uses existing `users.did_cardano` column). Brand.Me platform → `did:web:brandme.io`. Both resolvable. |
+| Cart Mandate key custody | **Client-side wallet sign** | User's wallet (CIP-30 for Cardano) signs the Cart Mandate. Brand.Me only relays. Adds ~1 week of frontend wallet integration. |
 
-1. **Brand.Me's role in ACP**: merchant only (selling lifecycle services
-   to external buyer agents), or also broker/marketplace (intermediating
-   between two external agents)? The plan above assumes **merchant only**.
-   Marketplace adds a second mandate hop and ~2 weeks.
-2. **DID method**: `did:cardano` for users (on-chain, expensive,
-   permanent) vs `did:web:brandme.io/users/<id>` (cheap, revocable, but
-   centrally controlled). Plan currently assumes `did:cardano` for users
-   + `did:web:brandme.io` for the platform itself. Mixed is fine; pure
-   `did:web` ships ~1 week sooner.
-3. **Cart Mandate signing key custody**: client-side (user's wallet
-   signs, Brand.Me only relays) is more honest to the AP2 spec but
-   requires a wallet integration on the frontend. Server-side custody is
-   faster but weakens the "non-disputable" guarantee. Plan currently
-   assumes client-side; flag if you want server-side as v1.
-4. **Real money in scope?** If yes, this plan is incomplete: KYC/AML,
-   licensed acquirer relationships, custody insurance, and fraud
-   monitoring all need to come in. If the goal is a working *spec/demo*
-   with testnet rails (Cardano preprod + Midnight devnet), the plan as
-   written is sufficient.
-5. **Midnight SDK timeline**: Phase 6 is gated on IOG shipping a usable
-   SDK. If that slips beyond ~Q3 2026, fallback options are (a) a
-   Brand.Me-operated stand-in shielded service or (b) settle on Cardano
-   only (lose privacy).
-6. **A2A authentication mode**: `did:web` + JWS for AgentCard signing is
-   the v1.0 default. Want to also accept OAuth-bearer agents (existing
-   gateway middleware)? Both can coexist.
+Still open (revisit after Phase 1):
+
+5. **Midnight SDK timeline**: Phase 6 is gated on IOG shipping a usable SDK.
+   If that slips beyond Q3 2026, fall back to (a) Brand.Me-operated stand-in
+   shielded service, or (b) Cardano-only settlement (lose privacy).
+6. **A2A auth mode**: `did:web` + JWS for AgentCard signing is the v1.0
+   default. Defer the OAuth-bearer-fallback decision until Phase 7
+   outbound-A2A traffic patterns are clearer.
 ## 8. Verification strategy
 
 Each phase ships with one new pytest module that exercises the happy path
@@ -426,6 +413,201 @@ end-to-end against emulators / testnets, plus targeted unit tests.
 | 5 | `tests/test_acp_checkout.py` | ACP cart create → update → checkout completes; produces an Intent Mandate row. |
 | 6 | `tests/test_payment_settlement.py` | Cart Mandate triggers Midnight stub TX + Cardano anchor; `chain_anchor`, `agent_payments`, `settlement_records` all populated. |
 | 7 | `tests/test_a2a_outbound.py` | Brand.Me successfully calls a peer A2A agent (mocked endpoint) and verifies its signed AgentCard. |
+
+## 9. Day-1 parallel execution
+
+The phase plan is sequential at the *milestone* level, but most of the
+file-level work has no cross-dependency and can be split across
+**six independent agent tracks**, each on its own git worktree, started
+simultaneously.
+
+### Why this works
+
+- Phase 0–6 touch **mostly disjoint file sets**.
+- The only shared contract is the schema in §6. We treat that schema as a
+  **frozen interface**: every track codes against it without waiting for
+  the migration to land in main.
+- Marketplace mode (decision §7) adds a parallel sub-track inside the ACP
+  agent (Track E).
+- Client-side wallet signing (decision §7) becomes its own track (Track F)
+  so the frontend and backend can advance independently.
+
+### Coordination contract (read first, all tracks)
+
+1. **Schema is frozen at §6.** No track modifies the table shapes. If you
+   need a column that's missing, add a comment in your PR; don't ship a
+   conflicting migration.
+2. **Branch naming.** Each track works on
+   `claude/track-<letter>-<short-name>` branched from
+   `claude/understand-repo-purpose-wcGa7`.
+3. **No edits to `CLAUDE.md` or `PLAN.md` from inside tracks.** Those are
+   the integrator's responsibility after merge.
+4. **Each track ships with the test module named in §8** for its phase.
+   No green test, no merge.
+5. **DID format.** Users → `did:cardano:mainnet:<bech32>`; platform →
+   `did:web:brandme.io`. Don't invent new methods.
+6. **Mandate envelope** = JWT-VC (compact JWS over a W3C VC payload). Not
+   JSON-LD. Picked for tooling simplicity.
+7. **Default-off for risky surfaces.** A2A, ACP, AP2 routes mount behind
+   feature flags (`ENABLE_A2A`, `ENABLE_ACP`, `ENABLE_AP2`) defaulting to
+   `false`. Existing services keep booting cleanly.
+
+### Track A — Phase 0 cleanup (1 agent, ~3h)
+
+Independent. Start immediately; no dependencies.
+
+- Delete `brandme_gateway/` (orphan after rateLimiter move, see CLAUDE.md).
+- Verify `brandme-cube` actually starts; fix any import / startup errors.
+- Replace `brandme-cube/tests/test_api.py` `test_placeholder()` with one
+  real round-trip test against the Spanner emulator.
+- Archive `docs/next_steps/ROADMAP.md` to `docs/archive/` and replace with a
+  one-line stub pointing to `PLAN.md`.
+
+Branch: `claude/track-a-phase0-cleanup`. Exit test: `pytest brandme-cube/tests/`.
+
+### Track B — Phase 1 real Cardano (1 agent, ~1 day)
+
+Depends on: nothing for the code; needs preprod Blockfrost API key for the
+test. Provision the key out-of-band before merge.
+
+- Uncomment + repair real impl at
+  `brandme-chain/src/services/cardano-tx-builder.ts:77-155`. Resolve any
+  `cardano-serialization-lib-nodejs@12.0.0` API drift.
+- Replace orchestrator stub at `brandme-core/orchestrator/main.py:99` with
+  a real `POST /tx/cardano` to brandme-chain.
+- New test `tests/test_cardano_anchor.py` against preprod (skip if no
+  Blockfrost key in env, but assert presence in CI).
+- Update `chain_anchor` writes to record real hash + verification status.
+
+Branch: `claude/track-b-cardano-real`. Exit test: `pytest tests/test_cardano_anchor.py -v`.
+
+### Track C — Schema + DIDs + VC issuer (1 agent, ~1 day)
+
+Depends on: nothing. Land the schema first; everything downstream codes
+against it.
+
+- New migration `brandme-data/schemas/008_agent_commerce.sql` exactly as
+  specified in §6, plus an extra `dispute_records` table (marketplace
+  mode):
+  ```sql
+  CREATE TABLE dispute_records (
+    dispute_id   STRING(64) NOT NULL,
+    payment_id   STRING(64) NOT NULL,
+    raised_by    STRING(256) NOT NULL,   -- DID
+    reason       STRING(1024),
+    status       STRING(16) NOT NULL,    -- 'open' | 'resolved' | 'rejected'
+    resolution   JSON,
+    created_at   TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+    resolved_at  TIMESTAMP,
+  ) PRIMARY KEY (dispute_id);
+  ```
+- New module `brandme-agents/identity/src/credentials.py` — JWT-VC
+  issuer/verifier (Ed25519). Issuer key from env / GCP KMS in prod,
+  ephemeral file in dev.
+- Populate `users.did_cardano` on signup; backfill script
+  `scripts/backfill_user_dids.py` for existing users.
+- Tests: `tests/test_vc_round_trip.py` (issue, verify, reject tampered).
+
+Branch: `claude/track-c-schema-vc`. Exit test:
+`pytest tests/test_vc_round_trip.py -v && make migrate`.
+
+### Track D — A2A surface (1 agent, ~1 day)
+
+Depends on: Track C's `did:web:brandme.io` issuer key (file path agreed
+upfront so D and C don't race). Otherwise independent.
+
+- `brandme-gateway/src/routes/agentCard.ts` — serves
+  `/.well-known/agent-card.json` with declared capabilities, supported
+  MCP tools, and `extensions: ["https://ap2-protocol.org/extension/v1"]`.
+- `brandme-gateway/src/services/agentCardSigner.ts` — signs AgentCard
+  with platform key; outputs JWS detached signature for v1.0 conformance.
+- `brandme-gateway/src/routes/a2a.ts` — `POST /a2a/v1/tasks/send` and
+  `POST /a2a/v1/tasks/sendSubscribe` (SSE). Lifecycle states
+  `pending → in-progress → completed | failed` mapped from existing
+  `AgentState` (`brandme-agents/agentic/orchestrator/agents.py`).
+- `brandme-agents/agentic/orchestrator/a2a_adapter.py` — adapter:
+  inbound A2A task → existing `scan_agent → identity_agent → policy_agent
+  → compliance_agent` chain; emits SSE events on each transition.
+- Mount behind `ENABLE_A2A` flag (default false).
+- Tests: `tests/test_a2a_task.py` (uses `a2aproject/A2A` reference SDK).
+
+Branch: `claude/track-d-a2a`. Exit test: `pytest tests/test_a2a_task.py -v`.
+
+### Track E — ACP merchant + marketplace (1 agent, ~1.5 days)
+
+Depends on: Track C's `mandates` and `agent_carts` schema. Code against
+the schema in §6; do not land before C.
+
+- `brandme-gateway/src/routes/acp.ts` — REST endpoints per Stripe/OpenAI
+  ACP spec (cart, feed, orders, capabilities, authentication).
+- `brandme_core/mcp/acp_tools.py` — three new MCP tools:
+  `acp.cart.create`, `acp.cart.update`, `acp.checkout.complete`. Each
+  goes through the existing `MCPToolExecutor` (consent + ESG + human-
+  approval gates already in place).
+- ACP product feed = lifecycle services (rental, repair, dissolve, resale).
+  Reuse existing tool definitions; expose ACP shapes alongside.
+- **Marketplace sub-track** (decision §7): when the cart involves an owner
+  agent on one side and a buyer agent on the other, issue **two Intent
+  Mandates** (one per side), produce a single Cart Mandate countersigned
+  by both, and surface a dispute-raise endpoint
+  `POST /acp/v1/disputes` that writes to `dispute_records`.
+- Token scoping: extend `brandme-gateway/src/middleware/auth.ts` with ACP
+  capability scopes (`acp:read`, `acp:cart`, `acp:checkout`).
+- Mount behind `ENABLE_ACP` flag (default false).
+- Tests: `tests/test_acp_checkout.py` (merchant happy path) +
+  `tests/test_acp_marketplace.py` (two-sided flow with dispute).
+
+Branch: `claude/track-e-acp`. Exit test:
+`pytest tests/test_acp_checkout.py tests/test_acp_marketplace.py -v`.
+
+### Track F — Frontend wallet signing (1 agent, ~1 day)
+
+Depends on: Track C's mandate envelope shape and Track E's cart shape.
+Stub these against the §6 schema until C+E land.
+
+- `brandme-frontend/lib/wallet.ts` — CIP-30 wallet connector (Lace, Eternl,
+  Nami support).
+- `brandme-frontend/components/CartMandateSign.tsx` — Cart Mandate review
+  + sign UI. Renders the mandate payload; user signs via wallet; result
+  is posted back to gateway as a detached JWS.
+- `brandme-frontend/lib/mandate.ts` — JWT-VC payload constructor matching
+  Track C's verifier.
+- E2E test (Playwright stub): connect wallet → sign sample mandate →
+  POST to gateway → verify accepted.
+
+Branch: `claude/track-f-wallet`. Exit test: `pnpm --filter brandme-frontend test`.
+
+### Merge order
+
+```
+Track A  ──┐
+Track B  ──┤
+Track C  ──┼──► merge to claude/understand-repo-purpose-wcGa7
+Track D  ──┤    in this order: A → C → B → D → E → F
+Track E  ──┤    (C must land before D, E, F because they reference its schema/keys)
+Track F  ──┘
+```
+
+A and B have no deps and merge in either order. C must precede D, E, F.
+B has no merge-blockers but its CI run needs the Blockfrost preprod key
+provisioned in the repo secrets.
+
+### Spinning up the tracks today
+
+Each track is a single-prompt agent task. Run them as **parallel `Agent`
+calls in one message** with `isolation: "worktree"` so each gets its own
+git worktree off `claude/understand-repo-purpose-wcGa7`. Use the
+`general-purpose` subagent type since the work spans research + code.
+The integrator (you, or a follow-up Claude session) merges in the order
+above as each track's exit test goes green.
+
+Pre-flight before kicking off:
+1. Provision Blockfrost preprod API key in `.env` and CI secrets (Track B).
+2. Generate platform Ed25519 keypair for `did:web:brandme.io` and place
+   the public JWK at `.claude/keys/platform-pub.jwk` (Tracks C, D agree
+   on this path).
+3. Confirm `MIDNIGHT_ENABLED=false` stays default in `docker-compose.yml`
+   so no track inadvertently flips it.
 
 Cross-cutting verification:
 
