@@ -6,6 +6,8 @@
 > readiness; this file is the ground-truth reference. When they conflict,
 > trust this.
 >
+> **Forward-looking plan** (end-to-end + ACP / AP2 / A2A): see [`PLAN.md`](./PLAN.md).
+>
 > Last verified: 2026-04-27 by code-level audit.
 
 ## What this is
