@@ -423,11 +423,6 @@ class ZKProofManager:
             # Build query based on device binding
             if device_id and self.enable_device_binding:
                 query = """
-                    SELECT proof_id, proof_data, public_signals, expires_at, device_session_id
-                    FROM ZKProofCache
-                    WHERE user_id = @user_id
-                        AND asset_id = @asset_id
-                        AND device_session_id = @device_session_id
                     SELECT proof_id, proof_data, public_signals, expires_at, device_id
                     FROM ZKProofCache
                     WHERE user_id = @user_id
@@ -440,17 +435,11 @@ class ZKProofManager:
                 params = {
                     "user_id": user_id,
                     "asset_id": asset_id,
-                    "device_session_id": device_id
                     "device_id": device_id
                 }
                 param_types_map = {
                     "user_id": param_types.STRING,
                     "asset_id": param_types.STRING,
-                    "device_session_id": param_types.STRING
-                }
-            else:
-                query = """
-                    SELECT proof_id, proof_data, public_signals, expires_at, device_session_id
                     "device_id": param_types.STRING
                 }
             else:
@@ -523,11 +512,6 @@ class ZKProofManager:
         def _check_ownership(transaction):
             results = transaction.execute_sql(
                 """
-                SELECT owner_id, acquired_at, transfer_method, is_current
-                FROM Owns
-                WHERE owner_id = @user_id
-                    AND asset_id = @asset_id
-                    AND is_current = true
                 SELECT owner_id, acquired_at, share_pct, is_active
                 FROM Owns
                 WHERE owner_id = @user_id
@@ -548,8 +532,6 @@ class ZKProofManager:
                 return {
                     "owner_id": row[0],
                     "acquired_at": row[1],
-                    "transfer_method": row[2],
-                    "is_current": row[3]
                     "share_pct": row[2],
                     "is_active": row[3]
                 }
@@ -573,7 +555,6 @@ class ZKProofManager:
                 table="ZKProofCache",
                 columns=[
                     "proof_id", "user_id", "asset_id", "proof_type",
-                    "proof_hash", "proof_data", "public_signals", "device_session_id",
                     "proof_data", "public_signals", "device_id",
                     "created_at", "expires_at"
                 ],
@@ -582,7 +563,6 @@ class ZKProofManager:
                     user_id,
                     asset_id,
                     proof.proof_type.value,
-                    hashlib.sha256(proof.proof_data).hexdigest() if isinstance(proof.proof_data, bytes) else hashlib.sha256(proof.proof_data.encode()).hexdigest(),
                     proof.proof_data.decode() if isinstance(proof.proof_data, bytes) else proof.proof_data,
                     json.dumps(proof.public_signals),
                     proof.device_bound,

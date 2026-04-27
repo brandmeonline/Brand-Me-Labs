@@ -1,10 +1,8 @@
-import { v4 as uuidv4 } from 'uuid'
-
 /**
  * Generates a unique request ID for distributed tracing
  */
 export function getRequestId(): string {
-  return uuidv4()
+  return crypto.randomUUID()
 }
 
 /**

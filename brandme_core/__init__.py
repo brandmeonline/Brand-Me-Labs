@@ -12,8 +12,6 @@ Shared utilities for all Brand.Me services including:
 
 from .logging import get_logger, redact_user_id, ensure_request_id
 from .config import config, ServiceConfig
-from .database import create_db_pool, execute_with_retry, safe_close_pool
-from .http_client import get_http_client, close_all_clients, ResilientHttpClient
 from .exceptions import (
     BrandMeException,
     DatabaseError,
@@ -32,14 +30,6 @@ __all__ = [
     # Config
     "config",
     "ServiceConfig",
-    # Database
-    "create_db_pool",
-    "execute_with_retry",
-    "safe_close_pool",
-    # HTTP Client
-    "get_http_client",
-    "close_all_clients",
-    "ResilientHttpClient",
     # Exceptions
     "BrandMeException",
     "DatabaseError",
