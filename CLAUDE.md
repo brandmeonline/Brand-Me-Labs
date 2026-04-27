@@ -27,7 +27,7 @@ Everything past the orchestrator's response is mocked.
 | `brandme-core/orchestrator` | 8002 | Py | **STUB** | Returns hardcoded `f"cardano_tx_{transfer_id[:16]}"` at `brandme-core/orchestrator/main.py:99`; comment at `:93-94` says "v6 simplified, in production this would trigger Celery." No Celery service in compose. |
 | `brandme-cube` | 8007 | Py | **STUB / UNVERIFIED** | Routes import; policy gates real; **all tests are `test_placeholder()`** in `brandme-cube/tests/test_api.py`. `PRODUCT_CUBE_SUMMARY.md` explicitly states startup is untested. |
 | `brandme-governance` | 8006 | Py | **STUB** | Only escalation listing implemented (`brandme-governance/governance_console/main.py:62-100`). No approve/deny endpoint. |
-| `brandme-gateway` | 3000 | TS | **BROKEN BUILD** | `brandme-gateway/src/index.ts:22` imports `./middleware/rateLimiter` — the file does not exist in this folder. See "Known broken imports" below. |
+| `brandme-gateway` | 3000 | TS | **REAL** | helmet/CORS/rate-limit framework wired in `brandme-gateway/src/index.ts`; OAuth uses dev-client-id placeholders in compose. |
 | `brandme-frontend` | — | TS | **NOT WIRED** | Components are placeholder UI (`<div>[Image]</div>` in `brandme-frontend/components/GarmentCard.tsx:21-22`); not in `docker-compose.yml`. |
 | `brandme-console` | 3002 | TS | **NOT WIRED** | Service block commented out in `docker-compose.dev.yml:168-184`. |
 | `brandme-chain` | — | TS | **NOT WIRED** | TX builder service commented out in `docker-compose.dev.yml:152-166`. Type defs only, no Cardano/Midnight client code. |
@@ -69,19 +69,8 @@ A small but real set:
 
 ## Known broken imports
 
-**`brandme-gateway/src/index.ts:22`** imports
-`{ rateLimiterMiddleware, strictRateLimiterMiddleware }` from
-`./middleware/rateLimiter`. That file does not exist in
-`brandme-gateway/src/middleware/`. The matching implementation is in
-`brandme_gateway/src/middleware/rateLimiter.ts` (the underscore-named
-duplicate folder). `brandme-gateway/tsconfig.json` has no path remap that
-would resolve across the two folders, so `tsc` will fail. The `auth.ts`
-files in the two folders also differ — `brandme-gateway`'s is the active one.
-
-Suggested fix (separate task, not done here): move
-`brandme_gateway/src/middleware/rateLimiter.ts` →
-`brandme-gateway/src/middleware/rateLimiter.ts`, then delete
-`brandme_gateway/`.
+None currently. The `rateLimiter.ts` that `brandme-gateway/src/index.ts:22`
+imports has been moved into `brandme-gateway/src/middleware/`.
 
 ## Safe-to-delete kill-list
 
@@ -92,7 +81,7 @@ Nothing in this repo is currently safe to blindly delete.
 
 | Folder | Verdict | Why |
 |---|---|---|
-| `brandme_gateway/` | **DO NOT DELETE** | Holds the only `rateLimiter.ts` that `brandme-gateway/src/index.ts:22` imports. Move the file out first, then delete. |
+| `brandme_gateway/` | **Now an orphan** | After moving `rateLimiter.ts` out, this folder holds only an unused alternate `auth.ts`. Safe to delete after confirming `brandme-gateway/src/middleware/auth.ts` (the imported one) is the canonical version. |
 | `agents/` (shell scripts) | **DO NOT DELETE** | Used by `deploy-brandme.sh` (data-agent, database-agent, integration-agent, etc.). |
 | `brandme-core/policies/` | **DO NOT DELETE** | Loaded at runtime by `brandme-core/policy/region_rules.py:13`. |
 
