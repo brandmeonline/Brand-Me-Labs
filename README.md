@@ -4,6 +4,8 @@
 
 Brand.Me is a symbiotic intelligence platform that merges digital fashion, identity expression, and verifiable trust on the Cardano blockchain. Autonomous agents handle precision and scale while humans govern intent, empathy, and ethics.
 
+> **For the actual implementation status of each service (what runs end-to-end vs. what is stubbed), see [`CLAUDE.md`](./CLAUDE.md).** This README describes the target architecture; CLAUDE.md describes today's reality.
+
 ## Documentation
 
 **Quick Links**:
@@ -73,16 +75,18 @@ Brand.Me uses a dual-blockchain architecture for privacy-preserving garment prov
 - **Midnight**: Private ownership lineage, pricing history, and consent snapshots
 - **Cross-Chain Verification**: Cryptographic linking between chains
 
-### v6 Service Architecture
+### Service Architecture (v9)
 
-All 9 backend services are production-ready with:
-- ✅ X-Request-Id tracing propagation
-- ✅ PII redaction with `redact_user_id()` and `truncate_id()`
-- ✅ CORS middleware on public-facing services
-- ✅ Consent graph integration
-- ✅ Hash-chained audit logging
-- ✅ Human escalation guardrails
-- ✅ Safe facet previews only
+The intended architecture spans 9 backend services with X-Request-Id tracing,
+PII redaction (`redact_user_id()`, `truncate_id()`), CORS on public-facing
+services, consent-graph integration, hash-chained audit logging, human
+escalation guardrails, and safe-facet-only previews.
+
+**Current implementation reality:** the consent / policy / provenance layer is
+real against emulators; orchestrator blockchain anchoring, the cube state
+machine, governance approve/deny, ZK proofs, ESG oracle verification, and the
+Cardano + Midnight TX builders are stubbed or not wired. See
+[`CLAUDE.md`](./CLAUDE.md) for the per-service status table.
 
 #### Service Ports
 | Service | Port | Description |
@@ -105,7 +109,7 @@ Brand.Me uses a **triple-layer architecture** for global consistency and real-ti
 - **Firestore**: Real-time wardrobe state, agentic modifications, frontend sync
 - **Cardano + Midnight**: Blockchain anchoring for immutable provenance
 
-### v8 Database Architecture
+### Database Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
