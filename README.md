@@ -231,10 +231,11 @@ MIDNIGHT_API_URL=http://midnight-devnet:9000
 
 ## Claude Code Setup
 
-This repo ships with two project-scoped Claude Code integrations:
+This repo ships with three project-scoped Claude Code integrations:
 
 - **UI/UX Pro Max skill** at `.claude/skills/ui-ux-pro-max/` — design-system reasoning (typography, color, components, per-stack patterns). Loads automatically.
-- **21st.dev Magic MCP server** declared in `.mcp.json` — generates UI components on demand.
+- **21st.dev Magic MCP server** declared in `.mcp.json` — generates UI components on demand (`mcp__magic__*` tools).
+- **Design audit skill** at `.claude/skills/design-audit/` — reproducible workflow that audits frontend surfaces for "default-ness" and generates non-standard concepts. Invoke with `/design-audit` or any phrase like "audit our design" / "pull innovative concepts for X". Outputs persist to `.claude/skills/design-audit/output/` so audits resume across sessions. See the skill's `SKILL.md` for the full workflow, rubric, and reference-anchor library.
 
 The Magic server requires an API key. To enable it (local CLI or Claude Code on the web):
 
