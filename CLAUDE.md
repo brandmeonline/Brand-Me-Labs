@@ -110,6 +110,12 @@ Nothing in this repo is currently safe to blindly delete.
   integration` — `ci-cd.yml` declares no `permissions:` block, so the token
   cannot write security events; Trivy itself scans clean. Details in
   `docs/audit/BRANDME_AUDIT.md`.
+- `ci-cd.yml:8-19` fires on both `push` to `claude/**` and `pull_request` to
+  `main` with **no `concurrency:` block**, so every push to a `claude/**`
+  branch with an open PR runs the whole pipeline twice, concurrently, on the
+  same SHA. The two runs get different tokens, so they can disagree —
+  `Security Scan` passed and failed on the same commit (`8aa8354`). Check
+  results on this repo are not deterministic.
 - `.github/workflows/foundation.yml` is the one Python job that does gate.
 - `make test`, `make lint`, `make type-check`, `make db-migrate`, and
   `make install` all fail on a clean checkout — they reference

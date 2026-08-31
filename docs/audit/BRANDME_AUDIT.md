@@ -64,12 +64,33 @@ None is a code defect; every one is workflow configuration:
 |---|---|---|
 | `regression` | `module-regression.yml:28-30` pins `pnpm/action-setup@v4` to `version: 8` while `package.json:28` declares `packageManager: pnpm@8.15.0`. v4 errors on the conflict and the job dies before any test body runs. | Delete the `with: version: 8` block; the action reads `packageManager`. |
 | `Test Gateway (Node/TypeScript)` | `brandme-gateway/src/config/index.ts:57` parses a zod schema at module load. `oauthClientId`, `oauthClientSecret` and `jwtSecret` have no defaults and are unset in CI, so `rateLimiter.test.ts` throws on import via `config/logger.ts` and collects zero tests. | Supply test values in the CI job. The fail-closed schema is correct — do not weaken it. |
-| `Security Scan` | `ci-cd.yml` declares **no `permissions:` block at all**, so `github/codeql-action/upload-sarif` (`:233`) cannot write results: `Resource not accessible by integration`. The action is also pinned to `@v2`, which GitHub has deprecated and which logs its own hard error. Trivy itself scans clean — the job fails *uploading*, not on a finding. | Add `permissions: {contents: read, security-events: write}` and bump the action to `@v3`. |
+| `Security Scan` | `ci-cd.yml` declares **no `permissions:` block at all**, so `github/codeql-action/upload-sarif` (`:233`) cannot write results: `Resource not accessible by integration`. The action is also pinned to `@v2`, which GitHub has deprecated and which logs its own hard error. Trivy itself scans clean — the job fails *uploading*, not on a finding. | Add `permissions: {contents: read, security-events: write}`, bump the action to `@v3`, and fix the duplicate-run bug below. |
 
-`Security Scan` is intermittent — it has passed at least once on this branch —
-so treat its exact trigger as unconfirmed. What is certain from the logs is
-that Trivy produced and validated its SARIF, and the job then failed in the
-upload step for want of a permission the workflow never grants.
+### Every workflow run happens twice, and the two disagree
+
+`Security Scan` looked intermittent until the cause turned up. On commit
+`8aa8354` it **passed and failed simultaneously** — check runs 99621124080
+(success) and 99621110182 (failure), same SHA, two concurrent workflow runs.
+
+`ci-cd.yml:8-19` triggers on both `push` to `claude/**` *and* `pull_request`
+to `main`, and declares **no `concurrency:` block**. So every push to a
+`claude/**` branch with an open PR fires the entire pipeline twice, at once,
+on the same commit. That is why the notification stream carries exactly two
+`regression` and two `Test Gateway` failures per push.
+
+The two runs do not get the same token. GitHub restricts `security-events:
+write` on `pull_request`-triggered runs, so the `push` run uploads its SARIF
+and the `pull_request` run gets `Resource not accessible by integration`. Same
+commit, same code, opposite results — and whichever finishes last is the one
+shown.
+
+This doubles CI cost on every push and makes check results non-deterministic.
+Fix it with a `concurrency` group (as `Lux_Real_Estate/.github/workflows/ci.yml:11-13`
+already does) and by narrowing the triggers so a branch with an open PR builds
+once, not twice.
+
+What is certain from the logs regardless: Trivy produced and validated its
+SARIF, and the job failed in the upload step, not on a finding.
 
 The gateway one is worth dwelling on: that schema is doing exactly the right thing.
 It refuses to boot without credentials, which is the same fail-closed contract
