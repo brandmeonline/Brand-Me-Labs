@@ -8,7 +8,11 @@
 >
 > **Forward-looking plan** (end-to-end + ACP / AP2 / A2A): see [`PLAN.md`](./PLAN.md).
 >
-> Last verified: 2026-04-27 by code-level audit.
+> **Repo audit + the Lux port plan**: see
+> [`docs/audit/BRANDME_AUDIT.md`](./docs/audit/BRANDME_AUDIT.md) and
+> [`docs/audit/LUX_LIFT_AND_SHIFT.md`](./docs/audit/LUX_LIFT_AND_SHIFT.md).
+>
+> Last verified: 2026-08-31 by code-level audit.
 
 ## What this is
 
@@ -39,6 +43,7 @@ Everything past the orchestrator's response is mocked.
 | `brandme-agents/agentic` | — | Py | **CLI only** | Not a service — `brandme-agents/agentic/cli/main.py` is a CLI tool. |
 | `brandme-agents/branding` | — | — | **NOT WIRED** | Not in `docker-compose.yml`. |
 | `brandme_core/*` (shared lib) | — | Py | **REAL** | `spanner/`, `firestore/`, `mcp/`, `zk/` — used by all working services. |
+| `brandme_foundation/*` | — | Py | **REAL** | Platform layer ported from Lux_Real_Estate; 62 tests pass (`pytest tests/foundation`), hard-gated by `.github/workflows/foundation.yml`. **No service imports it yet.** See `docs/audit/LUX_LIFT_AND_SHIFT.md`. |
 
 ## What runs end-to-end today
 
@@ -87,6 +92,39 @@ Nothing in this repo is currently safe to blindly delete.
 | `agents/` (shell scripts) | **DO NOT DELETE** | Used by `deploy-brandme.sh` (data-agent, database-agent, integration-agent, etc.). |
 | `brandme-core/policies/` | **DO NOT DELETE** | Loaded at runtime by `brandme-core/policy/region_rules.py:13`. |
 
+## CI accuracy notes
+
+- `.github/workflows/ci-cd.yml` job `test-core` **cannot fail**: every step is
+  suffixed `|| echo`, including `pytest tests/ -v || echo "Tests not
+  implemented yet"` (`:89`). Its `working-directory` is `./brandme-core`,
+  which has no `tests/` directory. Treat a green `test-core` as no signal.
+- `ci-cd.yml` as a whole has failed on **every** `main` run recorded, back to
+  January 2026 — six consecutive red runs including the current tip. Two root
+  causes, both environmental: `module-regression.yml:28-30` pins
+  `pnpm/action-setup@v4` to `version: 8` against `package.json`'s
+  `packageManager: pnpm@8.15.0` (the job dies at setup), and
+  `brandme-gateway/src/config/index.ts:57` parses a zod schema at module load
+  whose `oauthClientId` / `oauthClientSecret` / `jwtSecret` are unset in CI
+  (the gateway test file throws on import). A third, `Security Scan`, fails in
+  `codeql-action/upload-sarif@v2` with `Resource not accessible by
+  integration` — `ci-cd.yml` declares no `permissions:` block, so the token
+  cannot write security events; Trivy itself scans clean. Details in
+  `docs/audit/BRANDME_AUDIT.md`.
+- `ci-cd.yml:8-19` fires on both `push` to `claude/**` and `pull_request` to
+  `main` with **no `concurrency:` block**, so every push to a `claude/**`
+  branch with an open PR runs the whole pipeline twice, concurrently, on the
+  same SHA. The two runs get different tokens, so they can disagree —
+  `Security Scan` passed and failed on the same commit (`8aa8354`). Check
+  results on this repo are not deterministic. Note a `concurrency:` group does
+  NOT fix this — `github.ref` differs between the two event types, so they
+  land in different groups. Scoping `push` to `[main]` is what fixes it.
+- `.github/workflows/foundation.yml` is the one Python job that does gate.
+- `make test`, `make lint`, `make type-check`, `make db-migrate`, and
+  `make install` all fail on a clean checkout — they reference
+  `brandme-core/src`, `brandme-agents/src`, `brandme-core/tests`,
+  `brandme-agents/tests`, `brandme-data/manage.py`, and
+  `brandme-core/requirements-dev.txt`, none of which exist.
+
 ## Docs accuracy notes
 
 - README claims **v9** "Agentic & Circular Economy"; `docs/status/CURRENT_STATUS.md`
@@ -103,6 +141,8 @@ Nothing in this repo is currently safe to blindly delete.
 ## Local dev quick reference
 
 ```bash
+pytest tests/foundation -v      # 62 tests, all pass; the ported Lux foundation
+
 docker-compose up -d
 # Spanner emulator: 9010 (gRPC), 9020 (REST)
 # Firestore emulator: 8080
