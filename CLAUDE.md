@@ -98,6 +98,15 @@ Nothing in this repo is currently safe to blindly delete.
   suffixed `|| echo`, including `pytest tests/ -v || echo "Tests not
   implemented yet"` (`:89`). Its `working-directory` is `./brandme-core`,
   which has no `tests/` directory. Treat a green `test-core` as no signal.
+- `ci-cd.yml` as a whole has failed on **every** `main` run recorded, back to
+  January 2026 — six consecutive red runs including the current tip. Two root
+  causes, both environmental: `module-regression.yml:28-30` pins
+  `pnpm/action-setup@v4` to `version: 8` against `package.json`'s
+  `packageManager: pnpm@8.15.0` (the job dies at setup), and
+  `brandme-gateway/src/config/index.ts:57` parses a zod schema at module load
+  whose `oauthClientId` / `oauthClientSecret` / `jwtSecret` are unset in CI
+  (the gateway test file throws on import). Details in
+  `docs/audit/BRANDME_AUDIT.md`.
 - `.github/workflows/foundation.yml` is the one Python job that does gate.
 - `make test`, `make lint`, `make type-check`, `make db-migrate`, and
   `make install` all fail on a clean checkout — they reference

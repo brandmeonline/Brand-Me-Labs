@@ -50,6 +50,25 @@ not exist — so even without `|| echo` it would collect zero tests.
 
 `requirements-dev.txt` referenced on the line above does not exist either.
 
+### The workflow it lives in has never passed
+
+Worse than a job that cannot fail: **`ci-cd.yml` has failed on every `main`
+run recorded, back to January 2026.** Six consecutive red runs, including the
+current `main` tip (`0f5f58a`). `module-regression.yml`'s only `main` run is
+also red. Nobody is reading these results.
+
+Two distinct root causes, both environmental and both fixable in a few lines:
+
+| Check | Root cause | Fix |
+|---|---|---|
+| `regression` | `module-regression.yml:28-30` pins `pnpm/action-setup@v4` to `version: 8` while `package.json:28` declares `packageManager: pnpm@8.15.0`. v4 errors on the conflict and the job dies before any test body runs. | Delete the `with: version: 8` block; the action reads `packageManager`. |
+| `Test Gateway (Node/TypeScript)` | `brandme-gateway/src/config/index.ts:57` parses a zod schema at module load. `oauthClientId`, `oauthClientSecret` and `jwtSecret` have no defaults and are unset in CI, so `rateLimiter.test.ts` throws on import via `config/logger.ts` and collects zero tests. | Supply test values in the CI job. The fail-closed schema is correct — do not weaken it. |
+
+The second is worth dwelling on: that schema is doing exactly the right thing.
+It refuses to boot without credentials, which is the same fail-closed contract
+the ported `brandme_foundation/runtime/config.py` encodes. The bug is that CI
+never gave it any, and because the job was already red nobody noticed.
+
 ## Finding 3 — the Makefile is substantially aspirational
 
 Five of twelve paths that `make` targets depend on are absent:
@@ -145,7 +164,7 @@ per-service code above it is where the stubs concentrate.
 | # | Finding | Severity | Cheapest fix |
 |---|---|---|---|
 | 4 | No tenancy or isolation barrier | **Critical** | Adopt ported foundation now, before data volume |
-| 2 | Python CI cannot fail | **Critical** | Delete the `\|\| echo` suffixes; point at real paths |
+| 2 | Python CI cannot fail, and its workflow has been red since January | **Critical** | Fix the two root causes above, then delete the `\|\| echo` suffixes |
 | 1 | 85× test gap | **High** | Port Lux suites with the code they cover |
 | 5 | No migration runner | **High** | Port Lux's migrate.py (Wave 3) |
 | 3 | Makefile targets absent | **Medium** | Repair paths or delete dead targets |
@@ -156,6 +175,10 @@ per-service code above it is where the stubs concentrate.
 
 - All file, line, and count claims were checked against the working tree at
   `Brand-Me-Labs@0f5f58a` and `Lux_Real_Estate@1c4cd20`.
+- The CI history in Finding 2 was read from the GitHub Actions API: six
+  `ci-cd.yml` runs on `main` (2026-01-20 → 2026-04-27), all `failure`. The two
+  root causes were read from the job logs of runs 33431603905 and 33431603933,
+  and reproduce identically across two runs of this branch.
 - **Lux's test suite was not executed.** Its dependencies (pytest, Postgres,
   Playwright) are not installed in this environment, so "hardened" rests on
   code inspection plus its CI configuration (8 jobs including live-Postgres
