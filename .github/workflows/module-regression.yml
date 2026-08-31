@@ -1,9 +1,15 @@
 name: Module Regression
 
 on:
+  # `push` is scoped to the long-lived branches on purpose. It fires on
+  # refs/heads/<branch> while `pull_request` fires on refs/pull/N/merge, so a
+  # wildcard here makes every PR branch build twice, concurrently, on the same
+  # SHA. A `concurrency:` group does NOT dedupe that — github.ref differs, so
+  # the two runs land in different groups. Mirrors chain-tests.yml:10-11.
   push:
     branches:
-      - '**'
+      - main
+      - develop
   pull_request:
     branches:
       - main
@@ -24,10 +30,10 @@ jobs:
         with:
           node-version: '20'
 
+      # No `version:` here — package.json's `packageManager` field is the
+      # single source of truth. action-setup@v4 errors out if both are set.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 8
 
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
