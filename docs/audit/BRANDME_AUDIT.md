@@ -85,9 +85,18 @@ commit, same code, opposite results — and whichever finishes last is the one
 shown.
 
 This doubles CI cost on every push and makes check results non-deterministic.
-Fix it with a `concurrency` group (as `Lux_Real_Estate/.github/workflows/ci.yml:11-13`
-already does) and by narrowing the triggers so a branch with an open PR builds
-once, not twice.
+
+**A `concurrency` group does not fix it.** `push` fires on
+`refs/heads/<branch>` and `pull_request` on `refs/pull/N/merge`, so
+`github.ref` differs and the two runs land in *different* concurrency groups.
+Both proceed. What stops the double build is **trigger scoping**:
+`Lux_Real_Estate/.github/workflows/ci.yml:3-6` limits `push` to `[main]` and
+leaves `pull_request` unscoped, so a feature branch builds once (on the PR
+event) and `main` builds once (on push).
+
+This repo's `foundation.yml` had the same bug on its first four commits — it
+scoped `push` to `["**"]` — and double-ran despite carrying a concurrency
+group, which is how the distinction surfaced. It now mirrors Lux's shape.
 
 What is certain from the logs regardless: Trivy produced and validated its
 SARIF, and the job failed in the upload step, not on a finding.

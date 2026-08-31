@@ -115,7 +115,9 @@ Nothing in this repo is currently safe to blindly delete.
   branch with an open PR runs the whole pipeline twice, concurrently, on the
   same SHA. The two runs get different tokens, so they can disagree —
   `Security Scan` passed and failed on the same commit (`8aa8354`). Check
-  results on this repo are not deterministic.
+  results on this repo are not deterministic. Note a `concurrency:` group does
+  NOT fix this — `github.ref` differs between the two event types, so they
+  land in different groups. Scoping `push` to `[main]` is what fixes it.
 - `.github/workflows/foundation.yml` is the one Python job that does gate.
 - `make test`, `make lint`, `make type-check`, `make db-migrate`, and
   `make install` all fail on a clean checkout — they reference

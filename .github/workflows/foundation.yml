@@ -5,9 +5,14 @@
 # invariants; a green run has to mean they actually hold.
 name: Foundation
 
+# Trigger scoping, not the concurrency group, is what stops a branch from
+# building twice: `push` fires on refs/heads/<branch> and `pull_request` on
+# refs/pull/N/merge, so `github.ref` differs and the two land in DIFFERENT
+# concurrency groups. Limiting push to main is what makes a PR branch build
+# once. This mirrors Lux_Real_Estate/.github/workflows/ci.yml:3-6.
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
 
 permissions:
