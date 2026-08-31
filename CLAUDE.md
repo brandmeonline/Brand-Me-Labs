@@ -105,7 +105,10 @@ Nothing in this repo is currently safe to blindly delete.
   `packageManager: pnpm@8.15.0` (the job dies at setup), and
   `brandme-gateway/src/config/index.ts:57` parses a zod schema at module load
   whose `oauthClientId` / `oauthClientSecret` / `jwtSecret` are unset in CI
-  (the gateway test file throws on import). Details in
+  (the gateway test file throws on import). A third, `Security Scan`, fails in
+  `codeql-action/upload-sarif@v2` with `Resource not accessible by
+  integration` — `ci-cd.yml` declares no `permissions:` block, so the token
+  cannot write security events; Trivy itself scans clean. Details in
   `docs/audit/BRANDME_AUDIT.md`.
 - `.github/workflows/foundation.yml` is the one Python job that does gate.
 - `make test`, `make lint`, `make type-check`, `make db-migrate`, and

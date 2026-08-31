@@ -57,14 +57,21 @@ run recorded, back to January 2026.** Six consecutive red runs, including the
 current `main` tip (`0f5f58a`). `module-regression.yml`'s only `main` run is
 also red. Nobody is reading these results.
 
-Two distinct root causes, both environmental and both fixable in a few lines:
+Three distinct root causes, all environmental and all fixable in a few lines.
+None is a code defect; every one is workflow configuration:
 
 | Check | Root cause | Fix |
 |---|---|---|
 | `regression` | `module-regression.yml:28-30` pins `pnpm/action-setup@v4` to `version: 8` while `package.json:28` declares `packageManager: pnpm@8.15.0`. v4 errors on the conflict and the job dies before any test body runs. | Delete the `with: version: 8` block; the action reads `packageManager`. |
 | `Test Gateway (Node/TypeScript)` | `brandme-gateway/src/config/index.ts:57` parses a zod schema at module load. `oauthClientId`, `oauthClientSecret` and `jwtSecret` have no defaults and are unset in CI, so `rateLimiter.test.ts` throws on import via `config/logger.ts` and collects zero tests. | Supply test values in the CI job. The fail-closed schema is correct — do not weaken it. |
+| `Security Scan` | `ci-cd.yml` declares **no `permissions:` block at all**, so `github/codeql-action/upload-sarif` (`:233`) cannot write results: `Resource not accessible by integration`. The action is also pinned to `@v2`, which GitHub has deprecated and which logs its own hard error. Trivy itself scans clean — the job fails *uploading*, not on a finding. | Add `permissions: {contents: read, security-events: write}` and bump the action to `@v3`. |
 
-The second is worth dwelling on: that schema is doing exactly the right thing.
+`Security Scan` is intermittent — it has passed at least once on this branch —
+so treat its exact trigger as unconfirmed. What is certain from the logs is
+that Trivy produced and validated its SARIF, and the job then failed in the
+upload step for want of a permission the workflow never grants.
+
+The gateway one is worth dwelling on: that schema is doing exactly the right thing.
 It refuses to boot without credentials, which is the same fail-closed contract
 the ported `brandme_foundation/runtime/config.py` encodes. The bug is that CI
 never gave it any, and because the job was already red nobody noticed.
