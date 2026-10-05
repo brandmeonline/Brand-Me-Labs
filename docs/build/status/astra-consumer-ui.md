@@ -128,3 +128,37 @@ With dependencies installed by the foundation workspace, launch in separate term
 5. W05/W06/W07/W10: wire actual social deadlines/audiences/rewards, discovery, deterministic approvals/orders, and My Data controls. All related domain acceptance IDs remain `not_run`. Do not count these shell entry screens as those features.
 
 Consumer shell shared pieces live in `components/shell/`; editorial SVG in `components/editorial/`; preferences/tokens/fonts and browser harness in owned `lib/`. Console shell helpers live in `components/` and `lib/{shell,navigation}.ts`. The console shell contract published earlier remains v1. No operational domain subtree has been created or modified.
+
+## Stage 4 — independent browser verification of the W01 shell (2026-10-05)
+
+Independent run by Mia at the user's request against branch HEAD `472c404f3c34ff3eb59e23256abc77b36fb6da75` ("feat(ui): build consumer and operations shells from design tokens"). This supersedes the Stage 3 browser blocker: the lane's own environment could not launch a browser, so verification ran in a separate browser-capable runtime. No lane code files were touched; only this status file is updated, and only to record results.
+
+### Environment (all validation-only, outside the repository)
+
+- Node `v24.20.0`; `playwright@1.58.2`; `@axe-core/playwright@4.10.2`; Playwright Chromium (`chromium-1208`, headless)
+- Clean checkout of `472c404` with per-app `npm install` (consumer: Next `14.0.4`/React `18.2.0`; console: Next `14.1.0`/React `18.2.0`); `node_modules` never committed, no manifest/workspace/lockfile edits
+- Apps served with `next dev` (consumer `http://127.0.0.1:3000`, console `http://127.0.0.1:3002`); the committed read-only token bridge `docs/design/brandme/contracts/design-tokens.json` was present in the checkout
+- Harness executed unmodified: `node brandme-frontend/lib/testing/verify-shell.mjs` with `BRANDME_TEST_PACKAGE_JSON`, `BRANDME_CONSUMER_URL`, `BRANDME_CONSOLE_URL`, `BRANDME_EVIDENCE_DIR` set per the Stage 3 instructions
+
+### Result: 13 passed, 0 failed (process exit 0)
+
+| # | Check | Result |
+|---|---|---|
+| 1–8 | Consumer + console at 320×844, 390×844, 768×1024, 1440×900: light and dark render, exactly one `main` and one `h1`, no framework error overlay, no horizontal overflow, axe clean (`wcag2a`, `wcag2aa`, `wcag21aa`), no page errors, dark mode flips `--bm-canvas` to `#161817` | `passed` |
+| 9 | Consumer keyboard: skip link is first Tab stop and focuses `#main-content`; mobile menu dialog traps focus across 45 Tabs through Compact/Medium/Full-height snap buttons (each `aria-pressed` verified); Escape closes; focus returns to the `Open menu` trigger; menu `Settings` link routes to `/settings` with the expected heading | `passed` |
+| 10 | Display preferences: dark theme + Reduce motion + Simple View survive reload; in-app reduction removes `.bm-route-content` animation; with in-app reduction off, OS `prefers-reduced-motion` still wins; no `canvas`/`video`; no mediapipe/three/model-viewer/external-font requests | `passed` |
+| 11 | 200% reflow/text: `/today`, `/me`, `/settings` at 720×450 and `/settings` at 320×844 with `font-size: 200%` — no horizontal overflow | `passed` |
+| 12 | Legacy redirects honest: `/shop` → `/discover` and `/stash` → `/closet`; `/discover` and `/me/data` entry screens state the catalog/privacy surface is "not connected" rather than implying readiness | `passed` |
+| 13 | Console mobile menu at 320×844: `Open operations menu` dialog traps focus across 25 Tabs, Escape closes, focus returns to trigger | `passed` |
+
+### Evidence
+
+20 PNG screenshots written by the harness run (kept with the verification run, not committed): `consumer-{320x844,390x844,768x1024,1440x900}-{light,dark}.png`, `console-{320x844,390x844,768x1024,1440x900}-{light,dark}.png`, `consumer-large-text-{today,me,settings}.png`, `consumer-reduced-motion.png`. Spot-checked renders show the consumer editorial shell with labeled fictional 2D illustration and the console operations shell truthfully reporting unconnected access.
+
+Visual observation (not a failure): in the 390×844 consumer full-page capture, the fixed bottom tab bar renders over body copy mid-capture. This is most likely a known full-page-screenshot artifact of `position: fixed` elements, not a real overlap — but the lane should confirm on a real device that content carries enough bottom padding to clear the tab bar.
+
+### What this run does and does not establish
+
+- Establishes: the committed shell renders and hydrates without errors in Chromium at all four required widths, light and dark; no 320px overflow; axe-clean; keyboard/focus behavior as authored; preference persistence; OS reduced-motion precedence; 200% text/reflow; honest unavailable states.
+- Does NOT establish: production-build behavior (this run used `next dev`, not `next build`/`next start` — the lane's own optimized-build evidence stands separately); screen-reader behavior (`not_run`); real-device checks (`not_run`); human visual approval of the screenshots.
+- W01 is NOT marked complete. Still missing: foundation integration (published `packages/design-system` token export/CSS entry, generated client names, supported Next/React tuple — this ran on the baseline 14.0.4/18.2.0 — `on-accent` pairings, persisted theme/motion contract, self-hosted font exports with licenses); screen-reader and device evidence; and all of W03/W05/W06/W07/W10 domain work, which remains `not_run` behind unavailable entry screens.
