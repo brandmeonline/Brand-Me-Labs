@@ -1,0 +1,8 @@
+# Pinned runtime dependencies for the commerce/providers/MCP lane (opus-commerce-agents).
+# To be merged into the shared Python manifest by opus-foundation; versions verified 2026-10-05.
+rfc8785==0.1.4          # RFC 8785 JSON canonicalization for quote hashes
+jsonschema==4.26.0      # tool argument + contract validation (Draft 2020-12)
+PyJWT[crypto]==2.13.0   # MCP access token / executor assertion verification (ES256/RS256)
+cryptography==49.0.0
+jwcrypto==1.5.6         # AP2 SD-JWT (same pin as official AP2 SDK @ e1ea56d)
+sd-jwt==0.10.4          # AP2 SD-JWT (same pin as official AP2 SDK @ e1ea56d)

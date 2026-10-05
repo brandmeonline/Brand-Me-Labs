@@ -1,923 +1,410 @@
-"""
-Brand.Me v9 — MCP Tool Definitions
-==================================
+"""Brand.Me MCP tools and the principal-bound tool executor (ch.05 §4 "MCP surface").
 
-Defines tools exposed via Model Context Protocol for external agents.
-Style Vault is searchable as an MCP tool with ethical oversight.
+Replaces the v9 manifest whose handlers returned fabricated results (random
+"mandate" UUIDs, ``status: completed`` checkouts, ``esg_verified: True``,
+"Sample Garment" cubes). Those names are retired: they are no longer listed and
+return a documented ``tool_retired`` problem with the replacement, if any.
+
+Identity is never taken from tool arguments. The executor receives a verified
+``Principal`` (see ``authz.ExecutorAssertionVerifier``) and every argument
+object is closed (``additionalProperties: false``).
 """
 
+from __future__ import annotations
+
+import hashlib
 import json
-import uuid
+import re
+import time
+import unicodedata
 from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
-from typing import Optional, Dict, Any, List, Callable
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Tuple
 
-from brandme_core.logging import get_logger
+import jsonschema
 
-logger = get_logger("mcp.tools")
+from brandme_core.domains.commerce.errors import CommerceError
+from brandme_core.domains.commerce.principal import Principal
+from brandme_core.domains.commerce.service import CommerceService
+from brandme_core.domains.providers.contracts import CartLineRequest, ProviderError
+from brandme_core.domains.providers.ingestion import price_freshness
+from brandme_core.domains.providers.registry import ProviderRegistry
+
+from .authz import MCP_PROTOCOL_VERSION, AuthError, ExecutorAssertionVerifier
+
+SERVER_NAME = "brandme"
+SERVER_VERSION = "2.0.0"
+
+UUID = {"type": "string", "format": "uuid"}
+REVISION = {"type": "string", "pattern": "^(0|[1-9][0-9]{0,17})$"}
+LINES = {
+    "type": "array", "minItems": 1, "maxItems": 50,
+    "items": {"type": "object", "additionalProperties": False,
+              "required": ["variant_id", "source_variant_ref", "quantity"],
+              "properties": {"variant_id": UUID,
+                             "source_variant_ref": {"type": "string", "minLength": 1, "maxLength": 256},
+                             "quantity": {"type": "integer", "minimum": 1, "maximum": 99}}},
+}
+IDENTITY_ARGUMENTS = frozenset({"user_id", "member_id", "principal", "subject", "owner_id", "delegation_id",
+                                "approved", "approval", "scopes", "scope"})
+UNTRUSTED_TEXT_LIMIT = 2000
 
 
-class ToolCategory(str, Enum):
-    """Categories of MCP tools."""
-    SEARCH = "search"
-    VIEW = "view"
-    TRANSACTION = "transaction"
-    STYLE = "style"
-    LIFECYCLE = "lifecycle"
-    COMMERCE = "commerce"
+def _obj(required: List[str], props: Dict[str, Any]) -> Dict[str, Any]:
+    return {"type": "object", "additionalProperties": False, "required": required, "properties": props}
 
 
-@dataclass
-class MCPTool:
-    """
-    Definition of an MCP tool.
-
-    Tools with requires_esg_check=True trigger Cardano ESG verification
-    before execution. Tools with requires_consent=True verify user consent.
-    """
+@dataclass(frozen=True)
+class ToolSpec:
     name: str
+    title: str
     description: str
-    category: ToolCategory
+    scopes: Tuple[str, ...]
     input_schema: Dict[str, Any]
-    output_schema: Dict[str, Any]
-    requires_consent: bool = True
-    requires_esg_check: bool = False
-    min_trust_score: float = 0.5
-    is_transactional: bool = False
+    mutation: str  # none | draft | approval_request | purchase
+    requires_idempotency_key: bool = False
+    available: bool = True
+    unavailable_reason: Optional[str] = None
 
-
-@dataclass
-class ToolExecutionResult:
-    """Result of tool execution."""
-    success: bool
-    tool_name: str
-    invocation_id: str
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    consent_verified: bool = False
-    esg_check_passed: Optional[bool] = None
-    human_approval_required: bool = False
-    human_approved_by: Optional[str] = None
-    execution_time_ms: float = 0.0
-
-
-# =============================================================================
-# MCP Tool Manifest
-# =============================================================================
-
-class MCPToolManifest:
-    """
-    MCP Tool Manifest for Brand.Me Style Vault.
-
-    Exposes wardrobe and fashion tools to external agents.
-    """
-
-    VERSION = "1.0.0"
-    NAME = "brandme_style_vault"
-    DESCRIPTION = "Search and interact with Brand.Me digital fashion wardrobe"
-
-    TOOLS: List[MCPTool] = [
-        # Search Tools
-        MCPTool(
-            name="search_wardrobe",
-            description="Search user's wardrobe by criteria (material, color, category, ESG score)",
-            category=ToolCategory.SEARCH,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string", "description": "User's ID"},
-                    "query": {"type": "string", "description": "Search query"},
-                    "filters": {
-                        "type": "object",
-                        "properties": {
-                            "material_type": {"type": "string"},
-                            "category": {"type": "string"},
-                            "esg_min_score": {"type": "number", "minimum": 0, "maximum": 1},
-                            "lifecycle_state": {"type": "string", "enum": ["PRODUCED", "ACTIVE", "REPAIR", "DISSOLVE", "REPRINT"]},
-                            "color": {"type": "string"},
-                            "size": {"type": "string"}
-                        }
-                    },
-                    "limit": {"type": "integer", "default": 10, "maximum": 50}
-                },
-                "required": ["user_id"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "items": {"type": "array", "items": {"type": "object"}},
-                    "total_count": {"type": "integer"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=False,
-            min_trust_score=0.3
-        ),
-
-        MCPTool(
-            name="get_cube_details",
-            description="Get detailed information about a specific Product Cube",
-            category=ToolCategory.VIEW,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "cube_id": {"type": "string"},
-                    "include_faces": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "List of faces to include (product_details, esg_impact, etc.)"
-                    }
-                },
-                "required": ["user_id", "cube_id"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "cube_id": {"type": "string"},
-                    "display_name": {"type": "string"},
-                    "faces": {"type": "object"},
-                    "lifecycle_state": {"type": "string"},
-                    "esg_score": {"type": "number"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=False,
-            min_trust_score=0.3
-        ),
-
-        # Style Suggestion Tools
-        MCPTool(
-            name="suggest_outfit",
-            description="Get AI-powered outfit suggestions based on wardrobe and occasion",
-            category=ToolCategory.STYLE,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "occasion": {"type": "string", "description": "e.g., casual, formal, sport"},
-                    "weather": {"type": "string", "description": "e.g., warm, cold, rainy"},
-                    "color_preference": {"type": "string"},
-                    "sustainability_priority": {"type": "boolean", "default": True}
-                },
-                "required": ["user_id", "occasion"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "outfits": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "items": {"type": "array"},
-                                "esg_score": {"type": "number"},
-                                "style_notes": {"type": "string"}
-                            }
-                        }
-                    }
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=False,
-            min_trust_score=0.4
-        ),
-
-        # Transaction Tools (require ESG check)
-        MCPTool(
-            name="initiate_rental",
-            description="Start rental process for a garment",
-            category=ToolCategory.TRANSACTION,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "cube_id": {"type": "string"},
-                    "rental_duration_days": {"type": "integer", "minimum": 1, "maximum": 30},
-                    "rental_price_usd": {"type": "number"},
-                    "renter_id": {"type": "string"}
-                },
-                "required": ["user_id", "cube_id", "rental_duration_days", "renter_id"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "rental_id": {"type": "string"},
-                    "status": {"type": "string"},
-                    "requires_human_approval": {"type": "boolean"},
-                    "esg_verified": {"type": "boolean"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=True,
-            min_trust_score=0.6,
-            is_transactional=True
-        ),
-
-        MCPTool(
-            name="list_for_resale",
-            description="List item on marketplace for resale",
-            category=ToolCategory.TRANSACTION,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "cube_id": {"type": "string"},
-                    "asking_price_usd": {"type": "number"},
-                    "description": {"type": "string"},
-                    "condition": {"type": "string", "enum": ["new", "like_new", "good", "fair"]}
-                },
-                "required": ["user_id", "cube_id", "asking_price_usd"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "listing_id": {"type": "string"},
-                    "status": {"type": "string"},
-                    "requires_human_approval": {"type": "boolean"},
-                    "esg_verified": {"type": "boolean"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=True,
-            min_trust_score=0.6,
-            is_transactional=True
-        ),
-
-        # Lifecycle Tools
-        MCPTool(
-            name="request_repair",
-            description="Request repair for a damaged garment",
-            category=ToolCategory.LIFECYCLE,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "cube_id": {"type": "string"},
-                    "damage_description": {"type": "string"},
-                    "preferred_repair_type": {"type": "string", "enum": ["patch", "restore", "upcycle"]}
-                },
-                "required": ["user_id", "cube_id", "damage_description"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "repair_request_id": {"type": "string"},
-                    "estimated_esg_improvement": {"type": "number"},
-                    "status": {"type": "string"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=False,
-            min_trust_score=0.5
-        ),
-
-        MCPTool(
-            name="request_dissolve",
-            description="Request dissolution for circular economy (requires owner consent)",
-            category=ToolCategory.LIFECYCLE,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "cube_id": {"type": "string"},
-                    "dissolution_method": {"type": "string", "enum": ["chemical", "mechanical", "enzymatic"]},
-                    "facility_id": {"type": "string"}
-                },
-                "required": ["user_id", "cube_id"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "dissolve_request_id": {"type": "string"},
-                    "requires_auth_key": {"type": "boolean"},
-                    "estimated_material_recovery_pct": {"type": "number"},
-                    "status": {"type": "string"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=True,
-            min_trust_score=0.7,
-            is_transactional=True
-        ),
-
-        # AP2 Mandate Tools
-        MCPTool(
-            name="ap2.mandate.create_intent",
-            description="Create an AP2 Intent Mandate for agent commerce",
-            category=ToolCategory.COMMERCE,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "agent_id": {"type": "string"},
-                    "intent_type": {"type": "string"},
-                    "cube_id": {"type": "string"},
-                    "max_amount_usd": {"type": "number"}
-                },
-                "required": ["user_id", "agent_id", "intent_type"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "mandate_id": {"type": "string"},
-                    "status": {"type": "string"},
-                    "mandate_type": {"type": "string"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=False,
-            min_trust_score=0.6,
-            is_transactional=True
-        ),
-        MCPTool(
-            name="ap2.mandate.confirm_cart",
-            description="Confirm cart and emit Cart Mandate",
-            category=ToolCategory.COMMERCE,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "cart_id": {"type": "string"},
-                    "intent_mandate_id": {"type": "string"},
-                    "cart_total_usd": {"type": "number"}
-                },
-                "required": ["user_id", "cart_id", "intent_mandate_id"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "mandate_id": {"type": "string"},
-                    "status": {"type": "string"},
-                    "requires_human_approval": {"type": "boolean"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=True,
-            min_trust_score=0.7,
-            is_transactional=True
-        ),
-        MCPTool(
-            name="ap2.mandate.issue_payment",
-            description="Issue Payment Mandate from confirmed cart",
-            category=ToolCategory.COMMERCE,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "cart_mandate_id": {"type": "string"},
-                    "payment_rail": {"type": "string"},
-                    "payment_amount_usd": {"type": "number"}
-                },
-                "required": ["user_id", "cart_mandate_id", "payment_amount_usd"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "mandate_id": {"type": "string"},
-                    "status": {"type": "string"},
-                    "rail": {"type": "string"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=True,
-            min_trust_score=0.7,
-            is_transactional=True
-        ),
-
-        # ACP Commerce Adapters
-        MCPTool(
-            name="acp.cart.create",
-            description="Create an ACP cart from selected assets/services",
-            category=ToolCategory.COMMERCE,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "items": {"type": "array", "items": {"type": "object"}}
-                },
-                "required": ["user_id", "items"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "cart_id": {"type": "string"},
-                    "status": {"type": "string"},
-                    "item_count": {"type": "integer"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=False,
-            min_trust_score=0.5,
-            is_transactional=False
-        ),
-        MCPTool(
-            name="acp.cart.update",
-            description="Update an existing ACP cart",
-            category=ToolCategory.COMMERCE,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "cart_id": {"type": "string"},
-                    "items": {"type": "array", "items": {"type": "object"}}
-                },
-                "required": ["user_id", "cart_id", "items"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "cart_id": {"type": "string"},
-                    "status": {"type": "string"},
-                    "item_count": {"type": "integer"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=False,
-            min_trust_score=0.5,
-            is_transactional=False
-        ),
-        MCPTool(
-            name="acp.checkout.complete",
-            description="Complete ACP checkout and trigger mandate chain",
-            category=ToolCategory.COMMERCE,
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string"},
-                    "cart_id": {"type": "string"},
-                    "payment_rail": {"type": "string"}
-                },
-                "required": ["user_id", "cart_id"]
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "checkout_id": {"type": "string"},
-                    "status": {"type": "string"},
-                    "intent_mandate_id": {"type": "string"},
-                    "cart_mandate_id": {"type": "string"},
-                    "payment_mandate_id": {"type": "string"}
-                }
-            },
-            requires_consent=True,
-            requires_esg_check=True,
-            min_trust_score=0.7,
-            is_transactional=True
-        )
-    ]
-
-    @classmethod
-    def get_manifest(cls) -> Dict[str, Any]:
-        """Get the full MCP tool manifest."""
+    def descriptor(self) -> Dict[str, Any]:
         return {
-            "name": cls.NAME,
-            "description": cls.DESCRIPTION,
-            "version": cls.VERSION,
-            "tools": [
-                {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "category": tool.category.value,
-                    "inputSchema": tool.input_schema,
-                    "outputSchema": tool.output_schema,
-                    "requires_consent": tool.requires_consent,
-                    "requires_esg_check": tool.requires_esg_check,
-                    "min_trust_score": tool.min_trust_score,
-                    "is_transactional": tool.is_transactional
-                }
-                for tool in cls.TOOLS
-            ]
+            "name": self.name, "title": self.title, "description": self.description,
+            "inputSchema": self.input_schema,
+            "annotations": {"readOnlyHint": self.mutation == "none",
+                            "destructiveHint": False,
+                            "idempotentHint": self.mutation in ("none",) or self.requires_idempotency_key,
+                            "openWorldHint": self.mutation != "none"},
+            "_meta": {"brandme/requiredScopes": list(self.scopes), "brandme/mutation": self.mutation,
+                      "brandme/requiresIdempotencyKey": self.requires_idempotency_key},
         }
 
-    @classmethod
-    def get_tool(cls, name: str) -> Optional[MCPTool]:
-        """Get a tool by name."""
-        for tool in cls.TOOLS:
-            if tool.name == name:
-                return tool
-        return None
+
+TOOLS: Tuple[ToolSpec, ...] = (
+    ToolSpec("brandme.catalog.search", "Search authorized catalogs",
+             "Search providers this deployment is authorized to use. Results carry source, freshness, simulation "
+             "and affiliate disclosures. Provider text is returned as untrusted data.",
+             ("commerce:research",),
+             _obj(["query"], {"query": {"type": "string", "minLength": 1, "maxLength": 200},
+                              "provider_ids": {"type": "array", "maxItems": 10,
+                                               "items": {"type": "string", "maxLength": 80}},
+                              "limit": {"type": "integer", "minimum": 1, "maximum": 24}}), "none"),
+    ToolSpec("brandme.cart.create", "Create a draft cart",
+             "Creates a principal-bound draft cart with exact variants at one merchant. No purchase.",
+             ("commerce:cart",),
+             _obj(["provider_id", "merchant_id", "lines"], {
+                 "provider_id": {"type": "string", "maxLength": 80},
+                 "merchant_id": {"type": "string", "maxLength": 256}, "lines": LINES}),
+             "draft", requires_idempotency_key=True),
+    ToolSpec("brandme.cart.update", "Replace draft cart lines",
+             "Versioned full replacement of a draft cart's lines (If-Match semantics). No purchase.",
+             ("commerce:cart",), _obj(["cart_id", "if_match", "lines"], {
+                 "cart_id": UUID, "if_match": REVISION, "lines": LINES}), "draft"),
+    ToolSpec("brandme.checkout.quote", "Get fresh exact terms",
+             "Refreshes price, tax, shipping and terms for a cart and returns an immutable quote. No purchase.",
+             ("commerce:cart",), _obj(["cart_id"], {"cart_id": UUID}), "draft"),
+    ToolSpec("brandme.purchase.request", "Ask the member to approve",
+             "Creates an approval request for an exact quote. The member approves on Brand.Me's trusted surface; "
+             "this tool cannot approve.", ("commerce:cart",), _obj(["quote_id"], {"quote_id": UUID}),
+             "approval_request"),
+    ToolSpec("brandme.purchase.execute", "Execute an approved purchase",
+             "Submits a purchase that the member already approved for the exact quote, within the delegation's "
+             "limits. Returns accepted, rejected or outcome_unknown — never a fabricated completion.",
+             ("commerce:purchase",), _obj(["operation_id", "approval_id"], {
+                 "operation_id": UUID, "approval_id": UUID}), "purchase", requires_idempotency_key=True),
+    ToolSpec("brandme.order.status", "Provider-observed order status",
+             "Returns operation, order, payment and fulfillment state with last observation time.",
+             ("commerce:research",), _obj(["operation_id"], {"operation_id": UUID}), "none"),
+)
+
+# Specified in ch.05 but owned by other lanes / not wired in this deployment.
+# They are documented here and NOT advertised in tools/list.
+UNAVAILABLE_TOOLS: Dict[str, str] = {
+    "brandme.persona.read": "persona domain not wired to the MCP executor in this deployment",
+    "brandme.persona.propose_update": "persona domain not wired to the MCP executor in this deployment",
+    "brandme.wardrobe.search": "wardrobe domain not wired to the MCP executor in this deployment",
+    "brandme.outfits.suggest": "outfit domain not wired to the MCP executor in this deployment",
+    "brandme.social.request_decision": "requires separate communication authority; not wired",
+    "brandme.rights.transfer_request": "Midnight rights workflow not wired",
+    "brandme.reprint.quote": "reprint workflow not wired",
+    "brandme.reprint.request": "reprint workflow not wired",
+}
+
+# Old names → replacement (None = no successor). Fake implementations retired.
+RETIRED_TOOLS: Dict[str, Optional[str]] = {
+    "ap2.create_intent_mandate": None,
+    "ap2.mandate.create_intent": None,
+    "ap2.mandate.confirm_cart": "brandme.purchase.request",
+    "ap2.mandate.issue_payment": None,
+    "acp.cart.create": "brandme.cart.create",
+    "acp.cart.update": "brandme.cart.update",
+    "acp.checkout.complete": "brandme.purchase.execute",
+    "search_wardrobe": "brandme.wardrobe.search",
+    "get_cube_details": None,
+    "suggest_outfit": "brandme.outfits.suggest",
+    "initiate_rental": None,
+    "list_for_resale": None,
+    "request_repair": None,
+    "request_dissolve": None,
+}
+RETIRED_REASON = {
+    "ap2.create_intent_mandate": "Internal shopping intents are not AP2 credentials. AP2 v0.2 defines Checkout and "
+                                 "Payment mandates only; see brandme_core.domains.commerce.ap2.",
+    "ap2.mandate.create_intent": "Internal shopping intents are not AP2 credentials. AP2 v0.2 defines Checkout and "
+                                 "Payment mandates only; see brandme_core.domains.commerce.ap2.",
+    "ap2.mandate.issue_payment": "Payment mandates are produced only by a member-controlled trusted surface.",
+}
+
+_SPECS = {t.name: t for t in TOOLS}
+_PAN_RE = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
 
 
-# =============================================================================
-# MCP Tool Executor
-# =============================================================================
+def _luhn(digits: str) -> bool:
+    total, alt = 0, False
+    for ch in reversed(digits):
+        n = int(ch)
+        if alt:
+            n = n * 2 - 9 if n > 4 else n * 2
+        total += n
+        alt = not alt
+    return total % 10 == 0
 
-class MCPToolExecutor:
-    """
-    Executes MCP tools with consent and ESG verification.
-    """
 
-    def __init__(
-        self,
-        spanner_pool,
-        consent_verifier,
-        esg_verifier,
-        cube_service_client=None,
-        brain_service_client=None
-    ):
-        """
-        Initialize the tool executor.
+def _contains_payment_credential(value: Any) -> bool:
+    if isinstance(value, str):
+        for m in _PAN_RE.finditer(value):
+            d = re.sub(r"\D", "", m.group())
+            if 13 <= len(d) <= 19 and _luhn(d):
+                return True
+        return False
+    if isinstance(value, Mapping):
+        return any(_contains_payment_credential(k) or _contains_payment_credential(v) for k, v in value.items())
+    if isinstance(value, (list, tuple)):
+        return any(_contains_payment_credential(v) for v in value)
+    return False
 
-        Args:
-            spanner_pool: Spanner connection pool
-            consent_verifier: MCPConsentVerifier instance
-            esg_verifier: ESGVerifier instance
-            cube_service_client: Client for cube service
-            brain_service_client: Client for brain service
-        """
-        self.spanner_pool = spanner_pool
-        self.consent_verifier = consent_verifier
-        self.esg_verifier = esg_verifier
-        self.cube_client = cube_service_client
-        self.brain_client = brain_service_client
 
-        # Tool handlers
-        self._handlers: Dict[str, Callable] = {
-            "search_wardrobe": self._handle_search_wardrobe,
-            "get_cube_details": self._handle_get_cube_details,
-            "suggest_outfit": self._handle_suggest_outfit,
-            "initiate_rental": self._handle_initiate_rental,
-            "list_for_resale": self._handle_list_for_resale,
-            "request_repair": self._handle_request_repair,
-            "request_dissolve": self._handle_request_dissolve,
-            "ap2.mandate.create_intent": self._handle_ap2_create_intent,
-            "ap2.mandate.confirm_cart": self._handle_ap2_confirm_cart,
-            "ap2.mandate.issue_payment": self._handle_ap2_issue_payment,
-            "acp.cart.create": self._handle_acp_cart_create,
-            "acp.cart.update": self._handle_acp_cart_update,
-            "acp.checkout.complete": self._handle_acp_checkout_complete,
+def untrusted_text(text: str, origin: str) -> Dict[str, str]:
+    """Provider/retrieved text is data: normalized, control chars stripped, length-capped, labeled."""
+    clean = "".join(ch for ch in unicodedata.normalize("NFKC", text or "")
+                    if ch in "\n\t" or unicodedata.category(ch)[0] != "C")
+    return {"type": "untrusted_text", "origin": origin, "text": clean[:UNTRUSTED_TEXT_LIMIT]}
+
+
+@dataclass(frozen=True)
+class ToolOutcome:
+    request_id: str
+    tool: str
+    status: str  # ok | error
+    structured_content: Optional[Dict[str, Any]] = None
+    problem: Optional[Dict[str, Any]] = None
+
+    def to_wire(self) -> Dict[str, Any]:
+        out: Dict[str, Any] = {"request_id": self.request_id, "tool": self.tool, "status": self.status}
+        if self.structured_content is not None:
+            out["structured_content"] = self.structured_content
+        if self.problem is not None:
+            out["problem"] = self.problem
+        return out
+
+
+def _problem(status: int, code: str, detail: str, **extra: Any) -> Dict[str, Any]:
+    p = {"type": f"https://brand.me/problems/{code}", "title": code.replace("_", " "), "status": status,
+         "code": code, "detail": detail, "retryable": status in (429, 503)}
+    p.update(extra)
+    return p
+
+
+AuditSink = Callable[[Dict[str, Any]], None]
+
+
+class McpToolExecutor:
+    def __init__(self, *, commerce: CommerceService, registry: ProviderRegistry,
+                 verifier: ExecutorAssertionVerifier, audit: Optional[AuditSink] = None):
+        self.commerce = commerce
+        self.registry = registry
+        self.verifier = verifier
+        self.audit = audit or (lambda record: None)
+        self._invocation_schema = json.loads(_INVOCATION_SCHEMA)
+        self._handlers: Dict[str, Callable[[Principal, Dict[str, Any], Optional[str]], Dict[str, Any]]] = {
+            "brandme.catalog.search": self._catalog_search,
+            "brandme.cart.create": self._cart_create,
+            "brandme.cart.update": self._cart_update,
+            "brandme.checkout.quote": self._checkout_quote,
+            "brandme.purchase.request": self._purchase_request,
+            "brandme.purchase.execute": self._purchase_execute,
+            "brandme.order.status": self._order_status,
         }
 
-    async def execute(
-        self,
-        tool_name: str,
-        agent_id: str,
-        params: Dict[str, Any]
-    ) -> ToolExecutionResult:
-        """
-        Execute an MCP tool.
+    # -- discovery -----------------------------------------------------------
+    @staticmethod
+    def list_tools() -> Dict[str, Any]:
+        """``tools/list`` result: only tools that actually work in this deployment."""
+        return {"tools": [t.descriptor() for t in TOOLS if t.available]}
 
-        Args:
-            tool_name: Name of the tool to execute
-            agent_id: ID of the calling agent
-            params: Tool parameters
+    @staticmethod
+    def server_discover() -> Dict[str, Any]:
+        return {"supportedVersions": [MCP_PROTOCOL_VERSION],
+                "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
+                "capabilities": {"tools": {"listChanged": False}}}
 
-        Returns:
-            ToolExecutionResult with execution details
-        """
-        from google.cloud import spanner
-        import time
-
-        invocation_id = str(uuid.uuid4())
-        start_time = time.time()
-
-        # Get tool definition
-        tool = MCPToolManifest.get_tool(tool_name)
-        if not tool:
-            return ToolExecutionResult(
-                success=False,
-                tool_name=tool_name,
-                invocation_id=invocation_id,
-                error=f"Unknown tool: {tool_name}"
-            )
-
-        user_id = params.get("user_id")
-        if not user_id:
-            return ToolExecutionResult(
-                success=False,
-                tool_name=tool_name,
-                invocation_id=invocation_id,
-                error="user_id is required"
-            )
-
-        # Verify consent
-        consent_verified = False
-        if tool.requires_consent:
-            consent_result = await self.consent_verifier.verify(
-                user_id=user_id,
-                agent_id=agent_id,
-                permission_scope=self._get_permission_scope(tool),
-                tool_name=tool_name
-            )
-            if not consent_result.is_granted:
-                return ToolExecutionResult(
-                    success=False,
-                    tool_name=tool_name,
-                    invocation_id=invocation_id,
-                    error=consent_result.reason or "Consent not granted",
-                    consent_verified=False
-                )
-            consent_verified = True
-
-        # ESG verification for transactional tools
-        esg_check_passed = None
-        human_approval_required = False
-
-        if tool.requires_esg_check:
-            # Get asset's material for ESG check
-            cube_id = params.get("cube_id")
-            if cube_id:
-                material_id = await self._get_asset_material(cube_id)
-                if material_id:
-                    esg_result = await self.esg_verifier.verify_agent_transaction(
-                        asset_id=cube_id,
-                        material_id=material_id,
-                        agent_id=agent_id,
-                        transaction_type=tool.name,
-                        transaction_value_usd=params.get("asking_price_usd", 0) or params.get("rental_price_usd", 0),
-                        user_consent={"min_esg_score": tool.min_trust_score}
-                    )
-                    esg_check_passed = esg_result.is_approved
-                    human_approval_required = esg_result.requires_human_review
-
-                    if not esg_check_passed and not human_approval_required:
-                        return ToolExecutionResult(
-                            success=False,
-                            tool_name=tool_name,
-                            invocation_id=invocation_id,
-                            error=esg_result.reason or "ESG check failed",
-                            consent_verified=consent_verified,
-                            esg_check_passed=False
-                        )
-
-        # Execute tool handler
-        handler = self._handlers.get(tool_name)
-        if not handler:
-            return ToolExecutionResult(
-                success=False,
-                tool_name=tool_name,
-                invocation_id=invocation_id,
-                error=f"No handler for tool: {tool_name}",
-                consent_verified=consent_verified,
-                esg_check_passed=esg_check_passed
-            )
-
+    # -- invocation ----------------------------------------------------------
+    def invoke(self, assertion: str, invocation: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+        """Returns (http_status, body). Authorization failures carry ``www_authenticate``."""
+        started = time.monotonic()
+        request_id = str(invocation.get("request_id", "")) if isinstance(invocation, dict) else ""
         try:
-            result = await handler(params, agent_id)
+            principal = self.verifier.verify(assertion)
+        except AuthError as e:
+            return e.status, {"problem": _problem(e.status, e.error, e.description),
+                              "www_authenticate": e.www_authenticate()}
+        try:
+            jsonschema.Draft202012Validator(self._invocation_schema,
+                                            format_checker=jsonschema.FormatChecker()).validate(invocation)
+        except jsonschema.ValidationError as e:
+            return 400, ToolOutcome(request_id, str(invocation.get("tool", "")) if isinstance(invocation, dict) else "",
+                                    "error", problem=_problem(400, "malformed_invocation", e.message[:300])).to_wire()
+        tool = invocation["tool"]
+        status, outcome = self._dispatch(principal, invocation)
+        self.audit({
+            "request_id": request_id, "tool": tool, "client_id": principal.client_id,
+            "member_ref": hashlib.sha256(principal.member_id.encode()).hexdigest()[:16],
+            "delegation_id": principal.delegation_id, "status": outcome.status,
+            "code": (outcome.problem or {}).get("code"), "duration_ms": int((time.monotonic() - started) * 1000),
+            # Arguments are never logged; only a digest for correlation.
+            "arguments_digest": hashlib.sha256(json.dumps(invocation.get("arguments"), sort_keys=True,
+                                                          default=str).encode()).hexdigest()[:16],
+        })
+        return status, outcome.to_wire()
 
-            execution_time = (time.time() - start_time) * 1000
+    def _dispatch(self, principal: Principal, inv: Dict[str, Any]) -> Tuple[int, ToolOutcome]:
+        rid, tool, args = inv["request_id"], inv["tool"], inv["arguments"]
+        if inv["protocol_version"] != MCP_PROTOCOL_VERSION:
+            return 400, ToolOutcome(rid, tool, "error", problem=_problem(
+                400, "unsupported_protocol_version", "unsupported MCP protocol version",
+                supported=[MCP_PROTOCOL_VERSION]))
+        if inv["environment"] != principal.environment:
+            return 403, ToolOutcome(rid, tool, "error", problem=_problem(403, "environment_mismatch",
+                                                                         "invocation environment mismatch"))
+        if tool in RETIRED_TOOLS:
+            return 410, ToolOutcome(rid, tool, "error", problem=_problem(
+                410, "tool_retired", RETIRED_REASON.get(tool, "This tool returned simulated results and was retired."),
+                replacement=RETIRED_TOOLS[tool]))
+        if tool in UNAVAILABLE_TOOLS:
+            return 501, ToolOutcome(rid, tool, "error", problem=_problem(501, "tool_unavailable", UNAVAILABLE_TOOLS[tool]))
+        spec = _SPECS.get(tool)
+        if spec is None:
+            return 404, ToolOutcome(rid, tool, "error", problem=_problem(404, "unknown_tool", "unknown tool"))
+        if isinstance(args, dict) and IDENTITY_ARGUMENTS & set(args):
+            return 400, ToolOutcome(rid, tool, "error", problem=_problem(
+                400, "identity_argument_rejected",
+                "identity, scope and approval come from authentication, not tool arguments"))
+        if _contains_payment_credential(args):
+            return 400, ToolOutcome(rid, tool, "error", problem=_problem(
+                400, "payment_credential_rejected", "payment card data is never accepted by Brand.Me tools"))
+        try:
+            jsonschema.Draft202012Validator(spec.input_schema, format_checker=jsonschema.FormatChecker()).validate(args)
+        except jsonschema.ValidationError as e:
+            return 400, ToolOutcome(rid, tool, "error", problem=_problem(400, "invalid_arguments", e.message[:300]))
+        missing = sorted(set(spec.scopes) - principal.scopes)
+        if missing:
+            err = AuthError(403, "insufficient_scope", "additional scope required", scope=" ".join(spec.scopes))
+            return 403, ToolOutcome(rid, tool, "error", problem=_problem(
+                403, "insufficient_scope", "additional scope required", required_scopes=list(spec.scopes),
+                www_authenticate=err.www_authenticate()))
+        key = inv.get("idempotency_key")
+        if spec.requires_idempotency_key and not key:
+            return 400, ToolOutcome(rid, tool, "error", problem=_problem(400, "idempotency_key_required",
+                                                                         "this tool requires an idempotency key"))
+        try:
+            content = self._handlers[tool](principal, args, key)
+        except CommerceError as e:
+            return e.status, ToolOutcome(rid, tool, "error", problem=_problem(e.status, e.code, e.detail))
+        except ProviderError as e:
+            return 503, ToolOutcome(rid, tool, "error", problem=_problem(503, f"provider_{e.kind.value}",
+                                                                         "provider unavailable for this operation"))
+        return 200, ToolOutcome(rid, tool, "ok", structured_content=content)
 
-            # Log invocation to Spanner
-            await self._log_invocation(
-                invocation_id=invocation_id,
-                tool_name=tool_name,
-                agent_id=agent_id,
-                user_id=user_id,
-                params=params,
-                success=True,
-                esg_check_passed=esg_check_passed,
-                consent_verified=consent_verified,
-                human_approval_required=human_approval_required
-            )
+    # -- handlers --------------------------------------------------------------
+    def _catalog_search(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
+        self.commerce._active_delegation(p)
+        wanted = set(a.get("provider_ids") or [])
+        now = self.commerce.clock()
+        items, unavailable = [], []
+        for conn in self.registry.all():
+            if wanted and conn.provider_id not in wanted:
+                continue
+            if not conn.can_execute("catalog.search"):
+                unavailable.append({"provider_id": conn.provider_id,
+                                    "reason_code": conn.capability("catalog.search").reason_code,
+                                    "handoff": conn.capability("checkout.handoff").state})
+                continue
+            page = conn.adapter.search(a["query"], limit=a.get("limit", 12))
+            for v in page.items:
+                fresh = price_freshness(v, now)
+                items.append({
+                    "provider_id": v.provider_id, "merchant_id": v.merchant_id,
+                    "source_product_id": v.source_product_id, "source_variant_ref": v.source_variant_id,
+                    "variant_id": _variant_id(conn, v.source_variant_id),
+                    "title": untrusted_text(v.title, f"provider:{v.provider_id}"),
+                    "description": untrusted_text(v.description, f"provider:{v.provider_id}"),
+                    "category": v.category, "size_label": v.size_label, "availability": v.availability,
+                    "observed_price": v.price.to_wire() if v.price else None,
+                    "price_is_quote": False, "price_freshness": fresh.state,
+                    "checked_at": fresh.checked_at.strftime("%Y-%m-%dT%H:%M:%SZ") if fresh.checked_at else None,
+                    "simulation": conn.simulation, "disclosure": conn.disclosure,
+                })
+        return {"items": items, "unavailable_providers": unavailable,
+                "note": "Prices are observations; call brandme.checkout.quote for purchasable terms."}
 
-            logger.info({
-                "event": "mcp_tool_executed",
-                "invocation_id": invocation_id,
-                "tool_name": tool_name,
-                "agent_id": agent_id[:8] + "...",
-                "user_id": user_id[:8] + "...",
-                "success": True,
-                "execution_time_ms": execution_time
-            })
+    def _cart_create(self, p: Principal, a: Dict[str, Any], key: Optional[str]) -> Dict[str, Any]:
+        cart = self.commerce.create_cart(p, provider_id=a["provider_id"], merchant_id=a["merchant_id"],
+                                         lines=[CartLineRequest(**l) for l in a["lines"]], idempotency_key=key)
+        return {"cart_id": cart.id, "revision": str(cart.revision), "status": cart.status}
 
-            return ToolExecutionResult(
-                success=True,
-                tool_name=tool_name,
-                invocation_id=invocation_id,
-                result=result,
-                consent_verified=consent_verified,
-                esg_check_passed=esg_check_passed,
-                human_approval_required=human_approval_required,
-                execution_time_ms=execution_time
-            )
+    def _cart_update(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
+        cart = self.commerce.update_cart(p, a["cart_id"], if_match=int(a["if_match"]),
+                                         lines=[CartLineRequest(**l) for l in a["lines"]])
+        return {"cart_id": cart.id, "revision": str(cart.revision), "status": cart.status}
 
-        except Exception as e:
-            logger.error({
-                "event": "mcp_tool_error",
-                "invocation_id": invocation_id,
-                "tool_name": tool_name,
-                "error": str(e)
-            })
+    def _checkout_quote(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
+        q = self.commerce.quote_cart(p, a["cart_id"])
+        return {"quote": q.to_wire(), "display_total": q.total.display(),
+                "purchase": "not_started", "simulation": self.registry.get(q.provider_id).simulation}
 
-            return ToolExecutionResult(
-                success=False,
-                tool_name=tool_name,
-                invocation_id=invocation_id,
-                error=str(e),
-                consent_verified=consent_verified,
-                esg_check_passed=esg_check_passed,
-                execution_time_ms=(time.time() - start_time) * 1000
-            )
+    def _purchase_request(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
+        op = self.commerce.request_purchase(p, a["quote_id"])
+        return {"operation_id": op.id, "state": op.state,
+                "next": "The member reviews and approves on Brand.Me's trusted approval screen.",
+                "approval_surface": f"/approvals/{op.id}"}
 
-    def _get_permission_scope(self, tool: MCPTool) -> str:
-        """Map tool to permission scope."""
-        scope_map = {
-            ToolCategory.SEARCH: "view_wardrobe",
-            ToolCategory.VIEW: "view_wardrobe",
-            ToolCategory.STYLE: "style_suggest",
-            ToolCategory.TRANSACTION: "transact",
-            ToolCategory.LIFECYCLE: "transact",
-        }
-        return scope_map.get(tool.category, "view_wardrobe")
+    def _purchase_execute(self, p: Principal, a: Dict[str, Any], key: Optional[str]) -> Dict[str, Any]:
+        op = self.commerce.execute_purchase(p, operation_id=a["operation_id"], approval_id=a["approval_id"],
+                                            idempotency_key=key or "")
+        return self._op_status(p, op)
 
-    async def _get_asset_material(self, asset_id: str) -> Optional[str]:
-        """Get primary material ID for an asset."""
-        from google.cloud.spanner_v1 import param_types
+    def _order_status(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
+        self.commerce._active_delegation(p)
+        return self._op_status(p, self.commerce.get_operation(p, a["operation_id"]))
 
-        def _get_material(transaction):
-            results = transaction.execute_sql(
-                """
-                SELECT primary_material_id FROM Assets
-                WHERE asset_id = @asset_id
-                """,
-                params={"asset_id": asset_id},
-                param_types={"asset_id": param_types.STRING}
-            )
-            for row in results:
-                return row[0]
-            return None
+    def _op_status(self, p: Principal, op) -> Dict[str, Any]:
+        out: Dict[str, Any] = {"operation_id": op.id, "state": op.state, "reason_code": op.reason_code}
+        if op.state == "outcome_unknown":
+            out["message"] = "We are checking whether the retailer accepted this order."
+        if op.order_id:
+            o = self.commerce.get_order(p, op.order_id)
+            out["order"] = {"order_id": o.id, "order_status": o.order_status, "payment_status": o.payment_status,
+                            "fulfillment_status": o.fulfillment_status,
+                            "last_observed_at": o.last_observed_at.strftime("%Y-%m-%dT%H:%M:%SZ")}
+        return out
 
-        return self.spanner_pool.database.run_in_transaction(_get_material)
 
-    async def _log_invocation(
-        self,
-        invocation_id: str,
-        tool_name: str,
-        agent_id: str,
-        user_id: str,
-        params: Dict[str, Any],
-        success: bool,
-        esg_check_passed: Optional[bool],
-        consent_verified: bool,
-        human_approval_required: bool
-    ):
-        """Log tool invocation to Spanner."""
-        from google.cloud import spanner
-        from google.cloud.spanner_v1 import param_types
-        import hashlib
+def _variant_id(conn, source_variant_ref: str) -> Optional[str]:
+    fn = getattr(conn.adapter, "variant_id_for", None)
+    return fn(source_variant_ref) if fn is not None else None
 
-        params_hash = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()
 
-        # Get tool_id from MCPTools table
-        def _get_tool_id(transaction):
-            results = transaction.execute_sql(
-                """
-                SELECT tool_id FROM MCPTools
-                WHERE tool_name = @tool_name AND is_active = true
-                LIMIT 1
-                """,
-                params={"tool_name": tool_name},
-                param_types={"tool_name": param_types.STRING}
-            )
-            for row in results:
-                return row[0]
-            return None
+def _load_invocation_schema() -> str:
+    from pathlib import Path
+    return (Path(__file__).with_name("schemas") / "tool_invocation.schema.json").read_text()
 
-        tool_id = self.spanner_pool.database.run_in_transaction(_get_tool_id)
 
-        if tool_id:
-            def _log(transaction):
-                transaction.insert(
-                    table="MCPInvocations",
-                    columns=[
-                        "invocation_id", "tool_id", "agent_id", "user_id",
-                        "input_params_hash", "result_status", "esg_check_passed",
-                        "consent_verified", "human_approval_required", "invoked_at"
-                    ],
-                    values=[(
-                        invocation_id, tool_id, agent_id, user_id,
-                        params_hash, "success" if success else "error",
-                        esg_check_passed, consent_verified, human_approval_required,
-                        spanner.COMMIT_TIMESTAMP
-                    )]
-                )
-
-            self.spanner_pool.database.run_in_transaction(_log)
-
-    # Tool Handlers (stubs - would connect to actual services)
-
-    async def _handle_search_wardrobe(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle wardrobe search."""
-        # Stub implementation - would query Firestore wardrobe
-        return {
-            "items": [],
-            "total_count": 0,
-            "message": "Search functionality via MCP"
-        }
-
-    async def _handle_get_cube_details(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle cube details request."""
-        return {
-            "cube_id": params.get("cube_id"),
-            "display_name": "Sample Garment",
-            "lifecycle_state": "ACTIVE",
-            "faces": {}
-        }
-
-    async def _handle_suggest_outfit(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle outfit suggestion."""
-        return {
-            "outfits": [],
-            "message": "Outfit suggestion via MCP"
-        }
-
-    async def _handle_initiate_rental(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle rental initiation."""
-        return {
-            "rental_id": str(uuid.uuid4()),
-            "status": "pending_human_approval",
-            "requires_human_approval": True,
-            "esg_verified": True
-        }
-
-    async def _handle_list_for_resale(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle resale listing."""
-        return {
-            "listing_id": str(uuid.uuid4()),
-            "status": "pending_human_approval",
-            "requires_human_approval": True,
-            "esg_verified": True
-        }
-
-    async def _handle_request_repair(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle repair request."""
-        return {
-            "repair_request_id": str(uuid.uuid4()),
-            "estimated_esg_improvement": 0.1,
-            "status": "submitted"
-        }
-
-    async def _handle_request_dissolve(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle dissolve request."""
-        return {
-            "dissolve_request_id": str(uuid.uuid4()),
-            "requires_auth_key": True,
-            "estimated_material_recovery_pct": 85.0,
-            "status": "pending_authorization"
-        }
-
-    async def _handle_ap2_create_intent(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle AP2 Intent Mandate creation."""
-        return {
-            "mandate_id": str(uuid.uuid4()),
-            "mandate_type": "intent",
-            "agent_id": agent_id,
-            "status": "issued",
-            "intent_type": params.get("intent_type"),
-            "cube_id": params.get("cube_id")
-        }
-
-    async def _handle_ap2_confirm_cart(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle AP2 Cart Mandate confirmation."""
-        return {
-            "mandate_id": str(uuid.uuid4()),
-            "mandate_type": "cart",
-            "agent_id": agent_id,
-            "status": "pending_human_approval",
-            "requires_human_approval": True,
-            "cart_id": params.get("cart_id")
-        }
-
-    async def _handle_ap2_issue_payment(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle AP2 Payment Mandate issuance."""
-        return {
-            "mandate_id": str(uuid.uuid4()),
-            "mandate_type": "payment",
-            "agent_id": agent_id,
-            "status": "issued",
-            "rail": params.get("payment_rail", "midnight+cardano"),
-            "amount_usd": params.get("payment_amount_usd")
-        }
-
-    async def _handle_acp_cart_create(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle ACP cart creation."""
-        items = params.get("items", [])
-        return {
-            "cart_id": str(uuid.uuid4()),
-            "status": "open",
-            "agent_id": agent_id,
-            "item_count": len(items)
-        }
-
-    async def _handle_acp_cart_update(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle ACP cart update."""
-        items = params.get("items", [])
-        return {
-            "cart_id": params.get("cart_id"),
-            "status": "updated",
-            "agent_id": agent_id,
-            "item_count": len(items)
-        }
-
-    async def _handle_acp_checkout_complete(self, params: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
-        """Handle ACP checkout completion and emit mandate chain IDs."""
-        return {
-            "checkout_id": str(uuid.uuid4()),
-            "status": "completed",
-            "agent_id": agent_id,
-            "intent_mandate_id": str(uuid.uuid4()),
-            "cart_mandate_id": str(uuid.uuid4()),
-            "payment_mandate_id": str(uuid.uuid4())
-        }
+_INVOCATION_SCHEMA = _load_invocation_schema()

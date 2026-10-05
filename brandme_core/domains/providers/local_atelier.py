@@ -127,6 +127,9 @@ class LocalAtelierProvider:
                     availability="in_stock", source_updated_at=epoch,
                     rights_policy_ref="original_demo_asset", description=f"{title}. Fictional demo garment.")
 
+    def variant_id_for(self, source_variant_ref: str) -> str:
+        return variant_uuid(source_variant_ref)
+
     # -- test/operator controls ----------------------------------------------
     def arm(self, behavior: Behavior, **params) -> None:
         with self._lock:

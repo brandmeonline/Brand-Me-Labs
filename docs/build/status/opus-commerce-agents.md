@@ -171,3 +171,28 @@ Design notes recorded for review:
 - Webhooks: provider signature + 5-min replay window, dedupe on `(provider, event_id)`, then source re-read and monotonic merge.
 - Existing CLAUDE.md "passing" suites (`tests/test_consent_graph.py` etc.) do **not** collect in this container
   (missing `google-cloud-*` deps, no emulator). Not this lane's to fix; noted for opus-foundation W00.
+
+## Stage S3 — MCP tool surface, authorization, retired aliases (2026-10-05)
+
+**Code:** `brandme_core/mcp/{tools,authz,__init__}.py`, `brandme_core/mcp/schemas/{tool_invocation,executor_assertion}.schema.json`.
+`brandme_core/mcp/consent.py` unchanged. Dependency pins: `brandme_core/domains/commerce/requirements.txt` (for
+opus-foundation to merge into the shared manifest).
+**Tests:** `tests/test_mcp.py` — 36 passed. Full lane suite: **117 passed**.
+
+**Interface correction to S0:** the principal is **not** in the `ToolInvocation` body. It travels only in the
+gateway-signed executor assertion's `principal` claim (schema `executor_assertion.schema.json`); the body carries
+`request_id, protocol_version, environment, tool, arguments, idempotency_key`. This removes a second, unauthenticated
+copy of identity.
+
+| Item | Status | Evidence |
+|---|---|---|
+| Fake tools retired: `ap2.create_intent_mandate`, `ap2.mandate.create_intent/confirm_cart/issue_payment`, `acp.cart.create/update`, `acp.checkout.complete`, plus v9 stubs (`search_wardrobe`, `get_cube_details`, `suggest_outfit`, `initiate_rental`, `list_for_resale`, `request_repair`, `request_dissolve`) | passed | not listed; each returns 410 `tool_retired` with replacement name (`test_retired_fake_tools_return_documented_problem`) |
+| ch.05 tools implemented: `brandme.catalog.search`, `cart.create`, `cart.update`, `checkout.quote`, `purchase.request`, `purchase.execute`, `order.status` | passed | `test_agent_flow_research_prepare_then_member_approval` |
+| ch.05 tools owned by other lanes (`persona.*`, `wardrobe.search`, `outfits.suggest`, `social.request_decision`, `rights.transfer_request`, `reprint.*`) | not advertised; 501 `tool_unavailable` | `UNAVAILABLE_TOOLS` |
+| Advertised tools match real capability (BM-COM-016) | passed | `test_tools_list_advertises_only_working_tools` |
+| `user_id` impersonation (BM-COM-002) | passed | `test_user_id_argument_cannot_impersonate` |
+| Audience-bound tokens; wrong resource rejected (BM-COM-003) | passed for the Python reference validator and executor hop; **gateway transport `not_run`** (foundation-owned) | `test_wrong_audience_issuer_expiry_key_rejected`, `test_external_token_cannot_be_used_at_executor`, `test_symmetric_and_none_algorithms_rejected` |
+| Executor assertion: ES256 only, ≤60 s, single-use `jti`, environment-bound | passed | `test_assertion_replay_ttl_and_forgery_rejected` |
+| Malicious product text stays data (BM-COM-017) | passed | `test_malicious_product_text_stays_data` |
+| PAN/CVV never accepted or logged (BM-COM-018) | passed (MCP surface) | `test_payment_card_data_rejected_and_never_logged`, `test_audit_records_no_arguments` |
+| MCP interop test against a real client | **not_run** — needs the gateway Streamable HTTP transport |
