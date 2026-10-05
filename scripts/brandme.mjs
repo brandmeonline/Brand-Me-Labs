@@ -24,7 +24,8 @@ const opt = (name, def) => {
 
 const PORTS = { consumer: 3000, gateway: 3001, console: 3002, brain: 8000, policy: 8001, spanner: 9010 };
 const EMULATOR_IMAGE = 'gcr.io/cloud-spanner-emulator/emulator:1.5.28';
-const PY = process.env.BRANDME_PYTHON ?? (existsSync(join(ROOT, '.venv/bin/python')) ? join(ROOT, '.venv/bin/python') : 'python3');
+const VENV_PY = join(ROOT, '.venv/bin/python');
+let PY = process.env.BRANDME_PYTHON ?? (existsSync(VENV_PY) ? VENV_PY : 'python3');
 
 const c = { ok: (s) => `\x1b[32m${s}\x1b[0m`, bad: (s) => `\x1b[31m${s}\x1b[0m`, warn: (s) => `\x1b[33m${s}\x1b[0m`, dim: (s) => `\x1b[2m${s}\x1b[0m` };
 const fail = (msg) => {
@@ -119,14 +120,15 @@ function migrate(env) {
 
 async function setup(mode) {
   console.log(`Brand.Me setup (${mode})`);
-  const problems = checkRuntimes();
-  if (problems.length && !existsSync(join(ROOT, '.venv/bin/python'))) {
+  if (!process.env.BRANDME_PYTHON && !existsSync(VENV_PY)) {
+    // Project venv from the hashed lock (idempotent: skipped when present).
     const uv = capture('uv', ['--version']);
-    if (uv.status === 0) {
-      console.log(c.dim('creating .venv from scripts/python/requirements.lock with uv'));
-      run('uv', ['venv', '-p', '3.11', '.venv']);
-      run('uv', ['pip', 'sync', '--python', '.venv/bin/python', 'scripts/python/requirements.lock']);
-    }
+    const made = uv.status === 0
+      ? run('uv', ['venv', '-p', '3.11', '.venv']).status === 0 && run('uv', ['pip', 'sync', '--python', '.venv/bin/python', 'scripts/python/requirements.lock']).status === 0
+      : run('python3.11', ['-m', 'venv', '.venv']).status === 0 && run(VENV_PY, ['-m', 'pip', 'install', '--require-hashes', '-r', 'scripts/python/requirements.lock']).status === 0;
+    if (!made) fail('could not create .venv from scripts/python/requirements.lock (needs uv or python3.11)');
+    PY = VENV_PY;
+    console.log(c.ok('✓ .venv from scripts/python/requirements.lock'));
   }
   const remaining = checkRuntimes();
   if (remaining.length) fail(`missing prerequisites:\n  - ${remaining.join('\n  - ')}`);
