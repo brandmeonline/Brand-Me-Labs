@@ -68,7 +68,7 @@ CREATE TABLE Sessions (
   environment STRING(16) NOT NULL,
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
   expires_at TIMESTAMP NOT NULL,
-  revoked_at TIMESTAMP,
+  revoked_at TIMESTAMP OPTIONS (allow_commit_timestamp = true),
   CONSTRAINT sessions_assurance CHECK (assurance_level IN ('simulated', 'aal1', 'aal2')),
 ) PRIMARY KEY (session_hash),
   ROW DELETION POLICY (OLDER_THAN(expires_at, INTERVAL 30 DAY));
@@ -87,7 +87,7 @@ CREATE TABLE ConsentGrants (
   revision INT64 NOT NULL,
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
   updated_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
-  revoked_at TIMESTAMP,
+  revoked_at TIMESTAMP OPTIONS (allow_commit_timestamp = true),
   CONSTRAINT consent_state CHECK (state IN ('active', 'revoked', 'expired')),
 ) PRIMARY KEY (member_id, consent_id),
   INTERLEAVE IN PARENT Members ON DELETE CASCADE;

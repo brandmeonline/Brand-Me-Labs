@@ -1,0 +1,43 @@
+{
+  "started_at": "2026-10-05T18:30:02.773Z",
+  "mode": "development",
+  "steps": [
+    {
+      "name": "spanner emulator",
+      "result": "passed",
+      "detail": "already running"
+    },
+    {
+      "name": "migrations to V001",
+      "result": "passed",
+      "detail": ""
+    },
+    {
+      "name": "gateway → brain → Spanner health",
+      "result": "passed",
+      "detail": "[{\"name\":\"gateway.spanner\",\"status\":\"ok\",\"duration_ms\":3346},{\"name\":\"brain.health\",\"status\":\"ok\",\"duration_ms\":30}]"
+    },
+    {
+      "name": "dev session (labelled simulation)",
+      "result": "passed",
+      "detail": "member 642d38a3-63d2-410f-966f-cf0498b6a372"
+    },
+    {
+      "name": "PATCH /me with If-Match + CSRF",
+      "result": "passed",
+      "detail": "etag \"2\""
+    },
+    {
+      "name": "profile survives gateway + brain restart",
+      "result": "passed",
+      "detail": ""
+    },
+    {
+      "name": "outbox events validated + dispatched (Python)",
+      "result": "passed",
+      "detail": "member.created,member.updated"
+    }
+  ],
+  "finished_at": "2026-10-05T18:30:16.052Z",
+  "result": "passed"
+}
