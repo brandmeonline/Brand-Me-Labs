@@ -1,8 +1,10 @@
 # Pinned runtime dependencies for the commerce/providers/MCP lane (opus-commerce-agents).
 # To be merged into the shared Python manifest by opus-foundation; versions verified 2026-10-05.
+# PyJWT CVE-2026-103001 (options-dict mutation) has no fixed release: this lane passes a fresh literal
+# options dict on every decode and never shares/mutates one (brandme_core/mcp/authz.py, commerce/ap2.py).
 rfc8785==0.1.4          # RFC 8785 JSON canonicalization for quote hashes
 jsonschema==4.26.0      # tool argument + contract validation (Draft 2020-12)
-PyJWT[crypto]==2.13.0   # MCP access token / executor assertion verification (ES256/RS256)
-cryptography==49.0.0
-jwcrypto==1.5.6         # AP2 SD-JWT (same pin as official AP2 SDK @ e1ea56d)
+PyJWT[crypto]==2.15.1   # MCP token / executor assertion verification (ES256/RS256); >=2.15 fixes CVE-2026-1022xx/101917/101918
+cryptography==50.0.2    # fixes CVE-2026-69247
+jwcrypto==1.6.1         # AP2 SD-JWT; newer than the AP2 SDK's 1.5.6 pin to fix CVE-2026-39373 (oracle re-verified)
 sd-jwt==0.10.4          # AP2 SD-JWT (same pin as official AP2 SDK @ e1ea56d)

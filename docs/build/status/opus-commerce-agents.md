@@ -300,3 +300,11 @@ scanning; regression test added (`test_uuids_are_not_mistaken_for_card_numbers`,
    `generated/`) — coordinate with opus-foundation since that package is read-only for this lane.
 5. Align gateway routers with foundation `middleware/{session,validation,problem}` and `types.Principal` for mounting in
    `routes/v1/index.ts` (foundation-owned mount).
+
+### S6 addendum — dependency CVEs (Trivy on PR #35)
+Bumped lane pins: PyJWT 2.13.0 → **2.15.1**, cryptography 49.0.0 → **50.0.2**, jwcrypto 1.5.6 → **1.6.1** (deviation from
+the AP2 SDK's 1.5.6 pin, taken for CVE-2026-39373; AP2 tests still pass, and the official-SDK oracle still runs in its
+own pinned venv). PyJWT CVE-2026-103001 has no fixed release; this lane never shares or mutates a decode options dict.
+After the bump: lane + foundation suites 229 passed / 11 skipped; the emulator migration tests 6/6 (they first errored
+because the local emulator had stopped).
+Remaining Trivy alerts on the PR are outside this lane's files (merged foundation lockfiles / existing manifests).
