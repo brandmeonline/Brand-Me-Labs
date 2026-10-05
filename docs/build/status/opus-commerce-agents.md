@@ -271,3 +271,32 @@ no principal), `catalog.search|product`, `provider.*`, `capabilities.effective`,
 1. opus-foundation: MCP Streamable HTTP transport + audience-checking middleware (use `McpAccessTokenValidator` rules as oracle), mount these routers, outbox tables, shared requirements (merge `brandme_core/domains/commerce/requirements.txt`).
 2. This lane next: Spanner repository for the remaining commerce tables; Python internal HTTP adapter; console pages once Lane 5's shell contract exists; TS `packages/provider-contracts` after Lane 1 merges; simulator exchange behavior (BM-COM-011 exchange case).
 3. Founder/operator: Nordstrom program application via Impact and approval evidence; any merchant that supports AP2/ACP/UCP sandbox. No production credentials are in the repo; none were used.
+
+## Stage S6 — Foundation merge reconciliation (2026-10-05)
+
+opus-foundation PR #33 merged into `bench/opus-foundation-20261005` (`3704ec7`, verified by fetch). Merged it into this
+lane branch (merge commit `bdcbad9`, no history rewrite). Only conflict: `brandme_core/domains/__init__.py` (add/add) —
+foundation's version kept.
+
+| Check after merge | Result |
+|---|---|
+| Lane suite (emulator + AP2 oracle) | 158 passed |
+| Lane suite (no external tools) | 149 passed, 9 skipped |
+| `tests/foundation` on the merged tree | 77 passed, 11 skipped |
+| V006/V007 through foundation `runner.py up/status/verify` on top of V001 (emulator 1.5.58) | applied, `verify` exit 0 |
+
+Fix found while re-running: the MCP card-number guard accepted hyphen-separated digit runs, so ~0.3% of random UUIDs
+were refused as card data (flaky `test_agent_flow_research_prepare_then_member_approval`). UUIDs are now stripped before
+scanning; regression test added (`test_uuids_are_not_mistaken_for_card_numbers`, 20 000 random UUIDs, zero hits).
+
+### Reconciliation plan (next lane work, now unblocked)
+1. Replace `brandme_core/domains/commerce/principal.Principal` and `commerce/errors` with `brandme_core.domains.base`
+   (`Principal`, `DomainError` family, `authorize`, `run_command` / `run_idempotent_command`); register commerce/provider
+   event payload schemas with `brandme_core.domains.events.register`; register data categories.
+2. Spanner repositories for V006/V007 through `run_command` (outbox in the same transaction), replacing `InMemoryCommerceStore`.
+3. `packages/provider-contracts`: extend foundation's interfaces with the normalized payload types from
+   `brandme_core/domains/providers/contracts.py` (this lane is now sole writer).
+4. Add commerce/provider API shapes to `packages/contracts` via `scripts/endpoints.mjs` and regenerate (never hand-edit
+   `generated/`) — coordinate with opus-foundation since that package is read-only for this lane.
+5. Align gateway routers with foundation `middleware/{session,validation,problem}` and `types.Principal` for mounting in
+   `routes/v1/index.ts` (foundation-owned mount).
