@@ -147,7 +147,7 @@ services:
 
   gateway:
     <<: *node-service
-    command: ["sh", "-c", "corepack enable && pnpm --filter brandme-gateway dev"]
+    command: ["sh", "-c", "corepack enable && pnpm --filter @brandme/gateway dev"]
     environment:
       BRANDME_MODE: ${BRANDME_MODE:-development}
       PORT: "3001"

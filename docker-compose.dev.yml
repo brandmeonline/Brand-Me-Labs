@@ -22,7 +22,7 @@ services:
     volumes:
       - ./:/app
       - node_modules:/app/node_modules
-    command: ["sh", "-c", "corepack enable && pnpm --filter brandme-console exec next dev -p 3002"]
+    command: ["sh", "-c", "corepack enable && pnpm --filter @brandme/console exec next dev -p 3002"]
     environment:
       BRANDME_GATEWAY_URL: http://gateway:3001
     ports: ["3002:3002"]

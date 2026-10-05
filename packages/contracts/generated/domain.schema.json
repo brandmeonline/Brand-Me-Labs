@@ -1,0 +1,1272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:brandme:design:domain:1.0.0",
+  "title": "Brand.Me core wire contracts",
+  "description": "Implementation requirements, not a claim that corresponding endpoints already exist. Select a definition through $ref.",
+  "$defs": {
+    "Identifier": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "Revision": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,17})$"
+    },
+    "Environment": {
+      "type": "string",
+      "enum": [
+        "demo",
+        "development",
+        "sandbox",
+        "production"
+      ]
+    },
+    "Money": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "amount_minor": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,17})$"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        }
+      },
+      "required": [
+        "amount_minor",
+        "currency"
+      ]
+    },
+    "AxisKey": {
+      "type": "string",
+      "enum": [
+        "temperature",
+        "sport_couture",
+        "expression",
+        "fit_language",
+        "detail",
+        "novelty",
+        "color",
+        "finish",
+        "structure",
+        "setting",
+        "exploration",
+        "utility"
+      ]
+    },
+    "AxisValues": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "temperature": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "sport_couture": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "expression": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "fit_language": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "detail": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "novelty": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "color": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "finish": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "structure": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "setting": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "exploration": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "utility": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "temperature",
+        "sport_couture",
+        "expression",
+        "fit_language",
+        "detail",
+        "novelty",
+        "color",
+        "finish",
+        "structure",
+        "setting",
+        "exploration",
+        "utility"
+      ]
+    },
+    "PersonaChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "axis": {
+          "$ref": "#/$defs/AxisKey"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "locked": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "axis",
+        "value",
+        "locked"
+      ]
+    },
+    "PersonaPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PersonaChange"
+          },
+          "maxItems": 12
+        },
+        "learning_enabled": {
+          "type": "boolean"
+        },
+        "client_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "changes",
+        "client_revision"
+      ]
+    },
+    "PersonaProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "member_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version": {
+          "$ref": "#/$defs/Revision"
+        },
+        "declared_axes": {
+          "$ref": "#/$defs/AxisValues"
+        },
+        "inferred_axes": {
+          "$ref": "#/$defs/AxisValues"
+        },
+        "effective_axes": {
+          "$ref": "#/$defs/AxisValues"
+        },
+        "locked_axes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AxisKey"
+          },
+          "uniqueItems": true,
+          "maxItems": 12
+        },
+        "learning_enabled": {
+          "type": "boolean"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "member_id",
+        "version",
+        "declared_axes",
+        "inferred_axes",
+        "effective_axes",
+        "locked_axes",
+        "learning_enabled",
+        "updated_at"
+      ]
+    },
+    "ClosetPlacement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "wardrobe_item_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "layout_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "room_template_id": {
+          "type": "string",
+          "enum": [
+            "walnut_atelier",
+            "limestone_gallery",
+            "garden_studio"
+          ]
+        },
+        "semantic_group": {
+          "type": "string",
+          "enum": [
+            "rail.left",
+            "rail.right",
+            "shelf.shoes",
+            "shelf.folded",
+            "tray.accessories",
+            "stand.outfit"
+          ]
+        },
+        "slot_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "position_meters": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "rotation_quaternion": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "uniform_scale": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 10
+        },
+        "asset_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "$ref": "#/$defs/Revision"
+        }
+      },
+      "required": [
+        "wardrobe_item_id",
+        "layout_id",
+        "room_template_id",
+        "semantic_group",
+        "slot_id",
+        "position_meters",
+        "rotation_quaternion",
+        "uniform_scale",
+        "asset_revision",
+        "version"
+      ]
+    },
+    "MediaEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fidelity": {
+          "type": "string",
+          "enum": [
+            "P0",
+            "P1",
+            "P2",
+            "P3",
+            "P4"
+          ]
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "member_upload",
+            "licensed_provider",
+            "original_demo",
+            "issuer",
+            "manufacturer"
+          ]
+        },
+        "rights_policy_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "dimensions_calibrated": {
+          "type": "boolean"
+        },
+        "environment": {
+          "$ref": "#/$defs/Environment"
+        }
+      },
+      "required": [
+        "asset_id",
+        "fidelity",
+        "source_type",
+        "rights_policy_ref",
+        "label",
+        "dimensions_calibrated",
+        "environment"
+      ]
+    },
+    "WardrobeItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "member_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "collection": {
+          "type": "string",
+          "enum": [
+            "owned",
+            "want",
+            "on_the_way",
+            "digital",
+            "archive"
+          ]
+        },
+        "product_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "asset_instance_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claim_level": {
+          "type": "string",
+          "enum": [
+            "self_reported",
+            "receipt_backed",
+            "tag_verified",
+            "issuer_attested"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/Revision"
+        }
+      },
+      "required": [
+        "id",
+        "member_id",
+        "title",
+        "collection",
+        "product_id",
+        "asset_instance_id",
+        "claim_level",
+        "version"
+      ]
+    },
+    "DecisionCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subject_type": {
+          "type": "string",
+          "enum": [
+            "wardrobe_item",
+            "catalog_product",
+            "outfit_version"
+          ]
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 280
+        },
+        "recipient_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 1,
+          "maxItems": 12,
+          "uniqueItems": true
+        },
+        "duration_seconds": {
+          "const": 300
+        },
+        "discussion_mode": {
+          "type": "string",
+          "enum": [
+            "blind_until_response",
+            "open"
+          ]
+        }
+      },
+      "required": [
+        "subject_type",
+        "subject_id",
+        "prompt",
+        "recipient_ids",
+        "duration_seconds",
+        "discussion_mode"
+      ]
+    },
+    "DecisionResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "choice": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "pass",
+            "alternative"
+          ]
+        },
+        "alternative_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "choice"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "choice": {
+                "const": "alternative"
+              }
+            },
+            "required": [
+              "choice"
+            ]
+          },
+          "then": {
+            "required": [
+              "alternative_ref"
+            ],
+            "properties": {
+              "alternative_ref": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ShareCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subject_type": {
+          "type": "string",
+          "enum": [
+            "outfit_version",
+            "wardrobe_item",
+            "closet_capsule",
+            "persona_snapshot",
+            "badge"
+          ]
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "audience": {
+          "type": "string",
+          "enum": [
+            "selected_members",
+            "unlisted",
+            "public"
+          ]
+        },
+        "allowed_fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "maxItems": 30
+        },
+        "recipient_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uniqueItems": true,
+          "maxItems": 100
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "subject_type",
+        "subject_id",
+        "audience",
+        "allowed_fields",
+        "recipient_ids",
+        "expires_at"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "audience": {
+                "const": "selected_members"
+              }
+            },
+            "required": [
+              "audience"
+            ]
+          },
+          "then": {
+            "properties": {
+              "recipient_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "catalog.search",
+            "catalog.detail",
+            "catalog.feed",
+            "catalog.images",
+            "catalog.3d",
+            "inventory.read",
+            "price.quote",
+            "cart.create",
+            "cart.update",
+            "checkout.handoff",
+            "checkout.submit",
+            "orders.read",
+            "orders.webhook",
+            "returns.request",
+            "refunds.read",
+            "affiliate.attribution",
+            "receipts.import",
+            "tryon.photo",
+            "tryon.live",
+            "rights.issue",
+            "rights.transfer",
+            "rights.reprint",
+            "manufacture.quote",
+            "manufacture.submit"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "unconfigured",
+            "sandbox",
+            "verified",
+            "degraded",
+            "suspended",
+            "unsupported"
+          ]
+        },
+        "reason_code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "last_checked_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "state",
+        "reason_code",
+        "last_checked_at",
+        "evidence_ref"
+      ]
+    },
+    "ProviderPublic": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          },
+          "maxItems": 50
+        },
+        "country_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "maxItems": 250
+        },
+        "disclosure": {
+          "type": "string",
+          "maxLength": 1200
+        }
+      },
+      "required": [
+        "provider_id",
+        "display_name",
+        "environment",
+        "capabilities",
+        "country_codes",
+        "disclosure"
+      ]
+    },
+    "QuoteLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "variant_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_variant_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "unit_price": {
+          "$ref": "#/$defs/Money"
+        },
+        "line_total": {
+          "$ref": "#/$defs/Money"
+        }
+      },
+      "required": [
+        "variant_id",
+        "source_variant_ref",
+        "quantity",
+        "unit_price",
+        "line_total"
+      ]
+    },
+    "CheckoutQuote": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "provider_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "merchant_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "payee_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "cart_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "cart_revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/QuoteLine"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "subtotal": {
+          "$ref": "#/$defs/Money"
+        },
+        "tax": {
+          "$ref": "#/$defs/Money"
+        },
+        "shipping": {
+          "$ref": "#/$defs/Money"
+        },
+        "discount": {
+          "$ref": "#/$defs/Money"
+        },
+        "total": {
+          "$ref": "#/$defs/Money"
+        },
+        "delivery_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "terms_hash": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "quote_hash": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "environment",
+        "provider_id",
+        "merchant_id",
+        "payee_ref",
+        "cart_id",
+        "cart_revision",
+        "lines",
+        "subtotal",
+        "tax",
+        "shipping",
+        "discount",
+        "total",
+        "delivery_ref",
+        "terms_hash",
+        "quote_hash",
+        "issued_at",
+        "expires_at"
+      ]
+    },
+    "PurchaseRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quote_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "approval_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "delegation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "quote_id",
+        "approval_id",
+        "delegation_id"
+      ]
+    },
+    "ChainOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "network": {
+          "type": "string",
+          "enum": [
+            "local",
+            "preview",
+            "preprod",
+            "mainnet"
+          ]
+        },
+        "contract_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "issue",
+            "prove_control",
+            "transfer",
+            "consume_reprint",
+            "attest_manufacture",
+            "revoke",
+            "recover"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "prepared",
+            "awaiting_wallet",
+            "proving",
+            "submitted",
+            "observed",
+            "reconciling",
+            "finalized",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "request_digest": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "transaction_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_block": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,17})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "network",
+        "contract_ref",
+        "operation",
+        "state",
+        "request_digest",
+        "transaction_id",
+        "observed_block",
+        "updated_at"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "submitted",
+                  "observed",
+                  "finalized"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "transaction_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LicensePermissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "display": {
+          "type": "boolean"
+        },
+        "transfer": {
+          "type": "boolean"
+        },
+        "repair_parts": {
+          "type": "boolean"
+        },
+        "personal_reprint": {
+          "type": "boolean"
+        },
+        "commercial_reprint": {
+          "type": "boolean"
+        },
+        "remaining_quota": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "allowed_manufacturer_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "maxItems": 100
+        },
+        "policy_digest": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "display",
+        "transfer",
+        "repair_parts",
+        "personal_reprint",
+        "commercial_reprint",
+        "remaining_quota",
+        "allowed_manufacturer_ids",
+        "policy_digest",
+        "expires_at"
+      ]
+    },
+    "EventEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "event_type": {
+          "type": "string",
+          "pattern": "^[a-z]+(\\.[a-z_]+)+$"
+        },
+        "schema_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "aggregate_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "aggregate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "aggregate_version": {
+          "$ref": "#/$defs/Revision"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "actor_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "privacy_class": {
+          "type": "string",
+          "enum": [
+            "public",
+            "member_private",
+            "restricted"
+          ]
+        },
+        "payload": {
+          "type": "object",
+          "description": "Must be validated by the registered event-type-specific schema; arbitrary payloads are not accepted at runtime."
+        }
+      },
+      "required": [
+        "event_id",
+        "event_type",
+        "schema_version",
+        "aggregate_type",
+        "aggregate_id",
+        "aggregate_version",
+        "occurred_at",
+        "environment",
+        "actor_ref",
+        "correlation_id",
+        "causation_id",
+        "privacy_class",
+        "payload"
+      ]
+    },
+    "Problem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "format": "uri"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "status": {
+          "type": "integer",
+          "minimum": 400,
+          "maximum": 599
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "instance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "status",
+        "code",
+        "detail",
+        "instance",
+        "request_id",
+        "retryable"
+      ]
+    }
+  }
+}
