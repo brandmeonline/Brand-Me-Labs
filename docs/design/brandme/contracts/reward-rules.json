@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0.0",
+  "status": "proposed_defaults_not_existing_balances",
+  "currency_kind": "nontransferable_application_points",
+  "window_timezone": "UTC",
+  "window_basis": "qualifying_server_event_time",
+  "settlement": "domain_confirmed_event_with_transactional_cause_uniqueness",
+  "cause_key": ["member_id", "rule_id", "rule_version", "qualifying_event_id"],
+  "accounting": {
+    "available_must_be_nonnegative": true,
+    "reserve_balance_and_benefit_inventory_atomically": true,
+    "reversals_are_new_linked_entries": true,
+    "reversal_of_spent_points": "record_recovery_due_without_negative_spendable_balance; offset_future_eligible_credits_under_disclosed_policy",
+    "lifetime_earned_display": "net_eligible_earned_after_reversals; keep gross_and_reversed_history_separately",
+    "member_direct_balance_edit": false
+  },
+  "rules": [
+    {
+      "id": "meaningful_style_setup", "version": 1, "points": 100,
+      "condition": "first_saved_profile_and_first_saved_look_for_member",
+      "maximum_awards_lifetime": 1, "settle_after": "guest_migration_or_authenticated_domain_commit",
+      "exclusions": ["duplicate_account_abuse", "uncommitted_guest_preview"]
+    },
+    {
+      "id": "first_owned_item", "version": 1, "points": 25,
+      "condition": "first_persistent_member_declared_or_evidence_backed_owned_item",
+      "maximum_awards_lifetime": 1, "settle_after": "wardrobe_transaction_committed",
+      "exclusions": ["wishlist_only", "duplicate_creation_retry"]
+    },
+    {
+      "id": "friend_decision_response", "version": 1, "points": 10,
+      "condition": "eligible_unique_nonowner_response_before_server_deadline",
+      "cap_points": 100, "cap_window": "calendar_day",
+      "settle_after": "decision_closed_and_response_eligibility_reconciled",
+      "equal_choice_eligibility": ["yes", "pass", "alternative"],
+      "exclusions": ["self_response", "late_response", "blocked_relationship", "repeated_identical_request_farming"]
+    },
+    {
+      "id": "styling_proposal_accepted", "version": 1, "points": 25,
+      "condition": "different_member_accepts_unique_substantive_outfit_proposal",
+      "cap_points": 100, "cap_window": "calendar_day", "settle_after": "accepted_outfit_version_committed",
+      "exclusions": ["self_acceptance", "duplicate_proposal", "collusive_repeated_acceptance"]
+    },
+    {
+      "id": "catalog_correction_accepted", "version": 1, "points": 50,
+      "condition": "authorized_reviewer_accepts_evidenced_correction",
+      "cap_points": 250, "cap_window": "iso_week", "settle_after": "review_decision_committed",
+      "exclusions": ["unsupported_claim", "duplicate_correction", "self_review"]
+    },
+    {
+      "id": "referral_activated", "version": 1, "points": 50,
+      "condition": "new_verified_account_completes_meaningful_use_with_valid_referral",
+      "maximum_awards_per_referred_member": 1,
+      "settle_after": "activation_and_abuse_checks_complete",
+      "exclusions": ["contact_upload", "invitation_only", "self_referral", "existing_account"]
+    },
+    {
+      "id": "optional_research_contribution", "version": 1, "points": null,
+      "condition": "explicit_campaign_consent_and_valid_contribution",
+      "settle_after": "campaign_acceptance_under_disclosed_terms",
+      "requires_campaign_defined_compensation_and_cap": true,
+      "exclusions": ["implied_consent", "required_core_product_access", "undisclosed_data_reuse"]
+    },
+    {
+      "id": "verified_repair", "version": 1, "points": 50,
+      "condition": "approved_repair_workflow_supplies_unique_valid_completion_evidence",
+      "cap_points": 200, "cap_window": "calendar_month", "settle_after": "repair_attestation_accepted",
+      "exclusions": ["unverified_self_claim", "duplicate_repair_event", "revoked_issuer"]
+    }
+  ],
+  "anti_abuse_policy": {
+    "never_require_biometric_upload_or_wallet_connection_for_points": true,
+    "rules_must_not_reward_positive_purchase_votes_more_than_pass": true,
+    "referral_velocity_and_collusion_limits": "operator_versioned_policy_with_review_and_appeal; do_not_invent_hidden_universal_trust_scores",
+    "timezone_changes_do_not_reset_caps": true,
+    "audit_and_member_dispute_available": true
+  }
+}
