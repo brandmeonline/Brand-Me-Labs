@@ -293,3 +293,10 @@ opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into th
   - register `privacy.deletion.requested/completed` and `chain.operation.observed` with the foundation event registry
   - mount the v1 routers behind foundation's session/OIDC middleware
   - add the API shapes to `packages/contracts`
+
+## Stage 6 — CI fixes (2026-10-05)
+
+- **Correction:** the root `.gitignore` ignores `*.json`. Until `62cde97`, `brandme-chain/contracts/toolchain.json`, `contracts/artifact-manifest.json`, `compiler/contract-info.json` and `evidence/undeployed-2026-10-05T18-51-38-369Z.json` existed only in the working tree. Earlier stages cite them; they are now tracked via `brandme-chain/.gitignore` negations.
+- `9211286`: the indexer provider now gets an explicit `ws` WebSocket, because Node 20 (the regression workflow's runtime) has no global one. A clean clone passes type-check and 58/58 tests on Node 20 and Node 22.
+- `9f242b9`: ported #30's fixes for pnpm setup, gateway test env, and SARIF permissions/v3. Trigger scoping was not ported.
+- Remaining expected red: `regression` → `brandme_frontend` is missing from `pnpm-workspace.yaml`. This is pre-existing, documented in #30, and outside this lane.
