@@ -272,3 +272,24 @@ Tests: `tests/test_rights_cube_filter.py` (2/2). Cube startup itself remains unt
 5. **Console ops pages** (`brandme-console/app/(ops)/{chain,rights,manufacturing,privacy}`): not started. The Lane 5 shell layout contract (`docs/build/status/astra-consumer-ui.md`) does not exist on this branch yet.
 6. Python HTTP service endpoints behind the gateway's `upstream.rights` / `upstream.privacy` are not yet exposed (the domain logic is done; the FastAPI wiring depends on the foundation lane's service layout).
 7. An external Compact/protocol review of commitments and witness handling is required before production.
+
+## Stage 5 — Reconciliation with merged opus-foundation (2026-10-05)
+
+opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into this lane's base (`bench/opus-midnight-rights-20261005` is still `ede63f6`). Preview of integrating the foundation branch (`git merge-tree`):
+
+- **Conflicts:** only root `package.json` and `pnpm-lock.yaml`. Resolution at integration:
+  - keep foundation's scripts, engines and `packageManager pnpm@10.34.6`
+  - point its placeholder `test:midnight:local` / `test:midnight:preprod` scripts at `pnpm --filter @brandme/chain test:midnight:local|preprod`
+  - carry over this lane's `pnpm.overrides` (single ledger-v8 / onchain-runtime instance)
+  - regenerate the lockfile with pnpm 10.34.6
+- **No table collisions** between foundation V001 (15 tables/indexes) and V008/V009. The reserved numbers match the migration runner's reservation table. V008/V009 apply standalone and will run under `runner.py`'s checksum ledger.
+- **Two data-category registries.** Foundation shipped `brandme_core.domains.register_data_category` (callbacks `export(db, member)` / `delete(db, member)`) and its privacy README points domain lanes at it. This lane had published `DomainPrivacyHandler`. Resolution: `brandme_core/domains/privacy/foundation_bridge.py` registers foundation categories with the My Data orchestrator, so either path gets inventory, export, deletion receipt, tombstone and re-delete after restore.
+  - Foundation-style deletes run in their own transactions; the processing freeze already covers the gap.
+  - Domains that need single-transaction deletion implement `DomainPrivacyHandler` directly.
+  - Test: `test_foundation_registered_categories_are_driven_by_my_data`.
+  - Privacy/rights/cube suites now **19/19** on the emulator.
+- **Still to reconcile at integration (needs the foundation code on this base):**
+  - route My Data commands through `run_idempotent_command` + `authorize`
+  - register `privacy.deletion.requested/completed` and `chain.operation.observed` with the foundation event registry
+  - mount the v1 routers behind foundation's session/OIDC middleware
+  - add the API shapes to `packages/contracts`

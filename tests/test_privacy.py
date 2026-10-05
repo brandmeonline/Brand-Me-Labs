@@ -267,3 +267,37 @@ def test_category_deletion_blocks_stale_jobs_but_allows_fresh_ones(setup):
     # A new inference computed from data observed after the deletion is permitted.
     persona.write_inference(db, "m6", "warm_cold", 0.6, basis_time=now() + timedelta(seconds=1))
     assert persona.count(db, "m6") == 1
+
+
+def test_foundation_registered_categories_are_driven_by_my_data(setup):
+    """Bridge for categories registered via the foundation lane's register_data_category()."""
+    from dataclasses import dataclass
+    from typing import Any, Callable, Optional
+    from brandme_core.domains.privacy.foundation_bridge import bridge_foundation_categories
+
+    store: dict[str, list[dict]] = {"m9": [{"item": "denim jacket"}]}
+
+    @dataclass(frozen=True)
+    class FoundationCategory:  # same shape as brandme_core.domains.base.DataCategory
+        name: str
+        domain: str
+        description: str
+        supplied_by: str
+        visible_to: str
+        retention: str
+        tables: tuple
+        export: Optional[Callable[[Any, str], Any]] = None
+        delete: Optional[Callable[[Any, str], None]] = None
+
+    cat = FoundationCategory("wardrobe.items", "wardrobe", "Items in your closet", "member", "member", "Until you delete them",
+                             ("WardrobeItems",), export=lambda db, m: store.get(m, []), delete=lambda db, m: store.pop(m, None))
+    svc, _, _, reg, db = setup
+    assert bridge_foundation_categories(reg, db, [cat]) == 1
+    assert "wardrobe.items" in {c["key"] for c in svc.inventory()}
+    out = svc.export("m9", now(), ["wardrobe.items"])
+    assert out["package"]["categories"]["wardrobe.items"]["records"] == [{"item": "denim jacket"}]
+    receipt = svc.run_deletion(svc.request_deletion("m9", now(), ["wardrobe.items"]))
+    assert "m9" not in store and receipt["categories"]["wardrobe.items"]["status"] == "deleted"
+    store["m9"] = [{"item": "restored from backup"}]
+    svc.reapply_tombstones_after_restore("gs://b/old", now() - timedelta(days=1))
+    assert "m9" not in store

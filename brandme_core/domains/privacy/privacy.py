@@ -202,8 +202,12 @@ class MyDataService:
             steps = self._steps(job_id, key)
             out_records: Optional[DeletionOutcome] = None
             if steps.get("delete_records") != "done":
-                def txn_fn(txn: Any, key: str = key) -> DeletionOutcome:
-                    outcome = handler.delete(txn, ctx, key)
+                # Foundation-style categories delete with their own transaction(s);
+                # the tombstone and step are then recorded in ours.
+                pre = None if getattr(handler, "transactional", True) else handler.delete_outside_txn(self.db, ctx, key)
+
+                def txn_fn(txn: Any, key: str = key, pre: Optional[DeletionOutcome] = pre) -> DeletionOutcome:
+                    outcome = pre if pre is not None else handler.delete(txn, ctx, key)
                     txn.insert("DeletionTombstones", ["subject_ref", "category", "tombstone_id", "deletion_job_id", "record_keys", "created_at"],
                                [[ctx.subject_ref, key, new_id(), job_id, list(ctx.record_keys), pt_commit()]])
                     txn.update("DeletionSteps", ["job_id", "category", "step", "state", "rows_affected", "detail", "updated_at"],
@@ -290,7 +294,10 @@ class MyDataService:
                      for r in snap.execute_sql("SELECT subject_ref, category, tombstone_id, deletion_job_id, record_keys, created_at FROM DeletionTombstones")]
         for t in tombs:
             handler = self.reg.handler_for(t.category)
-            rows += self.db.run_in_transaction(lambda txn, t=t: handler.reapply_tombstone(txn, t))
+            if getattr(handler, "transactional", True):
+                rows += self.db.run_in_transaction(lambda txn, t=t: handler.reapply_tombstone(txn, t))
+            else:
+                rows += handler.delete_outside_txn(self.db, SubjectContext(t.subject_ref, t.deletion_job_id, t.created_at, t.record_keys), t.category).rows_affected
             handler.purge_derived(SubjectContext(t.subject_ref, t.deletion_job_id, t.created_at, t.record_keys), t.category)
             applied += 1
         with self.db.batch() as b:
