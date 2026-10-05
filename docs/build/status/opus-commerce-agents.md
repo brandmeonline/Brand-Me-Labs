@@ -122,3 +122,52 @@ usable by the foundation lane as the conformance oracle, and (c) the JSON schema
 
 ### Next actions
 S1 commerce domain core → S2 providers/local provider/Nordstrom → S3 MCP → S4 AP2 codec → S5 migrations, routes, orchestrator.
+
+## Stage S1+S2 — Commerce core, providers, local provider, Nordstrom gate (2026-10-05)
+
+**Code:** `brandme_core/domains/commerce/{money,quote,principal,delegation,records,store,service,errors}.py`,
+`brandme_core/domains/providers/{contracts,registry,local_atelier,nordstrom,ingestion,url_guard}.py`.
+**Tests:** `tests/test_commerce_quote.py` (23), `tests/test_commerce_purchase.py` (32), `tests/test_providers.py` (26) —
+**81 passed** locally (`python3 -m pytest tests/test_commerce_quote.py tests/test_commerce_purchase.py tests/test_providers.py`),
+Python 3.11.15, pytest 7.4.3 (repo pin), rfc8785 0.1.4, jsonschema 4.26.0. Overspend concurrency test re-run 5× — stable.
+
+Persistence here is `InMemoryCommerceStore` (same transaction contract as Spanner RW transactions). **Not** Spanner-verified:
+no emulator in this container. Any claim below is domain-level evidence only.
+
+| Exit evidence item | Status | Test(s) |
+|---|---|---|
+| Local provider: stock loss | passed (fixture) | `test_stock_loss_blocks_quote_without_substitution`, `test_stock_loss_after_approval_rejected_by_provider` |
+| price change | passed (fixture) | `test_price_change_after_approval_requires_new_quote` |
+| rejected auth | passed (fixture) | `test_rejected_authorization` |
+| timeout-after-accept | passed (fixture) | `test_timeout_after_accept_reconciles_to_one_order` |
+| duplicate webhook | passed (fixture) | `test_duplicate_webhook_applied_once` |
+| partial fulfillment | passed (fixture) | `test_partial_fulfillment_then_full` |
+| refund | passed (fixture) | `test_refund_before_delayed_fulfillment_keeps_facts_independent`, `test_refund_credit_back_follows_grant_policy` |
+| expired quote | passed (fixture) | `test_expired_quote`, `test_expiry_between_approval_and_execution` |
+| Retained references | passed | provider evidence refs kept on `Order.evidence_refs` and in `commerce.order.observed` payloads |
+| Quote canonical hash (RFC 8785, domain `brandme.checkout_quote` v1) + approval binding | passed | `TestQuoteHash::*`, `test_full_purchase_binds_exact_terms_and_emits_wardrobe_incoming` (BM-COM-004) |
+| Price/variant change → old approval rejected (BM-COM-005) | passed | `test_price_change_after_approval_requires_new_quote`, `test_agent_cannot_mutate_approved_terms` |
+| One ISO currency, integer arithmetic | passed | `TestMoney::*`, `test_invalid_arithmetic_currency_expiry_recurrence` |
+| Research/prepare but no purchase without authority (BM-COM-001, -006) | passed | `test_research_mode_*`, `test_prepare_mode_*`, `test_cannot_purchase_without_valid_approval`, `test_agent_cannot_open_challenge_or_approve` |
+| No overspend through concurrency (BM-COM-007) | passed (in-memory lock; Spanner txn `not_run`) | `test_two_agents_cannot_overspend_shared_budget` |
+| Revocation before submission (BM-COM-008) | passed | `test_revocation_before_submission_*`, `test_revocation_racing_submission_stops_unsent_work` |
+| Unknown outcome reconciles, no duplicate (BM-COM-009) | passed | `test_timeout_after_accept_reconciles_to_one_order` |
+| Out-of-order callbacks; payment vs fulfillment independent (BM-COM-010) | passed | refund-before-fulfillment test |
+| Partial shipment / refund / return → wardrobe events (BM-COM-011) | passed for partial + refund + return-not-refund; **exchange** handled in `_apply_observation` (new variant line with `exchanged_from_ref`) but no simulator exchange behavior yet → `not_run` |
+| Unregistered redirect rejected (BM-COM-013) | passed | `test_checkout_redirect_must_be_registered` |
+| Nordstrom: unconfigured gate, no guessed API, link-only path (BM-PROV-001/002) | passed | `test_nordstrom_*`, `test_link_only_path` |
+| Impact sandbox read-only test (BM-PROV-003) | **blocked** — no approved Nordstrom/Impact publisher account; the gate is `partner_approval_required` |
+| Feed replay/deletion (BM-PROV-004), forbidden derivative (‑005), stale price (‑006), SSRF redirect (‑010) | passed | `test_feed_replay_and_tombstone`, `test_forbidden_media_derivative_blocked`, `test_stale_feed_price_*`, `test_redirect_to_private_network_rejected_before_request` |
+| Simulation refused in sandbox/production | passed | `test_simulation_provider_refused_in_production` |
+
+Design notes recorded for review:
+- Approvals come only from a first-party session (`Principal.first_party_session`, no delegation) at `aal2`, through a
+  server-issued single-use challenge (nonce shown only on the trusted surface) bound to the recomputed quote hash.
+- `buy_within_rules` grants **require final human approval**; `require_final_human_approval=False` is refused with
+  `autonomous_not_supported` until a provider + AP2 open-mandate path is verified. A prepared (prepare-mode) purchase is
+  completed by the member's own session; only a buy-within-rules delegation can execute an approved purchase.
+- Budget limits are all-in totals; currency mismatch → `currency_mismatch` (no FX). Reservations commit with approval
+  consumption + submission intent in one transaction before provider I/O; refund credit-back only if the grant says so.
+- Webhooks: provider signature + 5-min replay window, dedupe on `(provider, event_id)`, then source re-read and monotonic merge.
+- Existing CLAUDE.md "passing" suites (`tests/test_consent_graph.py` etc.) do **not** collect in this container
+  (missing `google-cloud-*` deps, no emulator). Not this lane's to fix; noted for opus-foundation W00.
