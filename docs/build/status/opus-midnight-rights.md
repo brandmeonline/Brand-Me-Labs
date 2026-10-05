@@ -143,3 +143,55 @@ Newer packages exist (`compact-runtime 0.20.0`, `midnight-js 5.0.0-rc.*`, `proof
 **`pnpm test:midnight:local`: 55/55 passing**, including a fresh compile and an unchanged manifest (2m31s).
 
 **Deviation (proposed):** a Spanner-backed `OperationStore` is not written yet. Until it exists, `capability` reports writes as disabled outside development (`read_only`), so the in-memory store is never used for sandbox or production writes.
+
+## Stage 3 — W10 My Data framework, rights domain, V008/V009 (2026-10-05)
+
+**Migrations** (`brandme-data/spanner/migrations/`), GoogleSQL, applied to Spanner emulator 1.5.45:
+- `V008_rights.sql`: ChainOperations, RightsIssuers, RightsEntitlements, TransferIntents, LicenseGrants, ManufacturerCapabilities, ReprintJobs, ManufacturerCallbacks (inbox), PassportClaims, with query-specific indexes.
+- `V009_privacy.sql`: ExportJobs, DeletionJobs, DeletionSteps (interleaved), DeletionTombstones, ProcessingFreezes, RestoreRuns.
+- The emulator caught one bug in my own DDL: `DeletionJobs.state` was too narrow for `completed_with_exceptions`. Fixed.
+- V008/V009 assume the opus-foundation lane's migration ledger and V001–V007. No foreign keys to foundation tables, so they apply standalone.
+
+**Published registration interface — for consumer-domains and commerce-agents lanes:**
+`brandme_core/domains/privacy/deletion.py`. Implement `DomainPrivacyHandler` (`categories`, `export`, `delete(txn)`, `purge_derived`, `reapply_tombstone`) and call `register_domain(handler)`. Every writer of personal or derived data must call `assert_processing_allowed(txn, subject_ref, category, basis_time)` inside its own read/write transaction. The registry rejects:
+- undeclared categories
+- wrong domain prefixes
+- `RETAIN_LEGAL` without a stated basis
+
+A worked example implementation lives in `tests/fixtures/privacy/persona_fixture.py` (test-only stand-in; the real persona domain belongs to another lane).
+
+**Orchestrator** (`brandme_core/domains/privacy/privacy.py`, `MyDataService`):
+- Inventory.
+- Export: re-auth required, consistent snapshot, versioned JSON, sha256 receipt. Refuses secret-shaped keys (seed/mnemonic/private_key/…). Points to the separate Midnight private-state backup.
+- Deletion:
+  - the job and the processing freeze commit in one transaction
+  - per-category steps run inside a txn, plus a tombstone
+  - projection/cache purge happens after commit
+  - the receipt is truthful: `deleted` / `not_erasable` (public ledger) / `retained` with its basis / `exception`, plus the backup-expiry date
+- Restore: `reapply_tombstones_after_restore` plus `assert_serving`, which refuses to serve while a restore is unreconciled.
+
+**Rights domain** (`brandme_core/domains/rights/`):
+- `projection.py` projects only Finalized evidence, is idempotent per tx, monotonic in epoch, never reactivates a revoked entitlement, and drops the old member link when control moves.
+- `reprint.py`:
+  - ch.04 §7 state machine
+  - `rights_consumed` only from a Finalized chain operation
+  - manufacturer callbacks are exactly-once through a (manufacturer, callback_id) inbox written in the same txn as the effect
+  - units advance in order and never past the quantity
+  - no automatic quota restore
+- `passport.py`: versioned claim-level read API (`brandme.passport.claims/v1`), one statement per claim with assurance, source, environment, network/test-network flag, expiry/revocation, "what this means", and server-side visibility filtering.
+- `privacy_handler.py` registers the rights categories. Control links are erased, transfers deleted, reprint jobs retained with the member reference removed, chain commitments reported as not erasable.
+
+**Tests** (`tests/test_privacy.py`, `tests/test_rights.py`): **16/16 passing on the Spanner emulator**:
+- export receipt and secret-content guard
+- deletion propagates to projections/caches (old reads no longer leak)
+- truthful receipt with exceptions
+- tombstones reapply after restore from an older backup, and serving is blocked until they are
+- account deletion vs. a queued inference job, both commit orders refused/removed
+- stale-basis category jobs blocked while fresh ones are allowed
+- duplicate manufacturer callbacks applied exactly once
+- finalized-only projection
+- passport visibility filtering
+
+**Stated limit:** the emulator allows one read/write transaction at a time, so a truly overlapping deletion/inference interleaving can't be reproduced there. Correctness in that case rests on Spanner's serializable isolation: the guard reads the freeze row inside the writer's transaction. Re-run on an authorized disposable Cloud Spanner database before production.
+
+**Run:** start the emulator (`docker run -p 9010:9010 gcr.io/cloud-spanner-emulator/emulator:1.5.45`), then `pytest tests/test_privacy.py tests/test_rights.py` (google-cloud-spanner 3.40.1 as pinned in `brandme_core/requirements.txt`).
