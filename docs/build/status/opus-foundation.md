@@ -39,3 +39,23 @@ V002 persona · V003 wardrobe · V004 social · V005 rewards · V006 providers �
 
 ## Global rules (all lanes)
 Never edit another lane's owned files. Never edit `docs/design/brandme/**` or `contracts/**`. Fixtures stay in per-lane `tests/fixtures/<domain>/`. No `latest` tags — pin everything. Demo adapters carry visible simulation labels. Production boot fails closed.
+
+---
+
+# Status log (opus-foundation lane)
+
+Working branch: `claude/opus-foundation-w00-2hgiw5`. Session harness designates this branch; `bench/opus-foundation-20261005` points at the same base commit `e4f1342`. Base: spec baseline `0f5f58a` + docs `4511236`, `e4f1342` — no application-code drift from the audited baseline.
+
+## Stage W00 — audit, baseline, honest modes (in progress)
+
+| Item | State | Evidence |
+|---|---|---|
+| Baseline test report (actual execution) | done | `docs/build/evidence/w00/baseline-test-report.md` + raw outputs |
+| Trust-path fixture inventory (~60 sites, file:line) | done | `docs/build/evidence/w00/trust-path-fixtures.md` |
+| `BRANDME_MODE` + production/sandbox fail-closed guard | done | `brandme_core/config.py`; `python -m brandme_core.config preflight --service X` |
+| Mode-guard negative tests (BM-BASE-002) | passing (47 tests) | `tests/foundation/test_mode_guard.py` |
+| Compose rewritten: parses, port map, preflight before each Python service | done (config-validated; full container boot not yet executed) | `docker compose config` |
+| Hashed Python lock for the dev image | done | `scripts/python/requirements.lock` |
+
+Cross-lane edits (flag for parent review):
+- `brandme_core/spanner/pool.py`: additive read-only `database` property. Without it, all 49 `pool.database` call sites raise `AttributeError` and brain `/health` is 503 (baseline F8). No behavior change otherwise.

@@ -1,0 +1,1 @@
+failed to parse /home/user/Brand-Me-Labs/docker-compose.yml: yaml: construct errors: line 12: line 84: mapping key "spanner-emulator" already defined at line 20
