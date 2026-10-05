@@ -6,3 +6,9 @@ coverage/
 # Their sha256 values are pinned in contracts/artifact-manifest.json.
 contracts/managed/**/keys/*.prover
 .midnight-state/
+# The root .gitignore ignores *.json; these are pinned toolchain/artifact
+# metadata and committed network evidence, and must be tracked.
+!contracts/toolchain.json
+!contracts/artifact-manifest.json
+!contracts/managed/**/*.json
+!evidence/*.json
