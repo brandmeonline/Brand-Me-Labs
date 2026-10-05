@@ -13,9 +13,9 @@
  */
 
 import { createHash } from 'crypto';
-import { logger } from '../config/logger';
-import { getCardanoTxBuilder, CardanoTxData } from './cardano-tx-builder';
-import { getMidnightClient, MidnightTxData } from './midnight-client';
+import { logger } from '../config/logger.js';
+import { getCardanoTxBuilder, CardanoTxData } from './cardano-tx-builder.js';
+import { getMidnightClient, MidnightTxData } from './midnight-client.js';
 
 /**
  * Build and submit Cardano transaction

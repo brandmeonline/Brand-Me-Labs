@@ -12,15 +12,15 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import { config } from './config';
-import { logger } from './config/logger';
-import { errorHandler } from './middleware/errorHandler';
-import { requestLogger} from './middleware/requestLogger';
-import txRouter from './routes/tx';
-import healthRouter from './routes/health';
-import { initCardanoWallet } from './services/cardano-wallet';
-import { initCardanoTxBuilder } from './services/cardano-tx-builder';
-import { initMidnightClient } from './services/midnight-client';
+import { config } from './config/index.js';
+import { logger } from './config/logger.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { requestLogger} from './middleware/requestLogger.js';
+import txRouter from './routes/tx.js';
+import healthRouter from './routes/health.js';
+import { initCardanoWallet } from './services/cardano-wallet.js';
+import { initCardanoTxBuilder } from './services/cardano-tx-builder.js';
+import { initMidnightClient } from './services/midnight-client.js';
 
 const app = express();
 

@@ -7,8 +7,8 @@
 import { Router, Request, Response } from 'express';
 import type { Router as IRouter } from 'express';
 import { z } from 'zod';
-import { logger } from '../config/logger';
-import { buildCardanoTx, buildMidnightTx, computeCrossChainRootHash } from '../services/blockchain';
+import { logger } from '../config/logger.js';
+import { buildCardanoTx, buildMidnightTx, computeCrossChainRootHash } from '../services/blockchain.js';
 
 const router: IRouter = Router();
 

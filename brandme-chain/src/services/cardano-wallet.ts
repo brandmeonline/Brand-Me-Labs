@@ -3,7 +3,7 @@
  * Keeps startup wiring stable while wallet logic lives in tx-builder service.
  */
 
-import { logger } from '../config/logger';
+import { logger } from '../config/logger.js';
 
 export interface CardanoWalletConfig {
   network: string;

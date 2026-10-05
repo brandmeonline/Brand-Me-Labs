@@ -16,9 +16,9 @@
 import * as CardanoWasm from '@emurgo/cardano-serialization-lib-nodejs';
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js';
 import { createHash } from 'crypto';
-import { logger } from '../config/logger';
+import { logger } from '../config/logger.js';
 // @ts-expect-error - Reserved for future use when Cardano SDK is integrated
-import { getCardanoWallet } from './cardano-wallet';
+import { getCardanoWallet } from './cardano-wallet.js';
 
 export interface CardanoTxData {
   scanId: string;

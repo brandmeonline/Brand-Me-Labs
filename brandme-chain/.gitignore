@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+.compact/
+# Prover keys are ~5 MB each and deterministic; regenerate with `pnpm compact:compile`.
+# Their sha256 values are pinned in contracts/artifact-manifest.json.
+contracts/managed/**/keys/*.prover
+.midnight-state/

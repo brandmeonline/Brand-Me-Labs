@@ -23,7 +23,7 @@
  */
 
 import { createHash } from 'crypto';
-import { logger } from '../config/logger';
+import { logger } from '../config/logger.js';
 
 export interface MidnightTxData {
   scanId: string;
