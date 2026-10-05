@@ -91,3 +91,20 @@ Command: `python3 -m pytest tests/test_persona_model.py tests/test_persona_recom
 | BM-PER-001/004 (browser inspector, stale preview ordering in UI) | not_run — UI lanes; server returns `client_revision` echo on preview for the client to drop stale responses | — |
 
 Next: persona FastAPI router + gateway `persona.ts` (unmounted), guest migration (BM-ONB-004), then wardrobe (W04).
+
+## Foundation merge notice — 2026-10-05 19:53 UTC
+PR #33 (opus-foundation W00–W02) is merged into **`bench/opus-foundation-20261005` @ `25dff5c`**. This lane's base, `bench/opus-consumer-domains-20261005`, is still at `5d919ab` and does not contain it. Reconciliation therefore happens when the parent moves this lane's base onto the foundation tip, or merges the foundation tip into it. This lane does not copy foundation-owned files into its branch.
+
+Reconciliation checklist, from reading `25dff5c`:
+| Interim piece here | Foundation equivalent | Compatibility |
+|---|---|---|
+| `kernel.write_outbox` (18 columns) | `brandme_core.events.write_events` + `EventEnvelope` + `domains.events.register` (closed JSON-schema payloads) | Insert columns match V001 `OutboxEvents`. **Shard key differs**: here `aggregate_id`, foundation `event_id`; switch to foundation. Re-register the 4 persona event types as closed schemas. The foundation `FORBIDDEN_PAYLOAD_KEYS` list includes `declared_axes`/`persona`; persona payloads already carry only refs, version and axis *names*. |
+| `kernel.idempotency_lookup/store` (`response` column) | `run_idempotent_command` against V001 `IdempotencyRecords(state, response_status, response_body, resource_ref)` | **Incompatible columns.** Must switch to `run_idempotent_command` before running on V001. |
+| `kernel.Principal(member_id, scopes, environment, ...)` | `base.Principal(member_id, subject, session_id, client_id, scopes, assurance_level, environment, delegation_id)` | Field superset; adapt constructor. `actor_ref` is the same format. |
+| `kernel.VersionConflict` code `version_conflict` | `base.VersionConflict` code `revision_conflict` (+ `PreconditionRequired` 428 for a missing If-Match) | Adopt the foundation codes. Keep the mergeable-conflict extras (`mergeable`, `conflicting_axes`) as problem extension members. |
+| `kernel.run_txn` emulator rollback retry (PD-04) | `base.run_command` | Check whether `run_command` covers the emulator's discarded-transaction errors. If not, propose PD-04 to foundation rather than wrapping it. |
+| `deletion.py` (`DATA_CATEGORIES`, `export_member`, `delete_member`) | `base.register_data_category(DataCategory)` | Wrap the existing export/delete functions in a `DataCategory` registration. |
+| Missing FK to Members (PD-02) | V001 `Members(member_id)` exists | Add interleave/FK to `Members` in V002 before V002 is applied anywhere (it is unapplied, so editing it is still allowed). |
+| `tests/fixtures/persona/interim_foundation.sql` + harness | `brandme-data/spanner/migrations/runner.py` + V001 | Delete the interim DDL. The harness should run V001→V005 via the runner. |
+
+Development continues on the interim shims until the base moves. The next stages write new code behind thin seams (Principal, outbox, idempotency) so the switch-over touches only `kernel.py`.
