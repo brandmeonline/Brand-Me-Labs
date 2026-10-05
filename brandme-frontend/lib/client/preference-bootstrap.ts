@@ -1,0 +1,2 @@
+// Local presentation only. No identity, credentials or domain state.
+export const preferenceBootstrap = `(function(){try{var p=JSON.parse(localStorage.getItem('brandme:experience:v1')||'{}'),d=document.documentElement;if(['light','dark','system'].includes(p.theme))d.dataset.bmTheme=p.theme;if(p.motion==='reduce')d.dataset.bmMotion='reduce';if(p.highContrast===true)d.dataset.bmContrast='high';if(p.simpleView===true)d.dataset.bmSimpleView='true'}catch(e){}})()`

@@ -68,3 +68,63 @@ Never edit another lane's owned files. Never edit `docs/design/brandme/**` or `c
 ### Evidence at this stage
 
 Inspection only. Shell build, screenshots, keyboard, motion, dark mode and zoom: `not_run`. Full onboarding migration, persona persistence, decision deadline, checkout and privacy flows: `not_run` / waiting for domain integration. No production or provider verification claimed.
+
+## Stage 2 — W01 shell implementation (2026-10-05)
+
+- Consumer: editorial introduction and Today example, Me directory, functional display settings, primary/mobile navigation, desktop inspector, accessible Radix dialog, skip link, focus transfer, offline notice, loading/error/not-found states. `/shop` → `/discover`; `/stash` → `/closet`. Spatial destinations are links only; this branch does not supply their pages.
+- Added explicit unavailable entry screens for later consumer stages. They are **not completed domain features** and do not create profiles, votes, points, purchases, connections, exports or deletion receipts. Full lane exit remains pending those integrations.
+- Tokens are generated at render from the untouched specification JSON; no duplicated palette. Manrope 400/500/600/700 and Cormorant Garamond 500 Latin WOFF2 files are self-hosted under owned `lib/fonts/`, with both upstream OFL licenses (Fontsource packages `5.2.6`). Original inline SVG is labeled a fictional 2D style illustration, never a calibrated fit preview or actual spatial wardrobe.
+- Theme (automatic/light/dark), reduced motion, stronger contrast and Simple View preferences use a versioned, device-local presentation record. OS reduced motion always wins; other lanes can consume `useExperiencePreferences()`. Simple View is a requested preference; spatial behavior is not verified in this branch.
+- Console root implements contract v1 and no domain API reads. Root overview truthfully reports unconnected access; no fabricated operator role/provider verification. Legacy console API/helpers exist but are hidden by global `lib/` ignore rules; they are preserved unchanged, as are legacy `/proof/**` and `/dashboard/**` pages.
+- Baseline type checks passed for both apps. Browser/build checks next. Validation dependencies are installed outside the repository; no manifest, workspace or lockfile edits. Baseline Next 14.0.4 is obsolete and must be replaced by foundation's supported tuple before release; successful baseline rendering will not satisfy the supported-toolchain gate.
+- New source files under ignored `lib/` paths must be explicitly staged. Generated build output, temporary tooling and local `node_modules` symlinks are never committed.
+
+## Stage 3 — shell build and HTTP verification / visual gate blocked (2026-10-05)
+
+**Current disposition: shell implementation delivered for integration; W01 exit is NOT complete. Full consumer lane is NOT complete.** The user asked to begin with the shell; subsequent work remains W03/W05/W06/W07/W10 as specified above.
+
+### Executed evidence
+
+| Check | Result | Evidence / scope |
+|---|---|---|
+| Consumer TypeScript and optimized Next build | `passed` | `next build`: all 21 build entries generated; `/`, `/today`, `/me`, `/settings` and honest unavailable entry screens compile. Baseline tuple below, not the required supported upgrade. |
+| Console TypeScript and optimized Next build | `passed` | Root shell and existing dashboard/proof routes compile. Root uses `force-dynamic` so runtime environment and future sessions are not frozen into build-time HTML. |
+| HTTP render smoke | `passed` | Production-mode servers: 14 consumer entry routes + console `/` returned 200, exactly one main and one h1, and both light/dark token sets in delivered HTML. This proves server rendering, not hydration or visual quality. |
+| Font delivery | `passed` | All five self-hosted WOFF2 assets returned 200 with nonempty payload in each app. Both OFL licenses are checked in. Fonts total about 88 KiB on disk. |
+| Legacy redirects | `passed` | GET and HEAD `/shop` → `/discover`, `/stash` → `/closet`, HTTP 307. Initial page-based redirects returned 200 with streamed redirect markup; replaced with explicit route handlers and rechecked. `/closet` is still supplied by the spatial lane. |
+| Runtime console mode | `passed` | Built without a mode, then served with `BRANDME_MODE=sandbox`: HTTP HTML displayed `sandbox environment`. No capability verification implied. |
+| Static text-token contrast | `passed` | All 24 ink/muted/accent/forest/amber/error on canvas/surface combinations across light/dark are at least 4.5:1. Does not substitute for rendered contrast testing. |
+| Legacy consumer fixture disclosure | `passed` | `/scan` HTTP output contains the new explicit legacy simulation notice. Existing scan/governance implementation remains unverified. |
+| Whitespace, harness syntax, lane boundaries | `passed` | `git diff --check`; `node --check brandme-frontend/lib/testing/verify-shell.mjs`; no changes to protected spatial routes/features, design/contracts/packages, backend trees, manifests/workspace/lockfile, or legacy console pages/API helpers. |
+| 390×844 / 768×1024 / 1440×900 + 320px overflow | `blocked` | No browser screenshots obtained; cannot assert no overflow or visual approval. |
+| Keyboard, focus restoration, sheet sizes, dark/reduced motion, 200% zoom/text | `blocked` | Implemented and harness authored; browser execution unavailable. Actual device/screen-reader checks remain `not_run`. |
+
+Consumer validation uses Node `24.19.0`, Next `14.0.4`, React/React DOM `18.2.0`, TypeScript `5.3.3`, Tailwind `3.4.0`, Radix Dialog `1.0.5`, Lucide `0.294.0`. An initial console build used that consumer tuple; it was replaced by a separate successful install/build using the console's own declared minima: Next/eslint-config-next `14.1.0`, React/React DOM `18.2.0`, TypeScript `5.3.3`, Tailwind `3.4.0`, Radix Dialog `1.0.5`, Lucide `0.309.0`. No claim of clean-checkout reproducibility or supported release readiness. Dependency upgrades/lockfile changes remain with foundation.
+
+Browser blocker: agent-browser `0.38.2` failed to start its daemon. Direct Playwright/Chromium then identified the concrete sandbox restriction: `socket() failed: Operation not permitted`. Automatic approval policy rejected the requested browser escalation (`sandbox_approval: false`). That execution restriction was not bypassed. Builds and HTTP/static checks were completed as a safer alternative. No screenshots or browser pass results are fabricated.
+
+### Browser gate ready to execute
+
+`brandme-frontend/lib/testing/verify-shell.mjs` checks both shells at four widths in light/dark, axe accessibility, landmarks, keyboard skip, modal focus containment/Escape, the three mobile panel heights, persistent display settings, OS reduced-motion precedence, large text/reflow, fonts/heavy-dependency behavior, and legacy redirects. It writes screenshots only when actually run. Syntax checked; browser cases **not executed** here.
+
+In a browser-capable environment with the apps running and validation-only `playwright@1.58.2` / `@axe-core/playwright@4.10.2` installed (exact versions, no repository manifest changes from this lane):
+
+```bash
+BRANDME_TEST_PACKAGE_JSON=/absolute/path/to/validation/package.json \
+BRANDME_CONSUMER_URL=http://127.0.0.1:3000 \
+BRANDME_CONSOLE_URL=http://127.0.0.1:3002 \
+BRANDME_EVIDENCE_DIR=/absolute/path/to/shell-evidence \
+node brandme-frontend/lib/testing/verify-shell.mjs
+```
+
+With dependencies installed by the foundation workspace, launch in separate terminals with `pnpm --dir brandme-frontend exec next dev -p 3000` and `pnpm --dir brandme-console exec next dev -p 3002`. The workspace/install gate is still blocked on foundation; these commands are not a fresh-checkout setup claim.
+
+### Acceptance / next integration order
+
+1. Foundation: provide supported pinned workspace/toolchain, `packages/design-system` token/font exports, generated API clients, and server session/guest migration interfaces. Replace the temporary specification-token/font bridge; do not edit the protected package from this lane. Provide CSP nonce handling for the small pre-paint preference script when the app CSP is introduced.
+2. Browser-capable runner: execute the harness and inspect/fix every screenshot. `BM-VIS-001`, `BM-VIS-002`, `BM-VIS-012`, shell portions of `BM-OPS-002` and `BM-OPS-009` remain `blocked`; no whole criterion is marked passed from a static check. Large-text reflow in the harness is an equivalent viewport test, not evidence of actual browser zoom or a real-device accessibility review.
+3. Spatial lane: use the shell-owned provider (import hook from `lib/client/experience-preferences`) and publish the preview/editor API. It returns conservative reduced motion until the OS preference is known. CSS also respects OS reduction. Three mobile sheet heights are 40/70/full usable viewport; keyboard buttons are an equivalent to dragging. No spatial rendering is included in this shell stage.
+4. W03: implement real onboarding/guest migration and all 12 Looking Glass axes through generated domain clients. All `BM-ONB-*` and `BM-PER-*` remain `not_run`; current `/start` and `/me/style` pages are explicit unavailable states.
+5. W05/W06/W07/W10: wire actual social deadlines/audiences/rewards, discovery, deterministic approvals/orders, and My Data controls. All related domain acceptance IDs remain `not_run`. Do not count these shell entry screens as those features.
+
+Consumer shell shared pieces live in `components/shell/`; editorial SVG in `components/editorial/`; preferences/tokens/fonts and browser harness in owned `lib/`. Console shell helpers live in `components/` and `lib/{shell,navigation}.ts`. The console shell contract published earlier remains v1. No operational domain subtree has been created or modified.

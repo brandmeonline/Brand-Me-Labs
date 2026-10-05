@@ -1,13 +1,20 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import Header from '@/components/Header'
-
-const inter = Inter({ subsets: ['latin'] })
+import { AppShell } from '@/components/shell/app-shell'
+import { ExperiencePreferencesProvider } from '@/lib/client/experience-preferences'
+import { preferenceBootstrap } from '@/lib/client/preference-bootstrap'
+import { designTokenCss } from '@/lib/design-tokens'
+import { bodyFont, displayFont } from '@/lib/fonts'
 
 export const metadata: Metadata = {
-  title: 'Brand.Me - Authentic Fashion Identity',
-  description: 'Integrity platform for fashion objects',
+  title: { default: 'Brand.Me — Be More U', template: '%s · Brand.Me' },
+  description:
+    'A wardrobe that feels like you. Shape your style and keep your choices yours.',
+}
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
@@ -16,14 +23,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <div className="min-h-screen bg-black text-white">
-          <Header />
-          <main className="max-w-screen-xl mx-auto p-6 space-y-8">
-            {children}
-          </main>
-        </div>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <style
+          id="brandme-design-tokens"
+          dangerouslySetInnerHTML={{ __html: designTokenCss() }}
+        />
+        <script dangerouslySetInnerHTML={{ __html: preferenceBootstrap }} />
+      </head>
+      <body className={`${bodyFont.variable} ${displayFont.variable}`}>
+        <ExperiencePreferencesProvider>
+          <AppShell>{children}</AppShell>
+        </ExperiencePreferencesProvider>
       </body>
     </html>
   )
