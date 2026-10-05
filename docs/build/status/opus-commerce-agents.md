@@ -224,3 +224,50 @@ from the internal quote hash. Open mandates and `~~` chains → `unsupported_cha
 
 Oracle reproduction: `python3 -m venv /tmp/ap2venv && /tmp/ap2venv/bin/pip install -e <AP2 checkout @ e1ea56d> &&
 AP2_SDK_PYTHON=/tmp/ap2venv/bin/python python3 -m pytest tests/test_commerce_ap2.py`.
+
+## Stage S5 — Migrations, unmounted gateway routers, task runtime, Spanner budget (2026-10-05)
+
+**Code:** `brandme-data/spanner/migrations/V006_providers.sql`, `V007_commerce.sql`;
+`brandme_core/domains/commerce/spanner_budget.py`; `brandme_core/orchestrator/{__init__,runtime}.py`;
+`brandme-gateway/src/routes/v1/{commerce,catalog,providers,assistant,delegations}.ts` (+ `commerce.test.ts`).
+Hardening from self-review: unclassified submit exceptions → `outcome_unknown`; stale `submitting` (crash between
+durable intent and provider response, ≥2 min) → reconciled; `record_verification` now yields `verified` only for
+production evidence in production (sandbox/conformance → `sandbox`).
+
+| Item | Status | Evidence |
+|---|---|---|
+| V006/V007 apply to Cloud Spanner | **passed on emulator 1.5.58** (downloaded binary, no Docker) — all statements applied to an empty DB; CHECKs proven: simulation-outside-dev, quote total arithmetic, verified-needs-evidence; unique provider idempotency key | `tests/test_commerce_migrations.py` (requires `SPANNER_EMULATOR_REST`; skipped otherwise). Disposable cloud DB run: `not_run` |
+| Overspend prevention on real Spanner transactions (BM-COM-007) | **passed on emulator** — 12 concurrent reservations of $96.12 against $300.00 → exactly 3 admitted | `test_concurrent_reservations_cannot_overspend_on_spanner` |
+| Full Spanner repository for carts/quotes/operations/orders | **not done** — domain uses `InMemoryCommerceStore`; only the budget ledger has a Spanner implementation. Next lane step. |
+| Gateway routers (unmounted) | typecheck clean (`tsc 5.3.3`, repo strict tsconfig) and **8/8 vitest** in an isolated scratch install (repo lockfile untouched). Not mounted — `index.ts` is opus-foundation's. |
+| Assistant runtime: research/prepare, allowlist per mode, budgets, cancellation, injection | passed | `tests/test_commerce_assistant.py` (6) |
+| Console pages `brandme-console/app/(ops)/{providers,commerce}` | **blocked** — `docs/build/status/astra-consumer-ui.md` (Lane 5 shell layout contract) does not exist yet; building pages first would guess the layout. Router + domain setup checklist are ready to back them. |
+| `packages/provider-contracts` (TS) | **deferred** until opus-foundation merges (Lane 1 creates the package first); Python source of truth is `brandme_core/domains/providers/contracts.py`. |
+
+**Lane test totals (2026-10-05):** 157 passed with `SPANNER_EMULATOR_REST` + `AP2_SDK_PYTHON` set;
+148 passed + 9 skipped without them. Gateway: 8 vitest passed.
+
+### Domain HTTP contract the routers expect (for whoever mounts them)
+`POST {COMMERCE_DOMAIN}/internal/commerce/v1/{operation}` with `Authorization: Bearer <gateway principal assertion>`
+(same claims as `brandme_core/mcp/schemas/executor_assertion.schema.json`, audience to be `brandme:commerce-domain`),
+`Idempotency-Key` / `If-Match` forwarded verbatim, JSON body = validated request. Operations: `cart.create|update|quote`,
+`approval.challenge|create`, `purchase.execute`, `operation.get`, `order.get|return`, `webhook.receive` (raw body + headers,
+no principal), `catalog.search|product`, `provider.*`, `capabilities.effective`, `delegation.list|create|revoke`,
+`assistant.task.create|cancel|events`. The Python HTTP adapter for these is not yet written (needs the brain/service mount owner).
+
+### Exit evidence roll-up (brief)
+| Brief item | Result |
+|---|---|
+| Deterministic local provider, all 8 failure behaviors, retained refs | **met (fixture)** |
+| Quote canonical hash + approval binding; integer one-currency arithmetic | **met** |
+| Research/prepare yes; purchase without authority no; approved terms immutable; no overspend under concurrency; unknown outcome reconciled once | **met** (domain + Spanner-emulator budget) |
+| AP2 v0.2 Checkout/Payment conformance vs official schemas, version pinned | **met locally + official-SDK cross-verification**; real merchant/PSP **blocked** |
+| A2A only for approved need, else unconfigured with contract tests | **met** (unconfigured) |
+| MCP audience-bound tokens; product-text instructions stay data | **met in Python** (validator, executor hop, runtime); gateway transport **pending opus-foundation** |
+| Nordstrom = Impact publisher/deep-link only; checklist + link-only; approval as explicit gate | **met**; live Impact test **blocked** on approval |
+| Order reconciliation → wardrobe states; return/refund tested | **met** as `commerce.order.observed` events (`incoming/arrived/returned`); wardrobe reducer belongs to the wardrobe lane |
+
+### Open gates / next actions
+1. opus-foundation: MCP Streamable HTTP transport + audience-checking middleware (use `McpAccessTokenValidator` rules as oracle), mount these routers, outbox tables, shared requirements (merge `brandme_core/domains/commerce/requirements.txt`).
+2. This lane next: Spanner repository for the remaining commerce tables; Python internal HTTP adapter; console pages once Lane 5's shell contract exists; TS `packages/provider-contracts` after Lane 1 merges; simulator exchange behavior (BM-COM-011 exchange case).
+3. Founder/operator: Nordstrom program application via Impact and approval evidence; any merchant that supports AP2/ACP/UCP sandbox. No production credentials are in the repo; none were used.

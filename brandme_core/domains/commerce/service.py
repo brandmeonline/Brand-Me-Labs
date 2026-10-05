@@ -50,6 +50,7 @@ from .store import InMemoryCommerceStore, OutboxEvent, new_id
 Clock = Callable[[], datetime]
 
 APPROVAL_CHALLENGE_TTL = timedelta(minutes=5)
+STALE_SUBMITTING = timedelta(minutes=2)
 MAX_CART_LINES = 50
 _AAL = {"aal1": 1, "aal2": 2, "aal3": 3}
 _PAYMENT_RANK = {"unknown": 0, "authorized": 1, "captured": 2, "partially_refunded": 3, "refunded": 4}
@@ -94,7 +95,7 @@ class CommerceService:
         if not principal.has_scope(scope):
             raise Forbidden(f"missing scope {scope}", code="insufficient_scope")
 
-    def _active_delegation(self, principal: Principal) -> Optional[AgentDelegation]:
+    def require_active_delegation(self, principal: Principal) -> Optional[AgentDelegation]:
         """Agents must act through an active delegation; first-party sessions need none."""
         if principal.delegation_id is None:
             if principal.is_agent:
@@ -176,7 +177,7 @@ class CommerceService:
                     lines: Sequence[CartLineRequest], idempotency_key: Optional[str] = None) -> Cart:
         self._require_env(principal)
         self._require_scope(principal, "commerce:cart")
-        d = self._active_delegation(principal)
+        d = self.require_active_delegation(principal)
         if d is not None:
             if d.mode is AssistanceMode.RESEARCH:
                 raise Forbidden("research delegation cannot build carts")
@@ -204,7 +205,7 @@ class CommerceService:
     def update_cart(self, principal: Principal, cart_id: str, *, if_match: int,
                     lines: Sequence[CartLineRequest]) -> Cart:
         self._require_scope(principal, "commerce:cart")
-        self._active_delegation(principal)
+        self.require_active_delegation(principal)
         self._validate_lines(lines)
         cart = self._own("carts", cart_id, principal)
         if cart.revision != if_match:
@@ -235,7 +236,7 @@ class CommerceService:
     # ----------------------------------------------------------------- quotes
     def quote_cart(self, principal: Principal, cart_id: str) -> CheckoutQuote:
         self._require_scope(principal, "commerce:cart")
-        self._active_delegation(principal)
+        self.require_active_delegation(principal)
         cart = self._own("carts", cart_id, principal)
         conn = self._require_capability(cart.provider_id, "price.quote")
         from brandme_core.domains.providers.contracts import ProviderCart
@@ -282,7 +283,7 @@ class CommerceService:
     def request_purchase(self, principal: Principal, quote_id: str) -> PurchaseOperation:
         """Agent or member asks for approval. Creates no approval, spends nothing."""
         self._require_scope(principal, "commerce:cart")
-        d = self._active_delegation(principal)
+        d = self.require_active_delegation(principal)
         quote = self.get_quote(principal, quote_id)
         quote.verify_seal()
         quote.ensure_fresh(self.clock())
@@ -448,7 +449,7 @@ class CommerceService:
         if prior:
             return self.store.get("operations", prior)
 
-        delegation = self._active_delegation(principal)
+        delegation = self.require_active_delegation(principal)
         now = self.clock()
         with self.store.transaction():
             op = self._own("operations", operation_id, principal)
@@ -512,6 +513,11 @@ class CommerceService:
                     return self._transition(current, "outcome_unknown", reason=exc.kind.value)
                 self._release_budget(op.id)
                 return self._transition(current, "rejected", reason=exc.kind.value)
+        except Exception:
+            # Unclassified failure after the request may have left: never assume it did not.
+            with self.store.transaction():
+                current = self.store.get("operations", op.id)
+                return self._transition(current, "outcome_unknown", reason="unclassified_submit_error")
         return self._apply_ack(op.id, quote, ack.accepted, ack.provider_order_ref, ack.reason_code,
                                ack.evidence_ref, principal)
 
@@ -545,6 +551,11 @@ class CommerceService:
         op = self.store.get("operations", operation_id)
         if op is None:
             raise NotFound("operation not found")
+        if op.state == "submitting" and self.clock() - op.updated_at >= STALE_SUBMITTING:
+            # Crash between the durable intent and the provider response: treat as unknown.
+            with self.store.transaction():
+                op = self._transition(self.store.get("operations", op.id), "outcome_unknown",
+                                      reason="stale_submitting")
         if op.state != "outcome_unknown":
             return op
         conn = self.registry.get(op.provider_id)

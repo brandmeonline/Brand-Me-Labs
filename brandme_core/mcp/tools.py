@@ -325,7 +325,7 @@ class McpToolExecutor:
 
     # -- handlers --------------------------------------------------------------
     def _catalog_search(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
-        self.commerce._active_delegation(p)
+        self.commerce.require_active_delegation(p)
         wanted = set(a.get("provider_ids") or [])
         now = self.commerce.clock()
         items, unavailable = [], []
@@ -382,7 +382,7 @@ class McpToolExecutor:
         return self._op_status(p, op)
 
     def _order_status(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
-        self.commerce._active_delegation(p)
+        self.commerce.require_active_delegation(p)
         return self._op_status(p, self.commerce.get_operation(p, a["operation_id"]))
 
     def _op_status(self, p: Principal, op) -> Dict[str, Any]:

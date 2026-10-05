@@ -138,9 +138,11 @@ class ProviderRegistry:
             state, reason = "sandbox", "deterministic_local_simulation"
         elif evidence_kind not in VERIFYING_EVIDENCE:
             raise RegistryError(f"{evidence_kind} cannot verify {capability}")
+        elif conn.environment == "production" and evidence_kind == "production_operation":
+            state, reason = "verified", "verified_by_production_evidence"
         else:
-            state = "verified" if conn.environment == "production" or evidence_kind != "sandbox_operation" else "sandbox"
-            reason = "verified_by_evidence" if state == "verified" else "sandbox_evidence"
+            # Sandbox runs and conformance suites prove the sandbox path, not live access.
+            state, reason = "sandbox", "sandbox_evidence"
         status = CapabilityStatus(capability, state, reason, checked_at, evidence_ref, evidence_kind)
         self.set_capability(provider_id, status)
         return status

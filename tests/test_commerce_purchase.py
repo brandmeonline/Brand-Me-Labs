@@ -433,3 +433,35 @@ def test_simulation_provider_refused_in_production():
         world("production")
     with pytest.raises(SimulationInProductionError):
         world("sandbox")
+
+
+def test_unclassified_submit_error_becomes_unknown_then_reconciles(w):
+    d, ag = w.delegate()
+    _, _, op = w.prepared(ag)
+    approval = w.approve(op)
+    real_submit = w.provider.submit
+
+    def flaky(request):
+        real_submit(request)  # provider accepted ...
+        raise ConnectionResetError("socket closed")  # ... but our side lost the response
+
+    w.provider.submit = flaky
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="u1")
+    assert res.state == "outcome_unknown"
+    w.provider.submit = real_submit
+    assert w.svc.reconcile(op.id).state == "accepted" and len(w.store.rows("orders")) == 1
+
+
+def test_stale_submitting_after_crash_is_reconciled(w):
+    d, ag = w.delegate()
+    _, _, op = w.prepared(ag)
+    approval = w.approve(op)
+    w.svc._submit = lambda *a, **k: (_ for _ in ()).throw(SystemExit("crash before provider I/O"))
+    with pytest.raises(SystemExit):
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="crash")
+    assert w.svc.get_operation(w.member, op.id).state == "submitting"
+    assert w.svc.reconcile(op.id).state == "submitting"  # not stale yet
+    w.clock.advance(minutes=3)
+    res = w.svc.reconcile(op.id)
+    assert res.state == "rejected" and res.reason_code == "not_found_at_provider"
+    assert all(e.state == "released" for e in w.store.rows("reservations"))
