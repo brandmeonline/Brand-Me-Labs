@@ -1,0 +1,33 @@
+
+> @brandme/console@1.0.0 build /home/user/Brand-Me-Labs/brandme-console
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/6) ...
+   Generating static pages (1/6) 
+   Generating static pages (2/6) 
+   Generating static pages (4/6) 
+ ✓ Generating static pages (6/6)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    179 B          96.1 kB
+├ ○ /_not-found                          872 B          88.1 kB
+├ ○ /dashboard                           138 B          87.4 kB
+├ ○ /dashboard/scans                     2.31 kB         124 kB
+└ ƒ /proof/[scanId]                      3.14 kB         117 kB
++ First Load JS shared by all            87.3 kB
+  ├ chunks/651-bd4816d77eca0fc8.js       31.7 kB
+  ├ chunks/90f62467-623ca7758fae7e94.js  53.6 kB
+  └ other shared chunks (total)          1.89 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

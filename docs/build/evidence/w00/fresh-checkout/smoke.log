@@ -1,0 +1,107 @@
+
+> brandme-monorepo@1.0.0 smoke <clone>
+> node scripts/brandme.mjs smoke
+
+✓ spanner emulator — already running
+schema up to date
+V001_identity                 applied
+✓ migrations to V001
+[brandme preflight] brain: allowed in development; simulated adapters: 1
+  - chain.cardano: Simulated — no blockchain transaction was made
+[brain] {"service": "env", "event": "env_config_loaded", "region": "us-east1", "log_level": "info", "database": "spanner", "spanner_project": "test-project", "spanner_instance": "brandme-instance"}
+[brain] [brain] {"service": "cors_config", "event": "cors_config_loaded", "origins_count": 2, "environment": "development"}
+[brain] [brain] INFO:     Started server process [13105]
+[brain] [brain] INFO:     Waiting for application startup.
+[brain] [brain] {"service": "spanner.pool", "event": "pool_manager_init", "min_sessions": 10, "max_sessions": 100, "ping_interval": 300, "emulator": true}
+[brain] [brain] {"service": "spanner.pool", "event": "pool_manager_initialized", "is_healthy": true}
+[brain] [brain] {"service": "brain_service", "event": "brain_service_started", "database": "spanner"}
+[brain] INFO:     Application startup complete.
+[brain] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[brain] [brain] INFO:     127.0.0.1:60634 - "GET /health HTTP/1.1" 200 OK
+[brain] [gateway] [2026-10-05 18:38:03.389 +0000] WARN: NATS_URL not set: legacy /scan publishing is unavailable
+[gateway] [gateway] [2026-10-05 18:38:03.555 +0000] INFO: Brand.Me Gateway listening
+[gateway]     port: 3001
+[gateway]     mode: "development"
+[gateway]     identityProvider: "dev"
+[gateway] [2026-10-05 18:38:03.858 +0000] INFO: Incoming request
+[gateway]     requestId: "1349b083-f7cf-4576-9b80-a4726fb9575f"
+[gateway]     method: "GET"
+[gateway]     path: "/api/v1/system/health"
+[gateway]     regionCode: "us-east1"
+[gateway]     userAgent: "node"
+[gateway] [gateway] (node:13134) MetadataLookupWarning: received unexpected error = All promises were rejected code = 502, ETIMEDOUT
+[gateway] (Use `node --trace-warnings ...` to show where the warning was created)
+[gateway] ✓ gateway → brain → Spanner health — [{"name":"gateway.spanner","status":"ok","duration_ms":3241},{"name":"brain.health","status":"ok","duration_ms":25}]
+✓ dev session (labelled simulation) — member 7baf2b10-6872-493c-bfe3-d369d87afaa5
+✓ PATCH /me with If-Match + CSRF — etag "2"
+[brain] INFO:     Shutting down
+[brain] [brain] INFO:     Waiting for application shutdown.
+[brain] {"service": "spanner.pool", "event": "pool_manager_closed"}
+[brain] [brain] {"service": "brain_service", "event": "brain_service_stopped"}
+[brain] INFO:     Application shutdown complete.
+[brain] [brain] INFO:     Finished server process [13105]
+[brain] [gateway] [2026-10-05 18:38:07.103 +0000] INFO: Request completed
+[gateway]     requestId: "1349b083-f7cf-4576-9b80-a4726fb9575f"
+[gateway]     method: "GET"
+[gateway]     path: "/system/health"
+[gateway]     statusCode: 200
+[gateway]     duration: 3245
+[gateway]     regionCode: "us-east1"
+[gateway] [gateway] [2026-10-05 18:38:07.115 +0000] INFO: Incoming request
+[gateway]     requestId: "400c08e9-5260-421d-baa7-ee31ea14d303"
+[gateway]     method: "POST"
+[gateway]     path: "/api/v1/session/dev"
+[gateway]     regionCode: "us-east1"
+[gateway]     userAgent: "node"
+[gateway] [2026-10-05 18:38:07.175 +0000] INFO: Request completed
+[gateway]     requestId: "400c08e9-5260-421d-baa7-ee31ea14d303"
+[gateway]     method: "POST"
+[gateway]     path: "/session/dev"
+[gateway]     statusCode: 201
+[gateway]     duration: 60
+[gateway]     regionCode: "us-east1"
+[gateway] [2026-10-05 18:38:07.179 +0000] INFO: Incoming request
+[gateway]     requestId: "631eb235-f348-448b-bb09-70f9effba272"
+[gateway]     method: "PATCH"
+[gateway]     path: "/api/v1/me"
+[gateway]     regionCode: "us-east1"
+[gateway]     userAgent: "node"
+[gateway] [2026-10-05 18:38:07.212 +0000] INFO: Request completed
+[gateway]     requestId: "631eb235-f348-448b-bb09-70f9effba272"
+[gateway]     method: "PATCH"
+[gateway]     path: "/"
+[gateway]     statusCode: 200
+[gateway]     duration: 33
+[gateway]     regionCode: "us-east1"
+[gateway] [brandme preflight] brain: allowed in development; simulated adapters: 1
+  - chain.cardano: Simulated — no blockchain transaction was made
+[brain] {"service": "env", "event": "env_config_loaded", "region": "us-east1", "log_level": "info", "database": "spanner", "spanner_project": "test-project", "spanner_instance": "brandme-instance"}
+[brain] [brain] {"service": "cors_config", "event": "cors_config_loaded", "origins_count": 2, "environment": "development"}
+[brain] INFO:     Started server process [13172]
+[brain] INFO:     Waiting for application startup.
+[brain] {"service": "spanner.pool", "event": "pool_manager_init", "min_sessions": 10, "max_sessions": 100, "ping_interval": 300, "emulator": true}
+[brain] [brain] {"service": "spanner.pool", "event": "pool_manager_initialized", "is_healthy": true}
+[brain] [brain] {"service": "brain_service", "event": "brain_service_started", "database": "spanner"}
+[brain] [brain] INFO:     Application startup complete.
+[brain] [brain] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[brain] [gateway] [2026-10-05 18:38:09.546 +0000] WARN: NATS_URL not set: legacy /scan publishing is unavailable
+[gateway] [gateway] [2026-10-05 18:38:09.707 +0000] INFO: Brand.Me Gateway listening
+[gateway]     port: 3001
+[gateway]     mode: "development"
+[gateway]     identityProvider: "dev"
+[gateway] [2026-10-05 18:38:09.798 +0000] INFO: Incoming request
+[gateway]     requestId: "82b37bae-d492-47f9-9035-52b8b336e684"
+[gateway]     method: "GET"
+[gateway]     path: "/api/v1/me"
+[gateway]     regionCode: "us-east1"
+[gateway]     userAgent: "node"
+[gateway] [gateway] (node:13201) MetadataLookupWarning: received unexpected error = All promises were rejected code = 502, ETIMEDOUT
+[gateway] (Use `node --trace-warnings ...` to show where the warning was created)
+[gateway] ✓ profile survives gateway + brain restart
+✓ outbox events validated + dispatched (Python) — member.created,member.updated
+
+smoke PASSED → docs/build/evidence/w00/smoke-latest.json
+
+real	0m13.778s
+user	0m3.774s
+sys	0m0.507s

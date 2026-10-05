@@ -70,7 +70,7 @@ class SpannerPoolManager:
         self.enable_backpressure = enable_backpressure
 
         self._client: Optional[spanner.Client] = None
-        self._database: Optional[spanner.Database] = None
+        self._database: Optional[Any] = None
         self._pool: Optional[PingingPool] = None
 
         self._active_sessions = 0
@@ -121,6 +121,11 @@ class SpannerPoolManager:
             "event": "pool_manager_initialized",
             "is_healthy": self._is_healthy
         })
+
+    @property
+    def database(self):
+        """Underlying Database handle; callers across services use ``pool.database``."""
+        return self._database
 
     async def close(self):
         """Close the pool manager."""
