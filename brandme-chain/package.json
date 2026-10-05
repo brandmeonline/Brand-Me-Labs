@@ -1,12 +1,12 @@
 {
   "name": "@brandme/chain",
   "version": "1.0.0",
-  "description": "Brand.Me chain service — Midnight rights adapter (primary) and optional Cardano anchor adapter",
-  "main": "dist/index.js",
+  "description": "Brand.Me chain service \u2014 Midnight rights adapter (primary); optional Cardano anchor boundary (unverified, disabled)",
+  "main": "dist/src/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "tsc && rm -rf dist/contracts dist/scripts && mkdir -p dist && cp -r contracts scripts dist/",
+    "start": "node dist/src/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -20,7 +20,8 @@
     "compact:verify": "node scripts/verify-artifacts.mjs",
     "test:midnight:local": "bash scripts/test-midnight-local.sh",
     "test:midnight:network": "vitest run --config vitest.network.config.ts",
-    "test:midnight:preprod": "MIDNIGHT_NETWORK=preprod vitest run --config vitest.network.config.ts"
+    "test:midnight:preprod": "MIDNIGHT_NETWORK=preprod vitest run --config vitest.network.config.ts",
+    "midnight:local-network": "bash scripts/local-network.sh"
   },
   "keywords": [
     "brandme",
@@ -32,8 +33,6 @@
   "author": "Brand.Me, Inc.",
   "license": "PROPRIETARY",
   "dependencies": {
-    "@blockfrost/blockfrost-js": "^5.3.0",
-    "@emurgo/cardano-serialization-lib-nodejs": "^12.0.0",
     "@midnight-ntwrk/compact-js": "2.5.1",
     "@midnight-ntwrk/compact-runtime": "0.16.0",
     "@midnight-ntwrk/dapp-connector-api": "4.0.1",
@@ -51,8 +50,6 @@
     "@midnight-ntwrk/wallet-sdk": "1.2.0",
     "@noble/ciphers": "2.2.0",
     "@noble/hashes": "2.2.0",
-    "bip39": "^3.1.0",
-    "cbor": "^9.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -60,16 +57,13 @@
     "pino": "^8.17.2",
     "pino-pretty": "^10.3.1",
     "rxjs": "7.8.2",
-    "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@midnight-ntwrk/testkit-js": "4.1.1",
-    "@types/bip39": "^3.0.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "22.18.8",
-    "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "@vitest/coverage-v8": "3.2.4",

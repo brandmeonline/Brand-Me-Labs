@@ -18,7 +18,8 @@
  */
 
 import { CompiledContract } from '@midnight-ntwrk/compact-js';
-import { findDeployedContract, deployContract, submitCallTxAsync } from '@midnight-ntwrk/midnight-js-contracts';
+import { findDeployedContract, deployContract, submitCallTxAsync, submitInsertVerifierKeyTx } from '@midnight-ntwrk/midnight-js-contracts';
+import { ContractState } from '@midnight-ntwrk/compact-runtime';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
@@ -31,6 +32,7 @@ import type {
   WalletProvider,
 } from '@midnight-ntwrk/midnight-js-types';
 import { execFileSync } from 'node:child_process';
+import { inspect } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { assertSameNetwork, assertWritable, type MidnightEndpoints, WrongNetworkError } from './network.js';
 import {
@@ -269,7 +271,7 @@ export class RightsAdapter {
     } catch (e) {
       // Nothing was submitted: restore the private state if we changed it and fail.
       if (callPs !== originalPs && !this.o.session.isLocked) await this.o.session.save(originalPs);
-      return this.save(cur, transition(cur, 'Failed', { failureReason: reasonCode(e) }, (e as Error).message));
+      return this.save(cur, transition(cur, 'Failed', { failureReason: reasonCode(e) }, rootCauseMessage(e)));
     }
     cur = await this.save(cur, transition(cur, 'Submitted', { evidence: { txId, observedAt: new Date().toISOString() } }));
     return this.observe(cur.operationId);
@@ -315,6 +317,14 @@ export class RightsAdapter {
   }
 }
 
+/** Deepest cause text (e.g. the node's RPC rejection), bounded; never includes witness values. */
+export function rootCauseMessage(e: unknown): string {
+  const text = inspect(e, { depth: 8 });
+  const rpc = text.match(/RpcError: ([^\n]+)/);
+  if (rpc) return `node rejected: ${rpc[1]!.slice(0, 300)}`;
+  return ((e as Error)?.message ?? String(e)).slice(0, 300);
+}
+
 function reasonCode(e: unknown): string {
   const n = (e as Error)?.name ?? 'Error';
   const m = (e as Error)?.message ?? '';
@@ -322,6 +332,7 @@ function reasonCode(e: unknown): string {
   if (n === 'MissingWitnessError') return 'missing_private_state';
   if (n === 'WrongNetworkError') return 'wrong_network';
   if (/failed assert/.test(m)) return 'contract_precondition_failed';
+  if (/RpcError|1010|Invalid Transaction/.test(inspect(e, { depth: 8 }))) return 'node_rejected';
   if (/prov/i.test(m)) return 'proof_failed';
   return 'submission_failed';
 }
@@ -333,19 +344,86 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-/** Operator-only: deploy a new rights contract instance (never on Mainnet in this build). */
+/**
+ * Circuits whose verifier keys go into the deploy transaction. A deploy with
+ * all 15 operations (~37 KB) is rejected by the node with
+ * "1010: Transaction would exhaust the block limits" (observed on the local
+ * network, node 1.0.300); 8 operations (~21 KB) are accepted. The remaining
+ * keys are inserted afterwards by signed contract-maintenance transactions,
+ * then the full key set is verified on chain by findDeployedContract.
+ */
+export const DEPLOY_CIRCUITS: readonly RightsCircuit[] = [
+  'registerIssuer', 'issueEntitlement', 'proveControl', 'offerTransfer',
+  'acceptTransfer', 'cancelTransfer', 'registerManufacturer', 'grantReprintAllowance',
+];
+export const POST_DEPLOY_CIRCUITS: readonly RightsCircuit[] = [
+  'rotateIssuerKey', 'revokeIssuer', 'revokeEntitlement', 'deactivateManufacturer',
+  'consumeReprintAllowance', 'attestManufacture', 'grantReplacementAllowance',
+];
+
+/** Contract class restricted to the deploy subset: only those operations appear in the initial state. */
+class RightsDeployContract extends RightsContract<RightsPrivateState> {
+  constructor(w: ConstructorParameters<typeof RightsContract<RightsPrivateState>>[0]) {
+    super(w);
+    const keep = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([k]) => DEPLOY_CIRCUITS.includes(k as RightsCircuit))) as T;
+    this.provableCircuits = keep(this.provableCircuits);
+    this.impureCircuits = keep(this.impureCircuits);
+    this.circuits = keep(this.circuits);
+  }
+  override initialState(...a: Parameters<RightsContract<RightsPrivateState>['initialState']>) {
+    const r = super.initialState(...a);
+    const s = new ContractState();
+    s.data = r.currentContractState.data;
+    for (const op of DEPLOY_CIRCUITS) s.setOperation(op, r.currentContractState.operation(op)!);
+    return { ...r, currentContractState: s };
+  }
+}
+
+const compiledDeployContract = CompiledContract.make(RIGHTS_CONTRACT_TAG, RightsDeployContract).pipe(
+  CompiledContract.withWitnesses(rightsWitnesses as never),
+  CompiledContract.withCompiledFileAssets(RIGHTS_ARTIFACT_DIR),
+);
+
+export interface DeployResult {
+  readonly contractAddress: string;
+  readonly deployTx: { txId: string; txHash: string; blockHeight: number; blockHash: string; status: string };
+  readonly keyInsertions: { circuit: string; txId: string; blockHeight: number; status: string }[];
+}
+
+/**
+ * Operator-only: deploy a new rights contract instance (never on Mainnet in
+ * this build). The deployer's private-state provider receives the contract
+ * maintenance signing key; that key can replace verifier keys and must be
+ * held under governance custody (see contracts/DESIGN.md).
+ */
 export async function deployRightsContract(
   providers: MidnightProviders<RightsCircuit, string, RightsPrivateState>,
   endpoints: MidnightEndpoints,
   args: { salt: Uint8Array; networkTag: Uint8Array; governanceCommitment: Uint8Array; initialPrivateState: RightsPrivateState },
-) {
+): Promise<DeployResult> {
   assertWritable(endpoints.networkId);
-  return deployContract(providers as never, {
-    compiledContract: compiledRightsContract,
+  const deployed = await deployContract(providers as never, {
+    compiledContract: compiledDeployContract,
     privateStateId: PRIVATE_STATE_ID,
     initialPrivateState: args.initialPrivateState,
     args: [args.salt, args.networkTag, args.governanceCommitment],
   } as never);
+  const pub = (deployed as unknown as { deployTxData: { public: { contractAddress: string; txId: string; txHash: string; blockHeight: number; blockHash: string; status: string } } }).deployTxData.public;
+  const contractAddress = String(pub.contractAddress);
+  const keyInsertions: DeployResult['keyInsertions'] = [];
+  for (const circuit of POST_DEPLOY_CIRCUITS) {
+    const vk = await providers.zkConfigProvider.getVerifierKey(circuit);
+    const tx = await submitInsertVerifierKeyTx(providers as never, compiledRightsContract as never, contractAddress as never, circuit as never, vk);
+    keyInsertions.push({ circuit, txId: String(tx.txId), blockHeight: tx.blockHeight, status: tx.status });
+    if (tx.status !== 'SucceedEntirely') throw new Error(`verifier key insertion for ${circuit} failed: ${tx.status}`);
+  }
+  // Verifies that every on-chain verifier key equals our manifest-checked compiled key.
+  await attachRightsContract(providers, contractAddress);
+  return {
+    contractAddress,
+    deployTx: { txId: String(pub.txId), txHash: String(pub.txHash), blockHeight: pub.blockHeight, blockHash: String(pub.blockHash), status: String(pub.status) },
+    keyInsertions,
+  };
 }
 
 export async function attachRightsContract(providers: MidnightProviders<RightsCircuit, string, RightsPrivateState>, contractAddress: string) {

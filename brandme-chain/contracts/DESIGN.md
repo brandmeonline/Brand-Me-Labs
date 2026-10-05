@@ -11,6 +11,16 @@ Ch.04 §4 allows the issuer registry, transferable entitlement and licensed repr
 1. Compact 0.31.1 has no contract-to-contract calls. `grantReprintAllowance` must read the entitlement's issuer and reprint right, and `consumeReprintAllowance` must prove entitlement control, inside the same verifiable transition. Split contracts would turn these into server-side `if`s, which ch.04 forbids.
 2. Circuit sizes stay small after the merge. Each circuit only touches the maps it needs. Proving keys run 2.8–5.2 MB per circuit, so the merge adds no prover cost to the simpler circuits.
 
+## Deployment in two phases (observed constraint)
+
+On the local network (node 1.0.300), a deploy transaction carrying all 15 verifier keys (~37 KB) is rejected with `1010: Invalid Transaction: Transaction would exhaust the block limits`. With 8 keys (~21 KB) it is accepted. `deployRightsContract` therefore:
+
+1. deploys with the 8 core circuits (`DEPLOY_CIRCUITS`);
+2. inserts the other 7 keys with signed contract-maintenance transactions (`submitInsertVerifierKeyTx`);
+3. runs `findDeployedContract`, which fails unless every on-chain key equals our manifest-verified compiled key.
+
+**Maintenance authority is a governance power.** The deploy's maintenance signing key can insert, remove or replace verifier keys, which changes what the contract accepts. Replacements are visible on chain (never a hidden rewrite), but the key must be held under governance custody. Before any valuable rights are issued, either move it to a multi-party authority or rotate it away (`replaceAuthority`). This is a production gate; nothing in this build relinquishes it automatically.
+
 ## Authorization
 
 Every role proves knowledge of a 32-byte secret `s`. The circuit computes `persistentHash([domain, instanceSalt, networkTag, scope, s])` and compares it with the commitment stored on the ledger. Witnesses only supply `s`. A missing secret throws (`MissingWitnessError`), and a wrong one fails `assert`. Nothing in the trust path returns `true`.

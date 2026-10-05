@@ -5,7 +5,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { logger } from '../config/logger.js';
 
 export function requestLogger(
@@ -13,7 +13,7 @@ export function requestLogger(
   res: Response,
   next: NextFunction
 ): void {
-  const requestId = req.headers['x-request-id'] || uuidv4();
+  const requestId = req.headers['x-request-id'] || randomUUID();
   req.headers['x-request-id'] = requestId as string;
 
   const start = Date.now();

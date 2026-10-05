@@ -195,3 +195,80 @@ A worked example implementation lives in `tests/fixtures/privacy/persona_fixture
 **Stated limit:** the emulator allows one read/write transaction at a time, so a truly overlapping deletion/inference interleaving can't be reproduced there. Correctness in that case rests on Spanner's serializable isolation: the guard reads the freeze row inside the writer's transaction. Re-run on an authorized disposable Cloud Spanner database before production.
 
 **Run:** start the emulator (`docker run -p 9010:9010 gcr.io/cloud-spanner-emulator/emulator:1.5.45`), then `pytest tests/test_privacy.py tests/test_rights.py` (google-cloud-spanner 3.40.1 as pinned in `brandme_core/requirements.txt`).
+
+## Stage 4 — Live network evidence, Cardano boundary, cube filtering (2026-10-05)
+
+### Local Midnight network — real proofs, real node, real finality
+
+`pnpm test:midnight:network` against `scripts/local-network.sh`:
+- node `midnight-node:1.0.300` (`CFG_PRESET=dev`)
+- indexer `indexer-standalone:4.3.5`
+- `proof-server:8.1.0`
+
+All images are pinned by digest in `brandme-chain/tests/network/compose.yml`. **7/7 passing, run twice** (8m21s and 9m55s). Evidence: `brandme-chain/evidence/undeployed-2026-10-05T18-51-38-369Z.json`, contract `8332bb9a…2280`, source sha256 `919577bf…fa49` (= manifest).
+
+| Exit criterion | Observed |
+|---|---|
+| Deploy with verified artifacts | Deploy, plus 7 verifier-key insertions, all `SucceedEntirely`; `findDeployedContract` verified all 15 on-chain keys against the manifest |
+| issue → prove → transfer → consume | registerIssuer, registerManufacturer, issueEntitlement, proveControl, offerTransfer ×2, acceptTransfer, grantReprintAllowance, consumeReprintAllowance, attestManufacture: each **Finalized** (≈22–24 s each, mostly proving); `finalizedHeadHeight` ≥ block height via `chain_getFinalizedHead` |
+| Replay rejected before state mutation | Same (challenge, audience): local execution fails `challenge already used`, nothing submitted. Identical tx bytes resubmitted: node rejects `1013: Transaction Already Imported`. `usedChallenges` size unchanged |
+| Concurrent acceptance | Two offers at one epoch, both accepts submitted concurrently: exactly one Finalized, the other rejected at submission (SDK surfaced only a generic "Transaction submission error"; no node RPC reason captured). Epoch advanced exactly once |
+| Cross-network replay | Persisted op for another network: `WrongNetworkError` before proving, nothing submitted, op unchanged |
+| Invalid proof leaves state unchanged | Wrong holder secret fails `not controller` during local circuit execution. **No proof can be produced**, nothing is submitted, and the entitlement is byte-identical on chain afterwards. A tampered proof was not tested on the node |
+| Account switch during proving | Proved, then account changed, then the `balanceTx` guard aborted (`session_changed`); zero transactions submitted |
+| Reprint exactly once | Duplicate consume for the same job: `job already consumed`. Duplicate attest unit 0: `units must be attested in order`. Over-quota rejected; remaining quota exactly 1; one child entitlement only |
+| Private-state backup/restore | Export, then a clean in-memory profile restores it, then `proveControl` with the restored secret is **Finalized on chain** |
+| Old owner loses control | Old owner's proveControl fails `not controller`; new owner's is Finalized |
+
+**Finding (blocker resolved):** a 15-key deploy is rejected by the node (`1010: Transaction would exhaust the block limits`; 8 keys = 21 KB accepted). The deploy is now two-phase. The maintenance authority this creates is a governance power, recorded in `contracts/DESIGN.md` as a production gate.
+
+### Preprod
+
+- **Read path verified (2026-10-05):** `rpc.preprod.midnight.network` reports `system_version` `1.0.400-c338b9ac` (matches the matrix); `chain_getFinalizedHead` works; indexer v4 head (2851273) equals the node's finalized head.
+- **BLOCKED — needs a human:** the Preprod faucet (`faucet.preprod.midnight.network/api/drips`) returns `400 Missing X-Captcha-Token header`; the documented Nethermind faucet is a captcha web UI. I did not attempt to bypass it.
+  - **Operator action:** create 3 Preprod wallets, fund them via <https://midnight-tmnight-preprod.nethermind.dev/>, then run `bash scripts/local-network.sh up` (proof server only is needed) and `MN_PREPROD_SEEDS=s1,s2,s3 pnpm test:midnight:preprod`. The same 7-test scenario runs unchanged and writes `evidence/preprod-*.json`.
+  - Until then, **Preprod integration is NOT verified**.
+
+### Cardano (last, optional)
+
+- Removed `cardano-tx-builder.ts` (it returned `simulated_cardano_*`), `cardano-wallet.ts`, and the Cardano/bip39/cbor dependencies.
+- Added `src/cardano/anchor.ts`: a domain-separated Merkle batch over approved non-personal commitments (32-byte hex only, single network per batch) with an independent status.
+- The only submitter is `UnavailableCardanoAnchor`, which reports **unavailable** (no Blockfrost Preprod credentials, no integration test). The Midnight path never calls it.
+
+### brandme-cube
+
+`src/passport_filter.py` is now applied in `get_cube`/`get_face` after the face-level policy ALLOW:
+- nested owner references and valuation fields are stripped for non-owners;
+- fabricated chain refs (`cardano_tx_*`, `simulated_*`, `encrypted_*`) are never displayed as evidence.
+
+Tests: `tests/test_rights_cube_filter.py` (2/2). Cube startup itself remains untested (pre-existing state, per root CLAUDE.md).
+
+### Service/runtime
+
+- `brandme-chain` builds to `dist/` with artifacts and scripts.
+- The Dockerfile uses Node 22 and regenerates and verifies prover keys at image build.
+- The stale `BLOCKCHAIN_INTEGRATION.md` and `TESTING.md`, which described the stub as working, are replaced by an accurate `README.md`.
+
+## Exit-evidence summary (as of this stage)
+
+| Criterion | Experience complete | Integration verified | Production approved |
+|---|---|---|---|
+| `pnpm test:midnight:local` (compile + constraint/property/adversarial) | yes | **yes** (55/55 + 3 cardano) | no (no external contract review) |
+| issue/prove/transfer/consume observed | yes | **local network: yes; Preprod: BLOCKED (faucet captcha)** | no |
+| Replay / cross-network / concurrency | yes | local network: yes | no |
+| Invalid proof / account switch | yes | local network: yes (invalid witness cannot produce a proof; tampered-proof submission not tested) | no |
+| Reprint exactly-once | yes | local network + emulator: yes | no |
+| Private-state backup → clean restore | yes | local network: yes | no |
+| My Data export/deletion/tombstones/inference race | yes (backend) | Spanner emulator: yes (true overlap not reproducible on emulator) | no |
+| No stub fallback in trust path | yes | static guard test + code removal | — |
+| No Mainnet writes | yes | enforced, no override | — |
+
+## Open items / proposals
+
+1. **Preprod run**: needs funded seeds (above).
+2. **Spanner `OperationStore` for brandme-chain** (TS): the V008 `ChainOperations` table exists. Until a store is written, chain writes stay disabled outside development (capability `read_only`).
+3. **Maintenance authority custody**: move to governance multi-party or rotate away before valuable issuance.
+4. **CI (not my file):** `.github/workflows/chain-tests.yml` pins Node 18 and sets the removed `*_FALLBACK_MODE=true`, which now aborts startup. Proposal: Node 22, `SKIP_ZK=1 pnpm test:midnight:local`; run the Python suites with the Spanner emulator service.
+5. **Console ops pages** (`brandme-console/app/(ops)/{chain,rights,manufacturing,privacy}`): not started. The Lane 5 shell layout contract (`docs/build/status/astra-consumer-ui.md`) does not exist on this branch yet.
+6. Python HTTP service endpoints behind the gateway's `upstream.rights` / `upstream.privacy` are not yet exposed (the domain logic is done; the FastAPI wiring depends on the foundation lane's service layout).
+7. An external Compact/protocol review of commitments and witness handling is required before production.

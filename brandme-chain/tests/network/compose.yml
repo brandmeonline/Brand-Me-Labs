@@ -1,13 +1,7 @@
-# Local Midnight network for `pnpm test:midnight:network` (testkit LocalTestEnvironment).
+# Local Midnight network (node + indexer) for `pnpm test:midnight:network`; started by scripts/local-network.sh.
 # Pinned to the support-matrix Preview pairing (node 1.0.300 + indexer 4.3.5): the
 # Preprod indexer 4.3.302 is not published as a standalone image. SDK tuple is identical.
 services:
-  proof-server:
-    image: midnightntwrk/proof-server:8.1.0@sha256:801bbc0340e9e96f16735f77b523f23c7459e3359842f7c79c2c53f4e994d531
-    command: ['midnight-proof-server', '-v']
-    ports: ['6300']
-    environment:
-      RUST_BACKTRACE: 'full'
   node:
     image: midnightntwrk/midnight-node:1.0.300@sha256:593ca8484074b771c2643a1b5744474a266ec923c0946d3a1382ee25d11cf7c7
     ports: ['9944']
