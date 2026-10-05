@@ -24,7 +24,7 @@ Other lanes propose deviations in their own status files. The parent records acc
 
 - **Requirement:** commit generated contracts and evidence.
 - **Reason:** root `.gitignore` ignores `*.json` (to stop GCP key files) and `build/` (which matches `docs/build/`). Both are outside this lane's ownership.
-- **Replacement:** `git add -f` for `packages/contracts/generated/*.json`, `docs/build/**`. **Proposed .gitignore change for the parent:** add `!docs/build/` and `!packages/*/generated/*.json`.
+- **Replacement:** `git add -f` for `packages/contracts/generated/*.json`, `packages/contracts/src/foundation-schemas.json` and `docs/build/**`. **Proposed .gitignore change for the parent:** add `!docs/build/` and `!packages/**/*.json`. A fresh-clone `pnpm check` caught the missing `foundation-schemas.json`, which the ignore rule had hidden.
 - **Impact:** without the negations, a lane that regenerates these files must remember `-f`. CI drift check catches a stale file.
 
 ## D-004 Design-system primitives not delivered by this lane
