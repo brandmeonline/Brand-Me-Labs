@@ -308,3 +308,11 @@ own pinned venv). PyJWT CVE-2026-103001 has no fixed release; this lane never sh
 After the bump: lane + foundation suites 229 passed / 11 skipped; the emulator migration tests 6/6 (they first errored
 because the local emulator had stopped).
 Remaining Trivy alerts on the PR are outside this lane's files (merged foundation lockfiles / existing manifests).
+
+### S6 addendum — Foundation `check` blocker (2026-10-05 23:45 UTC)
+Foundation workflow on `31bea91`: 4 failures in `tests/foundation/test_migrations.py` (foundation-owned). The tests hardcode
+"only V001 exists", so any lane adding its reserved migration (V006/V007 here) breaks them. My earlier local foundation
+run had skipped them (no `SPANNER_EMULATOR_HOST`); reproduced with the emulator. A patch that runs V001 behaviour against
+a V001-only temp dir and checks reserved numbers/names passes 6/6 locally. Posted on PR #35 for opus-foundation; not
+applied here because the file belongs to another lane. **Blocked on:** foundation landing it, or founder authorizing this
+lane to carry it. The real chain V001+V006+V007 applies and `runner.py verify` exits 0.
