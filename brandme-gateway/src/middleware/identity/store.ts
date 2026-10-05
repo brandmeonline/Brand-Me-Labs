@@ -98,6 +98,33 @@ export class IdentityStore {
     this.database = new Spanner({ projectId: opts.projectId }).instance(opts.instanceId).database(opts.databaseId);
   }
 
+  /**
+   * Read/write transaction with explicit begin/commit/end and bounded retry on
+   * ABORTED. Replaces Database#runTransactionAsync, which leaked pooled
+   * sessions intermittently with @google-cloud/spanner 9.0.0 (CI + local
+   * repro). The callback must not call commit and must have no external
+   * side effects: it can run more than once.
+   */
+  private async rw<T>(fn: (tx: Transaction) => Promise<T>, attempts = 8): Promise<T> {
+    for (let attempt = 1; ; attempt++) {
+      const [tx] = await this.database.getTransaction();
+      try {
+        const result = await fn(tx);
+        await tx.commit();
+        return result;
+      } catch (err) {
+        const aborted = (err as { code?: number }).code === 10;
+        if (!aborted || attempt >= attempts) {
+          await tx.rollback().catch(() => undefined);
+          throw err;
+        }
+        await new Promise((r) => setTimeout(r, Math.min(1000, 20 * 2 ** attempt) * (0.5 + Math.random() / 2)));
+      } finally {
+        tx.end();
+      }
+    }
+  }
+
   async ping(): Promise<void> {
     await this.database.run({ sql: 'SELECT 1' });
   }
@@ -133,12 +160,11 @@ export class IdentityStore {
 
   /** Map (issuer, subject) to an internal member, creating one on first sight. Idempotent. */
   async resolveMember(issuer: string, subject: string, provider: string, correlationId: string): Promise<{ memberId: string; created: boolean }> {
-    return this.database.runTransactionAsync(async (tx) => {
+    return this.rw(async (tx) => {
       const [rows] = await tx.read('MemberIdentities', { keys: [[issuer, subject]], columns: ['member_id'], json: true });
       if (rows.length) {
         const memberId = (rows[0] as { member_id: string }).member_id;
         tx.update('MemberIdentities', { issuer, subject, last_seen_at: Spanner.COMMIT_TIMESTAMP });
-        await tx.commit();
         return { memberId, created: false };
       }
       const memberId = randomUUID();
@@ -184,7 +210,6 @@ export class IdentityStore {
         privacy_class: 'member_private',
         payload: { member_id: memberId, identity_provider: provider },
       });
-      await tx.commit();
       return { memberId, created: true };
     });
   }
@@ -228,7 +253,7 @@ export class IdentityStore {
   }
 
   async revokeSession(secret: string, memberId: string, reason: 'sign_out' | 'account_switch' | 'security' | 'deletion', correlationId: string): Promise<void> {
-    await this.database.runTransactionAsync(async (tx) => {
+    await this.rw(async (tx) => {
       tx.update('Sessions', { session_hash: sha256(secret), revoked_at: Spanner.COMMIT_TIMESTAMP });
       this.outbox(tx, `member:${memberId}`, correlationId, {
         event_type: 'session.revoked',
@@ -238,7 +263,6 @@ export class IdentityStore {
         privacy_class: 'restricted',
         payload: { member_id: memberId, reason },
       });
-      await tx.commit();
     });
   }
 
@@ -284,7 +308,7 @@ export class IdentityStore {
 
   /** Optimistic concurrency on the member aggregate (version covers settings too). */
   async patchMember(memberId: string, expectedVersion: number, patch: MePatch, correlationId: string): Promise<number> {
-    return this.database.runTransactionAsync(async (tx) => {
+    return this.rw(async (tx) => {
       const [rows] = await tx.read('Members', { keys: [memberId], columns: ['version', 'account_state'], json: true });
       const row = rows[0] as { version: number | string; account_state: string } | undefined;
       if (!row || row.account_state !== 'active') throw new MemberInactiveError('member not active');
@@ -322,7 +346,6 @@ export class IdentityStore {
         privacy_class: 'member_private',
         payload: { member_id: memberId, changed_fields: changed },
       });
-      await tx.commit();
       return next;
     });
   }
