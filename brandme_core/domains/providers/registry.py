@@ -71,6 +71,8 @@ class ProviderConnection:
     data_use: Mapping[str, bool] = field(default_factory=dict)  # e.g. {"display_images": False}
     allowed_redirect_hosts: Tuple[str, ...] = ()
     adapter: Any = None  # server-only adapter instance
+    protocols: Mapping[str, str] = field(default_factory=dict)  # e.g. {"ap2": "0.2"} only when verified/simulated
+    merchant_public_keys: Mapping[str, Any] = field(default_factory=dict)  # merchant_id -> checkout JWT key
     version: int = 1
 
     def capability(self, name: str) -> CapabilityStatus:

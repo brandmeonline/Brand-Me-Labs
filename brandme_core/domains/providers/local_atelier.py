@@ -34,6 +34,9 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
+import jwt
+from cryptography.hazmat.primitives.asymmetric import ec
+
 from brandme_core.domains.commerce.money import Money
 from brandme_core.domains.commerce.quote import CheckoutTerms
 
@@ -103,6 +106,8 @@ class LocalAtelierProvider:
         self._quote_ttl = quote_ttl
         # Generated per process; never committed. Signs this simulator's webhooks only.
         self._webhook_secret = secrets.token_bytes(32)
+        # Simulated merchant checkout-signing key (AP2 Checkout JWT, ES256). Per process, never committed.
+        self._merchant_key = ec.generate_private_key(ec.SECP256R1())
         self._stock: Dict[str, int] = {}
         self._price: Dict[str, int] = {}
         self._variants: Dict[str, SourceVariant] = {}
@@ -126,6 +131,33 @@ class LocalAtelierProvider:
                     image_urls=(f"/demo/garments/{slug}/poster.webp",), price=Money(price, "USD"),
                     availability="in_stock", source_updated_at=epoch,
                     rights_policy_ref="original_demo_asset", description=f"{title}. Fictional demo garment.")
+
+    @property
+    def merchant_public_key(self):
+        return self._merchant_key.public_key()
+
+    def ucp_checkout(self, quote) -> dict:
+        """UCP checkout document for a quote (what an AP2 merchant signs)."""
+        return {
+            "id": quote.checkout_reference,
+            "merchant": {"id": MERCHANT_ID, "name": "Demo Atelier (simulated, fictional)"},
+            "line_items": [{"id": f"li-{i}", "quantity": l.quantity,
+                            "item": {"id": l.source_variant_ref, "title": l.title or l.source_variant_ref,
+                                     "price": l.unit_price.amount_minor},
+                            "totals": [{"type": "subtotal", "amount": l.line_total.amount_minor}]}
+                           for i, l in enumerate(quote.lines)],
+            "status": "ready_for_complete", "currency": quote.currency,
+            "totals": [{"type": "subtotal", "amount": quote.subtotal.amount_minor},
+                       {"type": "tax", "amount": quote.tax.amount_minor},
+                       {"type": "fulfillment", "amount": quote.shipping.amount_minor},
+                       {"type": "total", "amount": quote.total.amount_minor}],
+            "links": [],
+        }
+
+    def signed_checkout_jwt(self, quote, **override) -> str:
+        doc = self.ucp_checkout(quote)
+        doc.update(override)
+        return jwt.encode(doc, self._merchant_key, algorithm="ES256", headers={"kid": "demo-merchant-1"})
 
     def variant_id_for(self, source_variant_ref: str) -> str:
         return variant_uuid(source_variant_ref)
@@ -365,4 +397,6 @@ def local_atelier_connection(provider: LocalAtelierProvider, environment: str,
         environment=environment, simulation=True, country_codes=("US",),
         disclosure=SIMULATION_LABEL, capabilities=caps, access_level="simulation",
         data_use={"display_images": True, "cache_prices": True, "derive_3d": True},
-        allowed_redirect_hosts=("demo-atelier.example.invalid",), adapter=provider)
+        allowed_redirect_hosts=("demo-atelier.example.invalid",), adapter=provider,
+        protocols={"ap2": "0.2"},  # simulated merchant; proves codec/flow behavior only
+        merchant_public_keys={MERCHANT_ID: provider.merchant_public_key})

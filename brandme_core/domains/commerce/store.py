@@ -20,7 +20,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 TABLES = (
     "carts", "quotes", "delegations", "challenges", "approvals", "reservations",
-    "operations", "orders", "idempotency", "webhook_receipts", "outbox",
+    "operations", "orders", "idempotency", "webhook_receipts", "outbox", "surface_keys", "ap2_used",
 )
 
 
@@ -72,6 +72,10 @@ class InMemoryCommerceStore:
             if self._depth == 0:
                 raise RuntimeError("writes require an open transaction")
             self._tables[table][key] = row
+
+    def keys(self, table: str) -> List[Any]:
+        with self._lock:
+            return list(self._tables[table].keys())
 
     def rows(self, table: str) -> List[Any]:
         with self._lock:

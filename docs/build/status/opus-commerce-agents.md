@@ -196,3 +196,31 @@ copy of identity.
 | Malicious product text stays data (BM-COM-017) | passed | `test_malicious_product_text_stays_data` |
 | PAN/CVV never accepted or logged (BM-COM-018) | passed (MCP surface) | `test_payment_card_data_rejected_and_never_logged`, `test_audit_records_no_arguments` |
 | MCP interop test against a real client | **not_run** — needs the gateway Streamable HTTP transport |
+
+## Stage S4 — AP2 v0.2 codec; ACP/UCP/A2A explicit gates (2026-10-05)
+
+**Code:** `brandme_core/domains/commerce/ap2.py`, vendored official schemas in
+`brandme_core/domains/commerce/ap2_schemas/` (verbatim from `google-agentic-commerce/AP2@e1ea56db72a6385bce3e5c1112b3a56ce60acb43`,
+Apache-2.0, `NOTICE.md`), `CommerceService.register_surface_key` / `approve_with_ap2`, `protocols.py`.
+**Tests:** `tests/test_commerce_ap2.py` (21), `tests/test_commerce_protocols.py` (5).
+
+Role decision: Brand.Me **verifies** AP2 mandates and maps them to an internal approval; it never signs a mandate for
+the member. The member's trusted-surface device key (EC P-256, registered from an `aal2` first-party session) signs
+closed Checkout/Payment mandates. Verification: SD-JWT signature (`sd-jwt==0.10.4`), exactly one `delegate_payload`,
+official JSON Schema, `vct` const, `checkout_hash` = b64url(sha-256 or `_sd_alg`) of `checkout_jwt`, merchant Checkout JWT
+ES256-only (spec forbids deterministic signatures) against the provider's registered merchant key, UCP checkout ↔ canonical
+quote material terms, payment `transaction_id`/amount/currency/payee, `iat`+`exp` required and `exp` ≤ quote expiry, KB-JWT
+`aud`/`nonce` enforced when present, single use by mandate digest. Approval stores `protocol_payload_hash` separately
+from the internal quote hash. Open mandates and `~~` chains → `unsupported_chain`.
+
+| Item | Status | Evidence |
+|---|---|---|
+| AP2 conformance vs official schemas (BM-COM-014) | **passed** (local, against simulated merchant) | 18 local tests |
+| Cross-verification with the **official AP2 SDK** at the pinned commit | **passed** — SDK verifies mandates Brand.Me accepts; Brand.Me verifies mandates the SDK issues; SDK rejects wrong key/expired as we do | `test_official_sdk_*` (3), run with `AP2_SDK_PYTHON=<venv with ap2 @ e1ea56d>`; skipped (not passed) when unset |
+| Invalid signatures / replays fail (BM-COM-014) | passed | `test_tampered_*`, `test_replayed_mandate_rejected`, `test_mandate_signed_by_unregistered_key_rejected` |
+| AP2 against a real merchant/PSP | **blocked** — no merchant supporting AP2 is approved for Brand.Me |
+| ACP / UCP | `unconfigured`, no version pinned; adapters fail closed (BM-COM-015 contract half passed; provider suites blocked on approved accounts) | `test_commerce_protocols.py` |
+| A2A | `unconfigured`; no Agent Card published; no `a2a.*` tools | `test_no_agent_card_and_no_protocol_tools_advertised` |
+
+Oracle reproduction: `python3 -m venv /tmp/ap2venv && /tmp/ap2venv/bin/pip install -e <AP2 checkout @ e1ea56d> &&
+AP2_SDK_PYTHON=/tmp/ap2venv/bin/python python3 -m pytest tests/test_commerce_ap2.py`.

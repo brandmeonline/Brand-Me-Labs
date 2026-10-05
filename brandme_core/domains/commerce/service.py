@@ -365,6 +365,78 @@ class CommerceService:
                         {"operation_id": op.id, "approval_id": approval.id, "quote_hash": current_hash})
         return approval
 
+    # ------------------------------------------------------ AP2-backed approval
+    def register_surface_key(self, principal: Principal, public_jwk: Mapping[str, Any]) -> str:
+        """Member registers the trusted-surface device key that signs their AP2 mandates."""
+        if principal.is_agent or _AAL.get(principal.assurance_level, 0) < _AAL["aal2"]:
+            raise Forbidden("only a reauthenticated member session can register a signing key")
+        from jwcrypto.jwk import JWK
+        key = JWK(**dict(public_jwk))
+        if key.has_private or key.get("kty") != "EC" or key.get("crv") != "P-256":
+            raise CommerceError("surface key must be a public EC P-256 JWK", code="invalid_surface_key")
+        kid = key.thumbprint()
+        with self.store.transaction():
+            self.store.put("surface_keys", (principal.member_id, kid), key.export_public(as_dict=True))
+        return kid
+
+    def approve_with_ap2(self, principal: Principal, *, operation_id: str, checkout_mandate: str,
+                         payment_mandate: str, expected_aud: Optional[str] = None,
+                         expected_nonce: Optional[str] = None) -> PurchaseApproval:
+        """Map verified AP2 v0.2 closed mandates to an approval bound to the canonical quote hash."""
+        from jwcrypto.jwk import JWK
+        from . import ap2
+        op = self._own("operations", operation_id, principal)
+        if op.state != "awaiting_approval":
+            raise ApprovalInvalid(f"operation is {op.state}")
+        quote = self.get_quote(principal, op.quote_id)
+        quote.verify_seal()
+        now = self.clock()
+        quote.ensure_fresh(now)
+        conn = self.registry.get(quote.provider_id)
+        if conn.protocols.get("ap2") != ap2.AP2_VERSION:
+            raise CapabilityUnavailable("provider does not support AP2 v0.2", code="protocol_not_supported")
+        merchant_key = conn.merchant_public_keys.get(quote.merchant_id)
+        if merchant_key is None:
+            raise CapabilityUnavailable("no verified merchant checkout key", code="merchant_key_missing")
+        keys = [JWK(**self.store.get("surface_keys", k)) for k in self.store.keys("surface_keys")
+                if k[0] == principal.member_id]
+        last: Optional[Exception] = None
+        for user_key in keys:
+            try:
+                result = ap2.verify_closed_mandates(
+                    checkout_mandate=checkout_mandate, payment_mandate=payment_mandate, quote=quote,
+                    user_key=user_key, merchant_public_key=merchant_key, now=int(now.timestamp()),
+                    expected_aud=expected_aud, expected_nonce=expected_nonce)
+                break
+            except ap2.Ap2Error as exc:
+                last = exc
+                if exc.code != "mandate_signature":
+                    raise ApprovalInvalid(exc.detail, code=f"ap2_{exc.code}") from None
+        else:
+            raise ApprovalInvalid("mandate not signed by a registered member key",
+                                  code="ap2_" + getattr(last, "code", "no_surface_key"))
+        with self.store.transaction():
+            if self.store.get("ap2_used", result.checkout_mandate_digest) is not None:
+                raise ApprovalInvalid("mandate already used", code="ap2_replay")
+            op = self.store.get("operations", operation_id)
+            if op.state != "awaiting_approval" or quote.compute_hash() != op.quote_hash:
+                raise ApprovalInvalid("quote terms changed", code="quote_changed")
+            d = self.store.get("delegations", op.delegation_id) if op.delegation_id else None
+            executor_ref = d.id if d is not None and d.mode is AssistanceMode.BUY_WITHIN_RULES else None
+            approval = PurchaseApproval(
+                id=new_id(), member_id=principal.member_id, delegation_ref=executor_ref, quote_id=quote.id,
+                quote_hash=op.quote_hash, merchant_id=quote.merchant_id, allowed_total=quote.total,
+                nonce=result.checkout_hash, issued_at=now, expires_at=quote.expires_at,
+                assurance_level="ap2_user_signed", method="ap2_mandate", materiality_rule=MATERIALITY_RULE,
+                protocol_payload_hash=result.protocol_payload_hash)
+            self.store.put("ap2_used", result.checkout_mandate_digest, approval.id)
+            self.store.put("approvals", approval.id, approval)
+            self._transition(op, "approved", approval_id=approval.id)
+            self._event("commerce.purchase.authorized", "PurchaseOperation", op.id, op.version + 1, principal,
+                        {"operation_id": op.id, "approval_id": approval.id, "quote_hash": op.quote_hash,
+                         "protocol": "ap2/0.2", "protocol_payload_hash": result.protocol_payload_hash})
+        return approval
+
     # ---------------------------------------------------------------- execute
     def execute_purchase(self, principal: Principal, *, operation_id: str, approval_id: str,
                          idempotency_key: str) -> PurchaseOperation:
