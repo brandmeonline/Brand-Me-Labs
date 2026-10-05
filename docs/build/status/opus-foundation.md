@@ -98,6 +98,11 @@ Open (proposed for parent / later lanes):
 - Backfill of the two legacy persona columns: persona lane (V002).
 - Browser OIDC code flow (D-005): gated on the OIDC tenant.
 
+## CI state (PR #33, head `dc4b62b`)
+- Green: Foundation `check` (check + smoke + builds + production refusal), Test Gateway, Test Chain, Test Core, regression, Security Scan.
+- Red: **Trivy code scanning** (65 alerts). They appear now because the SARIF upload succeeds for the first time after moving to `upload-sarif@v3` + `security-events: write`. All of them are in manifests this PR does not change: python-jose/aiohttp pins, agentic ML pins, Dockerfiles, terraform, and Next 14.x (the base lockfile already had `next@14.2.33`). The critical/high npm alerts clear with the Next 16.3.8 / React 19.3.0 migration (frontend/console lanes). Reproduced locally with Trivy 0.69.1; owners proposed in the PR comment.
+- Fixed in CI: an intermittent Spanner session leak in the gateway store (`runTransactionAsync` → explicit begin/commit/end with ABORTED retry; 0/8 failures after, 2/5 before).
+
 ## Cross-lane edits (flag for review; details in `docs/build/deviations.md` D-002)
 `brandme_core/spanner/pool.py` (additive `database` property; fixes 49 call sites), `brandme-gateway/src/index.ts`, `src/config/index.ts`, `package.json`, `vitest.config.ts`.
 
