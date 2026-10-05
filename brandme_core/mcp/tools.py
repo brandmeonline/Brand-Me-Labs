@@ -155,6 +155,7 @@ RETIRED_REASON = {
 
 _SPECS = {t.name: t for t in TOOLS}
 _PAN_RE = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
+_UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 
 
 def _luhn(digits: str) -> bool:
@@ -170,6 +171,9 @@ def _luhn(digits: str) -> bool:
 
 def _contains_payment_credential(value: Any) -> bool:
     if isinstance(value, str):
+        # Identifiers are not card data: remove UUIDs so their digit runs cannot
+        # chain across hyphens into a Luhn-valid 13-19 digit sequence.
+        value = _UUID_RE.sub(" ", value)
         for m in _PAN_RE.finditer(value):
             d = re.sub(r"\D", "", m.group())
             if 13 <= len(d) <= 19 and _luhn(d):

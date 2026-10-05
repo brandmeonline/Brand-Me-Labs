@@ -268,3 +268,14 @@ def test_unsupported_protocol_version(h):
            "tool": "brandme.catalog.search", "arguments": {"query": "x"}, "idempotency_key": None}
     status, body = h.ex.invoke(h.assertion(), inv)
     assert status == 400 and body["problem"]["supported"] == [MCP_PROTOCOL_VERSION]
+
+
+def test_uuids_are_not_mistaken_for_card_numbers():
+    from brandme_core.mcp.tools import _contains_payment_credential
+    # These UUIDs chain into Luhn-valid digit runs across hyphens (seen as a flaky false positive).
+    for u in ("8e694893-5172-4174-836b-6d317187f777", "dfcb71d3-8028-4328-8487-9071593728be",
+              "6210085a-6a38-4686-8277-0073b536b51c"):
+        assert not _contains_payment_credential({"operation_id": u, "nested": [u]})
+    assert not any(_contains_payment_credential(str(uuid.uuid4())) for _ in range(20000))
+    assert _contains_payment_credential({"note": "4111-1111-1111-1111"})
+    assert _contains_payment_credential({"note": "id 8e694893-5172-4174-836b-6d317187f777 card 4111111111111111"})
