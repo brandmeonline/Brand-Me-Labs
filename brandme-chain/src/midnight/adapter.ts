@@ -32,6 +32,7 @@ import type {
   WalletProvider,
 } from '@midnight-ntwrk/midnight-js-types';
 import { execFileSync } from 'node:child_process';
+import WebSocket from 'ws';
 import { inspect } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { assertSameNetwork, assertWritable, type MidnightEndpoints, WrongNetworkError } from './network.js';
@@ -127,7 +128,8 @@ export function buildProviders(p: {
   }
   return {
     privateStateProvider: p.session.stateProvider,
-    publicDataProvider: indexerPublicDataProvider(p.endpoints.indexerHttp, p.endpoints.indexerWs),
+    // Explicit WebSocket implementation: not every supported Node runtime has a global one.
+    publicDataProvider: indexerPublicDataProvider(p.endpoints.indexerHttp, p.endpoints.indexerWs, WebSocket as never),
     zkConfigProvider,
     proofProvider,
     walletProvider: p.wallet.walletProvider,
