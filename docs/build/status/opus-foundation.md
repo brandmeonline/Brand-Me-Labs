@@ -124,3 +124,7 @@ Open (proposed for parent / later lanes):
 1. `pnpm setup:demo && pnpm check && pnpm smoke` (needs Docker or a local Spanner emulator).
 2. Read this file, `docs/build/deviations.md` and `docs/build/compatibility-lock.md`.
 3. Next foundation items, if the parent keeps them in this lane: the Firestore projection framework + rules + revocation test (BM-FND-006), the redacted-log middleware for legacy routes, and export/deletion job scaffolding on top of `data_categories()`.
+
+## Merge record (2026-10-05)
+
+PR #33 merged into `bench/opus-foundation-20261005` at `25dff5c8` per founder approval (API merge of the draft required marking it ready-for-review first via GraphQL). The 8 working-branch commits (W00 honest baseline, W01 contracts/workspace/design tokens, W02 persistence/auth/privacy) are now on the bench branch. CI failures at merge time are systemic (fail on `main`, owned by PR #30), not lane-caused. Downstream lanes were notified via comments on PRs #32, #34, #35; the two Astra lanes (no open PRs) will see the merge via the bench watch digest. W00–W02 deliverables are complete; remaining foundation-adjacent work is the repo-wide CI repair (PR #30) and the Trivy dependency findings, both outside this lane's ownership.
