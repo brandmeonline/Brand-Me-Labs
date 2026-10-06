@@ -17,19 +17,34 @@ def _tables(db):
         return {r[0] for r in s.execute_sql("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ''")}
 
 
-def test_only_foundation_numbers_are_used(runner):
-    versions = [m.version for m in runner.load_migrations()]
-    assert versions == [1], "V002–V009 are reserved for other lanes"
+RESERVED = {1: "identity", 2: "persona", 3: "wardrobe", 4: "social", 5: "rewards", 6: "providers",
+            7: "commerce", 8: "rights", 9: "privacy"}
 
 
-def test_empty_to_v001_and_rerun_is_noop(runner, empty_database):
-    assert runner.migrate_up(empty_database, log=lambda *_: None) == [1]
+@pytest.fixture
+def v001_only(runner, tmp_path):
+    """Foundation behaviour is tested against V001 alone; lanes add their reserved numbers independently."""
+    d = tmp_path / "v001"
+    d.mkdir()
+    shutil.copy(REPO / "brandme-data/spanner/migrations/V001_identity.sql", d)
+    return runner.load_migrations(d), d
+
+
+def test_only_reserved_numbers_are_used(runner):
+    for m in runner.load_migrations():
+        assert m.version in RESERVED, f"V{m.version:03d} is not a reserved migration number"
+        assert RESERVED[m.version] in m.name, f"V{m.version:03d} must be the {RESERVED[m.version]} migration"
+
+
+def test_empty_to_v001_and_rerun_is_noop(runner, empty_database, v001_only):
+    ms, _ = v001_only
+    assert runner.migrate_up(empty_database, ms, log=lambda *_: None) == [1]
     assert V001_TABLES <= _tables(empty_database)
-    assert runner.migrate_up(empty_database, log=lambda *_: None) == []
+    assert runner.migrate_up(empty_database, ms, log=lambda *_: None) == []
     assert runner.assert_schema_supported(empty_database, 1) == 1
 
 
-def test_legacy_baseline_schema_then_v001(runner, empty_database):
+def test_legacy_baseline_schema_then_v001(runner, empty_database, v001_only):
     """The legacy schema.sql (as far as GoogleSQL accepts it) followed by V001."""
     src = (REPO / "brandme-data/spanner/schema.sql").read_text()
     accepted = 0
@@ -41,7 +56,7 @@ def test_legacy_baseline_schema_then_v001(runner, empty_database):
             pass  # baseline defects are recorded in docs/build/evidence/w00
     assert accepted >= 70
     assert {"Users", "Assets", "ConsentPolicies"} <= _tables(empty_database)
-    assert runner.migrate_up(empty_database, log=lambda *_: None) == [1]
+    assert runner.migrate_up(empty_database, v001_only[0], log=lambda *_: None) == [1]
     assert V001_TABLES <= _tables(empty_database)
 
 
@@ -55,9 +70,8 @@ def test_checksum_drift_is_refused(runner, empty_database, tmp_path):
         runner.migrate_up(empty_database, runner.load_migrations(d), log=lambda *_: None)
 
 
-def test_out_of_order_and_incomplete_are_refused(runner, empty_database, tmp_path):
-    d = tmp_path / "m"
-    shutil.copytree(REPO / "brandme-data/spanner/migrations", d)
+def test_out_of_order_and_incomplete_are_refused(runner, empty_database, v001_only):
+    _, d = v001_only
     (d / "V003_late.sql").write_text("CREATE TABLE LateThree (id STRING(36) NOT NULL) PRIMARY KEY (id);\n")
     runner.migrate_up(empty_database, runner.load_migrations(d), log=lambda *_: None)
     (d / "V002_gap.sql").write_text("CREATE TABLE GapTwo (id STRING(36) NOT NULL) PRIMARY KEY (id);\n")
