@@ -1,4 +1,17 @@
+# Owned by the opus-foundation lane. Toolchain pins: docs/build/compatibility-lock.md
 packages:
   - 'brandme-gateway'
   - 'brandme-chain'
   - 'brandme-console'
+  - 'brandme-frontend'
+  - 'packages/*'
+
+# pnpm 10 blocks dependency lifecycle scripts unless allowlisted.
+onlyBuiltDependencies:
+  - esbuild
+  - unrs-resolver
+  - protobufjs
+  - '@parcel/watcher'
+  - sharp
+
+engineStrict: true

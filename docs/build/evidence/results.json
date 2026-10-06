@@ -1,0 +1,29 @@
+{
+  "$comment": "Acceptance results recorded by the opus-foundation lane. Keyed by stable requirement ID; requirements are never rewritten. Read by `pnpm evidence:report`.",
+  "recorded_at": "2026-10-05",
+  "results": {
+    "BM-BASE-001": {
+      "status": "blocked",
+      "evidence": "docs/build/evidence/w00/fresh-checkout.md; docs/build/evidence/w00/smoke-latest.json",
+      "reason": "Fresh checkout → setup:demo → smoke passes for HTTP client → gateway → brain → Spanner (including restart persistence). The consumer app (brandme-frontend, Next 14 placeholder) has no gateway client yet; that part belongs to the consumer-ui lane."
+    },
+    "BM-BASE-002": {
+      "status": "passed",
+      "evidence": "tests/foundation/test_mode_guard.py (47); brandme-gateway/src/middleware/mode.test.ts (7); me.test.ts strict-mode cases; CI step 'Mode guard refuses production'"
+    },
+    "BM-BASE-003": {
+      "status": "passed",
+      "evidence": "docs/build/evidence/w00/baseline-test-report.md (F1-F16); docs/build/status/opus-foundation.md"
+    },
+    "BM-BASE-004": {
+      "status": "passed",
+      "evidence": "docs/build/evidence/w01/build-*.log (Node 24.21.0, pnpm 10.34.6, frozen lockfile); packages type-check/tests in pnpm check",
+      "note": "Frontend resolves Next 14.0.4 (deprecated upstream); upgrade to the compatibility-lock target is the frontend lane's W01 change."
+    },
+    "BM-BASE-005": {
+      "status": "failed",
+      "evidence": "docs/build/evidence/w00/fresh-checkout.md (legacy route probe)",
+      "reason": "POST /scan returns 500 without NATS and GET /scan/:id is a constant 'processing' placeholder (brandme-gateway/src/routes/scan.ts, not foundation-owned). /shop and /stash render placeholder pages instead of redirecting to /discover and /closet, which do not exist yet (frontend lane)."
+    }
+  }
+}
