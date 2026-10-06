@@ -25,5 +25,14 @@
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@8.15.0"
+  "packageManager": "pnpm@8.15.0",
+  "pnpm": {
+    "overrides": {
+      "@midnight-ntwrk/ledger-v8": "8.1.2",
+      "@midnight-ntwrk/onchain-runtime-v3": "3.0.0",
+      "@midnight-ntwrk/compact-runtime": "0.16.0",
+      "@midnight-ntwrk/compact-js": "2.5.1",
+      "@midnight-ntwrk/platform-js": "2.2.4"
+    }
+  }
 }

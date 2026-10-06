@@ -24,10 +24,11 @@ jobs:
         with:
           node-version: '20'
 
+      # No `version:` here — package.json's `packageManager` field is the
+      # single source of truth. action-setup@v4 errors out if both are set.
+      # (Ported from PR #30.)
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 8
 
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile

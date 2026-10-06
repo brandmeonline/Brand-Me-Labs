@@ -18,6 +18,12 @@ on:
       - main
       - develop
 
+# Least privilege by default. security-events:write is what
+# codeql-action/upload-sarif needs (ported from PR #30).
+permissions:
+  contents: read
+  security-events: write
+
 env:
   GCP_PROJECT_ID: brandme-prod
   GCP_REGION: us-east1
@@ -57,8 +63,14 @@ jobs:
         working-directory: ./brandme-gateway
         run: pnpm type-check
 
+      # CI-only placeholders for the gateway config schema check, not
+      # credentials; jwtSecret is .min(32). (Ported from PR #30.)
       - name: Run tests
         working-directory: ./brandme-gateway
+        env:
+          OAUTH_CLIENT_ID: test-client-id
+          OAUTH_CLIENT_SECRET: test-client-secret
+          JWT_SECRET: test-jwt-secret-at-least-32-chars-long
         run: pnpm test
 
   test-core:
@@ -230,6 +242,6 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
