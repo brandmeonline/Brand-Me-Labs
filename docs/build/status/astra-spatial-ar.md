@@ -159,3 +159,10 @@ node scripts/assets/dev.mjs
 | Experience complete | **No** — working guest scaffold; integration and listed interactions remain |
 | Integration verified | **No** — foundation/domain clients and physical AR/provider evidence absent |
 | Production approved | **No** — no deployment or live capability activation performed |
+
+### Stage 5 — publication checkpoint (2026-10-07)
+
+- Published implementation commit `7bea00e682499cddfc4b9bbc839e73643c46257c` to `bench/astra-spatial-ar-20261005`. No merge, PR, deployment, or live capability activation was performed.
+- Terminal push had no configured GitHub credentials. The connected GitHub integration published the reviewed Git blobs after recovering an interrupted upload; every returned blob hash was checked. Remote tree `dc588413725622d29bb67adb689a95d668a92160` exactly matches the tested local implementation commit `9bfb2c2`.
+- Fetched the remote commit and verified zero file differences before aligning the local branch. The 17 browser scenarios and asset/type evidence above were executed on 2026-10-05; publication recovery did not change implementation code or claim new device coverage.
+- The scaffold is available for cross-lane integration. All remaining work and the three **No** release assessments above remain in effect.
