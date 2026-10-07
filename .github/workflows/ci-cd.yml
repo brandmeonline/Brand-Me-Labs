@@ -6,17 +6,32 @@
 name: Build, Test, and Deploy
 
 on:
+  # `push` is scoped to the long-lived branches on purpose. It fires on
+  # refs/heads/<branch> while `pull_request` fires on refs/pull/N/merge, so
+  # listing feature branches here makes every PR build the whole pipeline
+  # twice, concurrently, on the same SHA. The two runs do not carry the same
+  # token — GitHub restricts security-events:write on pull_request runs — so
+  # they can disagree, and whichever finishes last is the result shown.
+  # A `concurrency:` group does NOT dedupe them: github.ref differs, so they
+  # land in different groups. Mirrors chain-tests.yml:10-11.
   push:
     branches:
       - main
       - develop
-      - 'claude/**'
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
       - develop
+
+# Least privilege by default. security-events:write is what
+# codeql-action/upload-sarif needs; without it the Security Scan job fails
+# with "Resource not accessible by integration" after Trivy has already
+# scanned clean.
+permissions:
+  contents: read
+  security-events: write
 
 env:
   GCP_PROJECT_ID: brandme-prod
@@ -57,8 +72,17 @@ jobs:
         working-directory: ./brandme-gateway
         run: pnpm type-check
 
+      # src/config/index.ts:57 parses its zod schema at module load, and
+      # oauthClientId/oauthClientSecret/jwtSecret carry no defaults, so the
+      # test file throws on import via config/logger.ts. These are CI-only
+      # placeholders for that schema check, not credentials. jwtSecret is
+      # .min(32), so the value has to clear 32 characters.
       - name: Run tests
         working-directory: ./brandme-gateway
+        env:
+          OAUTH_CLIENT_ID: test-client-id
+          OAUTH_CLIENT_SECRET: test-client-secret
+          JWT_SECRET: test-jwt-secret-at-least-32-chars-long
         run: pnpm test
 
   test-core:
@@ -230,6 +254,6 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
