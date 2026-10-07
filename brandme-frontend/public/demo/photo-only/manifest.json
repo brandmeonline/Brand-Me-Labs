@@ -1,0 +1,20 @@
+{
+  "id": "photo-only",
+  "title": "My reference overshirt",
+  "fidelity": "P0",
+  "fidelityLabel": "Photo display",
+  "poster": "/demo/photo-only/poster.webp",
+  "rights": "/demo/rights.json",
+  "source": "Original overshirt render used as image-only fallback; no linked 3D representation",
+  "files": {
+    "poster.webp": {
+      "bytes": 24340,
+      "sha256": "cbdafe04a182b1a7d32e71adf7dcb3982f9e30bd7054dedaf9ffdc1531e1cae4"
+    }
+  },
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "nativeDevice": "not_applicable"
+  }
+}

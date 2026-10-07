@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "5a0ccc0d-d627-52fa-ab80-de662ef92b1b",
+  "slug": "jacket",
+  "title": "Structured Field Jacket",
+  "category": "outerwear",
+  "revision": "original-v1",
+  "fidelity": "P1",
+  "fidelityLabel": "Approximate 3D",
+  "sourceProductRevision": "fictional-2026-10-05",
+  "glb": "/demo/garments/jacket/lod0.glb",
+  "lowGlb": "/demo/garments/jacket/lod1.glb",
+  "usdz": "/demo/garments/jacket/preview.usdz",
+  "poster": "/demo/garments/jacket/poster.webp",
+  "rights": "/demo/rights.json",
+  "dimensionsMeters": [
+    0.9247715771198273,
+    0.904145747423172,
+    0.21229586005210876
+  ],
+  "pivot": "hanger_hook",
+  "collisionBounds": {
+    "min": [
+      -0.4622729420661926,
+      -0.7939846515655518,
+      -0.0972958579659462
+    ],
+    "max": [
+      0.46249863505363464,
+      0.11016109585762024,
+      0.11500000208616257
+    ]
+  },
+  "displayScaleBounds": [
+    0.65,
+    1.25
+  ],
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "triangleCount": 3516,
+  "drawCalls": 4,
+  "compression": {
+    "geometry": "uncompressed portable fallback",
+    "transport": "gzip sidecar",
+    "textures": "embedded original PNG PBR maps; no external references",
+    "native": "USDZ geometry and base colors; microtextures omitted"
+  },
+  "physicalScale": "approximate; not a calibrated product dimension",
+  "rig": null,
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "nativeDevice": "not_run",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "lod0.glb": {
+      "sha256": "1b8cc2e64db681bd47f47f0c95e988cec3144ebae9e18e5a6c9601f6040eed37",
+      "bytes": 353472
+    },
+    "lod0.glb.gz": {
+      "sha256": "222dd5695d9cac31acf8af1e6b3b6e3d73afc647491bc737da187a6f8ee1f693",
+      "bytes": 72862
+    },
+    "lod1.glb": {
+      "sha256": "0d21ae353572baa013fe7cf01033068581bd40073d501d9ba6622390e388ff41",
+      "bytes": 256704
+    },
+    "lod1.glb.gz": {
+      "sha256": "4a80d451c478e8c2e0339d5d72dbccdfb6ee86ed8da141cce70891ab3812100d",
+      "bytes": 51512
+    },
+    "preview.usdz": {
+      "sha256": "66688df9a482fd01c0104ab35e2888880a82b1e54724f555ca96b84beebb2c04",
+      "bytes": 1102639
+    },
+    "poster.webp": {
+      "sha256": "ad7818dbbfeb5c9b60bd2db212c35915822524d72cf44e4311818cd68203cee1",
+      "bytes": 25704
+    }
+  }
+}

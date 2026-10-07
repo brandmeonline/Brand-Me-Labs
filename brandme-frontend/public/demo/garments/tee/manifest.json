@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "demo-tee",
+  "slug": "tee",
+  "title": "Quiet Cotton Tee",
+  "category": "top",
+  "revision": "original-v1",
+  "fidelity": "P1",
+  "fidelityLabel": "Approximate 3D",
+  "sourceProductRevision": "fictional-2026-10-05",
+  "glb": "/demo/garments/tee/lod0.glb",
+  "lowGlb": "/demo/garments/tee/lod1.glb",
+  "usdz": "/demo/garments/tee/preview.usdz",
+  "poster": "/demo/garments/tee/poster.webp",
+  "rights": "/demo/rights.json",
+  "dimensionsMeters": [
+    0.8043890297412872,
+    0.9110395014286041,
+    0.204592727124691
+  ],
+  "pivot": "hanger_hook",
+  "collisionBounds": {
+    "min": [
+      -0.40203016996383667,
+      -0.8008784055709839,
+      -0.10153016448020935
+    ],
+    "max": [
+      0.40235885977745056,
+      0.11016109585762024,
+      0.10306256264448166
+    ]
+  },
+  "displayScaleBounds": [
+    0.65,
+    1.25
+  ],
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "triangleCount": 1608,
+  "drawCalls": 3,
+  "compression": {
+    "geometry": "uncompressed portable fallback",
+    "transport": "gzip sidecar",
+    "textures": "embedded original PNG PBR maps; no external references",
+    "native": "USDZ geometry and base colors; microtextures omitted"
+  },
+  "physicalScale": "approximate; not a calibrated product dimension",
+  "rig": null,
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "nativeDevice": "not_run",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "lod0.glb": {
+      "sha256": "a22298f5f044f3d53ae26a6f1954c841b08487f98f1903c75ccb6b042bf210f6",
+      "bytes": 169380
+    },
+    "lod0.glb.gz": {
+      "sha256": "5773eaac0a41b32e541b2fda26eba53fda8b6e2f5336503a496d41da387c5180",
+      "bytes": 46232
+    },
+    "lod1.glb": {
+      "sha256": "bf9bb27e0b5add601086a52dcaaccba04af558ad8f85eea85444dcd1ca22b4bb",
+      "bytes": 104856
+    },
+    "lod1.glb.gz": {
+      "sha256": "5c1eb9b4a54b2c568cdf2b3725be0c9a3eb8cd0b5210fa4d082f46a95ae67a79",
+      "bytes": 31037
+    },
+    "preview.usdz": {
+      "sha256": "9689e52765eedf49a0fe3983a8d891d2e15b9af2470462c7c61b145df9d56796",
+      "bytes": 508328
+    },
+    "poster.webp": {
+      "sha256": "fff7c6394d7a3cc31389b96c373d66634b10d022c9d59ac2d883ec11e0a3ddcf",
+      "bytes": 17198
+    }
+  }
+}

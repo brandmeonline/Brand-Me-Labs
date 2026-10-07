@@ -1,0 +1,31 @@
+{
+  "name": "@brandme/spatial-asset-tools",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "generate": "node generate.mjs",
+    "validate": "node validate.mjs",
+    "review": "node review.mjs"
+  },
+  "dependencies": {
+    "three": "0.182.0",
+    "gltf-validator": "2.0.0-dev.3.10"
+  },
+  "devDependencies": {
+    "@react-three/fiber": "9.4.0",
+    "@google/model-viewer": "4.2.0",
+    "@mediapipe/tasks-vision": "0.10.22-rc.20250304",
+    "@types/three": "0.182.0",
+    "@types/react": "19.1.16",
+    "@types/react-dom": "19.1.9",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "motion": "12.23.24",
+    "typescript": "5.9.3",
+    "vite": "7.1.7",
+    "@playwright/test": "1.56.1",
+    "@types/node": "22.18.8"
+  },
+  "packageManager": "pnpm@11.25.0"
+}

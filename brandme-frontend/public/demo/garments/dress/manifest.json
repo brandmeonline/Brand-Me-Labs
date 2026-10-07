@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "9572fdc7-31e0-5b80-be82-147ef4a5e69c",
+  "slug": "dress",
+  "title": "Evening Fluid Dress",
+  "category": "dress",
+  "revision": "original-v1",
+  "fidelity": "P1",
+  "fidelityLabel": "Approximate 3D",
+  "sourceProductRevision": "fictional-2026-10-05",
+  "glb": "/demo/garments/dress/lod0.glb",
+  "lowGlb": "/demo/garments/dress/lod1.glb",
+  "usdz": "/demo/garments/dress/preview.usdz",
+  "poster": "/demo/garments/dress/poster.webp",
+  "rights": "/demo/rights.json",
+  "dimensionsMeters": [
+    0.6695370376110077,
+    1.4641102850437164,
+    0.3768984377384186
+  ],
+  "pivot": "hanger_hook",
+  "collisionBounds": {
+    "min": [
+      -0.3320743441581726,
+      -1.3539491891860962,
+      -0.19011320173740387
+    ],
+    "max": [
+      0.3374626934528351,
+      0.11016109585762024,
+      0.1867852360010147
+    ]
+  },
+  "displayScaleBounds": [
+    0.65,
+    1.25
+  ],
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "triangleCount": 1464,
+  "drawCalls": 3,
+  "compression": {
+    "geometry": "uncompressed portable fallback",
+    "transport": "gzip sidecar",
+    "textures": "embedded original PNG PBR maps; no external references",
+    "native": "USDZ geometry and base colors; microtextures omitted"
+  },
+  "physicalScale": "approximate; not a calibrated product dimension",
+  "rig": null,
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "nativeDevice": "not_run",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "lod0.glb": {
+      "sha256": "78a20ec8e709289f3583acd7635f1b792fd281dc528bf77a2be5e31dde6179ad",
+      "bytes": 155556
+    },
+    "lod0.glb.gz": {
+      "sha256": "32fc98f0764e41bdb761d5ac03320e9c91809c5a59ed5fb8a09cf0e860143309",
+      "bytes": 43252
+    },
+    "lod1.glb": {
+      "sha256": "9a5ac9104d84c459841c69b4afc413ce69f8711e9d01f289d1df9897d2ee9cdf",
+      "bytes": 112548
+    },
+    "lod1.glb.gz": {
+      "sha256": "fe9160731fe51e41652a7133da21bfaafcaa72bad3a2e049459e0f6688cc4962",
+      "bytes": 32343
+    },
+    "preview.usdz": {
+      "sha256": "e5c1bc8968ff3eb57afd6115b212dd50c13faf8ba7b04569f5f426f2c2debac3",
+      "bytes": 474173
+    },
+    "poster.webp": {
+      "sha256": "78522f9fa329026567024687681bdbc3fe406b20eb11aa24daefec13177f4c42",
+      "bytes": 16826
+    }
+  }
+}

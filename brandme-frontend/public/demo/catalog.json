@@ -1,0 +1,1187 @@
+{
+  "schemaVersion": 1,
+  "fictional": true,
+  "products": [
+    {
+      "schemaVersion": 1,
+      "id": "a4036cb0-7ab2-54b5-9238-ee5ffb378771",
+      "slug": "overshirt",
+      "title": "Field Linen Overshirt",
+      "category": "top",
+      "revision": "original-v1",
+      "fidelity": "P1",
+      "fidelityLabel": "Approximate 3D",
+      "sourceProductRevision": "fictional-2026-10-05",
+      "glb": "/demo/garments/overshirt/lod0.glb",
+      "lowGlb": "/demo/garments/overshirt/lod1.glb",
+      "usdz": "/demo/garments/overshirt/preview.usdz",
+      "poster": "/demo/garments/overshirt/poster.webp",
+      "rights": "/demo/rights.json",
+      "dimensionsMeters": [
+        0.9247715771198273,
+        0.904145747423172,
+        0.21653016656637192
+      ],
+      "pivot": "hanger_hook",
+      "collisionBounds": {
+        "min": [
+          -0.4622729420661926,
+          -0.7939846515655518,
+          -0.10153016448020935
+        ],
+        "max": [
+          0.46249863505363464,
+          0.11016109585762024,
+          0.11500000208616257
+        ]
+      },
+      "displayScaleBounds": [
+        0.65,
+        1.25
+      ],
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "triangleCount": 3516,
+      "drawCalls": 4,
+      "compression": {
+        "geometry": "uncompressed portable fallback",
+        "transport": "gzip sidecar",
+        "textures": "embedded original PNG PBR maps; no external references",
+        "native": "USDZ geometry and base colors; microtextures omitted"
+      },
+      "physicalScale": "approximate; not a calibrated product dimension",
+      "rig": null,
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "nativeDevice": "not_run",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "lod0.glb": {
+          "sha256": "b5e3b113ec9d0b57cb3c9ccd124c4a72095cc29fdfa64c0a9013e1d57e666b67",
+          "bytes": 353472
+        },
+        "lod0.glb.gz": {
+          "sha256": "2d5d8c94ba917c9fe5950f4b12070f6de90f74b9d136aaffb1be183c122efc5b",
+          "bytes": 72893
+        },
+        "lod1.glb": {
+          "sha256": "67db0d5d11a03fd526856ecec147d9e1f62fa515271e00d3ff1bce53f0ccdfc2",
+          "bytes": 256704
+        },
+        "lod1.glb.gz": {
+          "sha256": "41485a649c7874ac22a0b6bb039ea822bb90d0384c1d902a60a66fd9aeab9edc",
+          "bytes": 51506
+        },
+        "preview.usdz": {
+          "sha256": "cd08b9c79c0658b470e5cceab00546b154092503ba88346030307933ee0ffe15",
+          "bytes": 1102680
+        },
+        "poster.webp": {
+          "sha256": "cbdafe04a182b1a7d32e71adf7dcb3982f9e30bd7054dedaf9ffdc1531e1cae4",
+          "bytes": 24340
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "6b4ee94a-4998-55d8-8298-c8f81a40b7aa",
+      "slug": "trousers",
+      "title": "Soft Pleat Trousers",
+      "category": "bottom",
+      "revision": "original-v1",
+      "fidelity": "P1",
+      "fidelityLabel": "Approximate 3D",
+      "sourceProductRevision": "fictional-2026-10-05",
+      "glb": "/demo/garments/trousers/lod0.glb",
+      "lowGlb": "/demo/garments/trousers/lod1.glb",
+      "usdz": "/demo/garments/trousers/preview.usdz",
+      "poster": "/demo/garments/trousers/poster.webp",
+      "rights": "/demo/rights.json",
+      "dimensionsMeters": [
+        0.5294991731643677,
+        1.2740900814533234,
+        0.20738276094198227
+      ],
+      "pivot": "hanger_hook",
+      "collisionBounds": {
+        "min": [
+          -0.26186779141426086,
+          -1.1639289855957031,
+          -0.10038276016712189
+        ],
+        "max": [
+          0.2676313817501068,
+          0.11016109585762024,
+          0.10700000077486038
+        ]
+      },
+      "displayScaleBounds": [
+        0.65,
+        1.25
+      ],
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "triangleCount": 2640,
+      "drawCalls": 5,
+      "compression": {
+        "geometry": "uncompressed portable fallback",
+        "transport": "gzip sidecar",
+        "textures": "embedded original PNG PBR maps; no external references",
+        "native": "USDZ geometry and base colors; microtextures omitted"
+      },
+      "physicalScale": "approximate; not a calibrated product dimension",
+      "rig": null,
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "nativeDevice": "not_run",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "lod0.glb": {
+          "sha256": "525c1cb98335de4971fe2f8562f5e166cb5a110f278538c11006465c492657fd",
+          "bytes": 278332
+        },
+        "lod0.glb.gz": {
+          "sha256": "474a3b6d044f7b18351234d264aaa26adc2a538e8d3c389c22fb98dbb53d195b",
+          "bytes": 66586
+        },
+        "lod1.glb": {
+          "sha256": "37af0b5ffd2270d3aeb3280fb25aa26624c724a008511f5dde67edbb37e8ada5",
+          "bytes": 203064
+        },
+        "lod1.glb.gz": {
+          "sha256": "6d49be25aac3a12c2eba06db4a5f48b30a225fed08d1b0b8636311b959af1171",
+          "bytes": 49653
+        },
+        "preview.usdz": {
+          "sha256": "db189df23411a6eda0dca580bc3d85d9a83fd51ccbeb1dab93db4db6f5d37ae9",
+          "bytes": 840388
+        },
+        "poster.webp": {
+          "sha256": "29c2512dec79c856690c644d57cae40dfb0826b6b36a803d662856f04201d907",
+          "bytes": 15966
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "9572fdc7-31e0-5b80-be82-147ef4a5e69c",
+      "slug": "dress",
+      "title": "Evening Fluid Dress",
+      "category": "dress",
+      "revision": "original-v1",
+      "fidelity": "P1",
+      "fidelityLabel": "Approximate 3D",
+      "sourceProductRevision": "fictional-2026-10-05",
+      "glb": "/demo/garments/dress/lod0.glb",
+      "lowGlb": "/demo/garments/dress/lod1.glb",
+      "usdz": "/demo/garments/dress/preview.usdz",
+      "poster": "/demo/garments/dress/poster.webp",
+      "rights": "/demo/rights.json",
+      "dimensionsMeters": [
+        0.6695370376110077,
+        1.4641102850437164,
+        0.3768984377384186
+      ],
+      "pivot": "hanger_hook",
+      "collisionBounds": {
+        "min": [
+          -0.3320743441581726,
+          -1.3539491891860962,
+          -0.19011320173740387
+        ],
+        "max": [
+          0.3374626934528351,
+          0.11016109585762024,
+          0.1867852360010147
+        ]
+      },
+      "displayScaleBounds": [
+        0.65,
+        1.25
+      ],
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "triangleCount": 1464,
+      "drawCalls": 3,
+      "compression": {
+        "geometry": "uncompressed portable fallback",
+        "transport": "gzip sidecar",
+        "textures": "embedded original PNG PBR maps; no external references",
+        "native": "USDZ geometry and base colors; microtextures omitted"
+      },
+      "physicalScale": "approximate; not a calibrated product dimension",
+      "rig": null,
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "nativeDevice": "not_run",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "lod0.glb": {
+          "sha256": "78a20ec8e709289f3583acd7635f1b792fd281dc528bf77a2be5e31dde6179ad",
+          "bytes": 155556
+        },
+        "lod0.glb.gz": {
+          "sha256": "32fc98f0764e41bdb761d5ac03320e9c91809c5a59ed5fb8a09cf0e860143309",
+          "bytes": 43252
+        },
+        "lod1.glb": {
+          "sha256": "9a5ac9104d84c459841c69b4afc413ce69f8711e9d01f289d1df9897d2ee9cdf",
+          "bytes": 112548
+        },
+        "lod1.glb.gz": {
+          "sha256": "fe9160731fe51e41652a7133da21bfaafcaa72bad3a2e049459e0f6688cc4962",
+          "bytes": 32343
+        },
+        "preview.usdz": {
+          "sha256": "e5c1bc8968ff3eb57afd6115b212dd50c13faf8ba7b04569f5f426f2c2debac3",
+          "bytes": 474173
+        },
+        "poster.webp": {
+          "sha256": "78522f9fa329026567024687681bdbc3fe406b20eb11aa24daefec13177f4c42",
+          "bytes": 16826
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "5a0ccc0d-d627-52fa-ab80-de662ef92b1b",
+      "slug": "jacket",
+      "title": "Structured Field Jacket",
+      "category": "outerwear",
+      "revision": "original-v1",
+      "fidelity": "P1",
+      "fidelityLabel": "Approximate 3D",
+      "sourceProductRevision": "fictional-2026-10-05",
+      "glb": "/demo/garments/jacket/lod0.glb",
+      "lowGlb": "/demo/garments/jacket/lod1.glb",
+      "usdz": "/demo/garments/jacket/preview.usdz",
+      "poster": "/demo/garments/jacket/poster.webp",
+      "rights": "/demo/rights.json",
+      "dimensionsMeters": [
+        0.9247715771198273,
+        0.904145747423172,
+        0.21229586005210876
+      ],
+      "pivot": "hanger_hook",
+      "collisionBounds": {
+        "min": [
+          -0.4622729420661926,
+          -0.7939846515655518,
+          -0.0972958579659462
+        ],
+        "max": [
+          0.46249863505363464,
+          0.11016109585762024,
+          0.11500000208616257
+        ]
+      },
+      "displayScaleBounds": [
+        0.65,
+        1.25
+      ],
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "triangleCount": 3516,
+      "drawCalls": 4,
+      "compression": {
+        "geometry": "uncompressed portable fallback",
+        "transport": "gzip sidecar",
+        "textures": "embedded original PNG PBR maps; no external references",
+        "native": "USDZ geometry and base colors; microtextures omitted"
+      },
+      "physicalScale": "approximate; not a calibrated product dimension",
+      "rig": null,
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "nativeDevice": "not_run",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "lod0.glb": {
+          "sha256": "1b8cc2e64db681bd47f47f0c95e988cec3144ebae9e18e5a6c9601f6040eed37",
+          "bytes": 353472
+        },
+        "lod0.glb.gz": {
+          "sha256": "222dd5695d9cac31acf8af1e6b3b6e3d73afc647491bc737da187a6f8ee1f693",
+          "bytes": 72862
+        },
+        "lod1.glb": {
+          "sha256": "0d21ae353572baa013fe7cf01033068581bd40073d501d9ba6622390e388ff41",
+          "bytes": 256704
+        },
+        "lod1.glb.gz": {
+          "sha256": "4a80d451c478e8c2e0339d5d72dbccdfb6ee86ed8da141cce70891ab3812100d",
+          "bytes": 51512
+        },
+        "preview.usdz": {
+          "sha256": "66688df9a482fd01c0104ab35e2888880a82b1e54724f555ca96b84beebb2c04",
+          "bytes": 1102639
+        },
+        "poster.webp": {
+          "sha256": "ad7818dbbfeb5c9b60bd2db212c35915822524d72cf44e4311818cd68203cee1",
+          "bytes": 25704
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "bdbff281-45f2-5887-b09b-6db9151126f6",
+      "slug": "sneaker",
+      "title": "Everyday Low Sneaker",
+      "category": "shoes",
+      "revision": "original-v1",
+      "fidelity": "P1",
+      "fidelityLabel": "Approximate 3D",
+      "sourceProductRevision": "fictional-2026-10-05",
+      "glb": "/demo/garments/sneaker/lod0.glb",
+      "lowGlb": "/demo/garments/sneaker/lod1.glb",
+      "usdz": "/demo/garments/sneaker/preview.usdz",
+      "poster": "/demo/garments/sneaker/poster.webp",
+      "rights": "/demo/rights.json",
+      "dimensionsMeters": [
+        0.3857784569263458,
+        0.1600000038743019,
+        0.33663201332092285
+      ],
+      "pivot": "grounded_center",
+      "collisionBounds": {
+        "min": [
+          -0.1928892284631729,
+          0.017999999225139618,
+          -0.16831600666046143
+        ],
+        "max": [
+          0.1928892284631729,
+          0.17800000309944153,
+          0.16831600666046143
+        ]
+      },
+      "displayScaleBounds": [
+        0.65,
+        1.25
+      ],
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "triangleCount": 3168,
+      "drawCalls": 3,
+      "compression": {
+        "geometry": "uncompressed portable fallback",
+        "transport": "gzip sidecar",
+        "textures": "embedded original PNG PBR maps; no external references",
+        "native": "USDZ geometry and base colors; microtextures omitted"
+      },
+      "physicalScale": "approximate; not a calibrated product dimension",
+      "rig": null,
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "nativeDevice": "not_run",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "lod0.glb": {
+          "sha256": "33cacbaf36d9e6e4d3241c9720ac06888742de88e29335fc24806e514d04a328",
+          "bytes": 323308
+        },
+        "lod0.glb.gz": {
+          "sha256": "d52230197ff40281de9d5e04b6ce98e3c277cd2977b1da94fcf3883cc5087420",
+          "bytes": 70201
+        },
+        "lod1.glb": {
+          "sha256": "ddc1976f9352be81510d8fbd55f6d644c66ee6792d9596b364391cbec1996e37",
+          "bytes": 172768
+        },
+        "lod1.glb.gz": {
+          "sha256": "7ce7216eaad576e5406122c329de1a886518555a5b6d1b30d8e648874ba0c672",
+          "bytes": 40332
+        },
+        "preview.usdz": {
+          "sha256": "871faf493cc33e630f77da5cd60c9f05282b32d3cd79066fe584613dc8769f48",
+          "bytes": 988538
+        },
+        "poster.webp": {
+          "sha256": "58ba88287611dd72a9fef2ae9b57f9486b6f55bbb7c0848cd3a80b2a008b3fec",
+          "bytes": 10096
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "21e655b5-f16d-57c8-bf99-c7af6e942c6f",
+      "slug": "bag",
+      "title": "Sculpted Everyday Bag",
+      "category": "accessory",
+      "revision": "original-v1",
+      "fidelity": "P1",
+      "fidelityLabel": "Approximate 3D",
+      "sourceProductRevision": "fictional-2026-10-05",
+      "glb": "/demo/garments/bag/lod0.glb",
+      "lowGlb": "/demo/garments/bag/lod1.glb",
+      "usdz": "/demo/garments/bag/preview.usdz",
+      "poster": "/demo/garments/bag/poster.webp",
+      "rights": "/demo/rights.json",
+      "dimensionsMeters": [
+        0.3649955689907074,
+        0.46039231680333614,
+        0.16013775020837784
+      ],
+      "pivot": "grounded_center",
+      "collisionBounds": {
+        "min": [
+          -0.1824977844953537,
+          0.009999999776482582,
+          -0.0777454599738121
+        ],
+        "max": [
+          0.1824977844953537,
+          0.4703923165798187,
+          0.08239229023456573
+        ]
+      },
+      "displayScaleBounds": [
+        0.65,
+        1.25
+      ],
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "triangleCount": 1704,
+      "drawCalls": 3,
+      "compression": {
+        "geometry": "uncompressed portable fallback",
+        "transport": "gzip sidecar",
+        "textures": "embedded original PNG PBR maps; no external references",
+        "native": "USDZ geometry and base colors; microtextures omitted"
+      },
+      "physicalScale": "approximate; not a calibrated product dimension",
+      "rig": null,
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "nativeDevice": "not_run",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "lod0.glb": {
+          "sha256": "d541f0360916e642e242ea85f7bf3c1a494cf965426c21c52d8f970d3ee70b05",
+          "bytes": 174836
+        },
+        "lod0.glb.gz": {
+          "sha256": "c748dbcc7056ef4c56a80ee0d655c9a1f206ec6aab9b783da25fa329c92b4e54",
+          "bytes": 38021
+        },
+        "lod1.glb": {
+          "sha256": "12c016dae5a5b7cd261cf7594dd9748577a8a834aee9ec65ae7ecb38c7ac79e5",
+          "bytes": 153332
+        },
+        "lod1.glb.gz": {
+          "sha256": "194fd22b5d8a9056ef0a66b9c800f354007860b05be9ef55548ccd74303d13cc",
+          "bytes": 31739
+        },
+        "preview.usdz": {
+          "sha256": "bdf527b1608fe56b5d65c5b8f93f3711cd0e9ad8e46bdd1de1e6a3afae188e50",
+          "bytes": 543596
+        },
+        "poster.webp": {
+          "sha256": "8ff7ca50fd201947ca5990ab2822cb982428041625e85cdb4bf01c18f698fc51",
+          "bytes": 27596
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "demo-tee",
+      "slug": "tee",
+      "title": "Quiet Cotton Tee",
+      "category": "top",
+      "revision": "original-v1",
+      "fidelity": "P1",
+      "fidelityLabel": "Approximate 3D",
+      "sourceProductRevision": "fictional-2026-10-05",
+      "glb": "/demo/garments/tee/lod0.glb",
+      "lowGlb": "/demo/garments/tee/lod1.glb",
+      "usdz": "/demo/garments/tee/preview.usdz",
+      "poster": "/demo/garments/tee/poster.webp",
+      "rights": "/demo/rights.json",
+      "dimensionsMeters": [
+        0.8043890297412872,
+        0.9110395014286041,
+        0.204592727124691
+      ],
+      "pivot": "hanger_hook",
+      "collisionBounds": {
+        "min": [
+          -0.40203016996383667,
+          -0.8008784055709839,
+          -0.10153016448020935
+        ],
+        "max": [
+          0.40235885977745056,
+          0.11016109585762024,
+          0.10306256264448166
+        ]
+      },
+      "displayScaleBounds": [
+        0.65,
+        1.25
+      ],
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "triangleCount": 1608,
+      "drawCalls": 3,
+      "compression": {
+        "geometry": "uncompressed portable fallback",
+        "transport": "gzip sidecar",
+        "textures": "embedded original PNG PBR maps; no external references",
+        "native": "USDZ geometry and base colors; microtextures omitted"
+      },
+      "physicalScale": "approximate; not a calibrated product dimension",
+      "rig": null,
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "nativeDevice": "not_run",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "lod0.glb": {
+          "sha256": "a22298f5f044f3d53ae26a6f1954c841b08487f98f1903c75ccb6b042bf210f6",
+          "bytes": 169380
+        },
+        "lod0.glb.gz": {
+          "sha256": "5773eaac0a41b32e541b2fda26eba53fda8b6e2f5336503a496d41da387c5180",
+          "bytes": 46232
+        },
+        "lod1.glb": {
+          "sha256": "bf9bb27e0b5add601086a52dcaaccba04af558ad8f85eea85444dcd1ca22b4bb",
+          "bytes": 104856
+        },
+        "lod1.glb.gz": {
+          "sha256": "5c1eb9b4a54b2c568cdf2b3725be0c9a3eb8cd0b5210fa4d082f46a95ae67a79",
+          "bytes": 31037
+        },
+        "preview.usdz": {
+          "sha256": "9689e52765eedf49a0fe3983a8d891d2e15b9af2470462c7c61b145df9d56796",
+          "bytes": 508328
+        },
+        "poster.webp": {
+          "sha256": "fff7c6394d7a3cc31389b96c373d66634b10d022c9d59ac2d883ec11e0a3ddcf",
+          "bytes": 17198
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "demo-knit",
+      "slug": "knit",
+      "title": "Ribbed Oat Knit",
+      "category": "top",
+      "revision": "original-v1",
+      "fidelity": "P1",
+      "fidelityLabel": "Approximate 3D",
+      "sourceProductRevision": "fictional-2026-10-05",
+      "glb": "/demo/garments/knit/lod0.glb",
+      "lowGlb": "/demo/garments/knit/lod1.glb",
+      "usdz": "/demo/garments/knit/preview.usdz",
+      "poster": "/demo/garments/knit/poster.webp",
+      "rights": "/demo/rights.json",
+      "dimensionsMeters": [
+        0.9247715771198273,
+        0.9110395014286041,
+        0.20717769116163254
+      ],
+      "pivot": "hanger_hook",
+      "collisionBounds": {
+        "min": [
+          -0.4622729420661926,
+          -0.8008784055709839,
+          -0.10153016448020935
+        ],
+        "max": [
+          0.46249863505363464,
+          0.11016109585762024,
+          0.10564752668142319
+        ]
+      },
+      "displayScaleBounds": [
+        0.65,
+        1.25
+      ],
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "triangleCount": 3636,
+      "drawCalls": 4,
+      "compression": {
+        "geometry": "uncompressed portable fallback",
+        "transport": "gzip sidecar",
+        "textures": "embedded original PNG PBR maps; no external references",
+        "native": "USDZ geometry and base colors; microtextures omitted"
+      },
+      "physicalScale": "approximate; not a calibrated product dimension",
+      "rig": null,
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "nativeDevice": "not_run",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "lod0.glb": {
+          "sha256": "c5e671f783f9b8a61d228dbe04afcdbb323051d38256edec3278658e3433795d",
+          "bytes": 372952
+        },
+        "lod0.glb.gz": {
+          "sha256": "675f71f1a684e24553ed924daeb9823f414fe5bc70fcfc9d575f5a939082db18",
+          "bytes": 83229
+        },
+        "lod1.glb": {
+          "sha256": "5f233ca98828e9e93a752e548f29da71aa6639967d0e035d5aede5618547d130",
+          "bytes": 265428
+        },
+        "lod1.glb.gz": {
+          "sha256": "1a47c700187f68ee037719244ca15089627affd4a8f996115cc158c906f68f7b",
+          "bytes": 60059
+        },
+        "preview.usdz": {
+          "sha256": "cf539a456463a97e75b60820b1615e60fd52dc0e9a50d1246d1bd59dc871cfe8",
+          "bytes": 1155865
+        },
+        "poster.webp": {
+          "sha256": "bfc27048096361b9a2826f432b099ccd5e97af7973f751cd7157f72a07f501ff",
+          "bytes": 24720
+        }
+      }
+    }
+  ],
+  "rooms": [
+    {
+      "schemaVersion": 1,
+      "id": "walnut_atelier",
+      "title": "Walnut Atelier",
+      "revision": "original-v1",
+      "dimensionsMeters": [
+        4.8,
+        3.6,
+        2.8
+      ],
+      "collisionBounds": {
+        "min": [
+          -2.442500114440918,
+          -0.09000000357627869,
+          -1.8424999713897705
+        ],
+        "max": [
+          2.444999933242798,
+          2.799999952316284,
+          1.7999999523162842
+        ]
+      },
+      "glb": "/demo/rooms/walnut_atelier/room.glb",
+      "poster": "/demo/rooms/walnut_atelier/poster.webp",
+      "rights": "/demo/rights.json",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "lightKelvin": 4300,
+      "triangleCount": 17264,
+      "drawCalls": 7,
+      "groups": [
+        {
+          "id": "rail.left",
+          "center": [
+            -1.45,
+            1.75,
+            -0.65
+          ],
+          "capacity": 12,
+          "pitch": 0.12,
+          "width": 1.45
+        },
+        {
+          "id": "rail.right",
+          "center": [
+            1.45,
+            1.75,
+            -0.65
+          ],
+          "capacity": 12,
+          "pitch": 0.12,
+          "width": 1.45
+        },
+        {
+          "id": "shelf.shoes",
+          "center": [
+            0,
+            0.24,
+            -1.15
+          ],
+          "capacity": 8,
+          "pitch": 0.12,
+          "width": 1.1
+        },
+        {
+          "id": "shelf.folded",
+          "center": [
+            0,
+            1.05,
+            -1.15
+          ],
+          "capacity": 6,
+          "pitch": 0.12,
+          "width": 1.1
+        },
+        {
+          "id": "tray.accessories",
+          "center": [
+            1.45,
+            0.85,
+            0.4
+          ],
+          "capacity": 6,
+          "pitch": 0.12,
+          "width": 1.1
+        },
+        {
+          "id": "stand.outfit",
+          "center": [
+            0,
+            0,
+            -0.1
+          ],
+          "capacity": 1,
+          "pitch": 0.12,
+          "width": 1.1
+        }
+      ],
+      "camera": {
+        "fov": 38,
+        "near": 0.05,
+        "far": 40,
+        "position": [
+          0,
+          1.55,
+          4.8
+        ],
+        "target": [
+          0,
+          1.35,
+          0
+        ]
+      },
+      "views": [
+        {
+          "id": "room",
+          "name": "Room",
+          "position": [
+            0,
+            1.55,
+            4.8
+          ],
+          "target": [
+            0,
+            1.35,
+            0
+          ]
+        },
+        {
+          "id": "rail",
+          "name": "Work rail",
+          "position": [
+            -1.05,
+            1.6,
+            2.3
+          ],
+          "target": [
+            -1.4,
+            1.3,
+            -0.65
+          ]
+        },
+        {
+          "id": "details",
+          "name": "Details",
+          "position": [
+            1.8,
+            1.5,
+            2.5
+          ],
+          "target": [
+            1.45,
+            1,
+            0.1
+          ]
+        }
+      ],
+      "mirror": "Static tinted reflective material; not a live mirror",
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "room.glb": {
+          "sha256": "9c8e0559c59bff06cb5db49206c80c668c2890a101f73934d82da0297c2227c3",
+          "bytes": 1687688
+        },
+        "room.glb.gz": {
+          "sha256": "dbf2af809152138c85a1a3e6eb85ce9b0573deee6170dee75dbe80ad74fb0161",
+          "bytes": 149907
+        },
+        "poster.webp": {
+          "sha256": "4e912f0989dab34bc582943dae6891870c0a2a4fea176bbbc9cac3a6a8cce973",
+          "bytes": 86056
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "limestone_gallery",
+      "title": "Limestone Gallery",
+      "revision": "original-v1",
+      "dimensionsMeters": [
+        5.2,
+        4,
+        3
+      ],
+      "collisionBounds": {
+        "min": [
+          -2.6424999237060547,
+          -0.09000000357627869,
+          -2.0425000190734863
+        ],
+        "max": [
+          2.6449999809265137,
+          3,
+          2
+        ]
+      },
+      "glb": "/demo/rooms/limestone_gallery/room.glb",
+      "poster": "/demo/rooms/limestone_gallery/poster.webp",
+      "rights": "/demo/rights.json",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "lightKelvin": 5500,
+      "triangleCount": 8228,
+      "drawCalls": 6,
+      "groups": [
+        {
+          "id": "rail.left",
+          "center": [
+            -1.65,
+            1.75,
+            -0.85
+          ],
+          "capacity": 12,
+          "pitch": 0.12,
+          "width": 1.45
+        },
+        {
+          "id": "rail.right",
+          "center": [
+            1.65,
+            1.75,
+            -0.85
+          ],
+          "capacity": 12,
+          "pitch": 0.12,
+          "width": 1.45
+        },
+        {
+          "id": "shelf.shoes",
+          "center": [
+            0,
+            0.24,
+            -1.15
+          ],
+          "capacity": 8,
+          "pitch": 0.12,
+          "width": 1.1
+        },
+        {
+          "id": "shelf.folded",
+          "center": [
+            0,
+            1.05,
+            -1.15
+          ],
+          "capacity": 6,
+          "pitch": 0.12,
+          "width": 1.1
+        },
+        {
+          "id": "tray.accessories",
+          "center": [
+            1.45,
+            0.85,
+            0.4
+          ],
+          "capacity": 6,
+          "pitch": 0.12,
+          "width": 1.1
+        },
+        {
+          "id": "stand.outfit",
+          "center": [
+            0,
+            0,
+            -0.1
+          ],
+          "capacity": 1,
+          "pitch": 0.12,
+          "width": 1.1
+        }
+      ],
+      "camera": {
+        "fov": 38,
+        "near": 0.05,
+        "far": 40,
+        "position": [
+          0,
+          1.55,
+          4.8
+        ],
+        "target": [
+          0,
+          1.35,
+          0
+        ]
+      },
+      "views": [
+        {
+          "id": "room",
+          "name": "Room",
+          "position": [
+            0,
+            1.55,
+            4.8
+          ],
+          "target": [
+            0,
+            1.35,
+            0
+          ]
+        },
+        {
+          "id": "rail",
+          "name": "Work rail",
+          "position": [
+            -1.05,
+            1.6,
+            2.3
+          ],
+          "target": [
+            -1.4,
+            1.3,
+            -0.65
+          ]
+        },
+        {
+          "id": "details",
+          "name": "Details",
+          "position": [
+            1.8,
+            1.5,
+            2.5
+          ],
+          "target": [
+            1.45,
+            1,
+            0.1
+          ]
+        }
+      ],
+      "mirror": "Static tinted reflective material; not a live mirror",
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "room.glb": {
+          "sha256": "c0fead6d4e6eb13f663285752f8b9c5a850141b24eb4ad2feba1682d3f1beb80",
+          "bytes": 815440
+        },
+        "room.glb.gz": {
+          "sha256": "72951188359ea1c297b8c5f7863127a75fb0d98da945846c40ac26e83f795691",
+          "bytes": 98973
+        },
+        "poster.webp": {
+          "sha256": "8fea21ea080ec695978520f22139ebf4bad015bd3da6370c67fa02a0cce42064",
+          "bytes": 82856
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "garden_studio",
+      "title": "Garden Studio",
+      "revision": "original-v1",
+      "dimensionsMeters": [
+        4.6,
+        3.8,
+        2.8
+      ],
+      "collisionBounds": {
+        "min": [
+          -2.3424999713897705,
+          -0.09000000357627869,
+          -1.9424999952316284
+        ],
+        "max": [
+          2.3450000286102295,
+          2.799999952316284,
+          1.899999976158142
+        ]
+      },
+      "glb": "/demo/rooms/garden_studio/room.glb",
+      "poster": "/demo/rooms/garden_studio/poster.webp",
+      "rights": "/demo/rights.json",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "lightKelvin": 5000,
+      "triangleCount": 7144,
+      "drawCalls": 6,
+      "groups": [
+        {
+          "id": "rail.left",
+          "center": [
+            -1.45,
+            1.75,
+            -0.65
+          ],
+          "capacity": 12,
+          "pitch": 0.12,
+          "width": 1.45
+        },
+        {
+          "id": "shelf.shoes",
+          "center": [
+            -1.35,
+            0.24,
+            -0.87
+          ],
+          "capacity": 8,
+          "pitch": 0.12,
+          "width": 1.1
+        },
+        {
+          "id": "shelf.folded",
+          "center": [
+            1.34,
+            1.05,
+            -1.15
+          ],
+          "capacity": 6,
+          "pitch": 0.12,
+          "width": 1.1
+        },
+        {
+          "id": "tray.accessories",
+          "center": [
+            1.45,
+            0.85,
+            0.4
+          ],
+          "capacity": 6,
+          "pitch": 0.12,
+          "width": 1.1
+        }
+      ],
+      "camera": {
+        "fov": 38,
+        "near": 0.05,
+        "far": 40,
+        "position": [
+          0,
+          1.55,
+          4.8
+        ],
+        "target": [
+          0,
+          1.35,
+          0
+        ]
+      },
+      "views": [
+        {
+          "id": "room",
+          "name": "Room",
+          "position": [
+            0,
+            1.55,
+            4.8
+          ],
+          "target": [
+            0,
+            1.35,
+            0
+          ]
+        },
+        {
+          "id": "rail",
+          "name": "Work rail",
+          "position": [
+            -1.05,
+            1.6,
+            2.3
+          ],
+          "target": [
+            -1.4,
+            1.3,
+            -0.65
+          ]
+        },
+        {
+          "id": "details",
+          "name": "Details",
+          "position": [
+            1.8,
+            1.5,
+            2.5
+          ],
+          "target": [
+            1.45,
+            1,
+            0.1
+          ]
+        }
+      ],
+      "mirror": "Static tinted reflective material; not a live mirror",
+      "qa": {
+        "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+        "visual": "agent visual review passed; human approval not claimed",
+        "loader": "Chromium / Three GLTFLoader 0.182.0"
+      },
+      "files": {
+        "room.glb": {
+          "sha256": "37f0409ed249100634c608374ee1f0544e7f73e565ee477071c6238bb11332a5",
+          "bytes": 711416
+        },
+        "room.glb.gz": {
+          "sha256": "c714ac9c952caf3091803124aff9156feeda1cbbc3f6a9ef99468df37b45400e",
+          "bytes": 91320
+        },
+        "poster.webp": {
+          "sha256": "aa67af2920d40266d774d3035c5e7a7ab71361093f3e689cb938523bb926a4c5",
+          "bytes": 62978
+        }
+      }
+    }
+  ]
+}

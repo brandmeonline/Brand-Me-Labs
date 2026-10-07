@@ -1,0 +1,6 @@
+# These are intentional original asset records, not credential files.
+!*.json
+!*.glb
+!*.glb.gz
+!*.usdz
+!*.webp

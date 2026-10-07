@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "author": "Brand.Me procedural asset pipeline",
+  "created": "2026-10-05",
+  "source": "Original parametric geometry and textures in scripts/assets/generate.mjs",
+  "thirdPartyVisualAssets": [],
+  "license": "PROPRIETARY",
+  "rightsHolder": "Brand.Me, Inc.",
+  "permittedUses": [
+    "demo display",
+    "3D preview",
+    "room placement",
+    "derivative posters"
+  ],
+  "productClaims": "Fictional products; approximate visualization. No brand authenticity, physical measurements, manufacturing or calibrated fit claims.",
+  "generatorDependencies": [
+    {
+      "name": "three",
+      "version": "0.182.0",
+      "license": "MIT"
+    }
+  ]
+}
