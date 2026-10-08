@@ -1,7 +1,7 @@
 {
   "name": "@brandme/chain",
   "version": "1.0.0",
-  "description": "Brand.Me chain service — Midnight rights adapter (primary); optional Cardano anchor boundary (unverified, disabled)",
+  "description": "Brand.Me chain service \u2014 Midnight rights adapter (primary); optional Cardano anchor boundary (unverified, disabled)",
   "main": "dist/src/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -79,7 +79,7 @@
     "vitest": "3.2.4"
   },
   "engines": {
-    "node": ">=22.0.0",
+    "node": ">=20.0.0",
     "pnpm": ">=8.0.0"
   },
   "type": "module"
