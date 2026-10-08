@@ -1,0 +1,57 @@
+Scope: 7 of 8 workspace projects
+brandme-chain build$ tsc
+brandme-console build$ next build
+brandme-frontend build$ next build
+brandme-frontend build:    ▲ Next.js 14.0.4
+brandme-frontend build:    Creating an optimized production build ...
+brandme-console build:   ▲ Next.js 14.2.35
+brandme-console build:    Creating an optimized production build ...
+brandme-chain build: Done
+brandme-frontend build:  ✓ Compiled successfully
+brandme-frontend build:    Linting and checking validity of types ...
+brandme-frontend build:    Collecting page data ...
+brandme-frontend build:    Generating static pages (0/7) ...
+brandme-frontend build:    Generating static pages (1/7) 
+brandme-frontend build:    Generating static pages (3/7) 
+brandme-frontend build:    Generating static pages (5/7) 
+brandme-frontend build:  ✓ Generating static pages (7/7) 
+brandme-frontend build:    Finalizing page optimization ...
+brandme-frontend build:    Collecting build traces ...
+brandme-console build:  ✓ Compiled successfully
+brandme-console build:    Linting and checking validity of types ...
+brandme-console build:    Collecting page data ...
+brandme-console build:    Generating static pages (0/6) ...
+brandme-console build:    Generating static pages (1/6) 
+brandme-console build:    Generating static pages (2/6) 
+brandme-console build:    Generating static pages (4/6) 
+brandme-console build:  ✓ Generating static pages (6/6)
+brandme-console build:    Finalizing page optimization ...
+brandme-console build:    Collecting build traces ...
+brandme-frontend build: Route (app)                              Size     First Load JS
+brandme-frontend build: ┌ ○ /_not-found                          869 B          82.7 kB
+brandme-frontend build: ├ ○ /governance                          141 B            82 kB
+brandme-frontend build: ├ ○ /scan                                141 B            82 kB
+brandme-frontend build: ├ ○ /shop                                176 B          88.8 kB
+brandme-frontend build: └ ○ /stash                               176 B          88.8 kB
+brandme-frontend build: + First Load JS shared by all            81.8 kB
+brandme-frontend build:   ├ chunks/791-46ea55f0ee6ffde9.js       26.7 kB
+brandme-frontend build:   ├ chunks/dc699f08-a8612f6fb0290f6c.js  53.3 kB
+brandme-frontend build:   ├ chunks/main-app-432a43c15c8c63aa.js  219 B
+brandme-frontend build:   └ chunks/webpack-6726ee1cad4b5a13.js   1.65 kB
+brandme-frontend build: ○  (Static)  prerendered as static content
+brandme-frontend build: Done
+brandme-console build: Route (app)                              Size     First Load JS
+brandme-console build: ┌ ○ /                                    177 B          96.1 kB
+brandme-console build: ├ ○ /_not-found                          871 B          88.1 kB
+brandme-console build: ├ ○ /dashboard                           137 B          87.4 kB
+brandme-console build: ├ ○ /dashboard/scans                     2.31 kB         124 kB
+brandme-console build: └ ƒ /proof/[scanId]                      3.14 kB         117 kB
+brandme-console build: + First Load JS shared by all            87.2 kB
+brandme-console build:   ├ chunks/474-5005cfe244ac45c5.js       31.7 kB
+brandme-console build:   ├ chunks/f9848dab-94df16662c0058d3.js  53.6 kB
+brandme-console build:   └ other shared chunks (total)          1.89 kB
+brandme-console build: ○  (Static)   prerendered as static content
+brandme-console build: ƒ  (Dynamic)  server-rendered on demand
+brandme-console build: Done
+brandme-gateway build$ tsc
+brandme-gateway build: Done

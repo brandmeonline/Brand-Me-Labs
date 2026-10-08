@@ -1,5 +1,15 @@
 # PLAN — End-to-End + ACP / AP2 / A2A
 
+> **Historical plan — superseded product scope and dated protocol assumptions.**
+> The founder's current implementation brief is
+> [`docs/design/brandme/README.md`](./docs/design/brandme/README.md), including the
+> [Claude kickoff](./docs/design/brandme/CLAUDE_BUILD_PROMPT.md). Build the full
+> personality/social/loyalty/3D wardrobe experience together with its trust and
+> commerce capabilities. This older plan's three-mandate AP2 description, claim
+> that the Midnight SDK is unavailable, and claim that no commerce handlers exist
+> must not be used as current facts. See the new source catalog and code audit.
+> Existing repository safety and review requirements still apply.
+
 > Companion to `CLAUDE.md` (which describes today's reality). This plan
 > describes the path from today's emulator-only consent/policy slice to a
 > working agent-commerce platform that issues mandates, settles payments on

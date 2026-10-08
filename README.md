@@ -8,6 +8,14 @@ Brand.Me is a symbiotic intelligence platform that merges digital fashion, ident
 
 ## Documentation
 
+**Current complete product specification (2026-10-05):**
+[Brand.Me — Be More U](./docs/design/brandme/README.md) covers editable identity,
+social shopping, loyalty, three 3D closets, AR, authorized agent commerce,
+Midnight ownership and licensed reprint. It includes 150 acceptance criteria,
+machine-readable contracts and a [Claude build prompt](./docs/design/brandme/CLAUDE_BUILD_PROMPT.md).
+This is the forward-looking implementation contract; it does not change the
+current code's verified readiness.
+
 **Quick Links**:
 - [Architecture](./docs/architecture/SYSTEM_ARCHITECTURE.md) - v9 System architecture
 - [Agentic Architecture](./docs/architecture/AGENTIC_ARCHITECTURE.md) - Agent system design

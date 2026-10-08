@@ -1,5 +1,12 @@
 # Brand.Me Documentation (v9)
 
+**Start here for the current full product build:**
+[Brand.Me — Be More U specification](./design/brandme/README.md) and
+[Claude kickoff prompt](./design/brandme/CLAUDE_BUILD_PROMPT.md). The package contains
+the consumer experience, visual/3D/AR contracts, architecture, Midnight lifecycle,
+commerce connectors, delivery plan, dated audit and 150 acceptance criteria.
+The older v9 documents below remain historical context, not new readiness evidence.
+
 Welcome to the Brand.Me platform documentation. This directory contains comprehensive documentation for the v9 Agentic & Circular Economy release.
 
 ---

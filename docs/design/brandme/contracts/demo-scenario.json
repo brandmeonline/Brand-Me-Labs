@@ -1,0 +1,503 @@
+{
+  "schema_version": "1.0.0",
+  "mode": "demo",
+  "all_people_products_orders_and_proofs_fictional": true,
+  "asset_status": "implementation_must_create_and_validate_files; paths_below_are_requirements_not_delivered_assets",
+  "clock": {
+    "test_start": "2026-10-05T12:00:00Z",
+    "interactive_mode": "rebase_relative_events_to_session_clock",
+    "decision_duration_seconds": 300
+  },
+  "members": [
+    {
+      "id": "2ad9041e-561e-527b-aa0d-5a7fda5f710b",
+      "display_name": "Alex",
+      "fictional": true
+    },
+    {
+      "id": "fa9ad97d-0187-5b71-a602-b05aabb329e1",
+      "display_name": "Maya",
+      "fictional": true
+    },
+    {
+      "id": "3713cac8-3866-52a4-9506-23c82ddd0d38",
+      "display_name": "Rowan",
+      "fictional": true
+    }
+  ],
+  "persona_axes": [
+    {
+      "key": "temperature",
+      "left": "Warm",
+      "right": "Cool",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "sport_couture",
+      "left": "Sport",
+      "right": "Couture",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "expression",
+      "left": "Understated",
+      "right": "Expressive",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "fit_language",
+      "left": "Tailored",
+      "right": "Relaxed",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "detail",
+      "left": "Minimal",
+      "right": "Ornate",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "novelty",
+      "left": "Timeless",
+      "right": "Experimental",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "color",
+      "left": "Neutral",
+      "right": "Colorful",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "finish",
+      "left": "Matte",
+      "right": "Lustrous",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "structure",
+      "left": "Structured",
+      "right": "Fluid",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "setting",
+      "left": "Urban",
+      "right": "Outdoors",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "exploration",
+      "left": "Familiar",
+      "right": "Exploratory",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    },
+    {
+      "key": "utility",
+      "left": "Functional",
+      "right": "Decorative",
+      "range": [
+        0,
+        100
+      ],
+      "unknown": null
+    }
+  ],
+  "initial_declared_axes": {
+    "temperature": 35,
+    "sport_couture": 65,
+    "expression": 72,
+    "fit_language": 60,
+    "detail": 30,
+    "novelty": 45,
+    "color": 55,
+    "finish": 25,
+    "structure": 40,
+    "setting": 30,
+    "exploration": 60,
+    "utility": 45
+  },
+  "rooms": [
+    {
+      "id": "walnut_atelier",
+      "name": "Walnut Atelier",
+      "dimensions_m": [
+        4.8,
+        3.6,
+        2.8
+      ],
+      "light_kelvin": 4300,
+      "required_glb": "/demo/rooms/walnut_atelier/room.glb",
+      "required_poster": "/demo/rooms/walnut_atelier/poster.webp"
+    },
+    {
+      "id": "limestone_gallery",
+      "name": "Limestone Gallery",
+      "dimensions_m": [
+        5.2,
+        4,
+        3
+      ],
+      "light_kelvin": 5500,
+      "required_glb": "/demo/rooms/limestone_gallery/room.glb",
+      "required_poster": "/demo/rooms/limestone_gallery/poster.webp"
+    },
+    {
+      "id": "garden_studio",
+      "name": "Garden Studio",
+      "dimensions_m": [
+        4.6,
+        3.8,
+        2.8
+      ],
+      "light_kelvin": 5000,
+      "required_glb": "/demo/rooms/garden_studio/room.glb",
+      "required_poster": "/demo/rooms/garden_studio/poster.webp"
+    }
+  ],
+  "walnut_anchor_groups": [
+    {
+      "id": "rail.left",
+      "center_m": [
+        -1.45,
+        1.75,
+        -0.65
+      ],
+      "width_m": 1.45,
+      "pitch_m": 0.12
+    },
+    {
+      "id": "rail.right",
+      "center_m": [
+        1.45,
+        1.75,
+        -0.65
+      ],
+      "width_m": 1.45,
+      "pitch_m": 0.12
+    },
+    {
+      "id": "shelf.shoes",
+      "center_m": [
+        0,
+        0.24,
+        -1.15
+      ],
+      "slots": 8
+    },
+    {
+      "id": "shelf.folded",
+      "center_m": [
+        0,
+        1.05,
+        -1.15
+      ],
+      "slots": 6
+    },
+    {
+      "id": "tray.accessories",
+      "center_m": [
+        1.45,
+        0.85,
+        0.4
+      ],
+      "slots": 6
+    },
+    {
+      "id": "stand.outfit",
+      "center_m": [
+        0,
+        0,
+        -0.1
+      ],
+      "slots": 1
+    }
+  ],
+  "products": [
+    {
+      "id": "a4036cb0-7ab2-54b5-9238-ee5ffb378771",
+      "title": "Field Linen Overshirt",
+      "category": "top",
+      "color": "#C9BCA6",
+      "price": {
+        "amount_minor": "8900",
+        "currency": "USD"
+      },
+      "merchant": "Demo Atelier — fictional",
+      "fidelity_target": "P2",
+      "claim_level": "self_reported",
+      "required_assets": {
+        "glb": "/demo/garments/overshirt/lod0.glb",
+        "low_glb": "/demo/garments/overshirt/lod1.glb",
+        "usdz": "/demo/garments/overshirt/preview.usdz",
+        "poster": "/demo/garments/overshirt/poster.webp",
+        "manifest": "/demo/garments/overshirt/manifest.json"
+      },
+      "rights_requirement": "original_or_explicitly_licensed"
+    },
+    {
+      "id": "6b4ee94a-4998-55d8-8298-c8f81a40b7aa",
+      "title": "Soft Pleat Trousers",
+      "category": "bottom",
+      "color": "#E1D9C8",
+      "price": {
+        "amount_minor": "11900",
+        "currency": "USD"
+      },
+      "merchant": "Demo Atelier — fictional",
+      "fidelity_target": "P2",
+      "claim_level": "self_reported",
+      "required_assets": {
+        "glb": "/demo/garments/trousers/lod0.glb",
+        "low_glb": "/demo/garments/trousers/lod1.glb",
+        "usdz": "/demo/garments/trousers/preview.usdz",
+        "poster": "/demo/garments/trousers/poster.webp",
+        "manifest": "/demo/garments/trousers/manifest.json"
+      },
+      "rights_requirement": "original_or_explicitly_licensed"
+    },
+    {
+      "id": "9572fdc7-31e0-5b80-be82-147ef4a5e69c",
+      "title": "Evening Fluid Dress",
+      "category": "dress",
+      "color": "#62527F",
+      "price": {
+        "amount_minor": "15900",
+        "currency": "USD"
+      },
+      "merchant": "Demo Atelier — fictional",
+      "fidelity_target": "P2",
+      "claim_level": "self_reported",
+      "required_assets": {
+        "glb": "/demo/garments/dress/lod0.glb",
+        "low_glb": "/demo/garments/dress/lod1.glb",
+        "usdz": "/demo/garments/dress/preview.usdz",
+        "poster": "/demo/garments/dress/poster.webp",
+        "manifest": "/demo/garments/dress/manifest.json"
+      },
+      "rights_requirement": "original_or_explicitly_licensed"
+    },
+    {
+      "id": "5a0ccc0d-d627-52fa-ab80-de662ef92b1b",
+      "title": "Structured Field Jacket",
+      "category": "outerwear",
+      "color": "#526447",
+      "price": {
+        "amount_minor": "17900",
+        "currency": "USD"
+      },
+      "merchant": "Demo Atelier — fictional",
+      "fidelity_target": "P2",
+      "claim_level": "self_reported",
+      "required_assets": {
+        "glb": "/demo/garments/jacket/lod0.glb",
+        "low_glb": "/demo/garments/jacket/lod1.glb",
+        "usdz": "/demo/garments/jacket/preview.usdz",
+        "poster": "/demo/garments/jacket/poster.webp",
+        "manifest": "/demo/garments/jacket/manifest.json"
+      },
+      "rights_requirement": "original_or_explicitly_licensed"
+    },
+    {
+      "id": "bdbff281-45f2-5887-b09b-6db9151126f6",
+      "title": "Everyday Low Sneaker",
+      "category": "shoes",
+      "color": "#EAE6DD",
+      "price": {
+        "amount_minor": "9900",
+        "currency": "USD"
+      },
+      "merchant": "Demo Atelier — fictional",
+      "fidelity_target": "P2",
+      "claim_level": "self_reported",
+      "required_assets": {
+        "glb": "/demo/garments/sneaker/lod0.glb",
+        "low_glb": "/demo/garments/sneaker/lod1.glb",
+        "usdz": "/demo/garments/sneaker/preview.usdz",
+        "poster": "/demo/garments/sneaker/poster.webp",
+        "manifest": "/demo/garments/sneaker/manifest.json"
+      },
+      "rights_requirement": "original_or_explicitly_licensed"
+    },
+    {
+      "id": "21e655b5-f16d-57c8-bf99-c7af6e942c6f",
+      "title": "Sculpted Everyday Bag",
+      "category": "accessory",
+      "color": "#81533D",
+      "price": {
+        "amount_minor": "12900",
+        "currency": "USD"
+      },
+      "merchant": "Demo Atelier — fictional",
+      "fidelity_target": "P2",
+      "claim_level": "self_reported",
+      "required_assets": {
+        "glb": "/demo/garments/bag/lod0.glb",
+        "low_glb": "/demo/garments/bag/lod1.glb",
+        "usdz": "/demo/garments/bag/preview.usdz",
+        "poster": "/demo/garments/bag/poster.webp",
+        "manifest": "/demo/garments/bag/manifest.json"
+      },
+      "rights_requirement": "original_or_explicitly_licensed"
+    }
+  ],
+  "journey": [
+    {
+      "at_seconds": 0,
+      "action": "enter_as_guest",
+      "expected": "No wallet, camera or contact prompt"
+    },
+    {
+      "at_seconds": 20,
+      "action": "choose_visual_preferences",
+      "expected": "Deterministic profile preview with editable explanation"
+    },
+    {
+      "at_seconds": 45,
+      "action": "choose_walnut_atelier",
+      "expected": "Actual room asset with accessible Simple View"
+    },
+    {
+      "at_seconds": 75,
+      "action": "save_first_look_and_profile",
+      "expected": "Useful persisted guest reveal; no fake verification"
+    },
+    {
+      "at_seconds": 100,
+      "action": "create_test_account_and_migrate",
+      "expected": "Single migrated profile and one 100-point setup cause"
+    },
+    {
+      "at_seconds": 120,
+      "action": "lock_expression_at_78",
+      "expected": "Saved version increases; later inference cannot overwrite"
+    },
+    {
+      "at_seconds": 150,
+      "action": "add_owned_overshirt_to_rail",
+      "expected": "Real persistence; 900ms success animation; one 25-point award"
+    },
+    {
+      "at_seconds": 180,
+      "action": "ask_maya_and_rowan",
+      "expected": "Decision closes at server-relative +300 seconds"
+    },
+    {
+      "at_seconds": 210,
+      "action": "maya_votes_pass",
+      "expected": "Pass is eligible for same 10 points as yes; no duplicate award"
+    },
+    {
+      "at_seconds": 480,
+      "action": "observe_closed_decision",
+      "expected": "One closure, accurate result, safe notification"
+    },
+    {
+      "at_seconds": 500,
+      "action": "prepare_demo_purchase",
+      "expected": "Exact quote and human approval surface"
+    },
+    {
+      "at_seconds": 520,
+      "action": "simulate_timeout_after_merchant_acceptance",
+      "expected": "Outcome unknown then one reconciled order"
+    },
+    {
+      "at_seconds": 600,
+      "action": "try_ownership_transfer_without_verified_adapter",
+      "expected": "Explicit unavailable state; no fake tx hash"
+    },
+    {
+      "at_seconds": 650,
+      "action": "export_then_revoke_share",
+      "expected": "Portable own data and immediately denied shared access"
+    }
+  ],
+  "provider_failure_fixtures": [
+    "price_changed",
+    "out_of_stock",
+    "authorization_expired",
+    "timeout_after_acceptance",
+    "duplicate_webhook",
+    "partial_fulfillment",
+    "partial_refund",
+    "provider_unconfigured",
+    "invalid_signature"
+  ],
+  "badge_criteria": [
+    {
+      "id": "first_reflection",
+      "name": "First Reflection",
+      "criterion": "first saved persona"
+    },
+    {
+      "id": "closet_curator",
+      "name": "Closet Curator",
+      "criterion": "10 organized owned items"
+    },
+    {
+      "id": "trusted_eye",
+      "name": "Trusted Eye",
+      "criterion": "20 valid responses across at least 5 decisions"
+    },
+    {
+      "id": "style_collaborator",
+      "name": "Style Collaborator",
+      "criterion": "5 accepted outfit proposals"
+    },
+    {
+      "id": "care_keeper",
+      "name": "Care Keeper",
+      "criterion": "one verified repair"
+    },
+    {
+      "id": "material_story",
+      "name": "Material Story",
+      "criterion": "one verified product-history contribution"
+    }
+  ]
+}
