@@ -6,6 +6,7 @@ import {
   defaultGroup,
   eligibleGroups,
   roomById,
+  positionFor,
 } from "../spatial/catalog";
 import { RoomViewport } from "../spatial/RoomViewport";
 import {
@@ -19,10 +20,14 @@ import {
   type ItemStatus,
   type SemanticGroup,
 } from "../spatial/types";
-import type { AddInput } from "./repository";
+import type { AddInput, ClosetRepository } from "./repository";
+import { projectRoomPoint } from "../spatial/cameraPreferences";
 import styles from "../spatial/spatial.module.css";
-export default function AddItemPage() {
-  const { snapshot, error, setError, commit, persistenceLabel } = useCloset(),
+export default function AddItemPage({
+  repository,
+}: { repository?: ClosetRepository } = {}) {
+  const { snapshot, error, setError, commit, persistenceLabel } =
+      useCloset(repository),
     [mode, setMode] = useState<"catalog" | "manual">("catalog"),
     [assetSlug, setAssetSlug] = useState("overshirt"),
     [title, setTitle] = useState(""),
@@ -47,6 +52,7 @@ export default function AddItemPage() {
     source = useRef<HTMLImageElement>(null),
     destination = useRef<HTMLDivElement>(null),
     mounted = useRef(true),
+    saving = useRef(false),
     reduced = useMotionPreference(snapshot?.reducedMotion);
   const asset = allAssets.find((a) => a.slug === assetSlug)!,
     actualCategory = mode === "catalog" ? asset.category : category;
@@ -77,6 +83,16 @@ export default function AddItemPage() {
     setSlot(free ?? 0);
     setDuplicateConfirmed(false);
   }, [assetSlug, actualCategory, snapshot?.roomId, mode]);
+  useEffect(() => {
+    if (mode !== "catalog" || !asset.lowGlb || reduced || snapshot?.simpleView)
+      return;
+    const abort = new AbortController();
+    // Prefetch only the selected original low LOD. Never upload intake photos.
+    void fetch(asset.lowGlb, { signal: abort.signal, cache: "force-cache" })
+      .then((r) => (r.ok ? r.arrayBuffer() : undefined))
+      .catch(() => {});
+    return () => abort.abort();
+  }, [asset.lowGlb, mode, snapshot?.simpleView]);
   useEffect(() => {
     if (!undo) return;
     const timer = setTimeout(
@@ -128,7 +144,8 @@ export default function AddItemPage() {
     }
   }
   async function add() {
-    if (pending) return;
+    if (saving.current) return;
+    saving.current = true;
     const input: AddInput = {
       productId: mode === "catalog" ? asset.id : null,
       title: mode === "catalog" ? asset.title : title,
@@ -145,7 +162,9 @@ export default function AddItemPage() {
     setPending(true);
     setMessage("Saving your item and destination…");
     const from = source.current?.getBoundingClientRect(),
-      to = destination.current?.getBoundingClientRect();
+      to = destination.current
+        ?.querySelector("[data-room-ready]")
+        ?.getBoundingClientRect();
     try {
       const result = await commit({ type: "add", input }, operation.current.id);
       if (!mounted.current) return;
@@ -158,16 +177,24 @@ export default function AddItemPage() {
         expires: Date.now() + 10000,
       });
       setMessage(`Added to your ${groupLabels[group]}.`);
-      if (from && to && !document.hidden && !reduced && group !== "unplaced")
+      if (from && to && !document.hidden && !reduced && group !== "unplaced") {
+        const position = [...item.placement.positionMeters] as [
+          number,
+          number,
+          number,
+        ];
+        position[1] -= 0.35;
+        const point = projectRoomPoint(room, position, to.width / to.height);
         setFlight({
           itemId: item.id,
           poster,
           source: { x: from.x + from.width / 2, y: from.y + from.height / 2 },
           destination: {
-            x: to.x + to.width * (0.5 + item.placement.positionMeters[0] / 5.7),
-            y: to.y + to.height * 0.48,
+            x: to.x + to.width * point.x,
+            y: to.y + to.height * point.y,
           },
         });
+      }
       operation.current = undefined;
     } catch {
       if (mounted.current)
@@ -175,6 +202,7 @@ export default function AddItemPage() {
           "Your item was not settled. Review the error and retry the same request.",
         );
     } finally {
+      saving.current = false;
       if (mounted.current) setPending(false);
     }
   }
@@ -226,7 +254,11 @@ export default function AddItemPage() {
         </p>
       )}
       <div className={styles.divider} />
-      <div className={styles.workspace}>
+      <fieldset
+        className={`${styles.workspace} ${styles.intakeFields}`}
+        disabled={pending}
+        aria-label="Item and destination"
+      >
         <div className={styles.stack}>
           {mode === "catalog" ? (
             <div className={styles.catalog}>
@@ -298,6 +330,19 @@ export default function AddItemPage() {
               onSelect={() => {}}
               onFallback={setFallback}
               namedView="room"
+              interactiveCamera={false}
+              pendingPlacement={
+                pending && group !== "unplaced"
+                  ? {
+                      position: positionFor(room, group, slot).map((v, i) =>
+                        i === 1 ? v - 0.35 : v,
+                      ) as [number, number, number],
+                      poster,
+                      title: mode === "catalog" ? asset.title : title,
+                      label: `${groupLabels[group]}, slot ${slot + 1}`,
+                    }
+                  : undefined
+              }
               reducedMotion={reduced}
               simpleView={snapshot.simpleView || !!fallback}
             />
@@ -404,7 +449,7 @@ export default function AddItemPage() {
             </p>
           </div>
         </aside>
-      </div>
+      </fieldset>
       <p role="status" className={styles.notice}>
         {message || "Review your item, status, and destination before adding."}
       </p>

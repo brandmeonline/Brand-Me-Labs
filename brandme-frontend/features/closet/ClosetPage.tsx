@@ -1,9 +1,11 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useCloset } from "./useCloset";
 import { VirtualWardrobe } from "./VirtualWardrobe";
 import { eligibleGroups, roomById, rooms } from "../spatial/catalog";
 import { RoomViewport } from "../spatial/RoomViewport";
+import { SavedCameraViews } from "../spatial/SavedCameraViews";
+import type { CameraPose } from "../spatial/cameraPreferences";
 import { useMotionPreference } from "../spatial/useMotionPreference";
 import {
   fidelityLabels,
@@ -33,17 +35,29 @@ export default function ClosetPage({
     [slot, setSlot] = useState(0),
     [placing, setPlacing] = useState(false),
     [message, setMessage] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [picked, setPicked] = useState<Set<string>>(() => new Set()),
+    [capsuleId, setCapsuleId] = useState("all"),
+    [capsuleName, setCapsuleName] = useState("");
   const reducedMotion = useMotionPreference(snapshot?.reducedMotion);
-  const filtered = useMemo(
-    () =>
+  const currentCamera = useRef<
+    { roomId: string; pose: CameraPose } | undefined
+  >(undefined);
+  const [cameraRequest, setCameraRequest] = useState<
+    (CameraPose & { revision: number; roomId: string }) | undefined
+  >();
+  const filtered = useMemo(() => {
+    const capsule = snapshot?.capsules?.find((c) => c.id === capsuleId);
+    const members = capsule ? new Set(capsule.itemIds) : undefined;
+    return (
       snapshot?.items.filter(
         (i) =>
+          (!members || members.has(i.id)) &&
           (status === "all" || i.status === status) &&
           i.title.toLowerCase().includes(search.toLowerCase()),
-      ) ?? [],
-    [snapshot?.items, status, search],
-  );
+      ) ?? []
+    );
+  }, [snapshot?.items, snapshot?.capsules, capsuleId, status, search]);
   if (!snapshot)
     return (
       <section className={styles.root}>
@@ -66,7 +80,14 @@ export default function ClosetPage({
       setSlot(item.placement.slotId);
     }
   }
-  async function move() {
+  function beginPlacement(id: string) {
+    select(id);
+    setPlacing(true);
+    setMessage(
+      "Placement mode. Drop on an empty destination, or choose a slot and save. Escape cancels.",
+    );
+  }
+  async function move(destination = group, targetSlot = slot) {
     if (!selected || busy) return;
     setBusy(true);
     try {
@@ -74,11 +95,11 @@ export default function ClosetPage({
         type: "move",
         itemId: selected.id,
         expectedItemVersion: selected.version,
-        group,
-        slot,
+        group: destination,
+        slot: targetSlot,
       });
       setMessage(
-        `Moved ${selected.title} to ${groupLabels[group]}${group === "unplaced" ? "" : `, slot ${slot + 1}`}.`,
+        `Moved ${selected.title} to ${groupLabels[destination]}${destination === "unplaced" ? "" : `, slot ${targetSlot + 1}`}.`,
       );
       setPlacing(false);
     } catch {
@@ -116,7 +137,16 @@ export default function ClosetPage({
     }
   }
   return (
-    <section className={styles.root} aria-label="My Closet">
+    <section
+      className={styles.root}
+      aria-label="My Closet"
+      onKeyDown={(e) => {
+        if (!e.defaultPrevented && placing && e.key === "Escape") {
+          setPlacing(false);
+          setMessage("Placement cancelled. Your saved position is unchanged.");
+        }
+      }}
+    >
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Your wardrobe, your world</p>
@@ -148,7 +178,7 @@ export default function ClosetPage({
             Simple View
           </button>
           <a className={`${styles.button} ${styles.primary}`} href="/add">
-            ＋ Add item
+            + Add item
           </a>
         </div>
       </header>
@@ -213,11 +243,18 @@ export default function ClosetPage({
           {!simple && (
             <RoomViewport
               room={room}
-              items={filtered}
+              items={snapshot.items}
+              matchingIds={filtered.map((i) => i.id)}
               selectedId={selectedId}
               onSelect={select}
               onFallback={setFallback}
               namedView={snapshot.namedView}
+              cameraRequest={
+                cameraRequest?.roomId === room.id ? cameraRequest : undefined
+              }
+              onCameraPose={(pose) => {
+                currentCamera.current = { roomId: room.id, pose };
+              }}
               reducedMotion={reducedMotion}
               simpleView={simple}
             />
@@ -227,7 +264,6 @@ export default function ClosetPage({
               {room.views.map((view) => (
                 <button
                   key={view.id}
-                  disabled={reducedMotion && view.id !== "room"}
                   aria-pressed={snapshot.namedView === view.id}
                   onClick={() =>
                     void commit({
@@ -243,6 +279,23 @@ export default function ClosetPage({
                 Bounded capsule · all items remain below
               </span>
             </div>
+          )}
+          {!simple && (
+            <SavedCameraViews
+              roomId={room.id}
+              getPose={() =>
+                currentCamera.current?.roomId === room.id
+                  ? currentCamera.current.pose
+                  : undefined
+              }
+              onChoose={(pose) =>
+                setCameraRequest({
+                  ...pose,
+                  roomId: room.id,
+                  revision: Date.now(),
+                })
+              }
+            />
           )}
           <div className={styles.filters}>
             <label className={styles.srOnly} htmlFor="wardrobe-search">
@@ -273,10 +326,106 @@ export default function ClosetPage({
               </select>
             </label>
           </div>
+          <div className={styles.toolbar}>
+            <label>
+              Capsule
+              <select
+                aria-label="Capsule"
+                value={capsuleId}
+                onChange={(e) => setCapsuleId(e.target.value)}
+              >
+                <option value="all">All capsules</option>
+                {snapshot.capsules?.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {capsuleId !== "all" && (
+              <button
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await commit({ type: "delete_capsule", capsuleId });
+                    setCapsuleId("all");
+                    setMessage(
+                      "Capsule removed. Its items remain in your wardrobe.",
+                    );
+                  } catch {
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Remove capsule
+              </button>
+            )}
+          </div>
+          {!!picked.size && (
+            <div className={styles.notice} aria-label="Selected pieces tray">
+              <p>
+                {picked.size} selected, including selections outside this
+                filter.
+              </p>
+              <div className={styles.toolbar}>
+                <label>
+                  Capsule name
+                  <input
+                    disabled={busy}
+                    value={capsuleName}
+                    maxLength={80}
+                    onChange={(e) => setCapsuleName(e.target.value)}
+                  />
+                </label>
+                <button
+                  disabled={busy || !capsuleName.trim()}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      const result = await commit({
+                        type: "create_capsule",
+                        title: capsuleName,
+                        itemIds: [...picked],
+                      });
+                      setCapsuleId(
+                        result.snapshot.capsules?.at(-1)?.id ?? "all",
+                      );
+                      setPicked(new Set());
+                      setCapsuleName("");
+                      setMessage(
+                        "Capsule saved. Item status and ownership are unchanged.",
+                      );
+                    } catch {
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Save capsule
+                </button>
+                <button disabled={busy} onClick={() => setPicked(new Set())}>
+                  Clear selection
+                </button>
+              </div>
+            </div>
+          )}
           <VirtualWardrobe
             items={filtered}
             selectedId={selectedId}
             onSelect={select}
+            onBeginPlacement={beginPlacement}
+            pickedIds={picked}
+            selectionDisabled={busy}
+            onTogglePick={(id) =>
+              setPicked((previous) => {
+                const next = new Set(previous);
+                if (next.has(id)) next.delete(id);
+                else next.add(id);
+                return next;
+              })
+            }
           />
         </div>
         <aside className={styles.inspector} aria-label="Selected item">
@@ -374,8 +523,63 @@ export default function ClosetPage({
                         )}
                       </select>
                     </label>
+                    <div
+                      className={styles.dropSlots}
+                      aria-label="Drop destinations"
+                    >
+                      {eligibleGroups(selected.category, room).flatMap(
+                        (anchor) =>
+                          Array.from(
+                            { length: anchor.capacity },
+                            (_, index) => {
+                              const occupied = snapshot.items.some(
+                                (i) =>
+                                  i.id !== selected.id &&
+                                  i.placement.semanticGroup === anchor.id &&
+                                  i.placement.slotId === index,
+                              );
+                              return (
+                                <button
+                                  key={`${anchor.id}:${index}`}
+                                  disabled={busy || occupied}
+                                  data-drop-group={anchor.id}
+                                  data-drop-slot={index}
+                                  onDragOver={(e) => {
+                                    if (
+                                      e.dataTransfer.types.includes(
+                                        "application/x-brandme-wardrobe-item",
+                                      )
+                                    ) {
+                                      e.preventDefault();
+                                      e.dataTransfer.dropEffect = "move";
+                                    }
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    if (
+                                      e.dataTransfer.getData(
+                                        "application/x-brandme-wardrobe-item",
+                                      ) === selected.id
+                                    )
+                                      void move(anchor.id, index);
+                                  }}
+                                  onClick={() => {
+                                    setGroup(anchor.id);
+                                    setSlot(index);
+                                  }}
+                                >
+                                  {groupLabels[anchor.id]} · {index + 1}
+                                  {occupied ? " · occupied" : ""}
+                                </button>
+                              );
+                            },
+                          ),
+                      )}
+                    </div>
                     <p className={styles.muted}>
-                      Arrow keys choose a slot. Enter saves. Escape cancels.
+                      Drag the item image onto an empty destination to save.
+                      Clicking a destination selects it for confirmation. Arrow
+                      keys choose a slot. Enter saves. Escape cancels.
                     </p>
                     <button
                       className={styles.primary}

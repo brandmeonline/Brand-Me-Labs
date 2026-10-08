@@ -87,7 +87,13 @@ export interface ClosetItem {
   notes: string;
   placement: Placement;
 }
+export interface WardrobeCapsule {
+  id: string;
+  title: string;
+  itemIds: string[];
+}
 export interface ClosetSnapshot {
+  capsules?: WardrobeCapsule[];
   version: number;
   roomId: string;
   items: ClosetItem[];

@@ -3,7 +3,8 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as T from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CameraRig } from "./CameraRig";
+import type { CameraPose } from "./cameraPreferences";
 import { assets } from "./catalog";
 import type { ClosetItem, Room } from "./types";
 
@@ -76,11 +77,13 @@ function AssetObject({
   onFailure,
   onClick,
   onRendered,
+  dimmed = false,
 }: {
   url: string;
   onFailure: () => void;
   onClick?: () => void;
   onRendered?: () => void;
+  dimmed?: boolean;
 }) {
   const [object, setObject] = useState<T.Group>();
   const invalidate = useThree((s) => s.invalidate);
@@ -91,6 +94,7 @@ function AssetObject({
   useEffect(() => {
     let active = true;
     const lease = acquire(url);
+    const ownedMaterials = new Map<T.Material, T.Material>();
     void lease.promise
       .then((group) => {
         if (active) {
@@ -98,6 +102,23 @@ function AssetObject({
           let announced = false;
           instance.traverse((o) => {
             if (o instanceof T.Mesh) {
+              const copy = (material: T.Material) => {
+                let cloned = ownedMaterials.get(material);
+                if (!cloned) {
+                  cloned = material.clone();
+                  cloned.userData = {
+                    ...cloned.userData,
+                    baseOpacity: material.opacity,
+                    baseTransparent: material.transparent,
+                    baseDepthWrite: material.depthWrite,
+                  };
+                  ownedMaterials.set(material, cloned);
+                }
+                return cloned;
+              };
+              o.material = Array.isArray(o.material)
+                ? o.material.map(copy)
+                : copy(o.material);
               o.castShadow = true;
               o.receiveShadow = true;
               o.onAfterRender = () => {
@@ -117,9 +138,24 @@ function AssetObject({
       });
     return () => {
       active = false;
+      ownedMaterials.forEach((m) => m.dispose());
       lease.release();
     };
   }, [url, invalidate]);
+  useEffect(() => {
+    object?.traverse((o) => {
+      if (o instanceof T.Mesh)
+        for (const material of Array.isArray(o.material)
+          ? o.material
+          : [o.material]) {
+          material.opacity = dimmed ? 0.2 : material.userData.baseOpacity;
+          material.transparent = dimmed || material.userData.baseTransparent;
+          material.depthWrite = !dimmed && material.userData.baseDepthWrite;
+          material.needsUpdate = true;
+        }
+    });
+    invalidate();
+  }, [object, dimmed, invalidate]);
   return object ? (
     <primitive
       object={object}
@@ -135,47 +171,59 @@ function AssetObject({
     />
   ) : null;
 }
-function CameraRig({
-  room,
-  view,
-  active,
+function PhotoObject({
+  url,
+  onClick,
+  onFailure,
+  dimmed = false,
 }: {
-  room: Room;
-  view: string;
-  active: boolean;
+  url: string;
+  onClick: () => void;
+  onFailure: () => void;
+  dimmed?: boolean;
 }) {
-  const { camera, gl, invalidate, setFrameloop } = useThree();
-  const controls = useRef<OrbitControls | undefined>(undefined);
+  const [texture, setTexture] = useState<T.Texture>();
+  const invalidate = useThree((s) => s.invalidate),
+    failure = useRef(onFailure);
+  failure.current = onFailure;
   useEffect(() => {
-    const c = new OrbitControls(camera, gl.domElement);
-    controls.current = c;
-    c.enablePan = false;
-    c.enableDamping = false;
-    c.minDistance = 1.4;
-    c.maxDistance = 6;
-    c.minAzimuthAngle = (-55 * Math.PI) / 180;
-    c.maxAzimuthAngle = (55 * Math.PI) / 180;
-    c.minPolarAngle = Math.PI / 2 - (18 * Math.PI) / 180;
-    c.maxPolarAngle = Math.PI / 2 + (12 * Math.PI) / 180;
-    c.addEventListener("change", () => invalidate());
+    let active = true;
+    const map = new T.TextureLoader().load(
+      url,
+      (t) => {
+        if (!active) {
+          t.dispose();
+          return;
+        }
+        t.colorSpace = T.SRGBColorSpace;
+        setTexture(t);
+        invalidate();
+      },
+      undefined,
+      () => active && failure.current(),
+    );
     return () => {
-      c.dispose();
-      controls.current = undefined;
+      active = false;
+      map.dispose();
     };
-  }, [camera, gl, invalidate]);
-  useEffect(() => {
-    const chosen = room.views.find((v) => v.id === view) ?? room.views[0];
-    camera.position.set(...chosen.position);
-    controls.current?.target.set(...chosen.target);
-    camera.lookAt(...chosen.target);
-    controls.current?.update();
-    invalidate();
-  }, [room, view, camera, invalidate]);
-  useEffect(() => {
-    setFrameloop(active ? "demand" : "never");
-    if (active) invalidate();
-  }, [active, setFrameloop, invalidate]);
-  return null;
+  }, [url, invalidate]);
+  return texture ? (
+    <mesh
+      position={[0, -0.35, 0.02]}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+    >
+      <planeGeometry args={[0.55, 0.7]} />
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        opacity={dimmed ? 0.2 : 1}
+        side={T.DoubleSide}
+      />
+    </mesh>
+  ) : null;
 }
 function ContextLoss({ onFallback }: { onFallback: (reason: string) => void }) {
   const gl = useThree((s) => s.gl);
@@ -227,6 +275,10 @@ export interface SceneCanvasProps {
   namedView: string;
   reducedMotion: boolean;
   onReady?: () => void;
+  matchingIds?: readonly string[];
+  interactiveCamera?: boolean;
+  cameraRequest?: CameraPose & { revision: number };
+  onCameraPose?: (pose: CameraPose) => void;
 }
 export default function SceneCanvas({
   room,
@@ -237,6 +289,10 @@ export default function SceneCanvas({
   namedView,
   reducedMotion,
   onReady,
+  interactiveCamera = true,
+  cameraRequest,
+  onCameraPose,
+  matchingIds,
 }: SceneCanvasProps) {
   const [tier, setTier] = useState<Tier>("entry"),
     [active, setActive] = useState(true),
@@ -260,29 +316,34 @@ export default function SceneCanvas({
   const shown = useMemo(() => {
     let calls = 12,
       triangles = 20000;
-    return items
+    return [...items]
+      .sort((a, b) => Number(b.id === selectedId) - Number(a.id === selectedId))
       .filter(
         (i) =>
-          i.placement.semanticGroup !== "unplaced" &&
-          i.assetSlug &&
-          i.status !== "archive",
+          i.placement.semanticGroup !== "unplaced" && i.status !== "archive",
       )
       .filter((i) => {
         const a = assets.find((a) => a.slug === i.assetSlug);
-        if (!a) return false;
-        calls += a.drawCalls ?? 5;
-        triangles += a.triangleCount ?? 4000;
+        calls += a?.drawCalls ?? 1;
+        triangles += a?.triangleCount ?? 2;
         return (
           calls <= limits[tier].calls && triangles <= limits[tier].triangles
         );
       })
       .slice(0, limits[tier].items);
-  }, [items, tier]);
+  }, [items, tier, selectedId]);
+  const matches = useMemo(
+    () => (matchingIds ? new Set(matchingIds) : undefined),
+    [matchingIds],
+  );
   return (
     <div
       ref={host}
       data-scene-count={shown.length}
       data-scene-tier={tier}
+      data-scene-dimmed={
+        matches ? shown.filter((i) => !matches.has(i.id)).length : 0
+      }
       data-scene-stats={stats}
       aria-label={`${room.title}, ${shown.length} visible garments. Use the item list to organize everything.`}
     >
@@ -328,7 +389,7 @@ export default function SceneCanvas({
           }
         />
         {shown.map((item) => {
-          const a = assets.find((a) => a.slug === item.assetSlug)!;
+          const a = assets.find((a) => a.slug === item.assetSlug);
           const p = item.placement;
           return (
             <group
@@ -337,15 +398,29 @@ export default function SceneCanvas({
               quaternion={p.rotationQuaternion}
               scale={p.uniformScale}
             >
-              <AssetObject
-                url={a.lowGlb!}
-                onFailure={() =>
-                  onFallback(
-                    "A garment model could not load. Its image and controls are available in Simple View.",
-                  )
-                }
-                onClick={() => onSelect(item.id)}
-              />
+              {a?.lowGlb ? (
+                <AssetObject
+                  url={a.lowGlb}
+                  dimmed={!!matches && !matches.has(item.id)}
+                  onFailure={() =>
+                    onFallback(
+                      "A garment model could not load. Its image and controls are available in Simple View.",
+                    )
+                  }
+                  onClick={() => onSelect(item.id)}
+                />
+              ) : (
+                <PhotoObject
+                  dimmed={!!matches && !matches.has(item.id)}
+                  url={item.posterUrl}
+                  onClick={() => onSelect(item.id)}
+                  onFailure={() =>
+                    onFallback(
+                      "This photo could not load. The item is still available in Simple View.",
+                    )
+                  }
+                />
+              )}
               {item.id === selectedId && (
                 <mesh position={[0, 0.13, 0]} rotation={[Math.PI / 2, 0, 0]}>
                   <torusGeometry args={[0.04, 0.006, 6, 32]} />
@@ -358,8 +433,25 @@ export default function SceneCanvas({
         <ContextLoss onFallback={onFallback} />
         <CameraRig
           room={room}
-          view={reducedMotion ? "room" : namedView}
+          view={namedView}
           active={active}
+          reducedMotion={reducedMotion}
+          interactive={interactiveCamera}
+          cameraRequest={cameraRequest}
+          onCameraPose={(pose) => {
+            if (host.current)
+              host.current.dataset.cameraPosition = pose.position.join(",");
+            onCameraPose?.(pose);
+          }}
+          selected={
+            shown.some((i) => i.id === selectedId)
+              ? {
+                  id: selectedId!,
+                  position: shown.find((i) => i.id === selectedId)!.placement
+                    .positionMeters,
+                }
+              : undefined
+          }
         />
         <Monitor
           tier={tier}

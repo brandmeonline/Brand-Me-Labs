@@ -20,7 +20,14 @@ test("original rooms render from the real cameras and retain usable controls", a
     await page.getByLabel("Room environment").selectOption(id);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.locator("canvas")).toBeVisible();
-    await page.waitForTimeout(600);
+    await expect(page.locator("[data-room-ready]")).toHaveAttribute(
+      "data-room-ready",
+      "true",
+    );
+    await expect(page.locator("[data-room-phase]")).toHaveAttribute(
+      "data-room-phase",
+      "steady",
+    );
     await page.screenshot({
       path: info.outputPath(`${id}-1440.png`),
       fullPage: true,

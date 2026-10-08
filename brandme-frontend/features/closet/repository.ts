@@ -22,6 +22,8 @@ export type AddInput = {
   slot: number;
 };
 export type ClosetCommand =
+  | { type: "create_capsule"; title: string; itemIds: string[] }
+  | { type: "delete_capsule"; capsuleId: string }
   | { type: "add"; input: AddInput }
   | { type: "undo_add"; itemId: string; expectedItemVersion: number }
   | {
@@ -83,6 +85,7 @@ export function initialSnapshot(): ClosetSnapshot {
     reducedMotion: false,
     simpleView: false,
     namedView: "room",
+    capsules: [],
     items: allAssets
       .filter((a) => starts[a.slug])
       .map((a) => {
@@ -131,7 +134,22 @@ function apply(
 ): { snapshot: ClosetSnapshot; itemId?: string } {
   const s = clone(snapshot);
   let itemId: string | undefined;
-  if (command.type === "add") {
+  if (command.type === "create_capsule") {
+    const ids = [...new Set(command.itemIds)];
+    if (!command.title.trim() || command.title.length > 80 || !ids.length)
+      throw new Error("Name the capsule and select at least one item.");
+    const available = new Set(s.items.map((i) => i.id));
+    if (ids.some((id) => !available.has(id)))
+      throw new ClosetConflict(snapshot);
+    s.capsules = [
+      ...(s.capsules ?? []),
+      { id: crypto.randomUUID(), title: command.title.trim(), itemIds: ids },
+    ];
+  } else if (command.type === "delete_capsule") {
+    if (!s.capsules?.some((c) => c.id === command.capsuleId))
+      throw new ClosetConflict(snapshot);
+    s.capsules = s.capsules.filter((c) => c.id !== command.capsuleId);
+  } else if (command.type === "add") {
     const x = command.input,
       a = allAssets.find((a) => a.slug === x.assetSlug);
     if (!x.title.trim() || x.title.length > 120)
@@ -216,8 +234,13 @@ function apply(
     const item = s.items.find((i) => i.id === command.itemId);
     if (!item || item.version !== command.expectedItemVersion)
       throw new ClosetConflict(snapshot);
-    if (command.type === "undo_add")
+    if (command.type === "undo_add") {
       s.items = s.items.filter((i) => i.id !== item.id);
+      s.capsules = s.capsules?.map((c) => ({
+        ...c,
+        itemIds: c.itemIds.filter((id) => id !== item.id),
+      }));
+    }
     if (command.type === "notes") {
       item.notes = command.notes.slice(0, 2000);
       item.version++;

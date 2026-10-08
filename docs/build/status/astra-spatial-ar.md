@@ -148,7 +148,7 @@ node scripts/assets/dev.mjs
 #### Remaining work — do not mark these complete
 
 1. **Foundation integration:** supported Next/React migration, design-system exports, shared preference hook, generated API clients, authenticated wardrobe/outfit repositories, account migration/export/deletion integration, cross-device persistence and integrated build. Consume these read-only when supplied; keep the explicit demo boundary.
-2. **Spatial interaction/polish:** drag and touch long-press placement, physical collision/packing refinement for crowded slots, authored folded-display variants, saved custom camera views and orbit debounce, 450ms room transition, selected-item camera focus, source prefetch/pending slot representation, and 200% zoom/manual screen-reader/touch review. The current editor is an accessible visual composition using original garment posters; a composite 3D outfit preview remains future work.
+2. **Spatial interaction/polish, updated after Stage 6:** physical collision/packing refinement for crowded slots, authored folded-display variants, direct manipulation inside the 3D canvas (DOM image drag and touch entry are implemented), and 200% zoom/manual screen-reader/physical-touch review. The current editor is an accessible visual composition using original garment posters; a composite 3D outfit preview remains future work. Stage 6 implements saved cameras, orbit debounce, room/selection motion, prefetch/pending destinations, search dimming and the multi-select capsule tray.
 3. **Asset finishing:** richer baked grounding/AO and entry-tier lighting, optional measured KTX2/geometry compression, neutral turntable still sets, rigged garments, and a general quarantined upload/optimization pipeline. Current fixtures use embedded original PNG PBR maps and gzip transport with portable uncompressed GLBs. Source is reproducible from the generator; a private source-archive ingestion service is not implemented here.
 4. **Native AR:** actual supported iOS/Android/WebXR hardware tests and authoritative capability-registry activation; current disabled handoffs must not be switched on merely because desktop emulation passes.
 5. **Live pose:** rights-reviewed locally hosted model/WASM files, approved pinned stable runtime, confidence/multiple-person/occlusion validation across bodies and lighting. Lifecycle scaffolding is tested; pose inference is not represented as verified.
@@ -166,3 +166,36 @@ node scripts/assets/dev.mjs
 - Terminal push had no configured GitHub credentials. The connected GitHub integration published the reviewed Git blobs after recovering an interrupted upload; every returned blob hash was checked. Remote tree `dc588413725622d29bb67adb689a95d668a92160` exactly matches the tested local implementation commit `9bfb2c2`.
 - Fetched the remote commit and verified zero file differences before aligning the local branch. The 17 browser scenarios and asset/type evidence above were executed on 2026-10-05; publication recovery did not change implementation code or claim new device coverage.
 - The scaffold is available for cross-lane integration. All remaining work and the three **No** release assessments above remain in effect.
+
+### Stage 6 — continued implementation (2026-10-08)
+
+- Draft PR **#36**: https://github.com/brandmeonline/Brand-Me-Labs/pull/36, targeting the specified design-contract base. GitHub's completed mergeability calculation reports no merge conflict.
+- Read the current foundation bench (`67327e4`) and consumer-domain status read-only. Foundation packages exist on the foundation bench, not this PR base; frontend remains Next 14/React 18 there. Do not copy or modify other lanes' work. The integration gates above remain open.
+- Continuing the owned interactions: visible pending destination and asset prefetch, room transition, reduced-motion-safe camera control and local camera persistence, then focused browser regression coverage. PR remains draft throughout.
+
+
+Implemented in this continuation:
+- Prefetch the selected original low-LOD asset; show a destination placeholder throughout an outstanding add command; lock the reviewed inputs while saving. The real committed response still starts the 900ms signature and its ten-second inverse Undo. Flight coordinates now use the exact fixed room-camera projection rather than an approximate screen offset. Intake cameras remain fixed during this interaction.
+- Preserve the canvas while fading the old room out for 225ms, replacing the environment and fading in for 225ms. Reduced motion swaps directly. Interrupted/reversed transitions restore visibility.
+- Restrained 220ms selected-item camera focus, interrupted by orbit input. Named views remain usable under reduced motion and switch immediately. Orbit position is device-local with a one-second idle debounce; up to eight named views per room can be saved, restored and removed. Storage denial never blocks normal camera controls.
+- Drag an item image from the DOM wardrobe onto an eligible, unoccupied named destination to commit placement. Touch pointer hold enters placement after 350ms; movement before the threshold cancels the hold and leaves scrolling alone. Keyboard move/save/cancel remains available. Physical-device touch review is still open.
+- Search dims nonmatching scene garments instead of erasing room context; a selected item is prioritized within the bounded rendered capsule. Per-instance material clones preserve shared source materials and are disposed on release. Image-only items now render as labeled photo-display representations as well as remaining available through DOM rows.
+- Multi-select items across filters and save their actual IDs into a device-local capsule in the same revision/idempotency transaction adapter. Capsule membership survives refresh; removing a capsule preserves items and their statuses. This does not create entitlements or ownership claims.
+
+Consumer interface compatibility: `OutfitEditor` v1 is unchanged. `RoomViewport` adds optional `interactiveCamera`, `cameraRequest`, `onCameraPose`, `matchingIds` and `pendingPlacement`; existing consumers need no changes. Shared layout, global CSS, lib/components, backend, contracts and design documents remain unmodified.
+
+### Stage 7 — verification and PR update (2026-10-08)
+
+| Check | Result | Scope |
+|---|---|---|
+| Full browser regression | **28 passed, 0 failed/skipped/flaky** | `scripts/assets/evidence/browser-results.json`, 108.9 seconds, pinned Chromium 141; eleven new interaction scenarios plus the original seventeen |
+| Final visual/capsule recheck | **5 passed** | Rechecked three real room cameras, 320/390/768 reflow and capsule persistence after correcting an oversized checkbox and unsupported plus glyph; 44px label hit targets retained |
+| Isolated TypeScript | **passed** | Real owned components/routes; not an integrated Next build |
+| Asset validation | **passed** | 36 contract paths and 12 manifests remain valid; no original binary asset changes |
+| Placement video | **refreshed** | `scripts/assets/evidence/signature-placement.webm`, committed add, projected destination, settled state and actual inverse Undo |
+
+The expanded suite caught a transition assertion that missed the short fade interval; it now records mutation order and elapsed time. A capsule dropdown lookup included option text; its exact accessible combobox name now drives the check. A rapid room reversal is tested to prevent a permanently hidden scene. No failed assertions were removed to declare the suite green.
+
+Browser tooling required restoring the missing pinned Chromium cache in this resumed environment (the first run could not launch a browser). Here it was installed under `/workspace/scratch/83a30b4e4bb6/playwright-browsers`; prefix local commands with `PLAYWRIGHT_BROWSERS_PATH` pointing to that directory if using this cache. The normal install/reproduction commands above remain valid for a standard checkout.
+
+PR **#36** remains draft. No other lane's files were changed, no PR was merged, and no deployment occurred. Foundation integration, physical-device AR/touch/performance, pose-model validation, photo-provider integration and the remaining explicitly listed polish are still open. Calibrated fit remains unavailable. The full W04/W08 lane and production readiness are **not** marked complete.
