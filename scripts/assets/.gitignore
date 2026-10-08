@@ -1,0 +1,9 @@
+node_modules/
+!camera-measurements.json
+!evidence/browser-results.json
+!evidence/asset-validation.json
+evidence/runs/**/trace.zip
+evidence/runs/**/video.webm
+evidence/runs/**/error-context.md
+evidence/runs/.last-run.json
+evidence/runs/.playwright-artifacts*/

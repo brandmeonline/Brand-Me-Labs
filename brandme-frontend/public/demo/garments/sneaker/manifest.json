@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "bdbff281-45f2-5887-b09b-6db9151126f6",
+  "slug": "sneaker",
+  "title": "Everyday Low Sneaker",
+  "category": "shoes",
+  "revision": "original-v1",
+  "fidelity": "P1",
+  "fidelityLabel": "Approximate 3D",
+  "sourceProductRevision": "fictional-2026-10-05",
+  "glb": "/demo/garments/sneaker/lod0.glb",
+  "lowGlb": "/demo/garments/sneaker/lod1.glb",
+  "usdz": "/demo/garments/sneaker/preview.usdz",
+  "poster": "/demo/garments/sneaker/poster.webp",
+  "rights": "/demo/rights.json",
+  "dimensionsMeters": [
+    0.3857784569263458,
+    0.1600000038743019,
+    0.33663201332092285
+  ],
+  "pivot": "grounded_center",
+  "collisionBounds": {
+    "min": [
+      -0.1928892284631729,
+      0.017999999225139618,
+      -0.16831600666046143
+    ],
+    "max": [
+      0.1928892284631729,
+      0.17800000309944153,
+      0.16831600666046143
+    ]
+  },
+  "displayScaleBounds": [
+    0.65,
+    1.25
+  ],
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "triangleCount": 3168,
+  "drawCalls": 3,
+  "compression": {
+    "geometry": "uncompressed portable fallback",
+    "transport": "gzip sidecar",
+    "textures": "embedded original PNG PBR maps; no external references",
+    "native": "USDZ geometry and base colors; microtextures omitted"
+  },
+  "physicalScale": "approximate; not a calibrated product dimension",
+  "rig": null,
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "nativeDevice": "not_run",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "lod0.glb": {
+      "sha256": "33cacbaf36d9e6e4d3241c9720ac06888742de88e29335fc24806e514d04a328",
+      "bytes": 323308
+    },
+    "lod0.glb.gz": {
+      "sha256": "d52230197ff40281de9d5e04b6ce98e3c277cd2977b1da94fcf3883cc5087420",
+      "bytes": 70201
+    },
+    "lod1.glb": {
+      "sha256": "ddc1976f9352be81510d8fbd55f6d644c66ee6792d9596b364391cbec1996e37",
+      "bytes": 172768
+    },
+    "lod1.glb.gz": {
+      "sha256": "7ce7216eaad576e5406122c329de1a886518555a5b6d1b30d8e648874ba0c672",
+      "bytes": 40332
+    },
+    "preview.usdz": {
+      "sha256": "871faf493cc33e630f77da5cd60c9f05282b32d3cd79066fe584613dc8769f48",
+      "bytes": 988538
+    },
+    "poster.webp": {
+      "sha256": "58ba88287611dd72a9fef2ae9b57f9486b6f55bbb7c0848cd3a80b2a008b3fec",
+      "bytes": 10096
+    }
+  }
+}

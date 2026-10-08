@@ -1,0 +1,90 @@
+[
+  {
+    "id": "a4036cb0-7ab2-54b5-9238-ee5ffb378771",
+    "triangles": 3516,
+    "drawCalls": 4,
+    "textures": 9,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "6b4ee94a-4998-55d8-8298-c8f81a40b7aa",
+    "triangles": 2640,
+    "drawCalls": 5,
+    "textures": 12,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "9572fdc7-31e0-5b80-be82-147ef4a5e69c",
+    "triangles": 1464,
+    "drawCalls": 3,
+    "textures": 9,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "5a0ccc0d-d627-52fa-ab80-de662ef92b1b",
+    "triangles": 3516,
+    "drawCalls": 4,
+    "textures": 9,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "bdbff281-45f2-5887-b09b-6db9151126f6",
+    "triangles": 3168,
+    "drawCalls": 3,
+    "textures": 9,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "21e655b5-f16d-57c8-bf99-c7af6e942c6f",
+    "triangles": 1704,
+    "drawCalls": 3,
+    "textures": 6,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "demo-tee",
+    "triangles": 1608,
+    "drawCalls": 3,
+    "textures": 9,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "demo-knit",
+    "triangles": 3636,
+    "drawCalls": 4,
+    "textures": 12,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "walnut_atelier",
+    "triangles": 29168,
+    "drawCalls": 32,
+    "textures": 57,
+    "viewport": "1440x900",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "limestone_gallery",
+    "triangles": 20132,
+    "drawCalls": 31,
+    "textures": 54,
+    "viewport": "1440x900",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "garden_studio",
+    "triangles": 16176,
+    "drawCalls": 23,
+    "textures": 39,
+    "viewport": "1440x900",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  }
+]

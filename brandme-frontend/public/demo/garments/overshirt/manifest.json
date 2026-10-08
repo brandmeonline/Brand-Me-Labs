@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "a4036cb0-7ab2-54b5-9238-ee5ffb378771",
+  "slug": "overshirt",
+  "title": "Field Linen Overshirt",
+  "category": "top",
+  "revision": "original-v1",
+  "fidelity": "P1",
+  "fidelityLabel": "Approximate 3D",
+  "sourceProductRevision": "fictional-2026-10-05",
+  "glb": "/demo/garments/overshirt/lod0.glb",
+  "lowGlb": "/demo/garments/overshirt/lod1.glb",
+  "usdz": "/demo/garments/overshirt/preview.usdz",
+  "poster": "/demo/garments/overshirt/poster.webp",
+  "rights": "/demo/rights.json",
+  "dimensionsMeters": [
+    0.9247715771198273,
+    0.904145747423172,
+    0.21653016656637192
+  ],
+  "pivot": "hanger_hook",
+  "collisionBounds": {
+    "min": [
+      -0.4622729420661926,
+      -0.7939846515655518,
+      -0.10153016448020935
+    ],
+    "max": [
+      0.46249863505363464,
+      0.11016109585762024,
+      0.11500000208616257
+    ]
+  },
+  "displayScaleBounds": [
+    0.65,
+    1.25
+  ],
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "triangleCount": 3516,
+  "drawCalls": 4,
+  "compression": {
+    "geometry": "uncompressed portable fallback",
+    "transport": "gzip sidecar",
+    "textures": "embedded original PNG PBR maps; no external references",
+    "native": "USDZ geometry and base colors; microtextures omitted"
+  },
+  "physicalScale": "approximate; not a calibrated product dimension",
+  "rig": null,
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "nativeDevice": "not_run",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "lod0.glb": {
+      "sha256": "b5e3b113ec9d0b57cb3c9ccd124c4a72095cc29fdfa64c0a9013e1d57e666b67",
+      "bytes": 353472
+    },
+    "lod0.glb.gz": {
+      "sha256": "2d5d8c94ba917c9fe5950f4b12070f6de90f74b9d136aaffb1be183c122efc5b",
+      "bytes": 72893
+    },
+    "lod1.glb": {
+      "sha256": "67db0d5d11a03fd526856ecec147d9e1f62fa515271e00d3ff1bce53f0ccdfc2",
+      "bytes": 256704
+    },
+    "lod1.glb.gz": {
+      "sha256": "41485a649c7874ac22a0b6bb039ea822bb90d0384c1d902a60a66fd9aeab9edc",
+      "bytes": 51506
+    },
+    "preview.usdz": {
+      "sha256": "cd08b9c79c0658b470e5cceab00546b154092503ba88346030307933ee0ffe15",
+      "bytes": 1102680
+    },
+    "poster.webp": {
+      "sha256": "cbdafe04a182b1a7d32e71adf7dcb3982f9e30bd7054dedaf9ffdc1531e1cae4",
+      "bytes": 24340
+    }
+  }
+}

@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "id": "walnut_atelier",
+  "title": "Walnut Atelier",
+  "revision": "original-v1",
+  "dimensionsMeters": [
+    4.8,
+    3.6,
+    2.8
+  ],
+  "collisionBounds": {
+    "min": [
+      -2.442500114440918,
+      -0.09000000357627869,
+      -1.8424999713897705
+    ],
+    "max": [
+      2.444999933242798,
+      2.799999952316284,
+      1.7999999523162842
+    ]
+  },
+  "glb": "/demo/rooms/walnut_atelier/room.glb",
+  "poster": "/demo/rooms/walnut_atelier/poster.webp",
+  "rights": "/demo/rights.json",
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "lightKelvin": 4300,
+  "triangleCount": 17264,
+  "drawCalls": 7,
+  "groups": [
+    {
+      "id": "rail.left",
+      "center": [
+        -1.45,
+        1.75,
+        -0.65
+      ],
+      "capacity": 12,
+      "pitch": 0.12,
+      "width": 1.45
+    },
+    {
+      "id": "rail.right",
+      "center": [
+        1.45,
+        1.75,
+        -0.65
+      ],
+      "capacity": 12,
+      "pitch": 0.12,
+      "width": 1.45
+    },
+    {
+      "id": "shelf.shoes",
+      "center": [
+        0,
+        0.24,
+        -1.15
+      ],
+      "capacity": 8,
+      "pitch": 0.12,
+      "width": 1.1
+    },
+    {
+      "id": "shelf.folded",
+      "center": [
+        0,
+        1.05,
+        -1.15
+      ],
+      "capacity": 6,
+      "pitch": 0.12,
+      "width": 1.1
+    },
+    {
+      "id": "tray.accessories",
+      "center": [
+        1.45,
+        0.85,
+        0.4
+      ],
+      "capacity": 6,
+      "pitch": 0.12,
+      "width": 1.1
+    },
+    {
+      "id": "stand.outfit",
+      "center": [
+        0,
+        0,
+        -0.1
+      ],
+      "capacity": 1,
+      "pitch": 0.12,
+      "width": 1.1
+    }
+  ],
+  "camera": {
+    "fov": 38,
+    "near": 0.05,
+    "far": 40,
+    "position": [
+      0,
+      1.55,
+      4.8
+    ],
+    "target": [
+      0,
+      1.35,
+      0
+    ]
+  },
+  "views": [
+    {
+      "id": "room",
+      "name": "Room",
+      "position": [
+        0,
+        1.55,
+        4.8
+      ],
+      "target": [
+        0,
+        1.35,
+        0
+      ]
+    },
+    {
+      "id": "rail",
+      "name": "Work rail",
+      "position": [
+        -1.05,
+        1.6,
+        2.3
+      ],
+      "target": [
+        -1.4,
+        1.3,
+        -0.65
+      ]
+    },
+    {
+      "id": "details",
+      "name": "Details",
+      "position": [
+        1.8,
+        1.5,
+        2.5
+      ],
+      "target": [
+        1.45,
+        1,
+        0.1
+      ]
+    }
+  ],
+  "mirror": "Static tinted reflective material; not a live mirror",
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "room.glb": {
+      "sha256": "9c8e0559c59bff06cb5db49206c80c668c2890a101f73934d82da0297c2227c3",
+      "bytes": 1687688
+    },
+    "room.glb.gz": {
+      "sha256": "dbf2af809152138c85a1a3e6eb85ce9b0573deee6170dee75dbe80ad74fb0161",
+      "bytes": 149907
+    },
+    "poster.webp": {
+      "sha256": "4e912f0989dab34bc582943dae6891870c0a2a4fea176bbbc9cac3a6a8cce973",
+      "bytes": 86056
+    }
+  }
+}

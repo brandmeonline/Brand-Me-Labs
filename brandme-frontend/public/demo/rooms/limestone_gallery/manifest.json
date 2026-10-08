@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "id": "limestone_gallery",
+  "title": "Limestone Gallery",
+  "revision": "original-v1",
+  "dimensionsMeters": [
+    5.2,
+    4,
+    3
+  ],
+  "collisionBounds": {
+    "min": [
+      -2.6424999237060547,
+      -0.09000000357627869,
+      -2.0425000190734863
+    ],
+    "max": [
+      2.6449999809265137,
+      3,
+      2
+    ]
+  },
+  "glb": "/demo/rooms/limestone_gallery/room.glb",
+  "poster": "/demo/rooms/limestone_gallery/poster.webp",
+  "rights": "/demo/rights.json",
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "lightKelvin": 5500,
+  "triangleCount": 8228,
+  "drawCalls": 6,
+  "groups": [
+    {
+      "id": "rail.left",
+      "center": [
+        -1.65,
+        1.75,
+        -0.85
+      ],
+      "capacity": 12,
+      "pitch": 0.12,
+      "width": 1.45
+    },
+    {
+      "id": "rail.right",
+      "center": [
+        1.65,
+        1.75,
+        -0.85
+      ],
+      "capacity": 12,
+      "pitch": 0.12,
+      "width": 1.45
+    },
+    {
+      "id": "shelf.shoes",
+      "center": [
+        0,
+        0.24,
+        -1.15
+      ],
+      "capacity": 8,
+      "pitch": 0.12,
+      "width": 1.1
+    },
+    {
+      "id": "shelf.folded",
+      "center": [
+        0,
+        1.05,
+        -1.15
+      ],
+      "capacity": 6,
+      "pitch": 0.12,
+      "width": 1.1
+    },
+    {
+      "id": "tray.accessories",
+      "center": [
+        1.45,
+        0.85,
+        0.4
+      ],
+      "capacity": 6,
+      "pitch": 0.12,
+      "width": 1.1
+    },
+    {
+      "id": "stand.outfit",
+      "center": [
+        0,
+        0,
+        -0.1
+      ],
+      "capacity": 1,
+      "pitch": 0.12,
+      "width": 1.1
+    }
+  ],
+  "camera": {
+    "fov": 38,
+    "near": 0.05,
+    "far": 40,
+    "position": [
+      0,
+      1.55,
+      4.8
+    ],
+    "target": [
+      0,
+      1.35,
+      0
+    ]
+  },
+  "views": [
+    {
+      "id": "room",
+      "name": "Room",
+      "position": [
+        0,
+        1.55,
+        4.8
+      ],
+      "target": [
+        0,
+        1.35,
+        0
+      ]
+    },
+    {
+      "id": "rail",
+      "name": "Work rail",
+      "position": [
+        -1.05,
+        1.6,
+        2.3
+      ],
+      "target": [
+        -1.4,
+        1.3,
+        -0.65
+      ]
+    },
+    {
+      "id": "details",
+      "name": "Details",
+      "position": [
+        1.8,
+        1.5,
+        2.5
+      ],
+      "target": [
+        1.45,
+        1,
+        0.1
+      ]
+    }
+  ],
+  "mirror": "Static tinted reflective material; not a live mirror",
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "room.glb": {
+      "sha256": "c0fead6d4e6eb13f663285752f8b9c5a850141b24eb4ad2feba1682d3f1beb80",
+      "bytes": 815440
+    },
+    "room.glb.gz": {
+      "sha256": "72951188359ea1c297b8c5f7863127a75fb0d98da945846c40ac26e83f795691",
+      "bytes": 98973
+    },
+    "poster.webp": {
+      "sha256": "8fea21ea080ec695978520f22139ebf4bad015bd3da6370c67fa02a0cce42064",
+      "bytes": 82856
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "demo-knit",
+  "slug": "knit",
+  "title": "Ribbed Oat Knit",
+  "category": "top",
+  "revision": "original-v1",
+  "fidelity": "P1",
+  "fidelityLabel": "Approximate 3D",
+  "sourceProductRevision": "fictional-2026-10-05",
+  "glb": "/demo/garments/knit/lod0.glb",
+  "lowGlb": "/demo/garments/knit/lod1.glb",
+  "usdz": "/demo/garments/knit/preview.usdz",
+  "poster": "/demo/garments/knit/poster.webp",
+  "rights": "/demo/rights.json",
+  "dimensionsMeters": [
+    0.9247715771198273,
+    0.9110395014286041,
+    0.20717769116163254
+  ],
+  "pivot": "hanger_hook",
+  "collisionBounds": {
+    "min": [
+      -0.4622729420661926,
+      -0.8008784055709839,
+      -0.10153016448020935
+    ],
+    "max": [
+      0.46249863505363464,
+      0.11016109585762024,
+      0.10564752668142319
+    ]
+  },
+  "displayScaleBounds": [
+    0.65,
+    1.25
+  ],
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "triangleCount": 3636,
+  "drawCalls": 4,
+  "compression": {
+    "geometry": "uncompressed portable fallback",
+    "transport": "gzip sidecar",
+    "textures": "embedded original PNG PBR maps; no external references",
+    "native": "USDZ geometry and base colors; microtextures omitted"
+  },
+  "physicalScale": "approximate; not a calibrated product dimension",
+  "rig": null,
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "nativeDevice": "not_run",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "lod0.glb": {
+      "sha256": "c5e671f783f9b8a61d228dbe04afcdbb323051d38256edec3278658e3433795d",
+      "bytes": 372952
+    },
+    "lod0.glb.gz": {
+      "sha256": "675f71f1a684e24553ed924daeb9823f414fe5bc70fcfc9d575f5a939082db18",
+      "bytes": 83229
+    },
+    "lod1.glb": {
+      "sha256": "5f233ca98828e9e93a752e548f29da71aa6639967d0e035d5aede5618547d130",
+      "bytes": 265428
+    },
+    "lod1.glb.gz": {
+      "sha256": "1a47c700187f68ee037719244ca15089627affd4a8f996115cc158c906f68f7b",
+      "bytes": 60059
+    },
+    "preview.usdz": {
+      "sha256": "cf539a456463a97e75b60820b1615e60fd52dc0e9a50d1246d1bd59dc871cfe8",
+      "bytes": 1155865
+    },
+    "poster.webp": {
+      "sha256": "bfc27048096361b9a2826f432b099ccd5e97af7973f751cd7157f72a07f501ff",
+      "bytes": 24720
+    }
+  }
+}

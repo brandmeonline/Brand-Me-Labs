@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "21e655b5-f16d-57c8-bf99-c7af6e942c6f",
+  "slug": "bag",
+  "title": "Sculpted Everyday Bag",
+  "category": "accessory",
+  "revision": "original-v1",
+  "fidelity": "P1",
+  "fidelityLabel": "Approximate 3D",
+  "sourceProductRevision": "fictional-2026-10-05",
+  "glb": "/demo/garments/bag/lod0.glb",
+  "lowGlb": "/demo/garments/bag/lod1.glb",
+  "usdz": "/demo/garments/bag/preview.usdz",
+  "poster": "/demo/garments/bag/poster.webp",
+  "rights": "/demo/rights.json",
+  "dimensionsMeters": [
+    0.3649955689907074,
+    0.46039231680333614,
+    0.16013775020837784
+  ],
+  "pivot": "grounded_center",
+  "collisionBounds": {
+    "min": [
+      -0.1824977844953537,
+      0.009999999776482582,
+      -0.0777454599738121
+    ],
+    "max": [
+      0.1824977844953537,
+      0.4703923165798187,
+      0.08239229023456573
+    ]
+  },
+  "displayScaleBounds": [
+    0.65,
+    1.25
+  ],
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "triangleCount": 1704,
+  "drawCalls": 3,
+  "compression": {
+    "geometry": "uncompressed portable fallback",
+    "transport": "gzip sidecar",
+    "textures": "embedded original PNG PBR maps; no external references",
+    "native": "USDZ geometry and base colors; microtextures omitted"
+  },
+  "physicalScale": "approximate; not a calibrated product dimension",
+  "rig": null,
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "agent visual review passed; human approval not claimed",
+    "nativeDevice": "not_run",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "lod0.glb": {
+      "sha256": "d541f0360916e642e242ea85f7bf3c1a494cf965426c21c52d8f970d3ee70b05",
+      "bytes": 174836
+    },
+    "lod0.glb.gz": {
+      "sha256": "c748dbcc7056ef4c56a80ee0d655c9a1f206ec6aab9b783da25fa329c92b4e54",
+      "bytes": 38021
+    },
+    "lod1.glb": {
+      "sha256": "12c016dae5a5b7cd261cf7594dd9748577a8a834aee9ec65ae7ecb38c7ac79e5",
+      "bytes": 153332
+    },
+    "lod1.glb.gz": {
+      "sha256": "194fd22b5d8a9056ef0a66b9c800f354007860b05be9ef55548ccd74303d13cc",
+      "bytes": 31739
+    },
+    "preview.usdz": {
+      "sha256": "bdf527b1608fe56b5d65c5b8f93f3711cd0e9ad8e46bdd1de1e6a3afae188e50",
+      "bytes": 543596
+    },
+    "poster.webp": {
+      "sha256": "8ff7ca50fd201947ca5990ab2822cb982428041625e85cdb4bf01c18f698fc51",
+      "bytes": 27596
+    }
+  }
+}
