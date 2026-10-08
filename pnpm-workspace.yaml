@@ -14,4 +14,4 @@ onlyBuiltDependencies:
   - '@parcel/watcher'
   - sharp
 
-engineStrict: true
+engineStrict: false
