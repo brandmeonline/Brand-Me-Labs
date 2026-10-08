@@ -1,0 +1,6 @@
+# Foundation Python toolchain (python 3.11). Compile with:
+#   uv pip compile scripts/python/requirements.in --generate-hashes -p 3.11 -o scripts/python/requirements.lock
+-r ../../brandme_core/requirements.txt
+-r ../../docs/design/brandme/contracts/requirements.txt
+pytest-timeout==2.3.1
+datamodel-code-generator==0.34.0

@@ -1,5 +1,22 @@
 # CLAUDE.md — Honest Repo Map
 
+> **Current product build contract (2026-10-05):** read
+> [`docs/design/brandme/README.md`](./docs/design/brandme/README.md) and every linked
+> chapter before implementing the full Brand.Me experience. Start with the
+> [Claude kickoff prompt](./docs/design/brandme/CLAUDE_BUILD_PROMPT.md).
+> The package restores editable identity, social shopping, loyalty, the spatial
+> wardrobe, AR, authorized commerce and Midnight rights to one implementation plan.
+> It is a specification, not a claim that these features already work.
+>
+> **Dated audit correction:** at baseline `0f5f58a`, commerce handlers do exist in
+> `brandme_core/mcp/tools.py:799-923` and a Midnight client exists as a stub in
+> `brandme-chain/src/services/midnight-client.ts:60-194`. The older “no references”/“type defs only” wording
+> below and in `PLAN.md` is stale. These handlers are not verified integrations.
+> See the [code evidence and current sources](./docs/design/brandme/07-repository-audit-sources.md).
+> Current AP2 and Midnight implementation details come from the new package's
+> dated primary sources, with re-verification at build time. Preserve this file's
+> honesty, security and review requirements; do not promote a stub based on a plan.
+
 > Short, accurate map of what is **actually wired up** in this repo, vs. what
 > is stubbed or aspirational. The marketing-tone status documents
 > (`README.md`, `FINAL_SUMMARY.md`, `docs/status/CURRENT_STATUS.md`) overstate

@@ -1,0 +1,348 @@
+{
+  "status": "fictional_schema_examples_not_network_evidence",
+  "valid": [
+    {
+      "definition": "Money",
+      "value": {
+        "amount_minor": "9612",
+        "currency": "USD"
+      }
+    },
+    {
+      "definition": "PersonaPatch",
+      "value": {
+        "changes": [
+          {
+            "axis": "expression",
+            "value": 78,
+            "locked": true
+          }
+        ],
+        "client_revision": "draft-17",
+        "learning_enabled": true
+      }
+    },
+    {
+      "definition": "PersonaProfile",
+      "value": {
+        "member_id": "2ad9041e-561e-527b-aa0d-5a7fda5f710b",
+        "version": "43",
+        "declared_axes": {
+          "temperature": 35,
+          "sport_couture": 65,
+          "expression": 72,
+          "fit_language": 60,
+          "detail": 30,
+          "novelty": 45,
+          "color": 55,
+          "finish": 25,
+          "structure": 40,
+          "setting": 30,
+          "exploration": 60,
+          "utility": 45
+        },
+        "inferred_axes": {
+          "temperature": null,
+          "sport_couture": null,
+          "expression": null,
+          "fit_language": null,
+          "detail": null,
+          "novelty": null,
+          "color": null,
+          "finish": null,
+          "structure": null,
+          "setting": null,
+          "exploration": null,
+          "utility": null
+        },
+        "effective_axes": {
+          "temperature": 35,
+          "sport_couture": 65,
+          "expression": 72,
+          "fit_language": 60,
+          "detail": 30,
+          "novelty": 45,
+          "color": 55,
+          "finish": 25,
+          "structure": 40,
+          "setting": 30,
+          "exploration": 60,
+          "utility": 45
+        },
+        "locked_axes": [
+          "expression"
+        ],
+        "learning_enabled": true,
+        "updated_at": "2026-10-05T12:00:00Z"
+      }
+    },
+    {
+      "definition": "ClosetPlacement",
+      "value": {
+        "wardrobe_item_id": "1868eab5-6b18-5262-a8a2-6fa8e348ebd6",
+        "layout_id": "3ad11600-2702-550a-a020-af188cc173c1",
+        "room_template_id": "walnut_atelier",
+        "semantic_group": "rail.left",
+        "slot_id": "rail.left.03",
+        "position_meters": [
+          -1.21,
+          1.75,
+          -0.65
+        ],
+        "rotation_quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "uniform_scale": 1,
+        "asset_revision": "demo-overshirt-v1",
+        "version": "1"
+      }
+    },
+    {
+      "definition": "WardrobeItem",
+      "value": {
+        "id": "1868eab5-6b18-5262-a8a2-6fa8e348ebd6",
+        "member_id": "2ad9041e-561e-527b-aa0d-5a7fda5f710b",
+        "title": "Field Linen Overshirt — fictional demo",
+        "collection": "owned",
+        "product_id": "a4036cb0-7ab2-54b5-9238-ee5ffb378771",
+        "asset_instance_id": null,
+        "claim_level": "self_reported",
+        "version": "1"
+      }
+    },
+    {
+      "definition": "DecisionCreate",
+      "value": {
+        "subject_type": "outfit_version",
+        "subject_id": "e9fc1f71-92ba-57ab-bef8-e1327db23d25",
+        "prompt": "Which layer feels right for tonight?",
+        "recipient_ids": [
+          "fa9ad97d-0187-5b71-a602-b05aabb329e1",
+          "3713cac8-3866-52a4-9506-23c82ddd0d38"
+        ],
+        "duration_seconds": 300,
+        "discussion_mode": "blind_until_response"
+      }
+    },
+    {
+      "definition": "DecisionResponse",
+      "value": {
+        "choice": "pass",
+        "note": "I prefer the lighter layer you saved."
+      }
+    },
+    {
+      "definition": "CheckoutQuote",
+      "value": {
+        "id": "f36cb317-ec35-5a15-afe4-d8fd7c888384",
+        "environment": "demo",
+        "provider_id": "demo_atelier",
+        "merchant_id": "fictional-demo-merchant",
+        "payee_ref": "demo-payee",
+        "cart_id": "f90f1d6a-86ab-5cc7-847d-fe363d6cc105",
+        "cart_revision": "2",
+        "lines": [
+          {
+            "variant_id": "c70ea8fb-78db-593b-9c3c-824ef1412393",
+            "source_variant_ref": "demo-overshirt-m",
+            "quantity": 1,
+            "unit_price": {
+              "amount_minor": "8900",
+              "currency": "USD"
+            },
+            "line_total": {
+              "amount_minor": "8900",
+              "currency": "USD"
+            }
+          }
+        ],
+        "subtotal": {
+          "amount_minor": "8900",
+          "currency": "USD"
+        },
+        "tax": {
+          "amount_minor": "712",
+          "currency": "USD"
+        },
+        "shipping": {
+          "amount_minor": "0",
+          "currency": "USD"
+        },
+        "discount": {
+          "amount_minor": "0",
+          "currency": "USD"
+        },
+        "total": {
+          "amount_minor": "9612",
+          "currency": "USD"
+        },
+        "delivery_ref": "demo-delivery",
+        "terms_hash": "fixture-only-not-a-real-signature",
+        "quote_hash": "fixture-recompute-with-canonical-encoder",
+        "issued_at": "2026-10-05T12:00:00Z",
+        "expires_at": "2026-10-05T12:05:00Z"
+      }
+    },
+    {
+      "definition": "PurchaseRequest",
+      "value": {
+        "quote_id": "f36cb317-ec35-5a15-afe4-d8fd7c888384",
+        "approval_id": "3f127e02-ec00-5dc8-a19a-6575ffb2b5d3",
+        "delegation_id": null
+      }
+    },
+    {
+      "definition": "ChainOperation",
+      "value": {
+        "id": "d4882d30-800d-5a17-a062-9a0927b27d75",
+        "network": "preprod",
+        "contract_ref": "requires-real-deployment",
+        "operation": "transfer",
+        "state": "prepared",
+        "request_digest": "compute-from-real-intent",
+        "transaction_id": null,
+        "observed_block": null,
+        "updated_at": "2026-10-05T12:00:00Z"
+      }
+    },
+    {
+      "definition": "ProviderPublic",
+      "value": {
+        "provider_id": "nordstrom_impact",
+        "display_name": "Nordstrom via approved Impact publisher access",
+        "environment": "development",
+        "capabilities": [
+          {
+            "name": "catalog.feed",
+            "state": "unconfigured",
+            "reason_code": "partner_approval_required",
+            "last_checked_at": null,
+            "evidence_ref": null
+          },
+          {
+            "name": "checkout.submit",
+            "state": "unsupported",
+            "reason_code": "no_verified_public_checkout_access",
+            "last_checked_at": null,
+            "evidence_ref": null
+          }
+        ],
+        "country_codes": [
+          "US"
+        ],
+        "disclosure": "Retailer checkout occurs outside Brand.Me until richer authorized access is verified."
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "definition": "Money",
+      "value": {
+        "amount_minor": 96.12,
+        "currency": "USD"
+      },
+      "reason": "Floating-point money rejected"
+    },
+    {
+      "definition": "Money",
+      "value": {
+        "amount_minor": "-1",
+        "currency": "USD"
+      },
+      "reason": "Quote Money is nonnegative; direction belongs to transaction type"
+    },
+    {
+      "definition": "PersonaPatch",
+      "value": {
+        "changes": [
+          {
+            "axis": "expression",
+            "value": 101,
+            "locked": true
+          }
+        ],
+        "client_revision": "x"
+      },
+      "reason": "Axis outside range"
+    },
+    {
+      "definition": "PersonaPatch",
+      "value": {
+        "changes": [
+          {
+            "axis": "human_worth",
+            "value": 50,
+            "locked": true
+          }
+        ],
+        "client_revision": "x"
+      },
+      "reason": "Unknown executable axis"
+    },
+    {
+      "definition": "DecisionResponse",
+      "value": {
+        "choice": "alternative"
+      },
+      "reason": "Alternative needs an actual reference"
+    },
+    {
+      "definition": "PurchaseRequest",
+      "value": {
+        "quote_id": "f36cb317-ec35-5a15-afe4-d8fd7c888384",
+        "approval_id": "3f127e02-ec00-5dc8-a19a-6575ffb2b5d3",
+        "delegation_id": null,
+        "user_id": "45b9bcb5-5a6b-5657-a210-8ae8225c76b1"
+      },
+      "reason": "Untrusted identity parameter is not accepted"
+    },
+    {
+      "definition": "ChainOperation",
+      "value": {
+        "id": "d4882d30-800d-5a17-a062-9a0927b27d75",
+        "network": "preprod",
+        "contract_ref": "requires-real-deployment",
+        "operation": "transfer",
+        "state": "finalized",
+        "request_digest": "compute-from-real-intent",
+        "transaction_id": null,
+        "observed_block": null,
+        "updated_at": "2026-10-05T12:00:00Z"
+      },
+      "reason": "Finalized cannot lack actual transaction reference"
+    },
+    {
+      "definition": "ProviderPublic",
+      "value": {
+        "provider_id": "nordstrom_impact",
+        "display_name": "Nordstrom via approved Impact publisher access",
+        "environment": "development",
+        "capabilities": [
+          {
+            "name": "catalog.feed",
+            "state": "unconfigured",
+            "reason_code": "partner_approval_required",
+            "last_checked_at": null,
+            "evidence_ref": null
+          },
+          {
+            "name": "checkout.submit",
+            "state": "unsupported",
+            "reason_code": "no_verified_public_checkout_access",
+            "last_checked_at": null,
+            "evidence_ref": null
+          }
+        ],
+        "country_codes": [
+          "US"
+        ],
+        "disclosure": "Retailer checkout occurs outside Brand.Me until richer authorized access is verified.",
+        "api_key": "do-not-place-secrets-here"
+      },
+      "reason": "Public provider DTO cannot carry credentials"
+    }
+  ]
+}

@@ -197,6 +197,14 @@ gcloud-config/
 !.claude/**/*.json
 .claude/settings.local.json
 
+# Public design contracts and fictional examples; no credentials or live records.
+!docs/design/brandme/contracts/acceptance-catalog.json
+!docs/design/brandme/contracts/contract-examples.json
+!docs/design/brandme/contracts/demo-scenario.json
+!docs/design/brandme/contracts/design-tokens.json
+!docs/design/brandme/contracts/domain.schema.json
+!docs/design/brandme/contracts/reward-rules.json
+
 # Service account keys (NEVER commit)
 *-service-account.json
 *-sa-key.json
