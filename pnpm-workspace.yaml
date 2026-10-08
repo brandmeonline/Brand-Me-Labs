@@ -2,3 +2,4 @@ packages:
   - 'brandme-gateway'
   - 'brandme-chain'
   - 'brandme-console'
+  - 'brandme-frontend'
