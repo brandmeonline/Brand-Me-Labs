@@ -2,7 +2,7 @@
   "name": "brandme-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Brand.Me — Be More U. Consumer app, domain services and trust infrastructure.",
+  "description": "Brand.Me \u2014 Be More U. Consumer app, domain services and trust infrastructure.",
   "scripts": {
     "setup:demo": "node scripts/brandme.mjs setup --mode demo",
     "dev:demo": "node scripts/brandme.mjs dev --mode demo",
@@ -28,5 +28,14 @@
     "node": ">=24.21.0 <25",
     "pnpm": "10.34.6"
   },
-  "packageManager": "pnpm@10.34.6"
+  "packageManager": "pnpm@10.34.6",
+  "pnpm": {
+    "overrides": {
+      "@midnight-ntwrk/ledger-v8": "8.1.2",
+      "@midnight-ntwrk/onchain-runtime-v3": "3.0.0",
+      "@midnight-ntwrk/compact-runtime": "0.16.0",
+      "@midnight-ntwrk/compact-js": "2.5.1",
+      "@midnight-ntwrk/platform-js": "2.2.4"
+    }
+  }
 }

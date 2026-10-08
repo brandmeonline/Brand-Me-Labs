@@ -1,60 +1,28 @@
 # Copyright (c) Brand.Me, Inc. All rights reserved.
 #
-# Dockerfile for Brand.Me Chain Service
-# ======================================
-# Cardano and Midnight blockchain integration
+# Brand.Me chain service — Midnight rights adapter.
+# Prover keys are regenerated from the pinned compactc and verified against
+# contracts/artifact-manifest.json; the service refuses to start serving
+# proving material that does not match.
 
-FROM node:18-alpine as base
-
-# Set working directory
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
-
-# Install system dependencies
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    curl
-
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
-
-# Install pnpm
-RUN npm install -g pnpm@8.15.0
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy application code
+RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 COPY . .
+RUN pnpm install --frozen-lockfile --filter @brandme/chain...
+WORKDIR /app/brandme-chain
+RUN pnpm compact:compile && pnpm compact:verify && pnpm build
 
-# Build TypeScript
-RUN pnpm build
-
-# Create non-root user
-RUN addgroup -g 1000 brandme && \
-    adduser -D -u 1000 -G brandme brandme && \
-    chown -R brandme:brandme /app
-USER brandme
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-3001}/health || exit 1
-
-# Expose port
-EXPOSE ${PORT:-3001}
-
-# Start application
-CMD ["node", "dist/index.js"]
-
-
-# Production stage
-FROM base as production
+FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
-RUN pnpm prune --production
-
-
-# Development stage
-FROM base as development
-ENV NODE_ENV=development
-CMD ["pnpm", "dev"]
+WORKDIR /app/brandme-chain
+COPY --from=build /app/node_modules /app/node_modules
+COPY --from=build /app/brandme-chain/node_modules ./node_modules
+COPY --from=build /app/brandme-chain/dist ./dist
+COPY --from=build /app/brandme-chain/package.json ./package.json
+RUN useradd -u 1000 -m brandme && chown -R brandme /app
+USER brandme
+EXPOSE 3001
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3001)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "dist/src/index.js"]

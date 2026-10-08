@@ -1,0 +1,33 @@
+# Local Midnight network (node + indexer) for `pnpm test:midnight:network`; started by scripts/local-network.sh.
+# Pinned to the support-matrix Preview pairing (node 1.0.300 + indexer 4.3.5): the
+# Preprod indexer 4.3.302 is not published as a standalone image. SDK tuple is identical.
+services:
+  node:
+    image: midnightntwrk/midnight-node:1.0.300@sha256:593ca8484074b771c2643a1b5744474a266ec923c0946d3a1382ee25d11cf7c7
+    ports: ['9944']
+    environment:
+      CFG_PRESET: 'dev'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9944/health']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+  indexer:
+    image: midnightntwrk/indexer-standalone:4.3.5@sha256:1c69c6632df859140a4019af9d7ebb81cb6073b1d39194d3eabaa1b320883499
+    ports: ['8088']
+    environment:
+      RUST_LOG: 'indexer=info,chain_indexer=info,indexer_api=info,wallet_indexer=info,indexer_common=info,fastrace_opentelemetry=off,info'
+      APP__APPLICATION__NETWORK_ID: 'undeployed'
+      APP__INFRA__SECRET: '303132333435363738393031323334353637383930313233343536373839303132'
+      APP__INFRA__NODE__URL: 'ws://node:9944'
+      APP__INFRA__SPO_NODE__URL: 'ws://node:9944'
+      APP__INFRA__SPO_NODE__BLOCKFROST_ID: 'not-used-locally'
+    healthcheck:
+      test: ['CMD-SHELL', 'cat /var/run/indexer-standalone/running']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    depends_on:
+      node:
+        condition: service_healthy

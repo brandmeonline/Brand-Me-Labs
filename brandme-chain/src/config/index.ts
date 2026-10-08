@@ -1,7 +1,8 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * Configuration
+ * Configuration. There is no "fallback mode": a missing or misconfigured
+ * Midnight capability is reported as unavailable, never simulated.
  */
 
 import dotenv from 'dotenv';
@@ -10,48 +11,36 @@ import { z } from 'zod';
 dotenv.config();
 
 const configSchema = z.object({
-  // Server
   port: z.coerce.number().default(3001),
-  environment: z.enum(['development', 'staging', 'production']).default('development'),
-
-  // CORS
-  corsOrigins: z.string().transform(val => val.split(',')).default('http://localhost:3000'),
-
-  // Logging
+  environment: z.enum(['demo', 'development', 'sandbox', 'production']).default('development'),
+  corsOrigins: z.string().transform((val) => val.split(',')).default('http://localhost:3000'),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
-  // Cardano Configuration
-  cardanoNetwork: z.enum(['mainnet', 'testnet', 'preprod', 'preview']).default('preprod'),
-  cardanoWalletPath: z.string().optional(),
-  cardanoMnemonicPath: z.string().optional(),
-  blockfrostApiKey: z.string().optional(),
-  cardanoFallbackMode: z.string().transform(v => v === 'true').default('true'),
-
-  // Midnight Configuration
-  midnightNetwork: z.enum(['mainnet', 'testnet', 'devnet']).default('testnet'),
-  midnightWalletPath: z.string().optional(),
-  midnightRpcUrl: z.string().optional(),
-  midnightFallbackMode: z.string().transform(v => v === 'true').default('true'),
+  // Midnight (primary rights network)
+  midnightNetwork: z.enum(['undeployed', 'preview', 'preprod', 'mainnet']).default('preprod'),
+  midnightContractAddress: z.string().regex(/^[0-9a-f]{64,}$/i).optional(),
+  midnightBlockfrostProjectId: z.string().optional(),
+  midnightLocalNodePort: z.coerce.number().optional(),
+  midnightLocalIndexerPort: z.coerce.number().optional(),
 });
 
-const envConfig = {
+const removedFlags = ['MIDNIGHT_FALLBACK_MODE', 'CARDANO_FALLBACK_MODE'];
+for (const f of removedFlags) {
+  if (process.env[f] === 'true') {
+    throw new Error(`${f}=true is no longer supported: simulated chain results are not permitted in the trust path`);
+  }
+}
+
+export const config = configSchema.parse({
   port: process.env.PORT,
   environment: process.env.ENVIRONMENT,
   corsOrigins: process.env.CORS_ORIGINS,
   logLevel: process.env.LOG_LEVEL,
-
-  // Cardano
-  cardanoNetwork: process.env.CARDANO_NETWORK,
-  cardanoWalletPath: process.env.CARDANO_WALLET_PATH,
-  cardanoMnemonicPath: process.env.CARDANO_MNEMONIC_PATH,
-  blockfrostApiKey: process.env.BLOCKFROST_API_KEY,
-  cardanoFallbackMode: process.env.CARDANO_FALLBACK_MODE,
-
-  // Midnight
   midnightNetwork: process.env.MIDNIGHT_NETWORK,
-  midnightWalletPath: process.env.MIDNIGHT_WALLET_PATH,
-  midnightRpcUrl: process.env.MIDNIGHT_RPC_URL,
-  midnightFallbackMode: process.env.MIDNIGHT_FALLBACK_MODE,
-};
+  midnightContractAddress: process.env.MIDNIGHT_CONTRACT_ADDRESS,
+  midnightBlockfrostProjectId: process.env.MIDNIGHT_BLOCKFROST_PROJECT_ID,
+  midnightLocalNodePort: process.env.MIDNIGHT_LOCAL_NODE_PORT,
+  midnightLocalIndexerPort: process.env.MIDNIGHT_LOCAL_INDEXER_PORT,
+});
 
-export const config = configSchema.parse(envConfig);
+export type ChainConfig = typeof config;
