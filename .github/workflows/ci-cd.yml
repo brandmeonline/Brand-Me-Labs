@@ -34,7 +34,7 @@ permissions:
   security-events: write
 
 env:
-  GCP_PROJECT_ID: brandme-prod
+  GCP_PROJECT_ID: lux-realestate-app
   GCP_REGION: us-east1
   GKE_CLUSTER: brandme-cluster
   REGISTRY: gcr.io
