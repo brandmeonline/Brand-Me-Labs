@@ -156,6 +156,9 @@ jobs:
         run: |
           cp -r brandme_core brandme-agents/brandme_core
           cp -r brandme_core brandme-core/brandme_core
+          cp pnpm-lock.yaml brandme-gateway/pnpm-lock.yaml
+          cp pnpm-lock.yaml brandme-chain/pnpm-lock.yaml
+          cp pnpm-lock.yaml brandme-console/pnpm-lock.yaml
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
