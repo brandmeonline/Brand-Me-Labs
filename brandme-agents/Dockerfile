@@ -22,7 +22,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared brandme_core module
-COPY ../brandme_core /app/brandme_core
+COPY brandme_core /app/brandme_core
 
 # Copy application code
 COPY . /app
