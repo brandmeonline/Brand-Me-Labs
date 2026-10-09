@@ -8,7 +8,7 @@
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates && rm -rf /var/lib/apt/lists/*
-RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.34.6 --activate
 COPY . .
 RUN pnpm install --frozen-lockfile --filter @brandme/chain...
 WORKDIR /app/brandme-chain

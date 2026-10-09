@@ -9,7 +9,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@10.34.6
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* ./
@@ -22,7 +22,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@10.34.6
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
