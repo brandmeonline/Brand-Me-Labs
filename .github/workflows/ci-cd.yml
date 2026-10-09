@@ -159,6 +159,9 @@ jobs:
           cp pnpm-lock.yaml brandme-gateway/pnpm-lock.yaml
           cp pnpm-lock.yaml brandme-chain/pnpm-lock.yaml
           cp pnpm-lock.yaml brandme-console/pnpm-lock.yaml
+          cp pnpm-workspace.yaml brandme-gateway/pnpm-workspace.yaml
+          cp pnpm-workspace.yaml brandme-chain/pnpm-workspace.yaml
+          cp pnpm-workspace.yaml brandme-console/pnpm-workspace.yaml
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
