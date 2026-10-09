@@ -44,16 +44,19 @@ jobs:
   # Lint and Test
   # ==========================================
 
+
   test-gateway:
     name: Test Gateway (Node/TypeScript)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -89,10 +92,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
 
       - name: Install dependencies
         working-directory: ./brandme-core
@@ -100,11 +105,13 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt || echo "requirements-dev.txt not found"
 
+
       - name: Lint
         working-directory: ./brandme-core
         run: |
           ruff check . || echo "Ruff not configured yet"
           black --check . || echo "Black not configured yet"
+
 
       - name: Run tests
         working-directory: ./brandme-core
@@ -116,15 +123,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
+
 
       - name: Install dependencies
         working-directory: ./brandme-chain
@@ -133,6 +143,7 @@ jobs:
   # ==========================================
   # Build Docker Images
   # ==========================================
+
 
   build-images:
     name: Build Docker Images
@@ -156,12 +167,19 @@ jobs:
         run: |
           cp -r brandme_core brandme-agents/brandme_core
           cp -r brandme_core brandme-core/brandme_core
-          cp pnpm-lock.yaml brandme-gateway/pnpm-lock.yaml
-          cp pnpm-lock.yaml brandme-chain/pnpm-lock.yaml
-          cp pnpm-lock.yaml brandme-console/pnpm-lock.yaml
-          cp pnpm-workspace.yaml brandme-gateway/pnpm-workspace.yaml
-          cp pnpm-workspace.yaml brandme-chain/pnpm-workspace.yaml
-          cp pnpm-workspace.yaml brandme-console/pnpm-workspace.yaml
+          python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+          for svc in gateway chain console; do
+            python3 .github/scripts/rewrite_lockfile_importer.py pnpm-lock.yaml "brandme-$svc" "brandme-$svc/pnpm-lock.yaml"
+            cp pnpm-workspace.yaml "brandme-$svc/pnpm-workspace.yaml"
+            python3 -c "
+          import yaml, sys
+          svc = sys.argv[1]
+          p = f'brandme-{svc}/pnpm-workspace.yaml'
+          with open(p) as f: ws = yaml.safe_load(f)
+          ws.pop('packages', None)
+          with open(p, 'w') as f: yaml.safe_dump(ws, f, sort_keys=False)
+          " "$svc"
+          done
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
