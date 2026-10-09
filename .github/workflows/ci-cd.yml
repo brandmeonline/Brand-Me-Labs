@@ -152,6 +152,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Stage shared brandme_core for Python builds
+        run: |
+          cp -r brandme_core brandme-agents/brandme_core
+          cp -r brandme_core brandme-core/brandme_core
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
