@@ -53,13 +53,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
+        uses: pnpm/action-setup@v4
+        
       - name: Install dependencies
         working-directory: ./brandme-gateway
         run: pnpm install --frozen-lockfile
