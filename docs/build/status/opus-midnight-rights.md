@@ -304,17 +304,15 @@ opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into th
 ## Stage 7 — property-test non-vacuity flake (#38, 2026-10-10)
 
 - **Symptom on `main` (99fc2fa):** `tests/contracts/property.test.ts` sometimes failed with `consumeReprintAllowance never succeeded`.
-- **Cause:** the test generator, not the contract.
+- **Cause:** the test generator, not the contract. `consumeReprintAllowance` is unchanged.
   - An honest consume needs, in order: a reprintable issue, a grant with quota > 0 on it, then a consume by the current controller with `1 ≤ qty ≤ remaining` on a fresh job.
-  - Uniform random commands lined up that way about 7–9 times per 150 sequences, so some seeds hit zero and tripped the non-vacuity guard.
-  - `consumeReprintAllowance` is unchanged. The constraint suite, the callback-storm property and the local-network evidence already show it accepting and rejecting correctly.
-- **Fix (test only):**
-  - Each sequence now starts from an honest baseline: one reprintable entitlement held by `m0`, plus a quota-3 allowance.
-  - Grants carry quota ≥ 1 three times out of four.
-  - Consume gets a `'fit'` quantity that resolves to a value in `[1, remaining]`.
-  - Adversarial values are kept: quota 0, quantities −1..5, and non-controller callers.
-  - Runs went from 150 to 100 (more honest successes mean more real circuit work), with an explicit 180 s timeout per property.
-- **Result:**
-  - consume succeeds 76–87 times per run, with 104–139 rejections.
-  - 5 consecutive local runs green.
-  - Node 20: type-check passes; `pnpm -C brandme-chain test` is 58/58.
+  - Uniform random commands lined up that way about 7–9 times per 150 sequences.
+- **#39 (merged as `49623e4`)** made the guard deterministic. `seedCircuitCoverage()` puts one success and one rejection per guarded circuit into the tally before the random runs.
+  - Side effect: the guard no longer measures whether the random stream itself reaches the honest reprint path.
+- **#40 (this lane)** keeps #39's preamble and raises random-stream coverage of the honest path:
+  - each sequence starts with a reprintable entitlement held by `m0` plus a quota-3 allowance;
+  - grants carry quota ≥ 1 three times out of four;
+  - consume gets a `'fit'` quantity that resolves to a value in `[1, remaining]`;
+  - adversarial values are kept: quota 0, quantities −1..5, non-controller callers;
+  - 100 runs instead of 150, with an explicit 180 s timeout per property.
+- **Result:** in the random stream, consume succeeds about 70–90 times per run (68–81 in three post-merge runs), up from about 8.
