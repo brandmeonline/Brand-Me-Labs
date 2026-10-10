@@ -341,3 +341,24 @@ Still open:
   - `privacy.deletion.*` and `chain.operation.observed` are not registered with the foundation event registry;
   - no other domain registers with My Data (persona has a `deletion.py` that is not registered).
 - **CI:** no Python tests run. Module Regression only compiles Python, and `ci-cd.yml:118` swallows pytest failures.
+
+## Stage 9 — `chain-tests.yml` repaired (2026-10-10)
+
+- **Before:** "Chain Service Tests" had never passed. Every job died in `actions/setup-node` because its cache path, `brandme-chain/pnpm-lock.yaml`, no longer exists. Behind that failure the workflow also:
+  - pinned pnpm 8 and Node 18;
+  - ran `pnpm lint`, but no ESLint config exists;
+  - set the removed `*_FALLBACK_MODE` flags;
+  - had a Cardano testnet job for a `tests/integration` suite that does not exist.
+- **After:** the toolchain comes from the repo root, as in `module-regression.yml`: Node from `.nvmrc`, pnpm from `packageManager`, and the workspace lockfile.
+  - **Unit Tests:** type-check, then `pnpm test:midnight:local` (fetch compactc, recompile, check the manifest and artifacts, run the 58 tests). This is the first CI job that runs the compile and manifest check.
+  - **Build Test:** only the setup changed.
+  - **Security Scan:** a blocking Trivy secret scan of the committed `brandme-chain/` files (image pinned by digest), then the informational `pnpm audit`. It replaces `trufflehog@main`, which never ran.
+  - **Removed:** the lint step, the Cardano testnet job, the fallback env and the Codecov upload.
+  - **Triggers:** now also cover `tests/contracts/**`, the root `package.json`, `pnpm-lock.yaml`, `.nvmrc` and the workflow file itself, on PRs as well as pushes.
+- **Verified locally** (Node 24.21.0, pnpm 10.34.6):
+  - a fresh frozen install;
+  - type-check;
+  - the lane gate: 58/58 with the manifest unchanged, in 174 s;
+  - the build;
+  - the Trivy secret scan: exit 0 on a clean export of `brandme-chain/`, exit 1 on a planted GitHub token.
+  - `pnpm audit` reports 81 advisories across the workspace. That step stays informational.
