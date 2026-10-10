@@ -316,3 +316,53 @@ opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into th
   - adversarial values are kept: quota 0, quantities −1..5, non-controller callers;
   - 100 runs instead of 150, with an explicit 180 s timeout per property.
 - **Result:** in the random stream, consume succeeds about 70–90 times per run (68–81 in three post-merge runs), up from about 8.
+
+## Stage 8 — re-verification on integrated `main` (2026-10-10)
+
+`main` at `6044818`, which includes the W11 lane integration (`3f366f0`), #39 and #40. Every run below was in this container:
+
+- `pnpm test:midnight:local`: the compactc 0.31.1 recompile reproduces the committed artifacts (manifest unchanged); 58/58.
+- `pnpm test:midnight:network` on the local network (node 1.0.300, indexer 4.3.5, proof server 8.1.0): **7/7** in 9m43s.
+  - Evidence: `brandme-chain/evidence/undeployed-2026-10-10T21-15-56-331Z.json`.
+  - Contract `2eca9ad1…3082`; source sha256 `919577bf…fa49`, which matches the manifest.
+- Spanner emulator 1.5.45: `tests/test_privacy.py`, `tests/test_rights.py` and `tests/test_rights_cube_filter.py` pass 19/19.
+  - Importing `brandme_core.domains` now requires `jsonschema` (through foundation `events`). Only `brandme_core/domains/commerce/requirements.txt` declares it.
+- Gateway with the emulator: 34/34, including foundation's identity suite, which applies V001–V009 through the migration runner.
+- CI on `6044818`: Module Regression is green. `ci-cd.yml` is red on "Build Docker Images (agents)" because of the `brandme-agents` dependencies, which are outside this lane.
+
+Still open:
+- **Preprod:** issue/prove/transfer/consume has not been observed. It needs funded Preprod wallets.
+- **Trust inventory:** `brandme_core/config.py:300,304` still registers `chain.midnight` and `chain.cardano` as simulated via the removed `src/services/*` files.
+  - Accurate entries would be Midnight SANDBOX via `src/midnight/adapter.ts` (no Mainnet) and Cardano UNCONFIGURED (`UnavailableCardanoAnchor`).
+  - `CLAUDE.md:13,52` is stale in the same way.
+  - Both await a decision.
+- **Integration:**
+  - the v1 routes are not mounted;
+  - `privacy.deletion.*` and `chain.operation.observed` are not registered with the foundation event registry;
+  - no other domain registers with My Data (persona has a `deletion.py` that is not registered).
+- **CI:** no Python tests run. Module Regression only compiles Python, and `ci-cd.yml:118` swallows pytest failures.
+
+## Stage 9 — `chain-tests.yml` repaired (2026-10-10)
+
+- **Before:** "Chain Service Tests" had never passed. Every job died in `actions/setup-node` because its cache path, `brandme-chain/pnpm-lock.yaml`, no longer exists. Behind that failure the workflow also:
+  - pinned pnpm 8 and Node 18;
+  - ran `pnpm lint`, but no ESLint config exists;
+  - set the removed `*_FALLBACK_MODE` flags;
+  - had a Cardano testnet job for a `tests/integration` suite that does not exist.
+- **After:** the toolchain comes from the repo root, as in `module-regression.yml`: Node from `.nvmrc`, pnpm from `packageManager`, and the workspace lockfile.
+  - **Unit Tests:** type-check, then `pnpm test:midnight:local` (fetch compactc, recompile, check the manifest and artifacts, run the 58 tests). This is the first CI job that runs the compile and manifest check.
+  - **Build Test:** only the setup changed.
+  - **Security Scan:** a blocking Trivy secret scan of the committed `brandme-chain/` files (image pinned by digest), then the informational `pnpm audit`. It replaces `trufflehog@main`, which never ran.
+  - **Removed:** the lint step, the Cardano testnet job, the fallback env and the Codecov upload.
+  - **Triggers:** now also cover `tests/contracts/**`, the root `package.json`, `pnpm-lock.yaml`, `.nvmrc` and the workflow file itself, on PRs as well as pushes.
+- **Verified locally** (Node 24.21.0, pnpm 10.34.6):
+  - a fresh frozen install;
+  - type-check;
+  - the lane gate: 58/58 with the manifest unchanged, in 174 s;
+  - the build;
+  - the Trivy secret scan: exit 0 on a clean export of `brandme-chain/`, exit 1 on a planted GitHub token.
+  - `pnpm audit` reports 81 advisories across the workspace. That step stays informational.
+- **CI on `659d0a2`:** all three jobs are green on a GitHub runner.
+  - Unit Tests: compactc downloaded and sha256-verified, the 15 circuits recompiled in about 56 s, and `artifact manifest OK` passed the `git diff --exit-code` guard. Proving keys built on the runner therefore reproduce the committed manifest. Then 58/58.
+  - Build Test: green.
+  - Security Scan: the digest-pinned Trivy reported no secrets; `pnpm audit` stays informational.

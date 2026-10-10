@@ -2,7 +2,7 @@
 #
 # Chain Service Tests Workflow
 # ============================
-# Automated testing for brandme-chain service
+# brandme-chain gate: Compact compile + artifact manifest, contract and adapter suites, build, secret scan.
 
 name: Chain Service Tests
 
@@ -11,17 +11,34 @@ on:
     branches: ['main', 'develop']
     paths:
       - 'brandme-chain/**'
+      - 'tests/contracts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.nvmrc'
       - '.github/workflows/chain-tests.yml'
   pull_request:
     branches: ['main', 'develop']
     paths:
       - 'brandme-chain/**'
+      - 'tests/contracts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.nvmrc'
+      - '.github/workflows/chain-tests.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+# The toolchain comes from the repo root, as in module-regression.yml: Node
+# from .nvmrc, pnpm from package.json "packageManager" (action-setup@v4 errors
+# out if `version:` is also set), and the single workspace lockfile.
 
 jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: brandme-chain
@@ -30,99 +47,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'pnpm'
-          cache-dependency-path: brandme-chain/pnpm-lock.yaml
+          node-version-file: .nvmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Run linter
-        run: pnpm lint
 
       - name: Run type check
         run: pnpm type-check
 
-      - name: Run unit tests
-        run: pnpm test:coverage
-        env:
-          NODE_ENV: test
-          CARDANO_FALLBACK_MODE: true
-          MIDNIGHT_FALLBACK_MODE: true
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./brandme-chain/coverage/coverage-final.json
-          flags: chain-service
-          name: brandme-chain
-
-      - name: Archive coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: brandme-chain/coverage/
-
-  integration-tests:
-    name: Integration Tests (Cardano Testnet)
-    runs-on: ubuntu-latest
-    # Only run integration tests on main branch or manually
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    defaults:
-      run:
-        working-directory: brandme-chain
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'pnpm'
-          cache-dependency-path: brandme-chain/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Create test wallet mnemonic
-        run: |
-          mkdir -p /tmp/test-wallet
-          echo "${{ secrets.CARDANO_TEST_MNEMONIC }}" > /tmp/test-wallet/mnemonic.txt
-          chmod 600 /tmp/test-wallet/mnemonic.txt
-
-      - name: Run integration tests
-        run: INTEGRATION=true pnpm test:integration
-        env:
-          NODE_ENV: test
-          CARDANO_NETWORK: preprod
-          CARDANO_MNEMONIC_PATH: /tmp/test-wallet/mnemonic.txt
-          BLOCKFROST_API_KEY: ${{ secrets.BLOCKFROST_API_KEY_PREPROD }}
-          CARDANO_FALLBACK_MODE: false
-          MIDNIGHT_FALLBACK_MODE: true
-        timeout-minutes: 15
-
-      - name: Cleanup wallet
-        if: always()
-        run: rm -rf /tmp/test-wallet
+      # Fetches the pinned compactc (sha256-checked), recompiles the contract,
+      # fails if contracts/artifact-manifest.json changes, verifies the
+      # artifacts, then runs the constraint/property/adversarial and adapter
+      # suites against the compiled contract.
+      - name: Run Midnight lane gate
+        run: pnpm test:midnight:local
 
   build-test:
     name: Build Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: brandme-chain
@@ -131,17 +80,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'pnpm'
-          cache-dependency-path: brandme-chain/pnpm-lock.yaml
+          node-version-file: .nvmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -160,36 +105,35 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: brandme-chain
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+      # Blocking. Runs before install, so only committed files are scanned.
+      # Wallet seeds, keys and tokens must never land in brandme-chain/,
+      # evidence files included. Image pinned by digest.
+      - name: Scan for secrets
+        run: >-
+          docker run --rm -v "$GITHUB_WORKSPACE/brandme-chain:/src:ro"
+          aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+          fs --scanners secret --exit-code 1 --no-progress /src
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'pnpm'
-          cache-dependency-path: brandme-chain/pnpm-lock.yaml
+          node-version-file: .nvmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Install dependencies
+        working-directory: brandme-chain
         run: pnpm install --frozen-lockfile
 
+      # Informational only.
       - name: Run pnpm audit
+        working-directory: brandme-chain
         run: pnpm audit --audit-level=high
         continue-on-error: true
-
-      - name: Check for secrets
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./brandme-chain
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
