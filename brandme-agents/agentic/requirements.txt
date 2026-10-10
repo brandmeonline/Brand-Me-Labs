@@ -11,8 +11,8 @@ langgraph==0.0.20
 anthropic==0.18.1
 
 # Knowledge Graph
-neo4j==5.16.0
-neo4j-graphrag
+neo4j==5.17.0
+neo4j-graphrag==0.7.0
 
 # Vector Search & Embeddings
 openai==1.10.0
