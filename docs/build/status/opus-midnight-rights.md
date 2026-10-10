@@ -362,3 +362,7 @@ Still open:
   - the build;
   - the Trivy secret scan: exit 0 on a clean export of `brandme-chain/`, exit 1 on a planted GitHub token.
   - `pnpm audit` reports 81 advisories across the workspace. That step stays informational.
+- **CI on `659d0a2`:** all three jobs are green on a GitHub runner.
+  - Unit Tests: compactc downloaded and sha256-verified, the 15 circuits recompiled in about 56 s, and `artifact manifest OK` passed the `git diff --exit-code` guard. Proving keys built on the runner therefore reproduce the committed manifest. Then 58/58.
+  - Build Test: green.
+  - Security Scan: the digest-pinned Trivy reported no secrets; `pnpm audit` stays informational.
