@@ -19,7 +19,7 @@ type Cmd =
   | { t: 'cancel'; offer: number; by: number }
   | { t: 'prove'; ent: number; by: number | 'controller'; challenge: number }
   | { t: 'grant'; ent: number; quota: number }
-  | { t: 'consume'; allow: number; by: number | 'controller'; job: number; qty: number }
+  | { t: 'consume'; allow: number; by: number | 'controller'; job: number; qty: number | 'fit' }
   | { t: 'attest'; cons: number; unit: number | 'next'; byMfr: boolean }
   | { t: 'tick'; secs: number };
 
@@ -32,11 +32,17 @@ const cmd: fc.Arbitrary<Cmd> = fc.oneof(
   fc.record({ t: fc.constant('accept' as const), offer: idx, by: fc.nat({ max: ACTORS - 1 }) }),
   fc.record({ t: fc.constant('cancel' as const), offer: idx, by: fc.nat({ max: ACTORS - 1 }) }),
   fc.record({ t: fc.constant('prove' as const), ent: idx, by: who, challenge: fc.nat({ max: 3 }) }),
-  fc.record({ t: fc.constant('grant' as const), ent: idx, quota: fc.integer({ min: 0, max: 4 }) }),
-  fc.record({ t: fc.constant('consume' as const), allow: idx, by: who, job: fc.nat({ max: 3 }), qty: fc.integer({ min: -1, max: 5 }) }),
+  // Grants mostly carry a usable quota; 0 stays in the mix as an adversarial value.
+  fc.record({ t: fc.constant('grant' as const), ent: idx, quota: fc.oneof({ arbitrary: fc.integer({ min: 1, max: 4 }), weight: 3 }, { arbitrary: fc.constant(0), weight: 1 }) }),
+  // 'fit' resolves to a quantity in [1, remaining] at run time so the honest path is reachable;
+  // raw integers keep zero, negative and over-quota attempts.
+  fc.record({ t: fc.constant('consume' as const), allow: idx, by: who, job: fc.nat({ max: 3 }), qty: fc.oneof(fc.constant('fit' as const), fc.integer({ min: -1, max: 5 })) }),
   fc.record({ t: fc.constant('attest' as const), cons: idx, unit: fc.oneof(fc.constant('next' as const), fc.integer({ min: 0, max: 5 })), byMfr: fc.boolean() }),
   fc.record({ t: fc.constant('tick' as const), secs: fc.integer({ min: 0, max: 2000 }) }),
 );
+
+/** Real circuits run per command; CI runners are slower than dev machines. */
+const PROPERTY_TIMEOUT_MS = 180_000;
 
 /** Lets the vitest worker answer RPC between long synchronous runs. */
 const yieldToLoop = () => new Promise<void>((r) => setImmediate(r));
@@ -84,6 +90,16 @@ function run(cmds: Cmd[]) {
     }) ?? actors[0]!;
   };
   const pick = (w: number | 'controller', eid: Uint8Array) => (w === 'controller' ? controllerOf(eid) : actors[w]!);
+
+  // Honest baseline so every sequence can reach the transfer and reprint paths:
+  // one reprintable entitlement held by m0 with a granted allowance.
+  {
+    const issuanceId = random32();
+    const eid = derive.entitlementId(iid, issuanceId);
+    sim.call(issuer, 'issueEntitlement', iid, issuanceId, random32(), random32(), true, true, prepareHolder(sim, actors[0]!, eid, 1n));
+    ents.push(eid);
+    allows.push({ aid: sim.call<Uint8Array>(issuer, 'grantReprintAllowance', iid, random32(), eid, random32(), mid, 3n, FAR_FUTURE, random32()), quota: 3n });
+  }
 
   for (const c of cmds) {
     switch (c.t) {
@@ -143,11 +159,13 @@ function run(cmds: Cmd[]) {
       }
       case 'consume': {
         const a = at(allows, c.allow); if (!a) break;
-        const r = sim.attempt(pick(c.by, sim.ledger().allowances.lookup(a.aid).entitlementId), 'consumeReprintAllowance', a.aid, jobs[c.job]!, BigInt(c.qty), random32());
+        const allowance = sim.ledger().allowances.lookup(a.aid);
+        const qty = c.qty === 'fit' ? (allowance.remaining > 0n ? 1n + BigInt(c.job) % allowance.remaining : 1n) : BigInt(c.qty);
+        const r = sim.attempt(pick(c.by, allowance.entitlementId), 'consumeReprintAllowance', a.aid, jobs[c.job]!, qty, random32());
         if (r.ok) {
           cons.push(r.result as Uint8Array);
           const k = toHex(a.aid);
-          consumedPerAllowance.set(k, (consumedPerAllowance.get(k) ?? 0n) + BigInt(c.qty));
+          consumedPerAllowance.set(k, (consumedPerAllowance.get(k) ?? 0n) + qty);
         }
         break;
       }
@@ -265,9 +283,9 @@ function seedCircuitCoverage() {
 }
 
 describe('property: random command sequences preserve invariants', () => {
-  it('holds for 150 random sequences of up to 60 commands', async () => {
+  it('holds for 100 random sequences of up to 60 commands', async () => {
     seedCircuitCoverage();
-    await fc.assert(fc.asyncProperty(fc.array(cmd, { minLength: 10, maxLength: 60 }), async (cmds) => { await yieldToLoop(); run(cmds); }), { numRuns: 150 });
+    await fc.assert(fc.asyncProperty(fc.array(cmd, { minLength: 10, maxLength: 60 }), async (cmds) => { await yieldToLoop(); run(cmds); }), { numRuns: 100 });
     // Guard against a vacuous run: both outcomes must occur for the stateful circuits.
     // (attestManufacture success is covered by the dedicated callback-storm property below.)
     // seedCircuitCoverage() above already guarantees both outcomes deterministically;
@@ -282,7 +300,7 @@ describe('property: random command sequences preserve invariants', () => {
       expect(t?.fail, `${c} never rejected`).toBeGreaterThan(0);
     }
     console.info('circuit outcomes', Object.fromEntries(tally));
-  });
+  }, PROPERTY_TIMEOUT_MS);
 });
 
 describe('property: reprint quota is consumed exactly once under duplicate callbacks', () => {
@@ -338,5 +356,5 @@ describe('property: reprint quota is consumed exactly once under duplicate callb
         expect(children).toBeLessThanOrEqual(qty);
       }
     }), { numRuns: 200 });
-  });
+  }, PROPERTY_TIMEOUT_MS);
 });

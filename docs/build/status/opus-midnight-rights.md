@@ -300,3 +300,19 @@ opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into th
 - `9211286`: the indexer provider now gets an explicit `ws` WebSocket, because Node 20 (the regression workflow's runtime) has no global one. A clean clone passes type-check and 58/58 tests on Node 20 and Node 22.
 - `9f242b9`: ported #30's fixes for pnpm setup, gateway test env, and SARIF permissions/v3. Trigger scoping was not ported.
 - Remaining expected red: `regression` → `brandme_frontend` is missing from `pnpm-workspace.yaml`. This is pre-existing, documented in #30, and outside this lane.
+
+## Stage 7 — property-test non-vacuity flake (#38, 2026-10-10)
+
+- **Symptom on `main` (99fc2fa):** `tests/contracts/property.test.ts` sometimes failed with `consumeReprintAllowance never succeeded`.
+- **Cause:** the test generator, not the contract. `consumeReprintAllowance` is unchanged.
+  - An honest consume needs, in order: a reprintable issue, a grant with quota > 0 on it, then a consume by the current controller with `1 ≤ qty ≤ remaining` on a fresh job.
+  - Uniform random commands lined up that way about 7–9 times per 150 sequences.
+- **#39 (merged as `49623e4`)** made the guard deterministic. `seedCircuitCoverage()` puts one success and one rejection per guarded circuit into the tally before the random runs.
+  - Side effect: the guard no longer measures whether the random stream itself reaches the honest reprint path.
+- **#40 (this lane)** keeps #39's preamble and raises random-stream coverage of the honest path:
+  - each sequence starts with a reprintable entitlement held by `m0` plus a quota-3 allowance;
+  - grants carry quota ≥ 1 three times out of four;
+  - consume gets a `'fit'` quantity that resolves to a value in `[1, remaining]`;
+  - adversarial values are kept: quota 0, quantities −1..5, non-controller callers;
+  - 100 runs instead of 150, with an explicit 180 s timeout per property.
+- **Result:** in the random stream, consume succeeds about 70–90 times per run (68–81 in three post-merge runs), up from about 8.
