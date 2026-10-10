@@ -1,0 +1,57 @@
+# Brand.Me garment-lifecycle topics.
+#
+# Ported structure from Lux hooks/topics.yaml; the topic names are Brand.Me's
+# own. Every payload carries: event_id, owner_id, occurred_at, plus
+# topic-specific fields. No agent runs except in response to a hook.
+
+version: 1
+
+topics:
+  - name: on_asset_registered
+    trigger: api
+    subscribers: [provenance_writer, cube_projector]
+    description: A garment was minted into the registry with its first passport facet.
+
+  - name: on_asset_scanned
+    trigger: api
+    subscribers: [provenance_writer, authenticity_scorer]
+    description: An NFC/QR scan event was recorded against an asset.
+
+  - name: on_ownership_transferred
+    trigger: api
+    subscribers: [provenance_writer, cube_projector, chain_anchor]
+    description: Ownership moved between two owners; provenance chain extends.
+
+  - name: on_consent_granted
+    trigger: api
+    subscribers: [consent_projector]
+    description: An owner granted a viewer access to a facet, asset, or scope.
+
+  - name: on_consent_revoked
+    trigger: api
+    subscribers: [consent_projector, cache_invalidator]
+    description: A consent grant was withdrawn; dependent caches must drop.
+
+  - name: on_chain_anchor_confirmed
+    trigger: webhook
+    source: cardano
+    subscribers: [provenance_writer]
+    description: A Cardano anchoring transaction reached settlement depth.
+
+  - name: on_compliance_flagged
+    trigger: api
+    subscribers: [governance_escalation]
+    description: A compliance check crossed its threshold and needs review.
+
+  - name: on_governance_escalation
+    trigger: api
+    subscribers: [governance_console]
+    description: An action requires human adjudication before it proceeds.
+
+  - name: on_high_risk_alert
+    trigger: internal
+    subscribers: [governance_console, autonomy_dial]
+    description: >
+      A per-owner risk or spend ceiling was crossed. Published by the cost
+      meter (brandme_foundation.observability.CostMeter) at most once per
+      owner per day.
