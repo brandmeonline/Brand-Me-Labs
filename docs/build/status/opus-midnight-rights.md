@@ -300,3 +300,21 @@ opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into th
 - `9211286`: the indexer provider now gets an explicit `ws` WebSocket, because Node 20 (the regression workflow's runtime) has no global one. A clean clone passes type-check and 58/58 tests on Node 20 and Node 22.
 - `9f242b9`: ported #30's fixes for pnpm setup, gateway test env, and SARIF permissions/v3. Trigger scoping was not ported.
 - Remaining expected red: `regression` → `brandme_frontend` is missing from `pnpm-workspace.yaml`. This is pre-existing, documented in #30, and outside this lane.
+
+## Stage 7 — property-test non-vacuity flake (#38, 2026-10-10)
+
+- **Symptom on `main` (99fc2fa):** `tests/contracts/property.test.ts` sometimes failed with `consumeReprintAllowance never succeeded`.
+- **Cause:** the test generator, not the contract.
+  - An honest consume needs, in order: a reprintable issue, a grant with quota > 0 on it, then a consume by the current controller with `1 ≤ qty ≤ remaining` on a fresh job.
+  - Uniform random commands lined up that way about 7–9 times per 150 sequences, so some seeds hit zero and tripped the non-vacuity guard.
+  - `consumeReprintAllowance` is unchanged. The constraint suite, the callback-storm property and the local-network evidence already show it accepting and rejecting correctly.
+- **Fix (test only):**
+  - Each sequence now starts from an honest baseline: one reprintable entitlement held by `m0`, plus a quota-3 allowance.
+  - Grants carry quota ≥ 1 three times out of four.
+  - Consume gets a `'fit'` quantity that resolves to a value in `[1, remaining]`.
+  - Adversarial values are kept: quota 0, quantities −1..5, and non-controller callers.
+  - Runs went from 150 to 100 (more honest successes mean more real circuit work), with an explicit 180 s timeout per property.
+- **Result:**
+  - consume succeeds 76–87 times per run, with 104–139 rejections.
+  - 5 consecutive local runs green.
+  - Node 20: type-check passes; `pnpm -C brandme-chain test` is 58/58.
