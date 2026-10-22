@@ -29,7 +29,7 @@ rich==13.7.0
 
 # Existing dependencies
 fastapi==0.109.0
-pydantic==2.5.3
+pydantic==2.14.1
 asyncpg==0.29.0
 pydantic-settings==2.1.0
 python-dotenv==1.0.0

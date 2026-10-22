@@ -1,65 +1,17 @@
-# Copyright (c) Brand.Me, Inc. All rights reserved.
-#
-# Dockerfile for Brand.Me Console
-# ================================
-
-# Stage 1: Dependencies
-FROM node:18-alpine AS deps
-RUN apk add --no-cache libc6-compat
+ARG NODE_VERSION=24.21.0
+FROM node:${NODE_VERSION}-bookworm-slim AS build
 WORKDIR /app
-
-# Install pnpm
-RUN npm install -g pnpm@10.34.6
-
-# Copy package files
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Stage 2: Builder
-FROM node:18-alpine AS builder
-WORKDIR /app
-
-# Install pnpm
-RUN npm install -g pnpm@10.34.6
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-
-# Copy application code
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN corepack enable && corepack prepare pnpm@10.34.6 --activate
 COPY . .
+RUN pnpm install --frozen-lockfile --filter @brandme/console... && mkdir -p brandme-console/public && pnpm --filter @brandme/console build
 
-# Set environment to production
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
-
-# Build Next.js application
-RUN pnpm build
-
-# Stage 3: Runner
-FROM node:18-alpine AS runner
+FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 WORKDIR /app
-
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy necessary files from builder
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-# Set correct permissions
-RUN chown -R nextjs:nodejs /app
-
-USER nextjs
-
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3002 HOSTNAME=0.0.0.0
+COPY --from=build --chown=node:node /app/brandme-console/.next/standalone ./
+COPY --from=build --chown=node:node /app/brandme-console/public ./brandme-console/public
+COPY --from=build --chown=node:node /app/brandme-console/.next/static ./brandme-console/.next/static
+USER node
 EXPOSE 3002
-
-ENV PORT 3002
-ENV HOSTNAME "0.0.0.0"
-
-CMD ["node", "server.js"]
+CMD ["node", "brandme-console/server.js"]
