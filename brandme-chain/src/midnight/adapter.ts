@@ -1,3 +1,4 @@
+import { redactProviderSecrets } from './redaction.js';
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
@@ -288,7 +289,7 @@ export class RightsAdapter {
       try {
         data = await withTimeout(this.o.providers.publicDataProvider.watchForTxData(cur.evidence!.txId), this.o.observeTimeoutMs ?? 300_000);
       } catch (e) {
-        if (cur.state === 'Submitted') cur = await this.save(cur, transition(cur, 'Reconciling', {}, (e as Error).message));
+        if (cur.state === 'Submitted') cur = await this.save(cur, transition(cur, 'Reconciling', {}, rootCauseMessage(e)));
         return cur;
       }
       const evidence = {
@@ -323,8 +324,8 @@ export class RightsAdapter {
 export function rootCauseMessage(e: unknown): string {
   const text = inspect(e, { depth: 8 });
   const rpc = text.match(/RpcError: ([^\n]+)/);
-  if (rpc) return `node rejected: ${rpc[1]!.slice(0, 300)}`;
-  return ((e as Error)?.message ?? String(e)).slice(0, 300);
+  if (rpc) return redactProviderSecrets(`node rejected: ${rpc[1]!}`).slice(0, 300);
+  return redactProviderSecrets((e as Error)?.message ?? String(e)).slice(0, 300);
 }
 
 function reasonCode(e: unknown): string {

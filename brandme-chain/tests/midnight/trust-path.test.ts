@@ -40,7 +40,7 @@ describe('trust path', () => {
     expect(pre.reasons.join(' ')).toMatch(/no rights contract/);
     expect(pre.badge).toBe('Preprod test network');
     expect(pre.artifacts.verified).toBe(true);
-    const main = midnightCapability({ ...base, midnightNetwork: 'mainnet', midnightBlockfrostProjectId: 'abcdefgh12', midnightContractAddress: 'ab'.repeat(32) });
+    const main = midnightCapability({ ...base, midnightNetwork: 'mainnet', midnightBlockfrostProjectId: 'nightmainnettestonly123', midnightContractAddress: 'ab'.repeat(32) });
     expect(main.writesAuthorized).toBe(false);
     expect(main.status).not.toBe('available');
   });

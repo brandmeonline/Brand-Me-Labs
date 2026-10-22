@@ -17,6 +17,7 @@ case "$service" in
     ;;
   core)
     docker run --rm --entrypoint python "$image" -m pip check
+    docker run --rm -e BRANDME_MODE=development --entrypoint python "$image" -c "from uuid import uuid4; from brandme_core.domains.rights.projection import apply_observation; from brandme_core.domains.privacy.privacy import MyDataService; from brandme_core.events import EventEnvelope; j = str(uuid4()); EventEnvelope(event_type='privacy.deletion.requested', schema_version='1', aggregate_type='deletion_job', aggregate_id=j, aggregate_version=1, environment='development', actor_ref='service:privacy', correlation_id=j, privacy_class='restricted', payload={'job_id': j, 'scope': 'account'}).validate(); print('core rights/privacy imports and packaged event schema OK')"
     ;;
   console)
     cid=$(docker run -d -e HOSTNAME=0.0.0.0 -p 127.0.0.1:33002:3002 "$image")

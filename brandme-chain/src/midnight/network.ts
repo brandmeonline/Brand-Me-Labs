@@ -3,9 +3,8 @@
  *
  * Midnight network registry and wrong-network guard.
  *
- * Endpoints from https://docs.midnight.network/relnotes/network (fetched
- * 2026-10-05). Midnight-hosted Mainnet endpoints were retired 2026-09-30
- * 22:00 UTC; Mainnet is served by Blockfrost and needs a project token,
+ * Endpoints verified against https://docs.midnight.network/guides/networks-and-environments
+ * on 2026-10-22. Preprod and Mainnet are served by Blockfrost and need a project token,
  * which is only ever attached server-side (never in a browser URL).
  */
 
@@ -21,7 +20,7 @@ export interface MidnightEndpoints {
   readonly isTestNetwork: boolean;
 }
 
-export const PUBLIC_ENDPOINTS: Readonly<Record<Exclude<MidnightNetworkId, 'undeployed' | 'mainnet'>, MidnightEndpoints>> = {
+export const PUBLIC_ENDPOINTS: Readonly<Record<'preview', MidnightEndpoints>> = {
   preview: {
     networkId: 'preview',
     nodeRpc: 'https://rpc.preview.midnight.network',
@@ -30,29 +29,27 @@ export const PUBLIC_ENDPOINTS: Readonly<Record<Exclude<MidnightNetworkId, 'undep
     badge: 'Preview test network',
     isTestNetwork: true,
   },
-  preprod: {
-    networkId: 'preprod',
-    nodeRpc: 'https://rpc.preprod.midnight.network',
-    indexerHttp: 'https://indexer.preprod.midnight.network/api/v4/graphql',
-    indexerWs: 'wss://indexer.preprod.midnight.network/api/v4/graphql/ws',
-    badge: 'Preprod test network',
-    isTestNetwork: true,
-  },
+
 };
 
-/** Mainnet via Blockfrost. Token appended server-side only. */
-export function mainnetEndpoints(blockfrostProjectId: string): MidnightEndpoints {
-  if (!/^[A-Za-z0-9_-]{8,}$/.test(blockfrostProjectId)) throw new Error('invalid Blockfrost project id');
-  const q = `?project_id=${encodeURIComponent(blockfrostProjectId)}`;
+/** Credentials stay in server-side provider configuration, never capability responses. */
+function blockfrostEndpoints(network: 'preprod' | 'mainnet', projectId: string): MidnightEndpoints {
+  if (!new RegExp(`^night${network}[A-Za-z0-9_-]{8,}$`).test(projectId)) {
+    throw new Error(`a Blockfrost Midnight ${network} project token is required`);
+  }
+  const q = `?project_id=${encodeURIComponent(projectId)}`;
   return {
-    networkId: 'mainnet',
-    nodeRpc: `https://rpc.midnight-mainnet.blockfrost.io${q}`,
-    indexerHttp: `https://midnight-mainnet.blockfrost.io/api/v0${q}`,
-    indexerWs: `wss://midnight-mainnet.blockfrost.io/api/v0/ws${q}`,
-    badge: 'Mainnet',
-    isTestNetwork: false,
+    networkId: network,
+    nodeRpc: `https://rpc.midnight-${network}.blockfrost.io${q}`,
+    indexerHttp: `https://midnight-${network}.blockfrost.io/api/v0${q}`,
+    indexerWs: `wss://midnight-${network}.blockfrost.io/api/v0/ws${q}`,
+    badge: network === 'preprod' ? 'Preprod test network' : 'Mainnet',
+    isTestNetwork: network === 'preprod',
   };
 }
+
+export const preprodEndpoints = (projectId: string): MidnightEndpoints => blockfrostEndpoints('preprod', projectId);
+export const mainnetEndpoints = (projectId: string): MidnightEndpoints => blockfrostEndpoints('mainnet', projectId);
 
 export function localEndpoints(ports: { node: number; indexer: number }): MidnightEndpoints {
   return {

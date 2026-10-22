@@ -45,3 +45,47 @@ SESSION_REVOKED = register(
            ("member_id", "reason")),
     "restricted",
 )
+
+# Rights/My Data integration contracts. References only: no wallet secrets,
+# witness values, recipient details, deletion receipts or exported records.
+HEX32 = {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+NETWORK = {"type": "string", "enum": ["undeployed", "preview", "preprod"]}
+COUNTER = {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"}
+TX_ID = {"type": "string", "minLength": 1, "maxLength": 256}
+
+OWNERSHIP_TRANSFER_REQUESTED = register(
+    "ownership.transfer.requested", "1",
+    closed({"intent_id": UUID, "network": NETWORK, "entitlement_id": HEX32},
+           ("intent_id", "network", "entitlement_id")), "member_private",
+)
+CHAIN_OPERATION_OBSERVED = register(
+    "chain.operation.observed", "1",
+    closed({"operation_id": UUID, "network": NETWORK, "tx_id": TX_ID,
+            "block_height": COUNTER, "block_hash": TX_ID,
+            "state": {"enum": ["Observed", "Finalized"]}},
+           ("operation_id", "network", "tx_id", "block_height", "block_hash", "state")), "restricted",
+)
+LICENSE_ISSUED = register(
+    "license.issued", "1", closed({"license_id": UUID, "network": NETWORK, "entitlement_id": HEX32},
+                                  ("license_id", "network", "entitlement_id")), "member_private",
+)
+REPRINT_ATTESTED = register(
+    "reprint.attested", "1", closed({"job_id": UUID, "network": NETWORK, "child_entitlement_id": HEX32,
+                                     "unit_index": {"type": "integer", "minimum": 0}},
+                                    ("job_id", "network", "child_entitlement_id", "unit_index")), "member_private",
+)
+RIGHTS_ENTITLEMENT_PROJECTED = register(
+    "rights.entitlement.projected", "1",
+    closed({"network": NETWORK, "contract_address": HEX32, "entitlement_id": HEX32,
+            "epoch": COUNTER, "tx_id": TX_ID, "block_height": COUNTER, "block_hash": TX_ID},
+           ("network", "contract_address", "entitlement_id", "epoch", "tx_id", "block_height", "block_hash")), "restricted",
+)
+PRIVACY_DELETION_REQUESTED = register(
+    "privacy.deletion.requested", "1",
+    closed({"job_id": UUID, "scope": {"enum": ["account", "category"]}}, ("job_id", "scope")), "restricted",
+)
+PRIVACY_DELETION_COMPLETED = register(
+    "privacy.deletion.completed", "1",
+    closed({"job_id": UUID, "state": {"enum": ["completed", "completed_with_exceptions"]}},
+           ("job_id", "state")), "restricted",
+)

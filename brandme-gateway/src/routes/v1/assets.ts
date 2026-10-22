@@ -2,8 +2,10 @@
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
  * /v1/assets/:id — claim-level passport, transfer intents, reprint quotes.
- * UNMOUNTED (mounted by opus-foundation).
+ * Mounted under /api/v1 behind the gateway principal boundary.
  */
+
+import { handle } from '../../middleware/problem';
 
 import { Router } from 'express';
 import type { Router as IRouter } from 'express';
@@ -30,15 +32,15 @@ export function createAssetsRouter(deps: V1Deps): IRouter {
   const router: IRouter = Router();
 
   // Claim-level passport. Visibility is resolved server-side by the rights service from the viewer's relation.
-  router.get('/:id/passport', async (req, res) => {
+  router.get('/:id/passport', handle(async (req, res) => {
     const id = assetId.safeParse(req.params.id);
     if (!id.success) { res.status(400).json({ error: 'invalid_asset_id' }); return; }
     const subject = deps.subjectOf(req);
     const r = await deps.upstream.rights.get(`/assets/${id.data}/passport`, subject ? { 'x-subject-ref': subject } : {});
     relay(res, r);
-  });
+  }));
 
-  router.post('/:id/transfers', deps.requireScope('rights:transfer'), async (req, res) => {
+  router.post('/:id/transfers', deps.requireScope('rights:transfer'), handle(async (req, res) => {
     const subject = subjectOr401(deps, req, res);
     if (!subject) return;
     const id = assetId.safeParse(req.params.id);
@@ -52,9 +54,9 @@ export function createAssetsRouter(deps: V1Deps): IRouter {
       { 'x-subject-ref': subject, 'idempotency-key': idem });
     // Proving requirements come back from the rights service: circuit, expected epoch, network badge, prover modes.
     relay(res, r);
-  });
+  }));
 
-  router.post('/:id/reprint-quotes', deps.requireScope('rights:reprint'), async (req, res) => {
+  router.post('/:id/reprint-quotes', deps.requireScope('rights:reprint'), handle(async (req, res) => {
     const subject = subjectOr401(deps, req, res);
     if (!subject) return;
     const id = assetId.safeParse(req.params.id);
@@ -65,7 +67,7 @@ export function createAssetsRouter(deps: V1Deps): IRouter {
     // The rights service checks license, controller entitlement, quota, manufacturer capability, territory and
     // files, and returns either a quote or the missing conditions. Browsing never consumes quota.
     relay(res, await deps.upstream.rights.post(`/assets/${id.data}/reprint-quotes`, body.data, { 'x-subject-ref': subject }));
-  });
+  }));
 
   return router;
 }

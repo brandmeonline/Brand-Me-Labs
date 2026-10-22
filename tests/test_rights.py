@@ -24,7 +24,7 @@ from brandme_core.domains.rights.projection import FinalizedObservation, Project
 from brandme_core.domains.rights.reprint import IllegalReprintTransition, ReprintService, blinded_job_commitment  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql"]
+MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V001_identity.sql", ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql", ROOT / "brandme-data/spanner/migrations/V010_rights_projection_version.sql"]
 
 
 def _emulator_up() -> bool:
@@ -128,19 +128,34 @@ def _obs(**kw):
 
 def test_projection_accepts_only_finalized_evidence_and_is_monotonic(db):
     with pytest.raises(ProjectionRejected):
-        apply_observation(db, _obs(operation_state="Observed"))
+        apply_observation(db, _obs(operation_state="Observed"), environment="development")
     with pytest.raises(ProjectionRejected):
-        apply_observation(db, _obs(network="mainnet"))
-    assert apply_observation(db, _obs(), controller_subject_ref="alice") == "inserted"
-    assert apply_observation(db, _obs()) == "unchanged"                       # idempotent replay
-    assert apply_observation(db, _obs(tx_id="tx2", block_height=20, block_hash="bh20", epoch=2)) == "advanced"
+        apply_observation(db, _obs(network="mainnet"), environment="development")
+    assert apply_observation(db, _obs(), controller_subject_ref="alice", environment="development") == "inserted"
+    assert apply_observation(db, _obs(), environment="development") == "unchanged"                       # idempotent replay
+    assert apply_observation(db, _obs(tx_id="tx2", block_height=20, block_hash="bh20", epoch=2), environment="development") == "advanced"
     with db.snapshot() as s:
         row = list(s.execute_sql("SELECT epoch, controller_subject_ref FROM RightsEntitlements"))[0]
     assert row[0] == 2 and row[1] is None                                     # control moved: old member link dropped
-    assert apply_observation(db, _obs(tx_id="tx0", block_height=5, block_hash="bh5", epoch=1)) == "unchanged"  # stale cannot roll back
-    apply_observation(db, _obs(tx_id="tx3", block_height=30, block_hash="bh30", epoch=2, status="revoked"))
+    assert apply_observation(db, _obs(tx_id="tx0", block_height=5, block_hash="bh5", epoch=1), environment="development") == "unchanged"  # stale cannot roll back
+    apply_observation(db, _obs(tx_id="tx3", block_height=30, block_hash="bh30", epoch=2, status="revoked"), environment="development")
     with pytest.raises(ProjectionRejected):
-        apply_observation(db, _obs(tx_id="tx4", block_height=40, block_hash="bh40", epoch=2, status="active"))
+        apply_observation(db, _obs(tx_id="tx4", block_height=40, block_hash="bh40", epoch=2, status="active"), environment="development")
+    with db.snapshot() as snap:
+        events = list(snap.execute_sql("SELECT event_type, payload FROM OutboxEvents"))
+    assert len(events) == 3  # insert, advance, revoke; no replay, stale or rejected event
+    assert all(row[0] == "rights.entitlement.projected" for row in events)
+
+
+def test_projection_and_event_roll_back_together(db, monkeypatch):
+    import brandme_core.domains.rights.projection as projection
+    def reject(*_):
+        raise ValueError("event rejected")
+    monkeypatch.setattr(projection, "write_events", reject)
+    with pytest.raises(ValueError, match="event rejected"):
+        apply_observation(db, _obs(), environment="development")
+    with db.snapshot() as snap:
+        assert list(snap.execute_sql("SELECT COUNT(*) FROM RightsEntitlements"))[0][0] == 0
 
 
 def test_passport_claims_are_separate_and_visibility_filtered(db):
@@ -173,13 +188,13 @@ class _Store:
 
 
 def test_rights_deletion_unlinks_member_and_reports_public_commitments(db):
-    apply_observation(db, _obs(), controller_subject_ref="bob")
+    apply_observation(db, _obs(), controller_subject_ref="bob", environment="development")
     svc = ReprintService(db)
     jid = svc.create(network="preprod", allowance_id="aa" * 32, entitlement_id="ee" * 32, manufacturer_id="mm" * 32,
                      member_subject_ref="bob", quantity=1, job_commitment="cc" * 32)
     reg = PrivacyRegistry()
     reg.register(RightsPrivacyHandler())
-    my = MyDataService(db, _Store(), reg)
+    my = MyDataService(db, _Store(), reg, environment="development")
     export = my.export("bob", now())
     assert export["package"]["public_chain_references"][0]["entitlement_id"] == "ee" * 32
     receipt = my.run_deletion(my.request_deletion("bob", now()))

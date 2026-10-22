@@ -2,12 +2,14 @@
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
  * /v1/ownership — proof challenges and client-reported submissions.
- * UNMOUNTED (mounted by opus-foundation).
+ * Mounted under /api/v1 behind the gateway principal boundary.
  *
  * The member's wallet proves and submits; the gateway only issues a fresh
  * single-use challenge bound to an audience, and accepts a reported tx id for
  * reconciliation. A reported tx id is a hint to look up — never evidence.
  */
+
+import { handle } from '../../middleware/problem';
 
 import { Router } from 'express';
 import type { Router as IRouter } from 'express';
@@ -31,7 +33,7 @@ const reportSchema = z.object({
 export function createOwnershipRouter(deps: V1Deps): IRouter {
   const router: IRouter = Router();
 
-  router.post('/challenges', deps.requireScope('rights:read'), async (req, res) => {
+  router.post('/challenges', deps.requireScope('rights:read'), handle(async (req, res) => {
     const subject = subjectOr401(deps, req, res);
     if (!subject) return;
     const body = challengeSchema.safeParse(req.body);
@@ -42,9 +44,9 @@ export function createOwnershipRouter(deps: V1Deps): IRouter {
     const r = await deps.upstream.rights.post('/challenges', { ...body.data, challenge, ttl_seconds: 300 }, { 'x-subject-ref': subject });
     if (r.status !== 201) { relay(res, r); return; }
     res.status(201).json({ ...(r.body as object), challenge, network: cap.network, badge: cap.badge, circuit: 'proveControl' });
-  });
+  }));
 
-  router.post('/submissions', deps.requireScope('rights:transfer'), async (req, res) => {
+  router.post('/submissions', deps.requireScope('rights:transfer'), handle(async (req, res) => {
     const subject = subjectOr401(deps, req, res);
     if (!subject) return;
     const body = reportSchema.safeParse(req.body);
@@ -55,7 +57,7 @@ export function createOwnershipRouter(deps: V1Deps): IRouter {
       return;
     }
     relay(res, await deps.upstream.rights.post('/operations/reconcile', body.data, { 'x-subject-ref': subject }));
-  });
+  }));
 
   return router;
 }

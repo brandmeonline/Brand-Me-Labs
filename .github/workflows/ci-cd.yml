@@ -48,8 +48,27 @@ jobs:
   test-gateway:
     name: Test Gateway (Node/TypeScript)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
+        ports:
+          - 9010:9010
+    env:
+      SPANNER_EMULATOR_HOST: localhost:9010
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Python for identity database migrations
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install migration dependencies
+        run: pip install --require-hashes -r scripts/python/requirements.lock
+
+      - name: Require Spanner emulator
+        run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
 
 
       - name: Setup Node.js
@@ -73,18 +92,9 @@ jobs:
         working-directory: ./brandme-gateway
         run: pnpm type-check
 
-      # src/config/index.ts:57 parses its zod schema at module load, and
-      # oauthClientId/oauthClientSecret/jwtSecret carry no defaults, so the
-      # test file throws on import via config/logger.ts. These are CI-only
-      # placeholders for that schema check, not credentials. jwtSecret is
-      # .min(32), so the value has to clear 32 characters.
       - name: Run tests
         working-directory: ./brandme-gateway
-        env:
-          OAUTH_CLIENT_ID: test-client-id
-          OAUTH_CLIENT_SECRET: test-client-secret
-          JWT_SECRET: test-jwt-secret-at-least-32-chars-long
-        run: pnpm test
+        run: pnpm exec vitest run
 
   test-core:
     name: Test Core (Python/FastAPI)

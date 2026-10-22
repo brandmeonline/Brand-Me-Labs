@@ -24,6 +24,10 @@ from typing import Any, Mapping, Optional, Protocol, Sequence
 from google.cloud.spanner_v1 import param_types as pt
 from google.cloud.spanner_v1.database import Database
 
+from brandme_core.events import EventEnvelope, write_events
+from brandme_core.events.outbox import json_payload
+from brandme_core.domains.events import PRIVACY_DELETION_REQUESTED, PRIVACY_DELETION_COMPLETED
+
 from .deletion import (
     DataCategory,
     DeletionOutcome,
@@ -105,11 +109,19 @@ def _jsonable(o: Any) -> Any:
 
 class MyDataService:
     def __init__(self, database: Database, store: ObjectStore, reg: PrivacyRegistry | None = None,
-                 retention: RetentionPolicy = RetentionPolicy()) -> None:
+                 retention: RetentionPolicy = RetentionPolicy(), *, environment: str) -> None:
+        if environment not in ("demo", "development", "sandbox", "production"):
+            raise ValueError("explicit Brand.Me environment required")
         self.db = database
         self.store = store
         self.reg = reg or default_registry
         self.retention = retention
+        self.environment = environment
+
+    def _event(self, event_type: str, job_id: str, version: int, payload: dict) -> EventEnvelope:
+        return EventEnvelope(event_type=event_type, schema_version="1", aggregate_type="deletion_job",
+                             aggregate_id=job_id, aggregate_version=version, environment=self.environment,
+                             actor_ref="service:privacy", correlation_id=job_id, privacy_class="restricted", payload=payload)
 
     # ------------------------------------------------------------ inventory
     def inventory(self) -> list[dict[str, Any]]:
@@ -187,12 +199,16 @@ class MyDataService:
                 for step in ("delete_records", "delete_projections"):
                     steps.append([job_id, k, step, "pending", None, None, pt_commit()])
             txn.insert("DeletionSteps", ["job_id", "category", "step", "state", "rows_affected", "detail", "updated_at"], steps)
+            write_events(txn, [self._event(PRIVACY_DELETION_REQUESTED.event_type, job_id, 1,
+                                         {"job_id": job_id, "scope": "account" if account else "category"})])
 
         self.db.run_in_transaction(txn_fn)
         return job_id
 
     def run_deletion(self, job_id: str) -> dict[str, Any]:
         job = self._job(job_id)
+        if job["state"] in ("completed", "completed_with_exceptions") and job["receipt_json"]:
+            return json_payload(job["receipt_json"])
         ctx = SubjectContext(subject_ref=job["subject_ref"], job_id=job_id, requested_at=job["requested_at"])
         self._set_job_state(job_id, "running")
         results: dict[str, dict[str, Any]] = {}
@@ -211,7 +227,7 @@ class MyDataService:
                     txn.insert("DeletionTombstones", ["subject_ref", "category", "tombstone_id", "deletion_job_id", "record_keys", "created_at"],
                                [[ctx.subject_ref, key, new_id(), job_id, list(ctx.record_keys), pt_commit()]])
                     txn.update("DeletionSteps", ["job_id", "category", "step", "state", "rows_affected", "detail", "updated_at"],
-                               [[job_id, key, "delete_records", "exception" if outcome.exception else "done",
+                               [[job_id, key, "delete_records", "exception" if outcome.exception else "done" if outcome.done else "failed",
                                  outcome.rows_affected, outcome.exception or outcome.detail, pt_commit()]])
                     return outcome
                 out_records = self.db.run_in_transaction(txn_fn)
@@ -223,31 +239,44 @@ class MyDataService:
                            out_derived.rows_affected, out_derived.exception or out_derived.detail, pt_commit()]])
             results[key] = self._category_receipt(cat, out_records, out_derived)
         exceptions = [r for r in results.values() if r["status"] != "deleted"]
-        state = "completed_with_exceptions" if exceptions else "completed"
+        finished = all(r["status"] not in ("pending_derived", "pending_records") for r in results.values())
+        state = ("completed_with_exceptions" if exceptions else "completed") if finished else "running"
         receipt = {
             "schema": RECEIPT_SCHEMA,
             "job_id": job_id,
             "subject_ref": job["subject_ref"],
             "scope": job["scope"],
             "requested_at": job["requested_at"].isoformat(),
-            "completed_at": _now().isoformat(),
+            "completed_at": _now().isoformat() if finished else None,
             "categories": results,
             "backups": {
                 "statement": "Encrypted backups taken before this deletion may still contain this data until they expire. "
                              "If a backup is ever restored, this deletion is re-applied before any data is served.",
                 "expires_no_later_than": (job["requested_at"] + self.retention.backup_retention).date().isoformat(),
             },
-            "processing": "Frozen: no new inferences or derived data will be created from the deleted data.",
+            "processing": ("Category processing may resume from fresh inputs; tombstones reject stale work."
+                           if job["scope"] == "category" and finished else
+                           "Frozen: deletion processing has not been lifted."),
         }
-        if job["scope"] == "category":
-            # A category deletion lifts the freeze once complete; tombstones still block stale jobs (basis_time check).
-            def lift(txn: Any) -> None:
-                txn.delete("ProcessingFreezes", keyset_for([[job["subject_ref"], k] for k in job["categories"]]))
-            self.db.run_in_transaction(lift)
-        with self.db.batch() as b:
-            b.update("DeletionJobs", ["job_id", "state", "completed_at", "receipt_json"],
-                     [[job_id, state, _now(), json.dumps(receipt, default=_jsonable)]])
-        return receipt
+        def complete(txn: Any) -> dict[str, Any]:
+            # A retried/concurrent completion keeps the first receipt and emits once.
+            rows = list(txn.execute_sql("SELECT state, receipt_json, version FROM DeletionJobs WHERE job_id = @j",
+                                       params={"j": job_id}, param_types={"j": pt.STRING}))
+            if rows[0][0] in ("completed", "completed_with_exceptions") and rows[0][1]:
+                return json_payload(rows[0][1])
+            version = rows[0][2] + 1
+            txn.update("DeletionJobs", ["job_id", "state", "completed_at", "receipt_json", "version"],
+                       [[job_id, state, _now() if finished else None, json.dumps(receipt, default=_jsonable), version]])
+            if finished:
+                if job["scope"] == "category":
+                    # Never lift a freeze owned by a newer deletion request.
+                    txn.execute_update("DELETE FROM ProcessingFreezes WHERE subject_ref = @s AND deletion_job_id = @j",
+                                       params={"s": job["subject_ref"], "j": job_id},
+                                       param_types={"s": pt.STRING, "j": pt.STRING})
+                write_events(txn, [self._event(PRIVACY_DELETION_COMPLETED.event_type, job_id, version,
+                                             {"job_id": job_id, "state": state})])
+            return receipt
+        return self.db.run_in_transaction(complete)
 
     @staticmethod
     def _category_receipt(cat: DataCategory, rec: Optional[DeletionOutcome], derived: DeletionOutcome) -> dict[str, Any]:
@@ -256,19 +285,22 @@ class MyDataService:
             "rows_affected": (rec.rows_affected if rec else None),
             "derived_purged": derived.rows_affected,
         }
-        if cat.on_delete is OnDelete.NOT_ERASABLE_PUBLIC_LEDGER:
+        if not derived.done:
+            r["status"] = "pending_derived"
+            r["reason"] = derived.exception or "derived copies are still being removed"
+        elif rec and not rec.done and not rec.exception:
+            r["status"] = "pending_records"
+            r["reason"] = "records are still being removed"
+        elif cat.on_delete is OnDelete.NOT_ERASABLE_PUBLIC_LEDGER:
             r["status"] = "not_erasable"
             r["reason"] = ("Public blockchain commitments cannot be erased. They contain no personal data in plaintext; "
-                           "the link between you and them has been removed from Brand.Me.")
+                           "deleting this category does not erase the ledger. Member control links are a separate category.")
         elif cat.on_delete is OnDelete.RETAIN_LEGAL:
             r["status"] = "retained"
             r["reason"] = cat.retention_basis
         elif rec and rec.exception:
             r["status"] = "exception"
             r["reason"] = rec.exception
-        elif not derived.done:
-            r["status"] = "pending_derived"
-            r["reason"] = derived.exception or "derived copies are still being removed"
         else:
             r["status"] = "deleted" if cat.on_delete is OnDelete.ERASE else "anonymized"
             if r["status"] == "anonymized":
@@ -315,12 +347,12 @@ class MyDataService:
     def _job(self, job_id: str) -> dict[str, Any]:
         with self.db.snapshot() as snap:
             rows = list(snap.execute_sql(
-                "SELECT subject_ref, scope, categories, state, requested_at FROM DeletionJobs WHERE job_id = @j",
+                "SELECT subject_ref, scope, categories, state, requested_at, receipt_json FROM DeletionJobs WHERE job_id = @j",
                 params={"j": job_id}, param_types={"j": pt.STRING}))
         if not rows:
             raise KeyError(job_id)
         r = rows[0]
-        return {"subject_ref": r[0], "scope": r[1], "categories": list(r[2]), "state": r[3], "requested_at": r[4]}
+        return {"subject_ref": r[0], "scope": r[1], "categories": list(r[2]), "state": r[3], "requested_at": r[4], "receipt_json": r[5]}
 
     def _steps(self, job_id: str, category: str) -> dict[str, str]:
         with self.db.snapshot() as snap:
@@ -329,8 +361,9 @@ class MyDataService:
                 params={"j": job_id, "c": category}, param_types={"j": pt.STRING, "c": pt.STRING})}
 
     def _set_job_state(self, job_id: str, state: str) -> None:
-        with self.db.batch() as b:
-            b.update("DeletionJobs", ["job_id", "state"], [[job_id, state]])
+        self.db.run_in_transaction(lambda txn: txn.execute_update(
+            "UPDATE DeletionJobs SET state = @s WHERE job_id = @j AND state NOT IN ('completed', 'completed_with_exceptions')",
+            params={"s": state, "j": job_id}, param_types={"s": pt.STRING, "j": pt.STRING}))
 
 
 def pt_commit() -> Any:
