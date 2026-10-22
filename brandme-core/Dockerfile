@@ -8,6 +8,7 @@ FROM python:3.11-slim AS base
 
 # Set working directory
 WORKDIR /app
+ENV PYTHONPATH=/app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -23,6 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared brandme_core module
 COPY brandme_core /app/brandme_core
+COPY packages/contracts/generated/domain.schema.json /app/packages/contracts/generated/domain.schema.json
 
 # Copy application code
 COPY brandme-core/ /app/

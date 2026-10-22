@@ -35,6 +35,8 @@ Deletion requests and completion write outbox events atomically with the job sta
 
 The other four registered event types still need producers in the application command/reconciliation adapters. Registration is not evidence of dispatch, projection delivery or end-to-end application completion.
 
+The core image now includes the shared module path, Spanner/JSON Schema dependencies, and the generated event schema. Its runtime smoke check imports the actual rights/privacy modules and validates a registered event from the packaged schema.
+
 ## Preprod verification
 
 The [official network reference](https://docs.midnight.network/guides/networks-and-environments) states that Midnight-hosted Preprod endpoints were retired on October 9, 2026. The service and network runner now use Blockfrost HTTP/WebSocket endpoints and require a `nightpreprod` project token. Mainnet tokens are rejected for Preprod. Provider error history, test logging, evidence and the Preprod command's console output redact provider credentials. Test wallet seeds are also redacted from runner output/evidence.
