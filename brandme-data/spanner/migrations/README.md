@@ -23,3 +23,5 @@ The legacy `../schema.sql` is **not** applied by the runner. It contains Postgre
 V010 adds an independent projection revision to `RightsEntitlements` for transactional outbox events. Apply it before deploying the integrated rights projection; V008 and V009 remain unchanged. Existing rows receive revision 1 on their next verified update.
 
 V011 adds the authenticated owner/environment and observation timestamp to `ChainOperations`, replaces global idempotency with a member/network/contract/environment index, and adds transactional subject locks. Apply before configuring durable chain status/reconciliation. Old rows remain unowned and are excluded; do not assign them to a member or regenerate their digest without reviewing the original request and any broadcast evidence. Existing migrations are unchanged.
+
+V012 adds reconciliation leases, attempt counters and projection-completion markers to `ChainOperations`. Apply before deploying the background worker and updated rights privacy handler. Existing owned operations are due immediately; legacy unowned operations stay excluded. This migration does not enable any network writes.

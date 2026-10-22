@@ -16,6 +16,7 @@ const configSchema = z.object({
   corsOrigins: z.string().transform((val) => val.split(',')).default('http://localhost:3000'),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
+  chainReconciliationEnabled: z.enum(['true', 'false']).transform((v) => v === 'true').optional(),
   chainServiceToken: z.string().min(32).max(256).optional(),
   spannerProjectId: z.string().min(1).optional(),
   spannerInstanceId: z.string().min(1).optional(),
@@ -23,7 +24,7 @@ const configSchema = z.object({
 
   // Midnight (primary rights network)
   midnightNetwork: z.enum(['undeployed', 'preview', 'preprod', 'mainnet']).default('preprod'),
-  midnightContractAddress: z.string().regex(/^[0-9a-f]{64,}$/i).optional(),
+  midnightContractAddress: z.string().regex(/^[0-9a-f]{64}$/i).optional(),
   midnightBlockfrostProjectId: z.string().optional(),
   midnightLocalNodePort: z.coerce.number().optional(),
   midnightLocalIndexerPort: z.coerce.number().optional(),
@@ -37,6 +38,7 @@ for (const f of removedFlags) {
 }
 
 export const config = configSchema.parse({
+  chainReconciliationEnabled: process.env.CHAIN_RECONCILIATION_ENABLED,
   chainServiceToken: process.env.CHAIN_SERVICE_TOKEN,
   spannerProjectId: process.env.SPANNER_PROJECT_ID,
   spannerInstanceId: process.env.SPANNER_INSTANCE_ID,
