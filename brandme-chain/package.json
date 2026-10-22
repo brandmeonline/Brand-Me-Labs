@@ -20,7 +20,7 @@
     "compact:verify": "node scripts/verify-artifacts.mjs",
     "test:midnight:local": "bash scripts/test-midnight-local.sh",
     "test:midnight:network": "vitest run --config vitest.network.config.ts",
-    "test:midnight:preprod": "MIDNIGHT_NETWORK=preprod vitest run --config vitest.network.config.ts",
+    "test:midnight:preprod": "node scripts/test-midnight-preprod.mjs",
     "midnight:local-network": "bash scripts/local-network.sh"
   },
   "keywords": [
@@ -54,7 +54,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "helmet": "^7.1.0",
-    "pino": "^8.17.2",
+    "pino": "10.4.0",
     "pino-pretty": "^10.3.1",
     "rxjs": "7.8.2",
     "ws": "8.22.0",

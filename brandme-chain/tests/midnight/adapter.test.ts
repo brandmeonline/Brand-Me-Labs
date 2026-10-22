@@ -9,7 +9,7 @@ import { MemoryLevel } from 'memory-level';
 import { RightsAdapter, type ConnectedWallet, type FinalityOracle, buildProviders } from '../../src/midnight/adapter.js';
 import { InMemoryOperationStore } from '../../src/midnight/operations.js';
 import { PRIVATE_STATE_ID, PrivateStateSession } from '../../src/midnight/private-state.js';
-import { PUBLIC_ENDPOINTS, WrongNetworkError, WritesNotAuthorizedError, mainnetEndpoints, type MidnightEndpoints } from '../../src/midnight/network.js';
+import { PUBLIC_ENDPOINTS, preprodEndpoints, WrongNetworkError, WritesNotAuthorizedError, mainnetEndpoints, type MidnightEndpoints } from '../../src/midnight/network.js';
 import { Actor, RightsSimulator, issue, prepareHolder, registerIssuer } from '../support/scenario.js';
 import { random32, toHex } from '../../src/midnight/bytes.js';
 import { withSecret } from '../../src/midnight/rights-contract.js';
@@ -17,7 +17,7 @@ import { withSecret } from '../../src/midnight/rights-contract.js';
 const CONTRACT = 'cc'.repeat(32);
 
 function harness(opts: { endpoints?: MidnightEndpoints; walletNetwork?: string; watch?: 'ok' | 'fail' | 'hang' } = {}) {
-  const endpoints = opts.endpoints ?? PUBLIC_ENDPOINTS.preprod;
+  const endpoints = opts.endpoints ?? preprodEndpoints('nightpreprodtestonly123');
   const sim = new RightsSimulator(endpoints.networkId);
   const issuer = new Actor('issuer');
   const iid = registerIssuer(sim, issuer);
@@ -217,19 +217,19 @@ describe('RightsAdapter', () => {
   });
 
   it('no Mainnet writes: prepare is refused', async () => {
-    const h = harness({ endpoints: mainnetEndpoints('projectid123') });
+    const h = harness({ endpoints: mainnetEndpoints('nightmainnettestonly123') });
     await expect(h.adapter.prepare('proveControl', [h.eid, random32(), random32()])).rejects.toBeInstanceOf(WritesNotAuthorizedError);
   });
 
   it('refuses a non-loopback "local" proof server (remote provers see witnesses)', () => {
     const h = harness();
-    expect(() => buildProviders({ endpoints: PUBLIC_ENDPOINTS.preprod, session: h.session, wallet: h.wallet,
+    expect(() => buildProviders({ endpoints: preprodEndpoints('nightpreprodtestonly123'), session: h.session, wallet: h.wallet,
       proving: { kind: 'local-proof-server', url: 'https://prover.example.com' } })).toThrow(/loopback/);
   });
 
   it('builds real providers with manifest-verified artifacts for a loopback prover', () => {
     const h = harness();
-    const p = buildProviders({ endpoints: PUBLIC_ENDPOINTS.preprod, session: h.session, wallet: h.wallet,
+    const p = buildProviders({ endpoints: preprodEndpoints('nightpreprodtestonly123'), session: h.session, wallet: h.wallet,
       proving: { kind: 'local-proof-server', url: 'http://127.0.0.1:6300' } });
     expect(typeof p.publicDataProvider.watchForTxData).toBe('function');
     expect(typeof p.proofProvider.proveTx).toBe('function');

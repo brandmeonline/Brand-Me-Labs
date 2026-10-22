@@ -1,14 +1,16 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * /v1/chain — Midnight capability and operation status. UNMOUNTED: the
- * opus-foundation lane mounts these routers in the gateway entrypoint.
+ * /v1/chain — Midnight capability and operation status. Mounted behind the gateway principal boundary.
  *
  * Shared contract for all v1 rights/privacy routers in this directory: they
  * are factories taking injected dependencies, so they carry no coupling to
  * the gateway's middleware/config internals.
  */
 
+import { handle } from '../../middleware/problem';
+
+import { z } from 'zod';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import type { Router as IRouter } from 'express';
 
@@ -45,11 +47,17 @@ export interface MidnightCapabilityView {
 export async function chainCapability(deps: V1Deps): Promise<MidnightCapabilityView> {
   try {
     const r = await deps.upstream.chain.get('/midnight/capability');
-    const b = r.body as Partial<MidnightCapabilityView> | undefined;
-    if (r.status !== 200 || !b || !b.status) return { status: 'unavailable', reasons: [`chain service responded ${r.status}`], badge: null, network: 'unknown' };
-    return { status: b.status, reasons: b.reasons ?? [], badge: b.badge ?? null, network: b.network ?? 'unknown' };
-  } catch (e) {
-    return { status: 'unavailable', reasons: [`chain service unreachable: ${(e as Error).message}`], badge: null, network: 'unknown' };
+    const parsed = z.object({
+      status: z.enum(['available', 'read_only', 'unavailable']),
+      network: z.enum(['undeployed', 'preview', 'preprod', 'mainnet']),
+      reasons: z.array(z.string().max(256)).max(16),
+    }).safeParse(r.body);
+    if (r.status !== 200 || !parsed.success) throw new Error('invalid capability');
+    const b = parsed.data;
+    const badges = { undeployed: 'Local test network', preview: 'Preview test network', preprod: 'Preprod test network', mainnet: 'Mainnet' };
+    return { ...b, status: b.network === 'mainnet' && b.status === 'available' ? 'read_only' : b.status, badge: badges[b.network] };
+  } catch {
+    return { status: 'unavailable', reasons: ['Chain capability could not be verified.'], badge: null, network: 'unknown' };
   }
 }
 
@@ -73,16 +81,16 @@ export function relay(res: Response, r: UpstreamResponse): void {
 export function createChainRouter(deps: V1Deps): IRouter {
   const router: IRouter = Router();
 
-  router.get('/capability', async (_req, res) => {
+  router.get('/capability', handle(async (_req, res) => {
     res.status(200).json(await chainCapability(deps));
-  });
+  }));
 
-  router.get('/operations/:operationId', deps.requireScope('rights:read'), async (req, res) => {
+  router.get('/operations/:operationId', deps.requireScope('rights:read'), handle(async (req, res) => {
     const subject = subjectOr401(deps, req, res);
     if (!subject) return;
     if (!/^[0-9a-f-]{36}$/i.test(req.params.operationId!)) { res.status(400).json({ error: 'invalid_operation_id' }); return; }
     relay(res, await deps.upstream.rights.get(`/operations/${req.params.operationId}`, { 'x-subject-ref': subject }));
-  });
+  }));
 
   return router;
 }

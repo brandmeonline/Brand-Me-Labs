@@ -90,6 +90,7 @@ export function principalMiddleware({ cfg, store, jwks }: PrincipalResolverDeps)
           identityProvider: 'oidc',
           expiresAt: new Date((payload.exp ?? 0) * 1000),
           via: 'bearer',
+          authenticatedAt: typeof payload.auth_time === 'number' && Number.isFinite(payload.auth_time) ? new Date(payload.auth_time * 1000) : undefined,
         } satisfies Principal;
         return next();
       }
@@ -110,13 +111,14 @@ export function principalMiddleware({ cfg, store, jwks }: PrincipalResolverDeps)
             subject: session.member_id,
             sessionId: sha256(secret).slice(0, 16),
             clientId: session.client_id,
-            scopes: ['profile:read', 'profile:write', 'privacy:manage'],
+            scopes: ['profile:read', 'profile:write', 'privacy:manage', 'rights:read', 'rights:transfer', 'rights:reprint'],
             assuranceLevel: session.assurance_level,
             environment: cfg.mode,
             delegationId: null,
             identityProvider: session.identity_provider,
             expiresAt: session.expires_at,
             via: 'session',
+            authenticatedAt: session.created_at,
           } satisfies Principal;
         }
       }

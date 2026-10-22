@@ -51,4 +51,5 @@ export interface Principal {
   identityProvider: string;
   expiresAt: Date;
   via: 'session' | 'bearer';
+  authenticatedAt?: Date;
 }

@@ -1,8 +1,7 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * /api/v1 mount file (opus-foundation lane). Other lanes ship unmounted
- * router files; they are mounted here at integration. Every response carries
+ * /api/v1 mount file. Every response carries
  * X-Request-Id and X-Brandme-Environment; errors are application/problem+json.
  */
 
@@ -16,6 +15,12 @@ import { IdentityStore } from '../../middleware/identity/store';
 import { validator } from '../../middleware/validation';
 import type { Principal } from '../../types';
 import { meRouter } from './me';
+import { rightsDependencies } from '../../services/rights';
+import { createChainRouter, type V1Deps } from './chain';
+import { createRightsRouter } from './rights';
+import { createOwnershipRouter } from './ownership';
+import { createAssetsRouter } from './assets';
+import { createPrivacyRouter } from './privacy';
 
 const validateDevSession = validator('DevSessionCreate');
 
@@ -24,6 +29,7 @@ export interface ApiV1Deps {
   store: IdentityStore;
   jwks?: JWTVerifyGetKey;
   fetchImpl?: typeof fetch;
+  rights?: V1Deps;
 }
 
 async function timed(name: string, fn: () => Promise<void>) {
@@ -109,6 +115,12 @@ export function apiV1(deps: ApiV1Deps): Router {
     }),
   );
 
+  const rights = deps.rights ?? rightsDependencies(cfg, doFetch);
+  router.use('/chain', createChainRouter(rights));
+  router.use('/rights', createRightsRouter(rights));
+  router.use('/ownership', createOwnershipRouter(rights));
+  router.use('/assets', createAssetsRouter(rights));
+  router.use('/me', createPrivacyRouter(rights));
   router.use('/me', meRouter(cfg, store));
 
   router.use((req: Request, res: Response) => problemHandler(problems.notFound(), req, res, () => undefined));

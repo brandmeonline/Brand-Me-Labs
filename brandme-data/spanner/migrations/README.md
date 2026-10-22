@@ -19,3 +19,5 @@ python brandme-data/spanner/migrations/runner.py verify   # exit 1 on drift or p
 | `--create-database` | Emulator only |
 
 The legacy `../schema.sql` is **not** applied by the runner. It contains PostgreSQL syntax that GoogleSQL rejects (see `docs/build/evidence/w00/baseline-test-report.md`). Lanes that need legacy tables port them into their reserved migration with valid GoogleSQL. V001 has been verified on an empty database and on top of the partially-applied legacy schema.
+
+V010 adds an independent projection revision to `RightsEntitlements` for transactional outbox events. Apply it before deploying the integrated rights projection; V008 and V009 remain unchanged. Existing rows receive revision 1 on their next verified update.

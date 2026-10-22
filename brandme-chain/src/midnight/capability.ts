@@ -8,7 +8,7 @@
 
 import type { ChainConfig } from '../config/index.js';
 import { ArtifactIntegrityError, verifyArtifactsOrThrow } from './adapter.js';
-import { localEndpoints, mainnetEndpoints, PUBLIC_ENDPOINTS, type MidnightEndpoints } from './network.js';
+import { localEndpoints, mainnetEndpoints, preprodEndpoints, PUBLIC_ENDPOINTS, type MidnightEndpoints } from './network.js';
 import manifest from '../../contracts/artifact-manifest.json' with { type: 'json' };
 import toolchain from '../../contracts/toolchain.json' with { type: 'json' };
 
@@ -29,11 +29,13 @@ export interface MidnightCapability {
 
 export function resolveEndpoints(c: ChainConfig): MidnightEndpoints | null {
   switch (c.midnightNetwork) {
-    case 'preview':
+    case 'preview': return PUBLIC_ENDPOINTS.preview;
     case 'preprod':
-      return PUBLIC_ENDPOINTS[c.midnightNetwork];
     case 'mainnet':
-      return c.midnightBlockfrostProjectId ? mainnetEndpoints(c.midnightBlockfrostProjectId) : null;
+      try {
+        return c.midnightBlockfrostProjectId
+          ? (c.midnightNetwork === 'preprod' ? preprodEndpoints : mainnetEndpoints)(c.midnightBlockfrostProjectId) : null;
+      } catch { return null; }
     case 'undeployed':
       return c.midnightLocalNodePort && c.midnightLocalIndexerPort
         ? localEndpoints({ node: c.midnightLocalNodePort, indexer: c.midnightLocalIndexerPort })
@@ -53,8 +55,9 @@ export function midnightCapability(c: ChainConfig): MidnightCapability {
     reasons.push(e instanceof ArtifactIntegrityError ? e.message : 'artifact verification failed');
   }
   if (!c.midnightContractAddress) reasons.push('no rights contract deployed/configured for this network');
-  const writesAuthorized = c.midnightNetwork !== 'mainnet';
-  if (!writesAuthorized) reasons.push('Mainnet writes are not authorized in this build');
+  const writesAuthorized = false; // HTTP write orchestration is not configured yet.
+  if (c.midnightNetwork === 'mainnet') reasons.push('Mainnet writes are not authorized in this build');
+  reasons.push('application operation submission and reconciliation are not configured');
   if (c.environment !== 'development' && c.environment !== 'demo') {
     reasons.push('durable operation store not configured (Spanner ChainOperations); writes disabled outside development');
   }
@@ -62,7 +65,7 @@ export function midnightCapability(c: ChainConfig): MidnightCapability {
     !endpoints || !verified || !c.midnightContractAddress ? 'unavailable' : reasons.length ? 'read_only' : 'available';
   return {
     network: c.midnightNetwork,
-    badge: endpoints?.badge ?? null,
+    badge: { undeployed: 'Local test network', preview: 'Preview test network', preprod: 'Preprod test network', mainnet: 'Mainnet' }[c.midnightNetwork],
     status,
     reasons,
     contractAddress: c.midnightContractAddress ?? null,

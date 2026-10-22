@@ -31,7 +31,7 @@ from brandme_core.domains.privacy.privacy import (  # noqa: E402
 from tests.fixtures.privacy.persona_fixture import FIXTURE_DDL, PersonaFixtureHandler, ProjectionStore  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql"]
+MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V001_identity.sql", ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql", ROOT / "brandme-data/spanner/migrations/V010_rights_projection_version.sql"]
 
 
 def _ddl(path: Path) -> list[str]:
@@ -83,12 +83,79 @@ def setup(database):
     projections = ProjectionStore()
     persona = PersonaFixtureHandler(projections)
     reg.register(persona)
-    svc = MyDataService(database, MemoryObjectStore(), reg)
+    svc = MyDataService(database, MemoryObjectStore(), reg, environment="development")
     return svc, persona, projections, reg, database
 
 
 def now():
     return datetime.now(timezone.utc)
+
+
+def test_deletion_events_commit_with_jobs_and_completion_is_replay_safe(setup):
+    svc, _, _, _, db = setup
+    job = svc.request_deletion("event-test-member", now())
+    with db.snapshot() as snap:
+        assert list(snap.execute_sql("SELECT event_type FROM OutboxEvents")) == [["privacy.deletion.requested"]]
+    receipt = svc.run_deletion(job)
+    assert svc.run_deletion(job) == receipt
+    with db.snapshot() as snap:
+        events = sorted(row[0] for row in snap.execute_sql("SELECT event_type FROM OutboxEvents"))
+    assert events == ["privacy.deletion.completed", "privacy.deletion.requested"]
+
+
+def test_deletion_request_rolls_back_if_event_cannot_be_written(setup, monkeypatch):
+    import brandme_core.domains.privacy.privacy as privacy
+    svc, _, _, _, db = setup
+    def reject(*_):
+        raise ValueError("event rejected")
+    monkeypatch.setattr(privacy, "write_events", reject)
+    with pytest.raises(ValueError, match="event rejected"):
+        svc.request_deletion("event-test-member", now())
+    with db.snapshot(multi_use=True) as snap:
+        assert list(snap.execute_sql("SELECT COUNT(*) FROM DeletionJobs"))[0][0] == 0
+        assert list(snap.execute_sql("SELECT COUNT(*) FROM ProcessingFreezes"))[0][0] == 0
+
+
+def test_pending_derived_deletion_keeps_freeze_and_does_not_emit_completion(setup, monkeypatch):
+    svc, persona, _, _, db = setup
+    job = svc.request_deletion("pending-member", now(), ["persona.declared"])
+    purge = persona.purge_derived
+    monkeypatch.setattr(persona, "purge_derived", lambda ctx, key: DeletionOutcome(key, 0, done=False))
+    receipt = svc.run_deletion(job)
+    assert receipt["completed_at"] is None
+    with db.snapshot(multi_use=True) as snap:
+        assert list(snap.execute_sql("SELECT state FROM DeletionJobs")) == [["running"]]
+        assert list(snap.execute_sql("SELECT COUNT(*) FROM ProcessingFreezes"))[0][0] == 1
+        assert list(snap.execute_sql("SELECT COUNT(*) FROM OutboxEvents"))[0][0] == 1
+    monkeypatch.setattr(persona, "purge_derived", purge)
+    assert svc.run_deletion(job)["completed_at"] is not None
+    with db.snapshot(multi_use=True) as snap:
+        assert list(snap.execute_sql("SELECT COUNT(*) FROM ProcessingFreezes"))[0][0] == 0
+        assert list(snap.execute_sql("SELECT COUNT(*) FROM OutboxEvents"))[0][0] == 2
+
+
+def test_older_deletion_does_not_lift_newer_request_freeze(setup):
+    svc, _, _, _, db = setup
+    old = svc.request_deletion("two-requests", now(), ["persona.declared"])
+    new = svc.request_deletion("two-requests", now(), ["persona.declared"])
+    svc.run_deletion(old)
+    with db.snapshot() as snap:
+        assert list(snap.execute_sql("SELECT deletion_job_id FROM ProcessingFreezes")) == [[new]]
+
+
+def test_unfinished_record_deletion_does_not_complete(setup, monkeypatch):
+    svc, persona, _, _, db = setup
+    job = svc.request_deletion("pending-records", now(), ["persona.declared"])
+    delete = persona.delete
+    monkeypatch.setattr(persona, "delete", lambda tx, ctx, key: DeletionOutcome(key, 0, done=False))
+    receipt = svc.run_deletion(job)
+    assert receipt["categories"]["persona.declared"]["status"] == "pending_records"
+    assert receipt["completed_at"] is None
+    with db.snapshot(multi_use=True) as snap:
+        assert list(snap.execute_sql("SELECT COUNT(*) FROM ProcessingFreezes"))[0][0] == 1
+        assert list(snap.execute_sql("SELECT COUNT(*) FROM OutboxEvents"))[0][0] == 1
+    monkeypatch.setattr(persona, "delete", delete)
+    assert svc.run_deletion(job)["completed_at"] is not None
 
 
 def test_registry_rejects_undeclared_or_unjustified_categories():
