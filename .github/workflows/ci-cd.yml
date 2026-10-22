@@ -202,10 +202,18 @@ jobs:
           file: ./brandme-${{ matrix.service }}/Dockerfile
           build-args: NODE_VERSION=${{ steps.toolchain.outputs.node }}
           push: ${{ github.event_name == 'push' }}
+          load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Verify packaged runtime
+        if: github.event_name == 'pull_request'
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+          SERVICE: ${{ matrix.service }}
+        run: bash .github/scripts/smoke-image.sh "$SERVICE" "${IMAGE_TAGS%%$'\n'*}"
 
   # ==========================================
   # Deploy to GKE
