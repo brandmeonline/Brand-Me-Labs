@@ -152,7 +152,7 @@ export class NodeRpcFinalityOracle implements FinalityOracle {
   constructor(private readonly rpcUrl: string, private readonly fetchImpl: typeof fetch = fetch) {}
   private async rpc<T>(method: string, params: unknown[] = []): Promise<T> {
     const res = await this.fetchImpl(this.rpcUrl.replace(/^ws/, 'http'), {
-      method: 'POST',
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(2000),
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     });
@@ -164,7 +164,9 @@ export class NodeRpcFinalityOracle implements FinalityOracle {
   async isFinal(blockHeight: number, blockHash: string) {
     const head = await this.rpc<string>('chain_getFinalizedHead');
     const header = await this.rpc<{ number: string }>('chain_getHeader', [head]);
+    if (!/^0x[0-9a-f]+$/i.test(header.number)) throw new Error('invalid finalized header');
     const finalizedHeadHeight = parseInt(header.number, 16);
+    if (!Number.isSafeInteger(finalizedHeadHeight)) throw new Error('invalid finalized height');
     if (finalizedHeadHeight < blockHeight) return { final: false, finalizedHeadHeight };
     const canonical = await this.rpc<string>('chain_getBlockHash', [blockHeight]);
     const norm = (h: string) => h.toLowerCase().replace(/^0x/, '');
@@ -187,6 +189,7 @@ export interface RightsAdapterOptions {
   readonly session: PrivateStateSession;
   readonly wallet: ConnectedWallet;
   readonly store: OperationStore;
+  readonly ownerRef?: string;
   readonly finality: FinalityOracle;
   /** How long to watch the indexer before moving a submitted op to Reconciling. */
   readonly observeTimeoutMs?: number;
@@ -211,11 +214,8 @@ export class RightsAdapter {
   /** Persist an operation before any wallet interaction. */
   async prepare(circuit: RightsCircuit, args: readonly unknown[], meta: { subjectRef?: string; idempotencyKey?: string; expiresAt?: Date } = {}) {
     assertWritable(this.network);
-    if (meta.subjectRef) {
-      const active = (await this.o.store.activeForSubject(this.network, meta.subjectRef)).filter((x) => x.idempotencyKey !== meta.idempotencyKey);
-      if (active.length) throw new Error(`conflicting operation ${active[0]!.operationId} is still ${active[0]!.state}`);
-    }
-    return this.o.store.create(newOperation({ network: this.network, contractAddress: this.contractAddress, circuit, args, ...meta }));
+    return this.o.store.create(newOperation({ network: this.network, contractAddress: this.contractAddress,
+      circuit, args, ...meta, ownerRef: this.o.ownerRef }));
   }
 
   /**
@@ -227,6 +227,7 @@ export class RightsAdapter {
     const op = await this.o.store.get(operationId);
     if (!op) throw new Error('unknown operation');
     // --- replay / binding checks (no side effects) ---
+    if (op.ownerRef !== this.o.ownerRef) throw new ReplayRejectedError('operation bound to another member');
     if (op.network !== this.network) throw new WrongNetworkError(op.network, this.network, 'operation replay');
     if (op.contractAddress.toLowerCase() !== this.contractAddress.toLowerCase()) throw new ReplayRejectedError('operation bound to another contract');
     if (requestDigest(op) !== op.requestDigest) throw new ReplayRejectedError('request digest mismatch (tampered operation)');
@@ -245,9 +246,15 @@ export class RightsAdapter {
     // --- prove + submit ---
     let cur = await this.save(op, transition(op, 'Proving'));
     const generation = this.o.session.currentGeneration;
-    const originalPs = await this.o.session.load();
-    const callPs = opts.privateStateOverride ? opts.privateStateOverride(originalPs) : originalPs;
-    if (callPs !== originalPs) await this.o.session.save(callPs);
+    let originalPs: RightsPrivateState;
+    let callPs: RightsPrivateState;
+    try {
+      originalPs = await this.o.session.load();
+      callPs = opts.privateStateOverride ? opts.privateStateOverride(originalPs) : originalPs;
+      if (callPs !== originalPs) await this.o.session.save(callPs);
+    } catch {
+      return this.save(cur, transition(cur, 'Failed', { failureReason: 'private_state_unavailable' }));
+    }
 
     const guardedWallet: WalletProvider = {
       getCoinPublicKey: () => this.o.providers.walletProvider.getCoinPublicKey(),
@@ -261,43 +268,70 @@ export class RightsAdapter {
       },
     };
 
-    let txId: string;
+    // Save a real identifier from the balanced transaction BEFORE broadcast.
+    // A process exit, timeout or provider error afterwards is an uncertain outcome.
+    let broadcastStarted = false;
+    const guardedMidnight: MidnightProvider = {
+      submitTx: async (tx) => {
+        if (this.o.session.currentGeneration !== generation || this.o.session.isLocked ||
+            (await this.o.wallet.accountId()) !== this.o.session.config.accountId) throw new SessionChangedError();
+        assertSameNetwork(this.network, await this.o.wallet.networkId(), 'wallet (broadcast)');
+        if (op.expiresAt && Date.parse(op.expiresAt) <= Date.now()) throw new Error('operation expired before broadcast');
+        const ids = tx.identifiers();
+        if (!ids.length) throw new Error('balanced transaction has no identifier');
+        cur = await this.save(cur, transition(cur, 'Reconciling', {
+          evidence: { txId: String(ids[0]), observedAt: new Date().toISOString() },
+        }, 'broadcast pending; do not resubmit'));
+        broadcastStarted = true;
+        // The durable write awaited I/O: recheck a wallet change that happened during it.
+        if (this.o.session.currentGeneration !== generation || this.o.session.isLocked ||
+            (await this.o.wallet.accountId()) !== this.o.session.config.accountId) throw new SessionChangedError();
+        assertSameNetwork(this.network, await this.o.wallet.networkId(), 'wallet (after journal commit)');
+        const returnedId = await this.o.providers.midnightProvider.submitTx(tx);
+        if (!ids.includes(returnedId)) throw new Error('provider returned an unexpected transaction identifier');
+        cur = await this.save(cur, transition(cur, 'Submitted'));
+        return returnedId;
+      },
+    };
     try {
-      const submitted = await this.submit({ ...this.o.providers, walletProvider: guardedWallet } as never, {
+      await this.submit({ ...this.o.providers, walletProvider: guardedWallet, midnightProvider: guardedMidnight } as never, {
         compiledContract: compiledRightsContract,
         contractAddress: this.contractAddress,
         circuitId: op.circuit,
         args: op.args.map(decodeArg),
         privateStateId: PRIVATE_STATE_ID,
       } as never);
-      txId = (submitted as { txId: string }).txId;
+      if (!broadcastStarted) throw new Error('submission bypassed guarded provider');
     } catch (e) {
-      // Nothing was submitted: restore the private state if we changed it and fail.
+      if (broadcastStarted) return (await this.o.store.get(cur.operationId))!;
       if (callPs !== originalPs && !this.o.session.isLocked) await this.o.session.save(originalPs);
-      return this.save(cur, transition(cur, 'Failed', { failureReason: reasonCode(e) }, rootCauseMessage(e)));
+      return this.save(cur, transition(cur, 'Failed', { failureReason: reasonCode(e) }, 'failed before broadcast'));
     }
-    cur = await this.save(cur, transition(cur, 'Submitted', { evidence: { txId, observedAt: new Date().toISOString() } }));
     return this.observe(cur.operationId);
   }
 
   /** Watch the indexer for a submitted/reconciling operation. Safe to call repeatedly (e.g. after a restart). */
   async observe(operationId: string): Promise<ChainOperation> {
-    let cur = (await this.o.store.get(operationId))!;
+    let cur = await this.boundOperation(operationId);
     if (cur.state !== 'Submitted' && cur.state !== 'Reconciling' && cur.state !== 'Observed') return cur;
     if (cur.state !== 'Observed') {
+      if (!cur.evidence?.txId) return cur;
       let data: FinalizedTxData;
       try {
         data = await withTimeout(this.o.providers.publicDataProvider.watchForTxData(cur.evidence!.txId), this.o.observeTimeoutMs ?? 300_000);
-      } catch (e) {
-        if (cur.state === 'Submitted') cur = await this.save(cur, transition(cur, 'Reconciling', {}, rootCauseMessage(e)));
+      } catch {
+        if (cur.state === 'Submitted') cur = await this.save(cur, transition(cur, 'Reconciling', {}, 'observation unavailable'));
         return cur;
       }
+      if (data.txId !== cur.evidence!.txId) throw new Error('indexer returned an unexpected transaction identifier');
       const evidence = {
         txId: data.txId, txHash: data.txHash, blockHeight: data.blockHeight, blockHash: data.blockHash,
         status: data.status, observedAt: new Date().toISOString(),
       };
       if (data.status !== 'SucceedEntirely') {
-        return this.save(cur, transition(cur, 'Failed', { evidence, failureReason: `chain_${data.status}` }));
+        const f = await this.o.finality.isFinal(data.blockHeight, data.blockHash);
+        if (!f.final) return cur.state === 'Submitted' ? this.save(cur, transition(cur, 'Reconciling')) : cur;
+        return this.save(cur, transition(cur, 'Failed', { evidence: { ...evidence, finalizedHeadHeight: f.finalizedHeadHeight }, failureReason: `chain_${data.status}` }));
       }
       cur = await this.save(cur, transition(cur, 'Observed', { evidence }));
     }
@@ -305,12 +339,21 @@ export class RightsAdapter {
   }
 
   async checkFinality(operationId: string): Promise<ChainOperation> {
-    const cur = (await this.o.store.get(operationId))!;
+    const cur = await this.boundOperation(operationId);
     if (cur.state !== 'Observed') return cur;
     const ev = cur.evidence!;
     const f = await this.o.finality.isFinal(ev.blockHeight!, ev.blockHash!);
     if (!f.final) return cur;
     return this.save(cur, transition(cur, 'Finalized', { evidence: { ...ev, finalizedHeadHeight: f.finalizedHeadHeight } }));
+  }
+
+  private async boundOperation(id: string): Promise<ChainOperation> {
+    const op = await this.o.store.get(id);
+    if (!op || op.network !== this.network || op.contractAddress !== this.contractAddress.toLowerCase() || op.ownerRef !== this.o.ownerRef) {
+      throw new ReplayRejectedError('operation outside adapter scope');
+    }
+    if (requestDigest(op) !== op.requestDigest) throw new ReplayRejectedError('request digest mismatch');
+    return op;
   }
 
   private async save(prev: ChainOperation, next: ChainOperation): Promise<ChainOperation> {

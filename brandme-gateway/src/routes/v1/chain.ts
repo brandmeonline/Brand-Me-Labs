@@ -30,6 +30,7 @@ export interface V1Deps {
   /** Returns the auth_time of the current session (for re-auth evidence passed upstream). */
   authTimeOf(req: Request): Date | undefined;
   upstream: {
+    operations?: UpstreamClient; // authenticated chain operation journal
     chain: UpstreamClient;     // brandme-chain service
     rights: UpstreamClient;    // rights domain service (brandme_core.domains.rights)
     privacy: UpstreamClient;   // My Data service (brandme_core.domains.privacy)
@@ -89,7 +90,7 @@ export function createChainRouter(deps: V1Deps): IRouter {
     const subject = subjectOr401(deps, req, res);
     if (!subject) return;
     if (!/^[0-9a-f-]{36}$/i.test(req.params.operationId!)) { res.status(400).json({ error: 'invalid_operation_id' }); return; }
-    relay(res, await deps.upstream.rights.get(`/operations/${req.params.operationId}`, { 'x-subject-ref': subject }));
+    relay(res, await (deps.upstream.operations ?? deps.upstream.rights).get(`/operations/${req.params.operationId}`, { 'x-subject-ref': subject }));
   }));
 
   return router;

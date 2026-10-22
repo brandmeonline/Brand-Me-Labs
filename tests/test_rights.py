@@ -24,7 +24,7 @@ from brandme_core.domains.rights.projection import FinalizedObservation, Project
 from brandme_core.domains.rights.reprint import IllegalReprintTransition, ReprintService, blinded_job_commitment  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V001_identity.sql", ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql", ROOT / "brandme-data/spanner/migrations/V010_rights_projection_version.sql"]
+MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V001_identity.sql", ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql", ROOT / "brandme-data/spanner/migrations/V010_rights_projection_version.sql", ROOT / "brandme-data/spanner/migrations/V011_chain_operation_store.sql"]
 
 
 def _emulator_up() -> bool:
@@ -205,3 +205,56 @@ def test_rights_deletion_unlinks_member_and_reports_public_commitments(db):
         assert list(s.execute_sql("SELECT controller_subject_ref FROM RightsEntitlements"))[0][0] is None
         assert list(s.execute_sql("SELECT member_subject_ref FROM ReprintJobs WHERE job_id = @j",
                                   params={"j": jid}, param_types={"j": spanner.param_types.STRING}))[0][0] == "deleted-member"
+
+
+def _stored_operation(db, owner, state):
+    import json
+    operation_id = str(uuid.uuid4())
+    with db.batch() as batch:
+        batch.insert("ChainOperations", columns=("operation_id", "network", "contract_address", "circuit", "args_json",
+                     "request_digest", "idempotency_key", "state", "version", "history_json", "created_at", "updated_at", "owner_ref", "environment"),
+                     values=[(operation_id, "preprod", "ab" * 32, "proveControl", json.dumps([]), "00" * 32,
+                              str(uuid.uuid4()), state, 1, json.dumps([]), now(), now(), owner, "development")])
+        batch.insert("ChainOperationSubjects", columns=("environment", "network", "contract_address", "subject_ref", "operation_id"),
+                     values=[("development", "preprod", "ab" * 32, operation_id, operation_id)])
+    return operation_id
+
+
+def test_operation_deletion_waits_for_broadcasts_and_then_removes_member_history(db):
+    owner = str(uuid.uuid4())
+    queued = _stored_operation(db, owner, "ReadyToProve")
+    inflight = _stored_operation(db, owner, "Reconciling")
+    other = _stored_operation(db, str(uuid.uuid4()), "ReadyToProve")
+    reg = PrivacyRegistry(); reg.register(RightsPrivacyHandler())
+    my = MyDataService(db, _Store(), reg, environment="development")
+    job = my.request_deletion(owner, now(), ["rights.operations"])
+    receipt = my.run_deletion(job)
+    assert receipt["completed_at"] is None
+    assert receipt["categories"]["rights.operations"]["status"] == "pending_records"
+    with db.snapshot(multi_use=True) as snapshot:
+        assert {r[0] for r in snapshot.execute_sql("SELECT operation_id FROM ChainOperations")} == {inflight, other}
+        assert {r[0] for r in snapshot.execute_sql("SELECT operation_id FROM ChainOperationSubjects")} == {inflight, other}
+        assert list(snapshot.execute_sql("SELECT COUNT(*) FROM ProcessingFreezes"))[0][0] == 1
+    with db.batch() as batch:
+        batch.update("ChainOperations", columns=("operation_id", "state"), values=[(inflight, "Failed")])
+    receipt = my.run_deletion(job)
+    assert receipt["categories"]["rights.operations"]["status"] == "deleted"
+    assert receipt["completed_at"] is not None
+    with db.snapshot(multi_use=True) as snapshot:
+        assert {r[0] for r in snapshot.execute_sql("SELECT operation_id FROM ChainOperations")} == {other}
+        assert list(snapshot.execute_sql("SELECT COUNT(*) FROM ProcessingFreezes"))[0][0] == 0
+    assert queued != inflight
+
+
+def test_operation_export_omits_arguments_and_restore_refuses_unresolved_broadcasts(db):
+    from brandme_core.domains.privacy.deletion import SubjectContext, Tombstone
+    owner = str(uuid.uuid4())
+    operation_id = _stored_operation(db, owner, "Submitted")
+    handler = RightsPrivacyHandler()
+    with db.snapshot() as snapshot:
+        section = handler.export(snapshot, SubjectContext(owner, str(uuid.uuid4()), now()), "rights.operations")
+    assert section.records[0]["operation_id"] == operation_id
+    assert "args" not in section.records[0] and "owner_ref" not in section.records[0]
+    tombstone = Tombstone(owner, "rights.operations", str(uuid.uuid4()), str(uuid.uuid4()), (), now())
+    with pytest.raises(RuntimeError, match="reconciliation"):
+        db.run_in_transaction(lambda tx: handler.reapply_tombstone(tx, tombstone))

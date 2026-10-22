@@ -56,7 +56,7 @@ export function createOwnershipRouter(deps: V1Deps): IRouter {
       res.status(409).json({ error: 'wrong_network', expected: cap.network, got: body.data.network });
       return;
     }
-    relay(res, await deps.upstream.rights.post('/operations/reconcile', body.data, { 'x-subject-ref': subject }));
+    relay(res, await (deps.upstream.operations ?? deps.upstream.rights).post('/operations/reconcile', body.data, { 'x-subject-ref': subject }));
   }));
 
   return router;

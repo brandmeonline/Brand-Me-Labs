@@ -21,3 +21,5 @@ python brandme-data/spanner/migrations/runner.py verify   # exit 1 on drift or p
 The legacy `../schema.sql` is **not** applied by the runner. It contains PostgreSQL syntax that GoogleSQL rejects (see `docs/build/evidence/w00/baseline-test-report.md`). Lanes that need legacy tables port them into their reserved migration with valid GoogleSQL. V001 has been verified on an empty database and on top of the partially-applied legacy schema.
 
 V010 adds an independent projection revision to `RightsEntitlements` for transactional outbox events. Apply it before deploying the integrated rights projection; V008 and V009 remain unchanged. Existing rows receive revision 1 on their next verified update.
+
+V011 adds the authenticated owner/environment and observation timestamp to `ChainOperations`, replaces global idempotency with a member/network/contract/environment index, and adds transactional subject locks. Apply before configuring durable chain status/reconciliation. Old rows remain unowned and are excluded; do not assign them to a member or regenerate their digest without reviewing the original request and any broadcast evidence. Existing migrations are unchanged.

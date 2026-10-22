@@ -12,7 +12,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts', '../tests/contracts/**/*.test.ts'],
-    exclude: ['node_modules', 'dist', 'tests/network/**'],
+    exclude: ['node_modules', 'dist', 'tests/network/**', 'tests/spanner/**'],
     testTimeout: 60_000,
     hookTimeout: 60_000,
     coverage: { provider: 'v8', reporter: ['text', 'json'], include: ['src/**'] },

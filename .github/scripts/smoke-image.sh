@@ -9,6 +9,7 @@ case "$service" in
     ;;
   chain)
     docker run --rm --entrypoint node "$image" dist/scripts/verify-artifacts.mjs
+    docker run --rm --entrypoint node "$image" --input-type=module -e "await import('./dist/src/midnight/spanner-store.js'); await import('./dist/src/routes/operations.js'); console.log('chain operation runtime imports OK')"
     ;;
   agents)
     docker run --rm --entrypoint python "$image" -c "import pydantic, langchain, neo4j_graphrag, faiss, sentence_transformers; print('agent dependencies import OK')"

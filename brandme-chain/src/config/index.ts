@@ -16,6 +16,11 @@ const configSchema = z.object({
   corsOrigins: z.string().transform((val) => val.split(',')).default('http://localhost:3000'),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
+  chainServiceToken: z.string().min(32).max(256).optional(),
+  spannerProjectId: z.string().min(1).optional(),
+  spannerInstanceId: z.string().min(1).optional(),
+  spannerDatabaseId: z.string().min(1).optional(),
+
   // Midnight (primary rights network)
   midnightNetwork: z.enum(['undeployed', 'preview', 'preprod', 'mainnet']).default('preprod'),
   midnightContractAddress: z.string().regex(/^[0-9a-f]{64,}$/i).optional(),
@@ -32,6 +37,10 @@ for (const f of removedFlags) {
 }
 
 export const config = configSchema.parse({
+  chainServiceToken: process.env.CHAIN_SERVICE_TOKEN,
+  spannerProjectId: process.env.SPANNER_PROJECT_ID,
+  spannerInstanceId: process.env.SPANNER_INSTANCE_ID,
+  spannerDatabaseId: process.env.SPANNER_DATABASE_ID,
   port: process.env.PORT,
   environment: process.env.ENVIRONMENT,
   corsOrigins: process.env.CORS_ORIGINS,
@@ -42,5 +51,11 @@ export const config = configSchema.parse({
   midnightLocalNodePort: process.env.MIDNIGHT_LOCAL_NODE_PORT,
   midnightLocalIndexerPort: process.env.MIDNIGHT_LOCAL_INDEXER_PORT,
 });
+
+const storeSettings = [config.spannerProjectId, config.spannerInstanceId, config.spannerDatabaseId];
+if (storeSettings.some(Boolean) && (!storeSettings.every(Boolean) || !config.chainServiceToken)) {
+  throw new Error('Spanner operations require all three SPANNER_* IDs and CHAIN_SERVICE_TOKEN');
+}
+if (config.environment === 'production' && process.env.SPANNER_EMULATOR_HOST) throw new Error('production cannot use a Spanner emulator');
 
 export type ChainConfig = typeof config;
