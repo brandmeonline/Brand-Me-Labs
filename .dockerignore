@@ -8,6 +8,7 @@
 **/.compact
 **/.env
 **/.env.*
+**/gha-creds-*.json
 **/coverage
 **/*.log
 .codex

@@ -89,6 +89,14 @@ jobs:
   test-core:
     name: Test Core (Python/FastAPI)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
+        ports:
+          - 9010:9010
+    env:
+      SPANNER_EMULATOR_HOST: localhost:9010
     steps:
       - uses: actions/checkout@v4
 
@@ -100,22 +108,13 @@ jobs:
 
 
       - name: Install dependencies
-        working-directory: ./brandme-core
-        run: |
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt || echo "requirements-dev.txt not found"
+        run: pip install --require-hashes -r scripts/python/requirements.lock
 
+      - name: Require Spanner emulator
+        run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
 
-      - name: Lint
-        working-directory: ./brandme-core
-        run: |
-          ruff check . || echo "Ruff not configured yet"
-          black --check . || echo "Black not configured yet"
-
-
-      - name: Run tests
-        working-directory: ./brandme-core
-        run: pytest tests/ -v || echo "Tests not implemented yet"
+      - name: Test foundation, rights, and privacy
+        run: python -m pytest tests/foundation tests/test_rights.py tests/test_privacy.py tests/test_rights_cube_filter.py -q --timeout=120 -ra
 
   test-chain:
     name: Test Chain (Node/TypeScript)

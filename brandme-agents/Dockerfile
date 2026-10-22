@@ -68,6 +68,7 @@ CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8102", "--reload
 
 # Agentic orchestrator stage
 FROM base AS agentic
+HEALTHCHECK NONE
 WORKDIR /app/agentic
 ENV SERVICE_NAME=agentic
 ENV PORT=8200
