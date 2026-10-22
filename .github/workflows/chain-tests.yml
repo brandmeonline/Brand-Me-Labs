@@ -14,6 +14,7 @@ on:
       - 'tests/contracts/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.nvmrc'
       - '.github/workflows/chain-tests.yml'
   pull_request:
@@ -23,6 +24,7 @@ on:
       - 'tests/contracts/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.nvmrc'
       - '.github/workflows/chain-tests.yml'
   workflow_dispatch:
@@ -30,8 +32,8 @@ on:
 permissions:
   contents: read
 
-# The toolchain comes from the repo root, as in module-regression.yml: Node
-# from .nvmrc, pnpm from package.json "packageManager" (action-setup@v4 errors
+# The toolchain comes from the repo root: Node from .nvmrc,
+# pnpm from package.json "packageManager" (action-setup@v4 errors
 # out if `version:` is also set), and the single workspace lockfile.
 
 jobs:
@@ -90,6 +92,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Check the committed artifacts before the build copies them into dist.
+      # The unit job recompiles first, which could overwrite a damaged artifact.
+      - name: Verify committed contract artifacts
+        run: pnpm compact:verify
 
       - name: Build service
         run: pnpm build
