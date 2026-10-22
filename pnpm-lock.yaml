@@ -17,6 +17,9 @@ importers:
 
   brandme-chain:
     dependencies:
+      '@google-cloud/spanner':
+        specifier: 9.0.0
+        version: 9.0.0
       '@midnight-ntwrk/compact-js':
         specifier: 2.5.1
         version: 2.5.1

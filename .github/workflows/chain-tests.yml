@@ -12,6 +12,8 @@ on:
     paths:
       - 'brandme-chain/**'
       - 'tests/contracts/**'
+      - 'brandme-data/spanner/migrations/**'
+      - 'scripts/python/requirements.lock'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -22,6 +24,8 @@ on:
     paths:
       - 'brandme-chain/**'
       - 'tests/contracts/**'
+      - 'brandme-data/spanner/migrations/**'
+      - 'scripts/python/requirements.lock'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -69,6 +73,36 @@ jobs:
       # suites against the compiled contract.
       - name: Run Midnight lane gate
         run: pnpm test:midnight:local
+
+  durable-store:
+    name: Durable Operation Store
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
+        ports:
+          - 9010:9010
+    env:
+      SPANNER_EMULATOR_HOST: localhost:9010
+      BRANDME_MODE: development
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install locked dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          pip install --require-hashes -r scripts/python/requirements.lock
+      - name: Require Spanner emulator
+        run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
+      - name: Test durable operations against real migrations
+        run: pnpm --filter @brandme/chain test:spanner
 
   build-test:
     name: Build Test

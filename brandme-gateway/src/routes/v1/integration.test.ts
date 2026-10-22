@@ -30,7 +30,7 @@ function setup(options: { configured?: boolean; upstream?: (url: string) => Resp
       ? { status: 'available', network: 'preprod', reasons: [], badge: 'forged Mainnet badge' } : { items: [], job_id: jobId, network: 'mainnet' }));
   const cfg = loadConfig({ BRANDME_MODE: 'development', IDENTITY_PROVIDER: 'oidc', OIDC_ISSUER: issuer, OIDC_AUDIENCE: 'gateway',
     CHAIN_SERVICE_URL: 'http://chain.internal', ...(options.configured === false ? {} : {
-      RIGHTS_SERVICE_URL: 'http://rights.internal', PRIVACY_SERVICE_URL: 'http://privacy.internal', RIGHTS_SERVICE_TOKEN: token,
+      RIGHTS_SERVICE_URL: 'http://rights.internal', PRIVACY_SERVICE_URL: 'http://privacy.internal', RIGHTS_SERVICE_TOKEN: token, CHAIN_SERVICE_TOKEN: 'chain-' + token,
     }) });
   return { app: createApp(cfg, store, { jwks, fetchImpl: fetchImpl as typeof fetch }), fetchImpl };
 }
@@ -57,6 +57,20 @@ describe('mounted rights and My Data authentication boundary', () => {
     expect(call[1].headers).toMatchObject({ 'x-subject-ref': memberId, authorization: `Bearer ${token}` });
     expect(JSON.stringify(call)).not.toContain(bearer);
     expect(call[1].redirect).toBe('error');
+  });
+
+  it('uses the dedicated chain service credential for private operation status and reconciliation', async () => {
+    const { app, fetchImpl } = setup();
+    const bearer = await signed({ scope: 'rights:read rights:transfer' });
+    expect((await request(app).get(`/api/v1/chain/operations/${jobId}`).auth(bearer, { type: 'bearer' })).status).toBe(200);
+    expect((await request(app).post('/api/v1/ownership/submissions').auth(bearer, { type: 'bearer' })
+      .send({ operation_id: jobId, tx_id: 'bound-transaction-id', network: 'preprod' })).status).toBe(200);
+    const calls = (fetchImpl.mock.calls as unknown as [string, RequestInit][]).filter(([url]) => url.includes('/midnight/operations'));
+    expect(calls).toHaveLength(2);
+    for (const [url, init] of calls) {
+      expect(url).toContain('http://chain.internal/midnight/operations');
+      expect(init.headers).toMatchObject({ authorization: `Bearer chain-${token}`, 'x-subject-ref': memberId });
+    }
   });
 
   it('rejects authenticated clients without the required scope', async () => {

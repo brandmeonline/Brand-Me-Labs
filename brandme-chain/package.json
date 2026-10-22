@@ -1,7 +1,7 @@
 {
   "name": "@brandme/chain",
   "version": "1.0.0",
-  "description": "Brand.Me chain service \u2014 Midnight rights adapter (primary); optional Cardano anchor boundary (unverified, disabled)",
+  "description": "Brand.Me chain service — Midnight rights adapter (primary); optional Cardano anchor boundary (unverified, disabled)",
   "main": "dist/src/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:spanner": "vitest run --config vitest.spanner.config.ts",
     "test:integration": "vitest run tests/integration",
     "test:ui": "vitest --ui",
     "lint": "eslint src --ext .ts",
@@ -33,6 +34,7 @@
   "author": "Brand.Me, Inc.",
   "license": "PROPRIETARY",
   "dependencies": {
+    "@google-cloud/spanner": "9.0.0",
     "@midnight-ntwrk/compact-js": "2.5.1",
     "@midnight-ntwrk/compact-runtime": "0.16.0",
     "@midnight-ntwrk/dapp-connector-api": "4.0.1",

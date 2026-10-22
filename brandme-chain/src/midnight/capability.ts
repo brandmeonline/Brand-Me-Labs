@@ -57,9 +57,9 @@ export function midnightCapability(c: ChainConfig): MidnightCapability {
   if (!c.midnightContractAddress) reasons.push('no rights contract deployed/configured for this network');
   const writesAuthorized = false; // HTTP write orchestration is not configured yet.
   if (c.midnightNetwork === 'mainnet') reasons.push('Mainnet writes are not authorized in this build');
-  reasons.push('application operation submission and reconciliation are not configured');
-  if (c.environment !== 'development' && c.environment !== 'demo') {
-    reasons.push('durable operation store not configured (Spanner ChainOperations); writes disabled outside development');
+  reasons.push('member command submission is not configured');
+  if (!(c.chainServiceToken && c.spannerProjectId && c.spannerInstanceId && c.spannerDatabaseId)) {
+    reasons.push('durable operation status and reconciliation are not configured');
   }
   const status: CapabilityStatus =
     !endpoints || !verified || !c.midnightContractAddress ? 'unavailable' : reasons.length ? 'read_only' : 'available';

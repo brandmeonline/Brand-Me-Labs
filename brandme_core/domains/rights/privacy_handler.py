@@ -23,6 +23,9 @@ class RightsPrivacyHandler:
             DataCategory("rights.control_links", "rights", "Which digital entitlements you control", Supplier.SYSTEM,
                          ("member",), "While you control them", "Changes only through a transfer",
                          OnDelete.ERASE),
+            DataCategory("rights.operations", "rights", "Your app chain-operation history", Supplier.SYSTEM,
+                         ("member",), "Until deleted; pending broadcasts must be reconciled first",
+                         "Cannot change a submitted transaction", OnDelete.ERASE),
             DataCategory("rights.transfers", "rights", "Your transfer requests", Supplier.MEMBER, ("member", "recipient"),
                          "Until you delete them", "Cancel before acceptance", OnDelete.ERASE),
             DataCategory("rights.reprint_jobs", "rights", "Your reprint jobs", Supplier.MEMBER, ("member", "manufacturer"),
@@ -45,6 +48,12 @@ class RightsPrivacyHandler:
                 return ExportSection(category, [], references=refs,
                                      notes=["Public references only. Ownership secrets are exported separately from Wallet → Ownership backup."])
             return ExportSection(category, [{"asset_id": r[3], "entitlement_id": r[2], "status": r[5], "network": r[0]} for r in rows])
+        if category == "rights.operations":
+            rows = snap.execute_sql(
+                "SELECT operation_id, network, circuit, state, tx_id, created_at FROM ChainOperations WHERE owner_ref = @s",
+                params={"s": s}, param_types={"s": pt.STRING})
+            return ExportSection(category, [{"operation_id": r[0], "network": r[1], "circuit": r[2],
+                                            "state": r[3], "tx_id": r[4], "created_at": r[5]} for r in rows])
         if category == "rights.transfers":
             rows = snap.execute_sql("SELECT intent_id, entitlement_id, state, created_at FROM TransferIntents WHERE from_subject_ref = @s",
                                     params={"s": s}, param_types={"s": pt.STRING})
@@ -58,6 +67,18 @@ class RightsPrivacyHandler:
         if category == "rights.control_links":
             n = txn.execute_update("UPDATE RightsEntitlements SET controller_subject_ref = NULL WHERE controller_subject_ref = @s", params=p, param_types=t)
             return DeletionOutcome(category, n)
+        if category == "rights.operations":
+            rows = list(txn.execute_sql("SELECT operation_id, state FROM ChainOperations WHERE owner_ref = @s", params=p, param_types=t))
+            # Deleting a pre-broadcast row makes the guarded submitter's CAS fail.
+            # A broadcast may already have happened once Reconciling is persisted.
+            pending = [r for r in rows if r[1] in ("Reconciling", "Submitted", "Observed")]
+            deletable = [r[0] for r in rows if r[1] not in ("Reconciling", "Submitted", "Observed")]
+            for operation_id in deletable:
+                params, types = {"id": operation_id}, {"id": pt.STRING}
+                txn.execute_update("DELETE FROM ChainOperationSubjects WHERE operation_id = @id", params=params, param_types=types)
+                txn.execute_update("DELETE FROM ChainOperations WHERE operation_id = @id", params=params, param_types=types)
+            return DeletionOutcome(category, len(deletable), done=not pending,
+                                   detail="Pending broadcasts must be reconciled before their private operation links can be removed" if pending else None)
         if category == "rights.transfers":
             n = txn.execute_update("DELETE FROM TransferIntents WHERE from_subject_ref = @s", params=p, param_types=t)
             return DeletionOutcome(category, n)
@@ -70,4 +91,7 @@ class RightsPrivacyHandler:
         return DeletionOutcome(category, 0)
 
     def reapply_tombstone(self, txn: Any, t: Tombstone) -> int:
-        return self.delete(txn, SubjectContext(t.subject_ref, t.deletion_job_id, t.created_at), t.category).rows_affected
+        outcome = self.delete(txn, SubjectContext(t.subject_ref, t.deletion_job_id, t.created_at), t.category)
+        if not outcome.done:
+            raise RuntimeError("rights operation reconciliation is required before restore can serve data")
+        return outcome.rows_affected

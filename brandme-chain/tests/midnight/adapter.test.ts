@@ -16,7 +16,7 @@ import { withSecret } from '../../src/midnight/rights-contract.js';
 
 const CONTRACT = 'cc'.repeat(32);
 
-function harness(opts: { endpoints?: MidnightEndpoints; walletNetwork?: string; watch?: 'ok' | 'fail' | 'hang' } = {}) {
+function harness(opts: { endpoints?: MidnightEndpoints; walletNetwork?: string; watch?: 'ok' | 'fail' | 'hang'; submission?: 'timeout' | 'mismatch' } = {}) {
   const endpoints = opts.endpoints ?? preprodEndpoints('nightpreprodtestonly123');
   const sim = new RightsSimulator(endpoints.networkId);
   const issuer = new Actor('issuer');
@@ -33,7 +33,7 @@ function harness(opts: { endpoints?: MidnightEndpoints; walletNetwork?: string; 
       getEncryptionPublicKey: () => '00'.repeat(32) as never,
       balanceTx: async (tx) => tx as never,
     },
-    midnightProvider: { submitTx: async () => { const id = `tx-${submitted.length}`; submitted.push(id); return id; } },
+    midnightProvider: { submitTx: async () => { const id = `tx-${submitted.length}`; submitted.push(id); if (opts.submission === 'timeout') throw new Error('connection lost after broadcast'); return opts.submission === 'mismatch' ? 'unrelated-tx' : id; } },
     networkId: () => opts.walletNetwork ?? endpoints.networkId,
     accountId: () => account,
   };
@@ -63,7 +63,7 @@ function harness(opts: { endpoints?: MidnightEndpoints; walletNetwork?: string; 
     const actor = new Actor('exec', ps);
     sim.call(actor, o.circuitId as never, ...o.args); // throws on failed assert / missing witness — like local execution
     duringProve();
-    const balanced = await prov.walletProvider.balanceTx({});
+    const balanced = await prov.walletProvider.balanceTx({ identifiers: () => [`tx-${submitted.length}`] });
     const txId = await prov.midnightProvider.submitTx(balanced);
     return { txId };
   }) as never;
@@ -90,7 +90,7 @@ describe('RightsAdapter', () => {
     h.setFinalHead(10);
     done = await h.adapter.checkFinality(op.operationId);
     expect(done.state).toBe('Finalized');
-    expect(done.history.map((x) => x.state)).toEqual(['ReadyToProve', 'Proving', 'Submitted', 'Observed', 'Finalized']);
+    expect(done.history.map((x) => x.state)).toEqual(['ReadyToProve', 'Proving', 'Reconciling', 'Submitted', 'Observed', 'Finalized']);
   });
 
   it('replay of an operation on a different network is rejected before any state mutation', async () => {
@@ -111,7 +111,7 @@ describe('RightsAdapter', () => {
     await h.loadMember();
     const op = await h.adapter.prepare('proveControl', [h.eid, random32(), random32()]);
     const tampered = { ...op, args: [op.args[0]!, { t: 'bytes' as const, v: toHex(random32()) }, op.args[2]!] };
-    await h.store.update(tampered, op.version);
+    vi.spyOn(h.store, 'get').mockResolvedValue(tampered);
     await expect(h.adapter.execute(op.operationId)).rejects.toThrow(/digest mismatch/);
     expect(h.submitted).toHaveLength(0);
   });
@@ -183,6 +183,7 @@ describe('RightsAdapter', () => {
 
   it('chain-reported failure → Failed with evidence (app never projects it)', async () => {
     const h = harness({ watch: 'fail' });
+    h.setFinalHead(10);
     await h.loadMember();
     const op = await h.adapter.prepare('proveControl', [h.eid, random32(), random32()]);
     const r = await h.adapter.execute(op.operationId);
@@ -200,6 +201,44 @@ describe('RightsAdapter', () => {
     expect(h.submitted).toHaveLength(1);
     await expect(h.adapter.execute(op.operationId)).rejects.toThrow(/Reconciling/);
     expect(h.submitted).toHaveLength(1);
+  });
+
+  it.each(['timeout', 'mismatch'] as const)('keeps broadcast uncertainty reconcilable (%s), never retries', async (submission) => {
+    const h = harness({ submission });
+    await h.loadMember();
+    const op = await h.adapter.prepare('proveControl', [h.eid, random32(), random32()]);
+    const result = await h.adapter.execute(op.operationId);
+    expect(result.state).toBe('Reconciling');
+    expect(result.evidence?.txId).toBe('tx-0');
+    await expect(h.adapter.execute(op.operationId)).rejects.toThrow(/Reconciling/);
+    expect(h.submitted).toHaveLength(1);
+    h.setFinalHead(10);
+    expect((await h.adapter.observe(op.operationId)).state).toBe('Finalized');
+  });
+
+  it('rechecks wallet identity after the durable journal commit', async () => {
+    const h = harness(); await h.loadMember();
+    const op = await h.adapter.prepare('proveControl', [h.eid, random32(), random32()]);
+    const update = h.store.update.bind(h.store);
+    vi.spyOn(h.store, 'update').mockImplementation(async (next, version) => {
+      const saved = await update(next, version);
+      if (next.state === 'Reconciling') h.setAccount('changed-during-commit');
+      return saved;
+    });
+    expect((await h.adapter.execute(op.operationId)).state).toBe('Reconciling');
+    expect(h.submitted).toHaveLength(0);
+  });
+
+  it('refuses broadcast when recording the transaction identifier fails', async () => {
+    const h = harness(); await h.loadMember();
+    const op = await h.adapter.prepare('proveControl', [h.eid, random32(), random32()]);
+    const update = h.store.update.bind(h.store);
+    vi.spyOn(h.store, 'update').mockImplementation((next, version) => {
+      if (next.state === 'Reconciling') throw new Error('database unavailable before broadcast');
+      return update(next, version);
+    });
+    const result = await h.adapter.execute(op.operationId);
+    expect(result.state).toBe('Failed'); expect(h.submitted).toHaveLength(0);
   });
 
   it('blocks conflicting commands on the same subject while one is active', async () => {

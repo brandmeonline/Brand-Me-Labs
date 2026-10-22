@@ -7,13 +7,13 @@ import type { UpstreamClient, V1Deps } from '../routes/v1/chain';
 
 const principal = (req: Request): Principal | undefined => req.res?.locals.principal;
 
-function client(base: string | undefined, token: string | undefined, doFetch: typeof fetch, authenticated: boolean): UpstreamClient {
+function client(base: string | undefined, token: string | undefined, doFetch: typeof fetch, authenticated: boolean, timeoutMs = 5000): UpstreamClient {
   const send = async (method: string, path: string, body?: unknown, headers: Record<string, string> = {}) => {
     if (!base || (authenticated && !token)) throw problems.unavailable('This service is not configured.');
     try {
       // Only router-constructed headers cross this boundary. Never forward the caller's bearer token or subject header.
       const response = await doFetch(`${base.replace(/\/$/, '')}${path}`, {
-        method, redirect: 'error', signal: AbortSignal.timeout(5000),
+        method, redirect: 'error', signal: AbortSignal.timeout(timeoutMs),
         headers: { ...headers, 'content-type': 'application/json', ...(authenticated ? { authorization: `Bearer ${token}` } : {}) },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
@@ -58,6 +58,7 @@ export function rightsDependencies(cfg: GatewayConfig, doFetch: typeof fetch = f
         new ApiProblem(401, 'reauth_required', 'Sign in again', 'Recent authentication is required for this action.'));
     },
     upstream: {
+      operations: client(`${cfg.chainUrl.replace(/\/$/, '')}/midnight`, cfg.chainServiceToken, doFetch, true, 15000),
       chain: client(cfg.chainUrl, undefined, doFetch, false),
       rights: client(cfg.rightsServiceUrl, cfg.rightsServiceToken, doFetch, true),
       privacy: client(cfg.privacyServiceUrl, cfg.rightsServiceToken, doFetch, true),
