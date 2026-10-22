@@ -12,9 +12,12 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.syntax import Syntax
 import json
+import asyncio
+import uuid
+import httpx
 from typing import Optional
 
-from ..orchestrator.agents import run_scan_workflow
+from ..orchestrator.agents import run_agent_workflow
 from ..graph_rag import get_graph_rag
 from ..graph_db import get_knowledge_graph
 
@@ -49,7 +52,16 @@ def scan(
     ))
 
     with console.status("[bold green]Running agent workflow..."):
-        result = run_scan_workflow(tag, scanner_id)
+        async def run_scan():
+            async with httpx.AsyncClient() as client:
+                return await run_agent_workflow({
+                    "garment_tag": tag,
+                    "scanner_user_id": scanner_id,
+                    "request_id": str(uuid.uuid4()),
+                    "scan_id": str(uuid.uuid4()),
+                }, client)
+
+        result = asyncio.run(run_scan())
 
     # Display results
     console.print("\n[bold]Results:[/bold]")
@@ -58,12 +70,13 @@ def scan(
     table.add_column("Field")
     table.add_column("Value")
 
-    table.add_row("Decision", f"[{'green' if result['decision'] == 'allow' else 'red'}]{result['decision'].upper()}[/]")
+    decision = result.get("policy_decision") or "unavailable"
+    table.add_row("Decision", f"[{'green' if decision == 'allow' else 'red'}]{decision.upper()}[/]")
     table.add_row("Scope", result.get("resolved_scope", "N/A"))
     table.add_row("Relationship", result.get("relationship", "N/A"))
     table.add_row("Trust Score", f"{result.get('trust_score', 0):.2f}")
     table.add_row("Scan ID", result.get("scan_id", "N/A"))
-    table.add_row("Cardano TX", result.get("cardano_tx_hash", "N/A")[:16] + "...")
+    table.add_row("Cardano TX", (result.get("cardano_tx_hash") or "N/A")[:16])
     table.add_row("Policy Version", result.get("policy_version", "N/A"))
 
     console.print(table)
