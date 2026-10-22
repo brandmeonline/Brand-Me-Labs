@@ -103,6 +103,27 @@ describe('Spanner operation journal against real migrations', () => {
     expect((await store.update(transition(proving, 'Failed'), proving.version))!.state).toBe('Failed');
   });
 
+  it('rolls back the operation when its outbox event cannot be written', async () => {
+    let a = await store.create(op());
+    a = (await store.update(transition(a, 'Proving'), a.version))!;
+    a = (await store.update(transition(a, 'Reconciling', { evidence: { txId: 'bound-transaction', observedAt: new Date().toISOString() } }), a.version))!;
+    const getTransaction = db.getTransaction.bind(db);
+    const intercept = vi.spyOn(db, 'getTransaction').mockImplementationOnce(async () => {
+      const result = await getTransaction();
+      const tx = result[0]; const insert = tx.insert.bind(tx);
+      vi.spyOn(tx, 'insert').mockImplementation((table, rows) => {
+        if (table === 'OutboxEvents') throw new Error('outbox unavailable');
+        return insert(table, rows);
+      });
+      return result;
+    });
+    try {
+      await expect(store.update(transition(a, 'Observed', { evidence: { ...a.evidence!, blockHeight: 12,
+        blockHash: 'ab'.repeat(32), status: 'SucceedEntirely' } }), a.version)).rejects.toThrow(/outbox unavailable/);
+    } finally { intercept.mockRestore(); }
+    expect(await store.get(a.operationId)).toEqual(a);
+  });
+
   it('rejects stale work after a deletion tombstone without blocking fresh commands', async () => {
     const a = op();
     await db.table('DeletionTombstones').insert({ subject_ref: a.ownerRef, category: 'rights.operations',

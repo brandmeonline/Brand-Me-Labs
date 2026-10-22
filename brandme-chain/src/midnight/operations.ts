@@ -209,6 +209,8 @@ export function validateOperation(op: ChainOperation, initial = false): void {
   if (['Submitted', 'Observed', 'Finalized', 'HandoverPending', 'HandoverAcknowledged'].includes(op.state) && !op.evidence?.txId) throw new Error('missing transaction evidence');
   if (['Observed', 'Finalized', 'HandoverPending', 'HandoverAcknowledged'].includes(op.state) &&
       (!op.evidence?.blockHash || op.evidence.blockHeight === undefined || op.evidence.status !== 'SucceedEntirely')) throw new Error('missing successful block evidence');
+  if (op.state === 'Failed' && op.evidence && (!op.evidence.blockHash || op.evidence.blockHeight === undefined ||
+      !['FailEntirely', 'FailFallible'].includes(op.evidence.status ?? ''))) throw new Error('missing rejected block evidence');
   if ((['Finalized', 'HandoverPending', 'HandoverAcknowledged'].includes(op.state) || op.state === 'Failed' && op.evidence) &&
       (op.evidence?.finalizedHeadHeight === undefined || op.evidence.finalizedHeadHeight < op.evidence.blockHeight!)) throw new Error('missing finality evidence');
 }

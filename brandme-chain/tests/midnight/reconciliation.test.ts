@@ -91,6 +91,12 @@ describe('authenticated operation status and reconciliation', () => {
     finality.isFinal.mockResolvedValue({ final: true, finalizedHeadHeight: 12 });
     expect((await (await reconcile()).json()).state).toBe('failed');
   });
+  it('refuses terminal failure without complete rejected block evidence', async () => {
+    const current = (await store.get(id))!;
+    await expect(store.update(transition(current, 'Failed', { evidence: { ...current.evidence!,
+      status: 'FailEntirely', finalizedHeadHeight: 12 } }), current.version)).rejects.toThrow(/block evidence/);
+    expect((await store.get(id))!.state).toBe('Reconciling');
+  });
   it('records rejected chain outcomes and hides provider secrets on errors', async () => {
     lookup.lookup.mockRejectedValue(new Error(`provider failed ${token}`));
     const response = await reconcile(); expect(response.status).toBe(503); expect(await response.text()).not.toContain(token);
