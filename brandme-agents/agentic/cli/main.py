@@ -16,6 +16,7 @@ import asyncio
 import uuid
 import httpx
 from typing import Optional
+from brandme_core.config import enforce_boot_guard
 
 from ..orchestrator.agents import run_agent_workflow
 from ..graph_rag import get_graph_rag
@@ -27,6 +28,14 @@ app = typer.Typer(
     add_completion=False
 )
 console = Console()
+
+
+@app.callback()
+def configure():
+    # The legacy agents still contain simulated policy/identity logic. Fixing
+    # their packaging must not make that trust path available in strict modes.
+    enforce_boot_guard("agentic")
+    console.print("[yellow]Development agent workflow: policy and identity are simulated.[/yellow]")
 
 
 # ============================================================

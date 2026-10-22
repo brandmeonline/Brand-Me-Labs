@@ -13,6 +13,7 @@ case "$service" in
   agents)
     docker run --rm --entrypoint python "$image" -c "import pydantic, langchain, neo4j_graphrag, faiss, sentence_transformers; print('agent dependencies import OK')"
     docker run --rm "$image"
+    docker run --rm -e BRANDME_MODE=production --entrypoint python "$image" -c "from typer.testing import CliRunner; from agentic.cli.main import app; from brandme_core.config import TrustPathViolation; r = CliRunner().invoke(app, ['scan', '--tag', 'test', '--scanner-id', 'test']); assert isinstance(r.exception, TrustPathViolation), r.exception; print('legacy simulated workflow refused in production')"
     ;;
   core)
     docker run --rm --entrypoint python "$image" -m pip check
