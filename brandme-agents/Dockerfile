@@ -74,7 +74,10 @@ ENV SERVICE_NAME=agentic
 ENV PORT=8200
 COPY brandme-agents/agentic/requirements.txt .
 USER root
-RUN pip install --no-cache-dir torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu && pip install --no-cache-dir -r requirements.txt && pip check
+# wheel is build tooling, not a runtime dependency. Remove it after installation:
+# the current wheel requires packaging >=24 while this LangChain line needs <24.
+# Do not downgrade wheel to a vulnerable release to satisfy that conflict.
+RUN pip install --no-cache-dir torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu && pip install --no-cache-dir -r requirements.txt && pip uninstall --yes wheel && pip check
 USER brandme
 WORKDIR /app
 CMD ["python", "-m", "agentic.cli.main", "--help"]
