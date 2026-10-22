@@ -46,31 +46,33 @@ function toRow(op: ChainOperation, environment: string): Row {
   };
 }
 
+export async function runSpannerTransaction<T>(database: Database, fn: (tx: Transaction) => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    const [tx] = await database.getTransaction();
+    try {
+      const result = await fn(tx);
+      await tx.commit();
+      return result;
+    } catch (error) {
+      await tx.rollback().catch(() => undefined);
+      if ((error as { code?: number }).code !== 10 || attempt >= 7) throw error;
+    } finally { tx.end(); }
+    await new Promise((resolve) => setTimeout(resolve, randomInt(20, Math.min(1000, 50 * 2 ** attempt))));
+  }
+}
+
 export class SpannerOperationStore implements OperationStore {
-  constructor(readonly database: Database, private readonly environment: string) {
+  constructor(readonly database: Database, readonly environment: string) {
     if (!['demo', 'development', 'sandbox', 'production'].includes(environment)) throw new Error('invalid operation environment');
   }
 
-  /** Fail startup if V011 is missing; never silently substitute memory storage. */
+  /** Fail startup if V012 is missing; never silently substitute memory storage. */
   async initialize(): Promise<void> {
-    await this.database.run('SELECT environment, owner_ref, observed_at FROM ChainOperations LIMIT 0');
+    await this.database.run('SELECT environment, owner_ref, observed_at, reconciliation_lease_id, reconciliation_lease_until, reconciliation_attempts, projection_completed_at, projection_outcome FROM ChainOperations LIMIT 0');
     await this.database.run('SELECT operation_id FROM ChainOperationSubjects LIMIT 0');
   }
 
-  private async rw<T>(fn: (tx: Transaction) => Promise<T>): Promise<T> {
-    for (let attempt = 0; ; attempt++) {
-      const [tx] = await this.database.getTransaction();
-      try {
-        const result = await fn(tx);
-        await tx.commit();
-        return result;
-      } catch (error) {
-        await tx.rollback().catch(() => undefined);
-        if ((error as { code?: number }).code !== 10 || attempt >= 7) throw error;
-      } finally { tx.end(); }
-      await new Promise((resolve) => setTimeout(resolve, randomInt(20, Math.min(1000, 50 * 2 ** attempt))));
-    }
-  }
+  private rw<T>(fn: (tx: Transaction) => Promise<T>): Promise<T> { return runSpannerTransaction(this.database, fn); }
 
   private async read(reader: Database | Transaction, id: string): Promise<ChainOperation | null> {
     const [rows] = await reader.run({

@@ -15,6 +15,7 @@
  */
 
 import {
+  ContractState,
   createCircuitContext,
   createConstructorContext,
   sampleContractAddress,
@@ -67,6 +68,13 @@ export class RightsSimulator {
 
   ledger(): RightsLedger {
     return rightsLedger(this.state);
+  }
+
+  /** Serialized real runtime ledger for bounded indexer decoder tests. */
+  serializedState(): string {
+    const state = new ContractState();
+    state.data = this.state;
+    return Buffer.from(state.serialize()).toString('hex');
   }
 
   /** Opaque snapshot of public state, for "state unchanged" assertions. */

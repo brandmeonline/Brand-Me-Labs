@@ -1,5 +1,6 @@
 /** Read-only network reconciliation. This component has no wallet or prover. */
 import { z } from 'zod';
+import { indexerQuery } from './indexer-query.js';
 import type { FinalityOracle } from './adapter.js';
 import type { MidnightEndpoints } from './network.js';
 import { transition, type ChainEvidence, type ChainOperation, type OperationStore } from './operations.js';
@@ -23,25 +24,8 @@ const txSchema = z.object({
 export class IndexerTransactionLookup implements TransactionLookup {
   constructor(private readonly endpoints: MidnightEndpoints, private readonly doFetch: typeof fetch = fetch) {}
   async lookup(txId: string): Promise<ChainEvidence | null> {
-    const res = await this.doFetch(this.endpoints.indexerHttp, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, redirect: 'error',
-      signal: AbortSignal.timeout(2000), body: JSON.stringify({ query, variables: { offset: { identifier: txId } } }),
-    });
-    if (!res.ok) { await res.body?.cancel(); throw new Error('indexer unavailable'); }
-    const reader = res.body?.getReader();
-    if (!reader) throw new Error('empty indexer response');
-    const chunks: Uint8Array[] = []; let bytes = 0;
-    try {
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        bytes += value.byteLength;
-        if (bytes > 1024 * 1024) throw new Error('indexer response too large');
-        chunks.push(value);
-      }
-    } finally { await reader.cancel(); }
     const body = z.object({ data: z.object({ transactions: z.array(z.unknown()).max(256) }), errors: z.array(z.unknown()).optional() })
-      .parse(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      .parse(await indexerQuery(this.endpoints.indexerHttp, query, { offset: { identifier: txId } }, this.doFetch));
     if (body.errors?.length) throw new Error('indexer query failed');
     if (!body.data.transactions.length) return null;
     // An offset can return additional transactions. Never attribute an unrelated row to this operation.
@@ -67,20 +51,23 @@ export class OperationReconciler {
       throw new Error('operation outside reconciler scope');
     }
     if (!['Submitted', 'Reconciling', 'Observed'].includes(op.state) || !op.evidence?.txId) return op;
-    if (op.state !== 'Observed') {
-      const evidence = await this.o.lookup.lookup(op.evidence.txId);
-      if (!evidence) {
-        return op.state === 'Submitted' ? this.save(op, transition(op, 'Reconciling')) : op;
-      }
-      if (evidence.txId !== op.evidence.txId) throw new Error('transaction identifier mismatch');
-      if (evidence.status !== 'SucceedEntirely') {
-        if (!['FailEntirely', 'FailFallible'].includes(evidence.status ?? '')) throw new Error('invalid chain status');
-        const finality = await this.o.finality.isFinal(evidence.blockHeight!, evidence.blockHash!);
-        if (!finality.final) return op.state === 'Submitted' ? this.save(op, transition(op, 'Reconciling')) : op;
-        return this.save(op, transition(op, 'Failed', { evidence: { ...evidence, finalizedHeadHeight: finality.finalizedHeadHeight }, failureReason: `chain_${evidence.status}` }));
-      }
-      op = await this.save(op, transition(op, 'Observed', { evidence }));
+    // Re-query even an observed transaction: an unfinalized block may have been reorganized.
+    const evidence = await this.o.lookup.lookup(op.evidence.txId);
+    if (!evidence) {
+      return op.state !== 'Reconciling' ? this.save(op, transition(op, 'Reconciling')) : op;
     }
+    if (evidence.txId !== op.evidence.txId) throw new Error('transaction identifier mismatch');
+    if (op.state === 'Observed' && (evidence.blockHash !== op.evidence.blockHash ||
+        evidence.blockHeight !== op.evidence.blockHeight || evidence.status !== op.evidence.status)) {
+      return this.save(op, transition(op, 'Reconciling'));
+    }
+    if (evidence.status !== 'SucceedEntirely') {
+      if (!['FailEntirely', 'FailFallible'].includes(evidence.status ?? '')) throw new Error('invalid chain status');
+      const finality = await this.o.finality.isFinal(evidence.blockHeight!, evidence.blockHash!);
+      if (!finality.final) return op.state === 'Submitted' ? this.save(op, transition(op, 'Reconciling')) : op;
+      return this.save(op, transition(op, 'Failed', { evidence: { ...evidence, finalizedHeadHeight: finality.finalizedHeadHeight }, failureReason: `chain_${evidence.status}` }));
+    }
+    if (op.state !== 'Observed') op = await this.save(op, transition(op, 'Observed', { evidence }));
     if (op.state !== 'Observed') return op; // A concurrent reconciler may already have finished.
     const e = op.evidence!;
     const finality = await this.o.finality.isFinal(e.blockHeight!, e.blockHash!);

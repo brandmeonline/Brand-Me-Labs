@@ -130,3 +130,21 @@ describe('bounded provider lookups', () => {
       .toEqual({ final: false, finalizedHeadHeight: 15 });
   });
 });
+
+describe('unfinalized block reorganization', () => {
+  it('rechecks observed transactions and recovers when their block changes', async () => {
+    finality.isFinal.mockResolvedValue({ final: false, finalizedHeadHeight: 11 });
+    expect((await reconciler.reconcile(id)).state).toBe('Observed');
+    lookup.lookup.mockResolvedValue({ ...evidence, blockHash: 'cc'.repeat(32), blockHeight: 13 });
+    expect((await reconciler.reconcile(id)).state).toBe('Reconciling');
+    finality.isFinal.mockResolvedValue({ final: true, finalizedHeadHeight: 15 });
+    expect(await reconciler.reconcile(id)).toMatchObject({ state: 'Finalized', evidence: { blockHash: 'cc'.repeat(32), blockHeight: 13 } });
+  });
+  it('does not finalize an observed transaction that disappears from the indexer', async () => {
+    finality.isFinal.mockResolvedValue({ final: false, finalizedHeadHeight: 11 });
+    expect((await reconciler.reconcile(id)).state).toBe('Observed');
+    lookup.lookup.mockResolvedValue(null);
+    expect((await reconciler.reconcile(id)).state).toBe('Reconciling');
+    expect(finality.isFinal).toHaveBeenCalledTimes(1);
+  });
+});

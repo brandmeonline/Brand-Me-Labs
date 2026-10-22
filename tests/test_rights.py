@@ -24,7 +24,7 @@ from brandme_core.domains.rights.projection import FinalizedObservation, Project
 from brandme_core.domains.rights.reprint import IllegalReprintTransition, ReprintService, blinded_job_commitment  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V001_identity.sql", ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql", ROOT / "brandme-data/spanner/migrations/V010_rights_projection_version.sql", ROOT / "brandme-data/spanner/migrations/V011_chain_operation_store.sql"]
+MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V001_identity.sql", ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql", ROOT / "brandme-data/spanner/migrations/V010_rights_projection_version.sql", ROOT / "brandme-data/spanner/migrations/V011_chain_operation_store.sql", ROOT / "brandme-data/spanner/migrations/V012_chain_reconciliation.sql"]
 
 
 def _emulator_up() -> bool:
@@ -258,3 +258,17 @@ def test_operation_export_omits_arguments_and_restore_refuses_unresolved_broadca
     tombstone = Tombstone(owner, "rights.operations", str(uuid.uuid4()), str(uuid.uuid4()), (), now())
     with pytest.raises(RuntimeError, match="reconciliation"):
         db.run_in_transaction(lambda tx: handler.reapply_tombstone(tx, tombstone))
+
+
+def test_operation_deletion_waits_for_finalized_public_projection(db):
+    owner = str(uuid.uuid4())
+    operation_id = _stored_operation(db, owner, "Finalized")
+    reg = PrivacyRegistry(); reg.register(RightsPrivacyHandler())
+    my = MyDataService(db, _Store(), reg, environment="development")
+    job = my.request_deletion(owner, now(), ["rights.operations"])
+    assert my.run_deletion(job)["completed_at"] is None
+    with db.batch() as batch:
+        batch.update("ChainOperations", columns=("operation_id", "projection_completed_at"), values=[(operation_id, now())])
+    assert my.run_deletion(job)["completed_at"] is not None
+    with db.snapshot() as snapshot:
+        assert list(snapshot.execute_sql("SELECT COUNT(*) FROM ChainOperations"))[0][0] == 0

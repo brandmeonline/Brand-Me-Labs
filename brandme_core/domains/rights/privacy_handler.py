@@ -68,17 +68,19 @@ class RightsPrivacyHandler:
             n = txn.execute_update("UPDATE RightsEntitlements SET controller_subject_ref = NULL WHERE controller_subject_ref = @s", params=p, param_types=t)
             return DeletionOutcome(category, n)
         if category == "rights.operations":
-            rows = list(txn.execute_sql("SELECT operation_id, state FROM ChainOperations WHERE owner_ref = @s", params=p, param_types=t))
+            rows = list(txn.execute_sql("SELECT operation_id, state, projection_completed_at FROM ChainOperations WHERE owner_ref = @s", params=p, param_types=t))
             # Deleting a pre-broadcast row makes the guarded submitter's CAS fail.
             # A broadcast may already have happened once Reconciling is persisted.
-            pending = [r for r in rows if r[1] in ("Reconciling", "Submitted", "Observed")]
-            deletable = [r[0] for r in rows if r[1] not in ("Reconciling", "Submitted", "Observed")]
+            pending = [r for r in rows if r[1] in ("Reconciling", "Submitted", "Observed") or
+                       (r[1] in ("Finalized", "HandoverPending", "HandoverAcknowledged") and r[2] is None)]
+            pending_ids = {r[0] for r in pending}
+            deletable = [r[0] for r in rows if r[0] not in pending_ids]
             for operation_id in deletable:
                 params, types = {"id": operation_id}, {"id": pt.STRING}
                 txn.execute_update("DELETE FROM ChainOperationSubjects WHERE operation_id = @id", params=params, param_types=types)
                 txn.execute_update("DELETE FROM ChainOperations WHERE operation_id = @id", params=params, param_types=types)
             return DeletionOutcome(category, len(deletable), done=not pending,
-                                   detail="Pending broadcasts must be reconciled before their private operation links can be removed" if pending else None)
+                                   detail="Pending broadcasts must be reconciled and public projections completed before their private operation links can be removed" if pending else None)
         if category == "rights.transfers":
             n = txn.execute_update("DELETE FROM TransferIntents WHERE from_subject_ref = @s", params=p, param_types=t)
             return DeletionOutcome(category, n)
