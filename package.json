@@ -10,7 +10,10 @@
     "lint": "pnpm -r lint",
     "format": "pnpm -r format",
     "type-check": "pnpm -r type-check",
-    "clean": "pnpm -r clean && rm -rf node_modules"
+    "clean": "pnpm -r clean && rm -rf node_modules",
+    "assets:generate": "node scripts/assets/generate.mjs",
+    "assets:validate": "node scripts/assets/validate.mjs",
+    "assets:review": "node scripts/assets/review.mjs"
   },
   "keywords": [
     "brandme",
@@ -22,8 +25,36 @@
   "author": "Brand.Me, Inc.",
   "license": "PROPRIETARY",
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=20.0.0 <25",
+    "pnpm": "10.34.6"
   },
-  "packageManager": "pnpm@8.15.0"
+  "packageManager": "pnpm@10.34.6",
+  "pnpm": {
+    "packageExtensions": {
+      "@react-three/fiber@9.4.0": {
+        "peerDependencies": {
+          "@types/react": "^19.0.0"
+        },
+        "peerDependenciesMeta": {
+          "@types/react": {
+            "optional": true
+          }
+        }
+      },
+      "next@15.5.28": {
+        "peerDependencies": {
+          "@types/react": "^19.0.0",
+          "@types/react-dom": "^19.0.0"
+        },
+        "peerDependenciesMeta": {
+          "@types/react": {
+            "optional": true
+          },
+          "@types/react-dom": {
+            "optional": true
+          }
+        }
+      }
+    }
+  }
 }
