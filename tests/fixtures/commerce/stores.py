@@ -1,8 +1,9 @@
 """Commerce store fixtures: every parametrized test runs on the in-memory store and on Spanner.
 
 The Spanner variant uses one emulator database per test module, migrated with the
-repository's migration runner (V001 foundation outbox + V006/V007), and wipes
-the commerce and outbox tables before each test. Without a reachable emulator
+repository's migration runner (every reserved migration, including V001's outbox,
+V006/V007/V015 and the V009 privacy tables), and wipes the commerce, outbox and
+My Data tables before each test. Without a reachable emulator
 the Spanner variant is skipped with an explicit reason, never reported as passed.
 """
 
@@ -24,6 +25,8 @@ WIPE_ORDER = (
     "ApprovalChallenges", "PurchaseApprovals", "MemberSurfaceKeys", "Ap2UsedMandates", "PurchaseOperations",
     "DelegationBudgetEntries", "AgentDelegations", "CommerceIdempotencyKeys", "ProviderWebhookReceipts",
     "OutboxEvents",
+    # My Data state (V009), so privacy-orchestrator tests start clean.
+    "DeletionSteps", "DeletionJobs", "DeletionTombstones", "ProcessingFreezes", "ExportJobs", "RestoreRuns",
 )
 
 

@@ -13,7 +13,7 @@ from datetime import timedelta
 
 import pytest
 
-from brandme_core.domains.base import Principal, data_categories
+from brandme_core.domains.base import Principal
 from brandme_core.domains.commerce.delegation import AssistanceMode
 from brandme_core.domains.commerce.errors import (
     ApprovalInvalid, DelegationConflict, DelegationInvalid, Forbidden, InvalidRequest,
@@ -248,15 +248,6 @@ def test_event_payload_outside_schema_is_refused(w):
             w.store.run(lambda tx: w.svc._event(tx, "commerce.quote.ready", "CheckoutQuote", qid, 1,
                                                 w.member, payload))
     assert w.store.outbox() == []
-
-
-def test_commerce_data_categories_registered():
-    import brandme_core.domains.commerce.service  # noqa: F401
-    cats = {c.name: c for c in data_categories() if c.domain == "commerce"}
-    assert set(cats) == {"commerce.agent_grants", "commerce.carts_quotes", "commerce.orders"}
-    assert "AgentDelegations" in cats["commerce.agent_grants"].tables
-    assert "Orders" in cats["commerce.orders"].tables
-    assert "control" in cats["commerce.orders"].retention  # truthful about merchant-held records
 
 
 def test_revoked_agent_cannot_read(w):

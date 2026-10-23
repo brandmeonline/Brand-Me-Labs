@@ -18,7 +18,7 @@ from __future__ import annotations
 import threading
 import uuid
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Tuple, TypeVar
 
 from brandme_core.events import EventEnvelope
 
@@ -115,6 +115,8 @@ class InMemoryCommerceStore(QueryMixin):
         self._lock = threading.RLock()
         self._tables: Dict[str, Dict[Any, Any]] = {t: {} for t in TABLES}
         self._depth = 0
+        # In-memory stand-in for the V009 ProcessingFreezes rows: (member_id, category or "*").
+        self._frozen: Set[Tuple[str, str]] = set()
 
     def run(self, fn: Callable[["InMemoryCommerceStore"], T]) -> T:
         """Atomic unit of work; a nested call joins the outer one."""
@@ -160,6 +162,18 @@ class InMemoryCommerceStore(QueryMixin):
             if table == "surface_keys":
                 return [(k[0], k[1], v) for k, v in self._tables[table].items() if pred(k)]
             return [r for r in self._tables[table].values() if pred(r)]
+
+    # -- My Data processing guard ------------------------------------------
+    def freeze(self, member_id: str, category: str = "*") -> None:
+        self._frozen.add((member_id, category))
+
+    def unfreeze(self, member_id: str, category: str = "*") -> None:
+        self._frozen.discard((member_id, category))
+
+    def assert_processing_allowed(self, member_id: str, category: str, basis_time: datetime) -> None:
+        from brandme_core.domains.privacy.deletion import ProcessingFrozenError
+        if (member_id, category) in self._frozen or (member_id, "*") in self._frozen:
+            raise ProcessingFrozenError(f"processing frozen for {category}")
 
     # -- outbox ------------------------------------------------------------
     def emit(self, event: EventEnvelope) -> None:

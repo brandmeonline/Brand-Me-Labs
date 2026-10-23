@@ -590,6 +590,12 @@ class _SpannerTx(_Reader):
         event.validate()  # fail inside the callback, before commit
         self.events.append(event)
 
+    def assert_processing_allowed(self, member_id: str, category: str, basis_time: datetime) -> None:
+        """My Data guard, read in this transaction (race-free against a committing deletion request)."""
+        from brandme_core.domains.privacy.deletion import assert_processing_allowed
+        self.touched = True
+        assert_processing_allowed(self._r, member_id, category, basis_time)
+
 
 class SpannerCommerceStore(QueryMixin):
     def __init__(self, database) -> None:
@@ -604,6 +610,14 @@ class SpannerCommerceStore(QueryMixin):
             write_events(transaction, tx.events)
             return result
         return self.database.run_in_transaction(attempt)
+
+    @staticmethod
+    def within(transaction, fn: Callable[[_SpannerTx], T]) -> T:
+        """Run ``fn`` in a caller-owned read/write transaction (the privacy orchestrator's), writing its events there."""
+        tx = _SpannerTx(transaction)
+        result = fn(tx)
+        write_events(transaction, tx.events)
+        return result
 
     def get(self, table: str, key: Any) -> Any:
         with self.database.snapshot(multi_use=True) as snap:
@@ -637,23 +651,6 @@ class SpannerCommerceStore(QueryMixin):
 COMMERCE_AGGREGATES = ("AgentDelegation", "CheckoutQuote", "PurchaseOperation", "Order")
 
 
-MEMBER_TABLES = {
-    "AgentDelegations": "member_id", "DelegationBudgetEntries": None, "Carts": "member_id", "CartLines": None,
-    "CheckoutQuotes": "member_id", "QuoteLines": None, "ApprovalChallenges": "member_id",
-    "PurchaseApprovals": "member_id", "MemberSurfaceKeys": "member_id", "PurchaseOperations": "member_id",
-    "Orders": "member_id", "OrderLines": None, "ReturnRequests": "member_id", "CommerceIdempotencyKeys": "member_id",
-}
-# Child/ledger rows are selected through their parent's member column.
-_CHILD_SQL = {
-    "DelegationBudgetEntries": """SELECT e.* FROM DelegationBudgetEntries e JOIN AgentDelegations d
-        ON e.delegation_id = d.delegation_id WHERE d.member_id = @m""",
-    "CartLines": "SELECT l.* FROM CartLines l JOIN Carts c ON l.cart_id = c.cart_id WHERE c.member_id = @m",
-    "QuoteLines": """SELECT l.* FROM QuoteLines l JOIN CheckoutQuotes q ON l.quote_id = q.quote_id
-        WHERE q.member_id = @m""",
-    "OrderLines": "SELECT l.* FROM OrderLines l JOIN Orders o ON l.order_id = o.order_id WHERE o.member_id = @m",
-}
-
-
 def _plain(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.isoformat().replace("+00:00", "Z")
@@ -662,16 +659,3 @@ def _plain(value: Any) -> Any:
     if isinstance(value, list):
         return [_plain(v) for v in value]
     return value
-
-
-def iter_member_rows(database, member_id: str, tables: Sequence[str]) -> Iterable[Dict[str, Any]]:
-    """The member's rows in ``tables`` as JSON-safe dicts, for My Data export."""
-    with database.snapshot(multi_use=True) as snap:
-        for table in tables:
-            col = MEMBER_TABLES[table]
-            sql = _CHILD_SQL[table] if col is None else f"SELECT * FROM {table} WHERE {col} = @m"
-            result = snap.execute_sql(sql, params={"m": member_id}, param_types={"m": param_types.STRING})
-            rows = list(result)
-            names = [f.name for f in result.fields]
-            for r in rows:
-                yield {"table": table, "row": {n: _plain(v) for n, v in zip(names, r)}}

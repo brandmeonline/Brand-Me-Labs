@@ -26,9 +26,11 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple
 
 import rfc8785
 
@@ -36,20 +38,22 @@ from brandme_core.domains.providers.contracts import (
     CartLineRequest, CheckoutProvider, OrderObservation, OrderProvider, ProviderError,
     ProviderErrorKind, ReturnsProvider, SubmitRequest,
 )
+from brandme_core.domains.privacy.deletion import ProcessingFrozenError
 from brandme_core.domains.providers.registry import ProviderRegistry, RegistryError
 from brandme_core.events import EventEnvelope
 
-from . import data_categories as _data_categories  # noqa: F401  (registers My Data categories)
 from . import events as _events  # noqa: F401  (registers commerce event types)
 from .delegation import (
     DEFAULT_EXCLUDED_CATEGORIES, AgentDelegation, AssistanceMode, DelegationLimits, build_delegation,
 )
 from .errors import (
     ApprovalInvalid, BudgetExceeded, CapabilityUnavailable, CommerceError, DelegationConflict,
-    DelegationInvalid, Forbidden, IdempotencyConflict, InvalidQuote, InvalidRequest, NotFound, VersionConflict,
+    DelegationInvalid, Forbidden, IdempotencyConflict, InvalidQuote, InvalidRequest, NotFound, ProcessingRestricted,
+    VersionConflict,
 )
 from .money import Money, sum_money
 from .principal import Principal, is_agent, is_first_party, meets_assurance, validate_principal
+from .privacy_handler import AGENT_GRANTS, CARTS_QUOTES, ORDERS
 from .quote import MATERIALITY_RULE, CheckoutQuote, QuoteLine
 from .records import (
     IN_FLIGHT, ApprovalChallenge, BudgetEntry, Cart, IdempotencyRecord, Order, OrderLine,
@@ -67,6 +71,20 @@ _PAYMENT_RANK = {"unknown": 0, "authorized": 1, "captured": 2, "partially_refund
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+# When the data a write is based on was read: the start of a queued assistant task, else "now".
+_PROCESSING_BASIS: ContextVar[Optional[datetime]] = ContextVar("commerce_processing_basis", default=None)
+
+
+@contextmanager
+def processing_basis(at: datetime) -> Iterator[None]:
+    """Writes made inside this block are refused if a deletion of their category committed after ``at``."""
+    token = _PROCESSING_BASIS.set(at)
+    try:
+        yield
+    finally:
+        _PROCESSING_BASIS.reset(token)
 
 
 def _digest(doc: Any) -> str:
@@ -97,6 +115,20 @@ class CommerceService:
             actor_ref=actor if isinstance(actor, str) else actor.actor_ref,
             correlation_id=correlation_id or new_id(), privacy_class=privacy_class, payload=payload,
             occurred_at=self.clock()))
+
+    def _guard(self, tx: Any, member_id: str, category: str) -> None:
+        """My Data processing guard for a member or agent write, read inside that write's transaction.
+
+        Refused while a deletion of the member's data in ``category`` is pending (or after an
+        account deletion), and after a category deletion newer than the processing basis.
+        Provider settlement writes (acks, reconciliation, webhooks, observations) are not
+        guarded: they record what a provider did with the member's money and are retained
+        financial evidence of ``commerce.orders``.
+        """
+        try:
+            tx.assert_processing_allowed(member_id, category, _PROCESSING_BASIS.get() or self.clock())
+        except ProcessingFrozenError:
+            raise ProcessingRestricted("this data is being deleted or its processing is restricted") from None
 
     def bind(self, principal: Principal) -> Principal:
         """Resolve who is acting: first-party sessions pass through; agents get their delegation."""
@@ -204,6 +236,7 @@ class CommerceService:
                              limits=limits, now=now, expires_at=expires_at)
 
         def _tx(tx):
+            self._guard(tx, principal.member_id, AGENT_GRANTS)
             # One active grant per (member, client): an agent's authority is never ambiguous.
             if self._active_delegation(tx, principal.member_id, client_id, now) is not None:
                 raise DelegationConflict("this client already has an active delegation; revoke it first")
@@ -261,6 +294,7 @@ class CommerceService:
                     lines=tuple(lines), revision=1, created_by_client=principal.client_id or "")
 
         def _tx(tx):
+            self._guard(tx, principal.member_id, CARTS_QUOTES)
             if scope:
                 winner = tx.get("idempotency", scope)
                 if winner is not None:  # lost a race: return the winner
@@ -295,6 +329,7 @@ class CommerceService:
         conn.adapter.replace_cart(cart.provider_cart_ref, list(lines))
 
         def _tx(tx):
+            self._guard(tx, principal.member_id, CARTS_QUOTES)
             current = tx.get("carts", cart_id)
             if current.revision != if_match:
                 raise VersionConflict("cart revision changed", current_version=current.revision)
@@ -347,6 +382,7 @@ class CommerceService:
         ).seal()
 
         def _tx(tx):
+            self._guard(tx, principal.member_id, CARTS_QUOTES)
             current = tx.get("carts", cart.id)
             if current.revision != cart.revision:
                 raise VersionConflict("cart changed while quoting", current_version=current.revision)
@@ -383,6 +419,7 @@ class CommerceService:
             provider_idempotency_key="bm-" + secrets.token_hex(16), created_at=now, updated_at=now)
 
         def _tx(tx):
+            self._guard(tx, principal.member_id, ORDERS)
             tx.put("operations", op.id, op)
             self._event(tx, "commerce.purchase.approval_requested", "PurchaseOperation", op.id, 1, principal,
                         {"operation_id": op.id, "quote_id": quote.id})
@@ -406,7 +443,10 @@ class CommerceService:
                                quote_hash=quote.quote_hash, nonce_hash=_nonce_hash(nonce),
                                delegation_ref=op.delegation_id, issued_at=now,
                                expires_at=min(quote.expires_at, now + APPROVAL_CHALLENGE_TTL))
-        self.store.run(lambda tx: tx.put("challenges", ch.id, ch))
+        def _tx(tx):
+            self._guard(tx, principal.member_id, CARTS_QUOTES)
+            tx.put("challenges", ch.id, ch)
+        self.store.run(_tx)
         return replace(ch, nonce=nonce)  # the plaintext nonce leaves once, to the trusted surface
 
     def approve(self, principal: Principal, *, operation_id: str, challenge_id: str, nonce: str,
@@ -420,6 +460,7 @@ class CommerceService:
         now = self.clock()
 
         def _tx(tx):
+            self._guard(tx, principal.member_id, ORDERS)
             op = self._own(tx, "operations", operation_id, principal)
             ch = self._own(tx, "challenges", challenge_id, principal)
             quote = self._quote(tx, principal, op.quote_id)
@@ -473,7 +514,10 @@ class CommerceService:
             raise CommerceError("surface key must be a public EC P-256 JWK", code="invalid_surface_key")
         kid = key.thumbprint()
         public = key.export_public(as_dict=True)
-        self.store.run(lambda tx: tx.put("surface_keys", (principal.member_id, kid), public))
+        def _tx(tx):
+            self._guard(tx, principal.member_id, ORDERS)
+            tx.put("surface_keys", (principal.member_id, kid), public)
+        self.store.run(_tx)
         return kid
 
     def approve_with_ap2(self, principal: Principal, *, operation_id: str, checkout_mandate: str,
@@ -514,6 +558,7 @@ class CommerceService:
                                   code="ap2_" + getattr(last, "code", "no_surface_key"))
 
         def _tx(tx):
+            self._guard(tx, principal.member_id, ORDERS)
             if tx.get("ap2_used", result.checkout_mandate_digest) is not None:
                 raise ApprovalInvalid("mandate already used", code="ap2_replay")
             current = tx.get("operations", operation_id)
@@ -548,6 +593,7 @@ class CommerceService:
         now = self.clock()
 
         def _tx(tx):
+            self._guard(tx, principal.member_id, ORDERS)
             if scope:
                 winner = tx.get("idempotency", scope)
                 if winner is not None:  # a concurrent duplicate committed first
@@ -881,6 +927,7 @@ class CommerceService:
                                status="handoff" if handoff else "return_requested", requested_at=now)
 
         def _intent(tx):
+            self._guard(tx, principal.member_id, ORDERS)
             if scope:
                 winner = tx.get("idempotency", scope)
                 if winner is not None:
@@ -1067,14 +1114,10 @@ class CommerceService:
                 "outcome_unknown": unknown, "stale_submitting": stale, "webhooks_pending": hooks}
 
     # ----------------------------------------------------------- privacy jobs
-    # Called by the My Data deletion workflow (``data_categories``), which has already
-    # reauthenticated the member. Financial evidence — orders, the approvals and
-    # grants behind them, and anything still settling — is retained (ch.03 §8).
+    # Driven by the My Data deletion orchestrator through ``privacy_handler``; it has already
+    # reauthenticated the member. Financial evidence — orders, the approvals and grants behind
+    # them, and anything still settling — is retained (ch.03 §8).
     PRIVACY_ACTOR = "system:privacy"
-
-    @staticmethod
-    def _is_evidence(op: PurchaseOperation) -> bool:
-        return op.order_id is not None or op.state in IN_FLIGHT
 
     def _cancel_unsent(self, tx: Any, op: PurchaseOperation, reason: str) -> PurchaseOperation:
         if op.state in ("draft", "quoting", "awaiting_approval", "approved"):
@@ -1083,75 +1126,95 @@ class CommerceService:
             self._void_approval(tx, op.approval_id)
         return op
 
+    # Each category's erasure is self-contained: the privacy orchestrator runs categories in
+    # request order and replays tombstones in any order. Counts: ``settling`` rows wait for a
+    # provider outcome (the job stays open); ``kept`` rows are permanent evidence of an order.
+    def _erase_agent_grants(self, tx: Any, member_id: str) -> Dict[str, int]:
+        counts = {"revoked": 0, "deleted": 0, "kept": 0, "settling": 0}
+        for d in tx.for_member("delegations", member_id):
+            if d.revoked_at is None:
+                d = replace(d, revoked_at=self.clock(), version=d.version + 1)
+                tx.put("delegations", d.id, d)
+                for op in tx.operations_for_delegation(d.id):
+                    self._cancel_unsent(tx, op, "member_data_deleted")
+                self._event(tx, "commerce.delegation.revoked", "AgentDelegation", d.id, d.version,
+                            self.PRIVACY_ACTOR, {"delegation_id": d.id})
+                counts["revoked"] += 1
+            ops = tx.operations_for_delegation(d.id)
+            if any(op.state in IN_FLIGHT for op in ops):
+                counts["settling"] += 1
+                continue
+            if any(op.order_id is not None for op in ops):
+                counts["kept"] += 1  # purchase authority behind an order stays, revoked
+                continue
+            for e in tx.budget_entries(d.id):
+                tx.delete("reservations", (e.delegation_id, e.id))
+            tx.delete("delegations", d.id)
+            counts["deleted"] += 1
+        return counts
+
+    def _erase_carts_and_quotes(self, tx: Any, member_id: str) -> Dict[str, int]:
+        counts = {"carts": 0, "quotes": 0, "challenges": 0, "kept": 0, "settling": 0}
+        held: Dict[str, str] = {}  # quote_id -> "kept" | "settling"
+        for op in tx.for_member("operations", member_id):
+            op = self._cancel_unsent(tx, op, "member_data_deleted")
+            if op.state in IN_FLIGHT:
+                held[op.quote_id] = "settling"
+            elif op.order_id is not None:
+                held.setdefault(op.quote_id, "kept")
+        for c in tx.for_member("carts", member_id):
+            tx.delete("carts", c.id)
+            counts["carts"] += 1
+        for _, q in tx.for_member("quotes", member_id):
+            if q.id in held:
+                counts[held[q.id]] += 1
+            else:
+                tx.delete("quotes", q.id)
+                counts["quotes"] += 1
+        for ch in tx.for_member("challenges", member_id):
+            tx.delete("challenges", ch.id)
+            counts["challenges"] += 1
+        return counts
+
+    def _erase_order_side_data(self, tx: Any, member_id: str) -> Dict[str, int]:
+        """Orders are kept; device keys, order-less purchases and spent idempotency keys go."""
+        counts = {"surface_keys": 0, "operations": 0, "approvals": 0, "idempotency": 0,
+                  "retained": 0, "settling": 0}
+        for key in tx.surface_key_ids(member_id):
+            tx.delete("surface_keys", key)
+            counts["surface_keys"] += 1
+        guarded = set()  # purchases still settling with a provider
+        for op in tx.for_member("operations", member_id):
+            op = self._cancel_unsent(tx, op, "member_data_deleted")
+            if op.state in IN_FLIGHT:
+                guarded.add(op.id)
+                counts["settling"] += 1
+                continue
+            if op.order_id is not None:
+                counts["retained"] += 1
+                continue
+            if op.approval_id:
+                tx.delete("approvals", op.approval_id)
+                counts["approvals"] += 1
+            tx.delete("operations", op.id)
+            counts["operations"] += 1
+        for rec in tx.for_member("idempotency", member_id):
+            # Never expire a key while a remote side effect can still settle (ch.03 §6).
+            if rec.result_ref not in guarded:
+                tx.delete("idempotency", rec.scope)
+                counts["idempotency"] += 1
+        return counts
+
+    # Store-level entry points (the in-memory store and ops tooling); the privacy handler
+    # runs the same functions inside the orchestrator's transaction.
     def erase_agent_grants(self, member_id: str) -> Dict[str, int]:
-        def _tx(tx):
-            revoked = deleted = 0
-            for d in tx.for_member("delegations", member_id):
-                if d.revoked_at is None:
-                    d = replace(d, revoked_at=self.clock(), version=d.version + 1)
-                    tx.put("delegations", d.id, d)
-                    for op in tx.operations_for_delegation(d.id):
-                        self._cancel_unsent(tx, op, "member_data_deleted")
-                    self._event(tx, "commerce.delegation.revoked", "AgentDelegation", d.id, d.version,
-                                self.PRIVACY_ACTOR, {"delegation_id": d.id})
-                    revoked += 1
-                if any(self._is_evidence(op) for op in tx.operations_for_delegation(d.id)):
-                    continue  # purchase authority behind an order stays, revoked
-                for e in tx.budget_entries(d.id):
-                    tx.delete("reservations", (e.delegation_id, e.id))
-                tx.delete("delegations", d.id)
-                deleted += 1
-            return {"revoked": revoked, "deleted": deleted}
-        return self.store.run(_tx)
+        return self.store.run(lambda tx: self._erase_agent_grants(tx, member_id))
 
     def erase_carts_and_quotes(self, member_id: str) -> Dict[str, int]:
-        def _tx(tx):
-            kept_quotes = set()
-            for op in tx.for_member("operations", member_id):
-                op = self._cancel_unsent(tx, op, "member_data_deleted")
-                if self._is_evidence(op):
-                    kept_quotes.add(op.quote_id)
-            counts = {"carts": 0, "quotes": 0, "challenges": 0}
-            for c in tx.for_member("carts", member_id):
-                tx.delete("carts", c.id)
-                counts["carts"] += 1
-            for _, q in tx.for_member("quotes", member_id):
-                if q.id not in kept_quotes:
-                    tx.delete("quotes", q.id)
-                    counts["quotes"] += 1
-            for ch in tx.for_member("challenges", member_id):
-                tx.delete("challenges", ch.id)
-                counts["challenges"] += 1
-            return counts
-        return self.store.run(_tx)
+        return self.store.run(lambda tx: self._erase_carts_and_quotes(tx, member_id))
 
     def erase_order_side_data(self, member_id: str) -> Dict[str, int]:
-        """Orders are kept; device keys, order-less operations and spent idempotency keys go."""
-        def _tx(tx):
-            counts = {"surface_keys": 0, "operations": 0, "approvals": 0, "idempotency": 0}
-            for key in tx.surface_key_ids(member_id):
-                tx.delete("surface_keys", key)
-                counts["surface_keys"] += 1
-            guarded = set()  # operations still settling with a provider
-            for op in tx.for_member("operations", member_id):
-                if op.state in IN_FLIGHT:
-                    guarded.add(op.id)
-                if self._is_evidence(op):
-                    continue
-                if op.state not in ("rejected", "cancelled"):
-                    continue  # still open: cancelled by the carts/quotes category, not silently dropped
-                if op.approval_id:
-                    tx.delete("approvals", op.approval_id)
-                    counts["approvals"] += 1
-                tx.delete("operations", op.id)
-                counts["operations"] += 1
-            for rec in tx.for_member("idempotency", member_id):
-                # Never expire a key while a remote side effect can still settle (ch.03 §6).
-                if rec.result_ref not in guarded:
-                    tx.delete("idempotency", rec.scope)
-                    counts["idempotency"] += 1
-            return counts
-        return self.store.run(_tx)
+        return self.store.run(lambda tx: self._erase_order_side_data(tx, member_id))
 
     def get_operation(self, principal: Principal, operation_id: str) -> PurchaseOperation:
         principal, _ = self._authorize(principal, "commerce:research")

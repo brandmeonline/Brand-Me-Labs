@@ -67,5 +67,10 @@ class IdempotencyConflict(CommerceError, base.IdempotencyConflict):
     code, status = "idempotency_key_reused", 409
 
 
+class ProcessingRestricted(CommerceError):
+    """A member or agent write refused by the My Data processing guard (deletion pending or restricted)."""
+    code, status = "processing_restricted", 409
+
+
 class CapabilityUnavailable(CommerceError):
     code, status, retryable = "capability_unavailable", 503, False
