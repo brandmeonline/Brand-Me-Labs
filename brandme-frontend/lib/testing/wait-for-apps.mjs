@@ -1,4 +1,4 @@
-const urls=[process.env.BRANDME_CONSUMER_URL,process.env.BRANDME_CONSOLE_URL].filter(Boolean)
+const urls=[process.env.BRANDME_GATEWAY_HEALTH_URL,process.env.BRANDME_CONSUMER_URL,process.env.BRANDME_CONSOLE_URL].filter(Boolean)
 for(const url of urls){
   let ready=false
   for(let attempt=0;attempt<60;attempt++){

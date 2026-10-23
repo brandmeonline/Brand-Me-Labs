@@ -55,7 +55,7 @@ async function audit(page) {
       result.violations.map((v) => ({
         id: v.id,
         impact: v.impact,
-        targets: v.nodes.map((n) => n.target),
+        targets: v.nodes.map((n) => ({target:n.target,summary:n.failureSummary})),
       })),
     ),
   )
@@ -99,11 +99,11 @@ try {
               'Framework error overlay',
             )
             await noOverflow(page)
-            await audit(page)
             await page.screenshot({
               path: path.join(output, `${app}-${width}x${height}-light.png`),
               fullPage: true,
             })
+            await audit(page)
             await page.emulateMedia({ colorScheme: 'dark' })
             await page.waitForFunction(
               () =>
@@ -112,11 +112,11 @@ try {
                   .trim() === '#161817',
             )
             await noOverflow(page)
-            await audit(page)
             await page.screenshot({
               path: path.join(output, `${app}-${width}x${height}-dark.png`),
               fullPage: true,
             })
+            await audit(page)
             assert(errors.length === 0, errors.join('\n'))
           } finally {
             await context.close()

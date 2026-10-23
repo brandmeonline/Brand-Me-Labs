@@ -40,9 +40,11 @@ export function command<T>(path: string, body: unknown = {}, options: {
   const execute = async () => {
     if (version !== accountVersion) throw new GatewayError(409, 'account_changed', 'Your account changed. Review the action again.')
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (path !== '/session/dev') {
+    try {
       const session = await read<{ csrf_token: string }>('/session')
       headers['X-CSRF-Token'] = session.csrf_token
+    } catch (error) {
+      if (!(path === '/session/dev' && error instanceof GatewayError && error.status === 401)) throw error
     }
     if (version !== accountVersion) throw new GatewayError(409, 'account_changed', 'Your account changed. Review the action again.')
     if (options.version !== undefined) headers['If-Match'] = `"${options.version}"`

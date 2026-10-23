@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { LookIllustration } from '@/components/editorial/look-illustration'
 import { PageHeading } from '@/components/shell/page-heading'
+import { TodayData } from '@/features/persona/today'
 export const metadata: Metadata = { title: 'Today' }
 export default function TodayPage() {
   return (
@@ -17,6 +18,7 @@ export default function TodayPage() {
         title="Make room for you."
         description="A considered look. A fresh perspective. A place to begin."
       />
+      <TodayData />
       <section className="bm-look-feature" aria-labelledby="look-title">
         <figure className="bm-look-stage">
           <div className="bm-stage-top">

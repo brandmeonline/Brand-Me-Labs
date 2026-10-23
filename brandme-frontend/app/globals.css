@@ -259,9 +259,8 @@ figure {
   color: var(--bm-canvas);
   border: 1px solid var(--bm-ink);
   text-align: center;
-  transition:
-    background var(--bm-button-duration),
-    color var(--bm-button-duration);
+  /* Theme foreground/background switch together; intermediate colors lose contrast. */
+  transition: box-shadow var(--bm-button-duration);
 }
 .bm-button:hover {
   background: var(--bm-accent);
