@@ -20,6 +20,10 @@ export interface UpstreamClient {
   post(path: string, body: unknown, headers?: Record<string, string>): Promise<UpstreamResponse>;
 }
 
+export interface ExportClient extends UpstreamClient {
+  download(path: string, headers: Record<string, string>): Promise<{ bytes: Buffer; sha256: string }>;
+}
+
 export interface V1Deps {
   /** Rejects with 403 unless the token carries the scope (ch.03 scopes). */
   requireScope(scope: 'rights:read' | 'rights:transfer' | 'rights:reprint' | 'privacy:manage'): RequestHandler;
@@ -34,6 +38,7 @@ export interface V1Deps {
     chain: UpstreamClient;     // brandme-chain service
     rights: UpstreamClient;    // rights domain service (brandme_core.domains.rights)
     privacy: UpstreamClient;   // My Data service (brandme_core.domains.privacy)
+    exports?: ExportClient;   // independently deployed, selected-category export API
   };
 }
 

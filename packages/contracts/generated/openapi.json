@@ -6470,7 +6470,7 @@
         "tags": [
           "privacy"
         ],
-        "summary": "Rights category inventory with explicit partial coverage and unavailable write capabilities",
+        "summary": "Rights category inventory with explicit partial coverage and checked export capability",
         "x-brandme-owner": "foundation",
         "x-brandme-status": "implemented",
         "responses": {
@@ -6840,9 +6840,9 @@
         "tags": [
           "privacy"
         ],
-        "summary": "requestExport",
+        "summary": "Request an explicit selected-category rights export after recent authentication",
         "x-brandme-owner": "foundation",
-        "x-brandme-status": "reserved",
+        "x-brandme-status": "implemented",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -6861,8 +6861,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "description": "Shape defined by the owning lane before implementation"
+                  "$ref": "#/components/schemas/SelectedRightsExportStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected or export restricted/not ready",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -6889,6 +6898,336 @@
           },
           "409": {
             "description": "Idempotency key reused with a different request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid domain transition or field",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Throttled",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Provider or dependency unavailable; safe retry or handoff",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectedRightsExportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/exports/capability": {
+      "get": {
+        "operationId": "getMyExportCapability",
+        "tags": [
+          "privacy"
+        ],
+        "summary": "getMyExportCapability",
+        "x-brandme-owner": "foundation",
+        "x-brandme-status": "implemented",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelectedRightsExportCapability"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected or export restricted/not ready",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden by object policy or mode",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Throttled",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Provider or dependency unavailable; safe retry or handoff",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/exports/{jobId}": {
+      "get": {
+        "operationId": "getMyExportStatus",
+        "tags": [
+          "privacy"
+        ],
+        "summary": "getMyExportStatus",
+        "x-brandme-owner": "foundation",
+        "x-brandme-status": "implemented",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelectedRightsExportStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected or export restricted/not ready",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden by object policy or mode",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not visible to caller",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected or export restricted/not ready",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Throttled",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Provider or dependency unavailable; safe retry or handoff",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/exports/{jobId}/download": {
+      "get": {
+        "operationId": "downloadMyExport",
+        "tags": [
+          "privacy"
+        ],
+        "summary": "Download authenticated JSON attachment after recent authentication; expires 24 hours after request",
+        "x-brandme-owner": "foundation",
+        "x-brandme-status": "implemented",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelectedRightsExportPackage"
+                }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "JSON attachment with opaque job filename"
+              },
+              "X-Export-SHA256": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "description": "SHA-256 of the exact downloaded bytes"
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "private, no-store"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected or export restricted/not ready",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden by object policy or mode",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not visible to caller",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected or export restricted/not ready",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Export expired",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9183,7 +9522,10 @@
             "properties": {
               "export": {
                 "type": "string",
-                "const": "unavailable"
+                "enum": [
+                  "unavailable",
+                  "selected_categories"
+                ]
               },
               "deletion": {
                 "type": "string",
@@ -9320,6 +9662,754 @@
           "requested_at",
           "completed_at",
           "outcomes"
+        ]
+      },
+      "SelectedRightsExportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "rights.control_links",
+                "rights.operations",
+                "rights.transfers",
+                "rights.reprint_jobs",
+                "rights.chain_commitments"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "categories"
+        ]
+      },
+      "SelectedRightsExportCapability": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "available"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "demo",
+              "development",
+              "sandbox",
+              "production"
+            ]
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "undeployed",
+              "preview",
+              "preprod"
+            ]
+          },
+          "contract_address": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "rights.control_links",
+                "rights.operations",
+                "rights.transfers",
+                "rights.reprint_jobs",
+                "rights.chain_commitments"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "uniqueItems": true
+          },
+          "full_account": {
+            "type": "boolean",
+            "const": false
+          },
+          "selected_categories_only": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "status",
+          "environment",
+          "network",
+          "contract_address",
+          "categories",
+          "full_account",
+          "selected_categories_only"
+        ]
+      },
+      "SelectedRightsExportStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "requested",
+              "building",
+              "ready",
+              "failed",
+              "expired"
+            ]
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "rights.control_links",
+                "rights.operations",
+                "rights.transfers",
+                "rights.reprint_jobs",
+                "rights.chain_commitments"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "uniqueItems": true
+          },
+          "coverage": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "domains": {
+                "type": "array",
+                "const": [
+                  "rights"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "full_account": {
+                "type": "boolean",
+                "const": false
+              },
+              "selected_categories_only": {
+                "type": "boolean",
+                "const": true
+              }
+            },
+            "required": [
+              "domains",
+              "full_account",
+              "selected_categories_only"
+            ]
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "demo",
+              "development",
+              "sandbox",
+              "production"
+            ]
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "undeployed",
+              "preview",
+              "preprod"
+            ]
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "package_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "package_bytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 2097152
+          },
+          "failure_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              null,
+              "export_failed",
+              "export_too_large",
+              "export_restricted",
+              "attempts_exhausted"
+            ]
+          },
+          "download_available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "job_id",
+          "state",
+          "categories",
+          "coverage",
+          "environment",
+          "network",
+          "requested_at",
+          "expires_at",
+          "completed_at",
+          "package_sha256",
+          "package_bytes",
+          "failure_code",
+          "download_available"
+        ]
+      },
+      "SelectedRightsExportPackage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema": {
+            "type": "string",
+            "const": "brandme.selected-rights-export/v1"
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subject_ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "demo",
+              "development",
+              "sandbox",
+              "production"
+            ]
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "coverage": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "domains": {
+                "type": "array",
+                "const": [
+                  "rights"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "full_account": {
+                "type": "boolean",
+                "const": false
+              },
+              "selected_categories_only": {
+                "type": "boolean",
+                "const": true
+              }
+            },
+            "required": [
+              "domains",
+              "full_account",
+              "selected_categories_only"
+            ]
+          },
+          "sections": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "const": "rights.control_links"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "network": {
+                            "type": "string",
+                            "enum": [
+                              "undeployed",
+                              "preview",
+                              "preprod"
+                            ]
+                          },
+                          "contract_address": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "entitlement_id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "asset_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
+                          "epoch": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+$"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "last_tx_id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "network",
+                          "contract_address",
+                          "entitlement_id",
+                          "asset_id",
+                          "epoch",
+                          "status",
+                          "last_tx_id"
+                        ]
+                      },
+                      "maxItems": 1000
+                    },
+                    "scope": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "network": {
+                          "type": "string",
+                          "enum": [
+                            "undeployed",
+                            "preview",
+                            "preprod"
+                          ]
+                        },
+                        "contract_address": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "required": [
+                        "network",
+                        "contract_address"
+                      ]
+                    },
+                    "public_references_only": {
+                      "type": "boolean",
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "records",
+                    "scope",
+                    "public_references_only"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "const": "rights.chain_commitments"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "network": {
+                            "type": "string",
+                            "enum": [
+                              "undeployed",
+                              "preview",
+                              "preprod"
+                            ]
+                          },
+                          "contract_address": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "entitlement_id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "epoch": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+$"
+                          },
+                          "last_tx_id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "network",
+                          "contract_address",
+                          "entitlement_id",
+                          "epoch",
+                          "last_tx_id"
+                        ]
+                      },
+                      "maxItems": 1000
+                    },
+                    "scope": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "network": {
+                          "type": "string",
+                          "enum": [
+                            "undeployed",
+                            "preview",
+                            "preprod"
+                          ]
+                        },
+                        "contract_address": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "required": [
+                        "network",
+                        "contract_address"
+                      ]
+                    },
+                    "public_references_only": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "records",
+                    "scope",
+                    "public_references_only"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "const": "rights.operations"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "operation_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "network": {
+                            "type": "string",
+                            "enum": [
+                              "undeployed",
+                              "preview",
+                              "preprod"
+                            ]
+                          },
+                          "contract_address": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "circuit": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string"
+                          },
+                          "tx_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "operation_id",
+                          "network",
+                          "contract_address",
+                          "circuit",
+                          "state",
+                          "tx_id",
+                          "created_at"
+                        ]
+                      },
+                      "maxItems": 1000
+                    },
+                    "scope": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "network": {
+                          "type": "string",
+                          "enum": [
+                            "undeployed",
+                            "preview",
+                            "preprod"
+                          ]
+                        },
+                        "contract_address": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "required": [
+                        "network",
+                        "contract_address"
+                      ]
+                    },
+                    "public_references_only": {
+                      "type": "boolean",
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "records",
+                    "scope",
+                    "public_references_only"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "const": "rights.transfers"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "intent_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "network": {
+                            "type": "string",
+                            "enum": [
+                              "undeployed",
+                              "preview",
+                              "preprod"
+                            ]
+                          },
+                          "entitlement_id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "state": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "intent_id",
+                          "network",
+                          "entitlement_id",
+                          "state",
+                          "created_at"
+                        ]
+                      },
+                      "maxItems": 1000
+                    },
+                    "scope": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "network": {
+                          "type": "string",
+                          "enum": [
+                            "undeployed",
+                            "preview",
+                            "preprod"
+                          ]
+                        },
+                        "contract_address": {
+                          "type": "null"
+                        }
+                      },
+                      "required": [
+                        "network",
+                        "contract_address"
+                      ]
+                    },
+                    "public_references_only": {
+                      "type": "boolean",
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "records",
+                    "scope",
+                    "public_references_only"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "const": "rights.reprint_jobs"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "job_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "network": {
+                            "type": "string",
+                            "enum": [
+                              "undeployed",
+                              "preview",
+                              "preprod"
+                            ]
+                          },
+                          "entitlement_id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "state": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+$"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "job_id",
+                          "network",
+                          "entitlement_id",
+                          "state",
+                          "quantity",
+                          "created_at"
+                        ]
+                      },
+                      "maxItems": 1000
+                    },
+                    "scope": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "network": {
+                          "type": "string",
+                          "enum": [
+                            "undeployed",
+                            "preview",
+                            "preprod"
+                          ]
+                        },
+                        "contract_address": {
+                          "type": "null"
+                        }
+                      },
+                      "required": [
+                        "network",
+                        "contract_address"
+                      ]
+                    },
+                    "public_references_only": {
+                      "type": "boolean",
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "records",
+                    "scope",
+                    "public_references_only"
+                  ]
+                }
+              ]
+            }
+          },
+          "ownership_backup": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "job_id",
+          "subject_ref",
+          "environment",
+          "captured_at",
+          "coverage",
+          "sections",
+          "ownership_backup"
         ]
       }
     },

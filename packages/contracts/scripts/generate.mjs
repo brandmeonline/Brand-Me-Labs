@@ -89,6 +89,12 @@ function operation(e) {
   if (e.body) op.responses['422'] = problem('Invalid domain transition or field');
   op.responses['429'] = problem('Throttled');
   op.responses['503'] = problem('Provider or dependency unavailable; safe retry or handoff');
+  for (const code of e.errors ?? []) op.responses[String(code)] ??= problem(code === 410 ? 'Export expired' : 'Request rejected or export restricted/not ready');
+  if (e.exportDownload) op.responses[ok].headers = {
+    'Content-Disposition': { schema: { type: 'string' }, description: 'JSON attachment with opaque job filename' },
+    'X-Export-SHA256': { schema: { type: 'string', pattern: '^[0-9a-f]{64}$' }, description: 'SHA-256 of the exact downloaded bytes' },
+    'Cache-Control': { schema: { type: 'string', const: 'private, no-store' } },
+  };
   if (e.public === true) op.security = [];
   return op;
 }

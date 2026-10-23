@@ -45,7 +45,8 @@ export function createApp(cfg: GatewayConfig, store: IdentityStore, extra: Parti
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Region', 'X-CSRF-Token', 'If-Match', 'Idempotency-Key'],
-      exposedHeaders: ['X-Request-Id', 'X-Brandme-Environment', 'X-Brandme-Simulation', 'ETag', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
+      exposedHeaders: ['X-Request-Id', 'X-Brandme-Environment', 'X-Brandme-Simulation', 'ETag', 'X-RateLimit-Limit', 'X-RateLimit-Remaining',
+        'X-Export-SHA256', 'Content-Disposition'],
       maxAge: 86400,
     }),
   );

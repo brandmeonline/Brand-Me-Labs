@@ -102,7 +102,7 @@ describe.skipIf(!up)('gateway and running rights read backend', () => {
     expect(r.status).toBe(200); expect(r.body.coverage).toEqual({ domains: ['rights'], full_account: false });
     for (const path of ['/api/v1/me/exports', '/api/v1/me/deletion']) {
       const r = await request(app).post(path).auth(bearer, { type: 'bearer' })
-        .send(path.endsWith('/deletion') ? { scope: 'account', confirm: true } : {});
+        .set('Idempotency-Key', randomUUID()).send(path.endsWith('/deletion') ? { scope: 'account', confirm: true } : { categories: ['rights.control_links'] });
       expect(r.status).toBe(503); expect(r.body.code).toBe('dependency_unavailable');
     }
   });

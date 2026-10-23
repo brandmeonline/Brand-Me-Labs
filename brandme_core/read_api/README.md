@@ -107,12 +107,16 @@ it does not prevent inspecting persisted read data or enable writes.
 
 My Data inventory covers the five categories registered by
 `RightsPrivacyHandler`. `coverage.full_account` is **false**. Export and deletion
-capabilities are **unavailable**, and command requests return 503 without
+capabilities in this read service are **unavailable**, and command requests return 503 without
 creating jobs. A readable historical deletion job is not evidence that a new
-account deletion can be accepted. Other domains still need real handler coverage,
-authenticated private export storage/download/expiry and orphan cleanup,
-idempotent request acceptance, serialized durable deletion execution and fenced
-external callbacks. All writers need privacy guards.
+account deletion can be accepted. The separate `brandme_core.privacy_exports` API
+and worker now provide explicitly selected rights exports, durable idempotent
+requests, private storage/download, expiry and recurring cleanup. The gateway
+advertises `export: selected_categories` only when that deployment's capability
+is verified. See `../privacy_exports/README.md`. Other domains still need real
+handler coverage; full-account deletion needs serialized durable execution,
+fenced external callbacks and operational metadata retention handling. All
+writers need privacy guards.
 
 Deploying this process, its database permissions, ingress and gateway settings
 is still a target-environment task. Rights commands, member wallet integration,
