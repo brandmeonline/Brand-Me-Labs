@@ -6,7 +6,6 @@ commits rows + outbox events in one transaction via the foundation framework.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from google.cloud.spanner_v1 import COMMIT_TIMESTAMP, KeySet

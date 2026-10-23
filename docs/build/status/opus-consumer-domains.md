@@ -279,3 +279,118 @@ The emulator caught two DDL bugs during this stage, both fixed: `decided_at` was
 | Exit: placement quaternions finite/normalized, positions asset-bounded | passed (domain + integration + HTTP NaN/Infinity literals) | `test_wardrobe_placement.py`, `test_placement_versioning_slot_uniqueness_and_validation`, `test_create_place_and_reject_non_finite_json` |
 | Exit: concurrent moves into one slot | passed (4 threads → 1 commit, 3 `slot_occupied`) | `test_concurrent_moves_into_one_slot_commit_once` |
 | Exit: placement survives refresh and theme change | passed (integration; fresh service instance) | `test_theme_change_remaps_semantically_and_survives_reload` |
+
+## Stage 5 — Social: friendships, blocks, five-minute decisions, shares, notifications (W05 backend, part 1) — 2026-10-23
+**Migration `V004_social.sql`** (applies from empty after V001–V003 through the runner). Member aggregates are interleaved in `Members`:
+- `Relationships`: two mirrored rows per pair (`requested_out`/`requested_in`/`accepted`), so each member lists only their own circle
+- `MemberBlocks`: directional rows; a block in either direction blocks interaction
+- `Decisions`:
+  - `CHECK duration_seconds = 300`
+  - `opened_at`/`closes_at` are server times
+  - unique `DecisionsById`, plus `DecisionsByStateClose` for the closer
+- `DecisionAudience`: one row per recipient (the primary key enforces one invitation per recipient per request)
+- `DecisionResponses`: one row per respondent and decision (primary key) with `submitted_at` = server time and `eligible` set at close
+- `ShareGrants`: `token_hash` only, unique; `subject_version` pins what was shared
+- `SharePreviews`: the controlled preview cache, interleaved in the grant
+- `Notifications`: unique per (recipient, event, type)
+
+The emulator rejected a query on the NULL_FILTERED `DecisionsByStateClose` index, so it is now an ordinary index.
+
+**Domain (`brandme_core/domains/social/`)**
+- `clock.py`:
+  - `SpannerTxnClock` (production) reads `CURRENT_TIMESTAMP()` inside the very transaction that opens, answers or closes a decision.
+  - `FixedTxnClock` is for deterministic tests only.
+  - **Documented boundary (BM-SOC-005):** a response is accepted iff the server time read inside its own transaction is strictly before `closes_at` and the decision is `open`.
+- `relationships.py`:
+  - A friendship needs a request and an accept by the recipient side's own session. The requester or a third party gets the same 404 as a missing request.
+  - Unknown, inactive and blocked members all look like 404.
+  - **Block** removes, in one transaction:
+    - the friendship
+    - each party from the other's open decision audiences
+    - each party from the other's selected-member shares
+    - unread notifications either caused for the other
+
+    It also refuses future requests, notifications and proposals between them.
+  - `friendship_proposal_policy` is the policy `OutfitService(proposal_policy=…)` takes at wiring time (tested).
+- `decisions.py`:
+  - Recipients must be reachable friends (`ineligible_recipients` lists who is not).
+  - Subjects must be the creator's own item/outfit, or a catalog product via an injected check (providers lane).
+  - Limits are configurable: 5 per UTC day (counted on server-timed `opened_at`), 3 open at once, 12 recipients.
+  - A request identical to one in the last 24 h is allowed but flagged `repeat_request` (in `decision.closed`, for the rewards domain).
+  - Agent principals without `social:send` create a **draft**: no notification, no `decision.opened`, invisible to recipients. Only the member's own session can `open` it.
+  - Responses:
+    - an identical replay is a no-op (no revision, no event)
+    - a changed answer is a new revision of the same record until the deadline
+    - "Try this instead" needs an item visible to the respondent
+    - the creator cannot answer
+  - **Blind mode** hides others' choices and notes from a respondent until they answer or the decision closes; the creator always sees results.
+  - **Close happens once:** the state check and tally run in one serializable transaction. Eligibility is reconciled at close: in the audience, not the creator, not blocked, `submitted_at < closes_at`. `decision.closed` carries sorted eligible respondent ids, `zero_replies` and `repeat_request` (references only).
+  - Zero replies give "No replies this time" plus `next_actions: [save, ask_again_as_new_request]`; nothing is fabricated.
+  - The requester outcome is labelled self-reported.
+- `shares.py`:
+  - `allowed_fields` is a typed request checked against a per-subject allowlist. Anything else is refused with `refused_fields`:
+
+    | Subject | Shareable fields |
+    |---|---|
+    | item | title, category, color family, colors, materials |
+    | outfit | title, occasion, notes, items |
+    | persona snapshot | saved name, summary, declared axes; never inferred/effective values |
+
+    Prices, sizes, notes, receipts, tag serials, owner/member ids, ownership identity and closet totals are never shareable.
+  - An outfit share lists only the pinned version's items, by position, with no item ids.
+  - Expiry is 5 min–365 d from server time; at most 200 active shares per member.
+  - The token (`secrets.token_urlsafe(32)`) is **returned once**. Only its SHA-256 is stored, and an idempotent replay returns `token: null, token_already_issued: true`, so the token never enters `IdempotencyRecords`.
+  - Every access re-checks, under current permissions: revocation, expiry, audience membership + friendship, blocks, owner active, subject still present.
+  - **Revoke** sets `revoked_at`, deletes the cached preview and the recipients' unread `share_received` notices in the same transaction, and emits `share.revoked`. Later access gets **410 `share_unavailable`** with `reason` (`revoked`/`expired`/`removed`); unknown or malformed tokens get 404.
+  - `closet_capsule` and `badge` are refused with `unsupported_subject_type` (no backing entity in this lane yet).
+  - Share creation calls the privacy guard (`social.shares`).
+- `notifications.py`: in-app only (no email/push provider is configured; ch.06 gate). Rows are written in the same transaction as their cause. Payload keys are allowlisted (ids, enums, result label). `mark_read` touches only the caller's rows.
+- `deletion.py`: 5 categories (`social.relationships`, `.blocks`, `.decisions`, `.shares`, `.notifications`), registered with the foundation registry and the privacy-lane handler.
+  - Deleting a member erases their answers on friends' decisions; the closed tally keeps counts only.
+  - It removes them from others' audiences and share recipient lists, and nulls the actor on notifications they caused.
+- `api.py` (FastAPI, unmounted): `POST /decisions`, `POST /decisions/{id}/responses`, `POST /shares`, `DELETE /shares/{id}` from ch.03 §6. Lane additions go to **PD-09**:
+  - relationships, blocks
+  - decision get/list/open/close/cancel/outcome
+  - share list, member open, `POST /shares/resolve`
+  - notifications
+
+  `POST /shares/resolve` is the only route that accepts an anonymous caller; the token travels in the body so it stays out of URL logs.
+
+**Gateway (UNMOUNTED):** `routes/v1/social.ts` → `socialRouter(client)` and `routes/v1/decisions.ts` → `decisionsRouter(client)`.
+- Cheap shape checks with field allowlists: exactly 300 s, 1–12 unique recipients, share shape and audience rules, token shape.
+- Relationship/block targets use **`target_member_id`**, because `member_id` is a refused identity field.
+- `DomainRequest.principal` is now `Principal | null`. Null is used only by `forwardOptionalPrincipal` on `/shares/resolve`, which should sit behind the foundation rate limiter at mount time.
+
+**Evidence** (pinned venv: Python 3.11.15, google-cloud-spanner 3.40.1, pytest 7.4.3; emulator 1.5.28)
+| Check | Result |
+|---|---|
+| This branch: `pytest tests/test_persona_*.py tests/test_wardrobe_*.py tests/test_social_*.py tests/foundation -W error::…UnhandledThreadException` | **235 passed, 6 skipped** (5 privacy-lane + 1 spatial-manifest, all NOT RUN here). Social suites 3 runs in a row green; deadline/concurrency subset 5 runs in a row green |
+| W11 `bec80b1` overlay with spatial manifests: `pytest tests/test_persona_*.py tests/test_wardrobe_*.py tests/test_social_*.py tests/test_privacy.py tests/test_rights.py` | **170 passed, 0 skipped** (includes the social privacy-handler registration and the processing-freeze refusal of share creation) |
+| Gateway: `tsc --noEmit` 0; `eslint src` 0; `vitest run src/routes/v1` | **30 passed** (+7 `social.test.ts`) |
+
+| Acceptance | Result | Test |
+|---|---|---|
+| BM-SOC-001 only the intended recipient establishes the friendship | passed (integration) | `test_only_the_intended_recipient_can_accept` |
+| BM-SOC-002 audience and 5-minute deadline server-owned and visible | passed (integration, **production `SpannerTxnClock`**: `opened_at` lies between two Spanner reads taken around the call, `closes_at − opened_at = 300 s`; client `closes_at`/other durations refused) | `test_server_owns_audience_and_five_minute_deadline` |
+| BM-SOC-003 unrelated member learns nothing | passed (integration; uninvited friend and stranger get the same 404 as a missing id, with no subject in the error; lists empty) | `test_private_decision_invisible_to_unrelated_member` |
+| BM-SOC-004 yes/pass/alternative stored; alternative needs a visible item | passed (integration) | `test_votes_and_alternative_reference` |
+| BM-SOC-005 at and after the exact deadline | passed (integration): accepted at `closes_at − 1 µs`; rejected at `closes_at`, `+1 µs`, `+1 h` (`FixedTxnClock`). With `SpannerTxnClock`, moving the stored deadline to Spanner-now − 1 µs makes the next response fail with `decision_closed` (`server_time ≥ closes_at`). The closer does not close at `closes_at − 1 µs` | `test_exact_deadline_boundary`, `test_server_clock_rejects_late_response` |
+| BM-SOC-006 concurrent replay of response and expiry | passed (integration, threads): 10 identical concurrent replays → 1 record, revision 1, 1 `decision.responded`. Then 6 schedulers + 3 owner closes + 3 late responses race at the deadline → **exactly 1 `decision.closed`**, tally unchanged, late responses refused | `test_concurrent_replays_one_response_one_close` |
+| BM-SOC-007 blind until response | passed (integration) | `test_blind_until_response` |
+| BM-SOC-008 zero replies truthful | **server half passed** (no fabricated responses; explicit next actions). The browser half belongs to the UI lane: not_run | `test_zero_replies_is_truthful` |
+| BM-SOC-009 block revokes shares, decisions, pending notifications | passed (integration) | `test_block_revokes_friendship_decisions_shares_and_pending_notifications` |
+| BM-SOC-010 external preview leaks nothing | passed (integration; anonymous link view of an outfit contains only requested fields and the pinned items; no owner id, item ids, sizes, notes, rest of closet or unrequested occasion; token not stored in `ShareGrants` or `IdempotencyRecords`) | `test_outfit_preview_discloses_only_requested_fields_of_the_outfit`, `test_refuses_fields_outside_the_allowlist` |
+| BM-SOC-011 revoke while cached | passed (integration; preview row deleted in the revoking transaction, 410 for member and link access, notices withdrawn, one `share.revoked`) | `test_revocation_purges_cached_preview_and_blocks_access` |
+| BM-SOC-012 agent without send authority | passed (integration; draft only, 0 notifications, 0 `decision.opened`, recipients 404, agent cannot open, member opens from own session) | `test_agent_without_send_authority_only_drafts` |
+| Exit: server-timed decision deadlines | passed (see BM-SOC-002/005/006) | — |
+
+**Not done in this stage / honest limits**
+- Firestore projections of shares/decisions are not written by this lane. `share.revoked` is the event a projector must consume to delete shared projections (ch.03). No such projector exists yet.
+- Search discovery between members does not exist, so "blocking excludes search" has nothing to act on yet.
+- The decision closer (`DecisionService.close_due`) is a callable, not a deployed scheduler; integration must run it (Cloud Scheduler/Tasks). Responses are refused at the deadline whether or not it has run.
+- Catalog subjects/alternatives use an injected `catalog_check` (providers lane); the default allows any id and must be replaced at wiring.
+
+**Proposed deviations added**
+- **PD-09 (extended)**: social lane endpoints listed above, plus `target_member_id` as the request field for relationships and blocks.
+- **PD-10**: share expiry bounds (5 min–365 d) and the 200-active-share cap are lane choices; the contracts do not specify them.
+- **PD-11**: 410 `share_unavailable` with `reason` for revoked/expired/removed shares reached by a valid token or an authorized member; 404 for anything else.

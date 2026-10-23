@@ -18,7 +18,7 @@ Precedence (ch.01 §4.2), highest first:
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple

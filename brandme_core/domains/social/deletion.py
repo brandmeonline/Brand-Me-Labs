@@ -1,0 +1,171 @@
+"""W10 privacy registration for relationships, blocks, decisions, shares and
+notifications.
+
+Same pattern as persona/wardrobe: foundation ``register_data_category``
+always, the privacy lane's ``DomainPrivacyHandler`` when present.
+
+Cross-member rows: a deleted member's answers on a friend's decision are
+erased (the decision keeps its closed tally, which holds no identities);
+their membership in others' audiences and share recipient lists is removed;
+notifications they caused for others lose the actor reference.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List
+
+from brandme_core.domains import DataCategory as FoundationDataCategory, register_data_category
+from brandme_core.domains.persona.kernel import STR, iso, json_value, query, run_read, run_txn
+
+DOMAIN = "social"
+_M = {"m": STR}
+
+CATEGORIES: Dict[str, Dict[str, Any]] = {
+    "social.relationships": {
+        "title": "Friend requests and friendships",
+        "supplied_by": "member",
+        "retention": "Until you or your friend remove it, or you delete your account",
+        "on_edit": "Removing a friend ends shared access for both of you",
+        "tables": ("Relationships",),
+    },
+    "social.blocks": {
+        "title": "Members you blocked",
+        "supplied_by": "member",
+        "retention": "Until you unblock them or delete your account",
+        "on_edit": "Unblocking does not restore a friendship",
+        "tables": ("MemberBlocks",),
+    },
+    "social.decisions": {
+        "title": "Decisions you asked and answers you gave",
+        "supplied_by": "member",
+        "retention": "Until you delete them or your account; closed tallies keep counts only",
+        "on_edit": "Answers can change until the deadline, never after",
+        "tables": ("Decisions", "DecisionAudience", "DecisionResponses"),
+    },
+    "social.shares": {
+        "title": "Shares you created and their previews",
+        "supplied_by": "member",
+        "retention": "Until they expire, you revoke them or you delete your account",
+        "on_edit": "Revoking stops access and removes the preview; downloaded copies cannot be recalled",
+        "tables": ("ShareGrants", "SharePreviews"),
+    },
+    "social.notifications": {
+        "title": "Your in-app notifications",
+        "supplied_by": "system",
+        "retention": "Until you delete your account",
+        "on_edit": "Blocking withdraws unread notifications between you",
+        "tables": ("Notifications",),
+    },
+}
+
+
+def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]:
+    m = {"m": member_id}
+    if category == "social.relationships":
+        return [{"other_member_id": r[0], "relationship_id": r[1], "state": r[2], "created_at": iso(r[3]), "accepted_at": iso(r[4])}
+                for r in query(snap, "SELECT other_member_id, relationship_id, state, created_at, accepted_at FROM Relationships "
+                                     "WHERE member_id=@m ORDER BY other_member_id", m, _M)]
+    if category == "social.blocks":
+        return [{"blocked_member_id": r[0], "created_at": iso(r[1])}
+                for r in query(snap, "SELECT blocked_member_id, created_at FROM MemberBlocks WHERE member_id=@m ORDER BY blocked_member_id", m, _M)]
+    if category == "social.decisions":
+        asked = []
+        for d in query(snap, "SELECT decision_id, subject_type, subject_id, prompt, discussion_mode, state, opened_at, closes_at, closed_at, "
+                             "yes_count, pass_count, alternative_count, requester_outcome FROM Decisions WHERE member_id=@m ORDER BY created_at", m, _M):
+            asked.append({"decision_id": d[0], "subject_type": d[1], "subject_id": d[2], "prompt": d[3], "discussion_mode": d[4], "state": d[5],
+                          "opened_at": iso(d[6]), "closes_at": iso(d[7]), "closed_at": iso(d[8]),
+                          "result": {"yes": d[9], "pass": d[10], "alternative": d[11]}, "requester_outcome": d[12]})
+        answered = [{"decision_owner_ref": r[0], "decision_id": r[1], "choice": r[2], "alternative_ref": r[3], "note": r[4],
+                     "submitted_at": iso(r[5]), "eligible": r[6]}
+                    for r in query(snap, "SELECT member_id, decision_id, choice, alternative_ref, note, submitted_at, eligible FROM DecisionResponses"
+                                         "@{FORCE_INDEX=DecisionResponsesByRespondent} WHERE respondent_id=@m ORDER BY submitted_at", m, _M)]
+        return [{"asked": asked, "answered": answered}]
+    if category == "social.shares":
+        out = []
+        for r in query(snap, "SELECT g.share_id, g.subject_type, g.subject_id, g.audience, g.allowed_fields, g.recipient_ids, g.expires_at, "
+                             "g.revoked_at, p.preview FROM ShareGrants g LEFT JOIN SharePreviews p ON p.member_id=g.member_id AND p.share_id=g.share_id "
+                             "WHERE g.member_id=@m ORDER BY g.created_at", m, _M):
+            out.append({"share_id": r[0], "subject_type": r[1], "subject_id": r[2], "audience": r[3], "allowed_fields": list(r[4]),
+                        "recipient_ids": list(r[5] or []), "expires_at": iso(r[6]), "revoked_at": iso(r[7]),
+                        "preview": None if r[8] is None else json_value(r[8])})
+        return out
+    if category == "social.notifications":
+        return [{"notification_id": r[0], "type": r[1], "subject_ref": r[2], "payload": json_value(r[3]), "created_at": iso(r[4]), "read_at": iso(r[5])}
+                for r in query(snap, "SELECT notification_id, type, subject_ref, sanitized_payload, created_at, read_at FROM Notifications "
+                                     "WHERE member_id=@m ORDER BY created_at", m, _M)]
+    raise KeyError(category)
+
+
+def delete_category(txn, member_id: str, category: str) -> int:
+    m = {"m": member_id}
+    if category == "social.relationships":
+        return txn.execute_update("DELETE FROM Relationships WHERE member_id=@m OR other_member_id=@m", params=m, param_types=_M)
+    if category == "social.blocks":
+        return txn.execute_update("DELETE FROM MemberBlocks WHERE member_id=@m OR blocked_member_id=@m", params=m, param_types=_M)
+    if category == "social.decisions":
+        n = txn.execute_update("DELETE FROM DecisionResponses WHERE respondent_id=@m", params=m, param_types=_M)
+        n += txn.execute_update("DELETE FROM DecisionAudience WHERE recipient_id=@m", params=m, param_types=_M)
+        return n + txn.execute_update("DELETE FROM Decisions WHERE member_id=@m", params=m, param_types=_M)  # audience/responses cascade
+    if category == "social.shares":
+        n = txn.execute_update("DELETE FROM ShareGrants WHERE member_id=@m", params=m, param_types=_M)  # previews cascade
+        for owner, share_id, recips in query(txn, "SELECT member_id, share_id, recipient_ids FROM ShareGrants WHERE @m IN UNNEST(recipient_ids)", m, _M):
+            txn.update("ShareGrants", columns=("member_id", "share_id", "recipient_ids"),
+                       values=[(owner, share_id, [x for x in recips if x != member_id] or None)])
+            n += 1
+        return n
+    if category == "social.notifications":
+        n = txn.execute_update("DELETE FROM Notifications WHERE member_id=@m", params=m, param_types=_M)
+        return n + txn.execute_update("UPDATE Notifications SET actor_member_id=NULL WHERE actor_member_id=@m", params=m, param_types=_M)
+    raise KeyError(category)
+
+
+for _key, _c in CATEGORIES.items():
+    register_data_category(FoundationDataCategory(
+        name=_key, domain=DOMAIN, description=_c["title"], supplied_by=_c["supplied_by"], visible_to="member only",
+        retention=_c["retention"], tables=_c["tables"],
+        export=(lambda k: lambda db, mid: run_read(db, lambda s: export_category(s, mid, k)))(_key),
+        delete=(lambda k: lambda db, mid: run_txn(db, lambda t: delete_category(t, mid, k)))(_key),
+    ))
+
+
+def _make_privacy_handler():
+    try:
+        from brandme_core.domains.privacy import deletion as pd
+    except ImportError:
+        return None
+
+    class SocialPrivacyHandler:
+        domain = DOMAIN
+
+        def categories(self):
+            return [
+                pd.DataCategory(
+                    key=k, domain=DOMAIN, title=c["title"],
+                    supplied_by=pd.Supplier.SYSTEM if c["supplied_by"] == "system" else pd.Supplier.MEMBER,
+                    visible_to=("member",), retention=c["retention"], on_edit=c["on_edit"], on_delete=pd.OnDelete.ERASE,
+                )
+                for k, c in CATEGORIES.items()
+            ]
+
+        def export(self, snapshot, ctx, category):
+            return pd.ExportSection(category, export_category(snapshot, ctx.subject_ref, category))
+
+        def delete(self, txn, ctx, category):
+            return pd.DeletionOutcome(category, delete_category(txn, ctx.subject_ref, category))
+
+        def purge_derived(self, ctx, category):
+            # Share previews live in Spanner and are deleted with the grant; no other cache exists in this lane.
+            return pd.DeletionOutcome(category, 0, done=True, detail="no derived stores outside Spanner")
+
+        def reapply_tombstone(self, txn, tombstone):
+            return delete_category(txn, tombstone.subject_ref, tombstone.category)
+
+    handler = SocialPrivacyHandler()
+    try:
+        pd.register_domain(handler)
+    except pd.PrivacyRegistryError:
+        return None
+    return handler
+
+
+PRIVACY_HANDLER = _make_privacy_handler()

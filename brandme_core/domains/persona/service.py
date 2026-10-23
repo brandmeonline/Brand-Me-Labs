@@ -17,7 +17,6 @@ from google.cloud import spanner
 
 from .events import emit_updated
 from .kernel import (
-    BOOL,
     INT,
     STR,
     TS,

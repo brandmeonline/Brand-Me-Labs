@@ -31,7 +31,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Mapping, Optional, Protocol, Tuple, TypeVar
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, TypeVar
 
 from google.cloud.spanner_v1 import JsonObject, param_types
 
@@ -498,8 +498,10 @@ STR_ARRAY = param_types.Array(param_types.STRING)
 
 
 def server_now(txn) -> datetime:
-    """Spanner's CURRENT_TIMESTAMP() inside the caller's transaction."""
-    return query(txn, "SELECT CURRENT_TIMESTAMP()")[0][0]
+    """Spanner's CURRENT_TIMESTAMP() inside the caller's transaction, as a plain
+    UTC datetime (the client's DatetimeWithNanoseconds breaks on ``replace``)."""
+    t = query(txn, "SELECT CURRENT_TIMESTAMP()")[0][0]
+    return datetime(t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond, tzinfo=timezone.utc)
 
 
 def member_active(txn, member_id: str) -> bool:

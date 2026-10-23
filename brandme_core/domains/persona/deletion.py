@@ -18,7 +18,7 @@ freeze tables are absent.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping
+from typing import Any, Dict, List
 
 from google.cloud.spanner_v1 import COMMIT_TIMESTAMP, KeySet
 

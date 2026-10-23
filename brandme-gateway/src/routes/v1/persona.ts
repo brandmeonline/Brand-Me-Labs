@@ -27,7 +27,8 @@ export interface DomainRequest {
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   /** Path on the domain service, mirroring the public path (e.g. `/me/persona`). */
   path: string;
-  principal: Principal;
+  /** Null only on routes that explicitly allow anonymous callers (share-link resolve). */
+  principal: Principal | null;
   requestId: string;
   body?: unknown;
   query?: Record<string, string>;
@@ -120,6 +121,19 @@ export function forwardTo(client: DomainClient, build: (req: Request, res: Respo
   return handle(async (req: Request, res: Response) => {
     const spec = build(req, res);
     const r = await client.request({ ...spec, principal: res.locals.principal as Principal, requestId: res.locals.requestId });
+    relay(res, r);
+  });
+}
+
+/** Like forwardTo, for the few routes where a signed-in principal is optional. */
+export function forwardOptionalPrincipal(
+  client: DomainClient,
+  build: (req: Request, res: Response) => Omit<DomainRequest, 'principal' | 'requestId'>,
+) {
+  return handle(async (req: Request, res: Response) => {
+    const spec = build(req, res);
+    const principal = (res.locals.principal as Principal | undefined) ?? null;
+    const r = await client.request({ ...spec, principal, requestId: res.locals.requestId });
     relay(res, r);
   });
 }
