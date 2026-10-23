@@ -195,7 +195,8 @@ def test_typescript_provider_contracts_share_the_python_vocabulary():
     from pathlib import Path
 
     from brandme_core.domains.providers.contracts import (
-        CAPABILITIES, CAPABILITY_STATES, EXECUTABLE_STATES, ProviderErrorKind,
+        CAPABILITIES, CAPABILITY_STATES, EXECUTABLE_STATES, NON_VERIFYING_EVIDENCE, PROBE_MODES, PROBE_RESULTS,
+        ProviderErrorKind,
     )
     from brandme_core.domains.providers.registry import VERIFYING_EVIDENCE
 
@@ -211,3 +212,9 @@ def test_typescript_provider_contracts_share_the_python_vocabulary():
     assert set(ts_list("EXECUTABLE_STATES")) == set(EXECUTABLE_STATES)
     assert set(ts_list("VERIFYING_EVIDENCE")) == set(VERIFYING_EVIDENCE)
     assert ts_list("PROVIDER_ERROR_KINDS") == [k.value for k in ProviderErrorKind]
+    assert ts_list("PROBE_RESULTS") == list(PROBE_RESULTS)
+    assert ts_list("PROBE_MODES") == list(PROBE_MODES)
+    assert set(ts_list("NON_VERIFYING_EVIDENCE")) == set(NON_VERIFYING_EVIDENCE)
+    # The gateway's setup routes validate against the same closed capability list.
+    src = (Path(__file__).resolve().parents[1] / "brandme-gateway/src/routes/v1/providers.ts").read_text()
+    assert ts_list("CAPABILITY_NAMES") == list(CAPABILITIES)

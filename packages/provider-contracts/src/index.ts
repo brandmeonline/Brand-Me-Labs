@@ -33,6 +33,63 @@ export const EXECUTABLE_STATES = ['sandbox', 'verified', 'degraded'] as const sa
 export const VERIFYING_EVIDENCE = ['sandbox_operation', 'production_operation', 'conformance_suite'] as const;
 export type VerifyingEvidence = (typeof VERIFYING_EVIDENCE)[number];
 
+/**
+ * Evidence a connection test may record that can never verify anything: reaching a host or
+ * checking a link against allowed hosts says nothing about the operation. `none` = nothing ran.
+ */
+export const NON_VERIFYING_EVIDENCE = ['host_reachability', 'link_validation', 'none'] as const;
+export type EvidenceKind = VerifyingEvidence | (typeof NON_VERIFYING_EVIDENCE)[number];
+
+export const PROBE_RESULTS = ['passed', 'failed', 'blocked'] as const;
+export type ProbeResultKind = (typeof PROBE_RESULTS)[number];
+export const PROBE_MODES = ['read_only_test', 'staging_ingestion'] as const;
+export type ProbeMode = (typeof PROBE_MODES)[number];
+
+/** What one connection test observed for one exact capability (setup console, ch.05 §8). */
+export interface ProbeResult {
+  result: ProbeResultKind;
+  evidence_kind: EvidenceKind;
+  /** Points at what the test produced; never a provider body. */
+  evidence_ref: string;
+  /** Operator display text without secrets or personal data. */
+  sanitized_summary: string;
+  /** Why it failed or was blocked. */
+  reason_code?: string | null;
+}
+
+/**
+ * An adapter that can exercise one capability without side effects outside itself. A probe never
+ * places an order, moves money, submits a checkout or sends a message; a capability without such
+ * a test answers `blocked`. An adapter without `probe` has no connection test.
+ */
+export interface VerifiableProvider {
+  readonly descriptor: AdapterDescriptor;
+  probe(capability: CapabilityName, mode: ProbeMode, now: string): Promise<ProbeResult>;
+}
+
+/** A persisted connection test: time, environment, exact capability and sanitized evidence. */
+export interface VerificationRun extends ProbeResult {
+  run_id: string;
+  provider_id: string;
+  environment: Environment;
+  capability: CapabilityName;
+  mode: ProbeMode | null;
+  ran_at: string;
+}
+
+/** Only a passing test with verifying evidence can move a capability; the registry still decides the state. */
+export function canVerify(r: ProbeResult): boolean {
+  return r.result === 'passed' && (VERIFYING_EVIDENCE as readonly string[]).includes(r.evidence_kind);
+}
+
+/** Structural check that a blocked test carries no evidence (mirrors the Python `ProbeResult`). */
+export function isWellFormedProbe(r: ProbeResult): boolean {
+  return (PROBE_RESULTS as readonly string[]).includes(r.result)
+    && ([...VERIFYING_EVIDENCE, ...NON_VERIFYING_EVIDENCE] as readonly string[]).includes(r.evidence_kind)
+    && (r.result !== 'blocked' || r.evidence_kind === 'none')
+    && r.evidence_ref.length > 0 && r.evidence_ref.length <= 256;
+}
+
 /** The provider's status for one capability; an unlisted capability is `unsupported`, never assumed available. */
 export function capabilityOf(provider: ProviderPublic, name: CapabilityName): Capability {
   return provider.capabilities.find((c) => c.name === name)

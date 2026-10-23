@@ -2,8 +2,8 @@
 
 The Spanner variant uses one emulator database per test module, migrated with the
 repository's migration runner (every reserved migration, including V001's outbox,
-V006/V007/V015 and the V009 privacy tables), and wipes the commerce, outbox and
-My Data tables before each test. Without a reachable emulator
+V006/V007/V015 and the V009 privacy tables), and wipes the commerce, outbox,
+My Data and provider setup tables before each test. Without a reachable emulator
 the Spanner variant is skipped with an explicit reason, never reported as passed.
 """
 
@@ -27,6 +27,8 @@ WIPE_ORDER = (
     "OutboxEvents",
     # My Data state (V009), so privacy-orchestrator tests start clean.
     "DeletionSteps", "DeletionJobs", "DeletionTombstones", "ProcessingFreezes", "ExportJobs", "RestoreRuns",
+    # Provider setup (V006): items and capabilities are interleaved ON DELETE CASCADE under connections.
+    "ProviderVerificationRuns", "ProviderSetupItems", "ProviderCapabilities", "ProviderConnections",
 )
 
 
@@ -93,3 +95,14 @@ def commerce_store(request):
     wipe(db)
     from brandme_core.domains.commerce.spanner_store import SpannerCommerceStore
     return SpannerCommerceStore(db)
+
+
+@pytest.fixture(params=["memory", "spanner"])
+def provider_setup_store(request):
+    if request.param == "memory":
+        from brandme_core.domains.providers.setup import InMemoryProviderSetupStore
+        return InMemoryProviderSetupStore()
+    db = request.getfixturevalue("_spanner_db")
+    wipe(db)
+    from brandme_core.domains.providers.setup import SpannerProviderSetupStore
+    return SpannerProviderSetupStore(db)

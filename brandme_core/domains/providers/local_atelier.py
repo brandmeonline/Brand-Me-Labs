@@ -24,6 +24,13 @@ EXPIRED_QUOTE          next quote expires almost immediately
 original line records the return, a new line records the replacement with
 ``exchanged_from_ref``, and no money moves. A different-priced exchange is
 refused; that is a return plus a new purchase.
+
+``probe()`` is the setup console's connection test: read-only exercises of this
+simulator's own surface (search, detail, inventory, a scratch-cart quote that is
+never submitted, a signed webhook round trip). Armed behaviors apply to it, so
+``STOCK_LOSS`` on ``PROBE_VARIANT`` fails the quote test and an armed
+``EXPIRED_QUOTE`` is consumed by it. Its evidence is ``conformance_suite``,
+which the registry records as ``sandbox`` for a simulation, never ``verified``.
 """
 
 from __future__ import annotations
@@ -47,8 +54,8 @@ from brandme_core.domains.commerce.quote import CheckoutTerms
 
 from .contracts import (
     CartLineRequest, CatalogPage, HandoffLink, InventoryObservation, ObservedLine,
-    OrderObservation, ProviderCart, ProviderError, ProviderErrorKind, ProviderQuote,
-    ProviderResult, QuotedLine, SourceVariant, SubmitAck, SubmitRequest, WebhookEvent,
+    OrderObservation, ProbeResult, ProviderCart, ProviderError, ProviderErrorKind, ProviderQuote,
+    ProviderResult, QuotedLine, SetupProfile, SourceVariant, SubmitAck, SubmitRequest, WebhookEvent,
 )
 from .registry import CapabilityStatus, ProviderConnection
 
@@ -58,6 +65,18 @@ SIMULATION_LABEL = "Simulated provider — Demo Atelier is fictional; no real or
 _NS = uuid.UUID("6f1c2a0e-6c38-5d43-9a4e-6e0b9a1d2c11")  # fixed namespace for deterministic ids
 WEBHOOK_TOLERANCE = timedelta(minutes=5)
 TAX_BPS = 800  # fictional 8% demo tax, integer basis points
+PROBE_VARIANT = "demo-overshirt-m"  # fixed, so a test can arm a deterministic probe failure
+_PROBE_NOTE = "Simulation: fictional data; no real retailer, order or payment was involved."
+SETUP_PROFILE = SetupProfile(
+    summary=(SIMULATION_LABEL + " It exercises catalog, quote, checkout, order, webhook and return flows against "
+             "fictional data so application behavior can be shown and tested. It proves nothing about a real "
+             "retailer and never reaches verified."),
+    fixed_rows=(
+        ("prerequisites", "simulation_mode", "Runs only in demo or development", "done",
+         "Selected at startup; the registry refuses this adapter in sandbox and production."),
+        ("credentials", "credential", "No credential", "not_needed",
+         "The simulation has no account or secret; nothing is entered here."),
+    ))
 
 
 class Behavior(str, enum.Enum):
@@ -99,11 +118,18 @@ class _Order:
     created_at: datetime
 
 
+class _ProbeFailed(Exception):
+    def __init__(self, detail: str, reason_code: str):
+        super().__init__(detail)
+        self.reason_code = reason_code
+
+
 class LocalAtelierProvider:
-    """Implements Catalog/Feed/Inventory/Cart/Checkout/Order/Returns protocols."""
+    """Implements Catalog/Feed/Inventory/Cart/Checkout/Order/Returns protocols and ``VerifiableProvider``."""
 
     provider_id = PROVIDER_ID
     simulation = True
+    setup_profile = SETUP_PROFILE
 
     def __init__(self, clock: Callable[[], datetime], *, quote_ttl: timedelta = timedelta(minutes=10)):
         self._clock = clock
@@ -399,12 +425,14 @@ class LocalAtelierProvider:
             self._event_seq += 1
             event_id = f"demo-evt-{self._event_seq:06d}"
             dup = self._take(Behavior.DUPLICATE_WEBHOOK) is not None
+        return [self._signed(event_id, event_type, order_ref)] * (2 if dup else 1)
+
+    def _signed(self, event_id: str, event_type: str, order_ref: str) -> Tuple[Dict[str, str], bytes]:
         ts = str(int(self._clock().timestamp()))
         body = json.dumps({"id": event_id, "type": event_type, "order_ref": order_ref,
                            "simulation": True}, sort_keys=True).encode()
         sig = hmac.new(self._webhook_secret, ts.encode() + b"." + body, hashlib.sha256).hexdigest()
-        headers = {"x-demo-timestamp": ts, "x-demo-signature": f"v1={sig}"}
-        return [(headers, body)] * (2 if dup else 1)
+        return {"x-demo-timestamp": ts, "x-demo-signature": f"v1={sig}"}, body
 
     def verify_webhook(self, headers: Mapping[str, str], body: bytes) -> WebhookEvent:
         h = {k.lower(): v for k, v in headers.items()}
@@ -419,6 +447,74 @@ class LocalAtelierProvider:
             raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "webhook outside replay window")
         data = json.loads(body)
         return WebhookEvent(PROVIDER_ID, data["id"], data["type"], data["order_ref"], sent, data)
+
+    # -- connection tests (operator setup console) -------------------------------
+    _PROBES = {"catalog.search": "_probe_search", "catalog.detail": "_probe_detail",
+               "inventory.read": "_probe_inventory", "price.quote": "_probe_quote",
+               "orders.webhook": "_probe_webhook"}
+
+    def probe(self, capability: str, mode: str, now: datetime) -> ProbeResult:
+        """Read-only exercise of one capability. Never submits, captures, ships or returns anything."""
+        if mode != "read_only_test":
+            return ProbeResult("blocked", "none", f"blocked:{mode}_not_built",
+                               f"The simulation has no {mode.replace('_', ' ')} test; run the read-only test.",
+                               f"{mode}_not_built")
+        method = self._PROBES.get(capability)
+        if method is None:
+            return ProbeResult("blocked", "none", "blocked:no_read_only_probe",
+                               f"{capability} has no read-only test in the simulation: exercising it would create "
+                               "or change a cart, order or return.", "no_read_only_probe")
+        ref = f"sim:{PROVIDER_ID}:probe:{capability}:{now.astimezone(timezone.utc):%Y%m%dT%H%M%SZ}"
+        try:
+            observed = getattr(self, method)()
+        except ProviderError as e:
+            return ProbeResult("failed", "conformance_suite", ref, f"The simulated {capability} call answered "
+                               f"{e.kind.value}. {_PROBE_NOTE}", f"simulation_{e.kind.value}")
+        except _ProbeFailed as e:
+            return ProbeResult("failed", "conformance_suite", ref, f"{e} {_PROBE_NOTE}", e.reason_code)
+        return ProbeResult("passed", "conformance_suite", ref, f"{observed} {_PROBE_NOTE}")
+
+    def _probe_search(self) -> str:
+        page = self.search("overshirt", limit=3)
+        if not page.items or any(v.provider_id != PROVIDER_ID or not v.product_url.startswith("https://")
+                                 for v in page.items):
+            raise _ProbeFailed("Search returned no usable variants.", "search_empty")
+        return f"Search returned {len(page.items)} fictional variants."
+
+    def _probe_detail(self) -> str:
+        variants = self.detail(self._variants[PROBE_VARIANT].source_product_id)
+        if len(variants) != len(_SIZES):
+            raise _ProbeFailed("Product detail did not return every variant.", "detail_incomplete")
+        return f"Product detail returned {len(variants)} variants of one fictional product."
+
+    def _probe_inventory(self) -> str:
+        obs = self.check([PROBE_VARIANT])
+        if len(obs) != 1 or obs[0].source_variant_id != PROBE_VARIANT or obs[0].available_quantity is None:
+            raise _ProbeFailed("Inventory read returned no stock level.", "inventory_unreadable")
+        return "Inventory read returned a stock level for one fictional variant."
+
+    def _probe_quote(self) -> str:
+        cart = self.create_cart(MERCHANT_ID, [CartLineRequest(variant_uuid(PROBE_VARIANT), PROBE_VARIANT, 1)])
+        try:
+            q = self.quote(cart)
+        finally:
+            with self._lock:  # scratch cart: quoted, never submitted, then discarded
+                self._carts.pop(cart.provider_cart_ref, None)
+        if q.expires_at - q.observed_at < timedelta(minutes=1):
+            raise _ProbeFailed("The quote expired almost immediately.", "quote_expires_immediately")
+        line = q.lines[0]
+        return (f"Quoted a one-line scratch cart at {line.unit_price.amount_minor} {line.unit_price.currency} "
+                "minor units; it was discarded without submitting.")
+
+    def _probe_webhook(self) -> str:
+        headers, body = self._signed("demo-evt-probe", "probe.ping", "demo-order-probe")
+        if self.verify_webhook(headers, body).event_id != "demo-evt-probe":
+            raise _ProbeFailed("A signed webhook did not round-trip.", "webhook_round_trip_failed")
+        try:
+            self.verify_webhook(headers, body.replace(b"probe.ping", b"probe.pong"))
+        except ProviderError:
+            return "Signed a webhook, verified it, and refused a tampered copy."
+        raise _ProbeFailed("A tampered webhook was accepted.", "webhook_tamper_accepted")
 
 
 def local_atelier_connection(provider: LocalAtelierProvider, environment: str,
