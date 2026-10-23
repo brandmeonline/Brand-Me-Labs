@@ -596,3 +596,9 @@ The expiry indexes are now ordinary indexes, because the emulator refuses NULL_F
 **Proposed deviations added**
 - **PD-18** Console→gateway operator auth transport: shared cookie domain vs server-side token exchange. Foundation or UI lane to decide; the pages need one header-forwarding change either way.
 - **PD-19** Route mismatch. The shell's `lib/navigation.ts` links `/rewards/disputes`, but this lane's brief owns `app/(ops)/rewards-disputes`, which serves `/rewards-disputes`. The pages were built at the owned path. Proposal: the shell nav points to `/rewards-disputes`, or the brief is updated to own `app/(ops)/rewards/disputes`. Moving the folder is a one-line change.
+
+**Stage 8 addendum (same day).**
+- The pages first imported the shell's `ConsolePageHeader`, which does not exist on this lane's base. The foundation CI job runs `pnpm -r build`, which includes the console's `next build`, and would have failed. The import is optional under contract v1 §3, so the pages now render the same `console-page-header` markup from `(ops)/moderation/_lib/page-header.tsx` (commit `11860e4`).
+- Re-verified on this branch (Node 24.21.0, pnpm 10.34.6, `pnpm install --frozen-lockfile`): `pnpm --filter @brandme/console build` exit 0, and `pnpm check` exit 0. That covers the spec validator, contract/token drift, packages type-check/tests, gateway type-check/tests, python foundation tests and docs links.
+- Re-verified on the UI-shell overlay: tsc 0, `next build` 0, browser smoke **13/13** on the final code.
+- Commit `e13fd43` (the version before the fix) may show a red `check` run for this reason. `11860e4` supersedes it.
