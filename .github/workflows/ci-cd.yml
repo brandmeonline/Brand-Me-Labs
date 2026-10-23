@@ -144,14 +144,41 @@ jobs:
       - name: Require Spanner emulator
         run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
 
+      - name: Start pinned Firestore emulator (projections + rules)
+        run: |
+          launcher=$(python scripts/python/fetch_firestore_emulator.py .cache/firestore-emulator)
+          nohup "$launcher" start --host=127.0.0.1 --port=8080 > .cache/firestore-emulator.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8080/ >/dev/null && break; sleep 1; done
+          python -c "import socket; socket.create_connection(('127.0.0.1', 8080), timeout=10).close()"
+
       - name: Test foundation, rights, and privacy
         env:
           PUBSUB_EMULATOR_BIN: .cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
+          BRANDME_REQUIRE_EMULATORS: '1'
         run: |
           python scripts/python/fetch_pubsub_emulator.py
           test -x "$PUBSUB_EMULATOR_BIN"
           java -version
           python -m pytest tests/foundation tests/test_rights.py tests/test_privacy.py tests/test_privacy_recovery.py tests/test_rights_cube_filter.py tests/test_read_api.py tests/test_privacy_exports.py -q --timeout=120 -ra
+
+      - name: Setup Node.js for Firestore rules tests
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Firestore security rules (emulator-evaluated)
+        env:
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
+          BRANDME_REQUIRE_EMULATORS: '1'
+        run: |
+          pnpm install --frozen-lockfile --filter @brandme/firestore-rules...
+          pnpm --filter @brandme/firestore-rules test 2>&1 | tee .cache/rules.log
+          grep -Eq "skipped 0$" .cache/rules.log
+          grep -Eq "pass [1-9][0-9]*$" .cache/rules.log
 
   test-chain:
     name: Test Chain (Node/TypeScript)

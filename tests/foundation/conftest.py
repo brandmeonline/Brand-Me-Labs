@@ -29,6 +29,9 @@ def _emulator_up() -> bool:
         return False
 
 
+if os.environ.get("BRANDME_REQUIRE_EMULATORS") == "1" and not _emulator_up():
+    raise RuntimeError("BRANDME_REQUIRE_EMULATORS=1 but the Spanner emulator is not reachable")
+
 requires_spanner = pytest.mark.skipif(not _emulator_up(), reason="Spanner emulator not reachable (SPANNER_EMULATOR_HOST)")
 
 
