@@ -46,6 +46,9 @@ QUERIES: Mapping[str, Tuple[str, Callable[..., Predicate]]] = {
     "budget_entries_for_operation": ("reservations", lambda operation_id: (
         lambda e: e.operation_id == operation_id)),
     "surface_keys": ("surface_keys", lambda member_id: (lambda row: row[0] == member_id)),
+    # Operator queue (no member filter; the caller holds an operator role).
+    "operations_by_state": ("operations", lambda state: (lambda o: o.state == state)),
+    "webhook_receipts_pending": ("webhook_receipts", lambda: (lambda r: r.state == "pending_reconcile")),
     # Privacy jobs (export/deletion) walk a member's rows.
     "delegations_for_member": ("delegations", lambda member_id: (lambda d: d.member_id == member_id)),
     "operations_for_member": ("operations", lambda member_id: (lambda o: o.member_id == member_id)),
@@ -79,6 +82,12 @@ class QueryMixin:
         rows = self._query("orders_by_provider_ref", provider_id=provider_id,
                            provider_order_ref=provider_order_ref)
         return rows[0] if rows else None
+
+    def operations_by_state(self, state: str) -> List[Any]:
+        return self._query("operations_by_state", state=state)
+
+    def webhook_receipts_pending(self) -> List[Any]:
+        return self._query("webhook_receipts_pending")
 
     def budget_entries(self, delegation_id: str) -> List[Any]:
         return self._query("budget_entries", delegation_id=delegation_id)

@@ -941,6 +941,36 @@ class CommerceService:
         except RegistryError:
             return False
 
+    # ------------------------------------------------------------ operator queue
+    OPERATOR_SCOPE = "commerce:operator"
+
+    def operator_queue(self, principal: Principal) -> Dict[str, Any]:
+        """Purchases that need attention, for ``/commerce/operations``. No member identifiers.
+
+        An operator role is never implied by a member session. Reconciliation
+        itself runs in the worker (``reconcile``); this is a read-only view.
+        """
+        if principal.environment != self.environment:
+            raise Forbidden("principal environment mismatch")
+        if self.OPERATOR_SCOPE not in principal.scopes:
+            raise Forbidden(f"scope {self.OPERATOR_SCOPE} required", code="insufficient_scope")
+        now = self.clock()
+
+        def item(o: PurchaseOperation) -> Dict[str, Any]:
+            return {"operation_id": o.id, "provider_id": o.provider_id, "state": o.state,
+                    "reason_code": o.reason_code, "attempts": o.attempts,
+                    "age_seconds": int((now - o.updated_at).total_seconds()),
+                    "updated_at": o.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")}
+
+        unknown = [item(o) for o in self.store.operations_by_state("outcome_unknown")]
+        stale = [item(o) for o in self.store.operations_by_state("submitting")
+                 if now - o.updated_at >= STALE_SUBMITTING]
+        hooks = [{"provider_id": r.provider_id, "event_type": r.event_type,
+                  "age_seconds": int((now - r.received_at).total_seconds())}
+                 for r in self.store.webhook_receipts_pending()]
+        return {"environment": self.environment, "observed_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "outcome_unknown": unknown, "stale_submitting": stale, "webhooks_pending": hooks}
+
     # ----------------------------------------------------------- privacy jobs
     # Called by the My Data deletion workflow (``data_categories``), which has already
     # reauthenticated the member. Financial evidence — orders, the approvals and

@@ -487,6 +487,10 @@ QUERY_SQL: Dict[str, str] = {
         WHERE operation_id = @operation_id""",
     "surface_keys": """SELECT member_id, key_thumbprint FROM MemberSurfaceKeys
         WHERE member_id = @member_id AND revoked_at IS NULL""",
+    "operations_by_state": """SELECT operation_id FROM PurchaseOperations@{FORCE_INDEX=PurchaseOperationsByState}
+        WHERE state = @state ORDER BY updated_at LIMIT 200""",
+    "webhook_receipts_pending": """SELECT provider_id, event_id FROM ProviderWebhookReceipts
+        WHERE state = 'pending_reconcile' ORDER BY received_at LIMIT 200""",
     "delegations_for_member": "SELECT delegation_id FROM AgentDelegations WHERE member_id = @member_id",
     "operations_for_member": "SELECT operation_id FROM PurchaseOperations WHERE member_id = @member_id",
     "carts_for_member": "SELECT cart_id FROM Carts WHERE member_id = @member_id",

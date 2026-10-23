@@ -170,6 +170,7 @@ class CommerceHttpApi:
             "provider.setup.get": (frozenset({"provider_id"}), self._provider_setup_get),
             "provider.setup.update": (None, self._not_built),  # type: ignore[dict-item]
             "provider.verify": (None, self._not_built),  # type: ignore[dict-item]
+            "commerce.ops.queue": (frozenset(), lambda p, a, h: (200, self.svc.operator_queue(p))),
             "assistant.task.create": (frozenset({"goal", "assistance_mode", "budget_hint"}), self._task_create),
             "assistant.task.cancel": (frozenset({"task_id"}), self._task_cancel),
             "assistant.task.events": (frozenset({"task_id", "after"}), self._task_events),

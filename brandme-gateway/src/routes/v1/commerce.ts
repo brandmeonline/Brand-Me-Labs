@@ -217,6 +217,14 @@ export function createCommerceRouter(client: CommerceDomainClient): Router {
   return router;
 }
 
+/** `GET /commerce/ops/queue` — operator view of purchases needing attention (no member identifiers). */
+export function createCommerceOpsRouter(client: CommerceDomainClient): Router {
+  const router = Router();
+  router.use(rejectIdentityFields, requireRole('commerce:operator'));
+  router.get('/queue', forward(client, 'commerce.ops.queue', () => ({})));
+  return router;
+}
+
 /**
  * Provider webhooks: no session; the domain verifies signature, replay window and
  * (provider, event_id) dedupe. Mount with `express.raw({ type: '*\/*', limit: '256kb' })`

@@ -13,7 +13,8 @@ import type { Principal } from '../../types';
 import { createAssistantRouter } from './assistant';
 import { createCatalogRouter } from './catalog';
 import {
-  type CommerceDomainClient, type DomainResult, DOMAIN_AUDIENCE, createCommerceRouter, createCommerceWebhookRouter,
+  type CommerceDomainClient, type DomainResult, DOMAIN_AUDIENCE, createCommerceOpsRouter, createCommerceRouter,
+  createCommerceWebhookRouter,
   createHttpCommerceDomainClient, principalClaim,
 } from './commerce';
 import { createDelegationsRouter } from './delegations';
@@ -187,6 +188,16 @@ describe('delegations, providers, catalog, assistant', () => {
       { credential_secret_ref: 'projects/p/secrets/impact/versions/1' });
     expect(ok.status).toBe(200);
     expect(op.calls[0]).toMatchObject({ op: 'provider.setup.update', body: { provider_id: 'nordstrom_impact' } });
+  });
+
+  it('operations queue needs the commerce:operator role, even for a member session', async () => {
+    const mount = (a: express.Express, c: CommerceDomainClient) => a.use('/ops', createCommerceOpsRouter(c));
+    const m = await app(MEMBER, mount);
+    expect((await m.call('GET', '/ops/queue')).status).toBe(403);
+    server?.close();
+    const op = await app({ ...AGENT, clientId: 'ops-console', scopes: ['commerce:operator'] }, mount);
+    expect((await op.call('GET', '/ops/queue')).status).toBe(200);
+    expect(op.calls[0].op).toBe('commerce.ops.queue');
   });
 
   it('catalog search validates the query and forwards it', async () => {

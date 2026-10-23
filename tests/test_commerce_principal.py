@@ -23,6 +23,7 @@ from brandme_core.domains.providers.local_atelier import MERCHANT_ID, PROVIDER_I
 from brandme_core.events import EventEnvelope, registry
 from tests.fixtures.commerce.stores import commerce_store, _spanner_db  # noqa: F401  (fixtures)
 from tests.fixtures.commerce.harness import AGENT_CLIENT, MEMBER, agent, limits, line, member_session, world
+from tests.fixtures.commerce.harness import OTHER_MEMBER as OTHER_MEMBER_ID
 
 
 @pytest.fixture
@@ -272,3 +273,21 @@ def test_buy_mode_limits_unchanged_by_binding(w):
     from brandme_core.domains.commerce.errors import BudgetExceeded
     with pytest.raises(BudgetExceeded):
         w.prepared(agent(None, d.scopes))
+
+
+def test_operator_queue_needs_operator_role_and_hides_members(w):
+    from brandme_core.domains.providers.local_atelier import Behavior
+    d, ag = w.delegate()
+    _, _, op = w.prepared(ag)
+    approval = w.approve(op)
+    w.provider.arm(Behavior.TIMEOUT_AFTER_ACCEPT)
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="ops-queue-00000001")
+    assert res.state == "outcome_unknown"
+    with pytest.raises(Forbidden):
+        w.svc.operator_queue(w.member)  # a member session is never an operator
+    operator = Principal(member_id=OTHER_MEMBER_ID, subject="ops", session_id=None, client_id="ops-console",
+                         scopes=frozenset({"commerce:operator"}), assurance_level="aal2", environment="development")
+    q = w.svc.operator_queue(operator)
+    assert [i["operation_id"] for i in q["outcome_unknown"]] == [res.id]
+    assert MEMBER not in str(q)
+    assert q["stale_submitting"] == [] and q["webhooks_pending"] == []
