@@ -153,6 +153,41 @@ jobs:
           java -version
           python -m pytest tests/foundation tests/test_rights.py tests/test_privacy.py tests/test_privacy_recovery.py tests/test_rights_cube_filter.py tests/test_read_api.py tests/test_privacy_exports.py -q --timeout=120 -ra
 
+  test-consumer-domains:
+    name: Test Consumer Domains (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
+        ports:
+          - 9010:9010
+    env:
+      SPANNER_EMULATOR_HOST: localhost:9010
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --require-hashes -r scripts/python/requirements.lock
+
+      - name: Require Spanner emulator
+        run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
+
+      # Persona, wardrobe, social, rewards and media, including My Data end to end
+      # and real Pub/Sub delivery through the foundation outbox worker.
+      - name: Test persona, wardrobe, social, rewards and try-on
+        env:
+          PUBSUB_EMULATOR_BIN: .cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
+        run: |
+          python scripts/python/fetch_pubsub_emulator.py
+          test -x "$PUBSUB_EMULATOR_BIN"
+          python -m pytest tests/test_persona_*.py tests/test_wardrobe_*.py tests/test_social_*.py tests/test_rewards_*.py tests/test_media_*.py -q --timeout=300 -ra
+
   test-chain:
     name: Test Chain (Node/TypeScript)
     runs-on: ubuntu-latest
@@ -186,7 +221,7 @@ jobs:
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [test-gateway, test-core, test-chain, test-frontend, security-scan]
+    needs: [test-gateway, test-core, test-consumer-domains, test-chain, test-frontend, security-scan]
     timeout-minutes: 40
     env:
       PUBLISH_IMAGES: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
