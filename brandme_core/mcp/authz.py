@@ -10,6 +10,11 @@ Two audience-bound credentials exist, matching the interface decision in
 2. **Executor assertion** — a short-lived JWT the gateway signs after
    validation, audience ``brandme:mcp-executor``, carrying the resolved
    principal. The external token is never forwarded (no token passthrough).
+
+The same verifier, with audience ``brandme:commerce-domain`` and
+``allow_session=True``, authenticates the gateway's ``/api/v1`` hop to the
+commerce domain, where a first-party session principal is legitimate. The two
+audiences are never interchangeable.
 """
 
 from __future__ import annotations
@@ -25,6 +30,7 @@ from brandme_core.domains.commerce.principal import Principal, validate_principa
 
 MCP_PROTOCOL_VERSION = "2026-07-28"
 EXECUTOR_AUDIENCE = "brandme:mcp-executor"
+DOMAIN_AUDIENCE = "brandme:commerce-domain"
 ALLOWED_ALGORITHMS = ("ES256", "RS256")  # never HS256/none for externally issued tokens
 MAX_ASSERTION_TTL = 60
 CLOCK_SKEW = 30
@@ -144,15 +150,30 @@ class ExecutorAssertionVerifier:
     """Verifies the gateway's principal assertion before any tool runs."""
 
     def __init__(self, *, gateway_issuer: str, keys: Mapping[str, Any], environment: str,
-                 clock=time.time):
+                 clock=time.time, audience: str = EXECUTOR_AUDIENCE, allow_session: bool = False):
+        if allow_session and audience == EXECUTOR_AUDIENCE:
+            raise ValueError("the MCP executor hop never accepts session principals")
         self.gateway_issuer = gateway_issuer
         self.keys = dict(keys)
         self.environment = environment
         self.clock = clock
+        self.audience = audience
+        self.allow_session = allow_session
         self._seen: Dict[str, int] = {}
         self._lock = threading.Lock()
 
     def verify(self, assertion: str) -> Principal:
+        return self._principal(self._claims(assertion))
+
+    def verify_service(self, assertion: str) -> None:
+        """A principal-less gateway call (provider webhooks): the provider signature is checked downstream."""
+        claims = self._claims(assertion)
+        if claims["principal"] is not None:
+            raise AuthError(401, "invalid_token", "service assertion must not carry a principal")
+        if not self.allow_session:
+            raise AuthError(401, "invalid_token", "service assertions are not accepted on the MCP hop")
+
+    def _claims(self, assertion: str) -> Dict[str, Any]:
         try:
             header = jwt.get_unverified_header(assertion)
         except jwt.PyJWTError:
@@ -162,12 +183,13 @@ class ExecutorAssertionVerifier:
         now = int(self.clock())
         try:
             claims = jwt.decode(assertion, key=self.keys[header["kid"]], algorithms=["ES256"],
-                                issuer=self.gateway_issuer, audience=EXECUTOR_AUDIENCE, leeway=CLOCK_SKEW,
-                                options={"require": ["exp", "iat", "iss", "aud", "jti", "principal"],
+                                issuer=self.gateway_issuer, audience=self.audience, leeway=CLOCK_SKEW,
+                                # "principal" may be null on service assertions, so it is checked below.
+                                options={"require": ["exp", "iat", "iss", "aud", "jti"],
                                          "verify_iat": False},
                                 )
         except jwt.InvalidAudienceError:
-            raise AuthError(401, "invalid_token", "assertion not issued for the tool executor") from None
+            raise AuthError(401, "invalid_token", f"assertion not issued for {self.audience}") from None
         except jwt.PyJWTError as exc:
             raise AuthError(401, "invalid_token", f"invalid executor assertion: {type(exc).__name__}") from None
         if int(claims["exp"]) - int(claims["iat"]) > MAX_ASSERTION_TTL:
@@ -179,31 +201,42 @@ class ExecutorAssertionVerifier:
             if claims["jti"] in self._seen:
                 raise AuthError(401, "invalid_token", "executor assertion replayed")
             self._seen[claims["jti"]] = int(claims["exp"])
+        if "principal" not in claims:
+            raise AuthError(401, "invalid_token", "assertion has no principal claim")
+        return claims
+
+    def _principal(self, claims: Dict[str, Any]) -> Principal:
         p = claims["principal"]
         if not isinstance(p, dict):
             raise AuthError(401, "invalid_token", "principal claim malformed")
         if p.get("environment") != self.environment:
             raise AuthError(401, "invalid_token", "assertion environment mismatch")
-        if p.get("session_id") is not None:
+        session_id = p.get("session_id")
+        if session_id is not None and not self.allow_session:
             # MCP callers are never the trusted surface; a session here is a gateway bug.
             raise AuthError(401, "invalid_token", "session-bound principal on the MCP hop")
+        assurance = p.get("assurance_level", "aal1")
+        if assurance not in ("aal1", "aal2", "aal3") and not (self.allow_session and assurance == "simulated"):
+            raise AuthError(401, "invalid_token", "assurance level not accepted on this hop")
         try:
             principal = Principal(
-                member_id=p["member_id"], subject=p["subject"], session_id=None, client_id=p["client_id"],
-                scopes=frozenset(p.get("scopes", [])), assurance_level=p.get("assurance_level", "aal1"),
+                member_id=p["member_id"], subject=p["subject"], session_id=session_id, client_id=p.get("client_id"),
+                scopes=frozenset(p.get("scopes", [])), assurance_level=assurance,
                 environment=p["environment"], delegation_id=p.get("delegation_id"))
             validate_principal(principal)
         except (KeyError, ValueError, TypeError):
             raise AuthError(401, "invalid_token", "principal claim incomplete") from None
-        if not principal.client_id or not p.get("issuer"):
+        provenance = p.get("issuer") or p.get("identity_provider")
+        if not provenance or (session_id is None and not principal.client_id):
             raise AuthError(401, "invalid_token", "principal claim incomplete")
         return principal
 
 
 def sign_executor_assertion(*, private_key: Any, kid: str, gateway_issuer: str, principal: Dict[str, Any],
-                            jti: str, now: Optional[int] = None, ttl: int = 30) -> str:
+                            jti: str, now: Optional[int] = None, ttl: int = 30,
+                            audience: str = EXECUTOR_AUDIENCE) -> str:
     """Reference signer used by tests and by a Python gateway shim; the TS transport mirrors it."""
     now = int(now if now is not None else time.time())
-    return jwt.encode({"iss": gateway_issuer, "aud": EXECUTOR_AUDIENCE, "iat": now, "exp": now + ttl,
+    return jwt.encode({"iss": gateway_issuer, "aud": audience, "iat": now, "exp": now + ttl,
                        "jti": jti, "principal": principal}, private_key, algorithm="ES256",
                       headers={"kid": kid})

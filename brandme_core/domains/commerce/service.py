@@ -234,6 +234,11 @@ class CommerceService:
             return d
         return self.store.run(_tx)
 
+    def list_delegations(self, principal: Principal) -> List[AgentDelegation]:
+        principal = self._require_first_party(principal, "only the member can list their grants", "not_trusted_surface")
+        return sorted(self.store.for_member("delegations", principal.member_id), key=lambda d: d.created_at,
+                      reverse=True)
+
     # ------------------------------------------------------------------ carts
     def create_cart(self, principal: Principal, *, provider_id: str, merchant_id: str,
                     lines: Sequence[CartLineRequest], idempotency_key: Optional[str] = None) -> Cart:
@@ -571,6 +576,26 @@ class CommerceService:
         if quote is None:
             return op
         return self._submit(op, quote, principal)
+
+    def execute_approved_quote(self, principal: Principal, *, quote_id: str, approval_id: str,
+                               delegation_id: Optional[str], idempotency_key: str) -> PurchaseOperation:
+        """``POST /commerce/purchases`` (contract ``PurchaseRequest``): find the operation the approval was issued for.
+
+        ``delegation_id`` must name the caller's own grant (``null`` for the member's
+        own session); it is a consistency check, never a source of authority.
+        """
+        bound, _ = self._authorize(principal, "commerce:purchase")
+        if delegation_id != bound.delegation_id:
+            raise Forbidden("delegation does not match the authenticated principal", code="delegation_mismatch")
+        approval = self.store.get("approvals", approval_id)
+        if approval is None or approval.member_id != bound.member_id or approval.quote_id != quote_id:
+            raise ApprovalInvalid("unknown approval for this quote")
+        op = next((o for o in self.store.operations_for_quote_hash(approval.quote_hash)
+                   if o.approval_id == approval.id and o.member_id == bound.member_id), None)
+        if op is None:
+            raise ApprovalInvalid("approval is not attached to a purchase")
+        return self.execute_purchase(bound, operation_id=op.id, approval_id=approval.id,
+                                     idempotency_key=idempotency_key)
 
     def _submit(self, op: PurchaseOperation, quote: CheckoutQuote, principal: Principal | str) -> PurchaseOperation:
         # Last gate before the side effect: a revocation that landed after the

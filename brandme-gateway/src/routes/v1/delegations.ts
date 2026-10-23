@@ -2,18 +2,21 @@
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
  * /api/v1/delegations — UNMOUNTED router (lane: opus-commerce-agents).
- * Grants are created and revoked only from the member's first-party session. Defaults: research
- * mode, no substitution, all-in totals, final human approval required (autonomous purchase is
- * refused by the domain until a provider + AP2 open-mandate path is verified).
+ * Grants are created, listed and revoked only from the member's first-party session; one
+ * active grant per (member, client). Defaults: research mode, no substitution, all-in totals,
+ * final human approval required (autonomous purchase is refused by the domain until a
+ * provider + AP2 open-mandate path is verified).
  */
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { CommerceDomainClient, forward, rejectIdentityFields, requireTrustedSurface, validate } from './commerce';
+import {
+  type CommerceDomainClient, forward, rejectIdentityFields, requireIdempotencyKey, requireTrustedSurface, validate,
+} from './commerce';
 
 const money = z.object({ amount_minor: z.string().regex(/^(0|[1-9][0-9]{0,17})$/), currency: z.string().regex(/^[A-Z]{3}$/) }).strict();
 
-const DelegationCreate = z
+export const DelegationCreate = z
   .object({
     client_id: z.string().min(1).max(256),
     mode: z.enum(['research', 'prepare', 'buy_within_rules']).default('research'),
@@ -43,7 +46,8 @@ export function createDelegationsRouter(client: CommerceDomainClient): Router {
   const router = Router();
   router.use(rejectIdentityFields, requireTrustedSurface);
   router.get('/', forward(client, 'delegation.list', () => ({})));
-  router.post('/', validate(DelegationCreate), forward(client, 'delegation.create', (r) => r.body));
-  router.delete('/:id', forward(client, 'delegation.revoke', (r) => ({ delegation_id: r.params.id })));
+  router.post('/', requireIdempotencyKey, validate(DelegationCreate),
+    forward(client, 'delegation.create', (_req, res) => res.locals.input));
+  router.delete('/:id', forward(client, 'delegation.revoke', (req) => ({ delegation_id: req.params.id })));
   return router;
 }

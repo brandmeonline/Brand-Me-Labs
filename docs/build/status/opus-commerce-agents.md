@@ -576,3 +576,70 @@ the container only had Node 22. Python suite: **353 passed, 0 skipped**.
 
 Files: `packages/provider-contracts/{src/index.ts,test/guard.test.ts,README.md}`,
 `brandme_core/domains/providers/contracts.py`, `tests/test_providers.py`.
+
+## Stage S11 — Routers on foundation middleware; unmounted domain HTTP API (2026-10-23)
+
+**Done.** Results:
+
+- Python: **368 passed, 0 skipped** (includes the new `tests/test_commerce_http.py`, 15 tests).
+- Gateway, on Node 24.21.0: `tsc --noEmit` clean; ESLint clean on `src/routes/v1/*.ts`. Full gateway vitest run
+  **34/34**, of which `commerce.test.ts` is 16 and foundation's `me.test.ts` still passes against the emulator.
+- **Nothing is mounted.** `routes/v1/index.ts` (foundation) is untouched. No service starts the Python app.
+
+**TypeScript routers** (`brandme-gateway/src/routes/v1/{commerce,catalog,providers,assistant,delegations}.ts`):
+
+- **Foundation conventions.** The principal is `res.locals.principal` (foundation `Principal`); the round-1 local
+  `Principal`/`req.principal`/`firstPartySession` are gone. Errors are foundation `ApiProblem` → problem+json via
+  `handle`/`problemHandler`, with `request_id`.
+- **Authority split:**
+  - `requireAgentScope`: a first-party session (`via: 'session'`, no delegation) passes; bearer callers need the
+    commerce scope.
+  - `requireRole('provider:admin')`: always required, so a member session is never an operator.
+  - `requireTrustedSurface`: a first-party session only.
+- **Request handling:**
+  - Idempotency-Key is 16–128 characters. Cart edits need `If-Match`; `ETag` passes through.
+  - Domain problems keep their code and extras (e.g. `current_version`). A domain 401 (gateway assertion refused)
+    becomes 503 `dependency_unavailable`, never "you are unauthenticated".
+  - The webhook relay refuses a parsed body; it must be mounted with `express.raw` before JSON.
+- **Routes:**
+  - Contract routes from `@brandme/contracts` (carts, quote, approvals, `POST /commerce/purchases` with
+    `PurchaseRequest`, orders, returns, catalog, delegations, capabilities, assistant).
+  - **Lane extensions not yet in the contract**, for opus-foundation to add: `POST /commerce/operations` {quote_id}
+    (request approval of an exact quote), `GET /commerce/operations/:id`, and
+    `POST /commerce/operations/:id/approval-challenge`. Without them a member UI cannot reach the trusted-surface
+    challenge.
+- **Transport** — `createHttpCommerceDomainClient` in `commerce.ts`:
+  - Each call signs an ES256 assertion: `aud` `brandme:commerce-domain`, at most 60 s, unique `jti`. The principal
+    claim is snake_case, and `session_id` is only set for `via: 'session'`.
+  - It posts to `/internal/commerce/v1/{operation}`. Webhooks go with a principal-less service assertion and the raw
+    body base64-encoded.
+  - It never retries. A transport failure is a retryable 503; the caller retries with the same Idempotency-Key.
+  - Wire schema: `brandme_core/mcp/schemas/domain_assertion.schema.json`.
+
+**Python** (`brandme_core/domains/commerce/http_api.py`, FastAPI 0.104.1 as pinned in `brandme_core/requirements.txt`
+and the foundation lock):
+
+- **`POST /internal/commerce/v1/{operation}`**, 25 operations. Each one has a strict argument allowlist, and unexpected
+  fields are refused (`unexpected_field`). `DomainError` maps to problem+json.
+- **Webhooks:** `POST /internal/commerce/v1/webhooks/{provider_id}` needs a service assertion. A signature or replay
+  failure gets a bare `webhook_rejected`.
+- **Assertions:** `ExecutorAssertionVerifier` gained `audience=` and `allow_session=`. The MCP audience can never be
+  constructed with sessions allowed. The domain audience also accepts `simulated` assurance and principal-less service
+  assertions.
+- **Assistant:** a member session drives Brand.Me's assistant only through its grant to `brandme-assistant`. With no
+  grant it gets `delegation_required`. The task runs under that grant via the same MCP dispatch path.
+- **Operator console:** `provider.list/get/health/setup.get` are read-only views of the registry. They show whether a
+  credential is configured, never its reference. **`provider.setup.update` and `provider.verify` answer 501
+  `not_implemented`**: the operator setup workflow (V006 `ProviderSetupItems`) is not built, and the endpoint says so
+  instead of pretending.
+- **Service additions:** `list_delegations`, and `execute_approved_quote` (contract `PurchaseRequest`, where
+  `delegation_id` must equal the caller's own grant). Catalog search moved to
+  `brandme_core/domains/providers/catalog.py` and is shared by the MCP tool and this API.
+
+**Cross-language check (one-off, local):** assertions signed by the TS client, for a session, a bearer and a webhook,
+verify with the Python domain verifier. The MCP verifier refuses the domain token with "assertion not issued for
+brandme:mcp-executor". `test_assertion_shape_matches_the_published_schema` holds the Python side to the schema. No CI
+runs both languages together.
+
+Addendum to the S9 CI request: also add `tests/test_commerce_http.py` to the proposed `check()` step.
+`fastapi`/`httpx` are already in the foundation lock.
