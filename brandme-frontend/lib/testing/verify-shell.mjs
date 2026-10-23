@@ -349,8 +349,22 @@ try {
       })
       try {
         const page = await context.newPage()
+        const errors = []
+        page.on('pageerror', error => errors.push(error.message))
+        page.on('console', message => {
+          if (message.type() === 'error' && !message.text().startsWith('Failed to load resource:')) {
+            errors.push(message.text())
+          }
+        })
+        async function ready(route) {
+          await page.goto(consumer + route, { waitUntil: 'networkidle' })
+          await page.waitForFunction(() => document.documentElement.dataset.bmPreferencesReady === 'true')
+          await page.evaluate(() => document.fonts.ready)
+          assert(errors.length === 0, errors.join('\n'))
+        }
         for (const route of ['/today', '/me', '/settings']) {
-          await page.goto(consumer + route)
+          // Text resizing is a user action after hydration, not a change to the SSR DOM during hydration.
+          await ready(route)
           await noOverflow(page)
           await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%'
@@ -362,17 +376,20 @@ try {
               `consumer-large-text-${route.slice(1)}.png`,
             ),
             fullPage: true,
+            animations: 'disabled',
           })
+          assert(errors.length === 0, errors.join('\n'))
           await page.evaluate(() => {
             document.documentElement.style.fontSize = ''
           })
         }
         await page.setViewportSize({ width: 320, height: 844 })
-        await page.goto(consumer + '/settings')
+        await ready('/settings')
         await page.evaluate(() => {
           document.documentElement.style.fontSize = '200%'
         })
         await noOverflow(page)
+        assert(errors.length === 0, errors.join('\n'))
       } finally {
         await context.close()
       }
