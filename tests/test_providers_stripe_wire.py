@@ -10,6 +10,8 @@ Without the binary every test here is skipped with a "not run" reason, never
 reported as passed. Evidence label: "wire shape only".
 """
 
+from datetime import timedelta
+
 import pytest
 
 from brandme_core.domains.commerce.money import Money
@@ -105,6 +107,103 @@ def test_wire_lost_response_is_outcome_unknown(stripe_mock_url):
         p.authorize(_auth())
     assert e.value.kind is ProviderErrorKind.OUTCOME_UNKNOWN and e.value.transmitted
     assert client.lost == ["payment_intents"]  # the request was sent; only its answer was lost
+
+
+def _offline_flow_calls():
+    """Run the founder flow (and a decline, a void and a lost answer) on the semantics double; return its requests."""
+    from brandme_core.domains.providers.local_atelier import Behavior
+    from brandme_core.domains.providers.payments.stripe_test import StripeTestConfig, StripeTestPaymentProcessor
+    from tests.fixtures.commerce.harness import line, world
+    from tests.fixtures.providers.stripe_double import StripeSemanticsDouble
+    holder = {}
+
+    def rail(clock):
+        holder["double"] = StripeSemanticsDouble(clock)
+        return StripeTestPaymentProcessor(StripeTestConfig(SK_TEST), wire=holder["double"], environment="development",
+                                          clock=clock, log=lambda r: None)
+    w = world(payments=rail)
+
+    def buy(*lines_, key):
+        _, _, op = w.prepared(w.member, *lines_)
+        return w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=w.approve(op).id, idempotency_key=key)
+    res = buy(line("overshirt"), line("bag"), key="wire-replay-buy-000001")
+    ref = w.store.get("orders", res.order_id).provider_order_ref
+    for h, b in w.provider.ship(ref):
+        w.svc.handle_webhook("demo_atelier", h, b)
+    w.provider.arm(Behavior.REFUND, source_variant_ref="demo-bag-m", quantity=1)
+    w.provider.refund(ref)
+    cancelled = buy(line("trousers"), key="wire-replay-buy-000002")
+    w.svc.request_cancellation(w.member, cancelled.order_id, idempotency_key="wire-replay-cancel-0001")
+    w.provider.arm(Behavior.REJECTED_AUTH)
+    assert buy(line("dress"), key="wire-replay-buy-000003").state == "rejected"
+    holder["double"].lose_next("create_payment_intent")
+    holder["double"].search_lag = timedelta(minutes=30)  # search misses it; the list scan finds it
+    lost = buy(line("jacket"), key="wire-replay-buy-000004")
+    w.clock.advance(minutes=3)
+    assert w.svc.reconcile(lost.id).state == "accepted"
+    return holder["double"].calls
+
+
+def test_wire_shape_every_request_of_the_offline_flow(stripe_mock_url):
+    """Wire shape only: each request the processor made in the offline flow is replayed to stripe-mock.
+
+    stripe-mock validates request shape against Stripe's OpenAPI spec and returns canned fixtures (status stays
+    requires_payment_method, metadata comes back {}); this proves wire validity, not payment behaviour. No status
+    or metadata is asserted; only that no request shape is refused."""
+    from brandme_core.domains.providers.payments.stripe_wire import WireError
+    wire = _wire(stripe_mock_url)
+    calls = _offline_flow_calls()
+    methods = {c[0] for c in calls}
+    assert {"create_payment_intent", "capture_payment_intent", "cancel_payment_intent", "create_refund",
+            "retrieve_payment_intent", "list_refunds", "search_payment_intents", "list_payment_intents"} <= methods
+    ids = {}  # double object id -> stripe-mock object id
+    refused = []
+    for method, request, key in calls:
+        try:
+            if method == "create_payment_intent":
+                out = wire.create_payment_intent(request, idempotency_key=key)
+                ids.setdefault(f"#{len(ids)}", out["id"])
+                continue
+            if method in ("capture_payment_intent", "cancel_payment_intent"):
+                pi, params = request
+                getattr(wire, method)(ids.get(pi, _any(ids)), params, idempotency_key=key)
+            elif method == "create_refund":
+                wire.create_refund({**request, "payment_intent": _any(ids)}, idempotency_key=key)
+            elif method in ("retrieve_payment_intent", "list_refunds"):
+                getattr(wire, method)(_any(ids))
+            elif method == "search_payment_intents":
+                wire.search_payment_intents(request)
+            elif method == "list_payment_intents":
+                wire.list_payment_intents(created_gte=request["created_gte"], starting_after=None)
+        except WireError as e:
+            if e.kind == "invalid_request":
+                refused.append((method, e.code))
+            elif e.kind != "card_error":
+                raise
+    assert refused == [] and len(calls) > 20
+
+
+def _any(ids):
+    return next(iter(ids.values()))
+
+
+def test_wire_canned_response_is_never_accepted(stripe_mock_url):
+    """Wire shape only. stripe-mock's canned PaymentIntent carries none of the order's binding (metadata {}), so the
+    merchant voids it and rejects the purchase: a canned or foreign object is never taken as this order's payment."""
+    from brandme_core.domains.providers.payments.stripe_test import StripeTestPaymentProcessor
+    from tests.fixtures.commerce.harness import line, world
+    wire = _wire(stripe_mock_url)
+    w = world(payments=lambda clock: StripeTestPaymentProcessor(StripeTestConfig(SK_TEST), wire=wire,
+                                                                environment="development", clock=clock,
+                                                                log=lambda r: None))
+    stock = dict(w.provider._stock)
+    _, _, op = w.prepared(w.member, line())
+    res = w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=w.approve(op).id,
+                                 idempotency_key="wire-canned-00000001")
+    assert (res.state, res.reason_code) == ("rejected", "payment_binding_mismatch")
+    assert w.store.rows("orders") == [] and w.provider._stock == stock
+    (rec,) = w.provider._orders.values()
+    assert rec.release_reason == "binding_mismatch" and rec.pending == {}
 
 
 def test_unreachable_processor_is_outcome_unknown_for_writes_and_transient_for_reads():
