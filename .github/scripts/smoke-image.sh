@@ -19,6 +19,29 @@ case "$service" in
   core)
     docker run --rm --entrypoint python "$image" -m pip check
     docker run --rm --entrypoint python "$image" -m brandme_core.events.worker --help
+    docker run --rm --entrypoint python "$image" -m brandme_core.read_api --help
+    docker run --rm --entrypoint python "$image" -c "from brandme_core.read_api.app import create_app; from brandme_core.read_api.config import ReadConfig; print('authenticated read API runtime imports OK')"
+    docker run --rm -i --entrypoint python "$image" - <<'PY'
+from fastapi.testclient import TestClient
+from brandme_core.read_api.app import create_app
+from brandme_core.read_api.config import ReadConfig
+
+class UnavailableDatabase:
+    def snapshot(self, **kwargs):
+        raise RuntimeError('private provider error must not escape')
+
+config = ReadConfig('development', 'test', 'test', 'test', 'preprod', 'ab' * 32,
+                    'rights-test-credential-32-characters', 'privacy-test-credential-32-characters')
+with TestClient(create_app(UnavailableDatabase(), config)) as client:
+    assert client.get('/privacy/inventory').status_code == 401
+    response = client.get('/privacy/inventory', headers={
+        'Authorization': 'Bearer ' + config.privacy_token,
+        'X-Subject-Ref': '11111111-1111-4111-8111-111111111111',
+    })
+    assert response.status_code == 503 and response.json() == {'error': 'dependency_unavailable'}
+    assert response.headers['cache-control'] == 'no-store'
+print('packaged read API HTTP authentication and redaction OK')
+PY
     docker run --rm -e BRANDME_MODE=development --entrypoint python "$image" -c "from uuid import uuid4; from brandme_core.domains.rights.projection import apply_observation; from brandme_core.domains.privacy.privacy import MyDataService; from brandme_core.events import EventEnvelope; j = str(uuid4()); EventEnvelope(event_type='privacy.deletion.requested', schema_version='1', aggregate_type='deletion_job', aggregate_id=j, aggregate_version=1, environment='development', actor_ref='service:privacy', correlation_id=j, privacy_class='restricted', payload={'job_id': j, 'scope': 'account'}).validate(); print('core rights/privacy imports and packaged event schema OK')"
     ;;
   console)

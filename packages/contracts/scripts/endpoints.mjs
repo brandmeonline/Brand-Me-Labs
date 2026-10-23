@@ -81,7 +81,9 @@ export const ENDPOINTS = [
   E('post', '/commerce/orders/{orderId}/returns', 'requestReturn', 'commerce', 'commerce-agents', { idempotent: true, accepted: true }),
 
   // Ownership / rights / chain
-  E('get', '/assets/{assetId}/passport', 'getPassport', 'rights', 'midnight-rights'),
+  E('get', '/assets/{assetId}/passport', 'getPassport', 'rights', 'midnight-rights', { public: true, paginated: true, response: 'PassportClaimsRead', status: 'implemented' }),
+  E('get', '/rights/entitlements', 'listMyEntitlements', 'rights', 'midnight-rights', { paginated: true, cursorPattern: '^[0-9a-f]{64}$', response: 'RightsEntitlementsRead', status: 'implemented' }),
+  E('get', '/rights/reprint-jobs/{jobId}', 'getMyReprintJob', 'rights', 'midnight-rights', { response: 'ReprintJobRead', status: 'implemented' }),
   E('post', '/assets/{assetId}/claims', 'submitClaim', 'rights', 'midnight-rights', { idempotent: true, accepted: true }),
   E('post', '/assets/{assetId}/transfers', 'createTransfer', 'rights', 'midnight-rights', { idempotent: true, created: true }),
   E('post', '/transfers/{transferId}/accept', 'acceptTransfer', 'rights', 'midnight-rights', { idempotent: true }),
@@ -94,6 +96,8 @@ export const ENDPOINTS = [
   E('delete', '/try-on/jobs/{jobId}', 'deleteTryOnJob', 'try-on', 'spatial-ar', { noContent: true }),
 
   // Privacy
+  E('get', '/me/data', 'getMyDataInventory', 'privacy', 'foundation', { response: 'MyDataInventoryRead', status: 'implemented', summary: 'Rights category inventory with explicit partial coverage and unavailable write capabilities' }),
+  E('get', '/me/deletion/{jobId}', 'getMyDeletionStatus', 'privacy', 'foundation', { response: 'DeletionStatusRead', status: 'implemented' }),
   E('get', '/me/consents', 'listConsents', 'privacy', 'foundation'),
   E('post', '/me/consents', 'grantConsent', 'privacy', 'foundation', { idempotent: true, created: true }),
   E('delete', '/me/consents/{consentId}', 'revokeConsent', 'privacy', 'foundation', { noContent: true }),

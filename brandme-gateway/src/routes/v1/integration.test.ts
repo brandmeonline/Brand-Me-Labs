@@ -27,10 +27,11 @@ function setup(options: { configured?: boolean; upstream?: (url: string) => Resp
   } as unknown as IdentityStore;
   const fetchImpl = vi.fn(async (url: string | URL | Request) => options.upstream ? options.upstream(String(url)) :
     Response.json(String(url).includes('/midnight/capability')
-      ? { status: 'available', network: 'preprod', reasons: [], badge: 'forged Mainnet badge' } : { items: [], job_id: jobId, network: 'mainnet' }));
+      ? { status: 'available', network: 'preprod', reasons: [], badge: 'forged Mainnet badge' } : { items: [], job_id: jobId, network: 'preprod' }));
   const cfg = loadConfig({ BRANDME_MODE: 'development', IDENTITY_PROVIDER: 'oidc', OIDC_ISSUER: issuer, OIDC_AUDIENCE: 'gateway',
     CHAIN_SERVICE_URL: 'http://chain.internal', ...(options.configured === false ? {} : {
-      RIGHTS_SERVICE_URL: 'http://rights.internal', PRIVACY_SERVICE_URL: 'http://privacy.internal', RIGHTS_SERVICE_TOKEN: token, CHAIN_SERVICE_TOKEN: 'chain-' + token,
+      RIGHTS_SERVICE_URL: 'http://rights.internal', PRIVACY_SERVICE_URL: 'http://privacy.internal', RIGHTS_SERVICE_TOKEN: token,
+      PRIVACY_SERVICE_TOKEN: 'privacy-' + token, CHAIN_SERVICE_TOKEN: 'chain-' + token,
     }) });
   return { app: createApp(cfg, store, { jwks, fetchImpl: fetchImpl as typeof fetch }), fetchImpl };
 }
@@ -91,6 +92,37 @@ describe('mounted rights and My Data authentication boundary', () => {
     expect(r.status).toBe(200);
     const init = (fetchImpl.mock.calls as unknown as [string, RequestInit][])[0]![1];
     expect(JSON.parse(init.body as string).reauth_at).toBe(new Date(auth_time * 1000).toISOString());
+    expect(init.headers).toMatchObject({ authorization: `Bearer privacy-${token}`, 'x-subject-ref': memberId });
+  });
+
+  it('never relabels entitlements from another network', async () => {
+    const { app } = setup({ upstream: (url) => Response.json(url.includes('/capability')
+      ? { status: 'available', network: 'preprod', reasons: [] } : { network: 'mainnet', items: [{ entitlement_id: 'private-record' }] }) });
+    const r = await request(app).get('/api/v1/rights/entitlements').auth(await signed({ scope: 'rights:read' }), { type: 'bearer' });
+    expect(r.status).toBe(503); expect(JSON.stringify(r.body)).not.toContain('private-record');
+  });
+
+  it('forwards only bounded pagination, with no caller-selected visibility', async () => {
+    const { app, fetchImpl } = setup();
+    const bearer = await signed({ scope: 'rights:read' });
+    const cursor = 'ab'.repeat(32);
+    const r = await request(app).get(`/api/v1/rights/entitlements?cursor=${cursor}&limit=1`).auth(bearer, { type: 'bearer' });
+    expect(r.status).toBe(200); expect(r.headers['cache-control']).toBe('no-store');
+    expect(fetchImpl.mock.calls.some(([url]) => String(url).endsWith(`/entitlements?cursor=${cursor}&limit=1`))).toBe(true);
+    expect((await request(app).get(`/api/v1/assets/${jobId}/passport?cursor=${jobId}&limit=2`)).status).toBe(200);
+    const before = fetchImpl.mock.calls.length;
+    for (const suffix of ['limit=101', 'limit=1&limit=2', 'cursor=invalid', 'viewer=owner', 'x-subject-ref=victim']) {
+      expect((await request(app).get(`/api/v1/assets/${jobId}/passport?${suffix}`)).status).toBe(400);
+    }
+    expect(fetchImpl.mock.calls.length).toBe(before);
+  });
+
+  it('does not fall back to the rights credential when privacy authentication is unconfigured', async () => {
+    const cfg = loadConfig({ BRANDME_MODE: 'development', RIGHTS_SERVICE_TOKEN: token, PRIVACY_SERVICE_URL: 'http://privacy.internal' });
+    const { rightsDependencies } = await import('../../services/rights');
+    const fetchImpl = vi.fn();
+    await expect(rightsDependencies(cfg, fetchImpl).upstream.privacy.get('/inventory')).rejects.toMatchObject({ status: 503 });
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('applies the existing cookie CSRF boundary to newly mounted routes', async () => {
@@ -109,6 +141,13 @@ describe('mounted rights and My Data authentication boundary', () => {
     const { app } = setup({ upstream: () => { throw new Error(`provider failed with ${token}`); } });
     const r = await request(app).get('/api/v1/me/data').auth(await signed({ scope: 'privacy:manage' }), { type: 'bearer' });
     expect(r.status).toBe(503); expect(JSON.stringify(r.body)).not.toContain(token);
+  });
+
+  it('redacts client-error provider bodies and returns the public Problem contract', async () => {
+    const { app } = setup({ upstream: () => Response.json({ error: `private ${token}` }, { status: 404 }) });
+    const r = await request(app).get(`/api/v1/me/deletion/${jobId}`).auth(await signed({ scope: 'privacy:manage' }), { type: 'bearer' });
+    expect(r.status).toBe(404); expect(r.body.code).toBe('not_found');
+    expect(r.headers['content-type']).toMatch(/application\/problem\+json/); expect(JSON.stringify(r.body)).not.toContain(token);
   });
 
   it.each([{ status: 'yes', network: 'preprod', reasons: [] }, { status: 'available', network: 'other', reasons: [] }])('fails closed on malformed chain capability', async (cap) => {

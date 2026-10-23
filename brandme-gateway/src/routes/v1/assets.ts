@@ -11,6 +11,7 @@ import { Router } from 'express';
 import type { Router as IRouter } from 'express';
 import { z } from 'zod';
 import { capabilityUnavailable, chainCapability, relay, subjectOr401, type V1Deps } from './chain';
+import { readQuery } from './read-query';
 
 const assetId = z.string().uuid();
 
@@ -35,8 +36,9 @@ export function createAssetsRouter(deps: V1Deps): IRouter {
   router.get('/:id/passport', handle(async (req, res) => {
     const id = assetId.safeParse(req.params.id);
     if (!id.success) { res.status(400).json({ error: 'invalid_asset_id' }); return; }
+    const query = readQuery(req.query, z.string().uuid());
     const subject = deps.subjectOf(req);
-    const r = await deps.upstream.rights.get(`/assets/${id.data}/passport`, subject ? { 'x-subject-ref': subject } : {});
+    const r = await deps.upstream.rights.get(`/assets/${id.data}/passport${query}`, subject ? { 'x-subject-ref': subject } : {});
     relay(res, r);
   }));
 
