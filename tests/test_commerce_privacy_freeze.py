@@ -11,7 +11,7 @@ import pytest
 from jwcrypto.jwk import JWK
 
 from brandme_core.domains.commerce.errors import ProcessingRestricted
-from brandme_core.domains.commerce.privacy_handler import CARTS_QUOTES, ORDERS
+from brandme_core.domains.commerce.privacy_handler import AGENT_GRANTS, CARTS_QUOTES, ORDERS
 from brandme_core.domains.commerce.store import InMemoryCommerceStore
 from brandme_core.domains.providers.contracts import ProviderError, ProviderErrorKind
 from brandme_core.domains.providers.local_atelier import MERCHANT_ID, PROVIDER_ID
@@ -182,3 +182,17 @@ def test_a_retried_cancellation_is_not_re_sent_while_deletion_is_pending(fw, who
         w.svc.request_cancellation(actor, order.id, idempotency_key="freeze-guard-cancel-1")
     assert _trace(w) == before
 
+
+def test_a_pending_grant_deletion_stops_agent_spending(fw):
+    w, freeze = fw
+    act = _execute(w, "agent")
+    freeze(AGENT_GRANTS)
+    before = _trace(w)
+    with pytest.raises(ProcessingRestricted):
+        act()  # the reservation would be a new row of the grant's own ledger
+    assert _trace(w) == before
+    # Category-scoped: the member's own purchase is not a grant write and still goes through.
+    _, _, op = w.prepared(w.member)
+    res = w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=w.approve(op).id,
+                                 idempotency_key="freeze-guard-member-01")
+    assert res.state == "accepted"

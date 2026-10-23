@@ -235,6 +235,23 @@ def test_member_and_agent_writes_are_refused_while_deletion_is_pending(my_data):
                             allowed_providers={"demo_atelier"}, limits=None, expires_at=w.clock.now + timedelta(days=1))
 
 
+def test_a_pending_grant_deletion_stops_agent_spending_and_the_grant_is_erased(my_data):
+    svc, w = my_data
+    d, ag = w.delegate()
+    _, _, op = w.prepared(ag)
+    approval = w.approve(op)  # the member approved; then asked My Data to delete their grants
+    job = svc.request_deletion(MEMBER, _real_now(), [AGENT_GRANTS])
+    with pytest.raises(ProcessingRestricted):
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id,
+                               idempotency_key="privacy-grant-exec-0001")
+    assert w.provider.submit_calls == [] and w.store.budget_entries(d.id) == []
+    receipt = svc.run_deletion(job)
+    # No order was made under the grant, so nothing keeps it as evidence: it is erased.
+    assert receipt["categories"][AGENT_GRANTS]["status"] == "deleted"
+    assert w.store.get("delegations", d.id) is None
+    assert w.store.get("operations", op.id).state == "cancelled"
+
+
 def test_account_deletion_freezes_every_commerce_write(my_data):
     """Grant and cart writes here; every money path (request, approve, AP2, execute, return, cancel),
     on both stores, in tests/test_commerce_privacy_freeze.py."""

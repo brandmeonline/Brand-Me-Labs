@@ -635,6 +635,8 @@ class CommerceService:
 
         def _tx(tx):
             self._guard(tx, principal.member_id, ORDERS)
+            if delegation is not None:  # spending under a grant writes the grant's own budget ledger
+                self._guard(tx, principal.member_id, AGENT_GRANTS)
             if scope:
                 winner = tx.get("idempotency", scope)
                 if winner is not None:  # a concurrent duplicate committed first
