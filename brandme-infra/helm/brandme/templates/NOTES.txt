@@ -1,0 +1,19 @@
+Brand.Me {{ .Values.mode }} release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+Schema migrations ran as the pre-install/pre-upgrade hook Job
+{{ include "brandme.componentName" (list . "migrations") }} (kubectl logs job/{{ include "brandme.componentName" (list . "migrations") }}).
+
+Verify each process against its real dependencies:
+  kubectl -n {{ .Release.Namespace }} get deploy,pods -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- if .Values.eventsWorker.enabled }}
+  kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "events-worker") }} -- python -m brandme_core.events.worker --check
+{{- end }}
+{{- if .Values.exportsWorker.enabled }}
+  kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "exports-worker") }} -- python -m brandme_core.privacy_exports --check
+{{- end }}
+{{- if .Values.readApi.enabled }}
+  kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "read-api") }} -- python -m brandme_core.read_api --check
+{{- end }}
+
+Nothing here proves funded Midnight transactions, Preprod finality, or that a
+public endpoint is safe. See docs/build/deploy/gke-verification-packet.md.

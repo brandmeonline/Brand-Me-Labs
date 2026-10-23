@@ -1,0 +1,134 @@
+{{- /*
+Copyright (c) Brand.Me, Inc. All rights reserved.
+Default deny for the namespace, then one allow-list policy per workload.
+Flows (nothing else is permitted):
+  load balancer (only if ingress.enabled) -> gateway, console
+  gateway -> chain, read-api, exports-api
+  every Google-identity workload -> DNS, GKE metadata server, HTTPS egress
+  console -> DNS only
+Kubelet probes come from the node and are not subject to these policies on
+GKE Dataplane V2 / Calico.
+*/ -}}
+{{- if .Values.networkPolicy.enabled }}
+{{- $root := . }}
+{{- if .Values.networkPolicy.namespaceDefaultDeny }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "brandme.fullname" . }}-default-deny
+  labels:
+    {{- include "brandme.labels" (list . "network") | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+{{- end }}
+{{- $backends := list }}
+{{- if .Values.chain.enabled }}{{ $backends = append $backends (list "chain" .Values.chain.port) }}{{ end }}
+{{- if .Values.readApi.enabled }}{{ $backends = append $backends (list "read-api" .Values.readApi.port) }}{{ end }}
+{{- if .Values.exportsApi.enabled }}{{ $backends = append $backends (list "exports-api" .Values.exportsApi.port) }}{{ end }}
+{{- if .Values.gateway.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "brandme.componentName" (list . "gateway") }}
+  labels:
+    {{- include "brandme.labels" (list . "gateway") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "brandme.selectorLabels" (list . "gateway") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    {{- if .Values.ingress.enabled }}
+    - from:
+        {{- range .Values.networkPolicy.loadBalancerSourceRanges }}
+        - ipBlock: {cidr: {{ . }}}
+        {{- end }}
+      ports:
+        - {port: {{ .Values.gateway.port }}, protocol: TCP}
+    {{- else }} []
+    {{- end }}
+  egress:
+    {{- include "brandme.egressBase" . | nindent 4 }}
+    {{- range $b := $backends }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "brandme.selectorLabels" (list $root (index $b 0)) | nindent 14 }}
+      ports:
+        - {port: {{ index $b 1 }}, protocol: TCP}
+    {{- end }}
+{{- end }}
+{{- range $b := $backends }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "brandme.componentName" (list $root (index $b 0)) }}
+  labels:
+    {{- include "brandme.labels" (list $root (index $b 0)) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "brandme.selectorLabels" (list $root (index $b 0)) | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    {{- if $root.Values.gateway.enabled }}
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "brandme.selectorLabels" (list $root "gateway") | nindent 14 }}
+      ports:
+        - {port: {{ index $b 1 }}, protocol: TCP}
+    {{- else }} []
+    {{- end }}
+  egress:
+    {{- include "brandme.egressBase" $root | nindent 4 }}
+{{- end }}
+{{- range $w := list (list "exports-worker" $root.Values.exportsWorker.enabled) (list "events-worker" $root.Values.eventsWorker.enabled) }}
+{{- if index $w 1 }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "brandme.componentName" (list $root (index $w 0)) }}
+  labels:
+    {{- include "brandme.labels" (list $root (index $w 0)) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "brandme.selectorLabels" (list $root (index $w 0)) | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+    {{- include "brandme.egressBase" $root | nindent 4 }}
+{{- end }}
+{{- end }}
+{{- if .Values.console.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "brandme.componentName" (list . "console") }}
+  labels:
+    {{- include "brandme.labels" (list . "console") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "brandme.selectorLabels" (list . "console") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    {{- if .Values.ingress.enabled }}
+    - from:
+        {{- range .Values.networkPolicy.loadBalancerSourceRanges }}
+        - ipBlock: {cidr: {{ . }}}
+        {{- end }}
+      ports:
+        - {port: {{ .Values.console.port }}, protocol: TCP}
+    {{- else }} []
+    {{- end }}
+  egress:
+    {{- include "brandme.egressDns" . | nindent 4 }}
+{{- end }}
+{{- end }}

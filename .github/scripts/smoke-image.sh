@@ -17,13 +17,27 @@ case "$service" in
     docker run --rm -e BRANDME_MODE=production --entrypoint python "$image" -c "from typer.testing import CliRunner; from agentic.cli.main import app; from brandme_core.config import TrustPathViolation; r = CliRunner().invoke(app, ['scan', '--tag', 'test', '--scanner-id', 'test']); assert isinstance(r.exception, TrustPathViolation), r.exception; print('legacy simulated workflow refused in production')"
     ;;
   core)
+    # Default build is the `runtime` stage: non-root, no default process.
+    test "$(docker run --rm --entrypoint id "$image" -u)" = 10001
+    set +e; usage=$(docker run --rm "$image" 2>&1); rc=$?; set -e
+    test "$rc" -eq 64 && grep -q 'python -m brandme_core.read_api' <<<"$usage"
+    echo 'runtime default command prints usage and exits 64'
     docker run --rm --entrypoint python "$image" -m pip check
     docker run --rm --entrypoint python "$image" -m brandme_core.events.worker --help
     docker run --rm --entrypoint python "$image" -m brandme_core.read_api --help
     docker run --rm --entrypoint python "$image" -m brandme_core.privacy_exports --help
+    docker run --rm --entrypoint python "$image" brandme-data/spanner/migrations/runner.py --help
+    docker run --rm --read-only --network none --entrypoint python "$image" -c "import sys; sys.path.insert(0, 'brandme-data/spanner/migrations'); import runner; v = [m.version for m in runner.load_migrations()]; assert v and 13 in v and 14 in v, v; print('packaged migrations', v)"
+    # Strict modes refuse incomplete configuration before any network call.
+    for module in brandme_core.read_api brandme_core.privacy_exports brandme_core.events.worker; do
+      set +e; out=$(docker run --rm --read-only --network none -e BRANDME_MODE=sandbox -e ENVIRONMENT=sandbox --entrypoint python "$image" -m "$module" --check 2>&1); rc=$?; set -e
+      test "$rc" -eq 2 && test "$out" = '{"status":"startup_refused"}'
+    done
+    echo 'sandbox --check refuses missing configuration (exit 2)'
     docker run --rm --entrypoint python "$image" -c "from brandme_core.privacy_exports.app import create_app; from brandme_core.privacy_exports.storage import PrivateStore; print('selected rights export API and worker imports OK')"
     docker run --rm --entrypoint python "$image" -c "from brandme_core.read_api.app import create_app; from brandme_core.read_api.config import ReadConfig; print('authenticated read API runtime imports OK')"
-    docker run --rm -i --entrypoint python "$image" - <<'PY'
+    # Read-only root + /tmp tmpfs mirrors the chart's securityContext.
+    docker run --rm -i --read-only --tmpfs /tmp --entrypoint python "$image" - <<'PY'
 from fastapi.testclient import TestClient
 from brandme_core.read_api.app import create_app
 from brandme_core.read_api.config import ReadConfig

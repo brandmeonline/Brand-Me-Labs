@@ -1,0 +1,72 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# Offline gate for the GKE manifests (brandme-infra/helm/brandme): pinned,
+# checksum-verified helm + kubeconform, strict lint, schema validation against
+# the GKE Regular-channel Kubernetes versions, hardening assertions, negative
+# rendering tests and the env contract with the core processes' own
+# validators. No cloud credentials; nothing is deployed. See
+# docs/build/deploy/gke-verification-packet.md.
+name: Deploy manifests
+
+on:
+  # push only on main; feature branches are validated by their pull_request
+  # run, so a PR never builds twice (see ci-cd.yml:9-16).
+  push:
+    branches:
+      - main
+    paths:
+      - 'brandme-infra/**'
+      - 'scripts/validate-helm.sh'
+      - '.github/workflows/deploy-validate.yml'
+      # The env contract stage feeds rendered env to these validators.
+      - 'brandme_core/read_api/config.py'
+      - 'brandme_core/privacy_exports/config.py'
+      - 'brandme_core/events/worker.py'
+      - 'brandme_core/events/pubsub.py'
+      - 'brandme_core/config.py'
+  pull_request:
+    paths:
+      - 'brandme-infra/**'
+      - 'scripts/validate-helm.sh'
+      - '.github/workflows/deploy-validate.yml'
+      - 'brandme_core/read_api/config.py'
+      - 'brandme_core/privacy_exports/config.py'
+      - 'brandme_core/events/worker.py'
+      - 'brandme_core/events/pubsub.py'
+      - 'brandme_core/config.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-manifests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Helm lint, render and kubeconform
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python for the env contract check
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install hashed Python dependencies
+        run: pip install --require-hashes -r scripts/python/requirements.lock
+
+      # Archives are re-verified against the pinned SHA-256 on every run, so
+      # a cache hit only saves the download.
+      - name: Cache verified tool archives and pinned schemas
+        uses: actions/cache@v4
+        with:
+          path: .cache/tools
+          key: deploy-manifest-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/validate-helm.sh') }}
+
+      - name: Validate chart
+        env:
+          BRANDME_PYTHON: python
+        run: bash scripts/validate-helm.sh

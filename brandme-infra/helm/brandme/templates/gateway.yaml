@@ -1,0 +1,141 @@
+{{- /*
+Copyright (c) Brand.Me, Inc. All rights reserved.
+Gateway: brandme-gateway/Dockerfile runtime (node, uid 1000), port 3001,
+GET /healthz (brandme-gateway/src/index.ts:56). Strict modes need OIDC
+issuer/audience over https and https PUBLIC_ORIGINS (src/middleware/mode.ts).
+*/ -}}
+{{- if .Values.gateway.enabled }}
+{{- $root := . }}
+{{- $c := .Values.gateway }}
+{{- $name := include "brandme.componentName" (list . "gateway") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "brandme.labels" (list . "gateway") | nindent 4 }}
+spec:
+  replicas: {{ $c.replicas }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "brandme.selectorLabels" (list . "gateway") | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels:
+        {{- include "brandme.labels" (list . "gateway") | nindent 8 }}
+      {{- with .Values.podDefaults.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ $name }}
+      {{- include "brandme.podDefaults" . | nindent 6 }}
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        {{- include "brandme.podSecurityContext" (list . 1000) | nindent 8 }}
+      containers:
+        - name: gateway
+          image: {{ include "brandme.image" (list . "gateway") | quote }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          command: ["node", "dist/index.js"]
+          ports:
+            - name: http
+              containerPort: {{ $c.port }}
+              protocol: TCP
+          env:
+            {{- include "brandme.modeEnv" . | nindent 12 }}
+            - name: PORT
+              value: {{ $c.port | quote }}
+            - name: LOG_LEVEL
+              value: {{ $c.logLevel | quote }}
+            - name: DEFAULT_REGION
+              value: {{ .Values.gcp.region | quote }}
+            - name: IDENTITY_PROVIDER
+              value: "oidc"
+            - name: OIDC_ISSUER
+              value: {{ include "brandme.req" (list $c.oidc.issuer "gateway.oidc.issuer") | quote }}
+            - name: OIDC_AUDIENCE
+              value: {{ include "brandme.req" (list $c.oidc.audience "gateway.oidc.audience") | quote }}
+            {{- with $c.oidc.jwksUri }}
+            - name: OIDC_JWKS_URI
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with $c.oidc.algorithms }}
+            - name: OIDC_ALGORITHMS
+              value: {{ . | quote }}
+            {{- end }}
+            - name: PUBLIC_ORIGINS
+              value: {{ join "," $c.publicOrigins | quote }}
+            - name: CORS_ORIGINS
+              value: {{ join "," (default $c.publicOrigins $c.corsOrigins) | quote }}
+            {{- include "brandme.spannerEnv" . | nindent 12 }}
+            {{- if .Values.chain.enabled }}
+            - name: CHAIN_SERVICE_URL
+              value: {{ include "brandme.serviceUrl" (list . "chain" .Values.chain.port) | quote }}
+            {{- include "brandme.secretEnv" (list . "CHAIN_SERVICE_TOKEN" "chainServiceToken") | nindent 12 }}
+            {{- end }}
+            {{- if .Values.readApi.enabled }}
+            - name: RIGHTS_SERVICE_URL
+              value: {{ printf "%s/rights" (include "brandme.serviceUrl" (list . "read-api" .Values.readApi.port)) | quote }}
+            - name: PRIVACY_SERVICE_URL
+              value: {{ printf "%s/privacy" (include "brandme.serviceUrl" (list . "read-api" .Values.readApi.port)) | quote }}
+            {{- include "brandme.secretEnv" (list . "RIGHTS_SERVICE_TOKEN" "rightsServiceToken") | nindent 12 }}
+            {{- include "brandme.secretEnv" (list . "PRIVACY_SERVICE_TOKEN" "privacyServiceToken") | nindent 12 }}
+            {{- end }}
+            {{- if .Values.exportsApi.enabled }}
+            - name: PRIVACY_EXPORT_SERVICE_URL
+              value: {{ include "brandme.serviceUrl" (list . "exports-api" .Values.exportsApi.port) | quote }}
+            {{- include "brandme.secretEnv" (list . "PRIVACY_EXPORT_SERVICE_TOKEN" "privacyExportServiceToken") | nindent 12 }}
+            {{- end }}
+            {{- with $c.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          startupProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          {{- include "brandme.preStop" . | nindent 10 }}
+          resources:
+            {{- toYaml $c.resources | nindent 12 }}
+          securityContext:
+            {{- include "brandme.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            {{- include "brandme.tmpMount" . | nindent 12 }}
+      volumes:
+        {{- include "brandme.tmpVolume" . | nindent 8 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "brandme.labels" (list . "gateway") | nindent 4 }}
+  {{- if .Values.ingress.enabled }}
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: {{ printf "{\"default\": \"%s\"}" $name | squote }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "brandme.selectorLabels" (list . "gateway") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ $c.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}
