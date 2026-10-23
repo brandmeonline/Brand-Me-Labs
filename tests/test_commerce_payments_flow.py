@@ -519,6 +519,30 @@ def test_a_lost_cancellation_response_is_re_sent_under_the_same_merchant_key(w, 
     assert out["status"] == "cancelled" and keys[0] == keys[1] and len(_voids(w)) == 1
 
 
+@pytest.mark.parametrize("lost", ["response", "request"])
+def test_a_retried_cancellation_never_refunds_the_same_units_twice(w, lost):
+    """A refund lost inside a member cancellation is settled under its own key on retry, never sent anew."""
+    _, res = _buy(w, w.member, line("overshirt"), line("bag"))
+    order = _order(w, res)
+    w.provider.arm(Behavior.PARTIAL_FULFILLMENT, source_variant_ref="demo-bag-m", quantity=0)
+    _hook(w, w.provider.ship(order.provider_order_ref))  # captured in full; the bag has not shipped
+    (_lose_response if lost == "response" else _lose_request)(w, "refund")
+    with pytest.raises(ProviderError):
+        w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    if lost == "request":  # absent inside the settle window: the retry waits for it, never sends another
+        with pytest.raises(ProviderError) as e:
+            w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+        assert e.value.kind is ProviderErrorKind.OUTCOME_UNKNOWN
+        w.clock.advance(minutes=3)
+    out = w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)  # the same key, as documented
+    assert set(_calls(w, "refund")) == {("refund", payment_key(_base(w, res), "refund", 1))}
+    assert _held(w, order.provider_order_ref).refunded == Money(BAG, "USD")  # one bag, refunded once
+    o = w.store.get("orders", order.id)
+    assert (out["status"], out["units_cancelled"]) == ("partially_cancelled", 1)
+    assert o.refunded_total == Money(BAG, "USD") and w.provider.rail_health()["pending_money_ops"] == 0
+    assert w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY) == out  # replay
+
+
 # ======================================================= payments and fulfillment behind the merchant (§13.4)
 BAG = 12900 + 12900 * 800 // 10_000
 

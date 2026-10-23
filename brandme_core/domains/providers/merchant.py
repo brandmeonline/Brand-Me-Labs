@@ -99,6 +99,8 @@ class MerchantOrder:
     pending: Dict[str, PendingMoneyOp] = field(default_factory=dict)  # written before processor I/O
     cancel_seq: int = 0
     exchange_seq: int = 0
+    # Fulfillment cancel key -> the refund key its release sent (None: no money call). Written before I/O.
+    releases: Dict[str, Optional[str]] = field(default_factory=dict)
 
 
 class ComposedMerchantAdapter:
@@ -569,7 +571,7 @@ class ComposedMerchantAdapter:
         value = sum(self.line_value_minor(r, u) for r, u in res.cancelled)
         if value == 0:
             raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "no unshipped units to cancel")
-        self._release(rec, pay, value, "cancelled_units")
+        self._release(rec, pay, value, "cancelled_units", once_per=key)
 
     def cancel(self, order_ref: str, source_variant_ref: Optional[str] = None,
                quantity: Optional[int] = None) -> List[Tuple[Dict[str, str], bytes]]:
@@ -581,27 +583,49 @@ class ComposedMerchantAdapter:
         self._cancel(rec, source_variant_ref, quantity, key)
         return self._webhook(order_ref, "fulfillment.cancelled")
 
-    def _release(self, rec: MerchantOrder, pay: PaymentState, value: int, reason: str) -> None:
-        """Money for units no longer owed: void or reduce the uncaptured hold, or refund after capture."""
+    def _release(self, rec: MerchantOrder, pay: PaymentState, value: int, reason: str, *,
+                 once_per: Optional[str] = None) -> None:
+        """Money for units no longer owed: void or reduce the uncaptured hold, or refund after capture.
+
+        ``once_per`` is the fulfillment cancel key. A retry under it (a lost answer, then the same
+        cancellation again) settles the release that key already took; it never takes a second one.
+        """
         if value <= 0:
             return
+        with self._lock:
+            if once_per is not None and once_per in rec.releases:
+                sent = rec.releases[once_per]
+                if sent is not None and sent in rec.pending:  # settled by _settle_pending, never re-taken
+                    raise _unknown("payment outcome pending")
+                return
         owed = self.fulfillment.record(rec.ref).owed_units()
         if pay.status == "authorized":
             if owed == 0:
-                self._void(rec, "merchant_void")
+                self._void(rec, "merchant_void")  # one void key per order: a retry cannot void twice
                 with self._lock:
                     rec.order_status = "cancelled"
             else:
                 with self._lock:
                     rec.cancelled_value += value  # released at capture
+                    if once_per is not None:
+                        rec.releases[once_per] = None
         elif pay.status in ("captured", "partially_refunded"):
             remaining = pay.captured.amount_minor - pay.refunded.amount_minor
             amount = remaining if owed == 0 else min(value, remaining)  # the last units return exactly the rest
             if amount > 0:
                 with self._lock:  # the sequence is taken before I/O, so a lost answer never reuses it
                     rec.refund_seq += 1
-                    seq = rec.refund_seq
-                self._send(rec, self._op("refund", payment_key(rec.idempotency_key, "refund", seq), amount, reason))
+                    op = self._op("refund", payment_key(rec.idempotency_key, "refund", rec.refund_seq), amount,
+                                  reason)
+                    if once_per is not None:
+                        rec.releases[once_per] = op.key
+                try:
+                    self._send(rec, op)
+                except ProviderError:
+                    with self._lock:
+                        if once_per is not None and op.key not in rec.pending:  # refused: nothing was taken
+                            rec.releases.pop(once_per, None)
+                    raise
 
     def refund(self, order_ref: str) -> List[Tuple[Dict[str, str], bytes]]:
         """Refund units (armed ``REFUND``): unshipped ones are cancelled, shipped ones returned."""
