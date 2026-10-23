@@ -236,6 +236,8 @@ def test_member_and_agent_writes_are_refused_while_deletion_is_pending(my_data):
 
 
 def test_account_deletion_freezes_every_commerce_write(my_data):
+    """Grant and cart writes here; every money path (request, approve, AP2, execute, return, cancel),
+    on both stores, in tests/test_commerce_privacy_freeze.py."""
     svc, w = my_data
     svc.request_deletion(MEMBER, _real_now())  # whole account
     with pytest.raises(ProcessingRestricted):
