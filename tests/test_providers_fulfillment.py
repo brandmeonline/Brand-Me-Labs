@@ -135,3 +135,176 @@ def test_return_authorization_refused_beyond_owed_and_pending():
     assert f.pending_returns("demo-order-1", "demo-overshirt-m") == 0
     with pytest.raises(ProviderError):
         f.receive_return("demo-order-1", "demo-overshirt-m", 1)  # more back than went out
+
+
+# ------------------------------------------------------------------- swap proofs
+class Fake3PL:
+    """A minimal third-party fulfillment provider: its own records, no shared code with the simulator."""
+
+    fulfillment_id = "fake_3pl"
+
+    def __init__(self, clock):
+        self.clock = clock
+        self.orders = {}  # order ref -> {variant ref: [ordered, shipped, delivered, returned, cancelled]}
+        self.keys = {}
+
+    def _rec(self, ref):
+        from brandme_core.domains.providers.fulfillment import FulfillmentLine, FulfillmentRecord
+        if ref not in self.orders:
+            raise ProviderError(ProviderErrorKind.MALFORMED_RESPONSE, "unknown order")
+        return FulfillmentRecord(self.fulfillment_id, ref, tuple(FulfillmentLine(v, *c) for v, c in self.orders[ref].items()),
+                                 self.clock(), f"3pl:{ref}")
+
+    def open(self, request):
+        if request.idempotency_key not in self.keys:
+            self.keys[request.idempotency_key] = request.order_ref
+            self.orders[request.order_ref] = {l.source_variant_ref: [l.quantity, 0, 0, 0, 0] for l in request.lines}
+        return self._rec(request.order_ref)
+
+    def record(self, order_ref):
+        return self._rec(order_ref)
+
+    def cancel_unshipped(self, order_ref, source_variant_ref, quantity, *, idempotency_key):
+        from brandme_core.domains.providers.fulfillment import CancellationResult
+        if idempotency_key in self.keys:
+            return self.keys[idempotency_key]
+        done = []
+        for v, c in self.orders[order_ref].items():
+            if source_variant_ref in (None, v):
+                n = min(c[0] - c[1] - c[4], quantity or 99)
+                if n > 0:
+                    c[4] += n
+                    done.append((v, n))
+        self.keys[idempotency_key] = CancellationResult(order_ref, tuple(done), self.clock())
+        return self.keys[idempotency_key]
+
+    def authorize_return(self, order_ref, source_variant_ref, quantity, *, idempotency_key):
+        from brandme_core.domains.providers.fulfillment import ReturnAuthorization
+        c = self.orders[order_ref].get(source_variant_ref)
+        ok = c is not None and 1 <= quantity <= c[0] - c[3] - c[4]
+        return ReturnAuthorization(f"3pl-rma-{len(self.keys)}", order_ref, source_variant_ref, quantity,
+                                   "requested" if ok else "refused", self.clock())
+
+    def request_exchange(self, request):
+        raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "this 3PL does not exchange")
+
+    def verify_webhook(self, headers, body):
+        return None
+
+    # the merchant back office drives these (a real 3PL reports them itself)
+    def ship(self, order_ref, partial=None, deliver=True):
+        for c in self.orders[order_ref].values():
+            c[1] = c[0] - c[4]
+            c[2] = c[1] if deliver else c[2]
+        return self._rec(order_ref)
+
+    def receive_return(self, order_ref, source_variant_ref, quantity):
+        self.orders[order_ref][source_variant_ref][3] += quantity
+        return self._rec(order_ref)
+
+
+class FakeProcessor:
+    """A minimal non-simulator payment processor: authorize, capture, void, refund and reads, in memory."""
+
+    processor_id = "fake_pay"
+    simulation = True
+    label = "Fake processor for the swap test — no real payment occurs."
+
+    def __init__(self, clock):
+        from brandme_core.domains.providers.payments import PaymentRailDescriptor
+        self.clock = clock
+        self.descriptor = PaymentRailDescriptor("fake_pay", "simulated", "development", self.label, "fake-payee")
+        self.test_instruments = ("pm_card_visa", "pm_card_chargeDeclined")
+        self.p = {}
+        self.ops = set()
+
+    def _state(self, ref):
+        from brandme_core.domains.commerce.money import Money
+        from brandme_core.domains.providers.payments import PaymentState
+        x = self.p[ref]
+        cur = x["auth"].currency
+        status = x["status"]
+        if status == "captured" and x["refunded"]:
+            status = "refunded" if x["refunded"] >= x["captured"] else "partially_refunded"
+        return PaymentState(ref, status, x["auth"], Money(x["captured"], cur), Money(x["refunded"], cur), self.clock(),
+                            evidence_ref=f"fake:payment_for:{x['purpose']}", purpose_ref=x["purpose"],
+                            payee_ref="fake-payee", environment="development", authorize_key=x["key"])
+
+    def authorize(self, request):
+        ref = "fake_" + request.idempotency_key[-20:]
+        if ref not in self.p:
+            self.p[ref] = {"auth": request.amount, "captured": 0, "refunded": 0, "purpose": request.purpose_ref,
+                           "key": request.idempotency_key,
+                           "status": "failed" if request.payment_token_ref.endswith("Declined") else "authorized"}
+        return self._state(ref)
+
+    def capture(self, payment_ref, amount, *, idempotency_key):
+        if idempotency_key not in self.ops:
+            self.ops.add(idempotency_key)
+            self.p[payment_ref].update(status="captured", captured=amount.amount_minor)
+        return self._state(payment_ref)
+
+    def void(self, payment_ref, *, idempotency_key, reason="merchant_void"):
+        self.ops.add(idempotency_key)
+        self.p[payment_ref]["status"] = "voided"
+        return self._state(payment_ref)
+
+    def refund(self, payment_ref, amount, *, idempotency_key):
+        if idempotency_key not in self.ops:
+            self.ops.add(idempotency_key)
+            self.p[payment_ref]["refunded"] += amount.amount_minor
+        return self._state(payment_ref)
+
+    def lookup(self, payment_ref):
+        return self._state(payment_ref)
+
+    def find(self, purpose_ref, *, settled):
+        hit = [r for r, x in self.p.items() if x["purpose"] == purpose_ref]
+        return self._state(hit[0]) if hit else None
+
+    def operation_effect(self, payment_ref, idempotency_key):
+        return "applied" if idempotency_key in self.ops else "absent"
+
+    def verify_webhook(self, headers, body):
+        return None
+
+
+def _purchase_ship_return_refund(w):
+    from brandme_core.domains.providers.local_atelier import Behavior
+    from tests.fixtures.commerce.harness import line
+    _, quote, op = w.prepared(w.member, line("overshirt"), line("bag"))
+    res = w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=w.approve(op).id,
+                                 idempotency_key="swap-proof-0000000001")
+    assert res.state == "accepted"
+    order = w.store.get("orders", res.order_id)
+    for headers, body in w.provider.ship(order.provider_order_ref):
+        w.svc.handle_webhook("demo_atelier", headers, body)
+    o = w.store.get("orders", order.id)
+    assert (o.payment_status, o.fulfillment_status) == ("captured", "fulfilled")
+    assert w.svc.request_return(w.member, order.id, "demo-bag-m", 1)["status"] == "return_requested"
+    w.provider.arm(Behavior.REFUND, source_variant_ref="demo-bag-m", quantity=1)
+    for headers, body in w.provider.refund(order.provider_order_ref):
+        w.svc.handle_webhook("demo_atelier", headers, body)
+    o = w.store.get("orders", order.id)
+    from brandme_core.domains.commerce.money import Money
+    assert o.payment_status == "partially_refunded" and o.refunded_total == Money(12900 + 1032, "USD")
+    assert [r.status for r in w.store.rows("returns")] == ["received"]
+    return o
+
+
+def test_merchant_runs_on_a_different_fulfillment_provider():
+    from tests.fixtures.commerce.harness import world
+    w = world(fulfillment=Fake3PL)
+    assert isinstance(w.provider.fulfillment, FulfillmentProvider) and w.provider.fulfillment.fulfillment_id == "fake_3pl"
+    o = _purchase_ship_return_refund(w)
+    assert {l.source_variant_ref: l.quantity_returned for l in o.lines} == {"demo-overshirt-m": 0, "demo-bag-m": 1}
+
+
+def test_merchant_runs_on_a_different_payment_processor():
+    """The swap proof: the same merchant code path, another PaymentProcessor, no other change."""
+    from brandme_core.domains.providers.payments import PaymentProcessor
+    from tests.fixtures.commerce.harness import world
+    w = world(payments=FakeProcessor)
+    assert isinstance(w.provider.payments, PaymentProcessor) and w.provider.payee_ref == "fake-payee"
+    _purchase_ship_return_refund(w)
+    assert sorted(x["status"] for x in w.provider.payments.p.values()) == ["captured"]

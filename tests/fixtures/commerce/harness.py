@@ -5,6 +5,7 @@ All people, merchants and products are fictional (contracts/demo-scenario.json).
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -91,9 +92,12 @@ class World:
                                 displayed_quote_hash=ch.quote_hash)
 
 
-def world(environment: str = "development", store=None) -> World:
+def world(environment: str = "development", store=None, payments=None, fulfillment=None) -> World:
+    """``payments`` / ``fulfillment``: an instance, or a factory taking the world's clock. Default: simulated."""
     clock = Clock()
-    provider = LocalAtelierProvider(clock)
+    made = lambda x: x(clock) if isinstance(x, type) or inspect.isroutine(x) else x  # noqa: E731
+    payments, fulfillment = made(payments), made(fulfillment)
+    provider = LocalAtelierProvider(clock, payments=payments, fulfillment=fulfillment, environment=environment)
     registry = ProviderRegistry(environment)
     registry.register(local_atelier_connection(provider, environment, clock.now))
     store = store if store is not None else InMemoryCommerceStore()
