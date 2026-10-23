@@ -59,6 +59,7 @@ from brandme_core.domains.persona.kernel import (
 )
 
 from . import events as _events  # noqa: F401
+from . import policy
 from .notifications import blocked_between, notify
 from .relationships import are_friends
 
@@ -76,9 +77,10 @@ SHAREABLE_FIELDS: Dict[str, Tuple[str, ...]] = {
 # What an outfit share discloses about each item of the pinned version.
 OUTFIT_ITEM_FIELDS = ("title", "category", "color_family", "colors")
 
-MIN_LIFETIME = timedelta(minutes=5)
-MAX_LIFETIME = timedelta(days=365)
-MAX_ACTIVE_SHARES = 200
+# PD-10 / PD-11 defaults, pending ratification: see ``policy``.
+MIN_LIFETIME = policy.SHARE_MIN_LIFETIME
+MAX_LIFETIME = policy.SHARE_MAX_LIFETIME
+MAX_ACTIVE_SHARES = policy.SHARE_MAX_ACTIVE
 
 GRANT_COLS = ("member_id", "share_id", "subject_type", "subject_id", "subject_version", "audience", "allowed_fields",
               "recipient_ids", "expires_at", "revoked_at", "version", "created_at")
@@ -92,6 +94,15 @@ class ShareUnavailable(DomainError):
     def __init__(self, reason: str):
         super().__init__("this share is no longer available")
         self.extra = {"reason": reason}
+
+
+def gone(reason: str) -> DomainError:
+    """PD-11: 410 with a reason by default; 404 if the founder overrides it."""
+    return ShareUnavailable(reason) if policy.SHARE_GONE_STATUS == 410 else NotFound("share not found")
+
+
+def _span(d: timedelta) -> str:
+    return f"{d.days} days" if d.days else f"{int(d.total_seconds() // 60)} minutes"
 
 
 def token_hash(token: str) -> str:
@@ -263,7 +274,7 @@ class ShareService:
             except ProcessingFrozen:
                 raise DetailedInvalidTransition("sharing is paused while a privacy request is processed", code="processing_frozen")
             if not (now + MIN_LIFETIME <= req["expires_at"] <= now + MAX_LIFETIME):
-                raise ValidationFailed("expires_at must be between 5 minutes and 365 days from now",
+                raise ValidationFailed(f"expires_at must be between {_span(MIN_LIFETIME)} and {_span(MAX_LIFETIME)} from now",
                                        extra={"field": "expires_at", "server_time": iso(now)})
             unreachable = sorted(r for r in req["recipient_ids"] if r == owner or not are_friends(txn, owner, r))
             if unreachable:
@@ -325,15 +336,15 @@ class ShareService:
             if viewer is None or viewer not in (g["recipient_ids"] or []) or not are_friends(s, owner, viewer):
                 raise NotFound("share not found")
         if g["revoked_at"] is not None:
-            raise ShareUnavailable("revoked")
+            raise gone("revoked")
         if g["expires_at"] <= now:
-            raise ShareUnavailable("expired")
+            raise gone("expired")
         if not member_active(s, owner) or not self._subject_exists(s, g):
-            raise ShareUnavailable("removed")
+            raise gone("removed")
         rows = query(s, "SELECT preview FROM SharePreviews WHERE member_id=@m AND share_id=@s",
                      {"m": owner, "s": g["share_id"]}, {"m": STR, "s": STR})
         if not rows:
-            raise ShareUnavailable("removed")
+            raise gone("removed")
         return {
             "share_id": g["share_id"],
             "subject_type": g["subject_type"],

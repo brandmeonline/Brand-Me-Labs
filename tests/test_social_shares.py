@@ -210,3 +210,19 @@ def test_persona_snapshot_share_has_declared_axes_only(spanner_db):
     with pytest.raises(ValidationFailed):
         shares.create(owner, {"subject_type": "persona_snapshot", "subject_id": snap["snapshot_id"], "audience": "unlisted",
                               "allowed_fields": ["effective_axes"], "recipient_ids": [], "expires_at": later(days=1)}, key())
+
+
+def test_pd11_override_makes_gone_shares_indistinguishable(spanner_db, closet, monkeypatch):
+    from brandme_core.domains.social import policy
+
+    owner, _, _, _, (shirt, _, _) = closet
+    shares = ShareService(spanner_db)
+    s = shares.create(owner, {"subject_type": "wardrobe_item", "subject_id": shirt, "audience": "public",
+                              "allowed_fields": ["title"], "recipient_ids": [], "expires_at": later(days=1)}, key())
+    shares.revoke(owner, s["share_id"])
+    with pytest.raises(ShareUnavailable):
+        shares.open_by_token(s["token"])
+    monkeypatch.setattr(policy, "SHARE_GONE_STATUS", 404)
+    with pytest.raises(NotFound) as e:
+        shares.open_by_token(s["token"])
+    assert not isinstance(e.value, ShareUnavailable) and str(e.value) == "share not found"

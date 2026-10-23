@@ -10,7 +10,7 @@ import { formatTime, opsFetch } from '../../../moderation/_lib/ops-gateway'
 import styles from '../../../moderation/_lib/ops.module.css'
 import { ActionBanner, OpsState } from '../../../moderation/_lib/states'
 import { reverseEntry } from '../../actions'
-import { OpsPageHeader } from '../../../moderation/_lib/page-header'
+import { ConsolePageHeader } from '../../../_shell/console-page-header'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,7 +56,7 @@ export default async function MemberLedgerPage({ params, searchParams }: {
 
   return (
     <>
-      <OpsPageHeader eyebrow="Reward disputes" title="Member ledger" description="Every balance is the sum of this journal. Nothing here edits a balance directly." />
+      <ConsolePageHeader eyebrow="Reward disputes" title="Member ledger" description="Every balance is the sum of this journal. Nothing here edits a balance directly." />
       <p>
         <a href="/rewards-disputes">Back to disputes</a>
       </p>

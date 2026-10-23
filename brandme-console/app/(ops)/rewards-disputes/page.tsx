@@ -10,7 +10,7 @@ import { formatTime, opsFetch, type Page } from '../moderation/_lib/ops-gateway'
 import styles from '../moderation/_lib/ops.module.css'
 import { ActionBanner, OpsState } from '../moderation/_lib/states'
 import { resolveDispute } from './actions'
-import { OpsPageHeader } from '../moderation/_lib/page-header'
+import { ConsolePageHeader } from '../_shell/console-page-header'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +36,7 @@ export default async function RewardDisputesPage({ searchParams }: { searchParam
 
   return (
     <>
-      <OpsPageHeader
+      <ConsolePageHeader
         eyebrow="Rewards"
         title="Reward disputes"
         description="Members asking about missing, wrong or reversed points. Points are app credits, never cash; balances change only through ledger entries."
