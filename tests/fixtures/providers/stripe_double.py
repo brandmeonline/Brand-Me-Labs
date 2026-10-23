@@ -46,6 +46,7 @@ class StripeSemanticsDouble:
         self._lose: Dict[str, bool] = {}  # method -> lose before processing?
         self._fail: Dict[str, WireError] = {}
         self._livemode_next = False
+        self._corrupt: Dict[str, Any] = {}
         self.refund_status = "succeeded"
 
     # -- controls --------------------------------------------------------------
@@ -58,6 +59,10 @@ class StripeSemanticsDouble:
 
     def arm_livemode(self) -> None:
         self._livemode_next = True
+
+    def corrupt_next_create(self, **fields: Any) -> None:
+        """The next created PaymentIntent is stored and answered with these fields changed (e.g. amount)."""
+        self._corrupt = fields
 
     def __call__(self, config) -> "StripeSemanticsDouble":  # usable as a composition stripe_wire_factory
         return self
@@ -154,6 +159,11 @@ class StripeSemanticsDouble:
                     "payment_intent": pi_id, "livemode": False,
                     "payment_method_details": {"type": "card", "card": {"capture_before": now + int(HOLD.total_seconds()),
                                                                          "last4": "4242", "brand": "visa"}}}
+            if self._corrupt:
+                pi.update(self._corrupt)
+                if "amount" in self._corrupt and pi["status"] == "requires_capture":
+                    pi["amount_capturable"] = pi["amount"]
+                self._corrupt = {}
             self.intents[pi_id] = pi
             return pi
         return self._idempotent("create_payment_intent", idempotency_key, dict(params), run)

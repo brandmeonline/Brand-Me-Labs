@@ -361,7 +361,7 @@ class ComposedMerchantAdapter:
                 self._void(rec, release)
             except ProviderError:
                 with self._lock:  # the stock stays held until the void resolves
-                    rec.order_status, rec.reason = "voiding", reason
+                    rec.order_status, rec.reason, rec.release_reason = "voiding", reason, release
                 raise _unknown("payment void outcome unknown") from None
         with self._lock:
             rec.release_reason = release
