@@ -23,6 +23,8 @@ nats-py==2.6.0
 
 # HTTP Client
 httpx==0.26.0
+requests==2.34.2
+google-auth==2.60.0
 aiohttp==3.9.1
 
 # Logging & Monitoring

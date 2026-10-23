@@ -98,7 +98,8 @@ def test_dispatch_is_at_least_once_and_inbox_applies_once(migrated_database):
             failing["left"] -= 1
             raise ConnectionError("ack lost after remote success")  # ...but the ack is lost
 
-    d = OutboxDispatcher(migrated_database, deliver, base_backoff_seconds=0, max_backoff_seconds=0)
+    d = OutboxDispatcher(migrated_database, deliver, environment="development",
+                         base_backoff_seconds=0, max_backoff_seconds=0)
     r1 = d.run_once()
     assert r1.failed >= 1
     r2 = d.run_once()

@@ -145,7 +145,13 @@ jobs:
         run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
 
       - name: Test foundation, rights, and privacy
-        run: python -m pytest tests/foundation tests/test_rights.py tests/test_privacy.py tests/test_rights_cube_filter.py -q --timeout=120 -ra
+        env:
+          PUBSUB_EMULATOR_BIN: .cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
+        run: |
+          python scripts/python/fetch_pubsub_emulator.py
+          test -x "$PUBSUB_EMULATOR_BIN"
+          java -version
+          python -m pytest tests/foundation tests/test_rights.py tests/test_privacy.py tests/test_rights_cube_filter.py -q --timeout=120 -ra
 
   test-chain:
     name: Test Chain (Node/TypeScript)
