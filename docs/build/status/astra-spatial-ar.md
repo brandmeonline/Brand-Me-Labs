@@ -226,4 +226,9 @@ Restored implementation:
 
 - User reports repeated streaming interruptions. Publish small tested increments to the existing draft PR #36 before expanding scope; record the last verified remote commit and unfinished step here. A local commit or uploaded Git blob alone is not a published checkpoint.
 - At resumption, read this file first, check the actual branch/PR head and local worktree, and continue the outstanding step rather than rebuilding completed work. Reuse verified content-addressed blobs safely, with bounded upload batches and an expected-head lease on the branch update. Never force-push or infer publication from chat progress.
-- Current outstanding step: publish the Stage 8–9 folded-display/timing increment and its fresh 30-test evidence. Remote receipt follows after branch and PR verification. No further feature expansion until that checkpoint is durable.
+
+### Stage 10 — published checkpoint (2026-10-23)
+
+- Implementation **published and fetched back** as `5200b12740d38873eb71b05918315b676aa3fb2b` on `bench/astra-spatial-ar-20261005`. Tree `d0e28ad10f8f0cf13be9a19aadb8d61baa9bd1ed` exactly matches tested local commit `e11ecd20060c84fef406b0fe9fd019dd4fe8d089`; the fetched comparison has zero file differences. All 68 changed blobs were SHA-verified before the non-forced update from `7ccc0b4`.
+- **PR #36 verified open and draft**, head `5200b12740d38873eb71b05918315b676aa3fb2b`, base `docs/brandme-full-experience-2026-10-05`; GitHub reports mergeable. Its description now includes folded displays, migration, sequential transition correction, fresh 30-test evidence and the remaining gates. This receipt is a documentation-only follow-up.
+- No implementation upload remains outstanding. Resume future development from this published checkpoint, not from earlier interrupted uploads. Next owned work is broader collision/packing and manual accessibility/direct-canvas polish; foundation/domain integration and native-device/provider evidence remain explicit external gates. No merge, deployment or live capability activation occurred.
