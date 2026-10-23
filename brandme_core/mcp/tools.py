@@ -15,11 +15,10 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import re
 import secrets
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import jsonschema
 
@@ -29,6 +28,9 @@ from brandme_core.domains.commerce.service import CommerceService, correlation
 from brandme_core.domains.providers.contracts import CartLineRequest, ProviderError
 from brandme_core.domains.providers.catalog import UNTRUSTED_TEXT_LIMIT, search_catalog, untrusted_text  # noqa: F401
 from brandme_core.domains.providers.registry import ProviderRegistry
+# Card-number gate and masking live with the payment redaction helpers; the planner and runtime import them here.
+from brandme_core.domains.providers.redaction import contains_card_number as _contains_payment_credential
+from brandme_core.domains.providers.redaction import mask_card_numbers as mask_payment_credentials  # noqa: F401
 
 from .authz import MCP_PROTOCOL_VERSION, AuthError, ExecutorAssertionVerifier
 
@@ -154,59 +156,6 @@ RETIRED_REASON = {
 }
 
 _SPECS = {t.name: t for t in TOOLS}
-_PAN_RE = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
-_UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
-
-
-def _luhn(digits: str) -> bool:
-    total, alt = 0, False
-    for ch in reversed(digits):
-        n = int(ch)
-        if alt:
-            n = n * 2 - 9 if n > 4 else n * 2
-        total += n
-        alt = not alt
-    return total % 10 == 0
-
-
-def mask_payment_credentials(text: str) -> str:
-    """``text`` with Luhn-valid 13-19 digit card numbers replaced (UUIDs are left intact)."""
-    uuids: List[str] = []
-
-    def _hold(m: "re.Match[str]") -> str:
-        uuids.append(m.group())
-        return f"\x00{len(uuids) - 1}\x00"
-
-    held = _UUID_RE.sub(_hold, text)
-
-    def _mask(m: "re.Match[str]") -> str:
-        run = m.group()
-        d = re.sub(r"\D", "", run)
-        if not (13 <= len(d) <= 19 and _luhn(d)):
-            return run
-        return "[card number removed]" + run[len(run.rstrip(" -")):]  # keep the separator after it
-
-    masked = _PAN_RE.sub(_mask, held)
-    return re.sub("\x00(\\d+)\x00", lambda m: uuids[int(m.group(1))], masked)
-
-
-def _contains_payment_credential(value: Any) -> bool:
-    if isinstance(value, str):
-        # Identifiers are not card data: remove UUIDs so their digit runs cannot
-        # chain across hyphens into a Luhn-valid 13-19 digit sequence.
-        value = _UUID_RE.sub(" ", value)
-        for m in _PAN_RE.finditer(value):
-            d = re.sub(r"\D", "", m.group())
-            if 13 <= len(d) <= 19 and _luhn(d):
-                return True
-        return False
-    if isinstance(value, Mapping):
-        return any(_contains_payment_credential(k) or _contains_payment_credential(v) for k, v in value.items())
-    if isinstance(value, (list, tuple)):
-        return any(_contains_payment_credential(v) for v in value)
-    return False
-
-
 
 
 @dataclass(frozen=True)
