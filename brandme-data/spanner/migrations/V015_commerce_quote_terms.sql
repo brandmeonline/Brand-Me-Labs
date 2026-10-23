@@ -14,3 +14,14 @@ CREATE INDEX ApprovalChallengesByMember ON ApprovalChallenges (member_id);
 
 -- Revocation cancels a grant's unsent work.
 CREATE INDEX PurchaseOperationsByDelegation ON PurchaseOperations (delegation_id, state);
+
+-- Units that never ship (cancelled, or refunded before shipment) are counted apart from
+-- returns, so a refund before delivery cannot leave units "on the way" or exceed delivery.
+ALTER TABLE OrderLines ADD COLUMN quantity_cancelled INT64 NOT NULL DEFAULT (0);
+ALTER TABLE OrderLines ADD CONSTRAINT ck_order_line_cancelled
+  CHECK (quantity_cancelled BETWEEN 0 AND quantity_ordered AND quantity_cancelled + quantity_shipped <= quantity_ordered);
+
+-- 'voided': an authorization released before capture (cancelled order or expired hold); no money moved.
+ALTER TABLE Orders DROP CONSTRAINT ck_payment_status;
+ALTER TABLE Orders ADD CONSTRAINT ck_payment_status CHECK (payment_status IN ('unknown', 'authorized', 'captured',
+  'partially_refunded', 'refunded', 'voided', 'failed'));

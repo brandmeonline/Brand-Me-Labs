@@ -22,7 +22,10 @@ from brandme_core.domains.commerce.money import Money
 from brandme_core.domains.providers.contracts import ProviderError, ProviderErrorKind
 from brandme_core.domains.providers.payments import PaymentAuthorization, PaymentState
 from brandme_core.domains.providers.payments.simulated import (
-    HOLD_TTL, SIMULATED_TOKEN, PaymentBehavior, SimulatedPaymentProcessor,
+    HOLD_TTL, PaymentBehavior, SimulatedPaymentProcessor,
+)
+from brandme_core.domains.providers.payments import (
+    TEST_CARD, TEST_CARD_DECLINED, TEST_CARD_NEEDS_AUTHENTICATION,
 )
 from tests.fixtures.providers.stripe_mock import stripe_mock_url  # noqa: F401  (fixture)
 
@@ -37,8 +40,8 @@ class Clock:
         return self.now
 
 
-def _auth(key="pay-key-0000000001", amount=9612, token=SIMULATED_TOKEN, **kw):
-    return PaymentAuthorization(key, USD(amount), "demo-payee", "demo-order-1", token, **kw)
+def _auth(key="pay-key-0000000001", amount=9612, token=TEST_CARD, purpose="demo-order-1", **kw):
+    return PaymentAuthorization(key, USD(amount), "demo-payee", purpose, token, **kw)
 
 
 # ----------------------------------------------------------------- simulated processor
@@ -52,9 +55,13 @@ def test_simulated_authorization_is_idempotent_and_never_charges_twice():
 
 def test_simulated_decline_and_lost_response():
     p = SimulatedPaymentProcessor(Clock())
-    p.arm(PaymentBehavior.DECLINE)
-    d = p.authorize(_auth("pay-key-decline-0001"))
+    ok = p.authorize(_auth("pay-key-ok-000000001", purpose="demo-order-ok"))
+    d = p.authorize(_auth("pay-key-decline-0001", token=TEST_CARD_DECLINED, purpose="demo-order-dc"))
     assert d.status == "failed" and d.decline_code == "card_declined"
+    sca = p.authorize(_auth("pay-key-sca-00000001", token=TEST_CARD_NEEDS_AUTHENTICATION, purpose="demo-order-sca"))
+    assert sca.status == "requires_action"
+    assert p.void(sca.payment_ref, idempotency_key="void-sca-000000001").status == "voided"
+    assert p.find("demo-order-ok").payment_ref == ok.payment_ref and p.find("demo-order-none") is None
     p.arm(PaymentBehavior.TIMEOUT_AFTER_ACCEPT)
     with pytest.raises(ProviderError) as e:
         p.authorize(_auth("pay-key-timeout-0001"))
@@ -128,6 +135,8 @@ def test_wire_shape_authorize_capture_void_refund_lookup(stripe_wire):
                   stripe_wire.refund(a.payment_ref, USD(100), idempotency_key="ref-wire-000000001"),
                   stripe_wire.lookup(a.payment_ref)):
         assert isinstance(state, PaymentState) and state.payment_ref.startswith("pi_")
+    found = stripe_wire.find("demo-order-1")  # the search query shape Stripe accepts
+    assert found is None or found.payment_ref.startswith("pi_")
 
 
 def test_wire_shape_refuses_card_numbers_and_free_text_before_sending(stripe_wire):
@@ -158,19 +167,22 @@ def _signed(payload: dict, secret: str, at: int):
 def test_stripe_webhook_signatures_are_verified_and_live_events_refused():
     pytest.importorskip("stripe")
     from brandme_core.domains.providers.payments.stripe_test import StripeTestPaymentProcessor
-    p = StripeTestPaymentProcessor("sk_test_" + "0" * 24, base_url="http://127.0.0.1:9")
     secret = "whsec_" + "1" * 32
     event = {"id": "evt_1", "object": "event", "type": "payment_intent.succeeded", "livemode": False,
              "data": {"object": {"id": "pi_1", "object": "payment_intent"}}}
+    p = StripeTestPaymentProcessor("sk_test_" + "0" * 24, webhook_secret=secret, base_url="http://127.0.0.1:9")
     headers, body = _signed(event, secret, int(time.time()))
-    assert p.verify_webhook(headers, body, secret).id == "evt_1"
+    assert p.verify_webhook(headers, body).id == "evt_1"
     for h, b in (({"Stripe-Signature": headers["Stripe-Signature"]}, body + b" "),  # tampered
                  _signed(event, "whsec_" + "2" * 32, int(time.time())),  # wrong secret
                  _signed(event, secret, int(time.time()) - 3600),  # outside the replay window
                  _signed({**event, "livemode": True}, secret, int(time.time()))):  # live mode
         with pytest.raises(ProviderError) as e:
-            p.verify_webhook(h, b, secret)
+            p.verify_webhook(h, b)
         assert e.value.kind is ProviderErrorKind.UNAUTHORIZED
+    # A live-mode object latches the processor shut.
+    with pytest.raises(ProviderError):
+        p.lookup("pi_1")
 
 
 # --------------------------------------------------------------- LIVE: Stripe test mode

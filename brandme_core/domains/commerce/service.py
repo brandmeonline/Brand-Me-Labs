@@ -68,7 +68,10 @@ Clock = Callable[[], datetime]
 APPROVAL_CHALLENGE_TTL = timedelta(minutes=5)
 STALE_SUBMITTING = timedelta(minutes=2)
 MAX_CART_LINES = 50
-_PAYMENT_RANK = {"unknown": 0, "authorized": 1, "captured": 2, "partially_refunded": 3, "refunded": 4}
+# Payment status only moves forward. captured, voided and failed are alternative outcomes of an
+# authorization (same rank: the first one observed stands); refunds follow a capture.
+_PAYMENT_RANK = {"unknown": 0, "authorized": 1, "captured": 2, "voided": 2, "failed": 2,
+                 "partially_refunded": 3, "refunded": 4}
 
 
 def _utcnow() -> datetime:
@@ -848,29 +851,36 @@ class CommerceService:
                     # Exchange creates a new variant relationship; history is retained.
                     new_lines.append(OrderLine(resolve(ol.source_variant_ref), ol.source_variant_ref, ol.quantity_ordered,
                                                ol.quantity_shipped, ol.quantity_delivered,
-                                               ol.quantity_returned, ol.exchanged_from_ref))
+                                               ol.quantity_returned, ol.exchanged_from_ref, ol.quantity_cancelled))
                     continue
+                shipped_ = max(prev.quantity_shipped, min(ol.quantity_shipped, prev.quantity_ordered))
                 new_lines.append(replace(
-                    prev,
-                    quantity_shipped=max(prev.quantity_shipped, min(ol.quantity_shipped, prev.quantity_ordered)),
+                    prev, quantity_shipped=shipped_,
                     quantity_delivered=max(prev.quantity_delivered, min(ol.quantity_delivered, prev.quantity_ordered)),
-                    quantity_returned=max(prev.quantity_returned, min(ol.quantity_returned, prev.quantity_ordered))))
+                    quantity_returned=max(prev.quantity_returned, min(ol.quantity_returned, prev.quantity_ordered)),
+                    # Cancelled units are units that never ship.
+                    quantity_cancelled=max(prev.quantity_cancelled,
+                                           min(ol.quantity_cancelled, prev.quantity_ordered - shipped_))))
             new_lines.extend(by_ref.values())
             lines = tuple(new_lines)
             payment = order.payment_status
-            if obs.payment_status == "failed":
-                payment = "failed"
-            elif _PAYMENT_RANK.get(obs.payment_status, 0) > _PAYMENT_RANK.get(payment, 0):
+            if _PAYMENT_RANK.get(obs.payment_status, 0) > _PAYMENT_RANK.get(payment, 0):
                 payment = obs.payment_status
             refunded = order.refunded_total
             if obs.refunded_total.amount_minor > refunded.amount_minor:
                 credit = obs.refunded_total - refunded
                 refunded = obs.refunded_total
                 self._credit_refund(tx, order, credit)
+            if payment != order.payment_status:
+                # Money that was authorized but never taken goes back to the grant whatever its refund policy.
+                if payment == "voided":
+                    self._credit_unspent(tx, order, order.total - refunded)
+                elif payment == "captured" and obs.captured_total is not None and obs.captured_total < order.total:
+                    self._credit_unspent(tx, order, order.total - obs.captured_total)
             delivered = sum(l.quantity_delivered for l in lines)
             shipped = sum(l.quantity_shipped for l in lines)
-            ordered = sum(l.quantity_ordered for l in lines)
-            fulfillment = ("fulfilled" if ordered and delivered >= ordered else
+            owed = sum(l.quantity_ordered - l.quantity_cancelled for l in lines)
+            fulfillment = ("fulfilled" if owed and delivered >= owed else
                            "partially_fulfilled" if shipped or delivered else "unfulfilled")
             order_status = obs.order_status if obs.order_status in ("cancelled",) else order.order_status
             by_line = lambda ls: sorted(ls, key=lambda l: l.source_variant_ref)  # noqa: E731  (stores may reorder)
@@ -898,6 +908,7 @@ class CommerceService:
             exchanged = any(l.exchanged_from_ref and l.source_variant_ref not in previous_refs for l in lines)
             effect = ("exchanged" if exchanged
                       else "returned" if sum(l.quantity_returned for l in lines) > sum(l.quantity_returned for l in prev_order.lines)
+                      else "cancelled" if sum(l.quantity_cancelled for l in lines) > sum(l.quantity_cancelled for l in prev_order.lines)
                       else "arrived" if delivered > sum(l.quantity_delivered for l in prev_order.lines)
                       else "updated")
             self._order_event(tx, order, actor, effect=effect)
@@ -908,6 +919,8 @@ class CommerceService:
     def _summary_state(order: Order) -> str:
         if order.order_status == "cancelled":
             return "refunded" if order.payment_status == "refunded" else "cancelled"
+        if order.payment_status == "voided":
+            return "cancelled"
         if order.payment_status == "refunded":
             return "refunded"
         if order.payment_status == "partially_refunded":
@@ -928,7 +941,8 @@ class CommerceService:
             "lines": [{"variant_id": l.variant_id, "source_variant_ref": l.source_variant_ref,
                        "ordered": l.quantity_ordered, "shipped": l.quantity_shipped,
                        "delivered": l.quantity_delivered, "returned": l.quantity_returned,
-                       "exchanged_from_ref": l.exchanged_from_ref} for l in order.lines],
+                       "cancelled": l.quantity_cancelled, "exchanged_from_ref": l.exchanged_from_ref}
+                      for l in order.lines],
             "acquisition_evidence": list(order.evidence_refs),
         })
 
@@ -1057,6 +1071,17 @@ class CommerceService:
 
     def _consume_budget(self, tx: Any, op_id: str) -> None:
         self._set_reservation_state(tx, op_id, "consumed")
+
+    def _credit_unspent(self, tx: Any, order: Order, amount: Money) -> None:
+        """Authorized but never captured (void, expired hold, reduced capture): not a refund, never spent."""
+        op = tx.get("operations", order.operation_id)
+        if not op.delegation_id or amount.amount_minor <= 0:
+            return
+        d = tx.get("delegations", op.delegation_id)
+        if d is None or d.limits is None:
+            return
+        e = BudgetEntry(new_id(), d.id, op.id, amount, "credit", "credited", self.clock())
+        tx.put("reservations", (e.delegation_id, e.id), e)
 
     def _credit_refund(self, tx: Any, order: Order, amount: Money) -> None:
         op = tx.get("operations", order.operation_id)

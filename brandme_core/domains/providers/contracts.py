@@ -235,17 +235,20 @@ class ObservedLine:
     quantity_delivered: int = 0
     quantity_returned: int = 0
     exchanged_from_ref: Optional[str] = None
+    quantity_cancelled: int = 0  # never shipped and no longer owed (cancelled or refunded before shipment)
 
 
 @dataclass(frozen=True)
 class OrderObservation:
     provider_order_ref: str
     order_status: str  # accepted | rejected | cancelled
-    payment_status: str  # authorized | captured | partially_refunded | refunded | failed | unknown
+    # authorized | captured | partially_refunded | refunded | voided (released before capture) | failed | unknown
+    payment_status: str
     lines: Tuple[ObservedLine, ...]
     refunded_total: Money
     observed_at: datetime
     evidence_ref: Optional[str] = None
+    captured_total: Optional[Money] = None  # set once captured; the uncaptured remainder was released
 
 
 @dataclass(frozen=True)

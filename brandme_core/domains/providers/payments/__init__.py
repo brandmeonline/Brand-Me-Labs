@@ -29,8 +29,16 @@ from typing import Mapping, Optional, Protocol, runtime_checkable
 from brandme_core.domains.commerce.money import Money
 
 # Normalized processor states. ``voided``: the authorization was released before capture
-# (cancelled order or expired hold); no money moved.
-PAYMENT_STATES = ("authorized", "captured", "partially_refunded", "refunded", "voided", "failed", "unknown")
+# (cancelled order or expired hold); no money moved. ``requires_action``: the payment needs the
+# cardholder (e.g. 3-D Secure); merchants here void it, because nothing may redirect the member.
+PAYMENT_STATES = ("authorized", "captured", "partially_refunded", "refunded", "voided", "failed",
+                  "requires_action", "unknown")
+
+# Instruments both rails accept: Stripe's documented test PaymentMethod ids. The simulated
+# processor answers them the way Stripe test mode does, so armed failures behave alike.
+TEST_CARD = "pm_card_visa"
+TEST_CARD_DECLINED = "pm_card_chargeDeclined"
+TEST_CARD_NEEDS_AUTHENTICATION = "pm_card_authenticationRequired"
 
 
 @dataclass(frozen=True)
@@ -77,3 +85,11 @@ class PaymentProcessor(Protocol):
     def refund(self, payment_ref: str, amount: Money, *, idempotency_key: str) -> PaymentState: ...
 
     def lookup(self, payment_ref: str) -> PaymentState: ...
+
+    def find(self, purpose_ref: str) -> Optional[PaymentState]:
+        """The payment made for ``purpose_ref``, if any — reconciliation after a lost response.
+
+        Never re-sends an authorization. ``None`` may lag a just-created payment (Stripe search
+        is not read-after-write); callers treat absence as final only after a settle window.
+        """
+        ...

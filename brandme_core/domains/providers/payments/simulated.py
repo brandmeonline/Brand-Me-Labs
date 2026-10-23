@@ -18,22 +18,26 @@ from typing import Callable, Dict, Optional
 from brandme_core.domains.commerce.money import Money
 
 from ..contracts import ProviderError, ProviderErrorKind
-from . import PaymentAuthorization, PaymentState
+from . import (TEST_CARD, TEST_CARD_DECLINED, TEST_CARD_NEEDS_AUTHENTICATION, PaymentAuthorization,
+               PaymentState)
 
 # Card holds are not permanent; Stripe's manual-capture holds last about 7 days.
 HOLD_TTL = timedelta(days=7)
-SIMULATED_TOKEN = "sim_pm_ok"
+_INSTRUMENTS = {TEST_CARD: None, "pm_card_mastercard": None, TEST_CARD_DECLINED: "card_declined",
+                "pm_card_chargeDeclinedInsufficientFunds": "insufficient_funds",
+                TEST_CARD_NEEDS_AUTHENTICATION: "authentication_required"}
 
 
 class PaymentBehavior(str, enum.Enum):
-    DECLINE = "decline"  # next authorization is refused (card_declined)
     TIMEOUT_AFTER_ACCEPT = "timeout_after_accept"  # next authorization succeeds, its response is lost
+    LOST_BEFORE_PROCESSING = "lost_before_processing"  # next authorization never arrives; no payment exists
 
 
 @dataclass
 class _Payment:
     ref: str
     key: str
+    purpose_ref: str
     amount: Money
     status: str
     captured: int
@@ -52,6 +56,7 @@ class SimulatedPaymentProcessor:
         self._lock = threading.RLock()
         self._by_ref: Dict[str, _Payment] = {}
         self._by_key: Dict[str, str] = {}
+        self._by_purpose: Dict[str, str] = {}
         self._ops: Dict[str, str] = {}  # capture/void/refund idempotency key -> payment ref
         self._armed: Dict[PaymentBehavior, dict] = {}
         self.calls: list = []  # (operation, key) — test evidence
@@ -76,13 +81,19 @@ class SimulatedPaymentProcessor:
             ref = self._by_key.get(request.idempotency_key)
             if ref:  # same key, same payment: never a second charge
                 return self._state(self._by_ref[ref])
-            if not request.payment_token_ref.startswith("sim_pm_"):
-                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "unknown simulated payment method")
-            p = _Payment("simpay_" + secrets.token_hex(8), request.idempotency_key, request.amount, "authorized",
-                         0, 0, self._clock())
-            if self._armed.pop(PaymentBehavior.DECLINE, None) is not None:
-                p.status, p.decline_code = "failed", "card_declined"
+            if self._armed.pop(PaymentBehavior.LOST_BEFORE_PROCESSING, None) is not None:
+                raise ProviderError(ProviderErrorKind.OUTCOME_UNKNOWN, "request lost in transit", transmitted=True)
+            if request.payment_token_ref not in _INSTRUMENTS:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "unknown test payment method")
+            p = _Payment("simpay_" + secrets.token_hex(8), request.idempotency_key, request.purpose_ref,
+                         request.amount, "authorized", 0, 0, self._clock())
+            outcome = _INSTRUMENTS[request.payment_token_ref]
+            if outcome == "authentication_required":
+                p.status, p.decline_code = "requires_action", outcome
+            elif outcome:
+                p.status, p.decline_code = "failed", outcome
             self._by_ref[p.ref], self._by_key[request.idempotency_key] = p, p.ref
+            self._by_purpose[request.purpose_ref] = p.ref
             if self._armed.pop(PaymentBehavior.TIMEOUT_AFTER_ACCEPT, None) is not None:
                 raise ProviderError(ProviderErrorKind.OUTCOME_UNKNOWN, "payment response lost after acceptance",
                                     transmitted=True)
@@ -121,7 +132,7 @@ class SimulatedPaymentProcessor:
             p = self._get(payment_ref)
             if self._once(idempotency_key, payment_ref, "void") or p.status == "voided":
                 return self._state(p)
-            if p.status != "authorized":
+            if p.status not in ("authorized", "requires_action"):
                 raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, f"cannot void a {p.status} payment")
             p.status = "voided"
             return self._state(p)
@@ -142,6 +153,11 @@ class SimulatedPaymentProcessor:
     def lookup(self, payment_ref: str) -> PaymentState:
         with self._lock:
             return self._state(self._get(payment_ref))
+
+    def find(self, purpose_ref: str) -> Optional[PaymentState]:
+        with self._lock:
+            ref = self._by_purpose.get(purpose_ref)
+            return self._state(self._by_ref[ref]) if ref else None
 
     def advance_hold(self, payment_ref: str) -> None:
         """Test control: age a hold past its expiry."""

@@ -335,7 +335,7 @@ _ORDER_COLS = ("order_id", "member_id", "operation_id", "provider_id", "merchant
                "quote_hash", "idempotency_key", "order_status", "payment_status", "fulfillment_status", "currency",
                "total_minor", "refunded_minor", "evidence_refs", "last_observed_at", "version")
 _ORDER_LINE_COLS = ("order_id", "source_variant_ref", "variant_id", "quantity_ordered", "quantity_shipped",
-                    "quantity_delivered", "quantity_returned", "exchanged_from_ref")
+                    "quantity_delivered", "quantity_returned", "exchanged_from_ref", "quantity_cancelled")
 
 
 def _load_order(r, key):
@@ -344,7 +344,8 @@ def _load_order(r, key):
         return None
     cur = row["currency"]
     lines = tuple(OrderLine(l["variant_id"], l["source_variant_ref"], l["quantity_ordered"], l["quantity_shipped"],
-                            l["quantity_delivered"], l["quantity_returned"], l["exchanged_from_ref"])
+                            l["quantity_delivered"], l["quantity_returned"], l["exchanged_from_ref"],
+                            l["quantity_cancelled"])
                   for l in _read_children(r, "OrderLines", _ORDER_LINE_COLS, key))
     return Order(
         id=row["order_id"], member_id=row["member_id"], operation_id=row["operation_id"],
@@ -367,7 +368,7 @@ def _save_order(tx, key, o: Order, exists):
     # Lines are only ever added or advanced (exchange history is retained), never removed.
     tx.insert_or_update("OrderLines", columns=_ORDER_LINE_COLS, values=[
         [o.id, l.source_variant_ref, l.variant_id, l.quantity_ordered, l.quantity_shipped, l.quantity_delivered,
-         l.quantity_returned, l.exchanged_from_ref] for l in o.lines])
+         l.quantity_returned, l.exchanged_from_ref, l.quantity_cancelled] for l in o.lines])
 
 
 # idempotency (key: (member, environment, operation, delegation|"-", key)) ------------

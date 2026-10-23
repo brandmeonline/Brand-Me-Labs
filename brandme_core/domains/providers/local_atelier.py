@@ -2,8 +2,15 @@
 
 "Demo Atelier — fictional" sells the six fictional demo garments from
 ``contracts/demo-scenario.json``. It exists to prove application behavior
-under every required failure mode. It is not a retailer, it never moves
-money, and the registry refuses it outside ``demo``/``development``.
+under every required failure mode. It is not a retailer, nothing ships, and
+the registry refuses it outside ``demo``/``development``.
+
+Payments go through an injected ``PaymentProcessor`` (``providers.payments``):
+the deterministic ``SimulatedPaymentProcessor`` by default, or Stripe **test
+mode**, chosen at startup by ``commerce.composition``. Either way the merchant
+authorizes at submit (manual capture), captures once at the first shipment for
+the value of the units still owed, voids if every unit is cancelled before
+capture, and refunds after capture. No real money moves on either rail.
 
 Failure behaviors are armed explicitly and deterministically:
 
@@ -23,7 +30,9 @@ EXPIRED_QUOTE          next quote expires almost immediately
 ``exchange()`` simulates an even exchange (same price, e.g. another size): the
 original line records the return, a new line records the replacement with
 ``exchanged_from_ref``, and no money moves. A different-priced exchange is
-refused; that is a return plus a new purchase.
+refused; that is a return plus a new purchase. ``cancel()`` cancels units that
+have not shipped, and ``expire_authorization()`` (simulated rail) ages the hold
+past expiry, as for the demo scenario's ``authorization_expired``.
 """
 
 from __future__ import annotations
@@ -50,11 +59,18 @@ from .contracts import (
     OrderObservation, ProviderCart, ProviderError, ProviderErrorKind, ProviderQuote,
     ProviderResult, QuotedLine, SourceVariant, SubmitAck, SubmitRequest, WebhookEvent,
 )
+from .payments import (TEST_CARD, TEST_CARD_DECLINED, PaymentAuthorization, PaymentProcessor,
+                       PaymentState)
+from .payments.simulated import SimulatedPaymentProcessor
 from .registry import CapabilityStatus, ProviderConnection
 
 PROVIDER_ID = "demo_atelier"
 MERCHANT_ID = "fictional-demo-merchant"
 SIMULATION_LABEL = "Simulated provider — Demo Atelier is fictional; no real order or payment occurs."
+STRIPE_TEST_LABEL = ("Simulated provider — Demo Atelier is fictional and nothing ships. Payment runs in Stripe "
+                     "test mode: no real money moves; only Stripe test cards are used.")
+# Reconciliation treats "no payment found" as final only after this long (Stripe search lags writes).
+PAYMENT_SETTLE_WINDOW = timedelta(minutes=2)
 _NS = uuid.UUID("6f1c2a0e-6c38-5d43-9a4e-6e0b9a1d2c11")  # fixed namespace for deterministic ids
 WEBHOOK_TOLERANCE = timedelta(minutes=5)
 TAX_BPS = 800  # fictional 8% demo tax, integer basis points
@@ -90,13 +106,20 @@ def variant_uuid(source_variant_ref: str) -> str:
 @dataclass
 class _Order:
     ref: str
-    idempotency_key: str
+    idempotency_key: str  # the commerce operation's provider idempotency key; payment keys derive from it
     lines: List[ObservedLine]
     total: Money
-    order_status: str
-    payment_status: str
-    refunded: int
+    order_status: str  # pending (payment in flight) | accepted | rejected | cancelled
     created_at: datetime
+    payment_ref: Optional[str] = None
+    cancelled_value: int = 0  # value of units cancelled before capture, released at capture
+    refund_seq: int = 0
+    reason: Optional[str] = None
+
+
+def payment_key(base: str, op: str, seq: Optional[int] = None) -> str:
+    """Processor idempotency keys are a pure function of the persisted operation key."""
+    return f"{base}:{op}" if seq is None else f"{base}:{op}:{seq}"
 
 
 class LocalAtelierProvider:
@@ -105,8 +128,12 @@ class LocalAtelierProvider:
     provider_id = PROVIDER_ID
     simulation = True
 
-    def __init__(self, clock: Callable[[], datetime], *, quote_ttl: timedelta = timedelta(minutes=10)):
+    def __init__(self, clock: Callable[[], datetime], *, quote_ttl: timedelta = timedelta(minutes=10),
+                 payments: Optional[PaymentProcessor] = None):
         self._clock = clock
+        self.payments: PaymentProcessor = payments or SimulatedPaymentProcessor(clock)
+        # The party paid for a quote (bound into its hash). Brand.Me is never the payee.
+        self.payee_ref = "demo-payee" if self.payments.simulation else "demo-atelier-stripe-test"
         self._lock = threading.RLock()
         self._quote_ttl = quote_ttl
         # Generated per process; never committed. Signs this simulator's webhooks only.
@@ -119,6 +146,7 @@ class LocalAtelierProvider:
         self._carts: Dict[str, Tuple[CartLineRequest, ...]] = {}
         self._orders: Dict[str, _Order] = {}
         self._by_key: Dict[str, str] = {}
+        self._by_payment: Dict[str, str] = {}  # processor payment ref -> order ref
         self._armed: Dict[Behavior, dict] = {}
         self._event_seq = 0
         self.submit_calls: List[str] = []  # idempotency keys received (test evidence)
@@ -257,7 +285,7 @@ class LocalAtelierProvider:
             if not quoted:
                 raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "no purchasable lines (out of stock)")
             return ProviderQuote(
-                merchant_id=MERCHANT_ID, payee_ref="demo-payee", lines=tuple(quoted),
+                merchant_id=MERCHANT_ID, payee_ref=self.payee_ref, lines=tuple(quoted),
                 tax=Money(subtotal * TAX_BPS // 10_000, "USD"), shipping=Money(0, "USD"),
                 discount=Money(0, "USD"), delivery_ref="demo-delivery",
                 terms=CheckoutTerms(returnable=True, return_window_days=30, policy_ref="demo-returns-v1"),
@@ -266,14 +294,17 @@ class LocalAtelierProvider:
 
     def submit(self, request: SubmitRequest) -> SubmitAck:
         now = self._clock()
+        base = request.idempotency_key
         with self._lock:
-            self.submit_calls.append(request.idempotency_key)
-            existing = self._by_key.get(request.idempotency_key)
+            self.submit_calls.append(base)
+            existing = self._by_key.get(base)
             if existing:  # provider-side idempotency: same key, same order, no second charge
                 o = self._orders[existing]
-                return SubmitAck(o.order_status == "accepted", o.ref, None, now, f"sim:{PROVIDER_ID}:order")
-            if self._take(Behavior.REJECTED_AUTH) is not None:
-                return SubmitAck(False, None, "payment_authorization_declined", now, f"sim:{PROVIDER_ID}:decline")
+                if o.order_status == "pending":
+                    raise ProviderError(ProviderErrorKind.OUTCOME_UNKNOWN, "submission in flight", transmitted=True)
+                return SubmitAck(o.order_status == "accepted", o.ref if o.order_status == "accepted" else None,
+                                 o.reason, now, f"sim:{PROVIDER_ID}:order:{o.ref}")
+            # Every merchant-side check runs before any payment I/O.
             cart_ref = request.checkout_reference.split("demo-checkout-", 1)[-1].rsplit("-", 1)[0]
             lines = self._carts.get(cart_ref)
             if lines is None:
@@ -288,34 +319,102 @@ class LocalAtelierProvider:
             expected += expected * TAX_BPS // 10_000
             if expected != request.expected_total.amount_minor:
                 return SubmitAck(False, None, "price_changed", now)
+            # The merchant's own intent is recorded (and stock held) before the network call.
             for l in lines:
                 self._stock[l.source_variant_ref] -= l.quantity
-            ref = "demo-order-" + secrets.token_hex(6)
-            self._orders[ref] = _Order(ref, request.idempotency_key,
-                                       [ObservedLine(l.source_variant_ref, l.quantity) for l in lines],
-                                       request.expected_total, "accepted", "authorized", 0, now)
-            self._by_key[request.idempotency_key] = ref
-            if self._take(Behavior.TIMEOUT_AFTER_ACCEPT) is not None:
-                raise ProviderError(ProviderErrorKind.OUTCOME_UNKNOWN,
-                                    "response timed out after transmission", transmitted=True)
-            return SubmitAck(True, ref, None, now, f"sim:{PROVIDER_ID}:order:{ref}")
+            ref = "demo-order-" + hashlib.sha256(base.encode()).hexdigest()[:24]
+            o = _Order(ref, base, [ObservedLine(l.source_variant_ref, l.quantity) for l in lines],
+                       request.expected_total, "pending", now)
+            self._orders[ref], self._by_key[base] = o, ref
+            # An armed decline replaces only the merchant's default test card, never a supplied one.
+            instrument = request.payment_token_ref or (
+                TEST_CARD_DECLINED if self._take(Behavior.REJECTED_AUTH) is not None else TEST_CARD)
+        try:
+            pay = self.payments.authorize(PaymentAuthorization(
+                payment_key(base, "authorize"), request.expected_total, self.payee_ref, ref, instrument,
+                {"brandme_merchant": MERCHANT_ID, "brandme_simulated_merchant": "true"}))
+        except ProviderError as exc:
+            if exc.transmitted or exc.kind is ProviderErrorKind.OUTCOME_UNKNOWN:
+                raise ProviderError(ProviderErrorKind.OUTCOME_UNKNOWN, "payment outcome unknown",
+                                    transmitted=True) from None  # stays pending; reconcile resolves it
+            self._settle(o, None, exc.kind.value)
+            raise ProviderError(exc.kind, exc.detail) from None
+        ack = self._settle(o, pay, None)
+        if ack.accepted and self._take(Behavior.TIMEOUT_AFTER_ACCEPT) is not None:
+            raise ProviderError(ProviderErrorKind.OUTCOME_UNKNOWN,
+                                "response timed out after transmission", transmitted=True)
+        return ack
+
+    def _settle(self, o: _Order, pay: Optional[PaymentState], failure: Optional[str]) -> SubmitAck:
+        """Accept the pending order on a good authorization; otherwise release it (voiding what needs it)."""
+        now = self._clock()
+        reason = failure
+        if pay is not None and failure is None:
+            if pay.status == "authorized" and (pay.authorized != o.total):
+                reason = "payment_binding_mismatch"
+            elif pay.status == "requires_action":
+                reason = "payment_authentication_required"  # nothing may redirect the member
+            elif pay.status != "authorized":
+                reason = "payment_authorization_declined"
+            if reason and pay.status in ("authorized", "requires_action"):
+                self.payments.void(pay.payment_ref, idempotency_key=payment_key(o.idempotency_key, "void"))
+        with self._lock:
+            if pay is not None:
+                o.payment_ref = pay.payment_ref
+                self._by_payment[pay.payment_ref] = o.ref
+            if reason:
+                for l in o.lines:
+                    self._stock[l.source_variant_ref] += l.quantity_ordered
+                o.order_status, o.reason = "rejected", reason
+                return SubmitAck(False, None, reason, now, pay.evidence_ref if pay else None)
+            o.order_status = "accepted"
+            return SubmitAck(True, o.ref, None, now, f"sim:{PROVIDER_ID}:order:{o.ref}")
 
     # -- orders ----------------------------------------------------------------
-    def _observe(self, o: _Order) -> OrderObservation:
-        return OrderObservation(o.ref, o.order_status, o.payment_status, tuple(o.lines),
-                                Money(o.refunded, "USD"), self._clock(), f"sim:{PROVIDER_ID}:order:{o.ref}")
+    def _payment(self, o: _Order) -> Optional[PaymentState]:
+        return self.payments.lookup(o.payment_ref) if o.payment_ref else None  # outside the lock: may be I/O
+
+    def _observe(self, o: _Order, pay: Optional[PaymentState] = None) -> OrderObservation:
+        pay = pay if pay is not None else self._payment(o)
+        cur = o.total.currency
+        if pay is not None and pay.status == "voided" and o.order_status == "accepted":
+            with self._lock:  # an expired or released hold before anything shipped cancels the order
+                if not any(l.quantity_shipped for l in o.lines):
+                    self._cancel_units(o, None, None)
+                    o.order_status = "cancelled"
+        status = pay.status if pay is not None else "unknown"
+        if status == "requires_action":
+            status = "unknown"
+        captured = pay.captured if pay is not None and status in ("captured", "partially_refunded", "refunded") else None
+        refunded = min(pay.refunded.amount_minor, o.total.amount_minor) if pay is not None else 0
+        evidence = f"sim:{PROVIDER_ID}:order:{o.ref}" + (f"|{pay.evidence_ref}" if pay and pay.evidence_ref else "")
+        return OrderObservation(o.ref, o.order_status if o.order_status != "pending" else "accepted", status,
+                                tuple(o.lines), Money(refunded, cur), self._clock(), evidence[:256], captured)
 
     def lookup_by_idempotency_key(self, idempotency_key: str) -> Optional[OrderObservation]:
         with self._lock:
             ref = self._by_key.get(idempotency_key)
-            return self._observe(self._orders[ref]) if ref else None
+            o = self._orders.get(ref) if ref else None
+        if o is None or o.order_status == "rejected":
+            return None  # authoritatively no order for this key
+        if o.order_status == "pending":
+            # The payment response was lost: find it by purpose. Never re-send the authorization.
+            pay = self.payments.find(o.ref)
+            if pay is None:
+                if self._clock() - o.created_at < PAYMENT_SETTLE_WINDOW:
+                    raise ProviderError(ProviderErrorKind.TRANSIENT, "payment outcome not yet visible")
+                self._settle(o, None, "payment_not_found")
+                return None
+            if not self._settle(o, pay, None).accepted:
+                return None
+        return self._observe(o)
 
     def lookup(self, provider_order_ref: str) -> OrderObservation:
         with self._lock:
             o = self._orders.get(provider_order_ref)
-            if o is None:
-                raise ProviderError(ProviderErrorKind.MALFORMED_RESPONSE, "unknown order")
-            return self._observe(o)
+        if o is None or o.order_status in ("pending", "rejected"):
+            raise ProviderError(ProviderErrorKind.MALFORMED_RESPONSE, "unknown order")
+        return self._observe(o)
 
     def request_return(self, provider_order_ref: str, source_variant_ref: str, quantity: int) -> ProviderResult:
         now = self._clock()
@@ -325,25 +424,98 @@ class LocalAtelierProvider:
                               f"demo-return-{provider_order_ref}-{source_variant_ref}", now, None, "requested")
 
     # -- simulated provider-side events (produce signed webhooks) -------------
+    def _line_value(self, ref: str, qty: int) -> int:
+        unit = self._price[ref] * qty
+        return unit + unit * TAX_BPS // 10_000
+
+    def _capture(self, o: _Order, pay: Optional[PaymentState]) -> Optional[PaymentState]:
+        """Capture point: once, for the value of the units still owed; the processor releases the rest."""
+        if pay is None or pay.status != "authorized" or o.cancelled_value >= o.total.amount_minor:
+            return pay
+        amount = Money(o.total.amount_minor - o.cancelled_value, o.total.currency)
+        return self.payments.capture(o.payment_ref, amount, idempotency_key=payment_key(o.idempotency_key, "capture"))
+
     def capture(self, order_ref: str) -> List[Tuple[Dict[str, str], bytes]]:
-        with self._lock:
-            o = self._orders[order_ref]
-            o.payment_status = "captured"
+        o = self._orders[order_ref]
+        self._capture(o, self._payment(o))
         return self._webhook(order_ref, "payment.captured")
 
     def ship(self, order_ref: str, *, deliver: bool = True) -> List[Tuple[Dict[str, str], bytes]]:
         partial = self._take(Behavior.PARTIAL_FULFILLMENT)
+        o = self._orders[order_ref]
+        pay = self._payment(o)
+        if pay is not None and pay.status == "voided":  # the hold expired or was released: nothing ships
+            self._observe(o, pay)
+            return self._webhook(order_ref, "order.cancelled")
+        pay = self._capture(o, pay)
+        if pay is not None and pay.status not in ("captured", "partially_refunded", "refunded"):
+            raise ProviderError(ProviderErrorKind.TRANSIENT, "payment not captured; nothing shipped")
         with self._lock:
-            o = self._orders[order_ref]
             new = []
             for l in o.lines:
-                qty = l.quantity_ordered
+                qty = l.quantity_ordered - l.quantity_cancelled  # cancelled units never ship
                 if partial is not None and l.source_variant_ref == partial.get("source_variant_ref", l.source_variant_ref):
                     qty = min(qty, int(partial.get("quantity", 1)))
                 new.append(replace(l, quantity_shipped=max(l.quantity_shipped, qty),
                                    quantity_delivered=max(l.quantity_delivered, qty if deliver else 0)))
             o.lines = new
         return self._webhook(order_ref, "fulfillment.updated")
+
+    def _cancel_units(self, o: _Order, ref: Optional[str], qty: Optional[int]) -> int:
+        """Cancel unshipped units (caller holds the lock); returns their value and restocks them."""
+        value, new = 0, []
+        for l in o.lines:
+            if ref is None or l.source_variant_ref == ref:
+                open_ = l.quantity_ordered - l.quantity_shipped - l.quantity_cancelled
+                n = min(open_, qty) if qty else open_
+                if n > 0:
+                    value += self._line_value(l.source_variant_ref, n)
+                    self._stock[l.source_variant_ref] += n
+                    l = replace(l, quantity_cancelled=l.quantity_cancelled + n)
+            new.append(l)
+        o.lines = new
+        return value
+
+    def _release(self, o: _Order, pay: Optional[PaymentState], value: int) -> None:
+        """Money for units no longer owed: void or reduce the uncaptured hold, or refund after capture."""
+        if pay is None or value <= 0:
+            return
+        owed = sum(l.quantity_ordered - l.quantity_cancelled - l.quantity_returned for l in o.lines)
+        if pay.status == "authorized":
+            if owed == 0:
+                self.payments.void(o.payment_ref, idempotency_key=payment_key(o.idempotency_key, "void"))
+                with self._lock:
+                    o.order_status = "cancelled"
+            else:
+                with self._lock:
+                    o.cancelled_value += value  # released at capture
+        elif pay.status in ("captured", "partially_refunded"):
+            remaining = pay.captured.amount_minor - pay.refunded.amount_minor
+            amount = remaining if owed == 0 else min(value, remaining)
+            if amount > 0:
+                with self._lock:
+                    o.refund_seq += 1
+                    seq = o.refund_seq
+                self.payments.refund(o.payment_ref, Money(amount, o.total.currency),
+                                     idempotency_key=payment_key(o.idempotency_key, "refund", seq))
+
+    def cancel(self, order_ref: str, source_variant_ref: Optional[str] = None,
+               quantity: Optional[int] = None) -> List[Tuple[Dict[str, str], bytes]]:
+        """The merchant cancels units that have not shipped (all of them by default)."""
+        o = self._orders[order_ref]
+        pay = self._payment(o)
+        with self._lock:
+            value = self._cancel_units(o, source_variant_ref, quantity)
+        if value == 0:
+            raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "no unshipped units to cancel")
+        self._release(o, pay, value)
+        return self._webhook(order_ref, "fulfillment.cancelled")
+
+    def expire_authorization(self, order_ref: str) -> None:
+        """Simulated rail only: age the order's hold past expiry (demo scenario ``authorization_expired``)."""
+        if not isinstance(self.payments, SimulatedPaymentProcessor):
+            raise RuntimeError("a Stripe test-mode hold cannot be aged; use the simulated rail")
+        self.payments.advance_hold(self._orders[order_ref].payment_ref)
 
     def exchange(self, order_ref: str, source_variant_ref: str, new_source_variant_ref: str,
                  quantity: int = 1) -> List[Tuple[Dict[str, str], bytes]]:
@@ -373,25 +545,28 @@ class LocalAtelierProvider:
         return self._webhook(order_ref, "exchange.created")
 
     def refund(self, order_ref: str) -> List[Tuple[Dict[str, str], bytes]]:
+        """Refund units (armed ``REFUND``): unshipped ones are cancelled, shipped ones returned."""
         params = self._take(Behavior.REFUND)
         if params is None:
             raise RuntimeError("arm Behavior.REFUND first")
+        o = self._orders[order_ref]
+        pay = self._payment(o)
+        ref = params.get("source_variant_ref")
+        qty = int(params.get("quantity", 0))
+        value = 0
         with self._lock:
-            o = self._orders[order_ref]
-            ref = params.get("source_variant_ref")
-            qty = int(params.get("quantity", 0))
-            amount = 0
             new = []
             for l in o.lines:
                 if ref is None or l.source_variant_ref == ref:
-                    q = qty or (l.quantity_ordered - l.quantity_returned)
-                    unit = self._price[l.source_variant_ref]
-                    amount += (unit * q) + (unit * q * TAX_BPS // 10_000)
-                    l = replace(l, quantity_returned=l.quantity_returned + q)
+                    q = qty or (l.quantity_ordered - l.quantity_returned - l.quantity_cancelled)
+                    unshipped = min(q, l.quantity_ordered - l.quantity_shipped - l.quantity_cancelled)
+                    value += self._line_value(l.source_variant_ref, q)
+                    self._stock[l.source_variant_ref] += unshipped
+                    l = replace(l, quantity_cancelled=l.quantity_cancelled + unshipped,
+                                quantity_returned=l.quantity_returned + (q - unshipped))
                 new.append(l)
             o.lines = new
-            o.refunded = min(o.total.amount_minor, o.refunded + amount)
-            o.payment_status = "refunded" if o.refunded >= o.total.amount_minor else "partially_refunded"
+        self._release(o, pay, value)
         return self._webhook(order_ref, "refund.completed")
 
     def _webhook(self, order_ref: str, event_type: str) -> List[Tuple[Dict[str, str], bytes]]:
@@ -408,6 +583,8 @@ class LocalAtelierProvider:
 
     def verify_webhook(self, headers: Mapping[str, str], body: bytes) -> WebhookEvent:
         h = {k.lower(): v for k, v in headers.items()}
+        if "stripe-signature" in h:
+            return self._verify_payment_event(h, body)
         ts, sig = h.get("x-demo-timestamp"), h.get("x-demo-signature", "")
         if not ts or not ts.isdigit() or not sig.startswith("v1="):
             raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "missing webhook signature")
@@ -420,20 +597,52 @@ class LocalAtelierProvider:
         data = json.loads(body)
         return WebhookEvent(PROVIDER_ID, data["id"], data["type"], data["order_ref"], sent, data)
 
+    def _verify_payment_event(self, h: Mapping[str, str], body: bytes) -> WebhookEvent:
+        """A payment processor's signed event for one of this merchant's payments. It is only a hint:
+        the service dedupes it on its event id and re-reads the order, never trusting the payload."""
+        if "x-demo-signature" in h:
+            raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "ambiguous signature scheme")
+        verify = getattr(self.payments, "verify_webhook", None)
+        if verify is None:
+            raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "this payment rail sends no webhooks")
+        event = verify(h, body)
+        obj = event.data.object
+        payment_ref = obj.id if getattr(obj, "object", None) == "payment_intent" else getattr(obj, "payment_intent", None)
+        with self._lock:
+            order_ref = self._by_payment.get(str(payment_ref)) if payment_ref else None
+        if order_ref is None:
+            raise ProviderError(ProviderErrorKind.UNSUPPORTED, "event for a payment this merchant does not hold")
+        occurred = datetime.fromtimestamp(int(event.created), tz=timezone.utc)
+        return WebhookEvent(PROVIDER_ID, f"{self.payments.processor_id}:{event.id}"[:256],
+                            f"payment.{event.type}"[:80], order_ref, occurred, {"source": self.payments.processor_id})
+
+
+PAYMENT_CAPABILITIES = ("checkout.submit", "orders.read", "orders.webhook", "refunds.read")
+
 
 def local_atelier_connection(provider: LocalAtelierProvider, environment: str,
                              checked_at: datetime) -> ProviderConnection:
+    """The merchant stays a simulation on either payment rail, so it is refused outside demo/development
+    and can never be ``verified``. On the Stripe test rail, payment-touching capabilities say so and carry
+    no evidence until a run exercises them."""
+    stripe_rail = not provider.payments.simulation
     caps = {}
     for name in ("catalog.search", "catalog.detail", "catalog.feed", "inventory.read", "price.quote",
                  "cart.create", "cart.update", "checkout.submit", "orders.read", "orders.webhook",
                  "returns.request", "refunds.read", "checkout.handoff"):
+        if stripe_rail and name in PAYMENT_CAPABILITIES:
+            caps[name] = CapabilityStatus(name, "sandbox", "simulated_merchant_stripe_test_payments", checked_at)
+            continue
         # Simulation never reaches "verified": it proves app behavior only.
         caps[name] = CapabilityStatus(name, "sandbox", "deterministic_local_simulation",
                                       checked_at, f"sim:{PROVIDER_ID}:{name}", "conformance_suite")
     return ProviderConnection(
-        provider_id=PROVIDER_ID, display_name="Demo Atelier (simulated, fictional)",
+        provider_id=PROVIDER_ID,
+        display_name="Demo Atelier (simulated, fictional)" + (" · Stripe test mode" if stripe_rail else ""),
         environment=environment, simulation=True, country_codes=("US",),
-        disclosure=SIMULATION_LABEL, capabilities=caps, access_level="simulation",
+        disclosure=STRIPE_TEST_LABEL if stripe_rail else SIMULATION_LABEL, capabilities=caps,
+        access_level="simulation_stripe_test" if stripe_rail else "simulation",
+        credential_ref="env:STRIPE_TEST_SECRET_KEY" if stripe_rail else None,
         data_use={"display_images": True, "cache_prices": True, "derive_3d": True},
         allowed_redirect_hosts=("demo-atelier.example.invalid",), adapter=provider,
         protocols={"ap2": "0.2"},  # simulated merchant; proves codec/flow behavior only

@@ -135,6 +135,7 @@ class OrderLine:
     quantity_delivered: int = 0
     quantity_returned: int = 0
     exchanged_from_ref: Optional[str] = None
+    quantity_cancelled: int = 0
 
 
 @dataclass(frozen=True)

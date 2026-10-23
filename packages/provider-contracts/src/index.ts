@@ -230,7 +230,8 @@ export interface CheckoutHandoffProvider {
 
 // ------------------------------------------------------------------- orders
 export type OrderStatus = 'accepted' | 'rejected' | 'cancelled';
-export type PaymentStatus = 'unknown' | 'authorized' | 'captured' | 'partially_refunded' | 'refunded' | 'failed';
+/** `voided`: the authorization was released before capture (cancelled order or expired hold); no money moved. */
+export type PaymentStatus = 'unknown' | 'authorized' | 'captured' | 'partially_refunded' | 'refunded' | 'voided' | 'failed';
 
 export interface ObservedLine {
   source_variant_ref: string;
@@ -238,6 +239,8 @@ export interface ObservedLine {
   quantity_shipped: number;
   quantity_delivered: number;
   quantity_returned: number;
+  /** Units that never shipped and are no longer owed (cancelled, or refunded before shipment). */
+  quantity_cancelled: number;
   /** Set on a line created by an exchange; the original line's history is retained. */
   exchanged_from_ref: string | null;
 }
@@ -248,6 +251,8 @@ export interface OrderObservation {
   payment_status: PaymentStatus;
   lines: ObservedLine[];
   refunded_total: Money;
+  /** Set once captured; any uncaptured remainder was released. */
+  captured_total: Money | null;
   observed_at: string;
   evidence_ref: string | null;
 }

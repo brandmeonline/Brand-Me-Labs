@@ -412,6 +412,7 @@ def test_refund_credit_back_follows_grant_policy(w):
     _, _, op = w.prepared(ag)
     res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=w.approve(op).id, idempotency_key="cb-0000000000000")
     order = w.store.get("orders", res.order_id)
+    w.svc.handle_webhook("demo_atelier", *w.provider.ship(order.provider_order_ref)[0])  # captures
     w.provider.arm(Behavior.REFUND)
     w.svc.handle_webhook("demo_atelier", *w.provider.refund(order.provider_order_ref)[0])
     assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000, "USD")

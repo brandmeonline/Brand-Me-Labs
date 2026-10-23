@@ -48,12 +48,16 @@ class StripeTestPaymentProcessor:
     simulation = False
     label = "Stripe test mode — no real money moves."
 
-    def __init__(self, api_key: str, *, base_url: Optional[str] = None, http_client: Any = None,
-                 clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc)):
+    def __init__(self, api_key: str, *, webhook_secret: Optional[str] = None, base_url: Optional[str] = None,
+                 http_client: Any = None, clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc)):
         import stripe  # optional dependency: imported only when Stripe test mode is configured
 
+        if webhook_secret is not None and not re.match(r"^whsec_[A-Za-z0-9]{16,}$", webhook_secret):
+            raise ValueError("a Stripe webhook signing secret (whsec_…) is required")
         self._stripe = stripe
         self._clock = clock
+        self._webhook_secret = webhook_secret
+        self._latched = False  # set by any live-mode object: the processor refuses everything after it
         opts: dict = {"stripe_version": STRIPE_API_VERSION, "max_network_retries": 0}
         if base_url:  # stripe-mock for wire-shape tests
             opts["base_addresses"] = {"api": base_url}
@@ -63,6 +67,7 @@ class StripeTestPaymentProcessor:
 
     # -- calls ---------------------------------------------------------------
     def authorize(self, request: PaymentAuthorization) -> PaymentState:
+        self._open()
         if not _PM_RE.match(request.payment_token_ref or ""):
             raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "a Stripe test PaymentMethod id is required")
         for ref in (request.payee_ref, request.purpose_ref, *request.metadata.values()):
@@ -71,6 +76,7 @@ class StripeTestPaymentProcessor:
         params = {
             "amount": request.amount.amount_minor, "currency": request.amount.currency.lower(),
             "capture_method": "manual", "confirm": True, "payment_method": request.payment_token_ref,
+            "description": f"Brand.Me TEST MODE - {request.purpose_ref}"[:200],
             # No redirects: a hosted continuation is never treated as payment (BM-COM-012).
             "automatic_payment_methods": {"enabled": True, "allow_redirects": "never"},
             "metadata": {"brandme_payee_ref": request.payee_ref, "brandme_purpose_ref": request.purpose_ref,
@@ -89,6 +95,7 @@ class StripeTestPaymentProcessor:
         return self._state(pi)
 
     def capture(self, payment_ref: str, amount: Money, *, idempotency_key: str) -> PaymentState:
+        self._open()
         try:
             pi = self._client.v1.payment_intents.capture(
                 payment_ref, params={"amount_to_capture": amount.amount_minor},
@@ -98,6 +105,7 @@ class StripeTestPaymentProcessor:
         return self._state(pi)
 
     def void(self, payment_ref: str, *, idempotency_key: str) -> PaymentState:
+        self._open()
         try:
             pi = self._client.v1.payment_intents.cancel(payment_ref, params={"cancellation_reason": "abandoned"},
                                                         options={"idempotency_key": idempotency_key})
@@ -106,6 +114,7 @@ class StripeTestPaymentProcessor:
         return self._state(pi)
 
     def refund(self, payment_ref: str, amount: Money, *, idempotency_key: str) -> PaymentState:
+        self._open()
         try:
             self._client.v1.refunds.create(params={"payment_intent": payment_ref, "amount": amount.amount_minor},
                                            options={"idempotency_key": idempotency_key})
@@ -114,26 +123,50 @@ class StripeTestPaymentProcessor:
         return self.lookup(payment_ref)
 
     def lookup(self, payment_ref: str) -> PaymentState:
+        self._open()
         try:
             pi = self._client.v1.payment_intents.retrieve(payment_ref, params={"expand": ["latest_charge"]})
         except Exception as exc:
             raise self._error(exc, transmitting=False) from None
         return self._state(pi)
 
-    def verify_webhook(self, headers: Mapping[str, str], body: bytes, secret: str) -> Any:
+    def find(self, purpose_ref: str) -> Optional[PaymentState]:
+        """Search by the purpose metadata (eventually consistent: absence may lag about a minute)."""
+        self._open()
+        if not _REF_RE.match(purpose_ref):
+            raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "payment references must be opaque ids")
+        try:
+            found = self._client.v1.payment_intents.search(
+                params={"query": f"metadata['brandme_purpose_ref']:'{purpose_ref}'", "limit": 2})
+        except Exception as exc:
+            raise self._error(exc, transmitting=False) from None
+        items = list(getattr(found, "data", None) or [])
+        if len(items) > 1:
+            raise ProviderError(ProviderErrorKind.MALFORMED_RESPONSE, "more than one payment for one purpose")
+        return self.lookup(items[0].id) if items else None
+
+    def verify_webhook(self, headers: Mapping[str, str], body: bytes) -> Any:
         """A Stripe-signed event (``whsec_…`` secret, 5-minute tolerance). It is a hint: callers re-read the source."""
+        if not self._webhook_secret:
+            raise ProviderError(ProviderErrorKind.NOT_CONFIGURED, "Stripe webhooks are not configured")
         sig = {k.lower(): v for k, v in headers.items()}.get("stripe-signature")
         try:
-            event = self._stripe.Webhook.construct_event(body, sig, secret, tolerance=300)
+            event = self._stripe.Webhook.construct_event(body, sig, self._webhook_secret, tolerance=300)
         except Exception:
             raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "invalid webhook signature") from None
-        if getattr(event, "livemode", True):
+        if getattr(event, "livemode", True) is not False:
+            self._latched = True
             raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "live-mode event refused")
         return event
+
+    def _open(self) -> None:
+        if self._latched:
+            raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "processor latched after a live-mode object")
 
     # -- mapping -------------------------------------------------------------
     def _state(self, pi: Any, *, decline: Optional[str] = None) -> PaymentState:
         if getattr(pi, "livemode", True) is not False:
+            self._latched = True
             raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "live-mode payment refused")
         cur = str(pi.currency).upper()
         authorized = int(pi.amount or 0)
@@ -141,12 +174,14 @@ class StripeTestPaymentProcessor:
         charge = getattr(pi, "latest_charge", None)
         refunded = int(getattr(charge, "amount_refunded", 0) or 0) if charge is not None and not isinstance(charge, str) else 0
         status = {"requires_capture": "authorized", "succeeded": "captured", "canceled": "voided",
-                  "requires_payment_method": "failed"}.get(str(pi.status), "unknown")
+                  "requires_payment_method": "failed", "requires_action": "requires_action"}.get(str(pi.status),
+                                                                                                "unknown")
         code = decline
         if status == "captured" and refunded:
             status = "refunded" if refunded >= received else "partially_refunded"
         elif status == "voided":
-            code = "authorization_expired" if getattr(pi, "cancellation_reason", None) == "automatic" else "voided"
+            code = ("authorization_expired" if getattr(pi, "cancellation_reason", None) in ("automatic", "expired")
+                    else "voided")
         elif status == "failed":
             err = getattr(pi, "last_payment_error", None)
             code = code or (getattr(err, "decline_code", None) or getattr(err, "code", None) or "payment_failed")

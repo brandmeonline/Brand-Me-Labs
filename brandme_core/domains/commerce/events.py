@@ -43,18 +43,21 @@ PURCHASE_AUTHORIZED = register(
 _ORDER_LINE = closed({
     "variant_id": {"anyOf": [UUID, {"type": "null"}]}, "source_variant_ref": _REF,
     "ordered": {"type": "integer", "minimum": 1, "maximum": 99}, "shipped": _QTY, "delivered": _QTY,
-    "returned": _QTY, "exchanged_from_ref": {"anyOf": [_REF, {"type": "null"}]},
-}, ("variant_id", "source_variant_ref", "ordered", "shipped", "delivered", "returned", "exchanged_from_ref"))
+    "returned": _QTY, "cancelled": _QTY, "exchanged_from_ref": {"anyOf": [_REF, {"type": "null"}]},
+}, ("variant_id", "source_variant_ref", "ordered", "shipped", "delivered", "returned", "cancelled",
+    "exchanged_from_ref"))
 
 ORDER_OBSERVED = register(
     "commerce.order.observed", "1",
     closed({
         "order_id": UUID, "operation_id": UUID, "member_id": UUID, "provider_id": _SHORT,
         "order_status": {"enum": ["accepted", "rejected", "cancelled"]},
-        "payment_status": {"enum": ["unknown", "authorized", "captured", "partially_refunded", "refunded", "failed"]},
+        "payment_status": {"enum": ["unknown", "authorized", "captured", "partially_refunded", "refunded", "voided",
+                                    "failed"]},
         "fulfillment_status": {"enum": ["unfulfilled", "partially_fulfilled", "fulfilled"]},
         # exchanged: an original line was returned and a replacement line (exchanged_from_ref) added.
-        "wardrobe_effect": {"enum": ["incoming", "arrived", "returned", "exchanged", "updated"]},
+        # cancelled: units that will never arrive (cancelled or refunded before shipment).
+        "wardrobe_effect": {"enum": ["incoming", "arrived", "returned", "exchanged", "cancelled", "updated"]},
         "lines": {"type": "array", "minItems": 1, "maxItems": 100, "items": _ORDER_LINE},
         "acquisition_evidence": {"type": "array", "maxItems": 50, "items": _REF},
     }, ("order_id", "operation_id", "member_id", "provider_id", "order_status", "payment_status",
