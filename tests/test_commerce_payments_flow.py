@@ -276,3 +276,27 @@ def test_composition_selects_the_rail_and_labels_it():
     assert conn.capability("checkout.submit").state == "sandbox"
     assert conn.capability("checkout.submit").evidence_ref is None  # nothing exercised yet
     assert build_providers("production", env={}).registry.all() == []  # no simulated merchant outside dev
+
+
+# ------------------------------------------------------------------- exchanges (BM-COM-011)
+def test_exchange_back_into_an_earlier_variant_keeps_every_step(w):
+    _, res = _buy(w, w.member, line("overshirt", "m"))
+    order = _order(w, res)
+    _hook(w, w.provider.ship(order.provider_order_ref))
+    _hook(w, w.provider.exchange(order.provider_order_ref, "demo-overshirt-m", "demo-overshirt-l"))
+    _hook(w, w.provider.ship(order.provider_order_ref))
+    _hook(w, w.provider.exchange(order.provider_order_ref, "demo-overshirt-l", "demo-overshirt-m"))
+    o = w.store.get("orders", order.id)
+    lines = {l.source_variant_ref: (l.quantity_ordered, l.quantity_delivered, l.quantity_returned, l.exchanged_from_ref)
+             for l in o.lines}
+    assert lines == {"demo-overshirt-m": (2, 1, 1, None), "demo-overshirt-l": (1, 1, 1, "demo-overshirt-m")}
+    assert _effects(w)[-1] == "exchanged" and o.payment_status == "captured" and o.refunded_total == Money(0, "USD")
+
+
+def test_units_being_returned_cannot_also_be_exchanged(w):
+    _, res = _buy(w, w.member, line("overshirt", "m"))
+    order = _order(w, res)
+    _hook(w, w.provider.ship(order.provider_order_ref))
+    assert w.svc.request_return(w.member, order.id, "demo-overshirt-m", 1)["status"] == "return_requested"
+    with pytest.raises(ProviderError):
+        w.provider.exchange(order.provider_order_ref, "demo-overshirt-m", "demo-overshirt-l")

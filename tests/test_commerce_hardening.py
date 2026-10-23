@@ -157,8 +157,8 @@ def test_refused_exchange_moves_no_stock(w):
     w.provider.ship(order.provider_order_ref)
     stock = dict(w.provider._stock)
     from brandme_core.domains.providers.contracts import ProviderError
-    with pytest.raises(ProviderError):
-        w.provider.exchange(order.provider_order_ref, "demo-overshirt-m", "demo-overshirt-l")
+    with pytest.raises(ProviderError):  # more units than were delivered
+        w.provider.exchange(order.provider_order_ref, "demo-overshirt-m", "demo-overshirt-l", quantity=2)
     assert w.provider._stock == stock
 
 

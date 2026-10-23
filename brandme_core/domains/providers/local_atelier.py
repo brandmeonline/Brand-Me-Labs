@@ -147,6 +147,7 @@ class LocalAtelierProvider:
         self._orders: Dict[str, _Order] = {}
         self._by_key: Dict[str, str] = {}
         self._by_payment: Dict[str, str] = {}  # processor payment ref -> order ref
+        self._pending_returns: Dict[Tuple[str, str], int] = {}  # (order ref, variant ref) -> units requested
         self._armed: Dict[Behavior, dict] = {}
         self._event_seq = 0
         self.submit_calls: List[str] = []  # idempotency keys received (test evidence)
@@ -420,6 +421,8 @@ class LocalAtelierProvider:
         now = self._clock()
         with self._lock:
             self.return_calls.append((provider_order_ref, source_variant_ref, quantity))
+            slot = (provider_order_ref, source_variant_ref)
+            self._pending_returns[slot] = self._pending_returns.get(slot, 0) + quantity
         return ProviderResult(PROVIDER_ID, "simulation", str(uuid.uuid4()),
                               f"demo-return-{provider_order_ref}-{source_variant_ref}", now, None, "requested")
 
@@ -522,7 +525,8 @@ class LocalAtelierProvider:
         with self._lock:
             o = self._orders[order_ref]
             original = next((l for l in o.lines if l.source_variant_ref == source_variant_ref), None)
-            if original is None or not 1 <= quantity <= original.quantity_delivered - original.quantity_returned:
+            pending = self._pending_returns.get((order_ref, source_variant_ref), 0)  # units already being returned
+            if original is None or not 1 <= quantity <= original.quantity_delivered - original.quantity_returned - pending:
                 raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "only delivered, unreturned units exchange")
             if new_source_variant_ref not in self._variants:
                 raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "unknown replacement variant")
@@ -531,16 +535,22 @@ class LocalAtelierProvider:
                                     "uneven exchange: return and buy the replacement instead")
             if self._stock[new_source_variant_ref] < quantity:
                 raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "replacement out of stock")
-            if any(l.source_variant_ref == new_source_variant_ref for l in o.lines):
-                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "replacement already on this order")
+            existing = next((l for l in o.lines if l.source_variant_ref == new_source_variant_ref), None)
+            if existing is not None and existing.quantity_ordered + quantity > 99:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "replacement quantity out of range")
             self._stock[new_source_variant_ref] -= quantity
             self._stock[source_variant_ref] += quantity
             new = []
             for l in o.lines:
                 if l.source_variant_ref == source_variant_ref:
                     l = replace(l, quantity_returned=l.quantity_returned + quantity)
+                elif l.source_variant_ref == new_source_variant_ref:
+                    # Back into a variant already on the order (e.g. M -> L -> M): the line grows; its
+                    # earlier history (including its own return) is kept.
+                    l = replace(l, quantity_ordered=l.quantity_ordered + quantity)
                 new.append(l)
-            new.append(ObservedLine(new_source_variant_ref, quantity, exchanged_from_ref=source_variant_ref))
+            if existing is None:
+                new.append(ObservedLine(new_source_variant_ref, quantity, exchanged_from_ref=source_variant_ref))
             o.lines = new
         return self._webhook(order_ref, "exchange.created")
 
@@ -564,6 +574,9 @@ class LocalAtelierProvider:
                     self._stock[l.source_variant_ref] += unshipped
                     l = replace(l, quantity_cancelled=l.quantity_cancelled + unshipped,
                                 quantity_returned=l.quantity_returned + (q - unshipped))
+                    slot = (order_ref, l.source_variant_ref)
+                    if self._pending_returns.get(slot):  # requested returns that have now been received
+                        self._pending_returns[slot] = max(0, self._pending_returns[slot] - (q - unshipped))
                 new.append(l)
             o.lines = new
         self._release(o, pay, value)

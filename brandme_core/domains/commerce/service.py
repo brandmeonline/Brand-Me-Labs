@@ -853,14 +853,16 @@ class CommerceService:
                                                ol.quantity_shipped, ol.quantity_delivered,
                                                ol.quantity_returned, ol.exchanged_from_ref, ol.quantity_cancelled))
                     continue
-                shipped_ = max(prev.quantity_shipped, min(ol.quantity_shipped, prev.quantity_ordered))
+                # A line only grows: an exchange back into a variant already on the order adds units.
+                ordered_ = max(prev.quantity_ordered, min(ol.quantity_ordered, 99))
+                shipped_ = max(prev.quantity_shipped, min(ol.quantity_shipped, ordered_))
                 new_lines.append(replace(
-                    prev, quantity_shipped=shipped_,
-                    quantity_delivered=max(prev.quantity_delivered, min(ol.quantity_delivered, prev.quantity_ordered)),
-                    quantity_returned=max(prev.quantity_returned, min(ol.quantity_returned, prev.quantity_ordered)),
+                    prev, quantity_ordered=ordered_, quantity_shipped=shipped_,
+                    quantity_delivered=max(prev.quantity_delivered, min(ol.quantity_delivered, ordered_)),
+                    quantity_returned=max(prev.quantity_returned, min(ol.quantity_returned, ordered_)),
                     # Cancelled units are units that never ship.
                     quantity_cancelled=max(prev.quantity_cancelled,
-                                           min(ol.quantity_cancelled, prev.quantity_ordered - shipped_))))
+                                           min(ol.quantity_cancelled, ordered_ - shipped_))))
             new_lines.extend(by_ref.values())
             lines = tuple(new_lines)
             payment = order.payment_status
@@ -904,8 +906,10 @@ class CommerceService:
                     self._transition(tx, op, target)
                 except CommerceError:
                     pass  # summary state is advisory; order facts above are authoritative
-            previous_refs = {l.source_variant_ref for l in prev_order.lines}
-            exchanged = any(l.exchanged_from_ref and l.source_variant_ref not in previous_refs for l in lines)
+            previous = {l.source_variant_ref: l.quantity_ordered for l in prev_order.lines}
+            exchanged = any((l.exchanged_from_ref and l.source_variant_ref not in previous)
+                            or l.quantity_ordered > previous.get(l.source_variant_ref, l.quantity_ordered)
+                            for l in lines)
             effect = ("exchanged" if exchanged
                       else "returned" if sum(l.quantity_returned for l in lines) > sum(l.quantity_returned for l in prev_order.lines)
                       else "cancelled" if sum(l.quantity_cancelled for l in lines) > sum(l.quantity_cancelled for l in prev_order.lines)
