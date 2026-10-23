@@ -92,3 +92,15 @@ funded Midnight transactions.
 Primary references: [publish API](https://cloud.google.com/pubsub/docs/reference/rest/v1/projects.topics/publish),
 [emulator](https://cloud.google.com/pubsub/docs/emulator),
 [authentication transport](https://googleapis.dev/python/google-auth/latest/reference/google.auth.transport.requests.html).
+
+## Firestore projections
+
+`brandme_core/events/projections.py` turns committed events into Firestore read models for timely UI updates (spec ch.03 §5):
+
+- **Spec.** `ProjectionSpec(name, audience, path_template, allowed_fields)` declares one document kind. Member-private kinds live under `members/{member_id}/`, shared kinds under `shared/{share_id}`. Shared specs and documents reject private field names (owner/member refs, body data, prices, receipts, wallet/ownership history, persona vectors), including nested ones.
+- **Monotonic.** `ProjectionStore.apply(Upsert(...))` writes only when `source_version` is newer than the stored document and any tombstone. Redelivery and out-of-order events are no-ops (`stale` / `revoked`).
+- **Revocation.** `Delete(...)` removes the document and records a tombstone, so older updates cannot resurrect it. A delete older than the current view is ignored (`stale`), so a later re-share stays intact.
+- **Deletion.** `purge_member(member_id)` removes every private projection (for privacy deletion jobs).
+- **Reducers.** Register pure reducers per event type (`ProjectionRegistry.register`); they return ops and never write. Apply them from a Pub/Sub subscriber after the usual `first_delivery` dedupe.
+
+Client access is defined in `packages/firestore-rules`. Tests: `tests/foundation/test_projections_emulator.py` (needs `FIRESTORE_EMULATOR_HOST`).

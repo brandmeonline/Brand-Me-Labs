@@ -259,6 +259,8 @@ async function check() {
   const results = [];
   const emulator = await portOpen(PORTS.spanner);
   const env = { ...baseEnv('development') };
+  const [fsHost, fsPort] = (env.FIRESTORE_EMULATOR_HOST ?? '').split(':');
+  const firestore = Boolean(fsHost && fsPort) && (await portOpen(Number(fsPort), fsHost));
   const steps = [
     ['spec package validator', PY, ['docs/design/brandme/contracts/validate_spec.py']],
     ['contract + token drift', 'pnpm', ['contracts:check']],
@@ -278,6 +280,7 @@ async function check() {
     if (!ok) console.log((r.stdout + r.stderr).split('\n').slice(-25).join('\n'));
   }
   if (!emulator) console.log(c.warn(`! Spanner emulator not reachable on :${PORTS.spanner}; emulator suites were skipped (not_run), not passed.`));
+  if (!firestore) console.log(c.warn('! Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST); projection and security-rules suites were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_firestore_emulator.py'));
   process.exit(results.every((r) => r.result === 'passed') ? 0 : 1);
 }
 

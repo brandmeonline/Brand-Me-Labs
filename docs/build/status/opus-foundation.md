@@ -128,3 +128,31 @@ Open (proposed for parent / later lanes):
 ## Merge record (2026-10-05)
 
 PR #33 merged into `bench/opus-foundation-20261005` at `25dff5c8` per founder approval (API merge of the draft required marking it ready-for-review first via GraphQL). The 8 working-branch commits (W00 honest baseline, W01 contracts/workspace/design tokens, W02 persistence/auth/privacy) are now on the bench branch. CI failures at merge time are systemic (fail on `main`, owned by PR #30), not lane-caused. Downstream lanes were notified via comments on PRs #32, #34, #35; the two Astra lanes (no open PRs) will see the merge via the bench watch digest. W00–W02 deliverables are complete; remaining foundation-adjacent work is the repo-wide CI repair (PR #30) and the Trivy dependency findings, both outside this lane's ownership.
+
+## Round 2 (2026-10-23): remaining foundation items
+
+**Branch:** `claude/opus-foundation-w00-2hgiw5`, restarted from `main` at `5174ec2`. PR #33 was merged, and the bench branch is in `main`.
+
+| Item from "Resume instructions" | Outcome | Evidence |
+|---|---|---|
+| Firestore projection framework | **Done.** `brandme_core/events/projections.py`: field-allowlisted specs; private-field refusal for shared docs; monotonic `source_version`; revocation tombstones that block resurrection; `purge_member`; reducer registry | `tests/foundation/test_projections_emulator.py` (7) |
+| Security rules | **Done.** `packages/firestore-rules/firestore.rules`: member-only private reads, audience-only `get` before expiry for shared docs, no listing, no client writes, tombstones closed | `packages/firestore-rules/test/rules.test.ts` (6). With an allow-all negative control, 5 of 6 fail |
+| BM-FND-006: revoking a share removes shared projections | **Passing** on the emulator: server revoke → audience `get` denied; an older delayed upsert returns `revoked`; a superseded revoke does not delete a newer re-share | both suites above |
+| Redacted logs for legacy routes | **Done** at the logger: `REDACT_PATHS` in `brandme-gateway/src/config/logger.ts` covers `scanner_user_id`, `garment_tag`, user/member IDs, email and CSRF/session headers (top-level and nested). `routes/scan.ts` itself is unchanged | `brandme-gateway/src/middleware/redaction.test.ts` (2). Without the logger change both fail |
+| Export/deletion job scaffolding on `data_categories()` | **Already delivered by the midnight-rights lane** (V009, `brandme_core/domains/privacy/*`, `foundation_bridge.py` walks `data_categories()`). Not duplicated | `main` |
+
+CI: the `test-core` job now fetches the pinned Firestore emulator 1.22.0 (SHA-256 verified), runs the projection tests with `BRANDME_REQUIRE_EMULATORS=1` (a missing emulator fails instead of skipping), and runs the rules suite, failing on any skip. `pnpm check` warns when Firestore is unreachable.
+
+Dependency note: `firebase` (dev-only) pins `@grpc/grpc-js ~1.9`, which has a high and a low advisory. An override in `pnpm-workspace.yaml` moves it to the workspace's existing 1.14.6. The `pnpm audit` advisory set is identical to `main`; `--prod` and `--audit-level=critical` both pass.
+
+Local verification on this branch (Spanner emulator 1.5.45, Firestore 1.22.0, Pub/Sub 0.8.37):
+- CI's Python set: 281 passed, 0 skipped.
+- Gateway: 62 passed, plus lint and type-check.
+- Packages: 36 passed, 0 skipped.
+- `pnpm check`: all green.
+- Contract drift: none.
+
+Still open:
+- The gateway does not mint Firebase custom tokens (uid = member_id) yet, so clients cannot sign in to Firestore. The rules are ready for when it does.
+- No domain reducers are registered yet. Owning lanes add them alongside their events.
+- `routes/scan.ts` still returns 500 without NATS (BM-BASE-005, not this lane's file).
