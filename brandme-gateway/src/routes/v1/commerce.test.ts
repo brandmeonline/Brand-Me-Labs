@@ -15,7 +15,7 @@ import { createCatalogRouter } from './catalog';
 import {
   type CommerceDomainClient, type DomainResult, DOMAIN_AUDIENCE, createCommerceOpsRouter, createCommerceRouter,
   createCommerceWebhookRouter,
-  createHttpCommerceDomainClient, principalClaim,
+  createHttpCommerceDomainClient, principalClaim, WEBHOOK_HEADER,
 } from './commerce';
 import { createDelegationsRouter } from './delegations';
 import { createProvidersRouter } from './providers';
@@ -232,6 +232,15 @@ describe('delegations, providers, catalog, assistant', () => {
     server?.close();
     const raw = await app(null, mount, undefined, false);
     expect((await raw.call('POST', '/webhooks/demo_atelier', { any: 'json' })).status).toBe(202);
+  });
+});
+
+describe('webhook relay headers', () => {
+  it('relays signature and timestamp headers only, never cookies or authorization', () => {
+    for (const h of ['content-type', 'stripe-signature', 'x-demo-signature', 'x-demo-timestamp', 'webhook-id',
+      'webhook-signature', 'x-impact-event-id']) expect(WEBHOOK_HEADER.test(h)).toBe(true);
+    for (const h of ['cookie', 'authorization', 'x-forwarded-for', 'x-real-ip', 'x-csrf-token', 'host',
+      'x-api-key', 'x-signature-bypass']) expect(WEBHOOK_HEADER.test(h)).toBe(false);
   });
 });
 

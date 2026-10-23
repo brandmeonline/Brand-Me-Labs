@@ -305,3 +305,19 @@ def test_gateway_request_id_correlates_domain_events(h):
     h.call("cart.quote", {"cart_id": r.json()["id"]}, headers={"X-Request-Id": "not-a-uuid; drop table"})
     latest = [e for e in h.w.store.outbox() if e.event_type == "commerce.quote.ready"][-1]
     uuid.UUID(latest.correlation_id)
+
+
+def test_assistant_task_create_is_idempotent(h):
+    h.w.svc.create_delegation(h.w.member, client_id=ASSISTANT_CLIENT_ID, mode=AssistanceMode.RESEARCH,
+                              allowed_providers={PROVIDER_ID}, limits=None,
+                              expires_at=h.w.clock.now.replace(year=2027))
+    body = {"goal": "linen overshirt", "assistance_mode": "research"}
+    key = {"Idempotency-Key": "task-create-00000001"}
+    first = h.call("assistant.task.create", body, headers=key)
+    again = h.call("assistant.task.create", body, headers=key)  # e.g. the gateway timed out and the client retried
+    assert first.status_code == 201 and again.status_code == 200
+    assert again.json()["id"] == first.json()["id"]
+    events = h.call("assistant.task.events", {"task_id": first.json()["id"]}).json()["events"]
+    assert [e["type"] for e in events].count("goal") == 1
+    clash = h.call("assistant.task.create", {"goal": "something else", "assistance_mode": "research"}, headers=key)
+    assert clash.status_code == 409 and clash.json()["code"] == "idempotency_key_reused"

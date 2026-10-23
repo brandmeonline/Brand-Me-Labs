@@ -39,6 +39,7 @@ from brandme_core.domains.providers.contracts import (
     CartLineRequest, CheckoutProvider, OrderObservation, OrderProvider, ProviderError,
     ProviderErrorKind, ReturnsProvider, SubmitRequest,
 )
+from brandme_core.domains import base as _foundation
 from brandme_core.domains.privacy.deletion import ProcessingFrozenError
 from brandme_core.domains.providers.registry import ProviderRegistry, RegistryError
 from brandme_core.events import EventEnvelope
@@ -109,6 +110,20 @@ def processing_basis(at: datetime) -> Iterator[None]:
 
 def _digest(doc: Any) -> str:
     return "sha256:" + hashlib.sha256(rfc8785.dumps(doc)).hexdigest()
+
+
+def _owner_only(principal: Principal, owner_member_id: Optional[str], detail: str) -> None:
+    """Foundation object authorization (deny by default, 404 so existence does not leak).
+
+    Commerce objects have no sharing grants: an agent reaches them only as the member,
+    through its delegation, and delegation scope is checked before this.
+    """
+    try:
+        if owner_member_id is None:
+            raise _foundation.NotFound(detail)
+        _foundation.authorize(principal, "commerce.read", owner_member_id)
+    except _foundation.NotFound:
+        raise NotFound(detail) from None
 
 
 def _nonce_hash(nonce: str) -> str:
@@ -216,16 +231,13 @@ class CommerceService:
     @staticmethod
     def _own(reader: Any, table: str, key: str, principal: Principal) -> Any:
         row = reader.get(table, key)
-        # 404 for someone else's object: do not reveal existence.
-        if row is None or getattr(row, "member_id", None) != principal.member_id:
-            raise NotFound(f"{table[:-1]} not found")
+        _owner_only(principal, getattr(row, "member_id", None), f"{table[:-1]} not found")
         return row
 
     @staticmethod
     def _quote(reader: Any, principal: Principal, quote_id: str) -> CheckoutQuote:
         row = reader.get("quotes", quote_id)
-        if row is None or row[0] != principal.member_id:
-            raise NotFound("quote not found")
+        _owner_only(principal, row[0] if row is not None else None, "quote not found")
         return row[1]
 
     def _idempotent(self, principal: Principal, operation: str, key: Optional[str],

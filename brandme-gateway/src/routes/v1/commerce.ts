@@ -232,12 +232,19 @@ export function createCommerceOpsRouter(client: CommerceDomainClient): Router {
  * (provider, event_id) dedupe. Mount with `express.raw({ type: '*\/*', limit: '256kb' })`
  * before any JSON parser so the signed bytes arrive unchanged.
  */
+/** Headers relayed to the domain with a webhook: content type and signature/timestamp/event-id fields. */
+export const WEBHOOK_HEADER =
+  /^(content-type|stripe-signature|webhook-(id|timestamp|signature)|x-[a-z0-9-]*-(signature|timestamp|event-id))$/;
+
 export function createCommerceWebhookRouter(client: CommerceDomainClient): Router {
   const router = Router();
   router.post('/:providerId', handle(async (req: Request, res: Response) => {
     if (!Buffer.isBuffer(req.body)) throw problems.invalid('Webhook body must be delivered raw.');
+    // Only what a provider signature scheme needs; never cookies, authorization or proxy headers.
     const headers: Record<string, string> = {};
-    for (const [k, v] of Object.entries(req.headers)) if (typeof v === 'string') headers[k] = v;
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (typeof v === 'string' && WEBHOOK_HEADER.test(k)) headers[k] = v;
+    }
     const result = await client.webhook(req.params.providerId, headers, req.body);
     // Say nothing about why a delivery was refused.
     res.status(result.status === 200 ? 202 : result.status >= 500 ? 503 : 400).json({ received: result.status === 200 });

@@ -34,9 +34,10 @@ from brandme_core.domains.providers.catalog import search_catalog, untrusted_tex
 from brandme_core.domains.providers.contracts import CartLineRequest, ProviderError
 from brandme_core.domains.providers.registry import RegistryError
 from brandme_core.mcp.authz import DOMAIN_AUDIENCE, AuthError, ExecutorAssertionVerifier
+from brandme_core.orchestrator.runtime import IdempotencyReuse
 
 from .delegation import AssistanceMode, DelegationLimits
-from .errors import Forbidden, InvalidRequest, NotFound
+from .errors import Forbidden, IdempotencyConflict, InvalidRequest, NotFound
 from .money import Money
 from .principal import Principal, is_first_party
 from .records import ApprovalChallenge, Cart, Order, PurchaseApproval, PurchaseOperation
@@ -448,11 +449,16 @@ class CommerceHttpApi:
     def _task_create(self, p, a, h):
         self._need(a, "goal")
         agent = self._assistant_principal(p)
+        key = h.get("idempotency-key")
         try:
             mode = AssistanceMode(a.get("assistance_mode", "research"))
-            task = self.runtime.create(agent, str(a["goal"]), mode)
+            task = self.runtime.create(agent, str(a["goal"]), mode, idempotency_key=key)
+        except IdempotencyReuse as exc:
+            raise IdempotencyConflict(str(exc)) from None
         except (ValueError, PermissionError) as exc:
             raise Forbidden(str(exc) or "task refused", code="task_refused") from None
+        if task.state != "queued":  # a retried create: the task already ran (or is running)
+            return 200, {"id": task.id, "state": task.state, "mode": task.mode.value}
         if self.planner_factory is not None:
             task = self.runtime.run(agent, task.id, self.planner_factory())
         return 201, {"id": task.id, "state": task.state, "mode": task.mode.value}

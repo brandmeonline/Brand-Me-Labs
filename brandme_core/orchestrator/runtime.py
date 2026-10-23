@@ -17,6 +17,7 @@ requests and outcomes — not model reasoning.
 
 from __future__ import annotations
 
+import hashlib
 import threading
 import time
 import uuid
@@ -40,6 +41,10 @@ MODE_TOOLS = {
 }
 MAX_CALLS = 12
 MAX_SECONDS = 30.0
+
+
+class IdempotencyReuse(PermissionError):
+    """The same idempotency key was used for a different task."""
 
 
 @dataclass(frozen=True)
@@ -104,19 +109,32 @@ class AssistantRuntime:
         self.executor = executor
         self.environment = environment
         self._tasks: Dict[str, AssistantTask] = {}
+        # (member, delegation, idempotency key) -> (request digest, task id): a retried create is the same task.
+        self._by_key: Dict[Tuple[str, str, str], Tuple[str, str]] = {}
         self._lock = threading.Lock()
 
-    def create(self, principal: Principal, goal: str, mode: AssistanceMode) -> AssistantTask:
+    def create(self, principal: Principal, goal: str, mode: AssistanceMode, *,
+               idempotency_key: Optional[str] = None) -> AssistantTask:
+        """Create a task. With an ``idempotency_key``, a retry returns the original task (``replayed``)."""
         if principal.environment != self.environment:
             raise PermissionError("environment mismatch")
         principal = self._bind(principal)
         delegation = self.executor.commerce.store.get("delegations", principal.delegation_id)
         if delegation.mode is not mode:
             raise PermissionError("task mode differs from the delegation's mode")
-        task = AssistantTask(str(uuid.uuid4()), principal.member_id, principal.delegation_id, mode, goal[:1000])
-        self._emit(task, "goal", {"goal": task.goal, "mode": mode.value})
+        digest = hashlib.sha256(f"{mode.value}\n{goal[:1000]}".encode()).hexdigest()
+        slot = (principal.member_id, principal.delegation_id, idempotency_key) if idempotency_key else None
         with self._lock:
+            if slot and slot in self._by_key:
+                prior_digest, task_id = self._by_key[slot]
+                if prior_digest != digest:
+                    raise IdempotencyReuse("idempotency key reused for a different task")
+                return self._tasks[task_id]
+            task = AssistantTask(str(uuid.uuid4()), principal.member_id, principal.delegation_id, mode, goal[:1000])
+            self._emit(task, "goal", {"goal": task.goal, "mode": mode.value})
             self._tasks[task.id] = task
+            if slot:
+                self._by_key[slot] = (digest, task.id)
         return task
 
     def _bind(self, principal: Principal) -> Principal:
@@ -155,7 +173,10 @@ class AssistantRuntime:
         task = self.get(principal, task_id)
         if principal.delegation_id != task.delegation_id:
             raise PermissionError("task bound to a different delegation")
-        task.state = "running"
+        with self._lock:  # claim it: a task runs once, however many times its create is retried
+            if task.state != "queued":
+                return task
+            task.state = "running"
         allowed = MODE_TOOLS[task.mode]
         observations: List[Dict[str, Any]] = []
         calls, started = 0, time.monotonic()
