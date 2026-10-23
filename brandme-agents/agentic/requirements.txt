@@ -11,8 +11,8 @@ langgraph==0.0.20
 anthropic==0.18.1
 
 # Knowledge Graph
-neo4j==5.16.0
-neo4j-graphrag==0.1.0
+neo4j==5.17.0
+neo4j-graphrag==0.7.0
 
 # Vector Search & Embeddings
 openai==1.10.0
@@ -25,11 +25,13 @@ python-louvain==0.16
 
 # CLI
 typer==0.9.0
+# Typer 0.9 uses Click APIs removed in 8.2+.
+click==8.1.8
 rich==13.7.0
 
 # Existing dependencies
 fastapi==0.109.0
-pydantic==2.5.3
+pydantic==2.14.1
 asyncpg==0.29.0
 pydantic-settings==2.1.0
 python-dotenv==1.0.0

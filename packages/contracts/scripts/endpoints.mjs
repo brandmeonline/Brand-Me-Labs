@@ -81,7 +81,9 @@ export const ENDPOINTS = [
   E('post', '/commerce/orders/{orderId}/returns', 'requestReturn', 'commerce', 'commerce-agents', { idempotent: true, accepted: true }),
 
   // Ownership / rights / chain
-  E('get', '/assets/{assetId}/passport', 'getPassport', 'rights', 'midnight-rights'),
+  E('get', '/assets/{assetId}/passport', 'getPassport', 'rights', 'midnight-rights', { public: true, paginated: true, response: 'PassportClaimsRead', status: 'implemented' }),
+  E('get', '/rights/entitlements', 'listMyEntitlements', 'rights', 'midnight-rights', { paginated: true, cursorPattern: '^[0-9a-f]{64}$', response: 'RightsEntitlementsRead', status: 'implemented' }),
+  E('get', '/rights/reprint-jobs/{jobId}', 'getMyReprintJob', 'rights', 'midnight-rights', { response: 'ReprintJobRead', status: 'implemented' }),
   E('post', '/assets/{assetId}/claims', 'submitClaim', 'rights', 'midnight-rights', { idempotent: true, accepted: true }),
   E('post', '/assets/{assetId}/transfers', 'createTransfer', 'rights', 'midnight-rights', { idempotent: true, created: true }),
   E('post', '/transfers/{transferId}/accept', 'acceptTransfer', 'rights', 'midnight-rights', { idempotent: true }),
@@ -94,9 +96,14 @@ export const ENDPOINTS = [
   E('delete', '/try-on/jobs/{jobId}', 'deleteTryOnJob', 'try-on', 'spatial-ar', { noContent: true }),
 
   // Privacy
+  E('get', '/me/data', 'getMyDataInventory', 'privacy', 'foundation', { response: 'MyDataInventoryRead', status: 'implemented', summary: 'Rights category inventory with explicit partial coverage and checked export capability' }),
+  E('get', '/me/deletion/{jobId}', 'getMyDeletionStatus', 'privacy', 'foundation', { response: 'DeletionStatusRead', status: 'implemented' }),
   E('get', '/me/consents', 'listConsents', 'privacy', 'foundation'),
   E('post', '/me/consents', 'grantConsent', 'privacy', 'foundation', { idempotent: true, created: true }),
   E('delete', '/me/consents/{consentId}', 'revokeConsent', 'privacy', 'foundation', { noContent: true }),
-  E('post', '/me/exports', 'requestExport', 'privacy', 'foundation', { idempotent: true, accepted: true }),
+  E('post', '/me/exports', 'requestExport', 'privacy', 'foundation', { idempotent: true, accepted: true, body: 'SelectedRightsExportRequest', response: 'SelectedRightsExportStatus', status: 'implemented', errors: [400], summary: 'Request an explicit selected-category rights export after recent authentication' }),
+  E('get', '/me/exports/capability', 'getMyExportCapability', 'privacy', 'foundation', { response: 'SelectedRightsExportCapability', status: 'implemented', errors: [400] }),
+  E('get', '/me/exports/{jobId}', 'getMyExportStatus', 'privacy', 'foundation', { response: 'SelectedRightsExportStatus', status: 'implemented', errors: [400, 409] }),
+  E('get', '/me/exports/{jobId}/download', 'downloadMyExport', 'privacy', 'foundation', { response: 'SelectedRightsExportPackage', status: 'implemented', errors: [400, 409, 410], exportDownload: true, summary: 'Download authenticated JSON attachment after recent authentication; expires 24 hours after request' }),
   E('post', '/me/deletion', 'requestDeletion', 'privacy', 'foundation', { idempotent: true, accepted: true }),
 ];

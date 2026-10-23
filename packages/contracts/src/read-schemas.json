@@ -1,0 +1,1378 @@
+{
+  "$comment": "Implemented read API extensions. Status reads do not enable commands, prove funded transactions, or imply whole-account privacy coverage.",
+  "RightsEntitlementRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "entitlement_id": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "asset_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "uuid"
+      },
+      "issuer_id": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "epoch": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "Lossless non-negative int64 decimal string."
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "active",
+          "revoked"
+        ]
+      },
+      "transferable": {
+        "type": "boolean"
+      },
+      "reprintable": {
+        "type": "boolean"
+      },
+      "last_tx_id": {
+        "type": "string"
+      },
+      "last_block_height": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "Lossless non-negative int64 decimal string."
+      },
+      "finalized_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "date-time"
+      }
+    },
+    "required": [
+      "entitlement_id",
+      "asset_id",
+      "issuer_id",
+      "epoch",
+      "status",
+      "transferable",
+      "reprintable",
+      "last_tx_id",
+      "last_block_height",
+      "finalized_at",
+      "updated_at"
+    ]
+  },
+  "RightsEntitlementsRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "environment": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "development",
+          "sandbox",
+          "production"
+        ]
+      },
+      "network": {
+        "type": "string",
+        "enum": [
+          "undeployed",
+          "preview",
+          "preprod",
+          "mainnet"
+        ]
+      },
+      "contract_address": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RightsEntitlementRead"
+        },
+        "maxItems": 100
+      },
+      "next_cursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "badge": {
+        "type": "string"
+      },
+      "capability": {
+        "type": "string",
+        "enum": [
+          "available",
+          "read_only",
+          "unavailable"
+        ]
+      }
+    },
+    "required": [
+      "environment",
+      "network",
+      "contract_address",
+      "items",
+      "next_cursor"
+    ]
+  },
+  "PassportClaimRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "claim_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "facet": {
+        "type": "string"
+      },
+      "statement": {
+        "type": "string"
+      },
+      "assurance": {
+        "type": "string"
+      },
+      "source": {
+        "type": "string"
+      },
+      "environment": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "development",
+          "sandbox",
+          "production"
+        ]
+      },
+      "network": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "undeployed",
+              "preview",
+              "preprod",
+              "mainnet"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "test_network": {
+        "type": "boolean"
+      },
+      "evidence_ref": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "value": {},
+      "observed_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "expires_at": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "current",
+          "expired",
+          "revoked"
+        ]
+      },
+      "what_this_means": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "claim_id",
+      "facet",
+      "statement",
+      "assurance",
+      "source",
+      "environment",
+      "network",
+      "test_network",
+      "evidence_ref",
+      "value",
+      "observed_at",
+      "expires_at",
+      "state",
+      "what_this_means"
+    ]
+  },
+  "PassportClaimsRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "api": {
+        "type": "string",
+        "const": "brandme.passport.claims/v1"
+      },
+      "asset_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "viewer": {
+        "type": "string",
+        "enum": [
+          "public",
+          "owner"
+        ]
+      },
+      "environment": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "development",
+          "sandbox",
+          "production"
+        ]
+      },
+      "network": {
+        "type": "string",
+        "enum": [
+          "undeployed",
+          "preview",
+          "preprod",
+          "mainnet"
+        ]
+      },
+      "statements": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PassportClaimRead"
+        },
+        "maxItems": 100
+      },
+      "next_cursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "api",
+      "asset_id",
+      "viewer",
+      "environment",
+      "network",
+      "statements",
+      "next_cursor"
+    ]
+  },
+  "ReprintJobRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "job_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "environment": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "development",
+          "sandbox",
+          "production"
+        ]
+      },
+      "network": {
+        "type": "string",
+        "enum": [
+          "undeployed",
+          "preview",
+          "preprod",
+          "mainnet"
+        ]
+      },
+      "entitlement_id": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "manufacturer_id": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "quantity": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "Lossless non-negative int64 decimal string."
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "eligibility_check",
+          "quoted",
+          "approved",
+          "reserved",
+          "rights_consuming",
+          "rights_consumed",
+          "accepted",
+          "manufacturing",
+          "quality_review",
+          "shipped",
+          "delivered",
+          "cancel_requested",
+          "cancelled",
+          "failed",
+          "disputed"
+        ]
+      },
+      "payment_state": {
+        "type": "string"
+      },
+      "units_attested": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "Lossless non-negative int64 decimal string."
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "date-time"
+      }
+    },
+    "required": [
+      "job_id",
+      "environment",
+      "network",
+      "entitlement_id",
+      "manufacturer_id",
+      "quantity",
+      "state",
+      "payment_state",
+      "units_attested",
+      "created_at",
+      "updated_at"
+    ]
+  },
+  "MyDataCategoryRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "key": {
+        "type": "string"
+      },
+      "domain": {
+        "type": "string"
+      },
+      "title": {
+        "type": "string"
+      },
+      "supplied_by": {
+        "type": "string",
+        "enum": [
+          "member",
+          "inferred",
+          "provider",
+          "partner",
+          "system"
+        ]
+      },
+      "visible_to": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "retention": {
+        "type": "string"
+      },
+      "on_edit": {
+        "type": "string"
+      },
+      "on_delete": {
+        "type": "string",
+        "enum": [
+          "erase",
+          "anonymize",
+          "retain_legal",
+          "not_erasable_public_ledger"
+        ]
+      },
+      "personal": {
+        "type": "boolean"
+      },
+      "retention_basis": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "key",
+      "domain",
+      "title",
+      "supplied_by",
+      "visible_to",
+      "retention",
+      "on_edit",
+      "on_delete",
+      "personal",
+      "retention_basis"
+    ]
+  },
+  "MyDataInventoryRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "environment": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "development",
+          "sandbox",
+          "production"
+        ]
+      },
+      "categories": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/MyDataCategoryRead"
+        }
+      },
+      "coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "full_account": {
+            "type": "boolean",
+            "const": false
+          }
+        },
+        "required": [
+          "domains",
+          "full_account"
+        ]
+      },
+      "capabilities": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "export": {
+            "type": "string",
+            "enum": [
+              "unavailable",
+              "selected_categories"
+            ]
+          },
+          "deletion": {
+            "type": "string",
+            "const": "unavailable"
+          }
+        },
+        "required": [
+          "export",
+          "deletion"
+        ]
+      }
+    },
+    "required": [
+      "environment",
+      "categories",
+      "coverage",
+      "capabilities"
+    ]
+  },
+  "DeletionOutcomeRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "pending_records",
+          "pending_derived",
+          "exception",
+          "not_erasable",
+          "retained",
+          "deleted"
+        ]
+      },
+      "rows_affected": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Lossless non-negative int64 decimal string."
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "derived_purged": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Lossless non-negative int64 decimal string."
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "status",
+      "rows_affected",
+      "derived_purged"
+    ]
+  },
+  "DeletionStatusRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "job_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "environment": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "development",
+          "sandbox",
+          "production"
+        ]
+      },
+      "scope": {
+        "type": "string",
+        "enum": [
+          "account",
+          "category"
+        ]
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "requested",
+          "running",
+          "completed",
+          "completed_with_exceptions",
+          "failed"
+        ]
+      },
+      "categories": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 100
+      },
+      "requested_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "completed_at": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time"
+      },
+      "outcomes": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": {
+          "$ref": "#/components/schemas/DeletionOutcomeRead"
+        }
+      }
+    },
+    "required": [
+      "job_id",
+      "environment",
+      "scope",
+      "state",
+      "categories",
+      "requested_at",
+      "completed_at",
+      "outcomes"
+    ]
+  },
+  "SelectedRightsExportRequest": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "categories": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "rights.control_links",
+            "rights.operations",
+            "rights.transfers",
+            "rights.reprint_jobs",
+            "rights.chain_commitments"
+          ]
+        },
+        "minItems": 1,
+        "maxItems": 5,
+        "uniqueItems": true
+      }
+    },
+    "required": [
+      "categories"
+    ]
+  },
+  "SelectedRightsExportCapability": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "status": {
+        "type": "string",
+        "const": "available"
+      },
+      "environment": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "development",
+          "sandbox",
+          "production"
+        ]
+      },
+      "network": {
+        "type": "string",
+        "enum": [
+          "undeployed",
+          "preview",
+          "preprod"
+        ]
+      },
+      "contract_address": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "categories": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "rights.control_links",
+            "rights.operations",
+            "rights.transfers",
+            "rights.reprint_jobs",
+            "rights.chain_commitments"
+          ]
+        },
+        "minItems": 1,
+        "maxItems": 5,
+        "uniqueItems": true
+      },
+      "full_account": {
+        "type": "boolean",
+        "const": false
+      },
+      "selected_categories_only": {
+        "type": "boolean",
+        "const": true
+      }
+    },
+    "required": [
+      "status",
+      "environment",
+      "network",
+      "contract_address",
+      "categories",
+      "full_account",
+      "selected_categories_only"
+    ]
+  },
+  "SelectedRightsExportStatus": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "job_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "requested",
+          "building",
+          "ready",
+          "failed",
+          "expired"
+        ]
+      },
+      "categories": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "rights.control_links",
+            "rights.operations",
+            "rights.transfers",
+            "rights.reprint_jobs",
+            "rights.chain_commitments"
+          ]
+        },
+        "minItems": 1,
+        "maxItems": 5,
+        "uniqueItems": true
+      },
+      "coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "domains": {
+            "type": "array",
+            "const": [
+              "rights"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "full_account": {
+            "type": "boolean",
+            "const": false
+          },
+          "selected_categories_only": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "domains",
+          "full_account",
+          "selected_categories_only"
+        ]
+      },
+      "environment": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "development",
+          "sandbox",
+          "production"
+        ]
+      },
+      "network": {
+        "type": "string",
+        "enum": [
+          "undeployed",
+          "preview",
+          "preprod"
+        ]
+      },
+      "requested_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "expires_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "completed_at": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time"
+      },
+      "package_sha256": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "package_bytes": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 1,
+        "maximum": 2097152
+      },
+      "failure_code": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          null,
+          "export_failed",
+          "export_too_large",
+          "export_restricted",
+          "attempts_exhausted"
+        ]
+      },
+      "download_available": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "job_id",
+      "state",
+      "categories",
+      "coverage",
+      "environment",
+      "network",
+      "requested_at",
+      "expires_at",
+      "completed_at",
+      "package_sha256",
+      "package_bytes",
+      "failure_code",
+      "download_available"
+    ]
+  },
+  "SelectedRightsExportPackage": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "schema": {
+        "type": "string",
+        "const": "brandme.selected-rights-export/v1"
+      },
+      "job_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "subject_ref": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "environment": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "development",
+          "sandbox",
+          "production"
+        ]
+      },
+      "captured_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "domains": {
+            "type": "array",
+            "const": [
+              "rights"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "full_account": {
+            "type": "boolean",
+            "const": false
+          },
+          "selected_categories_only": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "domains",
+          "full_account",
+          "selected_categories_only"
+        ]
+      },
+      "sections": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 5,
+        "items": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "const": "rights.control_links"
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "network": {
+                        "type": "string",
+                        "enum": [
+                          "undeployed",
+                          "preview",
+                          "preprod"
+                        ]
+                      },
+                      "contract_address": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "entitlement_id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "asset_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uuid"
+                      },
+                      "epoch": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+$"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "last_tx_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "network",
+                      "contract_address",
+                      "entitlement_id",
+                      "asset_id",
+                      "epoch",
+                      "status",
+                      "last_tx_id"
+                    ]
+                  },
+                  "maxItems": 1000
+                },
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "network": {
+                      "type": "string",
+                      "enum": [
+                        "undeployed",
+                        "preview",
+                        "preprod"
+                      ]
+                    },
+                    "contract_address": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "network",
+                    "contract_address"
+                  ]
+                },
+                "public_references_only": {
+                  "type": "boolean",
+                  "const": false
+                }
+              },
+              "required": [
+                "category",
+                "records",
+                "scope",
+                "public_references_only"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "const": "rights.chain_commitments"
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "network": {
+                        "type": "string",
+                        "enum": [
+                          "undeployed",
+                          "preview",
+                          "preprod"
+                        ]
+                      },
+                      "contract_address": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "entitlement_id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "epoch": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+$"
+                      },
+                      "last_tx_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "network",
+                      "contract_address",
+                      "entitlement_id",
+                      "epoch",
+                      "last_tx_id"
+                    ]
+                  },
+                  "maxItems": 1000
+                },
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "network": {
+                      "type": "string",
+                      "enum": [
+                        "undeployed",
+                        "preview",
+                        "preprod"
+                      ]
+                    },
+                    "contract_address": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "network",
+                    "contract_address"
+                  ]
+                },
+                "public_references_only": {
+                  "type": "boolean",
+                  "const": true
+                }
+              },
+              "required": [
+                "category",
+                "records",
+                "scope",
+                "public_references_only"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "const": "rights.operations"
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "operation_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "network": {
+                        "type": "string",
+                        "enum": [
+                          "undeployed",
+                          "preview",
+                          "preprod"
+                        ]
+                      },
+                      "contract_address": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "circuit": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "tx_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "operation_id",
+                      "network",
+                      "contract_address",
+                      "circuit",
+                      "state",
+                      "tx_id",
+                      "created_at"
+                    ]
+                  },
+                  "maxItems": 1000
+                },
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "network": {
+                      "type": "string",
+                      "enum": [
+                        "undeployed",
+                        "preview",
+                        "preprod"
+                      ]
+                    },
+                    "contract_address": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "network",
+                    "contract_address"
+                  ]
+                },
+                "public_references_only": {
+                  "type": "boolean",
+                  "const": false
+                }
+              },
+              "required": [
+                "category",
+                "records",
+                "scope",
+                "public_references_only"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "const": "rights.transfers"
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "intent_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "network": {
+                        "type": "string",
+                        "enum": [
+                          "undeployed",
+                          "preview",
+                          "preprod"
+                        ]
+                      },
+                      "entitlement_id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "intent_id",
+                      "network",
+                      "entitlement_id",
+                      "state",
+                      "created_at"
+                    ]
+                  },
+                  "maxItems": 1000
+                },
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "network": {
+                      "type": "string",
+                      "enum": [
+                        "undeployed",
+                        "preview",
+                        "preprod"
+                      ]
+                    },
+                    "contract_address": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "network",
+                    "contract_address"
+                  ]
+                },
+                "public_references_only": {
+                  "type": "boolean",
+                  "const": false
+                }
+              },
+              "required": [
+                "category",
+                "records",
+                "scope",
+                "public_references_only"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "const": "rights.reprint_jobs"
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "job_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "network": {
+                        "type": "string",
+                        "enum": [
+                          "undeployed",
+                          "preview",
+                          "preprod"
+                        ]
+                      },
+                      "entitlement_id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+$"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "job_id",
+                      "network",
+                      "entitlement_id",
+                      "state",
+                      "quantity",
+                      "created_at"
+                    ]
+                  },
+                  "maxItems": 1000
+                },
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "network": {
+                      "type": "string",
+                      "enum": [
+                        "undeployed",
+                        "preview",
+                        "preprod"
+                      ]
+                    },
+                    "contract_address": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "network",
+                    "contract_address"
+                  ]
+                },
+                "public_references_only": {
+                  "type": "boolean",
+                  "const": false
+                }
+              },
+              "required": [
+                "category",
+                "records",
+                "scope",
+                "public_references_only"
+              ]
+            }
+          ]
+        }
+      },
+      "ownership_backup": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "schema",
+      "job_id",
+      "subject_ref",
+      "environment",
+      "captured_at",
+      "coverage",
+      "sections",
+      "ownership_backup"
+    ]
+  }
+}

@@ -1,0 +1,1286 @@
+{
+  "compiler-version": "0.31.1",
+  "language-version": "0.23.0",
+  "runtime-version": "0.16.0",
+  "circuits": [
+    {
+      "name": "roleCommitment",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "domain",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "scope",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "secret",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "salt",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "network",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "holderCommitment",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "entitlementId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "epoch",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        },
+        {
+          "name": "secret",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "salt",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "network",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "deriveEntitlementId",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "issuanceId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "deriveChildEntitlementId",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "nullifier",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "unit",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "deriveOfferId",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "entitlementId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "epoch",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        },
+        {
+          "name": "nonce",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "deriveAllowanceId",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "nonce",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "deriveConsumptionNullifier",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "allowanceId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "jobCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "deriveChallengeKey",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "entitlementId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "epoch",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        },
+        {
+          "name": "challenge",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "audience",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "registerIssuer",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "authCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "policyVersion",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        },
+        {
+          "name": "maxIssuance",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        },
+        {
+          "name": "validUntil",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "rotateIssuerKey",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "newAuthCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "newPolicyVersion",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "revokeIssuer",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "issueEntitlement",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "issuanceId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "assetCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "policyDigest",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "transferable",
+          "type": {
+            "type-name": "Boolean"
+          }
+        },
+        {
+          "name": "reprintable",
+          "type": {
+            "type-name": "Boolean"
+          }
+        },
+        {
+          "name": "controllerCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "proveControl",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "entitlementId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "challenge",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "audience",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "offerTransfer",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "entitlementId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "nonce",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "recipientCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "expiry",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "termsDigest",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "acceptTransfer",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "offerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "cancelTransfer",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "offerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "revokeEntitlement",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "entitlementId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "registerManufacturer",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "manufacturerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "authCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "deactivateManufacturer",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "manufacturerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "grantReprintAllowance",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "nonce",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "entitlementId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "designDigest",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "manufacturerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "quota",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        },
+        {
+          "name": "validUntil",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "policyDigest",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "consumeReprintAllowance",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "allowanceId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "jobCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "quantity",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        },
+        {
+          "name": "childControllerCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "attestManufacture",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "nullifier",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "unit",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        },
+        {
+          "name": "childAssetCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "evidenceDigest",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "grantReplacementAllowance",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "failedNullifier",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "nonce",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "validUntil",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "governanceSecret",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "issuerSecret",
+      "arguments": [
+        {
+          "name": "issuerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "manufacturerSecret",
+      "arguments": [
+        {
+          "name": "manufacturerId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "holderSecret",
+      "arguments": [
+        {
+          "name": "entitlementId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    }
+  ],
+  "contracts": [
+  ],
+  "ledger": [
+    {
+      "name": "instanceSalt",
+      "index": 0,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "networkTag",
+      "index": 1,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "governanceCommitment",
+      "index": 2,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "issuers",
+      "index": 3,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "IssuerPolicy",
+        "elements": [
+          {
+            "name": "authCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "policyVersion",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "maxIssuance",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "issued",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "validUntil",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "active",
+            "type": {
+              "type-name": "Boolean"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "entitlements",
+      "index": 4,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "Entitlement",
+        "elements": [
+          {
+            "name": "issuerId",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "assetCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "policyDigest",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "controllerCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "epoch",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "transferable",
+            "type": {
+              "type-name": "Boolean"
+            }
+          },
+          {
+            "name": "reprintable",
+            "type": {
+              "type-name": "Boolean"
+            }
+          },
+          {
+            "name": "parentConsumption",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "type-name": "Enum",
+              "name": "EntitlementStatus",
+              "elements": [
+                "active",
+                "revoked"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "offers",
+      "index": 5,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "TransferOffer",
+        "elements": [
+          {
+            "name": "entitlementId",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "senderEpoch",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "recipientCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "expiry",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "termsDigest",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "type-name": "Enum",
+              "name": "OfferState",
+              "elements": [
+                "open",
+                "accepted",
+                "cancelled"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "usedChallenges",
+      "index": 6,
+      "exported": true,
+      "storage": "Set",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "manufacturers",
+      "index": 7,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "Manufacturer",
+        "elements": [
+          {
+            "name": "issuerId",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "authCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "active",
+            "type": {
+              "type-name": "Boolean"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "allowances",
+      "index": 8,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "ReprintAllowance",
+        "elements": [
+          {
+            "name": "issuerId",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "entitlementId",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "designDigest",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "manufacturerId",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "remaining",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "validUntil",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "policyDigest",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "consumptions",
+      "index": 9,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "ConsumptionRecord",
+        "elements": [
+          {
+            "name": "allowanceId",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "jobCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "quantity",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "attested",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "childControllerCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "type-name": "Enum",
+              "name": "ConsumptionState",
+              "elements": [
+                "reserved",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "name": "replacedBy",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "sequence",
+      "index": 10,
+      "exported": true,
+      "storage": "Counter"
+    }
+  ]
+}

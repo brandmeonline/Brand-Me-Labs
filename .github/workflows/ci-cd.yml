@@ -6,11 +6,18 @@
 name: Build, Test, and Deploy
 
 on:
+  # `push` is scoped to the long-lived branches on purpose. It fires on
+  # refs/heads/<branch> while `pull_request` fires on refs/pull/N/merge, so
+  # listing feature branches here makes every PR build the whole pipeline
+  # twice, concurrently, on the same SHA. The two runs do not carry the same
+  # token — GitHub restricts security-events:write on pull_request runs — so
+  # they can disagree, and whichever finishes last is the result shown.
+  # A `concurrency:` group does NOT dedupe them: github.ref differs, so they
+  # land in different groups. Mirrors chain-tests.yml:10-11.
   push:
     branches:
       - main
       - develop
-      - 'claude/**'
     tags:
       - 'v*'
   pull_request:
@@ -18,8 +25,16 @@ on:
       - main
       - develop
 
+# Least privilege by default. security-events:write is what
+# codeql-action/upload-sarif needs; without it the Security Scan job fails
+# with "Resource not accessible by integration" after Trivy has already
+# scanned clean.
+permissions:
+  contents: read
+  security-events: write
+
 env:
-  GCP_PROJECT_ID: brandme-prod
+  GCP_PROJECT_ID: lux-realestate-app
   GCP_REGION: us-east1
   GKE_CLUSTER: brandme-cluster
   REGISTRY: gcr.io
@@ -29,20 +44,42 @@ jobs:
   # Lint and Test
   # ==========================================
 
+
   test-gateway:
     name: Test Gateway (Node/TypeScript)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
+        ports:
+          - 9010:9010
+    env:
+      SPANNER_EMULATOR_HOST: localhost:9010
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Python for identity database migrations
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install migration dependencies
+        run: pip install --require-hashes -r scripts/python/requirements.lock
+
+      - name: Require Spanner emulator
+        run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
+
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: .nvmrc
+
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4  # version from package.json packageManager
-
+        uses: pnpm/action-setup@v4
+        
       - name: Install dependencies
         working-directory: ./brandme-gateway
         run: pnpm install --frozen-lockfile
@@ -57,34 +94,64 @@ jobs:
 
       - name: Run tests
         working-directory: ./brandme-gateway
-        run: pnpm test
+        run: pnpm exec vitest run
+
+  test-frontend:
+    name: Test Frontend (Next.js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: pnpm/action-setup@v4
+      - name: Install locked frontend dependencies
+        run: pnpm install --frozen-lockfile --filter brandme-frontend...
+      - name: Reject production and critical dependency advisories
+        run: |
+          pnpm audit --prod
+          pnpm audit --audit-level=critical
+      - name: Build frontend with lint and type checks
+        run: pnpm --filter brandme-frontend build
 
   test-core:
     name: Test Core (Python/FastAPI)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
+        ports:
+          - 9010:9010
+    env:
+      SPANNER_EMULATOR_HOST: localhost:9010
     steps:
       - uses: actions/checkout@v4
+
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
+
       - name: Install dependencies
-        working-directory: ./brandme-core
-        run: |
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt || echo "requirements-dev.txt not found"
+        run: pip install --require-hashes -r scripts/python/requirements.lock
 
-      - name: Lint
-        working-directory: ./brandme-core
-        run: |
-          ruff check . || echo "Ruff not configured yet"
-          black --check . || echo "Black not configured yet"
+      - name: Require Spanner emulator
+        run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
 
-      - name: Run tests
-        working-directory: ./brandme-core
-        run: pytest tests/ -v || echo "Tests not implemented yet"
+      - name: Test foundation, rights, and privacy
+        env:
+          PUBSUB_EMULATOR_BIN: .cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
+        run: |
+          python scripts/python/fetch_pubsub_emulator.py
+          test -x "$PUBSUB_EMULATOR_BIN"
+          java -version
+          python -m pytest tests/foundation tests/test_rights.py tests/test_privacy.py tests/test_privacy_recovery.py tests/test_rights_cube_filter.py tests/test_read_api.py tests/test_privacy_exports.py -q --timeout=120 -ra
 
   test-chain:
     name: Test Chain (Node/TypeScript)
@@ -92,29 +159,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: .nvmrc
+
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4  # version from package.json packageManager
+        uses: pnpm/action-setup@v4
+
 
       - name: Install dependencies
         working-directory: ./brandme-chain
-        run: pnpm install --frozen-lockfile || echo "Package.json not found yet"
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify chain types and committed artifacts
+        working-directory: ./brandme-chain
+        run: pnpm type-check && pnpm compact:verify
 
   # ==========================================
   # Build Docker Images
   # ==========================================
 
+
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [test-gateway, test-core, test-chain]
-    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
+    needs: [test-gateway, test-core, test-chain, test-frontend, security-scan]
+    timeout-minutes: 40
+    env:
+      PUBLISH_IMAGES: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
 
     strategy:
+      fail-fast: false
       matrix:
         service:
           - gateway
@@ -126,16 +204,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read Node toolchain
+        id: toolchain
+        run: echo "node=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker
 
       - name: Extract metadata
         id: meta
@@ -149,15 +223,44 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha
 
-      - name: Build and push
+      - name: Build image
         uses: docker/build-push-action@v5
         with:
-          context: ./brandme-${{ matrix.service }}
-          push: true
+          context: .
+          file: ./brandme-${{ matrix.service }}/Dockerfile
+          build-args: NODE_VERSION=${{ steps.toolchain.outputs.node }}
+          push: false
+          load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Verify packaged runtime
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+          SERVICE: ${{ matrix.service }}
+        run: bash .github/scripts/smoke-image.sh "$SERVICE" "${IMAGE_TAGS%%$'\n'*}"
+
+      # Credentials are introduced only after the image has been built and tested.
+      - name: Authenticate to Google Cloud
+        if: env.PUBLISH_IMAGES == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker for GCR
+        if: env.PUBLISH_IMAGES == 'true'
+        run: gcloud auth configure-docker --quiet
+
+      - name: Publish verified images
+        if: env.PUBLISH_IMAGES == 'true'
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          while IFS= read -r tag; do
+            docker push "$tag"
+          done <<< "$IMAGE_TAGS"
 
   # ==========================================
   # Deploy to GKE
@@ -173,6 +276,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
+        if: github.event_name == 'push'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -214,9 +318,6 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
     steps:
       - uses: actions/checkout@v4
 

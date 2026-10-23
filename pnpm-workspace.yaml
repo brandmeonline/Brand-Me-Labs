@@ -14,4 +14,17 @@ onlyBuiltDependencies:
   - '@parcel/watcher'
   - sharp
 
-engineStrict: true
+engineStrict: false
+
+overrides:
+  "@midnight-ntwrk/ledger-v8": "8.1.2"
+  "@midnight-ntwrk/onchain-runtime-v3": "3.0.0"
+  "@midnight-ntwrk/compact-runtime": "0.16.0"
+  "@midnight-ntwrk/compact-js": "2.5.1"
+  "@midnight-ntwrk/platform-js": "2.2.4"
+
+  # Upstream critical worker-options pollution fixes; validated with the pinned Vitest suites.
+  "tinypool": "2.1.2"
+  "minimatch@9": "9.0.7"
+  "postcss@8": "8.5.23"
+  "@babel/core@7": "7.29.6"

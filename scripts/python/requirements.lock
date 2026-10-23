@@ -482,6 +482,7 @@ google-auth==2.60.0 \
     --hash=sha256:34aa0283ef72c99cd410e35db4417211fa3e6aaa5399183227bbe3b82bd15192 \
     --hash=sha256:e78414cd2e22cc02884768707def024ca32da17695f2c0e6194cdbe1316c4cd4
     # via
+    #   -r scripts/python/../../brandme_core/requirements.txt
     #   google-api-core
     #   google-cloud-core
 google-cloud-core==2.8.0 \
@@ -1151,7 +1152,9 @@ referencing==0.37.0 \
 requests==2.34.2 \
     --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
-    # via google-api-core
+    # via
+    #   -r scripts/python/../../brandme_core/requirements.txt
+    #   google-api-core
 rpds-py==2026.9.1 \
     --hash=sha256:00ba2d8c7dd4ee537978ddf4b3fbd712bef2d8751603f7f3146b3f4287768e25 \
     --hash=sha256:01445c8d194aa032a08e944f16567672da1c62dbdbefd8b6d0693032e290cf68 \
