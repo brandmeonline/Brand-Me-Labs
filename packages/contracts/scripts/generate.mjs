@@ -18,11 +18,14 @@ const pkg = resolve(here, '..');
 const repo = resolve(pkg, '../..');
 const SPEC = join(repo, 'docs/design/brandme/contracts/domain.schema.json');
 const EXT = join(pkg, 'src/foundation-schemas.json');
+const READ_EXT = join(pkg, 'src/read-schemas.json');
 const check = process.argv.includes('--check');
 
 const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
 const ext = JSON.parse(readFileSync(EXT, 'utf8'));
+const readExt = JSON.parse(readFileSync(READ_EXT, 'utf8'));
 delete ext.$comment;
+delete readExt.$comment;
 
 const rewriteRefs = (node) => {
   if (Array.isArray(node)) return node.map(rewriteRefs);
@@ -38,7 +41,7 @@ const rewriteRefs = (node) => {
 
 const schemas = {};
 for (const [name, def] of Object.entries(spec.$defs)) schemas[name] = rewriteRefs(def);
-for (const [name, def] of Object.entries(ext)) {
+for (const [name, def] of [...Object.entries(ext), ...Object.entries(readExt)]) {
   if (schemas[name]) throw new Error(`extension ${name} would shadow a spec definition`);
   schemas[name] = def;
 }
@@ -65,7 +68,7 @@ function operation(e) {
   if (e.ifMatch) op.parameters.push({ name: 'If-Match', in: 'header', required: true, schema: { type: 'string' }, description: 'Quoted aggregate revision' });
   if (e.idempotent) op.parameters.push({ name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', minLength: 16, maxLength: 128 } });
   if (e.paginated) {
-    op.parameters.push({ name: 'cursor', in: 'query', required: false, schema: { type: 'string', maxLength: 512 } });
+    op.parameters.push({ name: 'cursor', in: 'query', required: false, schema: { type: 'string', maxLength: 512, ...(e.cursorPattern ? { pattern: e.cursorPattern } : {}) } });
     op.parameters.push({ name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100, default: 24 } });
   }
   if (!op.parameters.length) delete op.parameters;
@@ -75,6 +78,7 @@ function operation(e) {
     ? { description: 'Done' }
     : { description: e.responseDescription ?? 'Success', content: { 'application/json': { schema: e.response ? (e.list ? { type: 'object', additionalProperties: false, properties: { items: { type: 'array', items: ref(e.response) }, next_cursor: { type: ['string', 'null'] } }, required: ['items', 'next_cursor'] } : ref(e.response)) : { type: 'object', description: 'Shape defined by the owning lane before implementation' } } } };
   if (e.public !== true) op.responses['401'] = problem('Not authenticated');
+  if (e.paginated) op.responses['400'] = problem('Invalid cursor or page limit');
   op.responses['403'] = problem('Forbidden by object policy or mode');
   if (e.path.includes('{')) op.responses['404'] = problem('Not found or not visible to caller');
   if (e.ifMatch) {
@@ -85,6 +89,12 @@ function operation(e) {
   if (e.body) op.responses['422'] = problem('Invalid domain transition or field');
   op.responses['429'] = problem('Throttled');
   op.responses['503'] = problem('Provider or dependency unavailable; safe retry or handoff');
+  for (const code of e.errors ?? []) op.responses[String(code)] ??= problem(code === 410 ? 'Export expired' : 'Request rejected or export restricted/not ready');
+  if (e.exportDownload) op.responses[ok].headers = {
+    'Content-Disposition': { schema: { type: 'string' }, description: 'JSON attachment with opaque job filename' },
+    'X-Export-SHA256': { schema: { type: 'string', pattern: '^[0-9a-f]{64}$' }, description: 'SHA-256 of the exact downloaded bytes' },
+    'Cache-Control': { schema: { type: 'string', const: 'private, no-store' } },
+  };
   if (e.public === true) op.security = [];
   return op;
 }

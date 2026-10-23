@@ -4,10 +4,11 @@
 # ======================================
 # Includes: Brain, Policy, Orchestrator
 
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 # Set working directory
 WORKDIR /app
+ENV PYTHONPATH=/app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -18,14 +19,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY brandme-core/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared brandme_core module
-COPY ../brandme_core /app/brandme_core
+COPY brandme_core /app/brandme_core
+COPY packages/contracts/generated/domain.schema.json /app/packages/contracts/generated/domain.schema.json
 
 # Copy application code
-COPY . /app
+COPY brandme-core/ /app/
 
 # Create non-root user
 RUN useradd -m -u 1000 brandme && chown -R brandme:brandme /app
@@ -43,7 +45,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "${PORT:-8000}"]
 
 
 # Brain service stage
-FROM base as brain
+FROM base AS brain
 WORKDIR /app/brain
 ENV SERVICE_NAME=brain
 ENV PORT=8000
@@ -51,7 +53,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 
 # Policy service stage
-FROM base as policy
+FROM base AS policy
 WORKDIR /app/policy
 ENV SERVICE_NAME=policy
 ENV PORT=8001
@@ -59,7 +61,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
 
 
 # Orchestrator worker stage
-FROM base as orchestrator
+FROM base AS orchestrator
 WORKDIR /app/orchestrator
 ENV SERVICE_NAME=orchestrator
 ENV PORT=8002
@@ -67,7 +69,7 @@ CMD ["uvicorn", "worker:app", "--host", "0.0.0.0", "--port", "8002", "--reload"]
 
 
 # Orchestrator beat scheduler stage (kept for compatibility, not used in new arch)
-FROM base as orchestrator-beat
+FROM base AS orchestrator-beat
 WORKDIR /app/orchestrator
 ENV SERVICE_NAME=orchestrator-beat
 ENV C_FORCE_ROOT=true

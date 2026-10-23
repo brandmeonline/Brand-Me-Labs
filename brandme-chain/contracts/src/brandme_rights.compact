@@ -1,0 +1,585 @@
+// Copyright (c) Brand.Me, Inc. All rights reserved.
+//
+// Brand.Me rights contract (W09).
+//
+// One deployed contract holding three bounded domains — issuer registry,
+// transferable entitlements, licensed reproduction — because Compact on the
+// pinned tuple (compactc 0.31.1) has no contract-to-contract calls, and the
+// reprint invariants must read entitlement + issuer state inside the same
+// verifiable transition. See brandme-chain/contracts/DESIGN.md.
+//
+// Authorization model: every role (governance, issuer, manufacturer, holder)
+// proves knowledge of a 32-byte secret whose domain-separated hash is stored
+// on the ledger. The check happens inside the circuit; a witness cannot return
+// "true" to authorize itself — it can only supply a secret, and the circuit
+// constrains the hash.
+//
+// No personal data is ever passed to these circuits. All identifiers are
+// random 32-byte values chosen off-chain; digests are of documents held in
+// restricted off-chain storage.
+
+pragma language_version >= 0.23.0;
+
+import CompactStandardLibrary;
+
+// ---------------------------------------------------------------- types --
+
+export enum EntitlementStatus { active, revoked }
+export enum OfferState { open, accepted, cancelled }
+export enum ConsumptionState { reserved, cancelled }
+
+export struct IssuerPolicy {
+  authCommitment: Bytes<32>,
+  policyVersion: Uint<32>,
+  maxIssuance: Uint<32>,
+  issued: Uint<32>,
+  validUntil: Uint<64>,
+  active: Boolean
+}
+
+export struct Entitlement {
+  issuerId: Bytes<32>,
+  assetCommitment: Bytes<32>,
+  policyDigest: Bytes<32>,
+  controllerCommitment: Bytes<32>,
+  epoch: Uint<32>,
+  transferable: Boolean,
+  reprintable: Boolean,
+  // Zero for a root issuance; the consumption nullifier for a reprint child.
+  parentConsumption: Bytes<32>,
+  status: EntitlementStatus
+}
+
+export struct TransferOffer {
+  entitlementId: Bytes<32>,
+  senderEpoch: Uint<32>,
+  recipientCommitment: Bytes<32>,
+  expiry: Uint<64>,
+  termsDigest: Bytes<32>,
+  state: OfferState
+}
+
+export struct Manufacturer {
+  issuerId: Bytes<32>,
+  authCommitment: Bytes<32>,
+  active: Boolean
+}
+
+export struct ReprintAllowance {
+  issuerId: Bytes<32>,
+  entitlementId: Bytes<32>,
+  designDigest: Bytes<32>,
+  manufacturerId: Bytes<32>,
+  remaining: Uint<32>,
+  validUntil: Uint<64>,
+  policyDigest: Bytes<32>
+}
+
+export struct ConsumptionRecord {
+  allowanceId: Bytes<32>,
+  jobCommitment: Bytes<32>,
+  quantity: Uint<32>,
+  attested: Uint<32>,
+  childControllerCommitment: Bytes<32>,
+  state: ConsumptionState,
+  replacedBy: Bytes<32>
+}
+
+// --------------------------------------------------------------- ledger --
+
+// Random per-deployment salt and the network this instance is bound to.
+// Every role/holder commitment is derived over both, so a secret or commitment
+// prepared for one deployment/network does not verify in another.
+export sealed ledger instanceSalt: Bytes<32>;
+export sealed ledger networkTag: Bytes<32>;
+
+export ledger governanceCommitment: Bytes<32>;
+export ledger issuers: Map<Bytes<32>, IssuerPolicy>;
+export ledger entitlements: Map<Bytes<32>, Entitlement>;
+export ledger offers: Map<Bytes<32>, TransferOffer>;
+export ledger usedChallenges: Set<Bytes<32>>;
+export ledger manufacturers: Map<Bytes<32>, Manufacturer>;
+export ledger allowances: Map<Bytes<32>, ReprintAllowance>;
+export ledger consumptions: Map<Bytes<32>, ConsumptionRecord>;
+export ledger sequence: Counter;
+
+// ------------------------------------------------------------ witnesses --
+// Implemented by the caller's encrypted, account-scoped private state.
+
+witness governanceSecret(): Bytes<32>;
+witness issuerSecret(issuerId: Bytes<32>): Bytes<32>;
+witness manufacturerSecret(manufacturerId: Bytes<32>): Bytes<32>;
+// Per-entitlement holder secret. A fresh random secret per entitlement keeps
+// a member's entitlements unlinkable to each other on the public ledger.
+witness holderSecret(entitlementId: Bytes<32>): Bytes<32>;
+
+// ---------------------------------------------------------- constructor --
+
+constructor(salt: Bytes<32>, network: Bytes<32>, governance: Bytes<32>) {
+  assert(salt != default<Bytes<32>>, "salt required");
+  assert(network != default<Bytes<32>>, "network required");
+  assert(governance != default<Bytes<32>>, "governance required");
+  instanceSalt = disclose(salt);
+  networkTag = disclose(network);
+  governanceCommitment = disclose(governance);
+}
+
+// ------------------------------------------------------ key derivation --
+
+export pure circuit roleCommitment(domain: Bytes<32>, scope: Bytes<32>, secret: Bytes<32>,
+                                   salt: Bytes<32>, network: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<5, Bytes<32>>>([domain, salt, network, scope, secret]);
+}
+
+export pure circuit holderCommitment(entitlementId: Bytes<32>, epoch: Uint<32>, secret: Bytes<32>,
+                                     salt: Bytes<32>, network: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<6, Bytes<32>>>(
+    [pad(32, "brandme:holder:v1"), salt, network, entitlementId, epoch as Field as Bytes<32>, secret]);
+}
+
+export pure circuit deriveEntitlementId(issuerId: Bytes<32>, issuanceId: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "brandme:entitlement:v1"), issuerId, issuanceId]);
+}
+
+export pure circuit deriveChildEntitlementId(nullifier: Bytes<32>, unit: Uint<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "brandme:child:v1"), nullifier, unit as Field as Bytes<32>]);
+}
+
+export pure circuit deriveOfferId(entitlementId: Bytes<32>, epoch: Uint<32>, nonce: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<4, Bytes<32>>>(
+    [pad(32, "brandme:offer:v1"), entitlementId, epoch as Field as Bytes<32>, nonce]);
+}
+
+export pure circuit deriveAllowanceId(issuerId: Bytes<32>, nonce: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "brandme:allowance:v1"), issuerId, nonce]);
+}
+
+export pure circuit deriveConsumptionNullifier(allowanceId: Bytes<32>, jobCommitment: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "brandme:reprint-nf:v1"), allowanceId, jobCommitment]);
+}
+
+export pure circuit deriveChallengeKey(entitlementId: Bytes<32>, epoch: Uint<32>,
+                                       challenge: Bytes<32>, audience: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<5, Bytes<32>>>(
+    [pad(32, "brandme:challenge:v1"), entitlementId, epoch as Field as Bytes<32>, challenge, audience]);
+}
+
+// ------------------------------------------------------- authorization --
+
+circuit assertGovernance(): [] {
+  const c = roleCommitment(pad(32, "brandme:governance:v1"), default<Bytes<32>>,
+                           governanceSecret(), instanceSalt, networkTag);
+  assert(disclose(c) == governanceCommitment, "not governance");
+}
+
+circuit assertIssuer(issuerId: Bytes<32>): IssuerPolicy {
+  assert(issuers.member(issuerId), "unknown issuer");
+  const p = issuers.lookup(issuerId);
+  assert(p.active, "issuer revoked");
+  assert(blockTimeLt(p.validUntil), "issuer authority expired");
+  const c = roleCommitment(pad(32, "brandme:issuer:v1"), issuerId,
+                           issuerSecret(issuerId), instanceSalt, networkTag);
+  assert(disclose(c) == p.authCommitment, "not issuer");
+  return p;
+}
+
+circuit assertManufacturer(manufacturerId: Bytes<32>): Manufacturer {
+  assert(manufacturers.member(manufacturerId), "unknown manufacturer");
+  const m = manufacturers.lookup(manufacturerId);
+  assert(m.active, "manufacturer inactive");
+  const c = roleCommitment(pad(32, "brandme:manufacturer:v1"), manufacturerId,
+                           manufacturerSecret(manufacturerId), instanceSalt, networkTag);
+  assert(disclose(c) == m.authCommitment, "not manufacturer");
+  return m;
+}
+
+circuit assertController(entitlementId: Bytes<32>): Entitlement {
+  assert(entitlements.member(entitlementId), "unknown entitlement");
+  const e = entitlements.lookup(entitlementId);
+  assert(e.status == EntitlementStatus.active, "entitlement not active");
+  const c = holderCommitment(entitlementId, e.epoch, holderSecret(entitlementId), instanceSalt, networkTag);
+  assert(disclose(c) == e.controllerCommitment, "not controller");
+  return e;
+}
+
+// ------------------------------------------------------ issuer registry --
+
+export circuit registerIssuer(issuerId: Bytes<32>, authCommitment: Bytes<32>, policyVersion: Uint<32>,
+                              maxIssuance: Uint<32>, validUntil: Uint<64>): [] {
+  assertGovernance();
+  const id = disclose(issuerId);
+  assert(id != default<Bytes<32>>, "malformed issuer id");
+  assert(disclose(authCommitment) != default<Bytes<32>>, "malformed issuer key");
+  assert(!issuers.member(id), "issuer exists");
+  assert(disclose(maxIssuance) > 0, "zero issuance cap");
+  issuers.insert(id, IssuerPolicy {
+    authCommitment: disclose(authCommitment),
+    policyVersion: disclose(policyVersion),
+    maxIssuance: disclose(maxIssuance),
+    issued: 0,
+    validUntil: disclose(validUntil),
+    active: true
+  });
+  sequence.increment(1);
+}
+
+// Rotation: governance replaces the issuer key and bumps the policy version.
+export circuit rotateIssuerKey(issuerId: Bytes<32>, newAuthCommitment: Bytes<32>, newPolicyVersion: Uint<32>): [] {
+  assertGovernance();
+  const id = disclose(issuerId);
+  assert(issuers.member(id), "unknown issuer");
+  const p = issuers.lookup(id);
+  assert(p.active, "issuer revoked");
+  assert(disclose(newAuthCommitment) != default<Bytes<32>>, "malformed issuer key");
+  assert(disclose(newPolicyVersion) > p.policyVersion, "policy version must increase");
+  issuers.insert(id, IssuerPolicy {
+    authCommitment: disclose(newAuthCommitment),
+    policyVersion: disclose(newPolicyVersion),
+    maxIssuance: p.maxIssuance,
+    issued: p.issued,
+    validUntil: p.validUntil,
+    active: true
+  });
+  sequence.increment(1);
+}
+
+export circuit revokeIssuer(issuerId: Bytes<32>): [] {
+  assertGovernance();
+  const id = disclose(issuerId);
+  assert(issuers.member(id), "unknown issuer");
+  const p = issuers.lookup(id);
+  issuers.insert(id, IssuerPolicy {
+    authCommitment: p.authCommitment,
+    policyVersion: p.policyVersion,
+    maxIssuance: p.maxIssuance,
+    issued: p.issued,
+    validUntil: p.validUntil,
+    active: false
+  });
+  sequence.increment(1);
+}
+
+// ---------------------------------------------------------- entitlements --
+
+export circuit issueEntitlement(issuerId: Bytes<32>, issuanceId: Bytes<32>, assetCommitment: Bytes<32>,
+                                policyDigest: Bytes<32>, transferable: Boolean, reprintable: Boolean,
+                                controllerCommitment: Bytes<32>): Bytes<32> {
+  const iid = disclose(issuerId);
+  const p = assertIssuer(iid);
+  assert(p.issued < p.maxIssuance, "issuance cap reached");
+  assert(disclose(assetCommitment) != default<Bytes<32>>, "malformed asset commitment");
+  assert(disclose(controllerCommitment) != default<Bytes<32>>, "malformed controller commitment");
+  const eid = deriveEntitlementId(iid, disclose(issuanceId));
+  assert(!entitlements.member(eid), "issuance id already used");
+  entitlements.insert(eid, Entitlement {
+    issuerId: iid,
+    assetCommitment: disclose(assetCommitment),
+    policyDigest: disclose(policyDigest),
+    controllerCommitment: disclose(controllerCommitment),
+    epoch: 1,
+    transferable: disclose(transferable),
+    reprintable: disclose(reprintable),
+    parentConsumption: default<Bytes<32>>,
+    status: EntitlementStatus.active
+  });
+  issuers.insert(iid, IssuerPolicy {
+    authCommitment: p.authCommitment,
+    policyVersion: p.policyVersion,
+    maxIssuance: p.maxIssuance,
+    issued: (p.issued + 1) as Uint<32>,
+    validUntil: p.validUntil,
+    active: p.active
+  });
+  sequence.increment(1);
+  return eid;
+}
+
+// Proves control of an active entitlement for one (challenge, audience) pair
+// at the current epoch. Does not mutate rights. The challenge key is recorded
+// so the same proof transaction cannot be replayed to the same audience.
+export circuit proveControl(entitlementId: Bytes<32>, challenge: Bytes<32>, audience: Bytes<32>): [] {
+  const eid = disclose(entitlementId);
+  const e = assertController(eid);
+  const k = deriveChallengeKey(eid, e.epoch, disclose(challenge), disclose(audience));
+  assert(!usedChallenges.member(k), "challenge already used");
+  usedChallenges.insert(k);
+  sequence.increment(1);
+}
+
+export circuit offerTransfer(entitlementId: Bytes<32>, nonce: Bytes<32>, recipientCommitment: Bytes<32>,
+                             expiry: Uint<64>, termsDigest: Bytes<32>): Bytes<32> {
+  const eid = disclose(entitlementId);
+  const e = assertController(eid);
+  assert(e.transferable, "right is not transferable");
+  assert(disclose(recipientCommitment) != default<Bytes<32>>, "malformed recipient commitment");
+  assert(blockTimeLt(disclose(expiry)), "offer already expired");
+  const oid = deriveOfferId(eid, e.epoch, disclose(nonce));
+  assert(!offers.member(oid), "offer nonce already used");
+  offers.insert(oid, TransferOffer {
+    entitlementId: eid,
+    senderEpoch: e.epoch,
+    recipientCommitment: disclose(recipientCommitment),
+    expiry: disclose(expiry),
+    termsDigest: disclose(termsDigest),
+    state: OfferState.open
+  });
+  sequence.increment(1);
+  return oid;
+}
+
+// The recipient proves knowledge of the secret behind the commitment they gave
+// the sender (computed for epoch + 1). Old control is consumed and the epoch
+// advances exactly once; a second acceptance of the same offer, or of any
+// other offer made at the old epoch, fails.
+export circuit acceptTransfer(offerId: Bytes<32>): [] {
+  const oid = disclose(offerId);
+  assert(offers.member(oid), "unknown offer");
+  const o = offers.lookup(oid);
+  assert(o.state == OfferState.open, "offer not open");
+  assert(blockTimeLt(o.expiry), "offer expired");
+  assert(entitlements.member(o.entitlementId), "unknown entitlement");
+  const e = entitlements.lookup(o.entitlementId);
+  assert(e.status == EntitlementStatus.active, "entitlement not active");
+  assert(e.epoch == o.senderEpoch, "stale offer epoch");
+  const nextEpoch = (e.epoch + 1) as Uint<32>;
+  const c = holderCommitment(o.entitlementId, nextEpoch, holderSecret(o.entitlementId), instanceSalt, networkTag);
+  assert(disclose(c) == o.recipientCommitment, "not the offered recipient");
+  entitlements.insert(o.entitlementId, Entitlement {
+    issuerId: e.issuerId,
+    assetCommitment: e.assetCommitment,
+    policyDigest: e.policyDigest,
+    controllerCommitment: o.recipientCommitment,
+    epoch: nextEpoch,
+    transferable: e.transferable,
+    reprintable: e.reprintable,
+    parentConsumption: e.parentConsumption,
+    status: e.status
+  });
+  offers.insert(oid, TransferOffer {
+    entitlementId: o.entitlementId,
+    senderEpoch: o.senderEpoch,
+    recipientCommitment: o.recipientCommitment,
+    expiry: o.expiry,
+    termsDigest: o.termsDigest,
+    state: OfferState.accepted
+  });
+  sequence.increment(1);
+}
+
+export circuit cancelTransfer(offerId: Bytes<32>): [] {
+  const oid = disclose(offerId);
+  assert(offers.member(oid), "unknown offer");
+  const o = offers.lookup(oid);
+  assert(o.state == OfferState.open, "offer not open");
+  const e = assertController(o.entitlementId);
+  assert(e.epoch == o.senderEpoch, "stale offer epoch");
+  offers.insert(oid, TransferOffer {
+    entitlementId: o.entitlementId,
+    senderEpoch: o.senderEpoch,
+    recipientCommitment: o.recipientCommitment,
+    expiry: o.expiry,
+    termsDigest: o.termsDigest,
+    state: OfferState.cancelled
+  });
+  sequence.increment(1);
+}
+
+// Visible, governance-authorized revocation. Never a hidden rewrite: the
+// entitlement record stays with status `revoked`.
+export circuit revokeEntitlement(entitlementId: Bytes<32>): [] {
+  assertGovernance();
+  const eid = disclose(entitlementId);
+  assert(entitlements.member(eid), "unknown entitlement");
+  const e = entitlements.lookup(eid);
+  entitlements.insert(eid, Entitlement {
+    issuerId: e.issuerId,
+    assetCommitment: e.assetCommitment,
+    policyDigest: e.policyDigest,
+    controllerCommitment: e.controllerCommitment,
+    epoch: e.epoch,
+    transferable: e.transferable,
+    reprintable: e.reprintable,
+    parentConsumption: e.parentConsumption,
+    status: EntitlementStatus.revoked
+  });
+  sequence.increment(1);
+}
+
+// -------------------------------------------------- licensed reproduction --
+
+export circuit registerManufacturer(issuerId: Bytes<32>, manufacturerId: Bytes<32>, authCommitment: Bytes<32>): [] {
+  const iid = disclose(issuerId);
+  assertIssuer(iid);
+  const mid = disclose(manufacturerId);
+  assert(mid != default<Bytes<32>>, "malformed manufacturer id");
+  assert(disclose(authCommitment) != default<Bytes<32>>, "malformed manufacturer key");
+  assert(!manufacturers.member(mid), "manufacturer exists");
+  manufacturers.insert(mid, Manufacturer { issuerId: iid, authCommitment: disclose(authCommitment), active: true });
+  sequence.increment(1);
+}
+
+export circuit deactivateManufacturer(issuerId: Bytes<32>, manufacturerId: Bytes<32>): [] {
+  const iid = disclose(issuerId);
+  assertIssuer(iid);
+  const mid = disclose(manufacturerId);
+  assert(manufacturers.member(mid), "unknown manufacturer");
+  const m = manufacturers.lookup(mid);
+  assert(m.issuerId == iid, "manufacturer belongs to another issuer");
+  manufacturers.insert(mid, Manufacturer { issuerId: m.issuerId, authCommitment: m.authCommitment, active: false });
+  sequence.increment(1);
+}
+
+export circuit grantReprintAllowance(issuerId: Bytes<32>, nonce: Bytes<32>, entitlementId: Bytes<32>,
+                                     designDigest: Bytes<32>, manufacturerId: Bytes<32>, quota: Uint<32>,
+                                     validUntil: Uint<64>, policyDigest: Bytes<32>): Bytes<32> {
+  const iid = disclose(issuerId);
+  assertIssuer(iid);
+  const eid = disclose(entitlementId);
+  assert(entitlements.member(eid), "unknown entitlement");
+  const e = entitlements.lookup(eid);
+  assert(e.status == EntitlementStatus.active, "entitlement not active");
+  assert(e.reprintable, "entitlement carries no reproduction right");
+  assert(e.issuerId == iid, "entitlement issued by another issuer");
+  const mid = disclose(manufacturerId);
+  assert(manufacturers.member(mid), "unknown manufacturer");
+  const m = manufacturers.lookup(mid);
+  assert(m.active, "manufacturer inactive");
+  assert(m.issuerId == iid, "manufacturer not authorized by issuer");
+  assert(disclose(quota) > 0, "zero quota");
+  assert(disclose(designDigest) != default<Bytes<32>>, "malformed design digest");
+  const aid = deriveAllowanceId(iid, disclose(nonce));
+  assert(!allowances.member(aid), "allowance nonce already used");
+  allowances.insert(aid, ReprintAllowance {
+    issuerId: iid,
+    entitlementId: eid,
+    designDigest: disclose(designDigest),
+    manufacturerId: mid,
+    remaining: disclose(quota),
+    validUntil: disclose(validUntil),
+    policyDigest: disclose(policyDigest)
+  });
+  sequence.increment(1);
+  return aid;
+}
+
+// Controller consumes `quantity` units of the allowance for one job. The
+// nullifier binds (allowance, job): a duplicate callback for the same job
+// cannot consume again, and quota only ever decreases here.
+export circuit consumeReprintAllowance(allowanceId: Bytes<32>, jobCommitment: Bytes<32>, quantity: Uint<32>,
+                                       childControllerCommitment: Bytes<32>): Bytes<32> {
+  const aid = disclose(allowanceId);
+  assert(allowances.member(aid), "unknown allowance");
+  const a = allowances.lookup(aid);
+  assert(blockTimeLt(a.validUntil), "allowance expired");
+  assertController(a.entitlementId);
+  assert(disclose(jobCommitment) != default<Bytes<32>>, "malformed job commitment");
+  // Duplicate check first, so a replayed callback is reported as a duplicate
+  // regardless of the quota left.
+  const nf = deriveConsumptionNullifier(aid, disclose(jobCommitment));
+  assert(!consumptions.member(nf), "job already consumed");
+  const q = disclose(quantity);
+  assert(q > 0, "quantity must be positive");
+  assert(q <= a.remaining, "quota exceeded");
+  assert(disclose(childControllerCommitment) != default<Bytes<32>>, "malformed child controller");
+  allowances.insert(aid, ReprintAllowance {
+    issuerId: a.issuerId,
+    entitlementId: a.entitlementId,
+    designDigest: a.designDigest,
+    manufacturerId: a.manufacturerId,
+    remaining: (a.remaining - q) as Uint<32>,
+    validUntil: a.validUntil,
+    policyDigest: a.policyDigest
+  });
+  consumptions.insert(nf, ConsumptionRecord {
+    allowanceId: aid,
+    jobCommitment: disclose(jobCommitment),
+    quantity: q,
+    attested: 0,
+    childControllerCommitment: disclose(childControllerCommitment),
+    state: ConsumptionState.reserved,
+    replacedBy: default<Bytes<32>>
+  });
+  sequence.increment(1);
+  return nf;
+}
+
+// The authorized manufacturer attests production of one unit. Exactly one
+// child entitlement per (consumption, unit); at most `quantity` units.
+export circuit attestManufacture(nullifier: Bytes<32>, unit: Uint<32>, childAssetCommitment: Bytes<32>,
+                                 evidenceDigest: Bytes<32>): Bytes<32> {
+  const nf = disclose(nullifier);
+  assert(consumptions.member(nf), "unknown consumption");
+  const r = consumptions.lookup(nf);
+  assert(r.state == ConsumptionState.reserved, "consumption cancelled");
+  const a = allowances.lookup(r.allowanceId);
+  assertManufacturer(a.manufacturerId);
+  const u = disclose(unit);
+  assert(u == r.attested, "units must be attested in order");
+  assert(u < r.quantity, "all units already attested");
+  assert(disclose(childAssetCommitment) != default<Bytes<32>>, "malformed child asset");
+  assert(disclose(evidenceDigest) != default<Bytes<32>>, "missing production evidence");
+  const cid = deriveChildEntitlementId(nf, u);
+  assert(!entitlements.member(cid), "child already issued");
+  const parent = entitlements.lookup(a.entitlementId);
+  entitlements.insert(cid, Entitlement {
+    issuerId: a.issuerId,
+    assetCommitment: disclose(childAssetCommitment),
+    policyDigest: disclose(evidenceDigest),
+    controllerCommitment: r.childControllerCommitment,
+    epoch: 1,
+    transferable: parent.transferable,
+    reprintable: false,
+    parentConsumption: nf,
+    status: EntitlementStatus.active
+  });
+  consumptions.insert(nf, ConsumptionRecord {
+    allowanceId: r.allowanceId,
+    jobCommitment: r.jobCommitment,
+    quantity: r.quantity,
+    attested: (r.attested + 1) as Uint<32>,
+    childControllerCommitment: r.childControllerCommitment,
+    state: r.state,
+    replacedBy: r.replacedBy
+  });
+  sequence.increment(1);
+  return cid;
+}
+
+// Compensation for a failed/cancelled job: the issuer grants a replacement
+// allowance that references the failed consumption exactly once. Unattested
+// units of the failed job can no longer be attested. Quota of the original
+// allowance is never restored.
+export circuit grantReplacementAllowance(issuerId: Bytes<32>, failedNullifier: Bytes<32>, nonce: Bytes<32>,
+                                         validUntil: Uint<64>): Bytes<32> {
+  const iid = disclose(issuerId);
+  assertIssuer(iid);
+  const nf = disclose(failedNullifier);
+  assert(consumptions.member(nf), "unknown consumption");
+  const r = consumptions.lookup(nf);
+  assert(r.state == ConsumptionState.reserved, "already cancelled or replaced");
+  assert(r.attested < r.quantity, "job fully attested; nothing to replace");
+  const a = allowances.lookup(r.allowanceId);
+  assert(a.issuerId == iid, "allowance granted by another issuer");
+  const aid = deriveAllowanceId(iid, disclose(nonce));
+  assert(!allowances.member(aid), "allowance nonce already used");
+  allowances.insert(aid, ReprintAllowance {
+    issuerId: iid,
+    entitlementId: a.entitlementId,
+    designDigest: a.designDigest,
+    manufacturerId: a.manufacturerId,
+    remaining: (r.quantity - r.attested) as Uint<32>,
+    validUntil: disclose(validUntil),
+    policyDigest: a.policyDigest
+  });
+  consumptions.insert(nf, ConsumptionRecord {
+    allowanceId: r.allowanceId,
+    jobCommitment: r.jobCommitment,
+    quantity: r.quantity,
+    attested: r.attested,
+    childControllerCommitment: r.childControllerCommitment,
+    state: ConsumptionState.cancelled,
+    replacedBy: aid
+  });
+  sequence.increment(1);
+  return aid;
+}

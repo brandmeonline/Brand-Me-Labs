@@ -1,0 +1,21 @@
+{
+  "comment": "Pinned Midnight tuple (support matrix, last updated 2026-10-05). Change only as a tested set.",
+  "compactc": {
+    "version": "0.31.1",
+    "languageVersion": "0.23.0",
+    "runtimeVersion": "0.16.0",
+    "generatedLedgerTarget": "ledger-8.0.2",
+    "assets": {
+      "x86_64-linux": {
+        "url": "https://github.com/midnightntwrk/compact/releases/download/compactc-v0.31.1/compactc_v0.31.1_x86_64-unknown-linux-musl.zip",
+        "sha256": "e291b4bab4d4e857707008f8b1c25c2b8e0c843f6c737d0ee6c0d9ac69a6bbfb"
+      }
+    }
+  },
+  "proofServerImage": "midnightntwrk/proof-server:8.1.0",
+  "networks": {
+    "preprod": { "node": "1.0.400", "indexer": "4.3.302" },
+    "preview": { "node": "1.0.300", "indexer": "4.3.5" },
+    "mainnet": { "node": "1.0.400", "indexer": "4.3.302" }
+  }
+}
