@@ -68,16 +68,21 @@ export function RoomViewport(
       return;
     }
     setPhase("out");
-    const swap = setTimeout(() => {
-      setDisplayRoom(props.room);
-      setPhase("in");
-    }, 225);
-    const finish = setTimeout(() => setPhase("steady"), 450);
-    return () => {
-      clearTimeout(swap);
-      clearTimeout(finish);
-    };
   }, [props.room.id, props.reducedMotion, props.simpleView]);
+  useEffect(() => {
+    if (props.reducedMotion || props.simpleView || phase === "steady") return;
+    // Start each interval after its phase has committed. Parallel deadlines can
+    // both expire during expensive GLB work and batch away the fade-in phase.
+    const timer = setTimeout(() => {
+      if (phase === "out") {
+        setDisplayRoom(props.room);
+        setPhase("in");
+      } else {
+        setPhase("steady");
+      }
+    }, 225);
+    return () => clearTimeout(timer);
+  }, [phase, props.room, props.reducedMotion, props.simpleView]);
   useEffect(() => {
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("webgl2");

@@ -55,6 +55,7 @@
       scene.add(asset);
       const isRoom = q.has("room");
       let camera;
+      const shelfGrounding = [];
       const hemi = new T.HemisphereLight("#fff8e8", "#797567", 2.1);
       scene.add(hemi);
       const key = new T.DirectionalLight("#fff2db", 4);
@@ -98,6 +99,21 @@
           item.rotation.y = yaw;
           scene.add(item);
         }
+        const catalog = await (await fetch("/demo/catalog.json")).json();
+        const room = catalog.rooms.find(r => r.id === q.get("room"));
+        const slots = room.groups.find(g => g.id === "shelf.folded").positions;
+        const folded = catalog.products.filter(p => p.folded);
+        for (let i = 0; i < folded.length; i++) {
+          asset.updateMatrixWorld(true);
+          const origin = new T.Vector3(...slots[i]).add(new T.Vector3(0, 0.1, 0));
+          const hit = new T.Raycaster(origin, new T.Vector3(0, -1, 0), 0, 0.15).intersectObject(asset, true)[0];
+          const gap = hit ? Math.abs(hit.point.y - slots[i][1]) : null;
+          if (gap === null || gap > 0.002) throw new Error(`Folded slot ${i} has no shelf support: ${gap}`);
+          shelfGrounding.push({ slot: i, gapMeters: gap });
+          const item = await load(folded[i].folded.glb);
+          item.position.set(...slots[i]);
+          scene.add(item);
+        }
       } else {
         const bounds = new T.Box3().setFromObject(asset),
           size = bounds.getSize(new T.Vector3()),
@@ -116,7 +132,7 @@
           ) * 1.16;
         camera.position.set(
           center.x + distance * 0.17,
-          center.y + distance * 0.035,
+          center.y + distance * (q.has("folded") ? 0.85 : 0.035),
           center.z + distance,
         );
         camera.lookAt(center);
@@ -126,6 +142,7 @@
       renderer.render(scene, camera);
       window.assetReview = {
         ready: true,
+        shelfGrounding,
         triangles: renderer.info.render.triangles,
         calls: renderer.info.render.calls,
         textureCount: renderer.info.memory.textures,

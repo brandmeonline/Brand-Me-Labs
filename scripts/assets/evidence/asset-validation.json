@@ -10,23 +10,23 @@
     },
     {
       "id": "9572fdc7-31e0-5b80-be82-147ef4a5e69c",
-      "triangles": 1464,
-      "files": 6
+      "triangles": 5688,
+      "files": 9
     },
     {
       "id": "5a0ccc0d-d627-52fa-ab80-de662ef92b1b",
-      "triangles": 3516,
-      "files": 6
+      "triangles": 5968,
+      "files": 9
     },
     {
       "id": "demo-knit",
-      "triangles": 3636,
-      "files": 6
+      "triangles": 7224,
+      "files": 9
     },
     {
       "id": "a4036cb0-7ab2-54b5-9238-ee5ffb378771",
-      "triangles": 3516,
-      "files": 6
+      "triangles": 5968,
+      "files": 9
     },
     {
       "id": "bdbff281-45f2-5887-b09b-6db9151126f6",
@@ -35,13 +35,13 @@
     },
     {
       "id": "demo-tee",
-      "triangles": 1608,
-      "files": 6
+      "triangles": 3744,
+      "files": 9
     },
     {
       "id": "6b4ee94a-4998-55d8-8298-c8f81a40b7aa",
-      "triangles": 2640,
-      "files": 6
+      "triangles": 4512,
+      "files": 9
     },
     {
       "id": "photo-only",
@@ -55,7 +55,7 @@
     },
     {
       "id": "limestone_gallery",
-      "triangles": 8228,
+      "triangles": 8828,
       "files": 3
     },
     {

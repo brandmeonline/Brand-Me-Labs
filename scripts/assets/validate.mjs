@@ -151,7 +151,7 @@ for (const file of manifests) {
         ),
       0,
     );
-    if (name === "lod1.glb")
+    if (name === "lod1.glb" || name === "folded.glb")
       assert(
         b.length <= 750 * 1024 && count <= 12000,
         `${m.id}: low LOD exceeds 750KB/12k triangles`,
@@ -174,6 +174,20 @@ for (const file of manifests) {
       `${m.id}: bounds invalid`,
     );
   }
+  if (m.folded) {
+    const f = m.folded;
+    assert(f.fidelity === "P1" && f.rights === m.rights && !!f.source,
+      `${m.id}: folded variant needs approximate fidelity and provenance`);
+    assert(f.pivot === "grounded_bottom_center" &&
+      Math.abs(f.collisionBounds?.min?.[1]) < 0.0001 &&
+      f.dimensionsMeters?.every(v => Number.isFinite(v) && v > 0 && v < 0.5),
+      `${m.id}: folded variant needs grounded bounds and plausible dimensions`);
+    for (const url of [f.glb, f.poster])
+      assert(path.dirname(url) === path.dirname(m.glb) && !!m.files[path.basename(url)],
+        `${m.id}: folded preview must be included in the hash-checked manifest`);
+    assert(f.triangleCount <= 12000 && f.drawCalls <= 3,
+      `${m.id}: folded variant exceeds its 12k triangle / 3 draw budget`);
+  }
   if (!m.camera && m.fidelity !== "P0")
     assert(
       m.pivot &&
@@ -185,15 +199,28 @@ for (const file of manifests) {
 }
 const catalog = JSON.parse(await readFile(path.join(pub, "demo/catalog.json")));
 for (const r of catalog.rooms) {
+  const shelf = r.groups.find(g => g.id === "shelf.folded");
+  assert(shelf?.positions?.length === shelf?.capacity &&
+    shelf.positions.every(p => p.length === 3 && p.every(Number.isFinite)),
+    `${r.id}: folded shelf needs six explicit grounded destinations`);
+  const variants = catalog.products.filter(p => p.folded).map(p => p.folded);
+  const widest = Math.max(...variants.map(f => f.dimensionsMeters[0]));
+  const tallest = Math.max(...variants.map(f => f.dimensionsMeters[1]));
+  for (let i = 0; i < (shelf?.positions?.length ?? 0); i++)
+    for (let j = i + 1; j < shelf.positions.length; j++) {
+      const a = shelf.positions[i], b = shelf.positions[j];
+      assert(Math.abs(a[0] - b[0]) > widest || Math.abs(a[1] - b[1]) > tallest,
+        `${r.id}: folded destinations ${i}/${j} overlap`);
+    }
   const garmentWorst = Math.max(
-    ...catalog.products.map((x) => x.files["lod1.glb.gz"].bytes),
+    ...catalog.products.flatMap((x) => [x.files["lod1.glb.gz"].bytes, x.files["folded.glb.gz"]?.bytes ?? 0]),
   );
   assert(
     r.files["room.glb.gz"].bytes + 12 * garmentWorst < 4 * 1024 * 1024,
     `${r.id}: first-use entry payload >4MB`,
   );
   assert(
-    r.drawCalls + 12 * Math.max(...catalog.products.map((x) => x.drawCalls)) <
+    r.drawCalls + 12 * Math.max(...catalog.products.flatMap((x) => [x.drawCalls, x.folded?.drawCalls ?? 0])) <
       100,
     `${r.id}: estimated entry draw calls >100`,
   );

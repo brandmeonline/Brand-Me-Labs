@@ -50,7 +50,7 @@
   "rig": null,
   "qa": {
     "structural": "passed; see scripts/assets/evidence/asset-validation.json",
-    "visual": "agent visual review passed; human approval not claimed",
+    "visual": "rendered; human approval not claimed",
     "nativeDevice": "not_run",
     "loader": "Chromium / Three GLTFLoader 0.182.0"
   },
@@ -76,7 +76,7 @@
       "bytes": 988538
     },
     "poster.webp": {
-      "sha256": "58ba88287611dd72a9fef2ae9b57f9486b6f55bbb7c0848cd3a80b2a008b3fec",
+      "sha256": "7f3ecc435a29346fb800a81c48112565488bf560f47241b1cb77720e47088bf6",
       "bytes": 10096
     }
   }

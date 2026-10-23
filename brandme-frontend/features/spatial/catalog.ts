@@ -49,6 +49,7 @@ export function positionFor(
     slotId >= anchor.capacity
   )
     throw new Error("That destination no longer exists. Choose another slot.");
+  if (anchor.positions?.[slotId]) return [...anchor.positions[slotId]];
   const x =
     anchor.center[0] +
     (slotId - (anchor.capacity - 1) / 2) *

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "walnut_atelier",
   "title": "Walnut Atelier",
-  "revision": "original-v1",
+  "revision": "original-shelves-v2",
   "dimensionsMeters": [
     4.8,
     3.6,
@@ -72,7 +72,39 @@
       ],
       "capacity": 6,
       "pitch": 0.12,
-      "width": 1.1
+      "width": 1.1,
+      "positions": [
+        [
+          -0.4,
+          1.045,
+          -1.17
+        ],
+        [
+          0,
+          1.045,
+          -1.17
+        ],
+        [
+          0.4,
+          1.045,
+          -1.17
+        ],
+        [
+          -0.4,
+          1.505,
+          -1.17
+        ],
+        [
+          0,
+          1.505,
+          -1.17
+        ],
+        [
+          0.4,
+          1.505,
+          -1.17
+        ]
+      ]
     },
     {
       "id": "tray.accessories",
@@ -158,8 +190,8 @@
   ],
   "mirror": "Static tinted reflective material; not a live mirror",
   "qa": {
-    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
-    "visual": "agent visual review passed; human approval not claimed",
+    "structural": "pending validation",
+    "visual": "rendered; human approval not claimed",
     "loader": "Chromium / Three GLTFLoader 0.182.0"
   },
   "files": {
@@ -172,8 +204,8 @@
       "bytes": 149907
     },
     "poster.webp": {
-      "sha256": "4e912f0989dab34bc582943dae6891870c0a2a4fea176bbbc9cac3a6a8cce973",
-      "bytes": 86056
+      "sha256": "a17b125bd459d949d89f856378b1f1199ea789150e0826e01f784e95f1c91b1a",
+      "bytes": 87954
     }
   }
 }

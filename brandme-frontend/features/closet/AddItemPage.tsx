@@ -55,6 +55,8 @@ export default function AddItemPage({
     saving = useRef(false),
     reduced = useMotionPreference(snapshot?.reducedMotion);
   const asset = allAssets.find((a) => a.slug === assetSlug)!,
+    prefetchUrl = group === "shelf.folded" && asset.folded
+      ? asset.folded.glb : asset.lowGlb,
     actualCategory = mode === "catalog" ? asset.category : category;
   useEffect(() => {
     mounted.current = true;
@@ -84,15 +86,15 @@ export default function AddItemPage({
     setDuplicateConfirmed(false);
   }, [assetSlug, actualCategory, snapshot?.roomId, mode]);
   useEffect(() => {
-    if (mode !== "catalog" || !asset.lowGlb || reduced || snapshot?.simpleView)
+    if (mode !== "catalog" || !prefetchUrl || reduced || snapshot?.simpleView)
       return;
     const abort = new AbortController();
     // Prefetch only the selected original low LOD. Never upload intake photos.
-    void fetch(asset.lowGlb, { signal: abort.signal, cache: "force-cache" })
+    void fetch(prefetchUrl, { signal: abort.signal, cache: "force-cache" })
       .then((r) => (r.ok ? r.arrayBuffer() : undefined))
       .catch(() => {});
     return () => abort.abort();
-  }, [asset.lowGlb, mode, snapshot?.simpleView]);
+  }, [prefetchUrl, mode, reduced, snapshot?.simpleView]);
   useEffect(() => {
     if (!undo) return;
     const timer = setTimeout(

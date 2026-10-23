@@ -4,6 +4,7 @@ import {
   eligibleGroups,
   makePlacement,
   roomById,
+  positionFor,
 } from "../spatial/catalog";
 import type {
   ClosetItem,
@@ -310,7 +311,21 @@ export function createGuestClosetRepository(
         let state: RecordState;
         get.onsuccess = () => {
           state = get.result ?? { snapshot: initialSnapshot(), operations: {} };
-          if (!get.result) store.put(state, "state");
+          // Preserve semantic slot/item identity when original shelf geometry changes.
+          let migrated = false;
+          for (const item of state.snapshot.items) {
+            const p = item.placement;
+            if (p.semanticGroup !== "shelf.folded") continue;
+            const next = positionFor(roomById(p.roomId), p.semanticGroup, p.slotId);
+            if (next.some((v, i) => Math.abs(v - p.positionMeters[i]) > 0.00001)) {
+              p.positionMeters = next;
+              p.version++;
+              item.version++;
+              migrated = true;
+            }
+          }
+          if (migrated) state.snapshot.version++;
+          if (!get.result || migrated) store.put(state, "state");
         };
         tx.oncomplete = () => resolve(clone(state.snapshot));
         tx.onerror = () => reject(tx.error);
@@ -320,6 +335,7 @@ export function createGuestClosetRepository(
     },
     async commit(command, expectedVersion, operationId) {
       if (!operationId) throw new Error("Missing operation id.");
+      await this.read();
       const database = await db();
       return new Promise((resolve, reject) => {
         const tx = database.transaction("closet", "readwrite"),

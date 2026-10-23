@@ -7,6 +7,7 @@ import { chromium } from "@playwright/test";
 const toolsDir = path.dirname(fileURLToPath(import.meta.url)),
   root = path.resolve(toolsDir, "../.."),
   pub = path.join(root, "brandme-frontend/public");
+const foldedOnly = process.argv.includes("--folded");
 const catalog = JSON.parse(await readFile(path.join(pub, "demo/catalog.json")));
 const mime = {
   ".html": "text/html",
@@ -50,7 +51,8 @@ try {
     ],
   });
   const measurements = [];
-  for (const entry of [...catalog.products, ...catalog.rooms]) {
+  for (const entry of (foldedOnly ? catalog.products.filter(a => a.folded) : [...catalog.products, ...catalog.rooms])) {
+    const view = foldedOnly ? entry.folded : entry;
     const isRoom = !!entry.camera;
     const page = await browser.newPage({
       viewport: isRoom
@@ -59,7 +61,7 @@ try {
     });
     page.on("pageerror", (e) => console.error(e.message));
     await page.goto(
-      `http://127.0.0.1:${server.address().port}/?asset=${encodeURIComponent(entry.glb)}${isRoom ? "&room=" + entry.id : ""}`,
+      `http://127.0.0.1:${server.address().port}/?asset=${encodeURIComponent(view.glb)}${isRoom ? "&room=" + entry.id : foldedOnly ? "&folded=1" : ""}`,
     );
     await page.waitForFunction(
       () => window.assetReview?.ready,
@@ -71,15 +73,16 @@ try {
       triangles: window.assetReview.triangles,
       calls: window.assetReview.calls,
       textureCount: window.assetReview.textureCount,
+      shelfGrounding: window.assetReview.shelfGrounding,
     }));
     const bytes = Buffer.from(data.webp.split(",")[1], "base64");
-    await writeFile(path.join(pub, entry.poster), bytes);
-    entry.files["poster.webp"] = {
+    await writeFile(path.join(pub, view.poster), bytes);
+    entry.files[path.basename(view.poster)] = {
       sha256: createHash("sha256").update(bytes).digest("hex"),
       bytes: bytes.length,
     };
-    entry.qa.loader = "Chromium / Three GLTFLoader 0.182.0";
-    entry.qa.visual = "rendered; human approval not claimed";
+    view.qa.loader = "Chromium / Three GLTFLoader 0.182.0";
+    view.qa.visual = "rendered; human approval not claimed";
     const manifestPath = path.join(
       pub,
       path.dirname(entry.glb),
@@ -91,11 +94,13 @@ try {
       triangles: data.triangles,
       drawCalls: data.calls,
       textures: data.textureCount,
+      ...(isRoom ? { shelfGrounding: data.shelfGrounding } : {}),
       viewport: isRoom ? "1440x900" : "600x760",
       renderer: "Chromium software WebGL2; not real-device performance",
     });
     await page.close();
   }
+  if (!foldedOnly) {
   // An intentional image-only specimen reuses an original garment still, without any 3D association.
   await mkdir(path.join(pub, "demo/photo-only"), { recursive: true });
   const poster = await readFile(path.join(pub, catalog.products[0].poster));
@@ -123,12 +128,13 @@ try {
       2,
     ) + "\n",
   );
+  }
   await writeFile(
     path.join(pub, "demo/catalog.json"),
     JSON.stringify(catalog, null, 2) + "\n",
   );
   await writeFile(
-    path.join(toolsDir, "camera-measurements.json"),
+    path.join(toolsDir, foldedOnly ? "folded-measurements.json" : "camera-measurements.json"),
     JSON.stringify(measurements, null, 2) + "\n",
   );
   await writeFile(
@@ -143,4 +149,8 @@ try {
 } finally {
   await browser?.close();
   server.close();
+}
+if (!foldedOnly && catalog.products.some(a => a.folded)) {
+  const { execFileSync } = await import("node:child_process");
+  execFileSync(process.execPath, [fileURLToPath(import.meta.url), "--folded"], { stdio: "inherit" });
 }

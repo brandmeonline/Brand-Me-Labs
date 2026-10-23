@@ -64,6 +64,82 @@
   },
   "suites": [
     {
+      "title": "spatial-folded.spec.ts",
+      "file": "spatial-folded.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "folded placement loads the authored variant and survives refresh and each room",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 22973,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:55:57.663Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2565fd76ad19cdf646c5-b636607888cbbf02ffc5",
+          "file": "spatial-folded.spec.ts",
+          "line": 3,
+          "column": 5
+        },
+        {
+          "title": "legacy folded coordinates migrate once and stale writes conflict without losing identity",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 694,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:56:20.755Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2565fd76ad19cdf646c5-6970dc7c13d46f176132",
+          "file": "spatial-folded.spec.ts",
+          "line": 48,
+          "column": 5
+        }
+      ]
+    },
+    {
       "title": "spatial-interactions.spec.ts",
       "file": "spatial-interactions.spec.ts",
       "column": 0,
@@ -85,12 +161,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 7414,
+                  "duration": 5593,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:31:35.869Z",
+                  "startTime": "2026-10-23T11:56:21.492Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -119,12 +195,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6256,
+                  "duration": 9227,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:31:43.424Z",
+                  "startTime": "2026-10-23T11:56:27.113Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -134,7 +210,7 @@
           ],
           "id": "48f580119c20a89bf72d-a41ea1b64c4c3949b185",
           "file": "spatial-interactions.spec.ts",
-          "line": 55,
+          "line": 58,
           "column": 5
         },
         {
@@ -153,12 +229,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 13162,
+                  "duration": 21500,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:31:49.707Z",
+                  "startTime": "2026-10-23T11:56:36.361Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -168,7 +244,7 @@
           ],
           "id": "48f580119c20a89bf72d-11792552f013d61a1c72",
           "file": "spatial-interactions.spec.ts",
-          "line": 87,
+          "line": 90,
           "column": 5
         },
         {
@@ -187,12 +263,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 10331,
+                  "duration": 15783,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:02.879Z",
+                  "startTime": "2026-10-23T11:56:57.889Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -202,7 +278,7 @@
           ],
           "id": "48f580119c20a89bf72d-35809b42992946a30682",
           "file": "spatial-interactions.spec.ts",
-          "line": 137,
+          "line": 140,
           "column": 5
         },
         {
@@ -221,12 +297,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5311,
+                  "duration": 7271,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:13.222Z",
+                  "startTime": "2026-10-23T11:57:13.690Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -236,7 +312,7 @@
           ],
           "id": "48f580119c20a89bf72d-07f8a4c4613f561067e4",
           "file": "spatial-interactions.spec.ts",
-          "line": 174,
+          "line": 177,
           "column": 5
         },
         {
@@ -255,12 +331,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3355,
+                  "duration": 15107,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:18.544Z",
+                  "startTime": "2026-10-23T11:57:20.971Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -270,7 +346,7 @@
           ],
           "id": "48f580119c20a89bf72d-1a751ded711aaf54af18",
           "file": "spatial-interactions.spec.ts",
-          "line": 216,
+          "line": 219,
           "column": 5
         },
         {
@@ -289,12 +365,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4241,
+                  "duration": 5845,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:21.908Z",
+                  "startTime": "2026-10-23T11:57:36.093Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -304,7 +380,7 @@
           ],
           "id": "48f580119c20a89bf72d-1737415641d82a892102",
           "file": "spatial-interactions.spec.ts",
-          "line": 248,
+          "line": 251,
           "column": 5
         },
         {
@@ -323,12 +399,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4824,
+                  "duration": 7646,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:26.162Z",
+                  "startTime": "2026-10-23T11:57:41.958Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -338,7 +414,7 @@
           ],
           "id": "48f580119c20a89bf72d-b16b658e721cad32a56b",
           "file": "spatial-interactions.spec.ts",
-          "line": 278,
+          "line": 281,
           "column": 5
         },
         {
@@ -357,12 +433,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 7038,
+                  "duration": 10925,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:31.011Z",
+                  "startTime": "2026-10-23T11:57:49.629Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -372,7 +448,7 @@
           ],
           "id": "48f580119c20a89bf72d-2d280773c12c80f2818d",
           "file": "spatial-interactions.spec.ts",
-          "line": 306,
+          "line": 309,
           "column": 5
         },
         {
@@ -391,12 +467,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5467,
+                  "duration": 11349,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:38.061Z",
+                  "startTime": "2026-10-23T11:58:00.578Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -406,7 +482,7 @@
           ],
           "id": "48f580119c20a89bf72d-d8aa1e0a355f0e272aa0",
           "file": "spatial-interactions.spec.ts",
-          "line": 329,
+          "line": 332,
           "column": 5
         },
         {
@@ -425,12 +501,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4994,
+                  "duration": 11523,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:43.538Z",
+                  "startTime": "2026-10-23T11:58:11.941Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -440,7 +516,7 @@
           ],
           "id": "48f580119c20a89bf72d-3d8e6bcf1c4850d4d3cc",
           "file": "spatial-interactions.spec.ts",
-          "line": 392,
+          "line": 395,
           "column": 5
         }
       ]
@@ -467,12 +543,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 7025,
+                  "duration": 10431,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:48.551Z",
+                  "startTime": "2026-10-23T11:58:23.504Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -501,12 +577,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4035,
+                  "duration": 11061,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:55.589Z",
+                  "startTime": "2026-10-23T11:58:33.949Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -535,12 +611,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5366,
+                  "duration": 9119,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:32:59.636Z",
+                  "startTime": "2026-10-23T11:58:45.023Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -569,12 +645,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 933,
+                  "duration": 2157,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:05.013Z",
+                  "startTime": "2026-10-23T11:58:54.156Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -584,7 +660,7 @@
           ],
           "id": "eb8a6728e228379df245-9d946beaf6d39b101820",
           "file": "spatial.spec.ts",
-          "line": 104,
+          "line": 125,
           "column": 5
         },
         {
@@ -603,12 +679,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 406,
+                  "duration": 824,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:05.954Z",
+                  "startTime": "2026-10-23T11:58:56.327Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -618,7 +694,7 @@
           ],
           "id": "eb8a6728e228379df245-6bca1d97899b2f9772cf",
           "file": "spatial.spec.ts",
-          "line": 119,
+          "line": 140,
           "column": 5
         },
         {
@@ -637,12 +713,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4937,
+                  "duration": 11068,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:06.369Z",
+                  "startTime": "2026-10-23T11:58:57.164Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -652,7 +728,7 @@
           ],
           "id": "eb8a6728e228379df245-dfcb78965ff0a54f8719",
           "file": "spatial.spec.ts",
-          "line": 182,
+          "line": 203,
           "column": 5
         },
         {
@@ -671,12 +747,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 759,
+                  "duration": 1222,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:11.316Z",
+                  "startTime": "2026-10-23T11:59:08.247Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -686,7 +762,7 @@
           ],
           "id": "eb8a6728e228379df245-8d7243cbb316488b40a0",
           "file": "spatial.spec.ts",
-          "line": 242,
+          "line": 263,
           "column": 5
         },
         {
@@ -705,12 +781,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1122,
+                  "duration": 1315,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:12.088Z",
+                  "startTime": "2026-10-23T11:59:09.483Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -720,7 +796,7 @@
           ],
           "id": "eb8a6728e228379df245-cc08b54c9a7d01cb297a",
           "file": "spatial.spec.ts",
-          "line": 264,
+          "line": 285,
           "column": 5
         },
         {
@@ -739,12 +815,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2388,
+                  "duration": 5078,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:13.221Z",
+                  "startTime": "2026-10-23T11:59:10.821Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -754,7 +830,7 @@
           ],
           "id": "eb8a6728e228379df245-a9611c20c815a993e4d1",
           "file": "spatial.spec.ts",
-          "line": 284,
+          "line": 305,
           "column": 5
         },
         {
@@ -773,12 +849,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 372,
+                  "duration": 558,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:15.619Z",
+                  "startTime": "2026-10-23T11:59:15.913Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -788,7 +864,7 @@
           ],
           "id": "eb8a6728e228379df245-0c85e7989a55aaf40259",
           "file": "spatial.spec.ts",
-          "line": 320,
+          "line": 341,
           "column": 5
         },
         {
@@ -807,12 +883,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 450,
+                  "duration": 681,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:16.005Z",
+                  "startTime": "2026-10-23T11:59:16.485Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -822,7 +898,7 @@
           ],
           "id": "eb8a6728e228379df245-d16ee75107952130ac76",
           "file": "spatial.spec.ts",
-          "line": 365,
+          "line": 386,
           "column": 5
         },
         {
@@ -841,12 +917,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 337,
+                  "duration": 537,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:16.467Z",
+                  "startTime": "2026-10-23T11:59:17.180Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -856,7 +932,7 @@
           ],
           "id": "eb8a6728e228379df245-688f2f96ef7aa7ca8cfd",
           "file": "spatial.spec.ts",
-          "line": 391,
+          "line": 412,
           "column": 5
         },
         {
@@ -875,12 +951,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 990,
+                  "duration": 5206,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:16.813Z",
+                  "startTime": "2026-10-23T11:59:17.731Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -890,7 +966,7 @@
           ],
           "id": "eb8a6728e228379df245-d54208be71b42427142c",
           "file": "spatial.spec.ts",
-          "line": 455,
+          "line": 476,
           "column": 5
         },
         {
@@ -909,12 +985,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 791,
+                  "duration": 1729,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:17.815Z",
+                  "startTime": "2026-10-23T11:59:22.960Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -924,7 +1000,7 @@
           ],
           "id": "eb8a6728e228379df245-e6571c65b073df28f552",
           "file": "spatial.spec.ts",
-          "line": 484,
+          "line": 505,
           "column": 5
         },
         {
@@ -943,12 +1019,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1360,
+                  "duration": 2720,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:18.621Z",
+                  "startTime": "2026-10-23T11:59:24.717Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -958,7 +1034,7 @@
           ],
           "id": "eb8a6728e228379df245-defbc99478b59c6c992d",
           "file": "spatial.spec.ts",
-          "line": 502,
+          "line": 523,
           "column": 7
         },
         {
@@ -977,12 +1053,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1439,
+                  "duration": 2820,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:19.992Z",
+                  "startTime": "2026-10-23T11:59:27.456Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -992,7 +1068,7 @@
           ],
           "id": "eb8a6728e228379df245-a62a04388bf72a8a7148",
           "file": "spatial.spec.ts",
-          "line": 502,
+          "line": 523,
           "column": 7
         },
         {
@@ -1011,12 +1087,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1964,
+                  "duration": 5924,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-08T21:33:21.440Z",
+                  "startTime": "2026-10-23T11:59:30.292Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1026,7 +1102,7 @@
           ],
           "id": "eb8a6728e228379df245-108d799dd7d6811a7120",
           "file": "spatial.spec.ts",
-          "line": 502,
+          "line": 523,
           "column": 7
         }
       ]
@@ -1034,9 +1110,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-08T21:31:34.612Z",
-    "duration": 108939.246,
-    "expected": 28,
+    "startTime": "2026-10-23T11:55:55.416Z",
+    "duration": 221020.72100000002,
+    "expected": 30,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -1,5 +1,6 @@
 node_modules/
 !camera-measurements.json
+!folded-measurements.json
 !evidence/browser-results.json
 !evidence/asset-validation.json
 evidence/runs/**/trace.zip

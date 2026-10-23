@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "author": "Brand.Me procedural asset pipeline",
   "created": "2026-10-05",
-  "source": "Original parametric geometry and textures in scripts/assets/generate.mjs",
+  "source": "Original parametric geometry and textures in scripts/assets/generate.mjs and scripts/assets/folded.mjs",
   "thirdPartyVisualAssets": [],
   "license": "PROPRIETARY",
   "rightsHolder": "Brand.Me, Inc.",

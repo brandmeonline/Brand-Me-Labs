@@ -65,25 +65,103 @@
   },
   {
     "id": "walnut_atelier",
-    "triangles": 29168,
-    "drawCalls": 32,
-    "textures": 57,
+    "triangles": 62272,
+    "drawCalls": 46,
+    "textures": 99,
+    "shelfGrounding": [
+      {
+        "slot": 0,
+        "gapMeters": 4.2915344167226976e-8
+      },
+      {
+        "slot": 1,
+        "gapMeters": 4.2915344167226976e-8
+      },
+      {
+        "slot": 2,
+        "gapMeters": 4.2915344167226976e-8
+      },
+      {
+        "slot": 3,
+        "gapMeters": 4.76837147544984e-9
+      },
+      {
+        "slot": 4,
+        "gapMeters": 4.76837147544984e-9
+      },
+      {
+        "slot": 5,
+        "gapMeters": 4.76837147544984e-9
+      }
+    ],
     "viewport": "1440x900",
     "renderer": "Chromium software WebGL2; not real-device performance"
   },
   {
     "id": "limestone_gallery",
-    "triangles": 20132,
-    "drawCalls": 31,
-    "textures": 54,
+    "triangles": 53836,
+    "drawCalls": 45,
+    "textures": 96,
+    "shelfGrounding": [
+      {
+        "slot": 0,
+        "gapMeters": 4.2915344167226976e-8
+      },
+      {
+        "slot": 1,
+        "gapMeters": 4.2915344167226976e-8
+      },
+      {
+        "slot": 2,
+        "gapMeters": 4.2915344167226976e-8
+      },
+      {
+        "slot": 3,
+        "gapMeters": 4.76837147544984e-9
+      },
+      {
+        "slot": 4,
+        "gapMeters": 4.76837147544984e-9
+      },
+      {
+        "slot": 5,
+        "gapMeters": 4.76837147544984e-9
+      }
+    ],
     "viewport": "1440x900",
     "renderer": "Chromium software WebGL2; not real-device performance"
   },
   {
     "id": "garden_studio",
-    "triangles": 16176,
-    "drawCalls": 23,
-    "textures": 39,
+    "triangles": 49280,
+    "drawCalls": 37,
+    "textures": 81,
+    "shelfGrounding": [
+      {
+        "slot": 0,
+        "gapMeters": 3.814697224768793e-9
+      },
+      {
+        "slot": 1,
+        "gapMeters": 3.814697224768793e-9
+      },
+      {
+        "slot": 2,
+        "gapMeters": 3.814697224768793e-9
+      },
+      {
+        "slot": 3,
+        "gapMeters": 5.340576181289691e-8
+      },
+      {
+        "slot": 4,
+        "gapMeters": 5.340576181289691e-8
+      },
+      {
+        "slot": 5,
+        "gapMeters": 5.340576181289691e-8
+      }
+    ],
     "viewport": "1440x900",
     "renderer": "Chromium software WebGL2; not real-device performance"
   }

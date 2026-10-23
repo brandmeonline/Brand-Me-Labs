@@ -16,7 +16,7 @@ async function ready(
 test("slow add prefetches its asset, shows an uncommitted destination, then settles only after commit", async ({
   page,
 }) => {
-  await page.goto("/add?save-delay=1400");
+  await page.goto("/add?save-hold=1");
   const prefetch = page.waitForRequest((r) =>
     r.url().endsWith("/garments/knit/lod1.glb"),
   );
@@ -38,6 +38,9 @@ test("slow add prefetches its asset, shows an uncommitted destination, then sett
       return (await createGuestClosetRepository().read()).items.length;
     }),
   ).toBe(7);
+  // Keep the real transaction outstanding until all pending-state assertions
+  // finish; a fixed 1400ms delay races slower software-WebGL machines.
+  await page.evaluate(() => window.dispatchEvent(new Event("brandme:test-release-save")));
   await expect(page.getByRole("status")).toContainText("Added to your");
   await expect(page.getByTestId("pending-placement")).toHaveCount(0);
   expect(

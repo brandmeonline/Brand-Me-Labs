@@ -324,8 +324,10 @@ export default function SceneCanvas({
       )
       .filter((i) => {
         const a = assets.find((a) => a.slug === i.assetSlug);
-        calls += a?.drawCalls ?? 1;
-        triangles += a?.triangleCount ?? 2;
+        const display = i.placement.semanticGroup === "shelf.folded"
+          ? a?.folded ?? a : a;
+        calls += display?.drawCalls ?? 1;
+        triangles += display?.triangleCount ?? 2;
         return (
           calls <= limits[tier].calls && triangles <= limits[tier].triangles
         );
@@ -391,6 +393,8 @@ export default function SceneCanvas({
         {shown.map((item) => {
           const a = assets.find((a) => a.slug === item.assetSlug);
           const p = item.placement;
+          const modelUrl = p.semanticGroup === "shelf.folded" && a?.folded
+            ? a.folded.glb : a?.lowGlb;
           return (
             <group
               key={item.id}
@@ -398,9 +402,9 @@ export default function SceneCanvas({
               quaternion={p.rotationQuaternion}
               scale={p.uniformScale}
             >
-              {a?.lowGlb ? (
+              {modelUrl ? (
                 <AssetObject
-                  url={a.lowGlb}
+                  url={modelUrl}
                   dimmed={!!matches && !matches.has(item.id)}
                   onFailure={() =>
                     onFallback(

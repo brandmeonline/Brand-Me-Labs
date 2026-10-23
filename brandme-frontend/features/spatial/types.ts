@@ -25,6 +25,22 @@ export interface Asset {
   fidelityLabel: string;
   glb?: string;
   lowGlb?: string;
+  folded?: {
+    revision: string;
+    glb: string;
+    poster: string;
+    fidelity: "P1";
+    fidelityLabel: string;
+    pivot: "grounded_bottom_center";
+    dimensionsMeters: Vector3;
+    collisionBounds: { min: Vector3; max: Vector3 };
+    triangleCount: number;
+    drawCalls: number;
+    source: string;
+    rights: string;
+    use: string;
+    qa: { loader: string; visual: string; roomPlacement: string };
+  };
   usdz?: string;
   poster: string;
   rights: string;
@@ -46,6 +62,7 @@ export interface Room {
     capacity: number;
     pitch: number;
     width: number;
+    positions?: Vector3[];
   }[];
   camera: {
     fov: number;

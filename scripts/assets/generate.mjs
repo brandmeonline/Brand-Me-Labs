@@ -1,4 +1,5 @@
 import * as T from "three";
+import { publishFolded } from "./folded.mjs";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
@@ -637,6 +638,8 @@ function room(def) {
       rod(g, [x - 0.64, 1.75, -0.85], [x + 0.64, 1.75, -0.85], 0.012, metal);
       box(g, [1.22, 0.21, 0.5], [x, 0.14, -1.25], materials.stone, 0.025);
     }
+    for (const y of [1.01, 1.47])
+      box(g, [1.22, 0.07, 0.48], [0, y, -1.25], wood);
     box(g, [0.84, 2.1, 0.035], [0, 1.22, -1.83], materials.mirror, 0.06);
     box(g, [0.7, 0.22, 0.65], [0, 0.11, 0.5], materials.stone, 0.035);
   }
@@ -789,6 +792,13 @@ const slotsFor = (id) => {
     capacity: a.slots || 12,
     pitch: a.pitch_m || 0.12,
     width: a.width_m || 1.1,
+    ...(a.id === "shelf.folded" ? {
+      positions: Array.from({ length: 6 }, (_, slot) => [
+        (id === "garden_studio" ? 1.34 : 0) + (slot % 3 - 1) * 0.4,
+        (id === "garden_studio" ? 1.079 : 1.045) + Math.floor(slot / 3) * (id === "garden_studio" ? 0.44 : 0.46),
+        id === "garden_studio" ? -1.28 : id === "limestone_gallery" ? -1.25 : -1.17,
+      ]),
+    } : {}),
   }));
   if (id === "garden_studio")
     return original
@@ -814,7 +824,7 @@ const slotsFor = (id) => {
     }));
   return original;
 };
-async function exportAsset(group, dir, isRoom = false) {
+async function exportAsset(group, dir, isRoom = false, filename) {
   const optimized = mergeByMaterial(group);
   const raw = Buffer.from(
     await new GLTFExporter().parseAsync(optimized, {
@@ -824,7 +834,7 @@ async function exportAsset(group, dir, isRoom = false) {
   );
   const bytes = pbrMaps(raw);
   await mkdir(dir, { recursive: true });
-  const name = isRoom ? "room.glb" : "lod0.glb";
+  const name = filename || (isRoom ? "room.glb" : "lod0.glb");
   await writeFile(path.join(dir, name), bytes);
   await writeFile(
     path.join(dir, name + ".gz"),
@@ -844,13 +854,16 @@ async function exportAsset(group, dir, isRoom = false) {
     dimensions: bounds.getSize(new T.Vector3()).toArray(),
   };
 }
+async function generate() {
+if (process.argv.includes("--folded-only"))
+  return publishFolded({ exportAsset, mesh, tube, materials });
 await mkdir(output, { recursive: true });
 const rights = {
   schemaVersion: 1,
   author: "Brand.Me procedural asset pipeline",
   created: "2026-10-05",
   source:
-    "Original parametric geometry and textures in scripts/assets/generate.mjs",
+    "Original parametric geometry and textures in scripts/assets/generate.mjs and scripts/assets/folded.mjs",
   thirdPartyVisualAssets: [],
   license: "PROPRIETARY",
   rightsHolder: "Brand.Me, Inc.",
@@ -870,8 +883,9 @@ await writeFile(
   path.join(output, "rights.json"),
   JSON.stringify(rights, null, 2) + "\n",
 );
-const catalog = [];
-for (const p of [
+const roomsOnly = process.argv.includes("--rooms-only");
+const catalog = roomsOnly ? JSON.parse(await readFile(path.join(output, "catalog.json"))).products : [];
+for (const p of (roomsOnly ? [] : [
   ...demo.products,
   {
     id: "demo-tee",
@@ -885,7 +899,7 @@ for (const p of [
     category: "top",
     required_assets: { glb: "/demo/garments/knit/lod0.glb" },
   },
-]) {
+])) {
   const slug = p.required_assets.glb.split("/")[3],
     base = `/demo/garments/${slug}`,
     dir = path.join(publicRoot, base);
@@ -976,7 +990,7 @@ for (const r of demo.rooms) {
     schemaVersion: 1,
     id: r.id,
     title: r.name,
-    revision: "original-v1",
+    revision: "original-shelves-v2",
     dimensionsMeters: r.dimensions_m,
     collisionBounds: result.bounds,
     glb: r.required_glb,
@@ -1045,3 +1059,6 @@ await writeFile(
 console.log(
   `Generated ${rooms.length} rooms and ${catalog.length} original garment sets. Run assets:review for rendered posters, then assets:validate.`,
 );
+if (!roomsOnly) await publishFolded({ exportAsset, mesh, tube, materials });
+}
+await generate();

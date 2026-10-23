@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "limestone_gallery",
   "title": "Limestone Gallery",
-  "revision": "original-v1",
+  "revision": "original-shelves-v2",
   "dimensionsMeters": [
     5.2,
     4,
@@ -27,7 +27,7 @@
   "up": "+Y",
   "forward": "-Z",
   "lightKelvin": 5500,
-  "triangleCount": 8228,
+  "triangleCount": 8828,
   "drawCalls": 6,
   "groups": [
     {
@@ -72,7 +72,39 @@
       ],
       "capacity": 6,
       "pitch": 0.12,
-      "width": 1.1
+      "width": 1.1,
+      "positions": [
+        [
+          -0.4,
+          1.045,
+          -1.25
+        ],
+        [
+          0,
+          1.045,
+          -1.25
+        ],
+        [
+          0.4,
+          1.045,
+          -1.25
+        ],
+        [
+          -0.4,
+          1.505,
+          -1.25
+        ],
+        [
+          0,
+          1.505,
+          -1.25
+        ],
+        [
+          0.4,
+          1.505,
+          -1.25
+        ]
+      ]
     },
     {
       "id": "tray.accessories",
@@ -158,22 +190,22 @@
   ],
   "mirror": "Static tinted reflective material; not a live mirror",
   "qa": {
-    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
-    "visual": "agent visual review passed; human approval not claimed",
+    "structural": "pending validation",
+    "visual": "rendered; human approval not claimed",
     "loader": "Chromium / Three GLTFLoader 0.182.0"
   },
   "files": {
     "room.glb": {
-      "sha256": "c0fead6d4e6eb13f663285752f8b9c5a850141b24eb4ad2feba1682d3f1beb80",
-      "bytes": 815440
+      "sha256": "b52e498e5faa7c30548085ae92a9b0724d9a4ac7a7f17afbf9c9c38d3253f7fd",
+      "bytes": 873044
     },
     "room.glb.gz": {
-      "sha256": "72951188359ea1c297b8c5f7863127a75fb0d98da945846c40ac26e83f795691",
-      "bytes": 98973
+      "sha256": "267971eab4142087478007d7a9d9a7b9f2ef37d9f1dbea994995ea1bfa5ab310",
+      "bytes": 103216
     },
     "poster.webp": {
-      "sha256": "8fea21ea080ec695978520f22139ebf4bad015bd3da6370c67fa02a0cce42064",
-      "bytes": 82856
+      "sha256": "b5cf724bb518b44e64c499407914e3bac97828557b72057419047f5a5986f319",
+      "bytes": 85444
     }
   }
 }

@@ -75,12 +75,33 @@ test("add animation starts only after the item commit and Undo removes its recor
   await page
     .getByRole("combobox", { name: "Closet status", exact: true })
     .selectOption("owned");
+  await expect(page.locator("[data-room-ready]")).toHaveAttribute(
+    "data-room-ready", "true",
+  );
+  // Capture visibility and identity together when the short-lived flight is
+  // inserted. Separate browser round trips can outlast its 900ms lifetime.
+  await page.evaluate(() => {
+    (window as any).committedFlight = new Promise((resolve) => {
+      const observer = new MutationObserver(() => {
+        const node = document.querySelector('[data-testid="placement-flight"]');
+        if (!node) return;
+        const rect = node.getBoundingClientRect();
+        observer.disconnect();
+        resolve({
+          id: node.getAttribute("data-committed-item"),
+          visible: rect.width > 0 && rect.height > 0 &&
+            getComputedStyle(node).visibility !== "hidden",
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  });
   await page
     .getByRole("button", { name: "Add to closet", exact: true })
     .click();
-  const flight = page.getByTestId("placement-flight");
-  await expect(flight).toBeVisible();
-  const itemId = await flight.getAttribute("data-committed-item");
+  const flight = await page.evaluate(() => (window as any).committedFlight);
+  expect(flight.visible).toBe(true);
+  expect(flight.id).toBeTruthy();
   const exists = await page.evaluate(async (id) => {
     const { createGuestClosetRepository } = await import(
       "/brandme-frontend/features/closet/repository.ts"
@@ -88,7 +109,7 @@ test("add animation starts only after the item commit and Undo removes its recor
     return (await createGuestClosetRepository().read()).items.some(
       (i: { id: string }) => i.id === id,
     );
-  }, itemId);
+  }, flight.id);
   expect(exists).toBe(true);
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Addition undone");

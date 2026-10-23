@@ -50,7 +50,7 @@
   "rig": null,
   "qa": {
     "structural": "passed; see scripts/assets/evidence/asset-validation.json",
-    "visual": "agent visual review passed; human approval not claimed",
+    "visual": "rendered; human approval not claimed",
     "nativeDevice": "not_run",
     "loader": "Chromium / Three GLTFLoader 0.182.0"
   },
@@ -78,6 +78,53 @@
     "poster.webp": {
       "sha256": "bfc27048096361b9a2826f432b099ccd5e97af7973f751cd7157f72a07f501ff",
       "bytes": 24720
+    },
+    "folded.glb": {
+      "bytes": 711640,
+      "sha256": "b5196a358d2d4d4ccb2a7686106da2b09af2aaf34cee374b0d4332718eabc932"
+    },
+    "folded.glb.gz": {
+      "bytes": 101505,
+      "sha256": "0456a4690a3a0288486e0c82b61ca32e3b8905e4cdcd44769743fc2122020caf"
+    },
+    "folded.webp": {
+      "sha256": "c8a5cac4ed1c83e5554d7dccdf2806c4ba60babfb941af8dab046e68d1cae464",
+      "bytes": 22316
+    }
+  },
+  "folded": {
+    "revision": "folded-original-v1",
+    "glb": "/demo/garments/knit/folded.glb",
+    "poster": "/demo/garments/knit/folded.webp",
+    "fidelity": "P1",
+    "fidelityLabel": "Approximate 3D",
+    "pivot": "grounded_bottom_center",
+    "dimensionsMeters": [
+      0.32235610485076904,
+      0.06401623785495758,
+      0.3427794873714447
+    ],
+    "collisionBounds": {
+      "min": [
+        -0.16117805242538452,
+        0,
+        -0.17000000178813934
+      ],
+      "max": [
+        0.16117805242538452,
+        0.06401623785495758,
+        0.17277948558330536
+      ]
+    },
+    "triangleCount": 7224,
+    "drawCalls": 2,
+    "source": "Original curved layered textile surfaces in scripts/assets/folded.mjs",
+    "rights": "/demo/rights.json",
+    "use": "Folded shelf display; not a drape or physical fit simulation",
+    "qa": {
+      "loader": "Chromium / Three GLTFLoader 0.182.0",
+      "visual": "rendered; human approval not claimed",
+      "roomPlacement": "semantic_shelf_v2; verification required"
     }
   }
 }
