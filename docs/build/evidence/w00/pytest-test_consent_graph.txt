@@ -1,0 +1,9 @@
+{"service": "spanner.consent", "event": "accept_friend_failed", "error": "400 Cannot write commit timestamp because the allow_commit_timestamp column option is not set to true for column FriendsWith.accepted_at, or for all corresponding shared key columns in this table's interleaved table hierarchy."}
+ERROR    spanner.consent:logging.py:61 {"service": "spanner.consent", "event": "accept_friend_failed", "error": "400 Cannot write commit timestamp because the allow_commit_timestamp column option is not set to true for column FriendsWith.accepted_at, or for all corresponding shared key columns in this table's interleaved table hierarchy."}
+PASSED tests/test_consent_graph.py::test_grant_and_check_consent
+PASSED tests/test_consent_graph.py::test_check_friendship_not_friends
+ERROR tests/test_consent_graph.py::test_check_consent_owner_access - google.a...
+ERROR tests/test_consent_graph.py::test_check_consent_public_default - google...
+FAILED tests/test_consent_graph.py::test_add_friend - assert False is True
+FAILED tests/test_consent_graph.py::test_revoke_global_consent - google.api_c...
+2 failed, 2 passed, 2 errors in 0.73s
