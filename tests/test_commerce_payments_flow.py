@@ -15,8 +15,9 @@ from datetime import timedelta
 import pytest
 
 from brandme_core.domains.commerce.delegation import AssistanceMode
+from brandme_core.domains.commerce.errors import Forbidden, InvalidRequest
 from brandme_core.domains.commerce.money import Money
-from brandme_core.domains.providers.contracts import ProviderError, SubmitRequest
+from brandme_core.domains.providers.contracts import ProviderError, ProviderErrorKind, SubmitRequest
 from brandme_core.domains.providers.local_atelier import (
     PAYMENT_SETTLE_WINDOW, Behavior, LocalAtelierProvider, local_atelier_connection, payment_key,
 )
@@ -300,3 +301,101 @@ def test_units_being_returned_cannot_also_be_exchanged(w):
     assert w.svc.request_return(w.member, order.id, "demo-overshirt-m", 1)["status"] == "return_requested"
     with pytest.raises(ProviderError):
         w.provider.exchange(order.provider_order_ref, "demo-overshirt-m", "demo-overshirt-l")
+
+
+# ------------------------------------------------- member-requested cancellation (ch.05 §6)
+CANCEL_KEY = "cancel-flow-key-00001"
+
+
+def _voids(w):
+    return [c for c in w.provider.payments.calls if c[0] == "void"]
+
+
+def test_member_cancels_an_unshipped_order_and_the_hold_is_voided_once(w):
+    _, res = _buy(w, w.member)
+    order = _order(w, res)
+    out = w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    assert out == {"order_id": order.id, "status": "cancelled", "order_status": "cancelled",
+                   "payment_status": "voided", "units_cancelled": 1}
+    assert w.store.get("operations", res.id).state == "cancelled" and _effects(w)[-1] == "cancelled"
+    assert w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY) == out  # replay
+    assert len(_voids(w)) == 1 and len(w.provider._cancellations) == 1
+    with pytest.raises(InvalidRequest) as e:  # a new key: nothing is left to cancel
+        w.svc.request_cancellation(w.member, order.id, idempotency_key="cancel-flow-key-00002")
+    assert e.value.code == "nothing_to_cancel"
+
+
+def test_shipped_units_are_returned_not_cancelled(w):
+    _, res = _buy(w, w.member)
+    order = _order(w, res)
+    _hook(w, w.provider.ship(order.provider_order_ref))
+    with pytest.raises(InvalidRequest) as e:
+        w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    assert e.value.code == "nothing_to_cancel" and w.provider._cancellations == {}
+
+
+def test_cancelling_after_a_partial_shipment_refunds_only_the_unshipped_units(w):
+    quote, res = _buy(w, w.member, line("overshirt"), line("bag"))
+    order = _order(w, res)
+    w.provider.arm(Behavior.PARTIAL_FULFILLMENT, source_variant_ref="demo-bag-m", quantity=0)
+    _hook(w, w.provider.ship(order.provider_order_ref))  # captured in full; the bag has not shipped
+    out = w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    bag = 12900 + 12900 * 800 // 10_000
+    o = w.store.get("orders", order.id)
+    assert (out["status"], out["units_cancelled"], out["payment_status"]) == ("partially_cancelled", 1,
+                                                                              "partially_refunded")
+    assert o.refunded_total == Money(bag, "USD") and o.fulfillment_status == "fulfilled"
+    assert {l.source_variant_ref: l.quantity_cancelled for l in o.lines} == {"demo-overshirt-m": 0, "demo-bag-m": 1}
+
+
+def test_agents_cancel_only_orders_placed_under_their_own_grant(w):
+    _, ag = w.delegate(lim=limits())
+    _, mine = _buy(w, w.member, key="pay-flow-buy-member01")
+    with pytest.raises(Forbidden) as e:
+        w.svc.request_cancellation(ag, mine.order_id, idempotency_key=CANCEL_KEY)
+    assert e.value.code == "order_not_yours"
+    _, theirs = _buy(w, ag, key="pay-flow-buy-agent001")
+    _order(w, theirs)
+    assert w.svc.request_cancellation(ag, theirs.order_id, idempotency_key=CANCEL_KEY)["status"] == "cancelled"
+
+
+def test_a_merchant_without_a_cancellation_path_is_an_explicit_handoff(w):
+    _, res = _buy(w, w.member)
+    w.registry.suspend("demo_atelier", "orders.read", "operator_hold", w.clock())
+    out = w.svc.request_cancellation(w.member, res.order_id, idempotency_key=CANCEL_KEY)
+    assert out["status"] == "handoff" and out["disclosure"] and w.provider._cancellations == {}
+    assert w.store.get("operations", res.id).state == "accepted"
+
+
+def test_a_cancellation_the_merchant_never_received_can_be_retried_with_the_same_key(w, monkeypatch):
+    _, res = _buy(w, w.member)
+    order = _order(w, res)
+    real = w.provider.request_cancellation
+
+    def refused(ref, *, idempotency_key):
+        monkeypatch.setattr(w.provider, "request_cancellation", real)
+        raise ProviderError(ProviderErrorKind.TRANSIENT, "merchant unavailable")
+    monkeypatch.setattr(w.provider, "request_cancellation", refused)
+    with pytest.raises(ProviderError):
+        w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    assert w.store.get("operations", res.id).state == "accepted"  # undone: the merchant never saw it
+    assert w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)["status"] == "cancelled"
+
+
+def test_a_lost_cancellation_response_is_re_sent_under_the_same_merchant_key(w, monkeypatch):
+    _, res = _buy(w, w.member)
+    order = _order(w, res)
+    real, keys = w.provider.request_cancellation, []
+
+    def lost(ref, *, idempotency_key):
+        keys.append(idempotency_key)
+        result = real(ref, idempotency_key=idempotency_key)
+        if len(keys) == 1:
+            raise ProviderError(ProviderErrorKind.OUTCOME_UNKNOWN, "response lost", transmitted=True)
+        return result
+    monkeypatch.setattr(w.provider, "request_cancellation", lost)
+    with pytest.raises(ProviderError):
+        w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    assert w.store.get("operations", res.id).state == "cancel_requested"
+    out = w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    assert out["status"] == "cancelled" and keys[0] == keys[1] and len(_voids(w)) == 1

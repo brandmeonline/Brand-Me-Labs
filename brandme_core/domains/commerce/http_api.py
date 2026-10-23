@@ -158,6 +158,7 @@ class CommerceHttpApi:
             "operation.get": (frozenset({"operation_id"}), self._operation_get),
             "order.get": (frozenset({"order_id"}), self._order_get),
             "order.return": (frozenset({"order_id", "source_variant_ref", "quantity"}), self._order_return),
+            "order.cancel": (frozenset({"order_id"}), self._order_cancel),
             "delegation.list": (frozenset(), self._delegation_list),
             "delegation.create": (frozenset({"client_id", "mode", "allowed_providers", "expires_at", "limits"}),
                                   self._delegation_create),
@@ -293,6 +294,10 @@ class CommerceHttpApi:
         self._need(a, "order_id", "source_variant_ref", "quantity")
         return 202, self.svc.request_return(p, str(a["order_id"]), str(a["source_variant_ref"]), int(a["quantity"]),
                                             idempotency_key=h.get("idempotency-key"))
+
+    def _order_cancel(self, p, a, h):
+        self._need(a, "order_id")
+        return 202, self.svc.request_cancellation(p, str(a["order_id"]), idempotency_key=h.get("idempotency-key"))
 
     # -- delegations ----------------------------------------------------------
     def _delegation_list(self, p, a, h):

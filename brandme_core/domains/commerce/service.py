@@ -36,7 +36,7 @@ from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, Optio
 import rfc8785
 
 from brandme_core.domains.providers.contracts import (
-    CartLineRequest, CheckoutProvider, OrderObservation, OrderProvider, ProviderError,
+    CartLineRequest, CheckoutProvider, OrderCancellationProvider, OrderObservation, OrderProvider, ProviderError,
     ProviderErrorKind, ReturnsProvider, SubmitRequest,
 )
 from brandme_core.domains import base as _foundation
@@ -1015,6 +1015,79 @@ class CommerceService:
                 pass
         self.store.run(_tx)
         return self._return_wire(done, order, conn)
+
+    def request_cancellation(self, principal: Principal, order_id: str, *,
+                             idempotency_key: Optional[str] = None) -> Dict[str, Any]:
+        """Ask the merchant to cancel what has not shipped (ch.05 §6 "offer the actual cancellation path").
+
+        Shipped units are returned, not cancelled. A merchant without a cancellation path gets an
+        explicit handoff. The result reflects the merchant's re-read order, never a local guess.
+        The merchant key derives from the member's Idempotency-Key, so a retry after a lost
+        response re-sends the same request while unshipped units remain.
+        """
+        principal, d = self._authorize(principal, "commerce:purchase")
+        order = self._own(self.store, "orders", order_id, principal)
+        if d is not None:
+            placed_by = self.store.get("operations", order.operation_id)
+            if (d.mode is not AssistanceMode.BUY_WITHIN_RULES or placed_by is None
+                    or placed_by.delegation_id != d.id or order.provider_id not in d.allowed_providers):
+                raise Forbidden("an agent can only cancel orders placed under its own grant", code="order_not_yours")
+        conn = self.registry.get(order.provider_id)
+        if not (isinstance(conn.adapter, OrderCancellationProvider) and conn.can_execute("orders.read")):
+            return {"order_id": order.id, "status": "handoff", "disclosure": conn.disclosure}
+        scope, prior, digest = self._idempotent(principal, "order.cancel", idempotency_key, {"order_id": order_id})
+        key = "bm-cancel-" + (hashlib.sha256(repr(scope).encode()).hexdigest()[:32] if scope
+                              else secrets.token_hex(16))
+
+        def _open(o: Order) -> bool:
+            return any(l.quantity_ordered - l.quantity_shipped - l.quantity_cancelled > 0 for l in o.lines)
+
+        def _intent(tx):
+            self._guard(tx, principal.member_id, ORDERS)
+            if scope:
+                if tx.get("idempotency", scope) is not None:
+                    return False
+                tx.put("idempotency", scope, IdempotencyRecord(scope, digest, order.operation_id, self.clock()))
+            op = tx.get("operations", order.operation_id)
+            if op.state == "accepted":
+                self._transition(tx, op, "cancel_requested")
+            return True
+
+        if prior is not None:
+            if not _open(self.store.get("orders", order.id)):
+                return self._cancellation_wire(self.store.get("orders", order.id))
+            self.store.run(lambda tx: self._guard(tx, principal.member_id, ORDERS))
+            fresh = False  # an earlier attempt's outcome is unknown: re-send it under the same key
+        else:
+            if not _open(order):
+                raise InvalidRequest("everything on this order has shipped; request a return instead",
+                                     code="nothing_to_cancel")
+            fresh = self.store.run(_intent)
+        try:
+            conn.adapter.request_cancellation(order.provider_order_ref, idempotency_key=key)  # outside txn
+        except ProviderError as exc:
+            if fresh and not (exc.transmitted or exc.kind is ProviderErrorKind.OUTCOME_UNKNOWN):
+                def _undo(tx):  # the merchant never saw it: the member may try again
+                    op = tx.get("operations", order.operation_id)
+                    if op.state == "cancel_requested":
+                        self._transition(tx, op, "accepted")
+                    if scope:
+                        tx.delete("idempotency", scope)
+                self.store.run(_undo)
+            raise
+        try:
+            obs = conn.adapter.lookup(order.provider_order_ref)
+        except ProviderError:
+            return self._cancellation_wire(self.store.get("orders", order.id), pending=True)
+        return self._cancellation_wire(self._apply_observation(order.id, obs, f"provider:{order.provider_id}"))
+
+    @staticmethod
+    def _cancellation_wire(order: Order, pending: bool = False) -> Dict[str, Any]:
+        cancelled = sum(l.quantity_cancelled for l in order.lines)
+        status = ("cancel_requested" if pending else "cancelled" if order.order_status == "cancelled"
+                  else "partially_cancelled" if cancelled else "cancel_requested")
+        return {"order_id": order.id, "status": status, "order_status": order.order_status,
+                "payment_status": order.payment_status, "units_cancelled": cancelled}
 
     @staticmethod
     def _return_wire(rr: ReturnRequest, order: Order, conn: Any = None) -> Dict[str, Any]:

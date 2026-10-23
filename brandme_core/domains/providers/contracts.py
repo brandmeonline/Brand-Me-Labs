@@ -279,6 +279,15 @@ class ReturnsProvider(Protocol):
     def request_return(self, provider_order_ref: str, source_variant_ref: str, quantity: int) -> ProviderResult: ...
 
 
+@runtime_checkable
+class OrderCancellationProvider(Protocol):
+    """Asks the merchant to cancel units that have not shipped. Shipped units go through returns.
+    No capability name exists for this in the closed vocabulary; support is the protocol itself."""
+    provider_id: str
+
+    def request_cancellation(self, provider_order_ref: str, *, idempotency_key: str) -> ProviderResult: ...
+
+
 # --- declared for completeness; implemented by other lanes / later stages -----
 
 class ReceiptImporter(Protocol):

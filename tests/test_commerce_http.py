@@ -321,3 +321,17 @@ def test_assistant_task_create_is_idempotent(h):
     assert [e["type"] for e in events].count("goal") == 1
     clash = h.call("assistant.task.create", {"goal": "something else", "assistance_mode": "research"}, headers=key)
     assert clash.status_code == 409 and clash.json()["code"] == "idempotency_key_reused"
+
+
+def test_cancellation_reaches_the_domain_once_per_key(h):
+    _, quote = _quote(h)
+    op = h.call("purchase.request", {"quote_id": quote["id"]}).json()
+    approval = _approve(h, op["id"])
+    done = h.call("purchase.execute", {"quote_id": quote["id"], "approval_id": approval["id"], "delegation_id": None},
+                  headers={"Idempotency-Key": "http-exec-0000000010"}).json()
+    body = {"order_id": done["order_id"]}
+    first = h.call("order.cancel", body, headers={"Idempotency-Key": "http-cancel-000000001"})
+    again = h.call("order.cancel", body, headers={"Idempotency-Key": "http-cancel-000000001"})
+    assert first.status_code == again.status_code == 202
+    assert first.json() == again.json() and first.json()["status"] == "cancelled"
+    assert len(h.w.provider._cancellations) == 1

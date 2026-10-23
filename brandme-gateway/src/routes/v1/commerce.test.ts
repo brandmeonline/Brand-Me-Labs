@@ -115,6 +115,18 @@ describe('commerce router', () => {
     expect(a.calls).toHaveLength(0);
   });
 
+  it('cancellation needs purchase authority from agents and an Idempotency-Key from everyone', async () => {
+    const a = await app(AGENT, commerce); // research + cart only
+    expect((await a.call('POST', `/commerce/orders/${q}/cancellation`, {}, { 'Idempotency-Key': KEY })).status).toBe(403);
+    expect(a.calls).toHaveLength(0);
+    const m = await app(MEMBER, commerce);
+    expect((await m.call('POST', `/commerce/orders/${q}/cancellation`, {})).status).toBe(400);
+    const ok = await m.call('POST', `/commerce/orders/${q}/cancellation`, {}, { 'Idempotency-Key': KEY });
+    expect(ok.status).toBe(200);
+    expect(m.calls).toHaveLength(1);
+    expect(m.calls[0]).toMatchObject({ op: 'order.cancel', principal: MEMBER, idem: KEY, body: { order_id: q } });
+  });
+
   it('only the first-party session can open challenges and create approvals', async () => {
     const body = { operation_id: q, challenge_id: q, nonce: 'n'.repeat(32), displayed_quote_hash: 'sha256:' + '0'.repeat(64) };
     const a = await app(AGENT, commerce);

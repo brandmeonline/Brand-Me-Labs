@@ -148,6 +148,7 @@ class LocalAtelierProvider:
         self._by_key: Dict[str, str] = {}
         self._by_payment: Dict[str, str] = {}  # processor payment ref -> order ref
         self._pending_returns: Dict[Tuple[str, str], int] = {}  # (order ref, variant ref) -> units requested
+        self._cancellations: Dict[str, str] = {}  # cancellation idempotency key -> outcome
         self._armed: Dict[Behavior, dict] = {}
         self._event_seq = 0
         self.submit_calls: List[str] = []  # idempotency keys received (test evidence)
@@ -513,6 +514,24 @@ class LocalAtelierProvider:
             raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "no unshipped units to cancel")
         self._release(o, pay, value)
         return self._webhook(order_ref, "fulfillment.cancelled")
+
+    def request_cancellation(self, provider_order_ref: str, *, idempotency_key: str) -> ProviderResult:
+        """Member-requested cancellation: the simulated merchant cancels every unshipped unit at once."""
+        with self._lock:
+            o = self._orders.get(provider_order_ref)
+            done = self._cancellations.get(idempotency_key)
+        if o is None or o.order_status not in ("accepted", "cancelled"):
+            raise ProviderError(ProviderErrorKind.MALFORMED_RESPONSE, "unknown order")
+        if done is None:
+            try:
+                self.cancel(provider_order_ref)
+                done = "cancelled"
+            except ProviderError:
+                done = "nothing_to_cancel"
+            with self._lock:
+                self._cancellations[idempotency_key] = done
+        return ProviderResult(PROVIDER_ID, "simulation", idempotency_key, f"demo-cancel-{provider_order_ref}",
+                              self._clock(), None, done)
 
     def expire_authorization(self, order_ref: str) -> None:
         """Simulated rail only: age the order's hold past expiry (demo scenario ``authorization_expired``)."""
