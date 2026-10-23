@@ -58,15 +58,20 @@ def _unauthenticated(request: Request, environment: str) -> JSONResponse:
     return problem(request, err, environment)
 
 
+def _reject_constant(name: str) -> Any:
+    # Python's json accepts NaN/Infinity/-Infinity by default; JSON does not.
+    raise ValueError(f"non-finite number {name}")
+
+
 def _parse_json(raw: bytes) -> Any:
     import json
 
     if not raw:
         return {}
     try:
-        return json.loads(raw)
+        return json.loads(raw, parse_constant=_reject_constant)
     except ValueError:
-        raise ValidationFailed("Request body is not valid JSON.") from None
+        raise ValidationFailed("Request body is not valid JSON (non-finite numbers are not allowed).") from None
 
 
 async def execute(

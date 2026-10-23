@@ -204,3 +204,78 @@ New tests: `test_persona_privacy.py` (registry, category export/delete, idempote
 | `vitest run` (whole gateway) | **25 passed** (18 foundation + 7 `persona.test.ts`) |
 
 Acceptance: **BM-ONB-004 passed (integration)**. BM-ONB-007 stays passed: `/recommendations` needs no model key.
+
+## Stage 4 — Wardrobe, closet placement, outfits, packing (W04 backend) — 2026-10-23
+**Migration `V003_wardrobe.sql`** (applies after V001/V002 from empty through the runner). Member aggregates are interleaved in `Members`:
+- `WardrobeItems`, with indexes by collection, variant and receipt line, plus a **unique NULL_FILTERED tag-serial index**
+- `WardrobeOrderLinks`, `ClosetLayouts`, `ClosetPlacements` (**unique NULL_FILTERED (room, group, slot)**; NULL group means the Unplaced tray)
+- `Outfits` with a global `OutfitsByOutfitId` index; immutable `OutfitVersions`; `OutfitProposals` (unique per proposer+content)
+- `PackingLists`/`PackingEntries`
+- try-on/media tables `TryOnConsents`, `TryOnJobs`, `MediaObjects` for stage W08 (PD-08)
+
+The emulator caught two DDL bugs during this stage, both fixed: `decided_at` was missing `allow_commit_timestamp`, and the emulator rejects `FORCE_INDEX` on NULL_FILTERED indexes, so those member-scoped lookups now use the base table.
+
+**Domain (`brandme_core/domains/wardrobe/`)**
+- `model.py` — intake rules and duplicate logic:
+  - A catalog save defaults to **want** and never implies ownership; manual and photo entries are owned and self-reported.
+  - A receipt line with *n* units becomes *n* items. They stay self-reported with `receipt_pending_review` until a reviewer path (`accept_receipt_evidence`; members cannot call it) makes them `receipt_backed`.
+  - Factual fields are refused at intake and in PATCH.
+  - No invented size or category.
+  - Duplicates are *suggestions*; distinct tag serials or receipt units can never merge. Tag serials are stored as a one-way normalized hash.
+- `placement.py` + `rooms.py` — placement validation:
+  - finite numbers only (NaN/±Inf rejected; the HTTP layer also refuses JSON `NaN`/`Infinity` literals)
+  - quaternion |‖q‖−1| ≤ 1e-3, then canonicalized (exact unit length, w ≥ 0)
+  - position inside the room's collision bounds **and** the selected group's volume
+  - slot index within capacity, category-eligible group, room asset revision must match, scale within the garment's `displayScaleBounds`
+  - slot uniqueness enforced in the domain and by the unique index
+  - deterministic theme remap (keep group+slot or go to Unplaced)
+
+  Room geometry mirrors the spatial lane's manifests at `original-v1` and is **checked against them** (`test_server_room_templates_match_spatial_manifests`, run with the manifests from `bench/astra-spatial-ar-20261005@7ccc0b4`).
+- `service.py` — intake, closet and orders:
+  - idempotent intake with optional placement in the same transaction
+  - get/list with filter, search and cursor
+  - patch (owned↔want only; order/receipt items can't become want), archive/unarchive, duplicate resolve, worn log, cost per wear (estimates labelled)
+  - closet layout, `PUT` placement (If-Match on the placement version; 409 returns the current placement), batch ≤ 50 with swaps
+  - theme change with preview
+  - **`commerce.order.observed` reducer**:
+    - exactly once via the foundation inbox
+    - monotonic by order version
+    - deterministic per-unit item ids
+    - on-the-way → owned → returned per unit
+    - returned units leave the room
+    - unknown category stays NULL with an honest placeholder title
+  - `wardrobe_refs` feeds the persona recommender
+- `outfits.py` — outfits, proposals and packing:
+  - immutable versions
+  - friend proposals addressed by outfit id; the owner is resolved server-side and the policy is injected (social supplies it next; default deny); same 404 for missing and not-allowed
+  - accept creates a **new version authored by the friend**; the original is preserved
+  - duplicate and self proposals refused
+  - packing lists with entry states; trip dates appear in no event
+- `guest_sections.py` — `saved_products` (want items) and `closet_theme` migrate in the **same transaction** as the persona guest migration; a failing section rolls everything back.
+- `deletion.py` — 5 categories (foundation registry + privacy handler). A proposer's deletion **anonymizes** their attribution in a friend's outfit history instead of erasing the friend's record.
+- Writers call the privacy guard (`wardrobe.items`).
+- `api.py` (FastAPI, unmounted) mirrors the ch.03 paths. Lane additions go to PD-09: unarchive, duplicate resolve, worn, proposal accept/decline, packing lists.
+
+**Gateway (UNMOUNTED):** `routes/v1/wardrobe.ts` → `wardrobeRouter(client)`, `routes/v1/outfits.ts` → `outfitsRouter(client)`. They reuse the `persona.ts` helpers and add a cheap placement-shape check (finite vectors, scale > 0, field allowlist), batch ≤ 50, theme preview without If-Match, and accept/decline-only decisions.
+
+**Evidence**
+| Check | Result |
+|---|---|
+| This branch: `pytest tests/test_persona_*.py tests/test_wardrobe_*.py tests/foundation -W error::…UnhandledThreadException` | **211 passed, 5 skipped** (4 privacy-lane, 1 spatial-manifest check, all NOT RUN here); wardrobe suites 3 runs in a row green |
+| W11 `bec80b1` overlay with spatial manifests: `pytest tests/test_persona_*.py tests/test_wardrobe_*.py tests/test_privacy.py tests/test_rights.py` | **145 passed, 0 skipped** |
+| Gateway: `tsc --noEmit` 0; `eslint` 0; `vitest run` | **31 passed** (+6 `wardrobe.test.ts`) |
+| 500-item closet, full cursor pagination (5×100) on emulator | 204 ms; complete, no duplicates; collection/category/search filters exact. Emulator timing is not a production benchmark. |
+
+| Acceptance | Result | Test |
+|---|---|---|
+| BM-WARD-001 manual/catalog/receipt keep source, collection, claim | passed (integration) | `test_intake_paths_keep_source_collection_and_claim` |
+| BM-WARD-002 discovery save → Want, no ownership | passed (integration) | same + `test_catalog_save_defaults_to_want_and_never_ownership` |
+| BM-WARD-003 retry after lost response → exactly one item + placement | passed (integration; same key replay + injected ABORTED) | `test_lost_response_retry_creates_exactly_one_item_and_placement` |
+| BM-WARD-004 member-controlled duplicates; distinct units never lost | passed (integration) | `test_duplicates_are_member_controlled` |
+| BM-WARD-005 500-item organization | **functional half passed** (pagination, filters, search). The performance/scene-virtualization half belongs to the UI/spatial lanes: not_run here | `test_500_item_closet_stays_organizable` |
+| BM-WARD-006 outfit + accepted friend proposal → immutable versions, attribution | passed (integration) | `test_versions_are_immutable_and_proposals_keep_attribution` |
+| BM-WARD-007 care/packing persist, provenance unchanged, trip details private | passed (integration; checks outbox payloads) | `test_care_and_packing_persist_privately` |
+| BM-WARD-008 partial order then return → only those units change | passed (integration) | `test_partial_order_then_return_changes_only_those_units` |
+| Exit: placement quaternions finite/normalized, positions asset-bounded | passed (domain + integration + HTTP NaN/Infinity literals) | `test_wardrobe_placement.py`, `test_placement_versioning_slot_uniqueness_and_validation`, `test_create_place_and_reject_non_finite_json` |
+| Exit: concurrent moves into one slot | passed (4 threads → 1 commit, 3 `slot_occupied`) | `test_concurrent_moves_into_one_slot_commit_once` |
+| Exit: placement survives refresh and theme change | passed (integration; fresh service instance) | `test_theme_change_remaps_semantically_and_survives_reload` |
