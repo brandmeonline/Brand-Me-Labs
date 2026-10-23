@@ -20,7 +20,7 @@ const guest = createGuestClosetRepository();
 const delayedGuest = {
   ...guest,
   commit: async (...args: Parameters<typeof guest.commit>) => {
-    if (holdSave && args[0].type === "add") {
+    if (holdSave && (args[0].type === "add" || args[0].type === "move")) {
       await new Promise<void>((resolve) => {
         window.addEventListener("brandme:test-release-save", () => resolve(), { once: true });
       });
@@ -37,7 +37,7 @@ const screen =
   ) : path.startsWith("/style") ? (
     <StylePage />
   ) : (
-    <ClosetPage />
+    <ClosetPage repository={delay || holdSave ? delayedGuest : undefined} />
   );
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>{screen}</React.StrictMode>,

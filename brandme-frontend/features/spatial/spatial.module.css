@@ -44,11 +44,12 @@
   justify-content: center;
   gap: 8px;
 }
-.root button:disabled {
+.root button:disabled,
+.root button[aria-disabled="true"] {
   opacity: 0.55;
   cursor: default;
 }
-.root button:hover:not(:disabled) {
+.root button:hover:not(:disabled):not([aria-disabled="true"]) {
   border-color: var(--sp-accent);
 }
 .root :focus-visible {

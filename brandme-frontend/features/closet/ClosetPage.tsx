@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useCloset } from "./useCloset";
 import { VirtualWardrobe } from "./VirtualWardrobe";
 import { eligibleGroups, roomById, rooms } from "../spatial/catalog";
@@ -40,6 +40,25 @@ export default function ClosetPage({
     [capsuleId, setCapsuleId] = useState("all"),
     [capsuleName, setCapsuleName] = useState("");
   const reducedMotion = useMotionPreference(snapshot?.reducedMotion);
+  const placementPanel = useRef<HTMLDivElement>(null),
+    placementKeyboard = useRef<HTMLDivElement>(null),
+    moveButton = useRef<HTMLButtonElement>(null),
+    focusRequest = useRef<"placement" | "move" | undefined>(undefined),
+    moving = useRef(false);
+  const placementHelpId = useId(),
+    placementChoiceId = useId();
+  useEffect(() => {
+    const target =
+      focusRequest.current === "placement"
+        ? placementKeyboard.current
+        : focusRequest.current === "move"
+          ? moveButton.current
+          : null;
+    if (target) {
+      focusRequest.current = undefined;
+      target.focus();
+    }
+  }, [placing, selectedId]);
   const currentCamera = useRef<
     { roomId: string; pose: CameraPose } | undefined
   >(undefined);
@@ -72,6 +91,8 @@ export default function ClosetPage({
     selected = snapshot.items.find((i) => i.id === selectedId),
     simple = snapshot.simpleView || !!fallback;
   function select(id: string) {
+    if (busy || moving.current) return;
+    focusRequest.current = undefined;
     setSelectedId(id);
     setPlacing(false);
     const item = snapshot!.items.find((i) => i.id === id);
@@ -80,16 +101,34 @@ export default function ClosetPage({
       setSlot(item.placement.slotId);
     }
   }
-  function beginPlacement(id: string) {
+  function beginPlacement(id: string, focusKeyboard = false) {
+    if (busy || moving.current) return;
     select(id);
+    if (focusKeyboard) focusRequest.current = "placement";
     setPlacing(true);
     setMessage(
       "Placement mode. Drop on an empty destination, or choose a slot and save. Escape cancels.",
     );
   }
+  function finishPlacement(announcement: string) {
+    // Only restore focus that belongs to the panel being removed. A user may
+    // have moved to search or another control while the save was outstanding.
+    if (placementPanel.current?.contains(document.activeElement))
+      focusRequest.current = "move";
+    setPlacing(false);
+    setMessage(announcement);
+  }
+  function cancelPlacement() {
+    // A submitted command has no cancellation API. Keep its pending state
+    // truthful instead of claiming that an eventual commit was cancelled.
+    if (busy || moving.current) return;
+    finishPlacement("Placement cancelled. Your saved position is unchanged.");
+  }
   async function move(destination = group, targetSlot = slot) {
-    if (!selected || busy) return;
+    if (!selected || busy || moving.current) return;
+    moving.current = true;
     setBusy(true);
+    setMessage("Saving placement…");
     try {
       await commit({
         type: "move",
@@ -98,42 +137,48 @@ export default function ClosetPage({
         group: destination,
         slot: targetSlot,
       });
-      setMessage(
+      finishPlacement(
         `Moved ${selected.title} to ${groupLabels[destination]}${destination === "unplaced" ? "" : `, slot ${targetSlot + 1}`}.`,
       );
-      setPlacing(false);
     } catch {
+      setMessage("");
     } finally {
+      moving.current = false;
       setBusy(false);
     }
   }
   function onKey(event: React.KeyboardEvent) {
-    if (!placing) return;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setPlacing(false);
-      setMessage("Placement cancelled. Your saved position is unchanged.");
-    }
+    // Native selects and buttons keep their own keyboard behavior. Shortcuts
+    // apply only to the explicitly focused navigator, never a bubbled event.
+    if (
+      !placing ||
+      event.target !== event.currentTarget ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey
+    )
+      return;
     if (
       ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"].includes(event.key)
     ) {
       event.preventDefault();
+      if (busy || moving.current) return;
       const capacity = room.groups.find((g) => g.id === group)?.capacity ?? 1;
-      setSlot(
-        (n) =>
-          (n +
-            (["ArrowRight", "ArrowDown"].includes(event.key)
-              ? 1
-              : capacity - 1)) %
-          capacity,
+      const nextSlot =
+        (slot +
+          (["ArrowRight", "ArrowDown"].includes(event.key)
+            ? 1
+            : capacity - 1)) %
+        capacity;
+      setSlot(nextSlot);
+      setMessage(
+        `Selected ${groupLabels[group]}${group === "unplaced" ? "" : `, slot ${nextSlot + 1}`}. Enter saves.`,
       );
     }
-    if (
-      event.key === "Enter" &&
-      event.target instanceof HTMLButtonElement === false
-    ) {
+    if (event.key === "Enter") {
       event.preventDefault();
-      void move();
+      if (!event.repeat) void move();
     }
   }
   return (
@@ -142,8 +187,8 @@ export default function ClosetPage({
       aria-label="My Closet"
       onKeyDown={(e) => {
         if (!e.defaultPrevented && placing && e.key === "Escape") {
-          setPlacing(false);
-          setMessage("Placement cancelled. Your saved position is unchanged.");
+          e.preventDefault();
+          cancelPlacement();
         }
       }}
     >
@@ -463,23 +508,46 @@ export default function ClosetPage({
                   Style this
                 </a>
               </div>
-              <div className={styles.field} onKeyDown={onKey}>
+              <div
+                className={styles.field}
+                ref={placementPanel}
+                aria-busy={placing && busy}
+              >
                 {!placing ? (
                   <button
-                    onClick={() => {
-                      setGroup(selected.placement.semanticGroup);
-                      setSlot(selected.placement.slotId);
-                      setPlacing(true);
-                    }}
+                    ref={moveButton}
+                    disabled={busy}
+                    onClick={() => beginPlacement(selected.id, true)}
                   >
                     Move item
                   </button>
                 ) : (
                   <>
+                    <div
+                      ref={placementKeyboard}
+                      role="group"
+                      aria-label="Placement keyboard controls"
+                      aria-describedby={`${placementChoiceId} ${placementHelpId}`}
+                      aria-disabled={busy}
+                      tabIndex={0}
+                      className={styles.notice}
+                      onKeyDown={onKey}
+                    >
+                      <p id={placementChoiceId}>
+                        {groupLabels[group]}
+                        {group === "unplaced" ? "" : ` · Slot ${slot + 1}`}
+                      </p>
+                      <p id={placementHelpId} className={styles.muted}>
+                        Arrow keys choose a slot here. Enter saves. Tab reaches
+                        the destination and slot selectors. Escape cancels
+                        before saving.
+                      </p>
+                    </div>
                     <label>
                       Destination
                       <select
                         aria-label="Placement destination"
+                        disabled={busy}
                         value={group}
                         onChange={(e) => {
                           setGroup(e.target.value as SemanticGroup);
@@ -498,6 +566,7 @@ export default function ClosetPage({
                       Slot
                       <select
                         aria-label="Placement slot"
+                        disabled={busy}
                         value={slot}
                         onChange={(e) => setSlot(Number(e.target.value))}
                       >
@@ -542,6 +611,14 @@ export default function ClosetPage({
                                 <button
                                   key={`${anchor.id}:${index}`}
                                   disabled={busy || occupied}
+                                  aria-pressed={
+                                    group === anchor.id && slot === index
+                                  }
+                                  className={
+                                    group === anchor.id && slot === index
+                                      ? styles.selected
+                                      : undefined
+                                  }
                                   data-drop-group={anchor.id}
                                   data-drop-slot={index}
                                   onDragOver={(e) => {
@@ -579,16 +656,16 @@ export default function ClosetPage({
                     <p className={styles.muted}>
                       Drag the item image onto an empty destination to save.
                       Clicking a destination selects it for confirmation. Arrow
-                      keys choose a slot. Enter saves. Escape cancels.
+                      shortcuts are available in the keyboard controls above.
                     </p>
                     <button
                       className={styles.primary}
-                      disabled={busy}
+                      aria-disabled={busy}
                       onClick={() => void move()}
                     >
-                      Save placement
+                      {busy ? "Saving placement…" : "Save placement"}
                     </button>
-                    <button disabled={busy} onClick={() => setPlacing(false)}>
+                    <button aria-disabled={busy} onClick={cancelPlacement}>
                       Cancel
                     </button>
                   </>

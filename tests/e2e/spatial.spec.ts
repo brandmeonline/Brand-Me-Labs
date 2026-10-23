@@ -47,7 +47,9 @@ test("keyboard placement survives refresh and semantic theme remapping", async (
   await page.getByRole("button", { name: "Move item", exact: true }).click();
   await page.getByLabel("Placement destination").selectOption("rail.right");
   await page.getByLabel("Placement slot").selectOption({ value: "1" });
-  await page.getByLabel("Placement slot").press("Enter");
+  await page
+    .getByRole("group", { name: "Placement keyboard controls", exact: true })
+    .press("Enter");
   await expect(page.getByRole("status")).toContainText(
     "Moved Field Linen Overshirt",
   );
