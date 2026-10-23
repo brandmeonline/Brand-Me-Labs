@@ -25,6 +25,7 @@ from brandme_core.domains.providers.contracts import CartLineRequest
 from brandme_core.events import EventEnvelope, write_events
 
 from .delegation import AgentDelegation, AssistanceMode, DelegationLimits
+from .errors import QuoteExpired
 from .money import Money
 from .quote import QUOTE_HASH_VERSION, CheckoutQuote, CheckoutTerms, QuoteLine
 from .records import (
@@ -140,6 +141,8 @@ def _load_quote(r, key):
                             m(l["line_total_minor"]), "", l["category"] or "")
                   for l in _read_children(r, "QuoteLines", _QUOTE_LINE_COLS, key))
     t = _json(row["terms"])
+    if "returnable" not in t:  # written before V015 recorded terms: those terms are unknown, never approvable
+        raise QuoteExpired("this quote predates recorded checkout terms; request a new quote")
     quote = CheckoutQuote(
         id=row["quote_id"], environment=row["environment"], provider_id=row["provider_id"],
         merchant_id=row["merchant_id"], payee_ref=row["payee_ref"], cart_id=row["cart_id"],

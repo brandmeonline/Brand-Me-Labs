@@ -1,8 +1,9 @@
-"""Apply V006/V007 to a Cloud Spanner emulator and probe key constraints.
+"""Apply V006/V007 then V015 to a Cloud Spanner emulator and probe key constraints.
 
 Requires SPANNER_EMULATOR_REST (e.g. http://127.0.0.1:9020). Skipped — not passed — without it.
 Migrations V001–V005 belong to opus-foundation; V006/V007 deliberately have no FKs into them,
-so they are applied here to an empty database.
+so they are applied here to an empty database. V007 is applied exactly as merged; V015 is
+applied on top of it, with a quote row already present, as it would be on a live database.
 """
 
 import json
@@ -53,7 +54,23 @@ def db():
         if s == 200 and len(ddl.get("statements", [])) == len(stmts):
             break
     assert len(ddl["statements"]) == len(stmts), (len(ddl.get("statements", [])), len(stmts))
-    return path, len(stmts)
+    # A quote written under V007 alone, before V015 recorded terms.
+    ok, msg = dml(path, """INSERT INTO CheckoutQuotes (quote_id, member_id, environment, provider_id, merchant_id,
+        payee_ref, cart_id, cart_revision, currency, subtotal_minor, tax_minor, shipping_minor, discount_minor,
+        total_minor, delivery_ref, checkout_reference, terms_hash, quote_hash, hash_domain_version,
+        material_document, issued_at, expires_at) VALUES ('legacy-q', 'm1', 'development', 'demo_atelier', 'mer',
+        'pay', 'c1', 1, 'USD', 8900, 712, 0, 0, 9612, 'd', 'ref', 't', 'h', '1', JSON '{}',
+        TIMESTAMP '2026-10-05T12:00:00Z', TIMESTAMP '2026-10-05T12:05:00Z')""")
+    assert ok, msg
+    v015 = statements(MIGRATIONS / "V015_commerce_quote_terms.sql")
+    status, body = call("PATCH", path + "/ddl", {"statements": v015})
+    assert status == 200, body
+    for _ in range(100):
+        s, ddl = call("GET", path + "/ddl")
+        if s == 200 and any("PurchaseOperationsByDelegation" in x for x in ddl.get("statements", [])):
+            break
+    assert any("PurchaseOperationsByDelegation" in x for x in ddl["statements"]), "V015 did not apply"
+    return path, len(stmts) + len(v015)
 
 
 def dml(path, sql):
@@ -118,3 +135,24 @@ def test_provider_idempotency_key_unique(db):
     assert dml(path, row("op-1"))[0]
     s, body = dml(path, row("op-2"))
     assert not s and "PurchaseOperationsByProviderKey" in body
+
+
+def test_v007_is_unchanged_and_v015_backfills_unknown_terms(db):
+    """main's ledger checksums V007 as merged; round-2 schema lives in V015 instead."""
+    import hashlib
+    # SHA-256 of V007 as merged to main at 7c61afd (what main's SchemaMigrations ledger records).
+    assert hashlib.sha256((MIGRATIONS / "V007_commerce.sql").read_bytes()).hexdigest() == (
+        "8b5efe9e9fb0f0f8b7b3205bda0f32b2a4b7161476e93742c4c8901bddd5eef9")
+    from google.cloud import spanner
+    path, _ = db
+    parts = path.strip("/").split("/")
+    db_ = spanner.Client(project=parts[2]).instance(parts[4]).database(parts[6])
+    with db_.snapshot() as snap:
+        rows = list(snap.execute_sql("SELECT TO_JSON_STRING(terms) FROM CheckoutQuotes WHERE quote_id = 'legacy-q'"))
+    assert rows == [["{}"]]
+
+    # The store refuses to treat unrecorded terms as approvable ones.
+    from brandme_core.domains.commerce.errors import QuoteExpired
+    from brandme_core.domains.commerce.spanner_store import SpannerCommerceStore
+    with pytest.raises(QuoteExpired):
+        SpannerCommerceStore(db_).run(lambda tx: tx.get("quotes", "legacy-q"))

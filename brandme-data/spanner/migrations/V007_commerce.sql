@@ -66,8 +66,6 @@ CREATE TABLE CheckoutQuotes (
   total_minor INT64 NOT NULL,
   delivery_ref STRING(256) NOT NULL,
   checkout_reference STRING(512) NOT NULL,
-  -- Return/recurrence terms; terms_hash is their digest and a material quote term.
-  terms JSON NOT NULL,
   terms_hash STRING(128) NOT NULL,
   quote_hash STRING(128) NOT NULL,
   hash_domain_version STRING(16) NOT NULL,
@@ -82,7 +80,6 @@ CREATE TABLE CheckoutQuotes (
 ) PRIMARY KEY (quote_id);
 
 CREATE INDEX CheckoutQuotesByHash ON CheckoutQuotes (quote_hash);
-CREATE INDEX CheckoutQuotesByMember ON CheckoutQuotes (member_id);
 
 CREATE TABLE QuoteLines (
   quote_id STRING(36) NOT NULL,
@@ -109,8 +106,6 @@ CREATE TABLE ApprovalChallenges (
   expires_at TIMESTAMP NOT NULL,
   used BOOL NOT NULL,
 ) PRIMARY KEY (challenge_id);
-
-CREATE INDEX ApprovalChallengesByMember ON ApprovalChallenges (member_id);
 
 CREATE TABLE PurchaseApprovals (
   approval_id STRING(36) NOT NULL,
@@ -178,8 +173,6 @@ CREATE INDEX PurchaseOperationsByMember ON PurchaseOperations (member_id, create
 -- Reconciliation worker scan: unknown outcomes and in-flight submissions.
 CREATE INDEX PurchaseOperationsByState ON PurchaseOperations (state, updated_at);
 CREATE INDEX PurchaseOperationsByQuoteHash ON PurchaseOperations (quote_hash, state);
--- Revocation cancels a grant's unsent work.
-CREATE INDEX PurchaseOperationsByDelegation ON PurchaseOperations (delegation_id, state);
 
 -- Reservation/consumption/credit ledger for delegated budgets. Checked and written in the
 -- same read/write transaction as approval consumption and the submission intent.
