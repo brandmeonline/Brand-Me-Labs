@@ -40,7 +40,7 @@ from .errors import Forbidden, InvalidRequest, NotFound
 from .money import Money
 from .principal import Principal, is_first_party
 from .records import ApprovalChallenge, Cart, Order, PurchaseApproval, PurchaseOperation
-from .service import CommerceService
+from .service import CommerceService, correlation
 
 PREFIX = "/internal/commerce/v1"
 ASSISTANT_CLIENT_ID = "brandme-assistant"  # Brand.Me's own assistant acts only under a grant to this client
@@ -194,7 +194,8 @@ class CommerceHttpApi:
         if allowed is not None and set(args) - allowed:
             # Identity, scope and approval never come from request fields.
             raise InvalidRequest(f"unexpected fields: {sorted(set(args) - allowed)}", code="unexpected_field")
-        status, payload = handler(principal, args, headers)
+        with correlation(headers.get("x-request-id")):  # the gateway's request id, when it is a UUID
+            status, payload = handler(principal, args, headers)
         extra = {"ETag": f'"{payload["revision"]}"'} if isinstance(payload, dict) and "revision" in payload else {}
         return status, payload, extra
 

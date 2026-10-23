@@ -291,3 +291,17 @@ def test_return_idempotency_key_reaches_the_domain(h):
     again = h.call("order.return", body, headers={"Idempotency-Key": "http-return-000000001"})
     assert first.status_code == again.status_code == 202
     assert first.json()["return_id"] == again.json()["return_id"] and len(h.w.provider.return_calls) == 1
+
+
+def test_gateway_request_id_correlates_domain_events(h):
+    rid = "0b7c3f2e-9d41-4e6a-8f15-2c9a4d7e1b33"
+    r = h.call("cart.create", {"provider_id": PROVIDER_ID, "merchant_id": MERCHANT_ID, "lines": [_line()]},
+               headers={"Idempotency-Key": "http-corr-0000000001", "X-Request-Id": rid})
+    q = h.call("cart.quote", {"cart_id": r.json()["id"]}, headers={"X-Request-Id": rid})
+    assert q.status_code == 200, q.text
+    ready = [e for e in h.w.store.outbox() if e.event_type == "commerce.quote.ready"]
+    assert [e.correlation_id for e in ready] == [rid]
+    # A request id that is not a UUID is ignored (a fresh correlation id, never the raw header).
+    h.call("cart.quote", {"cart_id": r.json()["id"]}, headers={"X-Request-Id": "not-a-uuid; drop table"})
+    latest = [e for e in h.w.store.outbox() if e.event_type == "commerce.quote.ready"][-1]
+    uuid.UUID(latest.correlation_id)

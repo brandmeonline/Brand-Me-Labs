@@ -39,7 +39,7 @@ export interface CommerceDomainClient {
     operation: string,
     principal: Principal,
     body: unknown,
-    options?: { idempotencyKey?: string; ifMatch?: string },
+    options?: { idempotencyKey?: string; ifMatch?: string; requestId?: string },
   ): Promise<DomainResult>;
   /** Provider webhook relay: no principal; the domain verifies the provider's signature. */
   webhook(providerId: string, headers: Record<string, string>, rawBody: Buffer): Promise<DomainResult>;
@@ -150,6 +150,7 @@ export function forward(client: CommerceDomainClient, operation: string, pick: (
     const result = await client.call(operation, principal, pick(req, res), {
       idempotencyKey: req.get('Idempotency-Key') ?? undefined,
       ifMatch: req.get('If-Match') ?? undefined,
+      requestId: res.locals.requestId as string | undefined,
     });
     if (result.status >= 400) throw domainProblem(result);
     const etag = result.headers?.etag ?? result.headers?.ETag;
@@ -326,6 +327,8 @@ export function createHttpCommerceDomainClient(opts: HttpCommerceClientOptions):
       const extra: Record<string, string> = {};
       if (options?.idempotencyKey) extra['idempotency-key'] = options.idempotencyKey;
       if (options?.ifMatch) extra['if-match'] = options.ifMatch;
+      // The gateway's validated request id; domain events and audit records correlate on it.
+      if (options?.requestId) extra['x-request-id'] = options.requestId;
       return post(`/internal/commerce/v1/${operation}`, await sign(principalClaim(principal)), JSON.stringify(body ?? {}), extra);
     },
     async webhook(providerId, headers, rawBody) {

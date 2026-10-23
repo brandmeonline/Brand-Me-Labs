@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import replace
@@ -75,6 +76,25 @@ def _utcnow() -> datetime:
 
 # When the data a write is based on was read: the start of a queued assistant task, else "now".
 _PROCESSING_BASIS: ContextVar[Optional[datetime]] = ContextVar("commerce_processing_basis", default=None)
+# The request or task id that commerce events emitted in this context share (a UUID).
+_CORRELATION: ContextVar[Optional[str]] = ContextVar("commerce_correlation", default=None)
+
+
+def _uuid_or_none(value: Optional[str]) -> Optional[str]:
+    try:
+        return str(uuid.UUID(str(value))) if value else None
+    except ValueError:
+        return None
+
+
+@contextmanager
+def correlation(correlation_id: Optional[str]) -> Iterator[None]:
+    """Events emitted inside this block carry ``correlation_id`` (ignored unless it is a UUID)."""
+    token = _CORRELATION.set(_uuid_or_none(correlation_id))
+    try:
+        yield
+    finally:
+        _CORRELATION.reset(token)
 
 
 @contextmanager
@@ -113,7 +133,8 @@ class CommerceService:
             event_type=event_type, schema_version="1", aggregate_type=aggregate_type,
             aggregate_id=aggregate_id, aggregate_version=version, environment=self.environment,
             actor_ref=actor if isinstance(actor, str) else actor.actor_ref,
-            correlation_id=correlation_id or new_id(), privacy_class=privacy_class, payload=payload,
+            correlation_id=correlation_id or _CORRELATION.get() or new_id(), privacy_class=privacy_class,
+            payload=payload,
             occurred_at=self.clock()))
 
     def _guard(self, tx: Any, member_id: str, category: str) -> None:

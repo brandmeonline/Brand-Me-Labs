@@ -4,8 +4,9 @@ The planner (deterministic, or a provider-neutral structured-output model
 adapter) only *proposes* typed tool calls. The runtime decides what runs:
 
 * a per-mode tool allowlist intersected with the principal's scopes;
-* every call goes through ``McpToolExecutor._dispatch`` with the task's
-  authenticated principal — identical policy to external MCP clients;
+* every call goes through ``McpToolExecutor.call`` with the task's
+  authenticated principal — the same validation, policy and audit record as
+  external MCP clients, correlated by the task id;
 * tool results are passed back to the planner as data; text inside them can
   never add tools, scopes or approvals;
 * per-task call and wall-clock budgets; cancellation stops new side effects.
@@ -182,7 +183,8 @@ class AssistantRuntime:
                 inv = {"request_id": str(uuid.uuid4()), "protocol_version": MCP_PROTOCOL_VERSION,
                        "environment": self.environment, "tool": p.tool, "arguments": p.arguments,
                        "idempotency_key": p.idempotency_key}
-                status, outcome = self.executor._dispatch(principal, inv)
+                status, outcome = self.executor.call(principal, inv, correlation_id=task.id, task_id=task.id,
+                                                     origin="assistant")
                 wire = outcome.to_wire()
                 observations.append(wire)
                 if outcome.status != "ok":

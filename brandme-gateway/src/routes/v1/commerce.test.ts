@@ -34,10 +34,10 @@ const KEY = 'idem-key-0000000001';
 const q = '6f1c2a0e-6c38-4d43-9a4e-6e0b9a1d2c11';
 
 function fakeClient(reply: DomainResult = { status: 200, body: { ok: true } }) {
-  const calls: Array<{ op: string; principal: Principal; body: unknown; idem?: string; ifMatch?: string }> = [];
+  const calls: Array<{ op: string; principal: Principal; body: unknown; idem?: string; ifMatch?: string; rid?: string }> = [];
   const client: CommerceDomainClient = {
     async call(op, principal, body, options) {
-      calls.push({ op, principal, body, idem: options?.idempotencyKey, ifMatch: options?.ifMatch });
+      calls.push({ op, principal, body, idem: options?.idempotencyKey, ifMatch: options?.ifMatch, rid: options?.requestId });
       return reply;
     },
     async webhook() {
@@ -232,6 +232,25 @@ describe('delegations, providers, catalog, assistant', () => {
     server?.close();
     const raw = await app(null, mount, undefined, false);
     expect((await raw.call('POST', '/webhooks/demo_atelier', { any: 'json' })).status).toBe(202);
+  });
+});
+
+describe('request correlation', () => {
+  it('forwards the gateway request id so domain events and audit records correlate on it', async () => {
+    const rid = '0b7c3f2e-9d41-4e6a-8f15-2c9a4d7e1b33';
+    const { call, calls } = await app(MEMBER, commerce);
+    const res = await call('GET', `/commerce/operations/${q}`, undefined, { 'X-Request-Id': rid });
+    expect(res.status).toBe(200);
+    expect(calls[0].rid).toBe(rid);
+    const { privateKey } = await generateKeyPair('ES256');
+    let sent: Record<string, string> = {};
+    const fetchImpl = (async (_url: string, init: RequestInit) => {
+      sent = init.headers as Record<string, string>;
+      return new Response('{}', { status: 200 });
+    }) as unknown as typeof fetch;
+    const client = createHttpCommerceDomainClient({ baseUrl: 'http://c', issuer: 'gw', kid: 'k', privateKey, fetchImpl });
+    await client.call('operation.get', MEMBER, { operation_id: q }, { requestId: rid });
+    expect(sent['x-request-id']).toBe(rid);
   });
 });
 

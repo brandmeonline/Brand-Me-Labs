@@ -35,7 +35,8 @@ export function createAssistantRouter(client: CommerceDomainClient): Router {
     const principal = principalOf(res);
     if (!principal) throw problems.unauthenticated();
     const after = req.get('Last-Event-ID') ?? undefined;
-    const result = await client.call('assistant.task.events', principal, { task_id: req.params.id, after });
+    const result = await client.call('assistant.task.events', principal, { task_id: req.params.id, after },
+      { requestId: res.locals.requestId as string | undefined });
     if (result.status >= 400) throw domainProblem(result);
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'private, no-store');

@@ -13,8 +13,10 @@ object is closed (``additionalProperties: false``).
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import re
+import secrets
 import time
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Tuple
@@ -23,7 +25,7 @@ import jsonschema
 
 from brandme_core.domains.commerce.errors import CommerceError
 from brandme_core.domains.commerce.principal import Principal
-from brandme_core.domains.commerce.service import CommerceService
+from brandme_core.domains.commerce.service import CommerceService, correlation
 from brandme_core.domains.providers.contracts import CartLineRequest, ProviderError
 from brandme_core.domains.providers.catalog import UNTRUSTED_TEXT_LIMIT, search_catalog, untrusted_text  # noqa: F401
 from brandme_core.domains.providers.registry import ProviderRegistry
@@ -212,6 +214,15 @@ def _problem(status: int, code: str, detail: str, **extra: Any) -> Dict[str, Any
 
 AuditSink = Callable[[Dict[str, Any]], None]
 
+# Audit references are keyed per process: they correlate records within a process, and a short
+# argument (say, a two-word catalog query) cannot be recovered by hashing guesses.
+_AUDIT_KEY = secrets.token_bytes(32)
+
+
+def _audit_ref(value: Any) -> str:
+    data = value if isinstance(value, str) else json.dumps(value, sort_keys=True, default=str)
+    return hmac.new(_AUDIT_KEY, data.encode(), hashlib.sha256).hexdigest()[:16]
+
 
 class McpToolExecutor:
     def __init__(self, *, commerce: CommerceService, registry: ProviderRegistry,
@@ -246,35 +257,48 @@ class McpToolExecutor:
     # -- invocation ----------------------------------------------------------
     def invoke(self, assertion: str, invocation: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
         """Returns (http_status, body). Authorization failures carry ``www_authenticate``."""
-        started = time.monotonic()
-        request_id = str(invocation.get("request_id", "")) if isinstance(invocation, dict) else ""
         try:
             principal = self.verifier.verify(assertion)
         except AuthError as e:
             return e.status, {"problem": _problem(e.status, e.error, e.description),
                               "www_authenticate": e.www_authenticate()}
+        request_id = invocation.get("request_id") if isinstance(invocation, dict) else None
+        status, outcome = self.call(principal, invocation, correlation_id=request_id, origin="mcp")
+        return status, outcome.to_wire()
+
+    def call(self, principal: Principal, invocation: Dict[str, Any], *, correlation_id: Optional[str] = None,
+             task_id: Optional[str] = None, origin: str = "mcp") -> Tuple[int, ToolOutcome]:
+        """The one audited path into the tools, for external MCP clients and the assistant runtime alike.
+
+        Validates the invocation envelope, dispatches under the verified principal, and writes one
+        audit record: codes, timings and keyed references only, never arguments or raw identifiers.
+        Commerce events emitted by the call carry ``correlation_id``.
+        """
+        started = time.monotonic()
+        request_id = str(invocation.get("request_id", "")) if isinstance(invocation, dict) else ""
+        tool = str(invocation.get("tool", "")) if isinstance(invocation, dict) else ""
         try:
             jsonschema.Draft202012Validator(self._invocation_schema,
                                             format_checker=jsonschema.FormatChecker()).validate(invocation)
         except jsonschema.ValidationError as e:
-            return 400, ToolOutcome(request_id, str(invocation.get("tool", "")) if isinstance(invocation, dict) else "",
-                                    "error", problem=_problem(400, "malformed_invocation", e.message[:300])).to_wire()
-        tool = invocation["tool"]
-        status, outcome = self._dispatch(principal, invocation)
+            status, outcome = 400, ToolOutcome(request_id, tool, "error",
+                                               problem=_problem(400, "malformed_invocation", e.message[:300]))
+        else:
+            with correlation(correlation_id):
+                status, outcome = self._dispatch(principal, invocation)
         try:
             principal = self.commerce.bind(principal)  # audit the resolved delegation
         except CommerceError:
             pass
         self.audit({
-            "request_id": request_id, "tool": tool, "client_id": principal.client_id,
-            "member_ref": hashlib.sha256(principal.member_id.encode()).hexdigest()[:16],
-            "delegation_id": principal.delegation_id, "status": outcome.status,
+            "request_id": request_id, "origin": origin, "tool": tool, "client_id": principal.client_id,
+            "member_ref": _audit_ref(principal.member_id), "delegation_id": principal.delegation_id,
+            "task_ref": _audit_ref(task_id) if task_id else None, "status": outcome.status,
             "code": (outcome.problem or {}).get("code"), "duration_ms": int((time.monotonic() - started) * 1000),
-            # Arguments are never logged; only a digest for correlation.
-            "arguments_digest": hashlib.sha256(json.dumps(invocation.get("arguments"), sort_keys=True,
-                                                          default=str).encode()).hexdigest()[:16],
+            # Arguments are never logged; only a keyed digest for correlation.
+            "arguments_digest": _audit_ref(invocation.get("arguments") if isinstance(invocation, dict) else None),
         })
-        return status, outcome.to_wire()
+        return status, outcome
 
     def _dispatch(self, principal: Principal, inv: Dict[str, Any]) -> Tuple[int, ToolOutcome]:
         rid, tool, args = inv["request_id"], inv["tool"], inv["arguments"]

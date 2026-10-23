@@ -111,3 +111,28 @@ def test_task_runs_after_resolution_without_delegation_id():
     unbound = agent(None, d.scopes)
     task = rt.run(unbound, rt.create(unbound, "linen", AssistanceMode.RESEARCH).id, DeterministicPlanner())
     assert task.delegation_id == d.id and task.state == "completed"
+
+
+def test_assistant_tool_calls_are_audited_and_correlated_by_task():
+    import hashlib
+    import json
+    w = world()
+    d, ag = w.delegate(AssistanceMode.PREPARE)
+    audit = []
+    rt = AssistantRuntime(McpToolExecutor(commerce=w.svc, registry=w.registry, audit=audit.append,
+                                          verifier=ExecutorAssertionVerifier(gateway_issuer="gw", keys={},
+                                                                             environment="development")),
+                          environment="development")
+    task = rt.run(ag, rt.create(ag, "linen overshirt", AssistanceMode.PREPARE).id, DeterministicPlanner())
+    assert task.state == "awaiting_approval"
+    # Every planner-proposed call went through the audited path, with no arguments or raw ids.
+    assert [r["tool"] for r in audit] == ["brandme.catalog.search", "brandme.cart.create",
+                                          "brandme.checkout.quote", "brandme.purchase.request"]
+    assert all(r["origin"] == "assistant" and r["task_ref"] and r["status"] == "ok" for r in audit)
+    text = json.dumps(audit)
+    assert "linen" not in text and w.member.member_id not in text and task.id not in text
+    assert hashlib.sha256(w.member.member_id.encode()).hexdigest()[:16] not in text  # keyed, not a bare hash
+    # The commerce events the task caused share its id as their correlation id.
+    caused = [e for e in w.store.outbox() if e.event_type in ("commerce.quote.ready",
+                                                              "commerce.purchase.approval_requested")]
+    assert caused and {e.correlation_id for e in caused} == {task.id}
