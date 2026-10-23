@@ -443,3 +443,62 @@ lane doesn't hit the same silent drop.
 Verified 2026-10-23: a clean `git worktree` of `4325a4d` (no untracked files) runs `tests/foundation` + lane suite
 **274 passed, 0 skipped**; a clean worktree of `origin/bench/opus-commerce-agents-20261005` fails collection of
 `tests/test_mcp.py` with `FileNotFoundError: brandme_core/mcp/schemas/tool_invocation.schema.json`.
+
+## Stage S9 — Spanner commerce store, retry-safe transactions, My Data jobs (2026-10-23)
+
+**Done.** `tests/foundation` + lane suite: **352 passed, 0 skipped** (emulator 1.5.58, AP2 SDK oracle). **71** of those
+are the purchase / principal / AP2 / privacy suites re-run on `SpannerCommerceStore` against a database migrated by
+the repository runner (V001 + V006 + V007); the same tests run on the in-memory store.
+
+- **Retry-safe transactions.** Every service write is now `store.run(fn)`; `fn(tx)` only reads/writes rows and emits
+  events (no provider I/O), so Spanner may re-run it. Helpers that write take `tx` explicitly; there are no nested
+  transactions and no table scans in domain code — reads go through `get` and named queries
+  (`brandme_core/domains/commerce/store.py` `QUERIES`).
+- **`SpannerCommerceStore`** (`brandme_core/domains/commerce/spanner_store.py`): one codec per logical table onto the
+  V006/V007 tables (child rows for cart/quote/order lines); `run` wraps `database.run_in_transaction` with a fresh
+  per-attempt overlay so a callback reads its own writes, and writes events with foundation `write_events` in the
+  same commit. Named queries are SQL over V007 indexes, merged with the overlay through the same predicates the
+  in-memory store uses. Verified directly: a delegated purchase leaves 1 row in each commerce table, a `consumed`
+  reservation and 5 `OutboxEvents` (`commerce.delegation.created` … `commerce.order.observed`).
+- **Behavior changes.**
+  - Approval challenges store only `nonce_hash`; the plaintext nonce leaves once, to the trusted surface. The
+    approval's `nonce` is that hash (unique per member, as V007 requires).
+  - The challenge is bound to its operation as well as its quote.
+  - A concurrent duplicate `execute` with the same key returns the winner's operation instead of failing.
+  - Returns are now persisted as `ReturnRequests`, including handoffs.
+  - **Removed** `brandme_core/domains/commerce/spanner_budget.py`, the round-1 standalone ledger. BM-COM-007 on
+    Spanner is now covered through the service: `test_two_agents_cannot_overspend_shared_budget[spanner]` runs 20
+    concurrent executions against one grant.
+- **One active grant per (member, client) under concurrency.** `test_concurrent_grants_for_one_client_cannot_both_win`
+  (6 threads) passes on both stores. Caveat: the emulator serializes read/write transactions, so this proves the
+  check-and-insert sits in one transaction, not real-Spanner lock behavior. Production relies on Spanner's
+  serializable read/write transactions (the scanned range is read-locked). No uniqueness index exists, because the
+  "active" predicate depends on time.
+- **My Data (`data_categories.py`) — export/delete now wired.**
+  - `export(database, member_id)` returns JSON-safe rows per table; child rows are joined through their parent
+    member.
+  - `delete` runs `CommerceService.erase_*` as `system:privacy`, is idempotent, and needs an explicit `BRANDME_MODE`.
+  - Grants: every active grant is revoked and its unsent work cancelled (`commerce.delegation.revoked` is emitted).
+    Grants behind an order or a purchase still settling are kept, revoked; the rest are erased with their budget
+    ledger.
+  - Carts, challenges and unsent purchases' quotes are erased.
+  - Device keys, order-less terminal operations and idempotency keys not guarding an in-flight purchase are erased.
+  - Orders, their quotes/approvals and return requests are kept as financial evidence; the store refuses to delete
+    orders.
+  - Tests: `tests/test_commerce_privacy.py` (8). One of them caught over-retention of settled orders' idempotency
+    keys, now fixed.
+- **V007 amended (pre-integration).** Added `CheckoutQuotes.terms JSON NOT NULL` (return/recurrence terms; a quote
+  could not be reconstructed or its hash re-verified without them), plus indexes `PurchaseOperationsByDelegation`,
+  `CheckoutQuotesByMember` and `ApprovalChallengesByMember`. This changes V007's checksum. V007 has only ever been
+  applied to throwaway emulator databases (bench branches, no shared environment), so no ledger anywhere holds the
+  old checksum. If one does, it must be re-created, not migrated. The lane owns only V006/V007, so this is the only
+  way to change them.
+- **Known limits.**
+  - Quote line titles (display-only, not hashed) are not persisted.
+  - `rows()`/`outbox()` on the Spanner store are introspection helpers for tests and ops tooling, not domain paths.
+  - Data-category deletion does not yet suppress re-import from provider order webhooks for an erased member. No
+    provider sends member-keyed data today; the simulator's events key on orders, which are retained.
+
+Files: `brandme_core/domains/commerce/{store,spanner_store,service,records,data_categories}.py` (−`spanner_budget.py`),
+`brandme-data/spanner/migrations/V007_commerce.sql`, `tests/fixtures/commerce/{stores,harness}.py`,
+`tests/test_commerce_{privacy,purchase,principal,ap2,migrations}.py`.

@@ -67,7 +67,7 @@ class World:
     clock: Clock
     provider: LocalAtelierProvider
     registry: ProviderRegistry
-    store: InMemoryCommerceStore
+    store: object  # InMemoryCommerceStore | SpannerCommerceStore
     svc: CommerceService
     member: Principal = field(default_factory=member_session)
 
@@ -91,11 +91,11 @@ class World:
                                 displayed_quote_hash=ch.quote_hash)
 
 
-def world(environment: str = "development") -> World:
+def world(environment: str = "development", store=None) -> World:
     clock = Clock()
     provider = LocalAtelierProvider(clock)
     registry = ProviderRegistry(environment)
     registry.register(local_atelier_connection(provider, environment, clock.now))
-    store = InMemoryCommerceStore()
+    store = store if store is not None else InMemoryCommerceStore()
     return World(clock, provider, registry, store, CommerceService(
         store=store, registry=registry, environment=environment, clock=clock))

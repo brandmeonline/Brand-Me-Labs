@@ -19,14 +19,15 @@ from brandme_core.domains.commerce.money import Money
 from brandme_core.domains.providers.contracts import ProviderError
 from brandme_core.domains.providers.local_atelier import Behavior
 from brandme_core.domains.providers.registry import SimulationInProductionError
+from tests.fixtures.commerce.stores import commerce_store, _spanner_db  # noqa: F401  (fixtures)
 from tests.fixtures.commerce.harness import (
     OTHER_MEMBER, agent, limits, line, member_session, world,
 )
 
 
 @pytest.fixture
-def w():
-    return world()
+def w(commerce_store):
+    return world(store=commerce_store)
 
 
 def _events(w, event_type):
@@ -150,9 +151,8 @@ def test_agent_cannot_mutate_approved_terms(w):
     approval = w.approve(op)
     # Simulate any write path that alters the stored quote after approval.
     member, q = w.store.get("quotes", quote.id)
-    with w.store.transaction():
-        w.store.put("quotes", quote.id, (member, replace(q, lines=(replace(q.lines[0], quantity=2,
-                    line_total=q.lines[0].unit_price.times(2)),))))
+    w.store.run(lambda tx: tx.put("quotes", quote.id, (member, replace(q, lines=(replace(
+        q.lines[0], quantity=2, line_total=q.lines[0].unit_price.times(2)),)))))
     with pytest.raises(ApprovalInvalid) as e:
         w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="m1-0000000000000")
     assert e.value.code == "quote_changed" and w.provider.submit_calls == []
@@ -298,9 +298,8 @@ def test_revocation_racing_submission_stops_unsent_work(w):
 
     def revoke_then_submit(op_, quote, principal):
         # Revocation lands after reservation commit but before provider I/O.
-        with w.store.transaction():
-            dd = w.store.get("delegations", d.id)
-            w.store.put("delegations", d.id, replace(dd, revoked_at=w.clock.now))
+        w.store.run(lambda tx: tx.put("delegations", d.id, replace(tx.get("delegations", d.id),
+                                                                    revoked_at=w.clock.now)))
         return original(op_, quote, principal)
 
     w.svc._submit = revoke_then_submit

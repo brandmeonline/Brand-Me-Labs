@@ -23,13 +23,14 @@ from tests.fixtures.commerce.ap2_issuer import (
     closed_checkout_mandate, closed_payment_mandate, issue, merchant_checkout_jwt, present_with_kb,
 )
 from tests.fixtures.commerce.harness import world
+from tests.fixtures.commerce.stores import commerce_store, _spanner_db  # noqa: F401  (fixtures)
 
 ORACLE = Path(__file__).resolve().parent / "fixtures/commerce/ap2_sdk_oracle.py"
 
 
 @pytest.fixture
-def setup():
-    w = world()
+def setup(commerce_store):
+    w = world(store=commerce_store)
     d, ag = w.delegate()
     _, quote, op = w.prepared(ag)
     user = JWK.generate(kty="EC", crv="P-256")

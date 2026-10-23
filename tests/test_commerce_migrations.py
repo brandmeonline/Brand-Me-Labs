@@ -89,9 +89,9 @@ def test_quote_total_arithmetic_enforced(db):
     path, _ = db
     s, body = dml(path, """INSERT INTO CheckoutQuotes (quote_id, member_id, environment, provider_id, merchant_id,
         payee_ref, cart_id, cart_revision, currency, subtotal_minor, tax_minor, shipping_minor, discount_minor,
-        total_minor, delivery_ref, checkout_reference, terms_hash, quote_hash, hash_domain_version,
+        total_minor, delivery_ref, checkout_reference, terms, terms_hash, quote_hash, hash_domain_version,
         material_document, issued_at, expires_at) VALUES ('q1', 'm1', 'development', 'demo_atelier', 'mer', 'pay',
-        'c1', 1, 'USD', 8900, 712, 0, 0, 1, 'd', 'ref', 't', 'h', '1', JSON '{}',
+        'c1', 1, 'USD', 8900, 712, 0, 0, 1, 'd', 'ref', JSON '{}', 't', 'h', '1', JSON '{}',
         TIMESTAMP '2026-10-05T12:00:00Z', TIMESTAMP '2026-10-05T12:05:00Z')""")
     assert not s and "ck_quote_total" in body
 
@@ -118,38 +118,3 @@ def test_provider_idempotency_key_unique(db):
     assert dml(path, row("op-1"))[0]
     s, body = dml(path, row("op-2"))
     assert not s and "PurchaseOperationsByProviderKey" in body
-
-
-def test_concurrent_reservations_cannot_overspend_on_spanner(db):  # BM-COM-007 on real Spanner txns
-    import threading
-    from datetime import datetime, timedelta, timezone
-
-    from google.cloud import spanner
-
-    from brandme_core.domains.commerce.errors import BudgetExceeded
-    from brandme_core.domains.commerce.money import Money
-    from brandme_core.domains.commerce.spanner_budget import SpannerBudgetLedger
-
-    os.environ.setdefault("SPANNER_EMULATOR_HOST", GRPC)
-    path, _ = db
-    parts = path.strip("/").split("/")
-    database = spanner.Client(project=parts[2]).instance(parts[4]).database(parts[6])
-    ledger = SpannerBudgetLedger(database)
-    now = datetime(2026, 10, 5, 12, 0, tzinfo=timezone.utc)
-    delegation = str(uuid.uuid4())
-    ok, refused = [], []
-
-    def reserve(i):
-        try:
-            ok.append(ledger.reserve(delegation_id=delegation, operation_id=f"op-{i}", amount=Money(9612, "USD"),
-                                     limit=Money(30_000, "USD"), window_start=now - timedelta(days=30), now=now))
-        except BudgetExceeded:
-            refused.append(i)
-
-    threads = [threading.Thread(target=reserve, args=(i,)) for i in range(12)]
-    [t.start() for t in threads]
-    [t.join() for t in threads]
-    assert len(ok) == 3 and len(refused) == 9  # 3 x 96.12 <= 300.00 < 4 x 96.12
-    assert ledger.spent(delegation, now - timedelta(days=30)) == 3 * 9612
-    assert ledger.set_state(delegation_id=delegation, operation_id="op-x", from_state="reserved",
-                            to_state="released") == 0

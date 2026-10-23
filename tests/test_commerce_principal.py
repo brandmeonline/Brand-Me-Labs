@@ -21,12 +21,13 @@ from brandme_core.domains.commerce.errors import (
 from brandme_core.domains.commerce.principal import is_agent, is_first_party, meets_assurance
 from brandme_core.domains.providers.local_atelier import MERCHANT_ID, PROVIDER_ID
 from brandme_core.events import EventEnvelope, registry
+from tests.fixtures.commerce.stores import commerce_store, _spanner_db  # noqa: F401  (fixtures)
 from tests.fixtures.commerce.harness import AGENT_CLIENT, MEMBER, agent, limits, line, member_session, world
 
 
 @pytest.fixture
-def w():
-    return world()
+def w(commerce_store):
+    return world(store=commerce_store)
 
 
 def test_first_party_rule():
@@ -92,6 +93,25 @@ def test_one_active_delegation_per_member_and_client(w):
                                     allowed_providers={PROVIDER_ID}, limits=None,
                                     expires_at=w.clock.now + timedelta(days=1))
     assert other.client_id == "client-second-agent"
+
+
+def test_concurrent_grants_for_one_client_cannot_both_win(w):
+    import threading
+    results, errors = [], []
+
+    def grant():
+        try:
+            results.append(w.svc.create_delegation(
+                w.member, client_id=AGENT_CLIENT, mode=AssistanceMode.RESEARCH, allowed_providers={PROVIDER_ID},
+                limits=None, expires_at=w.clock.now + timedelta(days=1)))
+        except DelegationConflict as exc:
+            errors.append(exc)
+
+    threads = [threading.Thread(target=grant) for _ in range(6)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert len(results) == 1 and len(errors) == 5
+    assert len(w.store.active_delegations(MEMBER, AGENT_CLIENT, w.clock.now)) == 1
 
 
 def test_expired_grant_frees_the_slot(w):
@@ -220,17 +240,12 @@ def test_outbox_rows_are_validated_foundation_envelopes(w):
 
 def test_event_payload_outside_schema_is_refused(w):
     from brandme_core.events.envelope import EventValidationError
-    with pytest.raises(EventValidationError):
-        with w.store.transaction():
-            w.svc._event("commerce.quote.ready", "CheckoutQuote", "8a3c0f5e-6d1b-4e0f-9d6c-0b6f3f0c2a11", 1,
-                         w.member, {"quote_id": "8a3c0f5e-6d1b-4e0f-9d6c-0b6f3f0c2a11",
-                                    "quote_hash": "sha256:" + "0" * 64, "cart_id": "not-a-uuid"})
-    with pytest.raises(EventValidationError):
-        with w.store.transaction():
-            w.svc._event("commerce.quote.ready", "CheckoutQuote", "8a3c0f5e-6d1b-4e0f-9d6c-0b6f3f0c2a11", 1,
-                         w.member, {"quote_id": "8a3c0f5e-6d1b-4e0f-9d6c-0b6f3f0c2a11",
-                                    "quote_hash": "sha256:" + "0" * 64,
-                                    "cart_id": "8a3c0f5e-6d1b-4e0f-9d6c-0b6f3f0c2a11", "address": "x"})
+    qid = "8a3c0f5e-6d1b-4e0f-9d6c-0b6f3f0c2a11"
+    for payload in ({"quote_id": qid, "quote_hash": "sha256:" + "0" * 64, "cart_id": "not-a-uuid"},
+                    {"quote_id": qid, "quote_hash": "sha256:" + "0" * 64, "cart_id": qid, "address": "x"}):
+        with pytest.raises(EventValidationError):
+            w.store.run(lambda tx: w.svc._event(tx, "commerce.quote.ready", "CheckoutQuote", qid, 1,
+                                                w.member, payload))
     assert w.store.outbox() == []
 
 

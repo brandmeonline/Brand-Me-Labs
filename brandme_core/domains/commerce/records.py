@@ -65,13 +65,15 @@ class Cart:
 class ApprovalChallenge:
     id: str
     member_id: str
+    operation_id: str
     quote_id: str
     quote_hash: str
-    nonce: str
+    nonce_hash: str  # only the hash is stored; the nonce goes once to the trusted surface
     delegation_ref: Optional[str]
     issued_at: datetime
     expires_at: datetime
     used: bool = False
+    nonce: str = ""  # set only on the object returned by open_approval_challenge
 
 
 @dataclass(frozen=True)
@@ -154,6 +156,18 @@ class Order:
     last_observed_at: datetime
     evidence_refs: Tuple[str, ...] = ()
     version: int = 1
+
+
+@dataclass(frozen=True)
+class ReturnRequest:
+    id: str
+    order_id: str
+    member_id: str
+    source_variant_ref: str
+    quantity: int
+    status: str  # handoff | return_requested | received | rejected
+    requested_at: datetime
+    provider_reference: Optional[str] = None
 
 
 @dataclass(frozen=True)

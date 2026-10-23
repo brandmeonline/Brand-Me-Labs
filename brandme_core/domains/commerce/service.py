@@ -12,6 +12,9 @@ Invariants enforced here:
   canonical quote hash.
 * Budget reservation, approval consumption, idempotency record and the durable
   submission intent commit in one transaction *before* provider network I/O.
+* Every write happens inside ``store.run(fn)``; ``fn`` may be retried by
+  Spanner, so it only reads and writes rows and emits events — provider calls
+  happen before or after it, never inside.
 * A transmitted-but-unanswered submission becomes ``outcome_unknown`` and is
   reconciled through the same provider idempotency key; it is never blindly
   re-sent and the same quote cannot be purchased again meanwhile.
@@ -34,14 +37,13 @@ from brandme_core.domains.providers.contracts import (
     ProviderErrorKind, ReturnsProvider, SubmitRequest,
 )
 from brandme_core.domains.providers.registry import ProviderRegistry, RegistryError
-
-from .delegation import (
-    DEFAULT_EXCLUDED_CATEGORIES, AgentDelegation, AssistanceMode, DelegationLimits, build_delegation,
-)
 from brandme_core.events import EventEnvelope
 
 from . import data_categories as _data_categories  # noqa: F401  (registers My Data categories)
 from . import events as _events  # noqa: F401  (registers commerce event types)
+from .delegation import (
+    DEFAULT_EXCLUDED_CATEGORIES, AgentDelegation, AssistanceMode, DelegationLimits, build_delegation,
+)
 from .errors import (
     ApprovalInvalid, BudgetExceeded, CapabilityUnavailable, CommerceError, DelegationConflict,
     DelegationInvalid, Forbidden, IdempotencyConflict, InvalidQuote, InvalidRequest, NotFound, VersionConflict,
@@ -51,9 +53,9 @@ from .principal import Principal, is_agent, is_first_party, meets_assurance, val
 from .quote import MATERIALITY_RULE, CheckoutQuote, QuoteLine
 from .records import (
     IN_FLIGHT, ApprovalChallenge, BudgetEntry, Cart, IdempotencyRecord, Order, OrderLine,
-    PurchaseApproval, PurchaseOperation, WebhookReceipt, check_transition,
+    PurchaseApproval, PurchaseOperation, ReturnRequest, WebhookReceipt, check_transition,
 )
-from .store import InMemoryCommerceStore, new_id
+from .store import new_id
 
 Clock = Callable[[], datetime]
 
@@ -71,21 +73,25 @@ def _digest(doc: Any) -> str:
     return "sha256:" + hashlib.sha256(rfc8785.dumps(doc)).hexdigest()
 
 
+def _nonce_hash(nonce: str) -> str:
+    return "sha256:" + hashlib.sha256(nonce.encode("utf-8")).hexdigest()
+
+
 class CommerceService:
-    def __init__(self, *, store: InMemoryCommerceStore, registry: ProviderRegistry,
+    def __init__(self, *, store: Any, registry: ProviderRegistry,
                  environment: str, clock: Clock = _utcnow,
                  approval_requires_assurance: str = "aal2"):
-        self.store = store
+        self.store = store  # InMemoryCommerceStore or SpannerCommerceStore
         self.registry = registry
         self.environment = environment
         self.clock = clock
         self.approval_requires_assurance = approval_requires_assurance
 
     # ------------------------------------------------------------------ utils
-    def _event(self, event_type: str, aggregate_type: str, aggregate_id: str, version: int,
+    def _event(self, tx: Any, event_type: str, aggregate_type: str, aggregate_id: str, version: int,
                actor: Principal | str, payload: Dict[str, Any], correlation_id: Optional[str] = None,
                privacy_class: str = "member_private") -> None:
-        self.store.emit(EventEnvelope(
+        tx.emit(EventEnvelope(
             event_type=event_type, schema_version="1", aggregate_type=aggregate_type,
             aggregate_id=aggregate_id, aggregate_version=version, environment=self.environment,
             actor_ref=actor if isinstance(actor, str) else actor.actor_ref,
@@ -113,16 +119,16 @@ class CommerceService:
             if d is None:
                 raise DelegationInvalid("unknown delegation")
         else:
-            d = self._active_delegation(principal.member_id, principal.client_id, now)
+            d = self._active_delegation(self.store, principal.member_id, principal.client_id, now)
             if d is None:
                 raise DelegationInvalid("no active delegation for this client", code="delegation_required")
         bound = replace(principal, delegation_id=d.id)
         d.require_active_for(bound, now)
         return bound, d
 
-    def _active_delegation(self, member_id: str, client_id: str, now: datetime) -> Optional[AgentDelegation]:
-        active = [d for d in self.store.rows("delegations")
-                  if d.member_id == member_id and d.client_id == client_id and d.is_active(now)]
+    @staticmethod
+    def _active_delegation(reader: Any, member_id: str, client_id: str, now: datetime) -> Optional[AgentDelegation]:
+        active = reader.active_delegations(member_id, client_id, now)
         if len(active) > 1:  # prevented by create_delegation; refuse rather than guess
             raise DelegationInvalid("ambiguous delegation for this client", code="delegation_ambiguous")
         return active[0] if active else None
@@ -154,12 +160,20 @@ class CommerceService:
                                         code=f"capability_{st.state}")
         return conn
 
-    def _own(self, table: str, key: str, principal: Principal) -> Any:
-        row = self.store.get(table, key)
+    @staticmethod
+    def _own(reader: Any, table: str, key: str, principal: Principal) -> Any:
+        row = reader.get(table, key)
         # 404 for someone else's object: do not reveal existence.
         if row is None or getattr(row, "member_id", None) != principal.member_id:
             raise NotFound(f"{table[:-1]} not found")
         return row
+
+    @staticmethod
+    def _quote(reader: Any, principal: Principal, quote_id: str) -> CheckoutQuote:
+        row = reader.get("quotes", quote_id)
+        if row is None or row[0] != principal.member_id:
+            raise NotFound("quote not found")
+        return row[1]
 
     def _idempotent(self, principal: Principal, operation: str, key: Optional[str],
                     request: Mapping[str, Any]) -> Tuple[Optional[Tuple], Optional[str], str]:
@@ -168,8 +182,9 @@ class CommerceService:
             return None, None, digest
         if not 16 <= len(key) <= 128:  # foundation Idempotency-Key contract
             raise InvalidRequest("Idempotency-Key must be 16-128 characters", code="idempotency_key_invalid")
-        # Same key shape as foundation run_idempotent_command: (actor_ref, environment, operation, key).
-        scope = (principal.actor_ref, self.environment, operation, key)
+        # (member, environment, operation, delegation|"-", key): the same scope as foundation's
+        # actor_ref-based key, laid out as the CommerceIdempotencyKeys primary key.
+        scope = (principal.member_id, self.environment, operation, principal.delegation_id or "-", key)
         rec = self.store.get("idempotency", scope)
         if rec is None:
             return scope, None, digest
@@ -183,37 +198,41 @@ class CommerceService:
                           expires_at: datetime) -> AgentDelegation:
         principal = self._require_first_party(principal, "agents cannot create or widen delegations",
                                               "not_trusted_surface")
+        now = self.clock()
         d = build_delegation(granting=principal, delegation_id=new_id(), client_id=client_id,
                              mode=mode, allowed_providers=frozenset(allowed_providers),
-                             limits=limits, now=self.clock(), expires_at=expires_at)
-        with self.store.transaction():
+                             limits=limits, now=now, expires_at=expires_at)
+
+        def _tx(tx):
             # One active grant per (member, client): an agent's authority is never ambiguous.
-            if self._active_delegation(principal.member_id, client_id, self.clock()) is not None:
+            if self._active_delegation(tx, principal.member_id, client_id, now) is not None:
                 raise DelegationConflict("this client already has an active delegation; revoke it first")
-            self.store.put("delegations", d.id, d)
-            self._event("commerce.delegation.created", "AgentDelegation", d.id, 1, principal,
+            tx.put("delegations", d.id, d)
+            self._event(tx, "commerce.delegation.created", "AgentDelegation", d.id, 1, principal,
                         {"delegation_id": d.id, "mode": d.mode.value, "client_id": client_id})
-        return d
+            return d
+        return self.store.run(_tx)
 
     def revoke_delegation(self, principal: Principal, delegation_id: str) -> AgentDelegation:
         principal = self._require_first_party(principal, "agents cannot revoke delegations",
                                               "not_trusted_surface")
-        with self.store.transaction():
-            d = self._own("delegations", delegation_id, principal)
+
+        def _tx(tx):
+            d = self._own(tx, "delegations", delegation_id, principal)
             if d.revoked_at is not None:
                 return d
-            now = self.clock()
-            d = replace(d, revoked_at=now, version=d.version + 1)
-            self.store.put("delegations", d.id, d)
+            d = replace(d, revoked_at=self.clock(), version=d.version + 1)
+            tx.put("delegations", d.id, d)
             # Cancel unsent work immediately; submitted work keeps reconciling.
-            for op in self.store.rows("operations"):
-                if op.delegation_id == d.id and op.state in ("draft", "quoting", "awaiting_approval", "approved"):
-                    self._transition(op, "cancelled", reason="delegation_revoked")
-                    self._release_budget(op.id)
-                    self._void_approval(op.approval_id)
-            self._event("commerce.delegation.revoked", "AgentDelegation", d.id, d.version, principal,
+            for op in tx.operations_for_delegation(d.id):
+                if op.state in ("draft", "quoting", "awaiting_approval", "approved"):
+                    self._transition(tx, op, "cancelled", reason="delegation_revoked")
+                    self._release_budget(tx, op.id)
+                    self._void_approval(tx, op.approval_id)
+            self._event(tx, "commerce.delegation.revoked", "AgentDelegation", d.id, d.version, principal,
                         {"delegation_id": d.id})
-        return d
+            return d
+        return self.store.run(_tx)
 
     # ------------------------------------------------------------------ carts
     def create_cart(self, principal: Principal, *, provider_id: str, merchant_id: str,
@@ -234,32 +253,37 @@ class CommerceService:
         provider_cart = conn.adapter.create_cart(merchant_id, list(lines))  # provider I/O outside txn
         cart = Cart(id=new_id(), member_id=principal.member_id, provider_id=provider_id,
                     merchant_id=merchant_id, provider_cart_ref=provider_cart.provider_cart_ref,
-                    lines=tuple(lines), revision=1, created_by_client=principal.client_id)
-        with self.store.transaction():
+                    lines=tuple(lines), revision=1, created_by_client=principal.client_id or "")
+
+        def _tx(tx):
             if scope:
-                if self.store.get("idempotency", scope):  # lost a race: return the winner
-                    return self.store.get("carts", self.store.get("idempotency", scope).result_ref)
-                self.store.put("idempotency", scope, IdempotencyRecord(scope, digest, cart.id, self.clock()))
-            self.store.put("carts", cart.id, cart)
-        return cart
+                winner = tx.get("idempotency", scope)
+                if winner is not None:  # lost a race: return the winner
+                    return tx.get("carts", winner.result_ref)
+                tx.put("idempotency", scope, IdempotencyRecord(scope, digest, cart.id, self.clock()))
+            tx.put("carts", cart.id, cart)
+            return cart
+        return self.store.run(_tx)
 
     def update_cart(self, principal: Principal, cart_id: str, *, if_match: int,
                     lines: Sequence[CartLineRequest]) -> Cart:
         principal, _ = self._authorize(principal, "commerce:cart")
         self._validate_lines(lines)
-        cart = self._own("carts", cart_id, principal)
+        cart = self._own(self.store, "carts", cart_id, principal)
         if cart.revision != if_match:
-            raise VersionConflict("cart revision changed")
+            raise VersionConflict("cart revision changed", current_version=cart.revision)
         conn = self._require_capability(cart.provider_id, "cart.update")
         # Full replacement semantics normalized here, protected by the revision check.
         conn.adapter.replace_cart(cart.provider_cart_ref, list(lines))
-        with self.store.transaction():
-            current = self.store.get("carts", cart_id)
+
+        def _tx(tx):
+            current = tx.get("carts", cart_id)
             if current.revision != if_match:
-                raise VersionConflict("cart revision changed")
-            cart = replace(current, lines=tuple(lines), revision=current.revision + 1, status="draft")
-            self.store.put("carts", cart.id, cart)
-        return cart
+                raise VersionConflict("cart revision changed", current_version=current.revision)
+            updated = replace(current, lines=tuple(lines), revision=current.revision + 1, status="draft")
+            tx.put("carts", updated.id, updated)
+            return updated
+        return self.store.run(_tx)
 
     @staticmethod
     def _validate_lines(lines: Sequence[CartLineRequest]) -> None:
@@ -276,7 +300,7 @@ class CommerceService:
     # ----------------------------------------------------------------- quotes
     def quote_cart(self, principal: Principal, cart_id: str) -> CheckoutQuote:
         principal, _ = self._authorize(principal, "commerce:cart")
-        cart = self._own("carts", cart_id, principal)
+        cart = self._own(self.store, "carts", cart_id, principal)
         conn = self._require_capability(cart.provider_id, "price.quote")
         from brandme_core.domains.providers.contracts import ProviderCart
         pq = conn.adapter.quote(ProviderCart(cart.provider_cart_ref, cart.merchant_id, cart.lines))
@@ -302,31 +326,27 @@ class CommerceService:
             delivery_ref=pq.delivery_ref, terms=pq.terms, checkout_reference=pq.checkout_reference,
             issued_at=now, expires_at=pq.expires_at, source_evidence_ref=pq.evidence_ref,
         ).seal()
-        with self.store.transaction():
-            current = self.store.get("carts", cart.id)
+
+        def _tx(tx):
+            current = tx.get("carts", cart.id)
             if current.revision != cart.revision:
-                raise VersionConflict("cart changed while quoting")
-            self.store.put("quotes", quote.id, (principal.member_id, quote))
-            self.store.put("carts", cart.id, replace(current, status="quoted"))
-            self._event("commerce.quote.ready", "CheckoutQuote", quote.id, 1, principal,
+                raise VersionConflict("cart changed while quoting", current_version=current.revision)
+            tx.put("quotes", quote.id, (principal.member_id, quote))
+            tx.put("carts", cart.id, replace(current, status="quoted"))
+            self._event(tx, "commerce.quote.ready", "CheckoutQuote", quote.id, 1, principal,
                         {"quote_id": quote.id, "quote_hash": quote.quote_hash, "cart_id": cart.id})
-        return quote
+            return quote
+        return self.store.run(_tx)
 
     def get_quote(self, principal: Principal, quote_id: str) -> CheckoutQuote:
         principal, _ = self._authorize(principal, "commerce:research")
-        return self._quote(principal, quote_id)
-
-    def _quote(self, principal: Principal, quote_id: str) -> CheckoutQuote:
-        row = self.store.get("quotes", quote_id)
-        if row is None or row[0] != principal.member_id:
-            raise NotFound("quote not found")
-        return row[1]
+        return self._quote(self.store, principal, quote_id)
 
     # -------------------------------------------------------- purchase request
     def request_purchase(self, principal: Principal, quote_id: str) -> PurchaseOperation:
         """Agent or member asks for approval. Creates no approval, spends nothing."""
         principal, d = self._authorize(principal, "commerce:cart")
-        quote = self._quote(principal, quote_id)
+        quote = self._quote(self.store, principal, quote_id)
         quote.verify_seal()
         quote.ensure_fresh(self.clock())
         if d is not None:
@@ -339,76 +359,83 @@ class CommerceService:
         now = self.clock()
         op = PurchaseOperation(
             id=new_id(), member_id=principal.member_id, delegation_id=principal.delegation_id,
-            client_id=principal.client_id, quote_id=quote.id, quote_hash=quote.quote_hash,
+            client_id=principal.client_id or "", quote_id=quote.id, quote_hash=quote.quote_hash,
             approval_id=None, provider_id=quote.provider_id, state="awaiting_approval",
             provider_idempotency_key="bm-" + secrets.token_hex(16), created_at=now, updated_at=now)
-        with self.store.transaction():
-            self.store.put("operations", op.id, op)
-            self._event("commerce.purchase.approval_requested", "PurchaseOperation", op.id, 1, principal,
+
+        def _tx(tx):
+            tx.put("operations", op.id, op)
+            self._event(tx, "commerce.purchase.approval_requested", "PurchaseOperation", op.id, 1, principal,
                         {"operation_id": op.id, "quote_id": quote.id})
-        return op
+            return op
+        return self.store.run(_tx)
 
     # ------------------------------------------------- trusted approval surface
     def open_approval_challenge(self, principal: Principal, operation_id: str) -> ApprovalChallenge:
         """Rendered only by Brand.Me's deterministic approval UI (AP2 trusted surface)."""
         principal = self._require_first_party(principal, "only the member's trusted surface can open an approval",
                                               "not_trusted_surface")
-        op = self._own("operations", operation_id, principal)
+        op = self._own(self.store, "operations", operation_id, principal)
         if op.state != "awaiting_approval":
             raise ApprovalInvalid(f"operation is {op.state}")
-        quote = self._quote(principal, op.quote_id)
+        quote = self._quote(self.store, principal, op.quote_id)
         quote.verify_seal()
         now = self.clock()
         quote.ensure_fresh(now)
-        ch = ApprovalChallenge(id=new_id(), member_id=principal.member_id, quote_id=quote.id,
-                               quote_hash=quote.quote_hash, nonce=secrets.token_urlsafe(24),
+        nonce = secrets.token_urlsafe(24)
+        ch = ApprovalChallenge(id=new_id(), member_id=principal.member_id, operation_id=op.id, quote_id=quote.id,
+                               quote_hash=quote.quote_hash, nonce_hash=_nonce_hash(nonce),
                                delegation_ref=op.delegation_id, issued_at=now,
                                expires_at=min(quote.expires_at, now + APPROVAL_CHALLENGE_TTL))
-        with self.store.transaction():
-            self.store.put("challenges", ch.id, ch)
-        return ch
+        self.store.run(lambda tx: tx.put("challenges", ch.id, ch))
+        return replace(ch, nonce=nonce)  # the plaintext nonce leaves once, to the trusted surface
 
     def approve(self, principal: Principal, *, operation_id: str, challenge_id: str, nonce: str,
                 displayed_quote_hash: str) -> PurchaseApproval:
         principal = self._require_first_party(principal, "agents cannot approve purchases", "not_trusted_surface")
-        op = self._own("operations", operation_id, principal)
+        op = self._own(self.store, "operations", operation_id, principal)
         # Foundation's ``simulated`` dev identity may approve only simulated providers in local environments.
         if not meets_assurance(principal, self.approval_requires_assurance,
                                simulation_ok=self._is_simulation(op.provider_id)):
             raise ApprovalInvalid("reauthentication required", code="reauthentication_required")
         now = self.clock()
-        with self.store.transaction():
-            op = self._own("operations", operation_id, principal)
-            ch = self._own("challenges", challenge_id, principal)
-            quote = self._quote(principal, op.quote_id)
+
+        def _tx(tx):
+            op = self._own(tx, "operations", operation_id, principal)
+            ch = self._own(tx, "challenges", challenge_id, principal)
+            quote = self._quote(tx, principal, op.quote_id)
             if ch.used or now >= ch.expires_at:
                 raise ApprovalInvalid("approval challenge expired or used")
-            if not secrets.compare_digest(ch.nonce, nonce):
+            if not secrets.compare_digest(ch.nonce_hash, _nonce_hash(nonce)):
                 raise ApprovalInvalid("approval nonce mismatch")
-            if ch.quote_id != op.quote_id:
-                raise ApprovalInvalid("challenge is for a different quote")
+            if ch.quote_id != op.quote_id or ch.operation_id != op.id:
+                raise ApprovalInvalid("challenge is for a different operation")
             # Bind to what was rendered *and* to current recomputed material terms.
             current_hash = quote.compute_hash()
             if not (displayed_quote_hash == ch.quote_hash == op.quote_hash == quote.quote_hash == current_hash):
                 raise ApprovalInvalid("quote terms changed; review the new quote", code="quote_changed")
             quote.ensure_fresh(now)
             check_transition(op.state, "approved")
-            # Only a buy-within-rules delegation may execute; a prepared purchase is
-            # completed by the member's own session.
-            d = self.store.get("delegations", op.delegation_id) if op.delegation_id else None
-            executor_ref = d.id if d is not None and d.mode is AssistanceMode.BUY_WITHIN_RULES else None
             approval = PurchaseApproval(
-                id=new_id(), member_id=principal.member_id, delegation_ref=executor_ref,
+                id=new_id(), member_id=principal.member_id, delegation_ref=self._executor_ref(tx, op),
                 quote_id=quote.id, quote_hash=current_hash, merchant_id=quote.merchant_id,
-                allowed_total=quote.total, nonce=ch.nonce, issued_at=now, expires_at=quote.expires_at,
+                allowed_total=quote.total, nonce=ch.nonce_hash, issued_at=now, expires_at=quote.expires_at,
                 assurance_level=principal.assurance_level, method="trusted_surface",
                 materiality_rule=MATERIALITY_RULE)
-            self.store.put("challenges", ch.id, replace(ch, used=True))
-            self.store.put("approvals", approval.id, approval)
-            self._transition(op, "approved", approval_id=approval.id)
-            self._event("commerce.purchase.authorized", "PurchaseOperation", op.id, op.version + 1, principal,
+            tx.put("challenges", ch.id, replace(ch, used=True))
+            tx.put("approvals", approval.id, approval)
+            op = self._transition(tx, op, "approved", approval_id=approval.id)
+            self._event(tx, "commerce.purchase.authorized", "PurchaseOperation", op.id, op.version, principal,
                         {"operation_id": op.id, "approval_id": approval.id, "quote_hash": current_hash})
-        return approval
+            return approval
+        return self.store.run(_tx)
+
+    @staticmethod
+    def _executor_ref(tx: Any, op: PurchaseOperation) -> Optional[str]:
+        # Only a buy-within-rules delegation may execute; a prepared purchase is
+        # completed by the member's own session.
+        d = tx.get("delegations", op.delegation_id) if op.delegation_id else None
+        return d.id if d is not None and d.mode is AssistanceMode.BUY_WITHIN_RULES else None
 
     # ------------------------------------------------------ AP2-backed approval
     def register_surface_key(self, principal: Principal, public_jwk: Mapping[str, Any]) -> str:
@@ -424,8 +451,8 @@ class CommerceService:
         if key.has_private or key.get("kty") != "EC" or key.get("crv") != "P-256":
             raise CommerceError("surface key must be a public EC P-256 JWK", code="invalid_surface_key")
         kid = key.thumbprint()
-        with self.store.transaction():
-            self.store.put("surface_keys", (principal.member_id, kid), key.export_public(as_dict=True))
+        public = key.export_public(as_dict=True)
+        self.store.run(lambda tx: tx.put("surface_keys", (principal.member_id, kid), public))
         return kid
 
     def approve_with_ap2(self, principal: Principal, *, operation_id: str, checkout_mandate: str,
@@ -435,10 +462,10 @@ class CommerceService:
         from jwcrypto.jwk import JWK
         from . import ap2
         principal, _ = self._authorize(principal, "commerce:cart")
-        op = self._own("operations", operation_id, principal)
+        op = self._own(self.store, "operations", operation_id, principal)
         if op.state != "awaiting_approval":
             raise ApprovalInvalid(f"operation is {op.state}")
-        quote = self._quote(principal, op.quote_id)
+        quote = self._quote(self.store, principal, op.quote_id)
         quote.verify_seal()
         now = self.clock()
         quote.ensure_fresh(now)
@@ -448,8 +475,7 @@ class CommerceService:
         merchant_key = conn.merchant_public_keys.get(quote.merchant_id)
         if merchant_key is None:
             raise CapabilityUnavailable("no verified merchant checkout key", code="merchant_key_missing")
-        keys = [JWK(**self.store.get("surface_keys", k)) for k in self.store.keys("surface_keys")
-                if k[0] == principal.member_id]
+        keys = [JWK(**jwk) for jwk in self.store.surface_keys(principal.member_id)]
         last: Optional[Exception] = None
         for user_key in keys:
             try:
@@ -465,27 +491,28 @@ class CommerceService:
         else:
             raise ApprovalInvalid("mandate not signed by a registered member key",
                                   code="ap2_" + getattr(last, "code", "no_surface_key"))
-        with self.store.transaction():
-            if self.store.get("ap2_used", result.checkout_mandate_digest) is not None:
+
+        def _tx(tx):
+            if tx.get("ap2_used", result.checkout_mandate_digest) is not None:
                 raise ApprovalInvalid("mandate already used", code="ap2_replay")
-            op = self.store.get("operations", operation_id)
-            if op.state != "awaiting_approval" or quote.compute_hash() != op.quote_hash:
+            current = tx.get("operations", operation_id)
+            if current.state != "awaiting_approval" or quote.compute_hash() != current.quote_hash:
                 raise ApprovalInvalid("quote terms changed", code="quote_changed")
-            d = self.store.get("delegations", op.delegation_id) if op.delegation_id else None
-            executor_ref = d.id if d is not None and d.mode is AssistanceMode.BUY_WITHIN_RULES else None
             approval = PurchaseApproval(
-                id=new_id(), member_id=principal.member_id, delegation_ref=executor_ref, quote_id=quote.id,
-                quote_hash=op.quote_hash, merchant_id=quote.merchant_id, allowed_total=quote.total,
-                nonce=result.checkout_hash, issued_at=now, expires_at=quote.expires_at,
+                id=new_id(), member_id=principal.member_id, delegation_ref=self._executor_ref(tx, current),
+                quote_id=quote.id, quote_hash=current.quote_hash, merchant_id=quote.merchant_id,
+                allowed_total=quote.total, nonce=result.checkout_hash, issued_at=now, expires_at=quote.expires_at,
                 assurance_level="ap2_user_signed", method="ap2_mandate", materiality_rule=MATERIALITY_RULE,
                 protocol_payload_hash=result.protocol_payload_hash)
-            self.store.put("ap2_used", result.checkout_mandate_digest, approval.id)
-            self.store.put("approvals", approval.id, approval)
-            self._transition(op, "approved", approval_id=approval.id)
-            self._event("commerce.purchase.authorized", "PurchaseOperation", op.id, op.version + 1, principal,
-                        {"operation_id": op.id, "approval_id": approval.id, "quote_hash": op.quote_hash,
-                         "protocol": "ap2/0.2", "protocol_payload_hash": result.protocol_payload_hash})
-        return approval
+            tx.put("ap2_used", result.checkout_mandate_digest, approval.id)
+            tx.put("approvals", approval.id, approval)
+            current = self._transition(tx, current, "approved", approval_id=approval.id)
+            self._event(tx, "commerce.purchase.authorized", "PurchaseOperation", current.id, current.version,
+                        principal, {"operation_id": current.id, "approval_id": approval.id,
+                                    "quote_hash": current.quote_hash, "protocol": "ap2/0.2",
+                                    "protocol_payload_hash": result.protocol_payload_hash})
+            return approval
+        return self.store.run(_tx)
 
     # ---------------------------------------------------------------- execute
     def execute_purchase(self, principal: Principal, *, operation_id: str, approval_id: str,
@@ -497,13 +524,19 @@ class CommerceService:
         scope, prior, digest = self._idempotent(principal, "purchase.execute", idempotency_key, request)
         if prior:
             return self.store.get("operations", prior)
-
         now = self.clock()
-        with self.store.transaction():
-            op = self._own("operations", operation_id, principal)
+
+        def _tx(tx):
+            if scope:
+                winner = tx.get("idempotency", scope)
+                if winner is not None:  # a concurrent duplicate committed first
+                    if winner.request_digest != digest:
+                        raise IdempotencyConflict("idempotency key reused with a different request")
+                    return tx.get("operations", winner.result_ref), None
+            op = self._own(tx, "operations", operation_id, principal)
             if op.state != "approved":
                 raise ApprovalInvalid(f"operation is {op.state}, not approved")
-            approval = self.store.get("approvals", approval_id)
+            approval = tx.get("approvals", approval_id)
             if approval is None or approval.member_id != principal.member_id:
                 raise ApprovalInvalid("unknown approval")
             if approval.id != op.approval_id or approval.state != "issued":
@@ -512,26 +545,31 @@ class CommerceService:
                 raise ApprovalInvalid("approval bound to a different delegation")
             if now >= approval.expires_at:
                 raise ApprovalInvalid("approval expired", code="approval_expired")
-            quote = self._quote(principal, op.quote_id)
+            quote = self._quote(tx, principal, op.quote_id)
             quote.ensure_fresh(now)
             current_hash = quote.compute_hash()
             if not (approval.quote_hash == op.quote_hash == quote.quote_hash == current_hash):
                 raise ApprovalInvalid("approved terms do not match the quote", code="quote_changed")
             if approval.allowed_total != quote.total or approval.merchant_id != quote.merchant_id:
                 raise ApprovalInvalid("approved amount or merchant does not match")
-            for other in self.store.rows("operations"):
-                if other.id != op.id and other.quote_hash == op.quote_hash and other.state in IN_FLIGHT | {"accepted"}:
+            for other in tx.operations_for_quote_hash(op.quote_hash):
+                if other.id != op.id and other.state in IN_FLIGHT | {"accepted"}:
                     raise IdempotencyConflict("this quote is already being purchased", code="purchase_in_progress")
             self._require_capability(op.provider_id, "checkout.submit")
             if delegation is not None:
                 if delegation.mode is not AssistanceMode.BUY_WITHIN_RULES:
                     raise Forbidden("delegation does not allow purchase execution")
                 self._check_grant(delegation, quote)
-                self._reserve_budget(delegation, op.id, quote.total)
-            self.store.put("approvals", approval.id, replace(approval, state="consumed"))
-            op = self._transition(op, "submitting", attempts=op.attempts + 1)
+                self._reserve_budget(tx, delegation, op.id, quote.total)
+            tx.put("approvals", approval.id, replace(approval, state="consumed"))
+            op = self._transition(tx, op, "submitting", attempts=op.attempts + 1)
             if scope:
-                self.store.put("idempotency", scope, IdempotencyRecord(scope, digest, op.id, now))
+                tx.put("idempotency", scope, IdempotencyRecord(scope, digest, op.id, now))
+            return op, quote
+
+        op, quote = self.store.run(_tx)
+        if quote is None:
+            return op
         return self._submit(op, quote, principal)
 
     def _submit(self, op: PurchaseOperation, quote: CheckoutQuote, principal: Principal | str) -> PurchaseOperation:
@@ -540,14 +578,15 @@ class CommerceService:
         if op.delegation_id:
             d = self.store.get("delegations", op.delegation_id)
             if d is None or not d.is_active(self.clock()):
-                with self.store.transaction():
-                    current = self.store.get("operations", op.id)
+                def _cancel(tx):
+                    current = tx.get("operations", op.id)
                     # submitting -> cancelled is not a normal edge: nothing was sent.
-                    self.store.put("operations", op.id, replace(
-                        current, state="cancelled", reason_code="delegation_revoked",
-                        updated_at=self.clock(), version=current.version + 1))
-                    self._release_budget(op.id)
-                return self.store.get("operations", op.id)
+                    cancelled = replace(current, state="cancelled", reason_code="delegation_revoked",
+                                        updated_at=self.clock(), version=current.version + 1)
+                    tx.put("operations", op.id, cancelled)
+                    self._release_budget(tx, op.id)
+                    return cancelled
+                return self.store.run(_cancel)
         conn = self.registry.get(op.provider_id)
         adapter: CheckoutProvider = conn.adapter
         try:
@@ -555,30 +594,30 @@ class CommerceService:
                 idempotency_key=op.provider_idempotency_key, checkout_reference=quote.checkout_reference,
                 quote_hash=quote.quote_hash, expected_total=quote.total, payment_token_ref=None))
         except ProviderError as exc:
-            with self.store.transaction():
-                current = self.store.get("operations", op.id)
+            def _failed(tx):
+                current = tx.get("operations", op.id)
                 if exc.transmitted or exc.kind is ProviderErrorKind.OUTCOME_UNKNOWN:
-                    return self._transition(current, "outcome_unknown", reason=exc.kind.value)
-                self._release_budget(op.id)
-                return self._transition(current, "rejected", reason=exc.kind.value)
+                    return self._transition(tx, current, "outcome_unknown", reason=exc.kind.value)
+                self._release_budget(tx, op.id)
+                return self._transition(tx, current, "rejected", reason=exc.kind.value)
+            return self.store.run(_failed)
         except Exception:
             # Unclassified failure after the request may have left: never assume it did not.
-            with self.store.transaction():
-                current = self.store.get("operations", op.id)
-                return self._transition(current, "outcome_unknown", reason="unclassified_submit_error")
+            return self.store.run(lambda tx: self._transition(
+                tx, tx.get("operations", op.id), "outcome_unknown", reason="unclassified_submit_error"))
         return self._apply_ack(op.id, quote, ack.accepted, ack.provider_order_ref, ack.reason_code,
                                ack.evidence_ref, principal)
 
     def _apply_ack(self, op_id: str, quote: CheckoutQuote, accepted: bool, order_ref: Optional[str],
                    reason: Optional[str], evidence_ref: Optional[str], actor: Principal | str) -> PurchaseOperation:
-        with self.store.transaction():
-            op = self.store.get("operations", op_id)
+        def _tx(tx):
+            op = tx.get("operations", op_id)
             if op.state not in ("submitting", "outcome_unknown"):
                 return op  # already resolved by a concurrent reconcile/webhook
             if not accepted:
-                self._release_budget(op.id)
-                return self._transition(op, "rejected", reason=reason or "provider_rejected")
-            self._consume_budget(op.id)
+                self._release_budget(tx, op.id)
+                return self._transition(tx, op, "rejected", reason=reason or "provider_rejected")
+            self._consume_budget(tx, op.id)
             now = self.clock()
             order = Order(
                 id=new_id(), member_id=op.member_id, operation_id=op.id, provider_id=op.provider_id,
@@ -588,10 +627,11 @@ class CommerceService:
                 lines=tuple(OrderLine(l.variant_id, l.source_variant_ref, l.quantity) for l in quote.lines),
                 total=quote.total, refunded_total=Money.zero(quote.currency), last_observed_at=now,
                 evidence_refs=(evidence_ref,) if evidence_ref else ())
-            self.store.put("orders", order.id, order)
-            op = self._transition(op, "accepted", order_id=order.id)
-            self._order_event(order, actor, effect="incoming")
+            tx.put("orders", order.id, order)
+            op = self._transition(tx, op, "accepted", order_id=order.id)
+            self._order_event(tx, order, actor, effect="incoming")
             return op
+        return self.store.run(_tx)
 
     # ------------------------------------------------------------- reconcile
     def reconcile(self, operation_id: str) -> PurchaseOperation:
@@ -601,15 +641,17 @@ class CommerceService:
             raise NotFound("operation not found")
         if op.state == "submitting" and self.clock() - op.updated_at >= STALE_SUBMITTING:
             # Crash between the durable intent and the provider response: treat as unknown.
-            with self.store.transaction():
-                op = self._transition(self.store.get("operations", op.id), "outcome_unknown",
-                                      reason="stale_submitting")
+            def _stale(tx):
+                current = tx.get("operations", op.id)
+                if current.state != "submitting":
+                    return current
+                return self._transition(tx, current, "outcome_unknown", reason="stale_submitting")
+            op = self.store.run(_stale)
         if op.state != "outcome_unknown":
             return op
         conn = self.registry.get(op.provider_id)
         provider: OrderProvider = conn.adapter
-        row = self.store.get("quotes", op.quote_id)
-        quote = row[1]
+        quote = self.store.get("quotes", op.quote_id)[1]
         try:
             obs = provider.lookup_by_idempotency_key(op.provider_idempotency_key)
         except ProviderError:
@@ -629,21 +671,23 @@ class CommerceService:
         conn = self._require_capability(provider_id, "orders.webhook")
         event = conn.adapter.verify_webhook(headers, body)  # raises on bad signature / replay window
         key = (provider_id, event.event_id)
-        with self.store.transaction():
-            existing = self.store.get("webhook_receipts", key)
+
+        def _receive(tx):
+            existing = tx.get("webhook_receipts", key)
             if existing is not None:
-                return existing
+                return existing, False
             receipt = WebhookReceipt(provider_id, event.event_id, event.event_type, self.clock(), "pending_reconcile")
-            self.store.put("webhook_receipts", key, receipt)
-        order = next((o for o in self.store.rows("orders")
-                      if o.provider_id == provider_id and o.provider_order_ref == event.provider_order_ref), None)
+            tx.put("webhook_receipts", key, receipt)
+            return receipt, True
+        receipt, fresh = self.store.run(_receive)
+        if not fresh:
+            return receipt
+        order = self.store.order_by_provider_ref(provider_id, event.provider_order_ref)
         if order is None:
             # Possibly an order still in outcome_unknown: reconcile that operation.
-            for op in self.store.rows("operations"):
-                if op.provider_id == provider_id and op.state == "outcome_unknown":
-                    self.reconcile(op.id)
-            order = next((o for o in self.store.rows("orders")
-                          if o.provider_id == provider_id and o.provider_order_ref == event.provider_order_ref), None)
+            for op in self.store.operations_in_state(provider_id, "outcome_unknown"):
+                self.reconcile(op.id)
+            order = self.store.order_by_provider_ref(provider_id, event.provider_order_ref)
             if order is None:
                 return receipt
         # Event order is not trusted: re-read the source of truth and apply monotonically.
@@ -652,14 +696,13 @@ class CommerceService:
         except ProviderError:
             return receipt
         self._apply_observation(order.id, obs, f"provider:{provider_id}")
-        with self.store.transaction():
-            receipt = replace(receipt, state="applied")
-            self.store.put("webhook_receipts", key, receipt)
-        return receipt
+        applied = replace(receipt, state="applied")
+        self.store.run(lambda tx: tx.put("webhook_receipts", key, applied))
+        return applied
 
     def _apply_observation(self, order_id: str, obs: OrderObservation, actor: str) -> Order:
-        with self.store.transaction():
-            order = self.store.get("orders", order_id)
+        def _tx(tx):
+            order = tx.get("orders", order_id)
             by_ref = {l.source_variant_ref: l for l in order.lines}
             new_lines: List[OrderLine] = []
             for ol in obs.lines:
@@ -686,7 +729,7 @@ class CommerceService:
             if obs.refunded_total.amount_minor > refunded.amount_minor:
                 credit = obs.refunded_total - refunded
                 refunded = obs.refunded_total
-                self._credit_refund(order, credit)
+                self._credit_refund(tx, order, credit)
             delivered = sum(l.quantity_delivered for l in lines)
             shipped = sum(l.quantity_shipped for l in lines)
             ordered = sum(l.quantity_ordered for l in lines)
@@ -703,20 +746,21 @@ class CommerceService:
                             last_observed_at=obs.observed_at,
                             evidence_refs=order.evidence_refs + ((obs.evidence_ref,) if obs.evidence_ref else ()),
                             version=order.version + 1)
-            self.store.put("orders", order.id, order)
-            op = self.store.get("operations", order.operation_id)
+            tx.put("orders", order.id, order)
+            op = tx.get("operations", order.operation_id)
             target = self._summary_state(order)
             if target != op.state:
                 try:
                     check_transition(op.state, target)
-                    self._transition(op, target)
+                    self._transition(tx, op, target)
                 except CommerceError:
                     pass  # summary state is advisory; order facts above are authoritative
             effect = ("returned" if sum(l.quantity_returned for l in lines) > sum(l.quantity_returned for l in prev_order.lines)
                       else "arrived" if delivered > sum(l.quantity_delivered for l in prev_order.lines)
                       else "updated")
-            self._order_event(order, actor, effect=effect)
+            self._order_event(tx, order, actor, effect=effect)
             return order
+        return self.store.run(_tx)
 
     @staticmethod
     def _summary_state(order: Order) -> str:
@@ -732,9 +776,9 @@ class CommerceService:
             return "partially_fulfilled"
         return "accepted"
 
-    def _order_event(self, order: Order, actor: Principal | str, *, effect: str) -> None:
+    def _order_event(self, tx: Any, order: Order, actor: Principal | str, *, effect: str) -> None:
         """Wardrobe lane reduces these into "On the way"/arrived/returned entries."""
-        self._event("commerce.order.observed", "Order", order.id, order.version, actor, {
+        self._event(tx, "commerce.order.observed", "Order", order.id, order.version, actor, {
             "order_id": order.id, "operation_id": order.operation_id,
             "member_id": order.member_id, "provider_id": order.provider_id,
             "order_status": order.order_status, "payment_status": order.payment_status,
@@ -750,34 +794,44 @@ class CommerceService:
     def request_return(self, principal: Principal, order_id: str, source_variant_ref: str,
                        quantity: int) -> Dict[str, Any]:
         principal, _ = self._authorize(principal, "commerce:cart")
-        order = self._own("orders", order_id, principal)
+        order = self._own(self.store, "orders", order_id, principal)
         line = next((l for l in order.lines if l.source_variant_ref == source_variant_ref), None)
         if line is None or not 1 <= quantity <= line.quantity_ordered - line.quantity_returned:
             raise InvalidQuote("invalid return line or quantity")
         conn = self.registry.get(order.provider_id)
+        record = ReturnRequest(id=new_id(), order_id=order.id, member_id=order.member_id,
+                               source_variant_ref=source_variant_ref, quantity=quantity, status="handoff",
+                               requested_at=self.clock())
         if not conn.can_execute("returns.request"):
-            return {"status": "handoff", "reason_code": conn.capability("returns.request").reason_code,
+            self.store.run(lambda tx: tx.put("returns", record.id, record))
+            return {"status": "handoff", "return_id": record.id,
+                    "reason_code": conn.capability("returns.request").reason_code,
                     "detail": "Start the return with the retailer; Brand.Me will update when evidence arrives."}
         adapter: ReturnsProvider = conn.adapter
-        result = adapter.request_return(order.provider_order_ref, source_variant_ref, quantity)
-        with self.store.transaction():
-            op = self.store.get("operations", order.operation_id)
+        result = adapter.request_return(order.provider_order_ref, source_variant_ref, quantity)  # outside txn
+        record = replace(record, status="return_requested", provider_reference=result.source_reference)
+
+        def _tx(tx):
+            tx.put("returns", record.id, record)
+            op = tx.get("operations", order.operation_id)
             try:
-                self._transition(op, "return_requested")
+                self._transition(tx, op, "return_requested")
             except CommerceError:
                 pass
+        self.store.run(_tx)
         # A return request is not a refund: refund state changes only on observation.
-        return {"status": "return_requested", "provider_reference": result.source_reference}
+        return {"status": "return_requested", "return_id": record.id,
+                "provider_reference": result.source_reference}
 
     # ----------------------------------------------------------------- budget
-    def available_budget(self, delegation: AgentDelegation) -> Money:
+    def available_budget(self, delegation: AgentDelegation, reader: Any = None) -> Money:
         limits = delegation.limits
         if limits is None:
             return Money.zero("USD")
         window_start = self.clock() - timedelta(seconds=limits.window_seconds)
         spent = 0
-        for e in self.store.rows("reservations"):
-            if e.delegation_id != delegation.id or e.created_at < window_start:
+        for e in (reader or self.store).budget_entries(delegation.id):
+            if e.created_at < window_start:
                 continue
             if e.kind == "reservation" and e.state in ("reserved", "consumed"):
                 spent += e.amount.amount_minor
@@ -785,32 +839,34 @@ class CommerceService:
                 spent -= e.amount.amount_minor
         return Money(max(0, limits.max_cumulative.amount_minor - max(0, spent)), limits.currency)
 
-    def _reserve_budget(self, delegation: AgentDelegation, op_id: str, amount: Money) -> None:
-        # Called inside the store transaction: the check and the write are atomic.
-        if amount > self.available_budget(delegation):
+    def _reserve_budget(self, tx: Any, delegation: AgentDelegation, op_id: str, amount: Money) -> None:
+        # Inside the transaction: the availability read and the reservation write are atomic.
+        if amount > self.available_budget(delegation, tx):
             raise BudgetExceeded("purchase exceeds the remaining delegated budget")
         e = BudgetEntry(new_id(), delegation.id, op_id, amount, "reservation", "reserved", self.clock())
-        self.store.put("reservations", e.id, e)
+        tx.put("reservations", (e.delegation_id, e.id), e)
 
-    def _release_budget(self, op_id: str) -> None:
-        for e in self.store.rows("reservations"):
-            if e.operation_id == op_id and e.kind == "reservation" and e.state == "reserved":
-                self.store.put("reservations", e.id, replace(e, state="released"))
+    @staticmethod
+    def _set_reservation_state(tx: Any, op_id: str, to_state: str) -> None:
+        for e in tx.budget_entries_for_operation(op_id):
+            if e.kind == "reservation" and e.state == "reserved":
+                tx.put("reservations", (e.delegation_id, e.id), replace(e, state=to_state))
 
-    def _consume_budget(self, op_id: str) -> None:
-        for e in self.store.rows("reservations"):
-            if e.operation_id == op_id and e.kind == "reservation" and e.state == "reserved":
-                self.store.put("reservations", e.id, replace(e, state="consumed"))
+    def _release_budget(self, tx: Any, op_id: str) -> None:
+        self._set_reservation_state(tx, op_id, "released")
 
-    def _credit_refund(self, order: Order, amount: Money) -> None:
-        op = self.store.get("operations", order.operation_id)
+    def _consume_budget(self, tx: Any, op_id: str) -> None:
+        self._set_reservation_state(tx, op_id, "consumed")
+
+    def _credit_refund(self, tx: Any, order: Order, amount: Money) -> None:
+        op = tx.get("operations", order.operation_id)
         if not op.delegation_id:
             return
-        d = self.store.get("delegations", op.delegation_id)
+        d = tx.get("delegations", op.delegation_id)
         if d is None or d.limits is None or not d.limits.refund_credit_back:
             return
         e = BudgetEntry(new_id(), d.id, op.id, amount, "credit", "credited", self.clock())
-        self.store.put("reservations", e.id, e)
+        tx.put("reservations", (e.delegation_id, e.id), e)
 
     # ------------------------------------------------------------------ grant
     @staticmethod
@@ -839,19 +895,20 @@ class CommerceService:
             raise Forbidden("delegation requires returnable items")
 
     # ------------------------------------------------------------- internals
-    def _transition(self, op: PurchaseOperation, new_state: str, *, reason: Optional[str] = None,
+    def _transition(self, tx: Any, op: PurchaseOperation, new_state: str, *, reason: Optional[str] = None,
                     **changes: Any) -> PurchaseOperation:
         check_transition(op.state, new_state)
         op = replace(op, state=new_state, updated_at=self.clock(), version=op.version + 1,
                      reason_code=reason if reason is not None else op.reason_code, **changes)
-        self.store.put("operations", op.id, op)
+        tx.put("operations", op.id, op)
         return op
 
-    def _void_approval(self, approval_id: Optional[str]) -> None:
+    @staticmethod
+    def _void_approval(tx: Any, approval_id: Optional[str]) -> None:
         if approval_id:
-            a = self.store.get("approvals", approval_id)
+            a = tx.get("approvals", approval_id)
             if a is not None and a.state == "issued":
-                self.store.put("approvals", a.id, replace(a, state="void"))
+                tx.put("approvals", a.id, replace(a, state="void"))
 
     def _is_simulation(self, provider_id: str) -> bool:
         try:
@@ -859,10 +916,97 @@ class CommerceService:
         except RegistryError:
             return False
 
+    # ----------------------------------------------------------- privacy jobs
+    # Called by the My Data deletion workflow (``data_categories``), which has already
+    # reauthenticated the member. Financial evidence — orders, the approvals and
+    # grants behind them, and anything still settling — is retained (ch.03 §8).
+    PRIVACY_ACTOR = "system:privacy"
+
+    @staticmethod
+    def _is_evidence(op: PurchaseOperation) -> bool:
+        return op.order_id is not None or op.state in IN_FLIGHT
+
+    def _cancel_unsent(self, tx: Any, op: PurchaseOperation, reason: str) -> PurchaseOperation:
+        if op.state in ("draft", "quoting", "awaiting_approval", "approved"):
+            op = self._transition(tx, op, "cancelled", reason=reason)
+            self._release_budget(tx, op.id)
+            self._void_approval(tx, op.approval_id)
+        return op
+
+    def erase_agent_grants(self, member_id: str) -> Dict[str, int]:
+        def _tx(tx):
+            revoked = deleted = 0
+            for d in tx.for_member("delegations", member_id):
+                if d.revoked_at is None:
+                    d = replace(d, revoked_at=self.clock(), version=d.version + 1)
+                    tx.put("delegations", d.id, d)
+                    for op in tx.operations_for_delegation(d.id):
+                        self._cancel_unsent(tx, op, "member_data_deleted")
+                    self._event(tx, "commerce.delegation.revoked", "AgentDelegation", d.id, d.version,
+                                self.PRIVACY_ACTOR, {"delegation_id": d.id})
+                    revoked += 1
+                if any(self._is_evidence(op) for op in tx.operations_for_delegation(d.id)):
+                    continue  # purchase authority behind an order stays, revoked
+                for e in tx.budget_entries(d.id):
+                    tx.delete("reservations", (e.delegation_id, e.id))
+                tx.delete("delegations", d.id)
+                deleted += 1
+            return {"revoked": revoked, "deleted": deleted}
+        return self.store.run(_tx)
+
+    def erase_carts_and_quotes(self, member_id: str) -> Dict[str, int]:
+        def _tx(tx):
+            kept_quotes = set()
+            for op in tx.for_member("operations", member_id):
+                op = self._cancel_unsent(tx, op, "member_data_deleted")
+                if self._is_evidence(op):
+                    kept_quotes.add(op.quote_id)
+            counts = {"carts": 0, "quotes": 0, "challenges": 0}
+            for c in tx.for_member("carts", member_id):
+                tx.delete("carts", c.id)
+                counts["carts"] += 1
+            for _, q in tx.for_member("quotes", member_id):
+                if q.id not in kept_quotes:
+                    tx.delete("quotes", q.id)
+                    counts["quotes"] += 1
+            for ch in tx.for_member("challenges", member_id):
+                tx.delete("challenges", ch.id)
+                counts["challenges"] += 1
+            return counts
+        return self.store.run(_tx)
+
+    def erase_order_side_data(self, member_id: str) -> Dict[str, int]:
+        """Orders are kept; device keys, order-less operations and spent idempotency keys go."""
+        def _tx(tx):
+            counts = {"surface_keys": 0, "operations": 0, "approvals": 0, "idempotency": 0}
+            for key in tx.surface_key_ids(member_id):
+                tx.delete("surface_keys", key)
+                counts["surface_keys"] += 1
+            guarded = set()  # operations still settling with a provider
+            for op in tx.for_member("operations", member_id):
+                if op.state in IN_FLIGHT:
+                    guarded.add(op.id)
+                if self._is_evidence(op):
+                    continue
+                if op.state not in ("rejected", "cancelled"):
+                    continue  # still open: cancelled by the carts/quotes category, not silently dropped
+                if op.approval_id:
+                    tx.delete("approvals", op.approval_id)
+                    counts["approvals"] += 1
+                tx.delete("operations", op.id)
+                counts["operations"] += 1
+            for rec in tx.for_member("idempotency", member_id):
+                # Never expire a key while a remote side effect can still settle (ch.03 §6).
+                if rec.result_ref not in guarded:
+                    tx.delete("idempotency", rec.scope)
+                    counts["idempotency"] += 1
+            return counts
+        return self.store.run(_tx)
+
     def get_operation(self, principal: Principal, operation_id: str) -> PurchaseOperation:
         principal, _ = self._authorize(principal, "commerce:research")
-        return self._own("operations", operation_id, principal)
+        return self._own(self.store, "operations", operation_id, principal)
 
     def get_order(self, principal: Principal, order_id: str) -> Order:
         principal, _ = self._authorize(principal, "commerce:research")
-        return self._own("orders", order_id, principal)
+        return self._own(self.store, "orders", order_id, principal)
