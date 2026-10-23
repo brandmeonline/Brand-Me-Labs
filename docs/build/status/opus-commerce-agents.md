@@ -316,3 +316,61 @@ run had skipped them (no `SPANNER_EMULATOR_HOST`); reproduced with the emulator.
 a V001-only temp dir and checks reserved numbers/names passes 6/6 locally. Posted on PR #35 for opus-foundation; not
 applied here because the file belongs to another lane. **Blocked on:** foundation landing it, or founder authorizing this
 lane to carry it. The real chain V001+V006+V007 applies and `runner.py verify` exits 0.
+
+---
+
+## Stage S7 — Resumption, re-verified pins, interface decision amended (2026-10-23)
+
+**State on resume:** PR #35 merged into `bench/opus-commerce-agents-20261005` as `7c61afd` (2026-10-06). The working branch
+`claude/opus-commerce-agents-setup-szpmf7` was an ancestor of it and was fast-forwarded; this round starts from `7c61afd`.
+Baseline re-run on `7c61afd` before any change: `tests/foundation` + lane suite **246 passed, 0 skipped**
+(Spanner emulator 1.5.58, official AP2 SDK oracle). Retired aliases (`ap2.create_intent_mandate`, `ap2.mandate.*`,
+`acp.*`, v9 stubs) still return documented 410s — `brandme_core/mcp/tools.py` `RETIRED_TOOLS`.
+
+Other lanes since 2026-10-05 (fetched, not merged here): foundation unchanged at `67327e4`; astra-consumer-ui published
+**console shell contract v1** (`9e21bd0`, `docs/build/status/astra-consumer-ui.md` on its bench branch) — this unblocks
+`brandme-console/app/(ops)/{providers,commerce}/**`; consumer-domains, midnight-rights and spatial-ar merged their own
+bench work (disjoint files).
+
+### External versions re-verified 2026-10-23
+
+| Protocol | Pin | Re-verification |
+|---|---|---|
+| AP2 | **v0.2**, release tag **`v0.2.0` = `b4587ac`** (2026-04-28); vendored schemas taken from `e1ea56d` | `main` is still `e1ea56d`; `git diff v0.2.0 e1ea56d -- code/sdk/schemas` is empty (the 4 later commits touch docs/CHANGELOG/`uv.lock` only), so the vendored schemas are byte-identical to the release. Spec page still "Agentic Payment Protocol (v0.2)", no newer draft or deprecation. Closed vct `mandate.checkout.1` / `mandate.payment.1` unchanged. |
+| MCP | **2026-07-28** | Versioning page still lists 2026-07-28 as *current*. Authorization page re-read: audience validation per RFC 8707, "MUST NOT accept or transit any other tokens", 401/403/400 table, `insufficient_scope` challenge — unchanged. Noted: "Servers MUST account for scope hierarchies" — this lane's scopes are flat (no scope implies another), so no hierarchy logic is needed until one is defined. |
+| ACP / UCP / A2A | unpinned, explicitly unconfigured | No approved merchant/processor/partner since S4. |
+
+### Decision (amended): MCP executor ⇄ gateway transport, and principal mapping
+
+The S0/S3 interface stands: the gateway (opus-foundation) terminates MCP Streamable HTTP and validates the external
+token (iss, `aud` = canonical MCP URI, exp, ES256/RS256 allowlist), drops it, and calls the Python executor with an
+ES256 executor assertion (`aud` `brandme:mcp-executor`, ≤60 s, single-use `jti`) carrying the principal; tool calls
+carry `request_id, protocol_version, environment, tool, arguments, idempotency_key` only. Foundation has not built the
+MCP transport yet (only `/api/v1` session + bearer). Amendments now that foundation's identity boundary exists:
+
+1. **One Python principal.** Commerce, MCP and the orchestrator adopt `brandme_core.domains.base.Principal`
+   (foundation) and drop `brandme_core/domains/commerce/principal.py`. Foundation's principal has no `issuer` or
+   first-party flag, so the rule is: **first-party = `session_id is not None and delegation_id is None`** (cookie
+   session, `via: 'session'` in TS). Bearer/MCP principals (`session_id` null) are agents.
+2. **Delegations are resolved by the commerce domain**, not the gateway: foundation bearer principals arrive with
+   `delegationId: null`. For an agent principal the domain looks up the single active `AgentDelegation` for
+   `(member_id, client_id)`; creating a second active grant for the same pair is refused. A supplied `delegation_id`
+   must match that grant.
+3. **Scopes gate delegated clients, not the member.** Foundation session principals carry only
+   `profile:*`/`privacy:manage`. A first-party session acts with the member's own authority on their own commerce
+   objects (object-level ownership still enforced); `commerce:*` scopes are required for bearer/MCP agents and must
+   also be in the delegation. Request to opus-foundation (non-blocking): if it prefers explicit scopes, add
+   `commerce:research`, `commerce:cart`, `commerce:purchase` to session principals; the domain accepts either.
+4. **Assurance.** Approvals need `aal2`. Foundation's dev identity is `simulated`; a `simulated` approval is accepted
+   **only** in `demo`/`development` and **only** against a simulation provider — never sandbox/production.
+5. **Audiences stay separate.** Gateway `/api/v1` bearer tokens use `cfg.oidcAudience`; MCP tokens must carry the
+   canonical MCP resource URI. Neither is accepted at the other surface (no audience sharing, no passthrough).
+6. **TS routers** read the principal from `res.locals.principal` (foundation convention) and map
+   `via === 'session'` to first-party; errors use foundation's `ApiProblem`/problem+json shape.
+
+### Plan for this round (each stage recorded here when done)
+S8 adopt foundation `Principal`/errors/event registration/data categories · S9 Spanner repository for V006/V007
+through `run_command` (outbox in the same transaction), tests parametrized over in-memory and emulator ·
+S10 `packages/provider-contracts` extension · S11 routers aligned to foundation middleware + unmounted Python domain
+HTTP adapter · S12 console `(ops)/providers/**` and `(ops)/commerce/operations` per shell contract v1 ·
+S13 simulator exchange behavior (BM-COM-011 exchange case).
