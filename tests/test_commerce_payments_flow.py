@@ -234,35 +234,143 @@ def test_live_simulator_purchase_through_stripe_test_mode():
 
 
 # ----------------------------------------------------------------------- composition
+SK_TEST = "sk_" + "test_" + "0" * 24  # built at runtime: no key-shaped literal in the repo
+STRIPE = {"BRANDME_COMMERCE_PAYMENTS": "stripe_test"}
+
+
 @pytest.mark.parametrize("environment,env,code", [
-    ("development", {"BRANDME_COMMERCE_PAYMENTS": "stripe_test"}, "stripe_test_not_configured"),
-    ("development", {"BRANDME_COMMERCE_PAYMENTS": "stripe_test", "STRIPE_TEST_SECRET_KEY": "sk_live_" + "a" * 24},
-     "stripe_key_refused"),
+    ("development", STRIPE, "stripe_test_not_configured"),
+    ("development", {**STRIPE, "STRIPE_TEST_SECRET_KEY": "sk_" + "live_" + "a" * 24}, "stripe_key_refused"),
+    ("development", {**STRIPE, "STRIPE_TEST_SECRET_KEY": "pk_" + "test_" + "a" * 24}, "stripe_key_refused"),
+    ("development", {**STRIPE, "STRIPE_TEST_SECRET_KEY": "whsec_" + "a" * 24}, "stripe_key_refused"),
+    ("development", {**STRIPE, "STRIPE_TEST_SECRET_KEY": SK_TEST, "STRIPE_TEST_WEBHOOK_SECRET": "nope"},
+     "stripe_webhook_secret_refused"),
+    ("development", {**STRIPE, "STRIPE_TEST_SECRET_KEY": SK_TEST, "STRIPE_LOG": "debug"}, "stripe_log_refused"),
+    ("development", {**STRIPE, "STRIPE_TEST_SECRET_KEY": SK_TEST, "STRIPE_LOG": " Info "}, "stripe_log_refused"),
+    ("development", {**STRIPE, "STRIPE_TEST_SECRET_KEY": SK_TEST, "BRANDME_STRIPE_EGRESS_PROXY": "socks5://p:1"},
+     "stripe_egress_proxy_refused"),
     ("development", {"BRANDME_COMMERCE_PAYMENTS": "paypal"}, "payments_rail_unknown"),
     ("production", {"BRANDME_COMMERCE_PAYMENTS": "simulated"}, "payments_rail_not_allowed"),
-    ("sandbox", {"BRANDME_COMMERCE_PAYMENTS": "stripe_test", "STRIPE_TEST_SECRET_KEY": "sk_test_" + "a" * 24},
-     "payments_rail_not_allowed"),
+    ("sandbox", {**STRIPE, "STRIPE_TEST_SECRET_KEY": SK_TEST}, "payments_rail_not_allowed"),
+    ("staging", {}, "environment_unknown"),
 ])
 def test_composition_refuses_to_boot_rather_than_fall_back(environment, env, code):
     from brandme_core.domains.commerce.composition import CompositionError, build_providers
+    from tests.fixtures.providers.stripe_double import StripeSemanticsDouble
     with pytest.raises(CompositionError) as e:
-        build_providers(environment, env=env)
-    assert e.value.code == code and "sk_" not in str(e.value)
+        build_providers(environment, env=env, stripe_wire_factory=StripeSemanticsDouble(lambda: None))
+    assert e.value.code == code and "sk_" not in str(e.value) and "whsec_" not in str(e.value)
 
 
 def test_composition_selects_the_rail_and_labels_it():
-    pytest.importorskip("stripe")
     from brandme_core.domains.commerce.composition import build_providers
+    from tests.fixtures.commerce.harness import Clock
+    from tests.fixtures.providers.stripe_double import StripeSemanticsDouble
     sim = build_providers("development", env={})
     assert sim.payments_rail == "simulated" and sim.demo_atelier.payments.simulation
-    stripe = build_providers("demo", env={"BRANDME_COMMERCE_PAYMENTS": "stripe_test",
-                                          "STRIPE_TEST_SECRET_KEY": "rk_test_" + "a" * 24})
+    assert sim.payments is sim.demo_atelier.payments
+    clock = Clock()
+    stripe = build_providers("demo", env={**STRIPE, "STRIPE_TEST_SECRET_KEY": SK_TEST}, clock=clock,
+                             stripe_wire_factory=StripeSemanticsDouble(clock))
     conn = stripe.registry.get("demo_atelier")
     assert stripe.demo_atelier.payments.processor_id == "stripe_test" and conn.simulation  # the merchant is fictional
     assert "Stripe test mode" in conn.disclosure and "no real money" in conn.disclosure
     assert conn.capability("checkout.submit").state == "sandbox"
     assert conn.capability("checkout.submit").evidence_ref is None  # nothing exercised yet
+    assert conn.payment_rail.mode == "sandbox" and conn.payment_rail.environment == "demo"
     assert build_providers("production", env={}).registry.all() == []  # no simulated merchant outside dev
+    # The founder's least-privilege choice: a restricted test key is accepted too.
+    restricted = build_providers("development", env={**STRIPE, "STRIPE_TEST_SECRET_KEY": "rk_" + "test_" + "A1" * 12},
+                                 stripe_wire_factory=StripeSemanticsDouble(clock))
+    assert restricted.payments_rail == "stripe_test"
+
+
+def test_composition_builds_the_real_sdk_wire_without_a_network_call():
+    pytest.importorskip("stripe")
+    from brandme_core.domains.commerce.composition import build_providers
+    from brandme_core.domains.providers.payments.stripe_wire import SdkStripeWire
+    built = build_providers("development", env={**STRIPE, "STRIPE_TEST_SECRET_KEY": SK_TEST})
+    assert isinstance(built.payments._wire, SdkStripeWire)
+
+
+class _RecordingEnv(dict):
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.read = set()
+
+    def __getitem__(self, k):
+        self.read.add(k)
+        return super().__getitem__(k)
+
+    def __contains__(self, k):
+        self.read.add(k)
+        return super().__contains__(k)
+
+    def get(self, k, default=None):
+        self.read.add(k)
+        return super().get(k, default)
+
+
+def test_composition_reads_only_allowlisted_env():
+    from brandme_core.domains.commerce.composition import ENV_KEYS, build_providers
+    from tests.fixtures.providers.stripe_double import StripeSemanticsDouble
+    env = _RecordingEnv({"ANTHROPIC_API_KEY": "x", "ANTHROPIC_BASE_URL": "http://x", "HTTPS_PROXY": "http://p:1",
+                         "STRIPE_SECRET_KEY": SK_TEST, "STRIPE_API_KEY": SK_TEST, **STRIPE,
+                         "STRIPE_TEST_SECRET_KEY": SK_TEST})
+    build_providers("development", env=env, stripe_wire_factory=StripeSemanticsDouble(lambda: None))
+    assert env.read and env.read <= set(ENV_KEYS)
+    assert not any(k.startswith("ANTHROPIC_") or k == "HTTPS_PROXY" for k in ENV_KEYS)
+
+
+def test_composition_runs_trust_path_check(monkeypatch):
+    import importlib
+    from brandme_core.domains.commerce.composition import CompositionError, build_providers
+    config = importlib.import_module("brandme_core.config")  # the module (the package re-exports a settings object)
+    seen = []
+
+    def violating(mode, registrations):
+        seen.extend(registrations)
+        return ["commerce.checkout via test is simulated without a visible simulation label"]
+    monkeypatch.setattr(config, "check_registrations", violating)
+    with pytest.raises(CompositionError) as e:
+        build_providers("development", env={})
+    assert e.value.code == "trust_path_violation"
+    assert [r.kind.value for r in seen] == ["simulated", "simulated"] and all(r.simulation_label for r in seen)
+
+
+def test_default_path_imports_without_stripe():
+    import subprocess
+    import sys
+    from pathlib import Path
+    code = ("import sys; sys.modules['stripe'] = None\n"
+            "from brandme_core.domains.commerce.composition import build_providers\n"
+            "p = build_providers('development', env={})\n"
+            "assert p.payments_rail == 'simulated' and 'stripe' not in [m for m in sys.modules if sys.modules[m]]\n"
+            "print('ok')")
+    out = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).resolve().parents[1], capture_output=True,
+                         text=True, timeout=120)
+    assert out.returncode == 0 and out.stdout.strip().endswith("ok"), out.stderr[-2000:]
+
+
+def test_runtime_stripe_failure_never_switches_rail():
+    from brandme_core.domains.commerce.composition import build_providers
+    from brandme_core.domains.providers.payments.stripe_wire import WireError
+    from tests.fixtures.commerce.harness import Clock
+    from tests.fixtures.providers.stripe_double import StripeSemanticsDouble
+    clock = Clock()
+    double = StripeSemanticsDouble(clock)
+    built = build_providers("development", env={**STRIPE, "STRIPE_TEST_SECRET_KEY": SK_TEST}, clock=clock,
+                            stripe_wire_factory=double)
+    adapter = built.registry.get("demo_atelier").adapter
+    rail = adapter.payments
+    cart = adapter.create_cart("fictional-demo-merchant", [line()])
+    q = adapter.quote(cart)
+    double.fail_next("create_payment_intent", WireError("api"))
+    with pytest.raises(ProviderError) as e:
+        adapter.submit(SubmitRequest("bm-" + "5" * 32, q.checkout_reference, "h", Money(8900 + 712, "USD"), None,
+                                     (line(),), q.payee_ref))
+    assert e.value.kind is ProviderErrorKind.OUTCOME_UNKNOWN
+    assert built.registry.get("demo_atelier").adapter.payments is rail and rail.processor_id == "stripe_test"
 
 
 # ------------------------------------------------------------------- exchanges (BM-COM-011)
