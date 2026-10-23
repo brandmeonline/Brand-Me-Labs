@@ -1,0 +1,22 @@
+instance: AlreadyExists
+FAIL: CREATE INDEX UsersActive ON Users => 400 Error parsing Spanner DDL statement: CREATE INDEX UsersActive ON Users(is_active) WHERE is_active = true : Syntax error on line 1, column 62: Expecting 'IS'
+FAIL: CREATE INDEX UserAgents ON Users => 400 Error parsing Spanner DDL statement: CREATE INDEX UserAgents ON Users(is_agent) WHERE is_agent = true : Syntax error on line 1, column 59: Expecting 'IS' bu
+FAIL: CREATE INDEX AssetsActive ON Assets => 400 Error parsing Spanner DDL statement: CREATE INDEX AssetsActive ON Assets(is_active) WHERE is_active = true : Syntax error on line 1, column 64: Expecting 'I
+FAIL: CREATE INDEX MaterialsRecyclable ON Materials => 400 Error parsing Spanner DDL statement: CREATE INDEX MaterialsRecyclable ON Materials(is_recyclable) WHERE is_recyclable = true : Syntax error on line 1, colum
+FAIL: CREATE TABLE Owns  => 400 Table Owns does not reference parent key column user_id.
+FAIL: CREATE INDEX OwnsCurrent ON Owns => 400 Error parsing Spanner DDL statement: CREATE INDEX OwnsCurrent ON Owns(asset_id, is_current) WHERE is_current = true : Syntax error on line 1, column 73: Exp
+FAIL: CREATE INDEX OwnsByAsset ON Owns => 404 Table not found: Owns
+FAIL: CREATE INDEX OwnsAgentFacilitated ON Owns => 400 Error parsing Spanner DDL statement: CREATE INDEX OwnsAgentFacilitated ON Owns(agent_facilitated) WHERE agent_facilitated = true : Syntax error on line 1, c
+FAIL: CREATE TABLE Created  => 400 Table Created does not reference parent key column user_id.
+FAIL: CREATE INDEX FriendsAccepted ON FriendsWith => 400 Error parsing Spanner DDL statement: CREATE INDEX FriendsAccepted ON FriendsWith(status) WHERE status = 'accepted' : Syntax error on line 1, column 66: Expe
+FAIL: CREATE INDEX ConsentActive ON ConsentedByAgent => 400 Error parsing Spanner DDL statement: CREATE INDEX ConsentActive ON ConsentedByAgent(revoked_at) WHERE revoked_at IS NULL : Syntax error on line 1, column 80
+FAIL: CREATE INDEX ConsentGlobal ON ConsentPolicies => 400 Error parsing Spanner DDL statement: CREATE INDEX ConsentGlobal ON ConsentPolicies(user_id, scope) WHERE scope = 'global' : Syntax error on line 1, column 7
+FAIL: CREATE INDEX ConsentActive ON ConsentPolicies => 400 Error parsing Spanner DDL statement: CREATE INDEX ConsentActive ON ConsentPolicies(is_revoked) WHERE is_revoked = false : Syntax error on line 1, column 76:
+FAIL: CREATE TABLE CubeFaces  => 400 Table CubeFaces does not reference parent key column asset_id.
+FAIL: CREATE INDEX AuditEscalated ON AuditLog => 400 Error parsing Spanner DDL statement: CREATE INDEX AuditEscalated ON AuditLog(escalated_to_human, human_approver_id) WHERE escalated_to_human = true : Syntax
+FAIL: CREATE INDEX AuditByAgent ON AuditLog => 400 Error parsing Spanner DDL statement: CREATE INDEX AuditByAgent ON AuditLog(agent_involved, agent_id) WHERE agent_involved = true : Syntax error on line 1, c
+FAIL: CREATE INDEX AnchorPending ON ChainAnchor => 400 Error parsing Spanner DDL statement: CREATE INDEX AnchorPending ON ChainAnchor(anchor_status) WHERE anchor_status = 'pending' : Syntax error on line 1, colu
+FAIL: CREATE INDEX MCPInvocationsPending ON MCPInvocations => 400 Error parsing Spanner DDL statement: CREATE INDEX MCPInvocationsPending ON MCPInvocations(human_approval_required) WHERE human_approval_required = true : Sy
+FAIL: CREATE INDEX AgentTxPending ON AgentTransaction => 400 Error parsing Spanner DDL statement: CREATE INDEX AgentTxPending ON AgentTransaction(status) WHERE status = 'pending_approval' : Syntax error on line 1, col
+FAIL: CREATE PROPERTY GRAPH IntegritySpineGraph   NODE TABLES  => 400 Error parsing Spanner DDL statement: CREATE PROPERTY GRAPH IntegritySpineGraph
+applied=72 failed=20 total=92

@@ -1,0 +1,21 @@
+{
+  "name": "@brandme/design-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Brand.Me design tokens generated from the design contract; shared by consumer and console",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./generated/tokens.css"
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "check": "node scripts/generate.mjs --check",
+    "type-check": "tsc --noEmit",
+    "test": "node --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "5.9.3"
+  }
+}

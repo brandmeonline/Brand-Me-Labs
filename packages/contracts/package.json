@@ -1,0 +1,29 @@
+{
+  "name": "@brandme/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generated Brand.Me API vocabulary: OpenAPI 3.1, TypeScript types, typed client, Python models",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./openapi.json": "./generated/openapi.json",
+    "./domain.schema.json": "./generated/domain.schema.json"
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "check": "node scripts/generate.mjs --check",
+    "type-check": "tsc --noEmit",
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  }
+}
