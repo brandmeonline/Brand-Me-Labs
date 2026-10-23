@@ -366,3 +366,75 @@ Still open:
   - Unit Tests: compactc downloaded and sha256-verified, the 15 circuits recompiled in about 56 s, and `artifact manifest OK` passed the `git diff --exit-code` guard. Proving keys built on the runner therefore reproduce the committed manifest. Then 58/58.
   - Build Test: green.
   - Security Scan: the digest-pinned Trivy reported no secrets; `pnpm audit` stays informational.
+
+## Stage 10 — tuple re-verification on `main` (2026-10-23)
+
+`main` at `5174ec2`. Between Stage 9 and this stage, the repo owner merged #42–#50, which changed lane-owned files (`brandme-chain/`, `brandme_core/domains/{rights,privacy}/`, `tests/test_{rights,privacy}*.py`). Those PRs are not recorded in earlier stages. They are listed here by title, with the suites below as evidence of current behavior:
+- #42: build and verify all Docker images before publishing
+- #43: secure rights routes, wire domain events, and update Preprod
+- #44: persist operations and reconcile authenticated transaction evidence
+- #45: reconcile durable operations and project finalized entitlements
+- #46: patch production dependencies and gate image publishing on audits
+- #47: deliver durable outbox events through a fenced Pub/Sub worker
+- #48: preserve deletion freezes and resume incomplete restores safely
+- #49: add authenticated rights and partial My Data backend
+- #50: add durable selected rights exports and authenticated downloads
+
+### Midnight tuple, re-verified 2026-10-23
+
+Sources, both fetched 2026-10-23:
+- the [support matrix](https://docs.midnight.network/relnotes/support-matrix), which no longer shows a "Last Updated" date;
+- [Networks and environments](https://docs.midnight.network/guides/networks-and-environments).
+
+| Component | Matrix (all networks unless noted) | Pinned here | Change |
+|---|---|---|---|
+| Ledger | ledger 8 ("Preview, Preprod, and Mainnet run ledger 8"); no package version listed | `@midnight-ntwrk/ledger-v8@8.1.2` | none. npm has 8.1.3 (2026-10-02); not adopted without a matrix requirement |
+| Compact toolchain | 0.31.1 | `compactc 0.31.1` | none |
+| Compact runtime | 0.16.0 | 0.16.0 | none |
+| Compact JS | 2.5.1 | 2.5.1 | none |
+| Platform JS | 2.2.4 | 2.2.4 | none |
+| On-chain runtime | 3.0.0 | 3.0.0 | none |
+| Wallet SDK | 1.2.0 | 1.2.0 | none |
+| Midnight.js / testkit-js | 4.1.1 | 4.1.1 | none |
+| DApp connector API | 4.0.1 | 4.0.1 | none |
+| **Proof server** | **8.1.3** | **`proof-server:8.1.3@sha256:0f4ab071…115c`** | **was 8.1.0** |
+| **Node** | **1.0.400** (Preview now too) | local network **`midnight-node:1.0.400@sha256:915b117f…040f`** | **local was 1.0.300**, the previous Preview version |
+| Indexer | Preview 4.3.5; Preprod/Mainnet 4.3.302 ("no public tag, release, or image yet") | local 4.3.5 | none |
+
+Image digests come from the Docker Hub tag API. The same API returns the digests already pinned for 8.1.0 and 1.0.300, which confirms the method.
+
+**Do not bump to ledger 9.** The matrix says compactc 0.34.0/0.35.0 and compact-runtime 0.19.0/0.20.0 "target ledger 9", "don't work with the versions in this matrix", and "Ledger 8 can't read the initial contract state of these contracts, so you can't deploy them to these networks." npm `latest` for `compact-runtime` is 0.20.0, so a routine dependency update would break deployment.
+
+### Providers
+- **Preprod.** The Midnight-hosted `rpc.preprod` and `indexer.preprod.midnight.network` endpoints were retired at 22:00 UTC on 2026-10-09; the indexer now answers HTTP 410.
+  - Preprod is Blockfrost-only and every request needs a project token. #43 moved `network.ts` to `preprodEndpoints(projectId)`.
+  - Stage 4's Preprod read-path check used the retired endpoints.
+- **Faucets** (Nethermind; 5,000 tNIGHT per request, rate-limited):
+  - Preview: `midnight-tmnight-preview.nethermind.dev`
+  - Preprod: `midnight-tmnight-preprod.nethermind.dev`
+  - Mainnet has none.
+
+### Verified in this container
+- **On `main` before the pin change:**
+  - install and type-check pass;
+  - `pnpm test:midnight:local`: manifest unchanged, 10 files / 90 tests (179 s).
+- **After the pin change:** type-check passes; unit suites 90/90.
+- **Durable operation store:** `pnpm --filter @brandme/chain test:spanner` on Spanner emulator 1.5.45: 3 files / 26 tests.
+- **Python lane suites:** `tests/test_privacy*.py` and `tests/test_rights*.py`, with dependencies from `scripts/python/requirements.lock`: 99/99.
+- **Network verification with the new pins.** Both images were pulled by the pinned digests, so Docker verified their content.
+  - **Isolation run** (node 1.0.400 with the previous proof server 8.1.0): 7/7 in 551 s. Its evidence file was not kept, because its tuple label read 8.1.3 from `toolchain.json`.
+  - **Final run** through `scripts/local-network.sh`: **7/7 in 556 s**. The running services reported node `1.0.400-87c0fbdb` and proof server `8.1.3`, with indexer 4.3.5.
+    - Evidence: `brandme-chain/evidence/undeployed-2026-10-23T12-13-38-231Z.json`. Its tuple labels now come from `toolchain.json` and `package.json`, and its source sha256 matches the manifest.
+    - One behaviour differs from the 2026-10-10 evidence. The losing concurrent acceptance is recorded as `Reconciling` ("broadcast pending; do not resubmit") instead of `Failed`, following the reconciliation added in #44/#45. Exactly one acceptance still finalizes.
+- **CI on `240a967`:** all 17 checks green or skipped, including the lane gate, the durable operation store, the Python suites and all five Docker image builds.
+
+### Still open
+- **Preprod writes.** Still not observed. `pnpm test:midnight:preprod` refuses to start without `MIDNIGHT_BLOCKFROST_PROJECT_ID` (a Blockfrost Midnight Preprod token) and `MN_PREPROD_SEEDS` (three or more distinct funded test seeds with tNIGHT and DUST). Neither is set in this environment.
+- **Trust inventory.** `brandme_core/config.py:300,304` still registers `chain.midnight`/`chain.cardano` as simulated via the removed `src/services/*` files.
+  - `tests/foundation/test_mode_guard.py` requires strict modes to refuse `chain`, so dropping or retyping those entries changes foundation's boot policy. That is foundation's call.
+  - Proposal: cite the current implementations instead. The Midnight adapter is SANDBOX-grade until Preprod writes and external review exist; Cardano is UNCONFIGURED (`UnavailableCardanoAnchor`).
+- **Resolved on `main` since Stage 8:**
+  - lane routes mounted (`brandme-gateway/src/routes/v1/index.ts:119-123`);
+  - lane events registered (`brandme_core/domains/events.py:62-88`);
+  - lane Python suites run in CI against an emulator (`.github/workflows/ci-cd.yml:154`).
+- **`CLAUDE.md`.** The `brandme-chain` row is corrected in this stage, with file:line evidence.

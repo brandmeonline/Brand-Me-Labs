@@ -24,7 +24,7 @@ export function resolveNetwork(): { env: EnvironmentConfiguration; endpoints: Mi
       env: new LocalTestConfiguration(ports),
       endpoints: localEndpoints(ports),
       // Genesis-funded seeds of the local dev chain (testkit LocalTestEnvironment.genesisMintWalletSeed).
-      // Seeds 1–3 are funded in the node 1.0.300 dev genesis (seed 4 is not).
+      // Seeds 1–3 are funded in the dev genesis (exercised on node 1.0.300 and 1.0.400); seed 4 was unfunded on 1.0.300.
       seeds: ['0000000000000000000000000000000000000000000000000000000000000001',
         '0000000000000000000000000000000000000000000000000000000000000002',
         '0000000000000000000000000000000000000000000000000000000000000003',
