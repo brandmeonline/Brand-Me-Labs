@@ -7,11 +7,11 @@
  * by the gateway and domain with the operator's own session.
  */
 
-import { ConsolePageHeader } from '@/components/console-page-header'
 import { resolveReport } from './actions'
 import { formatTime, opsFetch, type Page } from './_lib/ops-gateway'
 import styles from './_lib/ops.module.css'
 import { ActionBanner, OpsState } from './_lib/states'
+import { OpsPageHeader } from './_lib/page-header'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +43,7 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
 
   return (
     <>
-      <ConsolePageHeader
+      <OpsPageHeader
         eyebrow="Trust & safety"
         title="Moderation"
         description="Reports members filed about content they saw. Reporters are never shown to the reported member."
