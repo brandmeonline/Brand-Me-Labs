@@ -17,10 +17,13 @@ requests and outcomes — not model reasoning.
 
 from __future__ import annotations
 
+import contextvars
 import hashlib
+import logging
 import threading
 import time
 import uuid
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Protocol, Tuple
 
@@ -41,6 +44,8 @@ MODE_TOOLS = {
 }
 MAX_CALLS = 12
 MAX_SECONDS = 30.0
+_KNOWN_TOOLS = frozenset(t["name"] for t in McpToolExecutor.list_tools()["tools"])
+_log = logging.getLogger("brandme.assistant")
 
 
 class IdempotencyReuse(PermissionError):
@@ -188,6 +193,20 @@ class AssistantRuntime:
             if task.state != "queued":
                 return task
             task.state = "running"
+        try:
+            return self._loop(principal, task, planner)
+        except BaseException:
+            # Never leave a task "running" that nothing is running: it could not be retried or cancelled.
+            if task.state in ("running", "queued"):
+                task.state = "failed"
+                self._emit(task, "error", {"code": "runtime_failed"})
+            raise
+        finally:
+            close = getattr(planner, "close", None)
+            if close is not None:
+                close(task.id)
+
+    def _loop(self, principal: Principal, task: AssistantTask, planner: Planner) -> AssistantTask:
         allowed = MODE_TOOLS[task.mode]
         max_seconds = float(getattr(planner, "max_seconds", MAX_SECONDS))
         observations: List[Dict[str, Any]] = []
@@ -205,6 +224,11 @@ class AssistantRuntime:
                 task.state = "failed"
                 self._emit(task, "error", {"code": exc.code})
                 return task
+            except Exception:  # a planner bug: fixed code, no exception text in member events
+                _log.exception("assistant planner failed")
+                task.state = "failed"
+                self._emit(task, "error", {"code": "planner_failed"})
+                return task
             if not proposals:
                 break
             for p in proposals:
@@ -212,11 +236,12 @@ class AssistantRuntime:
                     task.state = "failed"
                     self._emit(task, "error", {"code": "task_budget_exhausted"})
                     return task
-                if task.cancel_requested:
-                    break
-                self._emit(task, "proposed_action", {"tool": p.tool})
+                if task.cancel_requested or task.state == "awaiting_approval":
+                    break  # the rest of the batch never runs; the planner reports it as not executed
+                shown = p.tool if p.tool in _KNOWN_TOOLS else "unknown_tool"  # no model text in events
+                self._emit(task, "proposed_action", {"tool": shown})
                 if p.tool not in allowed:
-                    self._emit(task, "action_refused", {"tool": p.tool, "code": "tool_not_allowed_in_mode"})
+                    self._emit(task, "action_refused", {"tool": shown, "code": "tool_not_allowed_in_mode"})
                     observations.append({"tool": p.tool, "status": "error", "problem": {"code": "tool_not_allowed_in_mode"}})
                     continue
                 calls += 1
@@ -253,3 +278,26 @@ class AssistantRuntime:
 def _summary(content: Dict[str, Any]) -> Dict[str, Any]:
     keep = ("cart_id", "revision", "operation_id", "state", "display_total", "purchase", "simulation")
     return {k: content[k] for k in keep if k in content}
+
+
+class TaskRunner:
+    """Runs tasks off the request thread for planners that take longer than an HTTP request
+    (a model run outlives the gateway's domain-call timeout). The caller answers 202 and the
+    client follows the task's events. Context (the request correlation id) goes with the task."""
+
+    def __init__(self, runtime: AssistantRuntime, *, max_workers: int = 2):
+        self.runtime = runtime
+        self._pool = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="assistant-task")
+
+    def submit(self, principal: Principal, task_id: str, planner: Planner) -> Future:
+        return self._pool.submit(contextvars.copy_context().run, self._run, principal, task_id, planner)
+
+    def _run(self, principal: Principal, task_id: str, planner: Planner) -> Optional[AssistantTask]:
+        try:
+            return self.runtime.run(principal, task_id, planner)
+        except Exception:  # the task is already marked failed; keep the worker alive
+            _log.exception("assistant task failed")
+            return None
+
+    def shutdown(self, wait: bool = True) -> None:
+        self._pool.shutdown(wait=wait)

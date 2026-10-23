@@ -18,8 +18,8 @@ import json
 import re
 import secrets
 import time
-from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 import jsonschema
 
@@ -243,6 +243,9 @@ _AUDIT_KEY = secrets.token_bytes(32)
 def _audit_ref(value: Any) -> str:
     data = value if isinstance(value, str) else json.dumps(value, sort_keys=True, default=str)
     return hmac.new(_AUDIT_KEY, data.encode(), hashlib.sha256).hexdigest()[:16]
+
+
+audit_ref = _audit_ref  # the same keyed ref in run logs joins them to audit records
 
 
 class McpToolExecutor:

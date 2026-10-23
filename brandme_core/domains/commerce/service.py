@@ -101,6 +101,11 @@ def correlation(correlation_id: Optional[str]) -> Iterator[None]:
         _CORRELATION.reset(token)
 
 
+def current_correlation() -> Optional[str]:
+    """The request correlation id set by ``correlation()``, if any."""
+    return _CORRELATION.get()
+
+
 @contextmanager
 def processing_basis(at: datetime) -> Iterator[None]:
     """Writes made inside this block are refused if a deletion of their category committed after ``at``."""

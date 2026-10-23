@@ -140,13 +140,14 @@ Handler = Callable[[Principal, Dict[str, Any], Mapping[str, str]], Tuple[int, An
 class CommerceHttpApi:
     def __init__(self, *, service: CommerceService, verifier: ExecutorAssertionVerifier,
                  runtime: Any = None, planner_factory: Optional[Callable[[], Any]] = None,
-                 setup_store: Any = None):
+                 setup_store: Any = None, task_runner: Any = None):
         if verifier.audience != DOMAIN_AUDIENCE or not verifier.allow_session:
             raise ValueError("the commerce domain hop needs a verifier for brandme:commerce-domain with sessions")
         self.svc = service
         self.verifier = verifier
         self.runtime = runtime
         self.planner_factory = planner_factory
+        self.task_runner = task_runner  # runs planners marked ``background`` (model runs) off the request
         # Operator setup and connection tests; the store defaults to in-memory (InMemoryProviderSetupStore).
         self.setup = ProviderSetupService(service.registry, setup_store, clock=service.clock)
         # operation -> (allowed argument names, handler)
@@ -473,7 +474,13 @@ class CommerceHttpApi:
         if task.state != "queued":  # a retried create: the task already ran (or is running)
             return 200, {"id": task.id, "state": task.state, "mode": task.mode.value}
         if self.planner_factory is not None:
-            task = self.runtime.run(agent, task.id, self.planner_factory())
+            planner = self.planner_factory()
+            if getattr(planner, "background", False):
+                if self.task_runner is None:
+                    raise InvalidRequest("this planner needs a background task runner", code="assistant_unavailable")
+                self.task_runner.submit(agent, task.id, planner)
+                return 202, {"id": task.id, "state": task.state, "mode": task.mode.value}
+            task = self.runtime.run(agent, task.id, planner)
         return 201, {"id": task.id, "state": task.state, "mode": task.mode.value}
 
     def _task_reader(self, p: Principal) -> Principal:
