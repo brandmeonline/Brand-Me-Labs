@@ -115,8 +115,10 @@ class RewardsService:
                 "badges": bs,
                 "badge_progress": progress,
                 "next_milestone": nxt,
+                # Launch table: only rules with a wired source. Referral and research ids stay
+                # reserved in RULES (and refuse to settle) but are not advertised (check-in Q21).
                 "rules": [{"rule_id": r.id, "version": r.version, "points": r.points, "cap_points": r.cap_points, "cap_window": r.cap_window,
-                           "lifetime_max": r.lifetime_max, "available": r.wired, "text": r.member_text} for r in RULES.values()],
+                           "lifetime_max": r.lifetime_max, "available": True, "text": r.member_text} for r in RULES.values() if r.wired],
                 "recovery_policy": "If awarded points are reversed after you spent them, the shortfall is shown as recovery due and "
                                    "offset from your future eligible awards. Spendable points never go below zero and are never a cash debt.",
             }

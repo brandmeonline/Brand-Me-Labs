@@ -77,7 +77,7 @@ SHAREABLE_FIELDS: Dict[str, Tuple[str, ...]] = {
 # What an outfit share discloses about each item of the pinned version.
 OUTFIT_ITEM_FIELDS = ("title", "category", "color_family", "colors")
 
-# PD-10 / PD-11 defaults, pending ratification: see ``policy``.
+# PD-10 / PD-11 values (ratified 2026-10-23): see ``policy``.
 MIN_LIFETIME = policy.SHARE_MIN_LIFETIME
 MAX_LIFETIME = policy.SHARE_MAX_LIFETIME
 MAX_ACTIVE_SHARES = policy.SHARE_MAX_ACTIVE

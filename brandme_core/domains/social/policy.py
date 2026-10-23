@@ -1,7 +1,8 @@
 """
-Social lane defaults that the contracts do not fix. They ship now so the lane
-does not stall, and wait for founder ratification at the lane check-in. Each
-can be changed here alone; services and tests read these names.
+Social lane defaults that the contracts do not fix. Ratified as written at the
+2026-10-23 lane check-in (the founder delegated the rulings to the lane; see
+docs/build/status/opus-consumer-domains.md, "Check-in rulings"). Each can still
+be changed here alone; services and tests read these names.
 
 * PD-10: a share lives between ``SHARE_MIN_LIFETIME`` and ``SHARE_MAX_LIFETIME``;
   a member holds at most ``SHARE_MAX_ACTIVE`` unrevoked, unexpired shares.
@@ -22,4 +23,4 @@ SHARE_MAX_LIFETIME = timedelta(days=365)
 SHARE_MAX_ACTIVE = 200
 SHARE_GONE_STATUS = 410  # 404 is the alternative under PD-11
 
-RATIFICATION = {"PD-09": "pending", "PD-10": "pending", "PD-11": "pending"}
+RATIFICATION = {"PD-09": "ratified 2026-10-23", "PD-10": "ratified 2026-10-23", "PD-11": "ratified 2026-10-23"}

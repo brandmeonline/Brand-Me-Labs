@@ -732,3 +732,30 @@ Commits `eb12620`, `84fad9d`, `e48414a`, `b79436d`, `efa1a25` on `claude/opus-co
   - *Retarget to `main` (default):* merge `origin/main`, resolve V002 and persona overlaps in favour of the lane where `main` has stage-1 code, add the Pub/Sub emulator to the lane CI job, and retarget.
   - *Stay on bench; the integrator merges:* keep the overlay evidence current after each `main` move and do nothing else.
   - *Split the PR:* persona + wardrobe first, then social + rewards, then media + console. This is easier to review, but consumers wait on producers across PRs.
+
+## Check-in rulings — 2026-10-23
+The founder delegated all 21 questions to the lane ("use your best judgement on all questions"). Each is ruled as below. "Handoff" means the action belongs to another owner, and the lane does not edit their files.
+
+| Q | Ruling | Owner / state |
+|---|---|---|
+| 1 | **Enforce the shell contract.** | consumer-ui publishes `@/components/console-page-header` to `main` (it is not there at 5174ec2). The lane then swaps its adapter in one line. Until then the ops pages render unstyled on `main`: the shell's `--bm-*` tokens and classes are absent, and inputs show no borders. They pass all 13 smoke steps (see Stage 10). |
+| 2 | **PD-09 ratified.** | Handoff: the contracts lane adds the lane endpoints, `/mutes` and `target_member_id` to `packages/contracts`. `social.policy.RATIFICATION` is updated. |
+| 3 | **PD-10 ratified** (5 min–365 d; 200 active shares). | Done (`social.policy`). |
+| 4 | **PD-11 ratified** (410 `share_unavailable` with reason; 404 otherwise). | Done (`social.policy`). |
+| 5 | **Mute ratified as built.** No extension to shares or proposals. | Done. |
+| 6 | **PD-05: learning stays on.** This matches ch.03's `PersonaProfile` example (`learning_enabled: true`). | Handoff: the UI lane discloses it in onboarding. |
+| 7 | **Retention after deletion ratified:** `PersonaTombstones` plus anonymized reports. | Open: privacy-counsel review before launch. |
+| 8 | **The foundation worker imports `brandme_core.domains.persona.lane`.** | Handoff to foundation. The lane keeps `persona/outbox_worker.py` until that lands, then deletes it. |
+| 9 | **Foundation purges delivered outbox rows after 7 days. The privacy lane redacts a deleted subject's undelivered `member_private` payloads.** | Handoff to foundation and privacy. **Launch-blocking for account deletion.** |
+| 10 | **Commerce registers `commerce.order.observed@1`** as a closed contract mirroring `ORDER_OBSERVED_V1`. | Handoff to commerce. The lane retires its consumer copy when the registered contract exists. |
+| 11 | **PD-12:** first-party sessions grant `wardrobe:*`, `outfits:*`, `social:*`, `rewards:read`, `rewards:write`. Agents never get `social:write` or `rewards:write`. | Handoff to foundation. |
+| 12 | **PD-07:** the gateway mints a short-lived, audience-bound internal JWT. **PD-18:** the console uses a server-side token exchange. | Handoff to foundation and UI. |
+| 13 | **Lane subscription spec:** `brandme-<env>-consumer-lane` on the member_private topic; dead letter after 5 attempts; 7-day retention; a subscriber identity with `pubsub.subscriber` on that subscription only. | Handoff to infra. |
+| 14 | **Credentials: dev-only, created when an integration starts, each logged in the manifest.** No try-on provider key until a provider's terms pass review. | None needed yet; none created. |
+| 15 | **Trivy:** a dependency PR by the owning lanes; PR #52 accepts the pre-existing alerts. | `main`'s dependency patch (#46) is now merged in; see Stage 10 for the count after the merge. |
+| 16 | **V002 replaced in place.** No persistent database holds `main`'s stage-1 V002. | Done in the merge. |
+| 17 | **Merge `main` into the lane branch (no rebase) and retarget PR #52 to `main`.** | Done in Stage 10. |
+| 18 | **PD-19:** the shell nav links `/rewards-disputes`. | Handoff to the UI lane (no nav file on `main` yet). |
+| 19 | **Next lane build: a GCS-backed `MediaStore`** (signed URLs, lifecycle, purge), developed against a local GCS emulator and then a dev bucket (Q14). | Lane, next. |
+| 20 | **Defer the Firestore reward projection.** Rewards are read from Spanner. | Deferred. |
+| 21 | **Unwired rules (referral, research) are not advertised.** Their ids stay reserved and refuse to settle. | Done: the member `rules` list holds only wired rules (tested). |
