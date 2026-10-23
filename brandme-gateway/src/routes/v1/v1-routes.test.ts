@@ -127,4 +127,17 @@ describe('v1 rights/privacy routers (unmounted)', () => {
     expect(ok.status).toBe(202);
     expect(calls.at(-1)!.body).toMatchObject({ categories: null });
   });
+
+  it('rejects empty, duplicate, and contradictory category selections before the upstream call', async () => {
+    const headers = member('privacy:manage', { 'x-test-auth-age': '30' });
+    const before = calls.length;
+    for (const categories of [[], ['rights.operations', 'rights.operations']]) {
+      expect((await req('POST', '/v1/me/exports', { categories }, headers)).status).toBe(400);
+      expect((await req('POST', '/v1/me/deletion', { scope: 'category', categories, confirm: true }, headers)).status).toBe(400);
+    }
+    expect((await req('POST', '/v1/me/deletion', {
+      scope: 'account', categories: ['rights.operations'], confirm: true,
+    }, headers)).status).toBe(400);
+    expect(calls.length).toBe(before);
+  });
 });

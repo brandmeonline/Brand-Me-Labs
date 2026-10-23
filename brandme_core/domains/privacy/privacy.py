@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+import re
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping, Optional, Protocol, Sequence
 
@@ -64,8 +65,14 @@ class ForbiddenExportContent(Exception):
     pass
 
 
+class ExportFailed(Exception):
+    """A provider failure; details must not cross the member boundary."""
+
+
 class RestoreNotServing(Exception):
-    pass
+    def __init__(self, message: str, restore_id: str | None = None):
+        super().__init__(message)
+        self.restore_id = restore_id
 
 
 class ObjectStore(Protocol):
@@ -91,12 +98,26 @@ def _check_reauth(reauth_at: datetime, now: datetime) -> None:
 def _scan_forbidden(obj: Any, path: str = "$") -> None:
     if isinstance(obj, Mapping):
         for k, v in obj.items():
-            if str(k).lower() in FORBIDDEN_EXPORT_KEYS:
-                raise ForbiddenExportContent(f"forbidden key '{k}' at {path}")
+            # Domain handlers use both Python and JSON naming conventions.
+            if re.sub(r"[^a-z0-9]", "", str(k).lower()) in _FORBIDDEN_NORMALIZED:
+                raise ForbiddenExportContent("export contains forbidden credential material")
             _scan_forbidden(v, f"{path}.{k}")
     elif isinstance(obj, (list, tuple)):
         for i, v in enumerate(obj):
             _scan_forbidden(v, f"{path}[{i}]")
+
+
+_FORBIDDEN_NORMALIZED = frozenset(re.sub(r"[^a-z0-9]", "", k) for k in FORBIDDEN_EXPORT_KEYS)
+
+
+def _checked_outcome(outcome: DeletionOutcome, category: str) -> DeletionOutcome:
+    if (not isinstance(outcome, DeletionOutcome) or outcome.category != category
+            or type(outcome.rows_affected) is not int or outcome.rows_affected < 0
+            or type(outcome.done) is not bool
+            or any(v is not None and (not isinstance(v, str) or not v.strip() or len(v) > 1024)
+                   for v in (outcome.exception, outcome.detail))):
+        raise ValueError("invalid privacy handler outcome")
+    return outcome
 
 
 def _jsonable(o: Any) -> Any:
@@ -132,44 +153,86 @@ class MyDataService:
         ]
 
     # --------------------------------------------------------------- export
+    def _categories(self, categories: Optional[Sequence[str]]) -> list[str]:
+        cats = [c.key for c in self.reg.categories()] if categories is None else list(categories)
+        if not cats or len(cats) > 100 or any(not isinstance(c, str) for c in cats) or len(set(cats)) != len(cats):
+            raise ValueError("select between 1 and 100 distinct registered categories")
+        for key in cats:
+            self.reg.category(key)
+        return cats
+
     def export(self, subject_ref: str, reauth_at: datetime, categories: Optional[Sequence[str]] = None) -> dict[str, Any]:
         now = _now()
         _check_reauth(reauth_at, now)
-        cats = list(categories) if categories else [c.key for c in self.reg.categories()]
+        cats = self._categories(categories)
+        self.assert_serving()
         job_id = new_id()
         with self.db.batch() as b:
             b.insert("ExportJobs", ["job_id", "subject_ref", "state", "categories", "reauth_at", "requested_at"],
                      [[job_id, subject_ref, "running", cats, reauth_at, now]])
-        ctx = SubjectContext(subject_ref=subject_ref, job_id=job_id, requested_at=now)
-        sections: dict[str, Any] = {}
-        chain_refs: list[Any] = []
-        with self.db.snapshot(multi_use=True) as snap:
-            for key in cats:
-                sec = self.reg.handler_for(key).export(snap, ctx, key)
-                cat = self.reg.category(key)
-                sections[key] = {
-                    "title": cat.title, "supplied_by": cat.supplied_by.value, "visible_to": list(cat.visible_to),
-                    "retention": cat.retention, "records": sec.records, "references": sec.references, "notes": sec.notes,
-                }
-                if cat.on_delete is OnDelete.NOT_ERASABLE_PUBLIC_LEDGER:
-                    chain_refs.extend(sec.references)
-        package = {
-            "schema": EXPORT_SCHEMA,
-            "subject_ref": subject_ref,
-            "generated_at": now.isoformat(),
-            "categories": sections,
-            "public_chain_references": chain_refs,
-            "private_state_backup": PRIVATE_STATE_BACKUP_INSTRUCTIONS,
-        }
-        _scan_forbidden(package)
-        body = json.dumps(package, default=_jsonable, sort_keys=True, indent=2).encode()
-        digest = hashlib.sha256(body).hexdigest()
-        ref = self.store.put(f"exports/{subject_ref}/{job_id}.json", body, "application/json")
+        # Object keys carry no subject identifier and never use caller-controlled path components.
+        key = f"exports/{job_id}.json"
+        upload_attempted = False
+        try:
+            ctx = SubjectContext(subject_ref=subject_ref, job_id=job_id, requested_at=now)
+            sections: dict[str, Any] = {}
+            chain_refs: list[Any] = []
+            with self.db.snapshot(multi_use=True) as snap:
+                for category in cats:
+                    sec = self.reg.handler_for(category).export(snap, ctx, category)
+                    if sec.category != category:
+                        raise ValueError("export handler returned another category")
+                    cat = self.reg.category(category)
+                    sections[category] = {
+                        "title": cat.title, "supplied_by": cat.supplied_by.value, "visible_to": list(cat.visible_to),
+                        "retention": cat.retention, "records": sec.records, "references": sec.references, "notes": sec.notes,
+                    }
+                    if cat.on_delete is OnDelete.NOT_ERASABLE_PUBLIC_LEDGER:
+                        chain_refs.extend(sec.references)
+            package = {
+                "schema": EXPORT_SCHEMA,
+                "subject_ref": subject_ref,
+                "generated_at": now.isoformat(),
+                "categories": sections,
+                "public_chain_references": chain_refs,
+                "private_state_backup": PRIVATE_STATE_BACKUP_INSTRUCTIONS,
+            }
+            _scan_forbidden(package)
+            body = json.dumps(package, default=_jsonable, sort_keys=True, indent=2).encode()
+            digest = hashlib.sha256(body).hexdigest()
+            upload_attempted = True
+            ref = self.store.put(key, body, "application/json")
+            if not isinstance(ref, str) or not ref or len(ref) > 512:
+                raise ValueError("invalid export storage reference")
+        except Exception as exc:
+            cleanup = "not_needed"
+            if upload_attempted:
+                try:
+                    self.store.delete(key)
+                    cleanup = "confirmed"
+                except Exception:
+                    cleanup = "required"
+            # No raw provider error, URL, credential or private payload in the job.
+            try:
+                with self.db.batch() as b:
+                    b.update("ExportJobs", ["job_id", "state", "manifest_json", "completed_at"],
+                             [[job_id, "failed", json.dumps({"error": "export_failed", "cleanup": cleanup}), _now()]])
+            except Exception:
+                # A database outage may leave a running job; an operator must reconcile it.
+                raise ExportFailed("export_failed") from None
+            if isinstance(exc, ForbiddenExportContent):
+                raise
+            raise ExportFailed("export_failed") from None
         expires = now + self.retention.export_link_ttl
         manifest = {"categories": cats, "sha256": digest, "bytes": len(body)}
-        with self.db.batch() as b:
-            b.update("ExportJobs", ["job_id", "state", "manifest_json", "package_ref", "package_sha256", "completed_at", "expires_at"],
-                     [[job_id, "ready", json.dumps(manifest), ref, digest, _now(), expires]])
+        try:
+            with self.db.batch() as b:
+                b.update("ExportJobs", ["job_id", "state", "manifest_json", "package_ref", "package_sha256", "completed_at", "expires_at"],
+                         [[job_id, "ready", json.dumps(manifest), ref, digest, _now(), expires]])
+        except Exception:
+            # Commit acknowledgement may be lost after success. Do not delete an object
+            # that a committed ready job references, or invent a failure receipt.
+            raise ExportFailed("export_finalization_unconfirmed") from None
         return {"job_id": job_id, "package_ref": ref, "sha256": digest, "expires_at": expires.isoformat(),
                 "categories": cats, "package": package}
 
@@ -183,17 +246,22 @@ class MyDataService:
         now = _now()
         _check_reauth(reauth_at, now)
         account = categories is None
-        cats = [c.key for c in self.reg.categories()] if account else list(categories)
-        for k in cats:
-            self.reg.category(k)
+        cats = self._categories(categories)
+        self.assert_serving()
         job_id = new_id()
 
         def txn_fn(txn: Any) -> None:
             txn.insert("DeletionJobs", ["job_id", "subject_ref", "scope", "categories", "state", "reauth_at", "requested_at", "version"],
                        [[job_id, subject_ref, "account" if account else "category", cats, "requested", reauth_at, now, 1]])
             freezes = ["*"] if account else cats
-            txn.insert_or_update("ProcessingFreezes", ["subject_ref", "category", "reason", "deletion_job_id", "created_at"],
-                                 [[subject_ref, f, "deletion", job_id, pt_commit()] for f in freezes])
+            for category in freezes:
+                existing = list(txn.execute_sql(
+                    "SELECT reason FROM ProcessingFreezes WHERE subject_ref = @s AND category = @c",
+                    params={"s": subject_ref, "c": category}, param_types={"s": pt.STRING, "c": pt.STRING}))
+                # A deletion cannot replace or later clear an independent restriction.
+                if not existing or existing[0][0] == "deletion":
+                    txn.insert_or_update("ProcessingFreezes", ["subject_ref", "category", "reason", "deletion_job_id", "created_at"],
+                                         [[subject_ref, category, "deletion", job_id, pt_commit()]])
             steps = []
             for k in cats:
                 for step in ("delete_records", "delete_projections"):
@@ -206,6 +274,12 @@ class MyDataService:
         return job_id
 
     def run_deletion(self, job_id: str) -> dict[str, Any]:
+        """Resume persisted steps. The caller must serialize execution per subject.
+
+        External handler callbacks are idempotent but cannot be fenced by this
+        library. Do not invoke it concurrently from an at-least-once consumer.
+        """
+        self.assert_serving()
         job = self._job(job_id)
         if job["state"] in ("completed", "completed_with_exceptions") and job["receipt_json"]:
             return json_payload(job["receipt_json"])
@@ -215,28 +289,33 @@ class MyDataService:
         for key in job["categories"]:
             cat = self.reg.category(key)
             handler = self.reg.handler_for(key)
-            steps = self._steps(job_id, key)
-            out_records: Optional[DeletionOutcome] = None
-            if steps.get("delete_records") != "done":
-                # Foundation-style categories delete with their own transaction(s);
-                # the tombstone and step are then recorded in ours.
-                pre = None if getattr(handler, "transactional", True) else handler.delete_outside_txn(self.db, ctx, key)
+            with self.db.snapshot() as snap:
+                saved_records = self._step(snap, job_id, key, "delete_records")
+            out_records = saved_records
+            if not saved_records.done:
+                # Outside-transaction adapters must be idempotent; keep the freeze
+                # until both their record and derived cleanup have finished.
+                pre = None if getattr(handler, "transactional", True) else _checked_outcome(
+                    handler.delete_outside_txn(self.db, ctx, key), key)
 
-                def txn_fn(txn: Any, key: str = key, pre: Optional[DeletionOutcome] = pre) -> DeletionOutcome:
-                    outcome = pre if pre is not None else handler.delete(txn, ctx, key)
+                def txn_fn(txn: Any) -> DeletionOutcome:
+                    saved = self._step(txn, job_id, key, "delete_records")
+                    if saved.done:
+                        return saved
+                    outcome = _checked_outcome(pre if pre is not None else handler.delete(txn, ctx, key), key)
+                    outcome = replace(outcome, rows_affected=outcome.rows_affected + saved.rows_affected)
                     txn.insert("DeletionTombstones", ["subject_ref", "category", "tombstone_id", "deletion_job_id", "record_keys", "created_at"],
                                [[ctx.subject_ref, key, new_id(), job_id, list(ctx.record_keys), pt_commit()]])
-                    txn.update("DeletionSteps", ["job_id", "category", "step", "state", "rows_affected", "detail", "updated_at"],
-                               [[job_id, key, "delete_records", "exception" if outcome.exception else "done" if outcome.done else "failed",
-                                 outcome.rows_affected, outcome.exception or outcome.detail, pt_commit()]])
+                    self._save_step(txn, job_id, key, "delete_records", outcome)
                     return outcome
                 out_records = self.db.run_in_transaction(txn_fn)
-            # Projections / caches / media: after commit, idempotent.
-            out_derived = handler.purge_derived(ctx, key)
-            with self.db.batch() as b:
-                b.update("DeletionSteps", ["job_id", "category", "step", "state", "rows_affected", "detail", "updated_at"],
-                         [[job_id, key, "delete_projections", "done" if out_derived.done else "failed",
-                           out_derived.rows_affected, out_derived.exception or out_derived.detail, pt_commit()]])
+            with self.db.snapshot() as snap:
+                out_derived = self._step(snap, job_id, key, "delete_projections")
+            if out_records.done and not out_derived.done:
+                fresh = _checked_outcome(handler.purge_derived(ctx, key), key)
+                fresh = replace(fresh, rows_affected=fresh.rows_affected + out_derived.rows_affected)
+                self.db.run_in_transaction(lambda txn: self._save_step(txn, job_id, key, "delete_projections", fresh))
+                out_derived = fresh
             results[key] = self._category_receipt(cat, out_records, out_derived)
         exceptions = [r for r in results.values() if r["status"] != "deleted"]
         finished = all(r["status"] not in ("pending_derived", "pending_records") for r in results.values())
@@ -265,16 +344,33 @@ class MyDataService:
             if rows[0][0] in ("completed", "completed_with_exceptions") and rows[0][1]:
                 return json_payload(rows[0][1])
             version = rows[0][2] + 1
-            txn.update("DeletionJobs", ["job_id", "state", "completed_at", "receipt_json", "version"],
-                       [[job_id, state, _now() if finished else None, json.dumps(receipt, default=_jsonable), version]])
             if finished:
                 if job["scope"] == "category":
-                    # Never lift a freeze owned by a newer deletion request.
-                    txn.execute_update("DELETE FROM ProcessingFreezes WHERE subject_ref = @s AND deletion_job_id = @j",
-                                       params={"s": job["subject_ref"], "j": job_id},
-                                       param_types={"s": pt.STRING, "j": pt.STRING})
+                    # Either completion order must preserve overlapping unfinished
+                    # requests, including failed jobs that still need intervention.
+                    pending = list(txn.execute_sql(
+                        "SELECT scope, categories FROM DeletionJobs WHERE subject_ref = @s AND job_id != @j "
+                        "AND (scope = 'account' OR state NOT IN ('completed', 'completed_with_exceptions'))",
+                        params={"s": job["subject_ref"], "j": job_id}, param_types={"s": pt.STRING, "j": pt.STRING}))
+                    for category in job["categories"]:
+                        if any(scope == "account" or category in categories for scope, categories in pending):
+                            continue
+                        txn.execute_update(
+                            "DELETE FROM ProcessingFreezes WHERE subject_ref = @s AND category = @c AND reason = 'deletion'",
+                            params={"s": job["subject_ref"], "c": category}, param_types={"s": pt.STRING, "c": pt.STRING})
+                    frozen = list(txn.execute_sql(
+                        "SELECT category FROM ProcessingFreezes WHERE subject_ref = @s AND category IN UNNEST(@c)",
+                        params={"s": job["subject_ref"], "c": ["*", *job["categories"]]},
+                        param_types={"s": pt.STRING, "c": pt.Array(pt.STRING)}))
+                    blocked = frozen or any(scope == "account" or set(categories).intersection(job["categories"])
+                                            for scope, categories in pending)
+                    receipt["processing"] = (
+                        "Frozen: another deletion request or processing restriction is still active." if blocked else
+                        "Category processing may resume from fresh inputs; tombstones reject stale work.")
                 write_events(txn, [self._event(PRIVACY_DELETION_COMPLETED.event_type, job_id, version,
                                              {"job_id": job_id, "state": state})])
+            txn.update("DeletionJobs", ["job_id", "state", "completed_at", "receipt_json", "version"],
+                       [[job_id, state, _now() if finished else None, json.dumps(receipt, default=_jsonable), version]])
             return receipt
         return self.db.run_in_transaction(complete)
 
@@ -285,12 +381,15 @@ class MyDataService:
             "rows_affected": (rec.rows_affected if rec else None),
             "derived_purged": derived.rows_affected,
         }
-        if not derived.done:
-            r["status"] = "pending_derived"
-            r["reason"] = derived.exception or "derived copies are still being removed"
-        elif rec and not rec.done and not rec.exception:
+        if rec and not rec.done:
             r["status"] = "pending_records"
             r["reason"] = "records are still being removed"
+        elif not derived.done:
+            r["status"] = "pending_derived"
+            r["reason"] = derived.exception or "derived copies are still being removed"
+        elif derived.exception:
+            r["status"] = "exception"
+            r["reason"] = derived.exception
         elif cat.on_delete is OnDelete.NOT_ERASABLE_PUBLIC_LEDGER:
             r["status"] = "not_erasable"
             r["reason"] = ("Public blockchain commitments cannot be erased. They contain no personal data in plaintext; "
@@ -308,40 +407,71 @@ class MyDataService:
         return r
 
     # -------------------------------------------------------------- restore
-    def reapply_tombstones_after_restore(self, backup_ref: str, backup_taken_at: datetime) -> dict[str, Any]:
+    def reapply_tombstones_after_restore(self, backup_ref: str, backup_taken_at: datetime, *,
+                                         restore_id: str | None = None) -> dict[str, Any]:
+        """Reapply a preserved tombstone ledger while traffic and writers are stopped.
+
+        Resume a failed/interrupted attempt using its restore_id and the exact
+        same backup identity. Every replayed handler must be idempotent. A new
+        physical restore always needs a new run, even for the same backup.
         """
-        Run immediately after a database restore, before serving traffic.
-        Re-deletes every tombstoned category; the restored DB is not served
-        until this completes (``assert_serving``).
-        """
-        restore_id = new_id()
-        with self.db.batch() as b:
-            b.insert("RestoreRuns", ["restore_id", "backup_ref", "backup_taken_at", "state", "started_at"],
-                     [[restore_id, backup_ref, backup_taken_at, "restoring", _now()]])
+        if not backup_ref or len(backup_ref) > 512 or backup_taken_at.tzinfo is None:
+            raise ValueError("backup identity and timezone-aware timestamp required")
+        if restore_id is None:
+            restore_id = new_id()
+            with self.db.batch() as b:
+                b.insert("RestoreRuns", ["restore_id", "backup_ref", "backup_taken_at", "state", "started_at"],
+                         [[restore_id, backup_ref, backup_taken_at, "restoring", _now()]])
+        else:
+            def resume(txn: Any) -> None:
+                rows = list(txn.execute_sql(
+                    "SELECT backup_ref, backup_taken_at, state FROM RestoreRuns WHERE restore_id = @r",
+                    params={"r": restore_id}, param_types={"r": pt.STRING}))
+                if not rows or rows[0][:2] != [backup_ref, backup_taken_at] or rows[0][2] not in ("restoring", "failed"):
+                    raise ValueError("restore run cannot resume with this backup identity or state")
+                txn.update("RestoreRuns", ["restore_id", "state"], [[restore_id, "restoring"]])
+            self.db.run_in_transaction(resume)
         applied = 0
-        rows = 0
-        with self.db.snapshot() as snap:
-            tombs = [Tombstone(subject_ref=r[0], category=r[1], tombstone_id=r[2], deletion_job_id=r[3],
-                               record_keys=tuple(r[4] or ()), created_at=r[5])
-                     for r in snap.execute_sql("SELECT subject_ref, category, tombstone_id, deletion_job_id, record_keys, created_at FROM DeletionTombstones")]
-        for t in tombs:
-            handler = self.reg.handler_for(t.category)
-            if getattr(handler, "transactional", True):
-                rows += self.db.run_in_transaction(lambda txn, t=t: handler.reapply_tombstone(txn, t))
-            else:
-                rows += handler.delete_outside_txn(self.db, SubjectContext(t.subject_ref, t.deletion_job_id, t.created_at, t.record_keys), t.category).rows_affected
-            handler.purge_derived(SubjectContext(t.subject_ref, t.deletion_job_id, t.created_at, t.record_keys), t.category)
-            applied += 1
-        with self.db.batch() as b:
-            b.update("RestoreRuns", ["restore_id", "state", "tombstones_applied", "completed_at"],
-                     [[restore_id, "tombstones_reapplied", applied, _now()]])
-        return {"restore_id": restore_id, "tombstones_applied": applied, "rows_redeleted": rows}
+        rows_deleted = 0
+        try:
+            with self.db.snapshot() as snap:
+                tombs = [Tombstone(subject_ref=r[0], category=r[1], tombstone_id=r[2], deletion_job_id=r[3],
+                                   record_keys=tuple(r[4] or ()), created_at=r[5])
+                         for r in snap.execute_sql("SELECT subject_ref, category, tombstone_id, deletion_job_id, record_keys, created_at FROM DeletionTombstones")]
+            for tombstone in tombs:
+                handler = self.reg.handler_for(tombstone.category)
+                ctx = SubjectContext(tombstone.subject_ref, tombstone.deletion_job_id, tombstone.created_at, tombstone.record_keys)
+                if getattr(handler, "transactional", True):
+                    def reapply(txn: Any) -> int:
+                        count = handler.reapply_tombstone(txn, tombstone)
+                        if type(count) is not int or count < 0:
+                            raise ValueError("invalid restore handler count")
+                        return count
+                    rows_deleted += self.db.run_in_transaction(reapply)
+                else:
+                    outcome = _checked_outcome(handler.delete_outside_txn(self.db, ctx, tombstone.category), tombstone.category)
+                    if not outcome.done or outcome.exception:
+                        raise RestoreNotServing("record cleanup is incomplete")
+                    rows_deleted += outcome.rows_affected
+                derived = _checked_outcome(handler.purge_derived(ctx, tombstone.category), tombstone.category)
+                if not derived.done or derived.exception:
+                    raise RestoreNotServing("derived cleanup is incomplete")
+                applied += 1
+            with self.db.batch() as b:
+                b.update("RestoreRuns", ["restore_id", "state", "tombstones_applied", "completed_at"],
+                         [[restore_id, "tombstones_reapplied", applied, _now()]])
+        except Exception:
+            # The existing restoring row remains a durable serving barrier.
+            # Do not persist or expose arbitrary handler/provider exception text.
+            raise RestoreNotServing("restore cleanup is incomplete; resume this run before serving", restore_id) from None
+        return {"restore_id": restore_id, "tombstones_applied": applied, "rows_redeleted": rows_deleted}
 
     def assert_serving(self) -> None:
         with self.db.snapshot() as snap:
-            pending = list(snap.execute_sql("SELECT restore_id FROM RestoreRuns WHERE state = 'restoring' LIMIT 1"))
+            pending = list(snap.execute_sql(
+                "SELECT restore_id FROM RestoreRuns WHERE state NOT IN ('tombstones_reapplied', 'serving') LIMIT 1"))
         if pending:
-            raise RestoreNotServing("restore in progress: tombstones not yet reapplied")
+            raise RestoreNotServing("restore is incomplete: serving is blocked", pending[0][0])
 
     # ------------------------------------------------------------- helpers
     def _job(self, job_id: str) -> dict[str, Any]:
@@ -354,11 +484,28 @@ class MyDataService:
         r = rows[0]
         return {"subject_ref": r[0], "scope": r[1], "categories": list(r[2]), "state": r[3], "requested_at": r[4], "receipt_json": r[5]}
 
-    def _steps(self, job_id: str, category: str) -> dict[str, str]:
-        with self.db.snapshot() as snap:
-            return {r[0]: r[1] for r in snap.execute_sql(
-                "SELECT step, state FROM DeletionSteps WHERE job_id = @j AND category = @c",
-                params={"j": job_id, "c": category}, param_types={"j": pt.STRING, "c": pt.STRING})}
+    @staticmethod
+    def _step(reader: Any, job_id: str, category: str, step: str) -> DeletionOutcome:
+        rows = list(reader.execute_sql(
+            "SELECT state, rows_affected, detail FROM DeletionSteps WHERE job_id = @j AND category = @c AND step = @step",
+            params={"j": job_id, "c": category, "step": step},
+            param_types={"j": pt.STRING, "c": pt.STRING, "step": pt.STRING}))
+        if not rows or rows[0][0] not in ("pending", "done", "exception", "exception_done", "failed"):
+            raise ValueError("missing or invalid deletion step")
+        state, count, detail = rows[0]
+        if state in ("exception", "exception_done") and not detail:
+            raise ValueError("missing deletion exception reason")
+        # Older writers used 'exception' for both done=True and done=False.
+        # Recheck that ambiguous state instead of upgrading it to completion.
+        return _checked_outcome(DeletionOutcome(category, count or 0, done=state in ("done", "exception_done"),
+                                                exception=detail if state == "exception_done" else None,
+                                                detail=detail if state != "exception_done" else None), category)
+
+    @staticmethod
+    def _save_step(txn: Any, job_id: str, category: str, step: str, outcome: DeletionOutcome) -> None:
+        state = "failed" if not outcome.done else "exception_done" if outcome.exception else "done"
+        txn.update("DeletionSteps", ["job_id", "category", "step", "state", "rows_affected", "detail", "updated_at"],
+                   [[job_id, category, step, state, outcome.rows_affected, outcome.exception or outcome.detail, pt_commit()]])
 
     def _set_job_state(self, job_id: str, state: str) -> None:
         self.db.run_in_transaction(lambda txn: txn.execute_update(

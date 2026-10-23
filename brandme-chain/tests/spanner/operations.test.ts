@@ -124,6 +124,30 @@ describe('Spanner operation journal against real migrations', () => {
     expect(await store.get(a.operationId)).toEqual(a);
   });
 
+  it.each([
+    ['category', 'requested'], ['category', 'failed'], ['account', 'completed'],
+  ])('keeps the %s deletion barrier in state %s after a separate freeze is lifted', async (scope, state) => {
+    const a = await store.create(op());
+    const proving = (await store.update(transition(a, 'Proving'), a.version))!;
+    await db.table('DeletionJobs').insert({ job_id: randomUUID(), subject_ref: a.ownerRef, scope,
+      categories: ['rights.operations'], state, reauth_at: new Date(), requested_at: new Date(), version: 1 });
+    // No ProcessingFreezes row remains; the committed request is still authoritative.
+    await expect(store.create(op({ ownerRef: a.ownerRef }))).rejects.toThrow(/frozen/);
+    await expect(store.update(transition(proving, 'Reconciling', {
+      evidence: { txId: 'never-broadcast', observedAt: new Date().toISOString() },
+    }), proving.version)).rejects.toThrow(/frozen/);
+    expect((await store.update(transition(proving, 'Failed'), proving.version))!.state).toBe('Failed');
+  });
+
+  it('does not block fresh operations for completed or unrelated category deletions', async () => {
+    const ownerRef = randomUUID();
+    for (const [category, state] of [['rights.operations', 'completed'], ['rights.transfers', 'requested']]) {
+      await db.table('DeletionJobs').insert({ job_id: randomUUID(), subject_ref: ownerRef, scope: 'category',
+        categories: [category], state, reauth_at: new Date(), requested_at: new Date(), version: 1 });
+    }
+    expect((await store.create(op({ ownerRef }))).ownerRef).toBe(ownerRef);
+  });
+
   it('rejects stale work after a deletion tombstone without blocking fresh commands', async () => {
     const a = op();
     await db.table('DeletionTombstones').insert({ subject_ref: a.ownerRef, category: 'rights.operations',
