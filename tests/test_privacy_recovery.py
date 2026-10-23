@@ -4,7 +4,7 @@ from datetime import timedelta
 import pytest
 from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
 
-from brandme_core.domains.privacy.deletion import DeletionOutcome, PrivacyRegistry, PrivacyRegistryError
+from brandme_core.domains.privacy.deletion import DeletionOutcome, PrivacyRegistry, PrivacyRegistryError, ProcessingFrozenError
 from brandme_core.domains.privacy.privacy import ExportFailed, ForbiddenExportContent, RestoreNotServing
 from brandme_core.events.outbox import json_payload
 from tests.test_privacy import database, setup, now, _emulator_up  # noqa: F401 fixtures
@@ -140,6 +140,27 @@ def test_failed_overlapping_job_still_blocks_processing(setup):
     job = svc.request_deletion("member", now(), ["persona.declared"])
     assert svc.run_deletion(job)["processing"].startswith("Frozen:")
     assert read(db, "SELECT COUNT(*) FROM ProcessingFreezes") == [[1]]
+
+
+@pytest.mark.parametrize("account", [False, True])
+def test_lifting_independent_restriction_cannot_lift_deletion_barrier(setup, account):
+    svc, persona, _, _, db = setup
+    category = "*" if account else "persona.inferred"
+    with db.batch() as batch:
+        batch.insert("ProcessingFreezes", ["subject_ref", "category", "reason", "created_at"],
+                     [["member", category, "restriction", COMMIT_TIMESTAMP]])
+    job = svc.request_deletion("member", now(), None if account else [category])
+    db.run_in_transaction(lambda tx: tx.execute_update("DELETE FROM ProcessingFreezes WHERE reason = 'restriction'"))
+    with pytest.raises(ProcessingFrozenError, match="deletion request"):
+        persona.write_inference(db, "member", "warm_cold", .5, basis_time=now())
+    svc.run_deletion(job)
+    if account:
+        with pytest.raises(ProcessingFrozenError, match="deletion request"):
+            persona.write_inference(db, "member", "warm_cold", .5, basis_time=now())
+        followup = svc.request_deletion("member", now(), ["persona.inferred"])
+        assert svc.run_deletion(followup)["processing"].startswith("Frozen:")
+    else:
+        persona.write_inference(db, "member", "warm_cold", .5, basis_time=now() + timedelta(seconds=1))
 
 
 def test_partial_record_count_survives_retry_and_pending_exception_never_completes(setup, monkeypatch):

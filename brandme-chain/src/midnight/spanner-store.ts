@@ -105,6 +105,15 @@ export class SpannerOperationStore implements OperationStore {
       params,
     });
     if (freezes.length) throw new Error('operation processing is frozen');
+    // A separately owned consent/restriction freeze may have been removed.
+    // Pending category deletions and every account deletion remain authoritative.
+    const [deletions] = await tx.run({
+      sql: `SELECT job_id FROM DeletionJobs WHERE subject_ref = @owner AND
+        (scope = 'account' OR ('rights.operations' IN UNNEST(categories)
+          AND state NOT IN ('completed', 'completed_with_exceptions'))) LIMIT 1`,
+      params: { owner: op.ownerRef! },
+    });
+    if (deletions.length) throw new Error('operation processing is frozen');
     const [tombstones] = await tx.run({
       sql: "SELECT tombstone_id FROM DeletionTombstones WHERE subject_ref = @owner AND category = 'rights.operations' AND created_at >= @basis LIMIT 1",
       params: { owner: op.ownerRef!, basis: new Date(op.createdAt) },

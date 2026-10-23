@@ -350,7 +350,7 @@ class MyDataService:
                     # requests, including failed jobs that still need intervention.
                     pending = list(txn.execute_sql(
                         "SELECT scope, categories FROM DeletionJobs WHERE subject_ref = @s AND job_id != @j "
-                        "AND state NOT IN ('completed', 'completed_with_exceptions')",
+                        "AND (scope = 'account' OR state NOT IN ('completed', 'completed_with_exceptions'))",
                         params={"s": job["subject_ref"], "j": job_id}, param_types={"s": pt.STRING, "j": pt.STRING}))
                     for category in job["categories"]:
                         if any(scope == "account" or category in categories for scope, categories in pending):
@@ -362,8 +362,10 @@ class MyDataService:
                         "SELECT category FROM ProcessingFreezes WHERE subject_ref = @s AND category IN UNNEST(@c)",
                         params={"s": job["subject_ref"], "c": ["*", *job["categories"]]},
                         param_types={"s": pt.STRING, "c": pt.Array(pt.STRING)}))
+                    blocked = frozen or any(scope == "account" or set(categories).intersection(job["categories"])
+                                            for scope, categories in pending)
                     receipt["processing"] = (
-                        "Frozen: another deletion request or processing restriction is still active." if frozen else
+                        "Frozen: another deletion request or processing restriction is still active." if blocked else
                         "Category processing may resume from fresh inputs; tombstones reject stale work.")
                 write_events(txn, [self._event(PRIVACY_DELETION_COMPLETED.event_type, job_id, version,
                                              {"job_id": job_id, "state": state})])

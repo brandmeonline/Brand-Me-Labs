@@ -26,6 +26,10 @@ these library methods directly to callers or accept a caller-supplied subject.
   domain event in one transaction. Existing consent/restriction freezes are
   preserved. Records and derived cleanup must both finish before completion.
   An outcome with `done=False` remains pending even if it includes an exception.
+- Python domain and chain pre-broadcast write guards also read durable deletion
+  requests in their own transaction. Lifting an independent restriction cannot
+  bypass a pending category deletion or a permanent account deletion. Preserve
+  the minimal deletion-job ledger for as long as that barrier is required.
 - Retries preserve committed row counts and terminal exceptions, and skip finished
   steps. Category freezes are released only after **every** overlapping deletion
   has completed, in either completion order. Failed jobs remain blockers. Account

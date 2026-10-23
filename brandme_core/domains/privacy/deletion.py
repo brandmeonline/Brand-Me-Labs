@@ -203,6 +203,16 @@ def assert_processing_allowed(txn: Any, subject_ref: str, category: str, basis_t
     ))
     if frozen:
         raise ProcessingFrozenError(f"processing frozen for {category} ({frozen[0][1]})")
+    # ProcessingFreezes has one row per category. An independent restriction
+    # may own that row and be lifted while a deletion is still pending. The
+    # durable request is an additional barrier, read inside this same transaction.
+    deleting = list(txn.execute_sql(
+        "SELECT job_id FROM DeletionJobs WHERE subject_ref = @s AND "
+        "(scope = 'account' OR (@c IN UNNEST(categories) AND state NOT IN ('completed', 'completed_with_exceptions'))) LIMIT 1",
+        params={"s": subject_ref, "c": category}, param_types=_types({"s": "STRING", "c": "STRING"}),
+    ))
+    if deleting:
+        raise ProcessingFrozenError(f"processing frozen for {category} (deletion request)")
     newer = list(txn.execute_sql(
         "SELECT tombstone_id FROM DeletionTombstones WHERE subject_ref = @s AND category = @c AND created_at >= @t LIMIT 1",
         params={"s": subject_ref, "c": category, "t": basis_time},
