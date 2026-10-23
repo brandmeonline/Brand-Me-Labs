@@ -37,9 +37,9 @@ export async function opsFetch<T>(path: string, init?: { method?: 'GET' | 'POST'
   const base = gatewayBase()
   if (!base) return { kind: 'unconnected', detail: 'BRANDME_GATEWAY_INTERNAL_URL is not configured for this console.' }
   const forward: Record<string, string> = { accept: 'application/json' }
-  const cookie = cookies().toString()
+  const cookie = (await cookies()).toString()
   if (cookie) forward.cookie = cookie
-  const authorization = headers().get('authorization')
+  const authorization = (await headers()).get('authorization')
   if (authorization) forward.authorization = authorization
   if (init?.body !== undefined) forward['content-type'] = 'application/json'
   let res: Response

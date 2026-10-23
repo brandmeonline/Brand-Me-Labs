@@ -46,10 +46,11 @@ interface Ledger {
   entries: Entry[]
 }
 
-export default async function MemberLedgerPage({ params, searchParams }: {
-  params: { memberId: string }
-  searchParams: { done?: string; failed?: string }
+export default async function MemberLedgerPage(props: {
+  params: Promise<{ memberId: string }>
+  searchParams: Promise<{ done?: string; failed?: string }>
 }) {
+  const [params, searchParams] = await Promise.all([props.params, props.searchParams])
   const valid = UUID_RE.test(params.memberId)
   const result = valid ? await opsFetch<Ledger>(`/rewards/members/${params.memberId}/ledger`) : null
   const reversed = new Set(result?.kind === 'ok' ? result.data.entries.map((e) => e.reverses_entry_id).filter(Boolean) : [])

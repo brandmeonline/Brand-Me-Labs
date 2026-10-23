@@ -30,7 +30,8 @@ interface Dispute {
 const STATES = ['open', 'resolved_correction', 'resolved_no_change'] as const
 const STATE_LABEL: Record<string, string> = { open: 'Open', resolved_correction: 'Corrected', resolved_no_change: 'No change' }
 
-export default async function RewardDisputesPage({ searchParams }: { searchParams: { state?: string; done?: string; failed?: string } }) {
+export default async function RewardDisputesPage(props: { searchParams: Promise<{ state?: string; done?: string; failed?: string }> }) {
+  const searchParams = await props.searchParams
   const state = STATES.find((s) => s === searchParams.state) ?? 'open'
   const result = await opsFetch<Page<Dispute>>(`/rewards/disputes?state=${state}`)
 

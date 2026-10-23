@@ -37,7 +37,8 @@ const TARGET_LABEL: Record<Report['target_type'], string> = {
   member: 'Member conduct',
 }
 
-export default async function ModerationPage({ searchParams }: { searchParams: { state?: string; done?: string; failed?: string } }) {
+export default async function ModerationPage(props: { searchParams: Promise<{ state?: string; done?: string; failed?: string }> }) {
+  const searchParams = await props.searchParams
   const state = STATES.find((s) => s === searchParams.state) ?? 'open'
   const result = await opsFetch<Page<Report>>(`/moderation/reports?state=${state}`)
 
