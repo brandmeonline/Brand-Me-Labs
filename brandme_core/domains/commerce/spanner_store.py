@@ -413,9 +413,10 @@ def _load_surface_key(r, key):
 
 def _save_surface_key(tx, key, jwk, exists):
     member_id, kid = key
-    _write(tx, "MemberSurfaceKeys", exists, {
-        "member_id": member_id, "key_thumbprint": kid, "public_jwk": JsonObject(dict(jwk)),
-        "registered_at": COMMIT_TIMESTAMP}, insert_only=("registered_at",))
+    # A revoked key reads as absent but its row remains: re-registration reactivates it.
+    tx.insert_or_update("MemberSurfaceKeys", columns=("member_id", "key_thumbprint", "public_jwk", "registered_at",
+                                                      "revoked_at"),
+                        values=[(member_id, kid, JsonObject(dict(jwk)), COMMIT_TIMESTAMP, None)])
 
 
 # used AP2 mandates ------------------------------------------------------------------------
@@ -491,6 +492,7 @@ QUERY_SQL: Dict[str, str] = {
         WHERE state = @state ORDER BY updated_at LIMIT 200""",
     "webhook_receipts_pending": """SELECT provider_id, event_id FROM ProviderWebhookReceipts
         WHERE state = 'pending_reconcile' ORDER BY received_at LIMIT 200""",
+    "returns_for_order": "SELECT return_id FROM ReturnRequests WHERE order_id = @order_id",
     "delegations_for_member": "SELECT delegation_id FROM AgentDelegations WHERE member_id = @member_id",
     "operations_for_member": "SELECT operation_id FROM PurchaseOperations WHERE member_id = @member_id",
     "carts_for_member": "SELECT cart_id FROM Carts WHERE member_id = @member_id",
@@ -551,8 +553,18 @@ class _SpannerTx(_Reader):
         super().__init__(transaction)
         self._exists: Dict[Tuple[str, Any], bool] = {}
         self.events: List[EventEnvelope] = []
+        self.touched = False  # a callback that neither read nor wrote still has to commit cleanly
+
+    def get(self, table: str, key: Any) -> Any:
+        self.touched = True
+        return super().get(table, key)
+
+    def _sql_keys(self, name: str, params: Dict[str, Any]) -> List[Any]:
+        self.touched = True
+        return super()._sql_keys(name, params)
 
     def put(self, table: str, key: Any, row: Any) -> None:
+        self.touched = True
         slot = (table, key)
         exists = self._exists.get(slot)
         if exists is None:
@@ -563,6 +575,7 @@ class _SpannerTx(_Reader):
 
     def delete(self, table: str, key: Any) -> None:
         """Delete a row; interleaved children cascade (CartLines, QuoteLines) or are removed first."""
+        self.touched = True
         codec = CODECS[table]
         if table == "orders":
             raise ValueError("orders are financial evidence and are never deleted by the commerce store")
@@ -583,6 +596,8 @@ class SpannerCommerceStore(QueryMixin):
         def attempt(transaction):
             tx = _SpannerTx(transaction)  # fresh overlay/events per attempt
             result = fn(tx)
+            if not tx.touched and not tx.events:
+                list(transaction.execute_sql("SELECT 1"))  # begin it; an empty commit is refused
             write_events(transaction, tx.events)
             return result
         return self.database.run_in_transaction(attempt)

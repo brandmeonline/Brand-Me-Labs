@@ -107,6 +107,14 @@ describe('commerce router', () => {
     expect(ok.headers.get('cache-control')).toBe('private, no-store');
   });
 
+  it('returns need purchase authority from agents', async () => {
+    const a = await app(AGENT, commerce); // research + cart only
+    const r = await a.call('POST', `/commerce/orders/${q}/returns`, { source_variant_ref: 'demo-overshirt-m', quantity: 1 },
+      { 'Idempotency-Key': KEY });
+    expect(r.status).toBe(403);
+    expect(a.calls).toHaveLength(0);
+  });
+
   it('only the first-party session can open challenges and create approvals', async () => {
     const body = { operation_id: q, challenge_id: q, nonce: 'n'.repeat(32), displayed_quote_hash: 'sha256:' + '0'.repeat(64) };
     const a = await app(AGENT, commerce);

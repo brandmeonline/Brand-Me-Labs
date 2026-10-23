@@ -289,7 +289,8 @@ class CommerceHttpApi:
 
     def _order_return(self, p, a, h):
         self._need(a, "order_id", "source_variant_ref", "quantity")
-        return 202, self.svc.request_return(p, str(a["order_id"]), str(a["source_variant_ref"]), int(a["quantity"]))
+        return 202, self.svc.request_return(p, str(a["order_id"]), str(a["source_variant_ref"]), int(a["quantity"]),
+                                            idempotency_key=h.get("idempotency-key"))
 
     # -- delegations ----------------------------------------------------------
     def _delegation_list(self, p, a, h):
@@ -436,7 +437,7 @@ class CommerceHttpApi:
         if self.runtime is None:
             raise InvalidRequest("assistant runtime not configured", code="assistant_unavailable")
         if not is_first_party(p):
-            return p  # an agent principal already acts under its own grant
+            return self.svc.bind(p)  # an agent acts only under its own active grant
         d = self.svc._active_delegation(self.svc.store, p.member_id, ASSISTANT_CLIENT_ID, self.svc.clock())
         if d is None:
             raise Forbidden("grant the Brand.Me assistant first", code="delegation_required")
@@ -455,10 +456,18 @@ class CommerceHttpApi:
             task = self.runtime.run(agent, task.id, self.planner_factory())
         return 201, {"id": task.id, "state": task.state, "mode": task.mode.value}
 
+    def _task_reader(self, p: Principal) -> Principal:
+        """Members read and cancel their own tasks; the runtime checks an agent against its grant."""
+        if self.runtime is None:
+            raise InvalidRequest("assistant runtime not configured", code="assistant_unavailable")
+        if p.environment != self.svc.environment:
+            raise Forbidden("principal environment mismatch")
+        return p
+
     def _task_cancel(self, p, a, h):
         self._need(a, "task_id")
         try:
-            task = self.runtime.cancel(self._assistant_principal(p), str(a["task_id"]))
+            task = self.runtime.cancel(self._task_reader(p), str(a["task_id"]))
         except KeyError:
             raise NotFound("task not found") from None
         return 200, {"id": task.id, "state": task.state, "cancel_requested": True}
@@ -467,7 +476,7 @@ class CommerceHttpApi:
         self._need(a, "task_id")
         after = a.get("after")
         try:
-            events = self.runtime.events_after(self._assistant_principal(p), str(a["task_id"]),
+            events = self.runtime.events_after(self._task_reader(p), str(a["task_id"]),
                                                int(after) if after not in (None, "") else None)
         except KeyError:
             raise NotFound("task not found") from None

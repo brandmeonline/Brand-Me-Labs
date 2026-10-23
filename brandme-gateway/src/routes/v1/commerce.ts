@@ -212,7 +212,8 @@ export function createCommerceRouter(client: CommerceDomainClient): Router {
     forward(client, 'purchase.execute', (_q, res) => input(res)));
   router.get('/orders/:id', requireAgentScope('commerce:research'),
     forward(client, 'order.get', (req) => ({ order_id: req.params.id })));
-  router.post('/orders/:id/returns', requireAgentScope('commerce:cart'), requireIdempotencyKey, validate(ReturnCreate),
+  // Returns move money back: agents need purchase authority, and the domain checks the order is theirs.
+  router.post('/orders/:id/returns', requireAgentScope('commerce:purchase'), requireIdempotencyKey, validate(ReturnCreate),
     forward(client, 'order.return', (req, res) => ({ order_id: req.params.id, ...input<object>(res) })));
   return router;
 }

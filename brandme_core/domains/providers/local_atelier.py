@@ -122,6 +122,7 @@ class LocalAtelierProvider:
         self._armed: Dict[Behavior, dict] = {}
         self._event_seq = 0
         self.submit_calls: List[str] = []  # idempotency keys received (test evidence)
+        self.return_calls: List[Tuple[str, str, int]] = []  # return requests received (test evidence)
         epoch = datetime(2026, 10, 5, 12, 0, tzinfo=timezone.utc)
         for pid, slug, title, category, price in _PRODUCTS:
             for size in _SIZES:
@@ -277,6 +278,9 @@ class LocalAtelierProvider:
             lines = self._carts.get(cart_ref)
             if lines is None:
                 return SubmitAck(False, None, "unknown_checkout", now)
+            exact = lambda ls: sorted((l.source_variant_ref, l.quantity) for l in ls)  # noqa: E731
+            if exact(lines) != exact(request.lines):
+                return SubmitAck(False, None, "checkout_changed", now)  # never buy what was not approved
             for l in lines:
                 if self._stock[l.source_variant_ref] < l.quantity:
                     return SubmitAck(False, None, "out_of_stock", now)
@@ -315,6 +319,8 @@ class LocalAtelierProvider:
 
     def request_return(self, provider_order_ref: str, source_variant_ref: str, quantity: int) -> ProviderResult:
         now = self._clock()
+        with self._lock:
+            self.return_calls.append((provider_order_ref, source_variant_ref, quantity))
         return ProviderResult(PROVIDER_ID, "simulation", str(uuid.uuid4()),
                               f"demo-return-{provider_order_ref}-{source_variant_ref}", now, None, "requested")
 
@@ -353,6 +359,8 @@ class LocalAtelierProvider:
                                     "uneven exchange: return and buy the replacement instead")
             if self._stock[new_source_variant_ref] < quantity:
                 raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "replacement out of stock")
+            if any(l.source_variant_ref == new_source_variant_ref for l in o.lines):
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "replacement already on this order")
             self._stock[new_source_variant_ref] -= quantity
             self._stock[source_variant_ref] += quantity
             new = []
@@ -360,9 +368,6 @@ class LocalAtelierProvider:
                 if l.source_variant_ref == source_variant_ref:
                     l = replace(l, quantity_returned=l.quantity_returned + quantity)
                 new.append(l)
-            existing = next((l for l in new if l.source_variant_ref == new_source_variant_ref), None)
-            if existing is not None:
-                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "replacement already on this order")
             new.append(ObservedLine(new_source_variant_ref, quantity, exchanged_from_ref=source_variant_ref))
             o.lines = new
         return self._webhook(order_ref, "exchange.created")

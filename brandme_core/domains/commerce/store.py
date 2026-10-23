@@ -49,6 +49,7 @@ QUERIES: Mapping[str, Tuple[str, Callable[..., Predicate]]] = {
     # Operator queue (no member filter; the caller holds an operator role).
     "operations_by_state": ("operations", lambda state: (lambda o: o.state == state)),
     "webhook_receipts_pending": ("webhook_receipts", lambda: (lambda r: r.state == "pending_reconcile")),
+    "returns_for_order": ("returns", lambda order_id: (lambda r: r.order_id == order_id)),
     # Privacy jobs (export/deletion) walk a member's rows.
     "delegations_for_member": ("delegations", lambda member_id: (lambda d: d.member_id == member_id)),
     "operations_for_member": ("operations", lambda member_id: (lambda o: o.member_id == member_id)),
@@ -88,6 +89,9 @@ class QueryMixin:
 
     def webhook_receipts_pending(self) -> List[Any]:
         return self._query("webhook_receipts_pending")
+
+    def returns_for_order(self, order_id: str) -> List[Any]:
+        return self._query("returns_for_order", order_id=order_id)
 
     def budget_entries(self, delegation_id: str) -> List[Any]:
         return self._query("budget_entries", delegation_id=delegation_id)

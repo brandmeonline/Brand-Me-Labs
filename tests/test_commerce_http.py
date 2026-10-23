@@ -276,3 +276,18 @@ def test_assertion_shape_matches_the_published_schema(h):
     for principal in (h.session(), h.bearer(["commerce:cart"]), None):
         claims = jwt.decode(h.assertion(principal), options={"verify_signature": False})
         assert not list(v.iter_errors(claims)), principal
+
+
+def test_return_idempotency_key_reaches_the_domain(h):
+    _, quote = _quote(h)
+    op = h.call("purchase.request", {"quote_id": quote["id"]}).json()
+    approval = _approve(h, op["id"])
+    done = h.call("purchase.execute", {"quote_id": quote["id"], "approval_id": approval["id"], "delegation_id": None},
+                  headers={"Idempotency-Key": "http-exec-0000000009"}).json()
+    order = h.w.store.get("orders", done["order_id"])
+    h.w.svc.handle_webhook(PROVIDER_ID, *h.w.provider.ship(order.provider_order_ref)[0])
+    body = {"order_id": done["order_id"], "source_variant_ref": "demo-overshirt-m", "quantity": 1}
+    first = h.call("order.return", body, headers={"Idempotency-Key": "http-return-000000001"})
+    again = h.call("order.return", body, headers={"Idempotency-Key": "http-return-000000001"})
+    assert first.status_code == again.status_code == 202
+    assert first.json()["return_id"] == again.json()["return_id"] and len(h.w.provider.return_calls) == 1

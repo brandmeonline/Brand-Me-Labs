@@ -128,9 +128,17 @@ class AssistantRuntime:
             raise PermissionError(exc.detail) from None
 
     def get(self, principal: Principal, task_id: str) -> AssistantTask:
+        """The member's own session sees their tasks; an agent only the tasks of its active grant."""
         task = self._tasks.get(task_id)
         if task is None or task.member_id != principal.member_id:
             raise KeyError("task not found")
+        if not is_first_party(principal):
+            try:
+                bound = self._bind(principal)
+            except PermissionError:
+                raise KeyError("task not found") from None
+            if bound.delegation_id != task.delegation_id:
+                raise KeyError("task not found")
         return task
 
     def cancel(self, principal: Principal, task_id: str) -> AssistantTask:

@@ -206,6 +206,11 @@ export interface SubmitRequest {
   expected_total: Money;
   /** Scoped provider token reference; never a PAN, CVV or raw credential. */
   payment_token_ref: string | null;
+  /**
+   * The exact quoted lines. The adapter must refuse (`accepted: false`) a checkout whose
+   * provider-side cart no longer matches them: the cart can change outside Brand.Me.
+   */
+  lines: CartLineRequest[];
 }
 export interface SubmitAck { accepted: boolean; provider_order_ref: string | null; reason_code: string | null; observed_at: string; evidence_ref: string | null }
 

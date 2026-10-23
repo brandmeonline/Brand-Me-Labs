@@ -270,11 +270,24 @@ class CommerceService:
             return cart
         return self.store.run(_tx)
 
+    @staticmethod
+    def _guard_agent_cart(principal: Principal, d: Optional[AgentDelegation], cart: Cart) -> None:
+        """An agent edits or quotes only carts its own client built, at providers its grant allows."""
+        if d is None:
+            return
+        if d.mode is AssistanceMode.RESEARCH:
+            raise Forbidden("research delegation cannot change or quote carts")
+        if cart.provider_id not in d.allowed_providers:
+            raise Forbidden("provider not allowed by delegation")
+        if cart.created_by_client != principal.client_id:
+            raise Forbidden("this cart was built by someone else", code="cart_not_yours")
+
     def update_cart(self, principal: Principal, cart_id: str, *, if_match: int,
                     lines: Sequence[CartLineRequest]) -> Cart:
-        principal, _ = self._authorize(principal, "commerce:cart")
+        principal, d = self._authorize(principal, "commerce:cart")
         self._validate_lines(lines)
         cart = self._own(self.store, "carts", cart_id, principal)
+        self._guard_agent_cart(principal, d, cart)
         if cart.revision != if_match:
             raise VersionConflict("cart revision changed", current_version=cart.revision)
         conn = self._require_capability(cart.provider_id, "cart.update")
@@ -304,8 +317,9 @@ class CommerceService:
 
     # ----------------------------------------------------------------- quotes
     def quote_cart(self, principal: Principal, cart_id: str) -> CheckoutQuote:
-        principal, _ = self._authorize(principal, "commerce:cart")
+        principal, d = self._authorize(principal, "commerce:cart")
         cart = self._own(self.store, "carts", cart_id, principal)
+        self._guard_agent_cart(principal, d, cart)
         conn = self._require_capability(cart.provider_id, "price.quote")
         from brandme_core.domains.providers.contracts import ProviderCart
         pq = conn.adapter.quote(ProviderCart(cart.provider_cart_ref, cart.merchant_id, cart.lines))
@@ -415,6 +429,8 @@ class CommerceService:
                 raise ApprovalInvalid("approval nonce mismatch")
             if ch.quote_id != op.quote_id or ch.operation_id != op.id:
                 raise ApprovalInvalid("challenge is for a different operation")
+            if op.state != "awaiting_approval":  # a second challenge cannot approve twice
+                raise ApprovalInvalid(f"operation is {op.state}")
             # Bind to what was rendered *and* to current recomputed material terms.
             current_hash = quote.compute_hash()
             if not (displayed_quote_hash == ch.quote_hash == op.quote_hash == quote.quote_hash == current_hash):
@@ -555,6 +571,11 @@ class CommerceService:
             current_hash = quote.compute_hash()
             if not (approval.quote_hash == op.quote_hash == quote.quote_hash == current_hash):
                 raise ApprovalInvalid("approved terms do not match the quote", code="quote_changed")
+            # The approval binds the quote, and the quote binds a cart revision: a cart edited
+            # after approval is a different purchase.
+            cart = tx.get("carts", quote.cart_id)
+            if cart is None or cart.revision != quote.cart_revision:
+                raise ApprovalInvalid("the cart changed after approval; review a new quote", code="quote_changed")
             if approval.allowed_total != quote.total or approval.merchant_id != quote.merchant_id:
                 raise ApprovalInvalid("approved amount or merchant does not match")
             for other in tx.operations_for_quote_hash(op.quote_hash):
@@ -598,10 +619,13 @@ class CommerceService:
                                      idempotency_key=idempotency_key)
 
     def _submit(self, op: PurchaseOperation, quote: CheckoutQuote, principal: Principal | str) -> PurchaseOperation:
-        # Last gate before the side effect: a revocation that landed after the
-        # reservation must stop unsent work.
-        if op.delegation_id:
-            d = self.store.get("delegations", op.delegation_id)
+        # Last gate before the side effect: a revocation of the *executing* grant that
+        # landed after the reservation must stop unsent work. A member executing their
+        # own approved purchase is not stopped by the drafting agent's grant expiring.
+        approval = self.store.get("approvals", op.approval_id) if op.approval_id else None
+        executing = approval.delegation_ref if approval is not None else op.delegation_id
+        if executing:
+            d = self.store.get("delegations", executing)
             if d is None or not d.is_active(self.clock()):
                 def _cancel(tx):
                     current = tx.get("operations", op.id)
@@ -617,7 +641,8 @@ class CommerceService:
         try:
             ack = adapter.submit(SubmitRequest(
                 idempotency_key=op.provider_idempotency_key, checkout_reference=quote.checkout_reference,
-                quote_hash=quote.quote_hash, expected_total=quote.total, payment_token_ref=None))
+                quote_hash=quote.quote_hash, expected_total=quote.total, payment_token_ref=None,
+                lines=tuple(CartLineRequest(l.variant_id, l.source_variant_ref, l.quantity) for l in quote.lines)))
         except ProviderError as exc:
             def _failed(tx):
                 current = tx.get("operations", op.id)
@@ -769,7 +794,8 @@ class CommerceService:
             fulfillment = ("fulfilled" if ordered and delivered >= ordered else
                            "partially_fulfilled" if shipped or delivered else "unfulfilled")
             order_status = obs.order_status if obs.order_status in ("cancelled",) else order.order_status
-            changed = (lines != order.lines or payment != order.payment_status or refunded != order.refunded_total
+            by_line = lambda ls: sorted(ls, key=lambda l: l.source_variant_ref)  # noqa: E731  (stores may reorder)
+            changed = (by_line(lines) != by_line(order.lines) or payment != order.payment_status or refunded != order.refunded_total
                        or fulfillment != order.fulfillment_status or order_status != order.order_status)
             if not changed:
                 return order
@@ -780,6 +806,7 @@ class CommerceService:
                             evidence_refs=order.evidence_refs + ((obs.evidence_ref,) if obs.evidence_ref else ()),
                             version=order.version + 1)
             tx.put("orders", order.id, order)
+            self._mark_returns_received(tx, order.id, prev_order.lines, lines)
             op = tx.get("operations", order.operation_id)
             target = self._summary_state(order)
             if target != op.state:
@@ -828,36 +855,91 @@ class CommerceService:
 
     # ---------------------------------------------------------------- returns
     def request_return(self, principal: Principal, order_id: str, source_variant_ref: str,
-                       quantity: int) -> Dict[str, Any]:
-        principal, _ = self._authorize(principal, "commerce:cart")
+                       quantity: int, *, idempotency_key: Optional[str] = None) -> Dict[str, Any]:
+        """Ask the provider to accept a return. A return request is not a refund.
+
+        The intent and its idempotency record commit before provider I/O, so a
+        retried request with the same key never reaches the provider twice.
+        Units already being returned count against what can be returned.
+        """
+        principal, d = self._authorize(principal, "commerce:purchase")
         order = self._own(self.store, "orders", order_id, principal)
-        line = next((l for l in order.lines if l.source_variant_ref == source_variant_ref), None)
-        if line is None or not 1 <= quantity <= line.quantity_ordered - line.quantity_returned:
-            raise InvalidQuote("invalid return line or quantity")
+        if d is not None:
+            placed_by = self.store.get("operations", order.operation_id)
+            if (d.mode is not AssistanceMode.BUY_WITHIN_RULES or placed_by is None
+                    or placed_by.delegation_id != d.id or order.provider_id not in d.allowed_providers):
+                raise Forbidden("an agent can only return orders placed under its own grant", code="order_not_yours")
+        request = {"order_id": order_id, "source_variant_ref": source_variant_ref, "quantity": quantity}
+        scope, prior, digest = self._idempotent(principal, "order.return", idempotency_key, request)
+        if prior:
+            return self._return_wire(self.store.get("returns", prior), order)
         conn = self.registry.get(order.provider_id)
+        handoff = not conn.can_execute("returns.request")
+        now = self.clock()
         record = ReturnRequest(id=new_id(), order_id=order.id, member_id=order.member_id,
-                               source_variant_ref=source_variant_ref, quantity=quantity, status="handoff",
-                               requested_at=self.clock())
-        if not conn.can_execute("returns.request"):
-            self.store.run(lambda tx: tx.put("returns", record.id, record))
-            return {"status": "handoff", "return_id": record.id,
-                    "reason_code": conn.capability("returns.request").reason_code,
-                    "detail": "Start the return with the retailer; Brand.Me will update when evidence arrives."}
+                               source_variant_ref=source_variant_ref, quantity=quantity,
+                               status="handoff" if handoff else "return_requested", requested_at=now)
+
+        def _intent(tx):
+            if scope:
+                winner = tx.get("idempotency", scope)
+                if winner is not None:
+                    return tx.get("returns", winner.result_ref), False
+            current = tx.get("orders", order.id)
+            line = next((l for l in current.lines if l.source_variant_ref == source_variant_ref), None)
+            pending = sum(r.quantity for r in tx.returns_for_order(order.id)
+                          if r.source_variant_ref == source_variant_ref and r.status == "return_requested")
+            if line is None or not 1 <= quantity <= line.quantity_ordered - line.quantity_returned - pending:
+                raise InvalidQuote("invalid return line or quantity (including returns already requested)")
+            if scope:
+                tx.put("idempotency", scope, IdempotencyRecord(scope, digest, record.id, now))
+            tx.put("returns", record.id, record)
+            return record, True
+
+        saved, fresh = self.store.run(_intent)
+        if not fresh or handoff:
+            return self._return_wire(saved, order, conn)
         adapter: ReturnsProvider = conn.adapter
-        result = adapter.request_return(order.provider_order_ref, source_variant_ref, quantity)  # outside txn
-        record = replace(record, status="return_requested", provider_reference=result.source_reference)
+        try:
+            result = adapter.request_return(order.provider_order_ref, source_variant_ref, quantity)  # outside txn
+        except ProviderError as exc:
+            if not (exc.transmitted or exc.kind is ProviderErrorKind.OUTCOME_UNKNOWN):
+                self.store.run(lambda tx: tx.put("returns", saved.id, replace(saved, status="rejected")))
+            raise
+        done = replace(saved, provider_reference=result.source_reference)
 
         def _tx(tx):
-            tx.put("returns", record.id, record)
+            tx.put("returns", done.id, done)
             op = tx.get("operations", order.operation_id)
             try:
                 self._transition(tx, op, "return_requested")
             except CommerceError:
                 pass
         self.store.run(_tx)
-        # A return request is not a refund: refund state changes only on observation.
-        return {"status": "return_requested", "return_id": record.id,
-                "provider_reference": result.source_reference}
+        return self._return_wire(done, order, conn)
+
+    @staticmethod
+    def _return_wire(rr: ReturnRequest, order: Order, conn: Any = None) -> Dict[str, Any]:
+        if rr.status == "handoff":
+            return {"status": "handoff", "return_id": rr.id,
+                    "reason_code": conn.capability("returns.request").reason_code if conn else "handoff",
+                    "detail": "Start the return with the retailer; Brand.Me will update when evidence arrives."}
+        return {"status": rr.status, "return_id": rr.id, "provider_reference": rr.provider_reference}
+
+    @staticmethod
+    def _mark_returns_received(tx: Any, order_id: str, before: Sequence[OrderLine], after: Sequence[OrderLine]) -> None:
+        returned_before = {l.source_variant_ref: l.quantity_returned for l in before}
+        for l in after:
+            delta = l.quantity_returned - returned_before.get(l.source_variant_ref, 0)
+            if delta <= 0:
+                continue
+            for rr in sorted(tx.returns_for_order(order_id), key=lambda r: r.requested_at):
+                if delta <= 0:
+                    break
+                if rr.source_variant_ref == l.source_variant_ref and rr.status == "return_requested" \
+                        and rr.quantity <= delta:
+                    tx.put("returns", rr.id, replace(rr, status="received"))
+                    delta -= rr.quantity
 
     # ----------------------------------------------------------------- budget
     def available_budget(self, delegation: AgentDelegation, reader: Any = None) -> Money:
@@ -877,6 +959,8 @@ class CommerceService:
 
     def _reserve_budget(self, tx: Any, delegation: AgentDelegation, op_id: str, amount: Money) -> None:
         # Inside the transaction: the availability read and the reservation write are atomic.
+        if amount.amount_minor == 0:
+            return  # nothing to reserve; the ledger only records positive amounts
         if amount > self.available_budget(delegation, tx):
             raise BudgetExceeded("purchase exceeds the remaining delegated budget")
         e = BudgetEntry(new_id(), delegation.id, op_id, amount, "reservation", "reserved", self.clock())

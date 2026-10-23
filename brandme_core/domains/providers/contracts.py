@@ -187,6 +187,9 @@ class SubmitRequest:
     quote_hash: str
     expected_total: Money
     payment_token_ref: Optional[str]  # scoped provider token reference; never PAN/CVV
+    # The exact quoted lines. An adapter must refuse a checkout whose provider-side
+    # cart no longer matches them (the cart can change outside Brand.Me's control).
+    lines: Tuple["CartLineRequest", ...] = ()
 
 
 @dataclass(frozen=True)

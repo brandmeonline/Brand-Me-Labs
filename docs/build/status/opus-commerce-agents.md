@@ -733,3 +733,36 @@ this stays within it.
 **Re-verified:**
 - On this branch: `bash scripts/regression/modules/brandme_console.sh` ✅.
 - In the astra scratch merge: `tsc` ✅, `next build` ✅, Chromium smoke **28/28**.
+
+## Stage S14 — Independent review of the round-2 diff, and fixes (2026-10-23)
+
+An independent reviewer read `git diff 7c61afd..HEAD` without seeing my conclusions. I re-verified every finding
+before fixing it. Python suite: **398 passed, 0 skipped**, with 24 new regression tests, most of them run on both
+stores. Gateway vitest 36/36, `tsc` and ESLint clean. `@brandme/provider-contracts` 7/7. Console regression module ✅.
+
+| # | Finding (verified) | Fix | Test |
+|---|---|---|---|
+| 1 | **High.** After the member approved, an agent could edit the cart, and the purchase submitted the edited cart. Approval bound the quote hash, but the retailer received different goods (reproduced: approved size M, provider ordered L). The gap dates from round 1. | (a) Execute refuses unless the cart is still at `quote.cart_revision`. (b) `SubmitRequest` carries the exact quoted lines (Python and TS contracts), and the adapter must refuse a checkout whose provider-side cart differs; the simulator answers `checkout_changed`. This closes the window between the domain check and provider I/O. | `test_cart_edited_after_approval_is_never_bought`, `test_provider_cart_changed_behind_our_back_is_refused_at_checkout` |
+| 2 | `update_cart`/`quote_cart` skipped the grant's mode and provider checks, and agents could edit carts other clients built. Returns needed only `commerce:cart`, so a prepare agent could return any of the member's orders. | `_guard_agent_cart`: no research mode, provider must be in the grant, own client's carts only. Returns need `commerce:purchase` (domain and gateway) and an order placed under the agent's own grant. | `test_agent_cannot_touch_carts…`, `test_returns_need_purchase_authority…`, gateway `returns need purchase authority from agents` |
+| 3 | Returns ignored `Idempotency-Key` and did not count pending returns, so three identical calls reached the provider three times. | The intent and idempotency record commit before provider I/O. Open `return_requested` units count against the returnable quantity and become `received` when the provider reports the return. The HTTP adapter now passes the key. | `test_return_requests_are_idempotent_and_counted_until_received`, `test_return_idempotency_key_reaches_the_domain` |
+| 4 | A bearer with no grant, or another grant, could read or cancel the member's assistant task. | `AssistantRuntime.get`: the member's own session sees their tasks; an agent only the tasks of its active grant. The adapter no longer exempts agents. | `test_agent_without_the_tasks_grant_cannot_read_or_cancel_it` |
+| 5 | The member's own approved purchase was cancelled when the drafting prepare agent's grant expired. | `_submit` checks the executing grant (`approval.delegation_ref`). | `test_member_buys_its_approved_purchase_after_drafting_grant_expires` |
+| 6 | Two challenges could approve one operation, leaving an orphan approval. | Approval requires `awaiting_approval` inside the transaction. | `test_an_operation_cannot_be_approved_twice` |
+| 7 | Spanner: multi-line orders always looked changed, because the store returns lines in key order, giving duplicate events. | Lines are compared by `source_variant_ref`. | `test_unchanged_multi_line_observation_emits_nothing`; fails on `[spanner]` without the fix |
+| 8 | A refused simulator exchange still moved stock. | Every check now runs before stock moves. | `test_refused_exchange_moves_no_stock` |
+| 9a | Spanner: a $0 delegated purchase would violate `amount_minor > 0` at commit. | Zero amounts write no ledger row. | `test_zero_amount_reservation_writes_no_ledger_row` |
+| 9b | Spanner: re-registering a revoked surface key would hit ALREADY_EXISTS. | `insert_or_update`, clearing `revoked_at`. | `test_surface_key_can_be_registered_again` |
+| — | Found while writing 9a: a Spanner `run()` callback that touches nothing fails at commit. | Begin with `SELECT 1` when untouched. | Same test, `[spanner]` |
+
+**Known limit, not fixed:** the single-use `jti` cache in `ExecutorAssertionVerifier` is per process. With several
+domain replicas, a captured assertion could be replayed once per replica inside its ≤60 s lifetime. A shared replay
+store (e.g. a Spanner table keyed by `jti` with TTL) is needed before more than one replica serves the commerce
+domain or the MCP executor.
+
+The reviewer also checked these and found them sound:
+- The MCP hop refusing sessions and principal-less assertions.
+- Scope intersection; the trusted-surface and assurance gates.
+- Execute atomicity and retry safety.
+- Spanner overlay merges.
+- Privacy jobs keeping evidence.
+- Operator roles, and the console pages forwarding only the bearer.
