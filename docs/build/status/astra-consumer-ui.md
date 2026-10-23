@@ -162,3 +162,62 @@ Visual observation (not a failure): in the 390×844 consumer full-page capture, 
 - Establishes: the committed shell renders and hydrates without errors in Chromium at all four required widths, light and dark; no 320px overflow; axe-clean; keyboard/focus behavior as authored; preference persistence; OS reduced-motion precedence; 200% text/reflow; honest unavailable states.
 - Does NOT establish: production-build behavior (this run used `next dev`, not `next build`/`next start` — the lane's own optimized-build evidence stands separately); screen-reader behavior (`not_run`); real-device checks (`not_run`); human visual approval of the screenshots.
 - W01 is NOT marked complete. Still missing: foundation integration (published `packages/design-system` token export/CSS entry, generated client names, supported Next/React tuple — this ran on the baseline 14.0.4/18.2.0 — `on-accent` pairings, persisted theme/motion contract, self-hosted font exports with licenses); screen-reader and device evidence; and all of W03/W05/W06/W07/W10 domain work, which remains `not_run` behind unavailable entry screens.
+
+## Stage 5 — resumed inspection and remaining W01 controls (2026-10-23)
+
+- Re-cloned the lane after transient workspace maintenance. Read this brief first, then the product/visual/delivery specification, root instructions and machine contracts. Lane HEAD remains `019204c3`; the independently verified shell is preserved, not rebuilt from scratch.
+- Foundation bench is published at `67327e45`, but its packages are absent from this lane. The previous request to merge foundation and change app manifests/shared lockfile has not been approved; the repeated lane brief preserves the original ownership boundaries. No merge, dependency-manifest change, shared-package edit or backend change will be made in this stage. Integrator request: bring in foundation and authorize/install the supported framework tuple and workspace dependencies; then replace the temporary read-only specification token bridge.
+- Unblocked work: complete app-local W01 accessible primitives and a development-only component gallery, exercise reusable controls in display settings, and harden the mobile shell against bottom-navigation growth. The existing 64px padding assumption does not track actual navigation height after text scaling; the screenshot observation is not itself proof of a real-device defect.
+- Console contract v1 above remains published and unchanged. All new controls stay in this lane's `components/` and `lib/`, not `packages/design-system`. No domain capability or full W01 completion is claimed. New browser/device evidence starts `not_run`; Stage 4 passes apply only to its recorded commit.
+
+## Stage 6 — app-local primitives and mobile clearance implemented (2026-10-23)
+
+- Added `components/ui/` primitives: Button/ActionLink, labeled Input/Select/Switch, native range + numeric Slider, keyboard Tabs, Radix Dialog, Drawer reuse of the existing shell Sheet, Toast, Skeleton, EmptyState, ErrorState, StatusChip, Price and EvidenceLabel. No new runtime dependency. Display settings now exercise the shared Switch, with label and description separately associated.
+- Slider distinguishes unknown (`null`) from an explicit neutral 50; pointer step is 1, arrow-key step 5, numeric entry is integer-only, and Clear restores unknown. These are draft controls, not persona persistence or a pass for BM-PER. Tabs use one tab stop, arrow/Home/End navigation and disabled-tab skipping. Dialog/Drawer use the existing focus-management dependency. Toasts do not auto-expire important actions or steal focus; Skeleton is static rather than an endless animation.
+- Price formatting validates the wire-format decimal string and uses integer/string operations throughout, including values above JavaScript's safe-number limit. Currency exponent comes from runtime Intl metadata, unknown metadata fails closed as unavailable, and the ISO code remains visible. This is presentation, not a quote validator, provider verification or a checkout implementation.
+- EvidenceLabel keeps photo display, approximate/product 3D, live overlay and generative preview distinct. Fit-estimate rendering requires method plus limitations; the gallery offers no fit-estimate capability. No generative example is labeled calibrated fit.
+- `/dev/components` is a clearly labeled local fixture gallery with no domain writes. The production check caught streamed not-found HTML returning HTTP 200 with both an ordinary dynamic page and `force-static` under the root loading boundary. The gallery now uses a finite `dev/[example]` route with `dynamicParams=false` and no generated production paths, plus a page-level development guard. Development availability and production exclusion are tested separately; the result belongs in Stage 7, not an assumption about `notFound()`.
+- Mobile shell now observes the actual bottom-navigation height, including safe area/text growth, and uses it for content and scroll clearance. Observer/listener cleanup and public-route transitions are covered by component tests. The original full-page screenshot is not reclassified as a proven device bug; the browser harness now checks final content/control geometry at 320/390/768px and 100%/200% text, with viewport-only bottom captures.
+- React best-practices review: direct imports, generated stable control IDs, native controls where possible, no new provider/model/network calls, no global mutable account state, and no per-frame React updates. Review did not authorize a dependency upgrade or a shared-package edit.
+
+## Stage 7 — shell hardening evidence and handoff (2026-10-23)
+
+**W01 remains open. This is an additional shell/primitives increment, not completion of W03/W05/W06/W07/W10.** Console contract v1 is unchanged. All status changes for this work are confined to this file.
+
+| Check | Result | Actual evidence / limits |
+|---|---|---|
+| Consumer and console optimized builds + TypeScript | `passed` | Consumer Next `14.0.4`, console Next `14.1.0`, React/React DOM `18.2.0`, Node `24.19.0`, TypeScript `5.3.3`, Tailwind `3.4.0`, Radix Dialog `1.0.5`. These are isolated validation installs, not a new supported workspace tuple. npm warns that both old Next versions have known security issues; release remains blocked on the upgrade. |
+| Component behaviors, exact money, evidence labels | `passed` | `node --test brandme-frontend/lib/testing/verify-ui.mjs`: **13 passed, 0 failed**. JSDOM `26.1.0`, Testing Library React `16.1.0`, DOM `10.4.0`, user-event `14.6.1`; validation-only. Covers pending actions, associated labels/errors, keyboard switch/slider/tabs, dialog/drawer focus and Escape, null-vs-neutral, fractional/invalid money rejection, 18-digit amounts, 0/2/3 currency decimals, missing currency metadata, label fidelity, toast focus, and navigation observer lifecycle. **Simulated DOM, not browser/visual/device evidence.** An initial harness-only failure (`self` missing for Next Link) was fixed by supplying the browser global in the test environment; app code was not weakened. |
+| Production HTTP shell regression | `passed` | `node brandme-frontend/lib/testing/verify-shell-http.mjs`: 14 consumer routes plus console root return 200 with single main/h1; both token themes delivered; GET/HEAD redirects remain 307; all 10 font deliveries succeed; console uses runtime `sandbox environment`; privacy entry remains honestly not connected. Ephemeral loopback servers stop in `finally`. No domain writes. |
+| Development gallery / production exclusion | `passed` | Final `/dev/components` returns 200 under `next dev` with one main/h1 and fixture disclosure. Same source under `next build`/`next start` returns **HTTP 404** without gallery content. Two earlier page-config attempts returned streamed 200/not-found; the finite route manifest corrected this. Stale generated `.next/types` from the moved route initially failed a build; a clean generated-output rebuild passed. |
+| Code quality and lane scope | `passed` | `git diff --check`, TS checks/builds, syntax checks for browser harnesses; no dependency manifests, lockfile, shared packages, backend files, protected spatial routes/features, design contracts or console domain pages changed. Existing consumer/console APIs and legacy pages remain untouched. No new runtime dependencies. |
+| New browser screenshots, axe, 320px layout and large-text geometry | `not_run` on this increment | `verify-shell.mjs` now adds 18 bottom-of-viewport captures across 3 routes × 3 widths × 2 text sizes, actual nav-height/clearance checks, and last-control visibility. `verify-controls.mjs` adds gallery light/dark/axe/keyboard/reflow checks at 320/390/768/1440 widths. Authored and syntax-checked only. No fresh Chromium launch/escalation attempted after the earlier automatic policy denial. Stage 4 remains historical evidence for `472c404`, not an automatic pass for changed code. |
+| Real device / screen reader / human visual review | `not_run` | Needed for current shell and new controls; JSDOM focus tests do not substitute for assistive-technology checks. |
+| Onboarding, migration, persona API, social decisions, trusted checkout, My Data | `not_run` | Their actual integrations remain pending. Gallery sliders, prices and evidence labels are primitives, not those domain journeys. |
+
+### Re-run commands and next assignment
+
+With validation dependencies installed externally (or by the eventual approved workspace), run from the repository root:
+
+```bash
+BRANDME_TEST_PACKAGE_JSON=/absolute/path/to/validation/package.json \
+node --test brandme-frontend/lib/testing/verify-ui.mjs
+
+# After both app production builds:
+node brandme-frontend/lib/testing/verify-shell-http.mjs
+
+# Browser-capable approved runner; both production servers running:
+BRANDME_TEST_PACKAGE_JSON=/absolute/path/to/validation/package.json \
+BRANDME_CONSUMER_URL=http://127.0.0.1:3000 \
+BRANDME_CONSOLE_URL=http://127.0.0.1:3002 \
+BRANDME_EVIDENCE_DIR=/absolute/path/to/shell-evidence \
+node brandme-frontend/lib/testing/verify-shell.mjs
+
+# Separate development consumer server for the non-production gallery:
+BRANDME_TEST_PACKAGE_JSON=/absolute/path/to/validation/package.json \
+BRANDME_CONSUMER_URL=http://127.0.0.1:3000 \
+BRANDME_EVIDENCE_DIR=/absolute/path/to/controls-evidence \
+node brandme-frontend/lib/testing/verify-controls.mjs
+```
+
+Next integration assignment: consume foundation's published token CSS/client exports once its commits and approved manifest/toolchain changes are brought into this branch; keep package sources read-only. Then implement W03 against the mounted persona and guest-migration APIs, not a second local imitation of domain persistence. Before claiming W01, run the two browser suites in an approved runtime, inspect the actual viewport-bottom captures and gallery screenshots, fix findings, and add real-device/screen-reader evidence. Existing token/font/CSP and spatial-component interface requests above remain open unless satisfied by an integrated authoritative export.

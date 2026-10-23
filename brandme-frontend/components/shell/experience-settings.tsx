@@ -1,5 +1,6 @@
 'use client'
 import { useId } from 'react'
+import { Switch } from '@/components/ui/field'
 import {
   useExperiencePreferences,
   type ThemeMode,
@@ -33,55 +34,31 @@ export function ExperienceSettings() {
           ))}
         </div>
       </fieldset>
-      <label className="bm-setting-row">
-        <span>
-          <strong>Reduce motion</strong>
-          <span className="bm-support">
-            Keep changes clear. Skip camera flights and parallax.
-          </span>
-        </span>
-        <input
-          type="checkbox"
-          role="switch"
-          checked={preferences.motion === 'reduce'}
-          onChange={(e) =>
-            update({ motion: e.target.checked ? 'reduce' : 'system' })
-          }
-        />
-      </label>
+      <Switch
+        label="Reduce motion"
+        description="Keep changes clear. Skip camera flights and parallax."
+        checked={preferences.motion === 'reduce'}
+        onCheckedChange={(checked) =>
+          update({ motion: checked ? 'reduce' : 'system' })
+        }
+      />
       <p className="bm-support">
         {reducedMotion
           ? 'Reduced motion is active.'
           : 'Your device’s motion preference is also respected.'}
       </p>
-      <label className="bm-setting-row">
-        <span>
-          <strong>Prefer Simple View</strong>
-          <span className="bm-support">
-            Ask supported wardrobe views to use a list instead of 3D.
-          </span>
-        </span>
-        <input
-          type="checkbox"
-          role="switch"
-          checked={preferences.simpleView}
-          onChange={(e) => update({ simpleView: e.target.checked })}
-        />
-      </label>
-      <label className="bm-setting-row">
-        <span>
-          <strong>Stronger contrast</strong>
-          <span className="bm-support">
-            Give secondary text and boundaries more definition.
-          </span>
-        </span>
-        <input
-          type="checkbox"
-          role="switch"
-          checked={preferences.highContrast}
-          onChange={(e) => update({ highContrast: e.target.checked })}
-        />
-      </label>
+      <Switch
+        label="Prefer Simple View"
+        description="Ask supported wardrobe views to use a list instead of 3D."
+        checked={preferences.simpleView}
+        onCheckedChange={(checked) => update({ simpleView: checked })}
+      />
+      <Switch
+        label="Stronger contrast"
+        description="Give secondary text and boundaries more definition."
+        checked={preferences.highContrast}
+        onCheckedChange={(checked) => update({ highContrast: checked })}
+      />
       <p className="bm-storage-note" role="status">
         {storageAvailable
           ? 'Display preferences are saved on this device.'

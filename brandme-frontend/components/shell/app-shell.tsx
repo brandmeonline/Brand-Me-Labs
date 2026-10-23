@@ -18,6 +18,7 @@ import {
 import { Wordmark } from './wordmark'
 import { Sheet } from './sheet'
 import { ExperienceSettings } from './experience-settings'
+import { useNavigationClearance } from '@/lib/client/use-navigation-clearance'
 
 function ContextContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
@@ -50,8 +51,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [offline, setOffline] = useState(false)
   const previousPath = useRef(pathname)
   const mainRef = useRef<HTMLElement>(null)
+  const navigationRef = useRef<HTMLElement>(null)
   const publicPage =
     pathname === '/' || pathname === '/start' || pathname.startsWith('/share/')
+  useNavigationClearance(navigationRef, publicPage)
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine)
     update()
@@ -234,7 +237,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       {!publicPage && (
-        <nav className="bm-bottom-nav" aria-label="Primary mobile navigation">
+        <nav
+          ref={navigationRef}
+          className="bm-bottom-nav"
+          aria-label="Primary mobile navigation"
+        >
           {links('primary')}
         </nav>
       )}

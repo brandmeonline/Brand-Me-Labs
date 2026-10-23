@@ -126,6 +126,84 @@ try {
     }
   }
   await check(
+    'mobile page end and final control clear the actual tab bar at 100% and 200% text',
+    async () => {
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+      })
+      try {
+        const page = await context.newPage()
+        for (const width of [320, 390, 768]) {
+          await page.setViewportSize({
+            width,
+            height: width === 768 ? 1024 : 844,
+          })
+          for (const route of ['/today', '/me', '/settings']) {
+            for (const scale of [100, 200]) {
+              await page.goto(consumer + route, { waitUntil: 'networkidle' })
+              await page.evaluate((scale) => {
+                document.documentElement.style.fontSize = `${scale}%`
+              }, scale)
+              await page.evaluate(() => document.fonts.ready)
+              await page.waitForFunction(() => {
+                const bar = document.querySelector('.bm-bottom-nav')
+                const measured = parseFloat(
+                  getComputedStyle(document.documentElement).getPropertyValue(
+                    '--bm-nav-occupied',
+                  ),
+                )
+                return bar && measured >= bar.getBoundingClientRect().height
+              })
+              await page.evaluate(() =>
+                window.scrollTo(0, document.documentElement.scrollHeight),
+              )
+              const bounds = await page.evaluate(() => ({
+                content: document
+                  .querySelector('.bm-route-content')
+                  .getBoundingClientRect().bottom,
+                navigation: document
+                  .querySelector('.bm-bottom-nav')
+                  .getBoundingClientRect().top,
+              }))
+              assert(
+                bounds.content <= bounds.navigation - 16,
+                `${width}px ${route} ${scale}% page end obscured: ${JSON.stringify(bounds)}`,
+              )
+              const last = page
+                .locator(
+                  'main :is(a, button, input, select, textarea):visible:not(:disabled)',
+                )
+                .last()
+              if (await last.count()) {
+                await last.focus()
+                await last.evaluate((element) =>
+                  element.scrollIntoView({ block: 'nearest' }),
+                )
+                const bottom = await last.evaluate(
+                  (element) => element.getBoundingClientRect().bottom,
+                )
+                assert(
+                  bottom <= bounds.navigation,
+                  `${width}px ${route} ${scale}% last control obscured`,
+                )
+              }
+              await noOverflow(page)
+              await page.screenshot({
+                path: path.join(
+                  output,
+                  `consumer-bottom-${route.slice(1)}-${width}-${scale}.png`,
+                ),
+                fullPage: false,
+              })
+            }
+          }
+        }
+      } finally {
+        await context.close()
+      }
+    },
+  )
+  await check(
     'consumer keyboard skip, mobile dialog trap, snaps, Escape and focus return',
     async () => {
       const context = await browser.newContext({
@@ -333,7 +411,9 @@ try {
     try {
       const page = await context.newPage()
       await page.goto(consoleUrl)
-      const trigger = page.getByRole('button', { name: 'Open operations menu' })
+      const trigger = page.getByRole('button', {
+        name: 'Open operations menu',
+      })
       await trigger.focus()
       await page.keyboard.press('Enter')
       const dialog = page.getByRole('dialog')
