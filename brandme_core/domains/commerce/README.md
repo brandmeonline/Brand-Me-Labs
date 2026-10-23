@@ -21,3 +21,30 @@ How the foundation contract is met:
   import. Every member/agent write calls `assert_processing_allowed` inside its own transaction.
 - **API shapes:** routers in `brandme-gateway/src/routes/v1/` (unmounted); three lane routes still need adding to
   `packages/contracts` by its owner.
+
+## Assistant planner (dev form)
+
+Assistant tasks (`assistant.task.*`) run in `brandme_core/orchestrator`. The deterministic planner is the
+default. A model planner (`model_planner.py`, Anthropic Messages API) exists for development and demo only; it
+is **not** a production integration, and its live test is `not_run` unless a dev key is present.
+
+- **Selection** (`planner_from_env`, once at startup; `orchestrator/composition.py` wires it):
+  `BRANDME_ASSISTANT_PLANNER=deterministic|anthropic`. Unset, a `BRANDME_DEV_ANTHROPIC_API_KEY` in development or
+  demo selects the model planner; in sandbox or production that key is not used, and `anthropic` there refuses to
+  boot. `BRANDME_ASSISTANT_MODEL` (default `claude-opus-5-5`), `BRANDME_ASSISTANT_EFFORT` (`low|medium|high`,
+  default `medium`), `BRANDME_ASSISTANT_EGRESS_PROXY` and `BRANDME_ASSISTANT_CA_BUNDLE` (explicit only; no ambient
+  proxy), `BRANDME_LOG_REF_KEY` (base64url, at least 32 bytes, from the secret store). `ANTHROPIC_*` and
+  `HTTPS_PROXY` are never read.
+- **Authority:** the model only proposes one tool call per step. Runtime guards (approval stop, mode allowlist,
+  duplicates, identifier provenance, the member's `budget_hint` price ceiling) and the audited MCP executor
+  decide what runs; `purchase.execute` is never offered to the model, so buy-within-rules plans up to approval.
+- **Data:** each step is one fresh request built from the task's own results (no conversation is kept). The goal
+  is sent with emails, phone numbers and card numbers masked; provider text is labelled untrusted; payee,
+  delivery and hash fields are dropped. Model text and thinking are discarded unread.
+- **Spend and logs:** tokens and cost are reserved before every call and settled after (per task, per member
+  day, per environment day; in memory in this form). One closed-schema JSON line per model call, task end and
+  tool call goes to stdout with keyed refs only.
+- **HTTP:** every `assistant.task.create` answers 202 (a retried create 200); a model-planned task runs on a
+  bounded background runner and a full runner is a retryable 503 `assistant_busy`.
+- **Not done yet:** durable task, ledger and audit storage; a durable job queue; a non-dev key, DPA and retention
+  review before any real member data is sent to a model provider.

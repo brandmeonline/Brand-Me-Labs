@@ -186,3 +186,15 @@ def test_agent_without_the_tasks_grant_cannot_read_or_cancel_it():
     with pytest.raises(KeyError):  # revoked: the agent loses access
         rt.events_after(ag, task.id, None)
     assert rt.events_after(member_session(), task.id, None)
+
+
+# ------------------------------------------------- no model I/O inside a transaction (ch.03 §5)
+def test_store_marks_its_transactions_for_the_assistant_guard(w):
+    from brandme_core.domains.commerce.store import in_store_transaction
+    seen = []
+    assert in_store_transaction() is False
+    w.store.run(lambda tx: seen.append(in_store_transaction()))
+    assert seen == [True] and in_store_transaction() is False
+    with pytest.raises(RuntimeError):
+        w.store.run(lambda tx: (_ for _ in ()).throw(RuntimeError("callback failed")))
+    assert in_store_transaction() is False  # reset when the callback raises

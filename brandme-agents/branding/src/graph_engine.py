@@ -23,21 +23,19 @@ Copyright (c) Brand.Me, Inc. All rights reserved.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
+import os
 import time
 import uuid
-from typing import Any, Literal
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.output_parsers import JsonOutputParser
 from langgraph.graph import END, StateGraph
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
-from .database import Neo4jConnectionPool, get_neo4j_pool
+from .database import get_neo4j_pool
 from .schemas import (
     APPROVED_PRODUCT_REGISTRY,
     BrandingQueryInput,
@@ -46,7 +44,6 @@ from .schemas import (
     ClosedBookProduct,
     DynamicUserEntity,
     GoalType,
-    PIIScrubber,
     ProductRecommendation,
     SkillLevel,
     UserProfileInput,
@@ -60,15 +57,31 @@ tracer = trace.get_tracer(__name__)
 # LLM Configuration
 # -----------------------------------------------------------------------------
 
-def get_llm() -> ChatAnthropic:
+# Not wired into any service. The engine runs only with an explicit Brand.Me dev key: the key and
+# the base URL are passed to ChatAnthropic, so ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL are never read.
+DEV_KEY_ENV = "BRANDME_DEV_ANTHROPIC_API_KEY"
+ANTHROPIC_API = "https://api.anthropic.com"
+LLM_MODEL = "claude-opus-5-5"
+
+
+class BrandingEngineDisabled(RuntimeError):
+    """The branding engine refuses to run without an explicit BRANDME_DEV_ANTHROPIC_API_KEY."""
+
+
+def get_llm(api_key: str | None = None) -> ChatAnthropic:
     """
     Get configured LLM with structured output support.
 
-    Uses Anthropic Claude with JSON Mode for structured output.
+    Uses Anthropic Claude with JSON Mode for structured output. No sampling parameters are sent
+    (current models reject temperature).
     """
+    key = api_key or os.environ.get(DEV_KEY_ENV)
+    if not key:
+        raise BrandingEngineDisabled(f"the branding engine is disabled: set {DEV_KEY_ENV}")
     return ChatAnthropic(
-        model="claude-sonnet-4-20250514",
-        temperature=0.1,  # Low temperature for consistent structured output
+        model=LLM_MODEL,
+        api_key=key,
+        base_url=ANTHROPIC_API,
         max_tokens=4096,
     )
 
@@ -358,7 +371,7 @@ async def hybrid_search_node(state: BrandingState) -> BrandingState:
 
             # Generate goal embedding (placeholder - would use actual embedding model)
             # In production, use OpenAI ada-002 or similar
-            goal_text = " ".join([
+            _goal_text = " ".join([
                 state.query.profile.scrubbed_input,
                 " ".join(goal_types),
             ])
@@ -619,7 +632,7 @@ Available Products (already validated):
 
 Generate personalized recommendations."""
 
-            span.set_attribute("llm.model", "claude-sonnet-4-20250514")
+            span.set_attribute("llm.model", LLM_MODEL)
             span.set_attribute("products_in_context", len(product_context))
 
             response = await llm.ainvoke([

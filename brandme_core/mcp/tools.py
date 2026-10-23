@@ -12,13 +12,11 @@ object is closed (``additionalProperties: false``).
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
-import secrets
+import re
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 import jsonschema
 
@@ -33,6 +31,7 @@ from brandme_core.domains.providers.redaction import contains_card_number as _co
 from brandme_core.domains.providers.redaction import mask_card_numbers as mask_payment_credentials  # noqa: F401
 
 from .authz import MCP_PROTOCOL_VERSION, AuthError, ExecutorAssertionVerifier
+from .refs import log_ref
 
 SERVER_NAME = "brandme"
 SERVER_VERSION = "2.0.0"
@@ -184,17 +183,27 @@ def _problem(status: int, code: str, detail: str, **extra: Any) -> Dict[str, Any
 
 AuditSink = Callable[[Dict[str, Any]], None]
 
-# Audit references are keyed per process: they correlate records within a process, and a short
-# argument (say, a two-word catalog query) cannot be recovered by hashing guesses.
-_AUDIT_KEY = secrets.token_bytes(32)
+# Audit references are keyed (``refs.log_ref``): they correlate records, and a short argument
+# (say, a two-word catalog query) cannot be recovered by hashing guesses. The assistant run log
+# uses the same refs, so its lines join to these records.
+
+# -- assistant runtime support ---------------------------------------------------
+# Every name a proposal may carry into events and audit records; anything else becomes UNKNOWN_TOOL.
+KNOWN_TOOL_NAMES = frozenset(_SPECS) | frozenset(RETIRED_TOOLS) | frozenset(UNAVAILABLE_TOOLS)
+UNKNOWN_TOOL = "unknown_tool"
+contains_payment_credential = _contains_payment_credential
+_CSC_RE = re.compile(r"(?i)\b(cvv2?|cvc2?|cvn|csc|cid|security\s*code)\b\W{0,4}\d{3,4}\b")
 
 
-def _audit_ref(value: Any) -> str:
-    data = value if isinstance(value, str) else json.dumps(value, sort_keys=True, default=str)
-    return hmac.new(_AUDIT_KEY, data.encode(), hashlib.sha256).hexdigest()[:16]
-
-
-audit_ref = _audit_ref  # the same keyed ref in run logs joins them to audit records
+def contains_card_security_code(value: Any) -> bool:
+    """A card security code next to its label ("cvv 123"); the number alone is not detectable."""
+    if isinstance(value, str):
+        return bool(_CSC_RE.search(value))
+    if isinstance(value, Mapping):
+        return any(contains_card_security_code(k) or contains_card_security_code(v) for k, v in value.items())
+    if isinstance(value, (list, tuple)):
+        return any(contains_card_security_code(v) for v in value)
+    return False
 
 
 class McpToolExecutor:
@@ -240,12 +249,13 @@ class McpToolExecutor:
         return status, outcome.to_wire()
 
     def call(self, principal: Principal, invocation: Dict[str, Any], *, correlation_id: Optional[str] = None,
-             task_id: Optional[str] = None, origin: str = "mcp") -> Tuple[int, ToolOutcome]:
+             task_id: Optional[str] = None, origin: str = "mcp", step: Optional[int] = None) -> Tuple[int, ToolOutcome]:
         """The one audited path into the tools, for external MCP clients and the assistant runtime alike.
 
         Validates the invocation envelope, dispatches under the verified principal, and writes one
         audit record: codes, timings and keyed references only, never arguments or raw identifiers.
-        Commerce events emitted by the call carry ``correlation_id``.
+        Commerce events emitted by the call carry ``correlation_id``. ``step`` is the assistant
+        planning step that proposed the call.
         """
         started = time.monotonic()
         request_id = str(invocation.get("request_id", "")) if isinstance(invocation, dict) else ""
@@ -259,19 +269,34 @@ class McpToolExecutor:
         else:
             with correlation(correlation_id):
                 status, outcome = self._dispatch(principal, invocation)
+        self._audit(principal, request_id=request_id, origin=origin, tool=tool, task_id=task_id, step=step,
+                    status=outcome.status, code=(outcome.problem or {}).get("code"),
+                    duration_ms=int((time.monotonic() - started) * 1000),
+                    arguments=invocation.get("arguments") if isinstance(invocation, dict) else None)
+        return status, outcome
+
+    def audit_refusal(self, principal: Principal, *, tool: str, arguments: Any, code: str, task_id: str,
+                      step: int, origin: str = "assistant") -> None:
+        """The audit record for a proposal the assistant runtime refused before dispatch (same shape
+        as ``call``'s, ``status: refused``): every proposal leaves exactly one record."""
+        self._audit(principal, request_id=None, origin=origin, tool=tool, task_id=task_id, step=step,
+                    status="refused", code=code, duration_ms=0, arguments=arguments)
+
+    def _audit(self, principal: Principal, *, request_id: Optional[str], origin: str, tool: str,
+               task_id: Optional[str], step: Optional[int], status: str, code: Optional[str], duration_ms: int,
+               arguments: Any) -> None:
         try:
             principal = self.commerce.bind(principal)  # audit the resolved delegation
         except CommerceError:
             pass
         self.audit({
             "request_id": request_id, "origin": origin, "tool": tool, "client_id": principal.client_id,
-            "member_ref": _audit_ref(principal.member_id), "delegation_id": principal.delegation_id,
-            "task_ref": _audit_ref(task_id) if task_id else None, "status": outcome.status,
-            "code": (outcome.problem or {}).get("code"), "duration_ms": int((time.monotonic() - started) * 1000),
+            "member_ref": log_ref("member", principal.member_id), "delegation_id": principal.delegation_id,
+            "task_ref": log_ref("task", task_id) if task_id else None, "step": step, "status": status,
+            "code": code, "duration_ms": duration_ms,
             # Arguments are never logged; only a keyed digest for correlation.
-            "arguments_digest": _audit_ref(invocation.get("arguments") if isinstance(invocation, dict) else None),
+            "arguments_digest": log_ref("args", arguments),
         })
-        return status, outcome
 
     def _dispatch(self, principal: Principal, inv: Dict[str, Any]) -> Tuple[int, ToolOutcome]:
         rid, tool, args = inv["request_id"], inv["tool"], inv["arguments"]
@@ -296,6 +321,9 @@ class McpToolExecutor:
                 400, "identity_argument_rejected",
                 "identity, scope and approval come from authentication, not tool arguments"))
         if _contains_payment_credential(args):
+            return 400, ToolOutcome(rid, tool, "error", problem=_problem(
+                400, "payment_credential_rejected", "payment card data is never accepted by Brand.Me tools"))
+        if contains_card_security_code(args):  # a security code is card data too (BM-COM-018)
             return 400, ToolOutcome(rid, tool, "error", problem=_problem(
                 400, "payment_credential_rejected", "payment card data is never accepted by Brand.Me tools"))
         try:

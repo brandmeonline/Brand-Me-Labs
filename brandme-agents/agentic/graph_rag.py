@@ -6,6 +6,7 @@ Graph RAG (Retrieval-Augmented Generation)
 Natural language querying of Brand.Me knowledge graph
 """
 
+import os
 from typing import List, Dict, Any, Optional
 from langchain_anthropic import ChatAnthropic
 from langchain.prompts import ChatPromptTemplate
@@ -17,6 +18,16 @@ import logging
 from .graph_db import BrandMeKnowledgeGraph, get_knowledge_graph
 
 logger = logging.getLogger(__name__)
+
+# Not wired into any service. It runs only with an explicit Brand.Me dev key: the key and the
+# base URL are passed to ChatAnthropic, so ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL are never read.
+DEV_KEY_ENV = "BRANDME_DEV_ANTHROPIC_API_KEY"
+ANTHROPIC_API = "https://api.anthropic.com"
+DEFAULT_MODEL = "claude-opus-5-5"
+
+
+class GraphRAGDisabled(RuntimeError):
+    """GraphRAG refuses to run without an explicit BRANDME_DEV_ANTHROPIC_API_KEY."""
 
 
 class GraphRAG:
@@ -35,10 +46,15 @@ class GraphRAG:
     def __init__(
         self,
         graph_db: Optional[BrandMeKnowledgeGraph] = None,
-        llm_model: str = "claude-3-5-sonnet-20241022"
+        llm_model: str = DEFAULT_MODEL,
+        *,
+        api_key: Optional[str] = None,
     ):
+        if not api_key:
+            raise GraphRAGDisabled(f"GraphRAG is disabled: pass api_key from {DEV_KEY_ENV}")
         self.graph = graph_db or get_knowledge_graph()
-        self.llm = ChatAnthropic(model=llm_model, temperature=0)
+        # No sampling parameters: current models reject temperature.
+        self.llm = ChatAnthropic(model=llm_model, api_key=api_key, base_url=ANTHROPIC_API)
         self.openai_client = openai.Client()
 
     def generate_embedding(self, text: str) -> List[float]:
@@ -74,7 +90,7 @@ class GraphRAG:
         reasoning_steps = []
 
         # Step 1: Generate embedding for question
-        question_embedding = self.generate_embedding(question)
+        _question_embedding = self.generate_embedding(question)  # placeholder: not used by the search below
         reasoning_steps.append(f"Generated embedding for question: {question}")
 
         # Step 2: Classify question type
@@ -346,5 +362,5 @@ class GraphRAG:
 # ============================================================
 
 def get_graph_rag() -> GraphRAG:
-    """Get GraphRAG instance"""
-    return GraphRAG()
+    """Get GraphRAG instance (raises GraphRAGDisabled unless BRANDME_DEV_ANTHROPIC_API_KEY is set)"""
+    return GraphRAG(api_key=os.environ.get(DEV_KEY_ENV))

@@ -315,3 +315,85 @@ def test_short_idempotency_key_is_malformed(h):
         "lines": [{"variant_id": str(uuid.uuid4()), "source_variant_ref": "demo-overshirt-m", "quantity": 1}]},
         key="short-key")
     assert status == 400 and body["problem"]["code"] == "malformed_invocation"
+
+
+# ------------------------------------------------- W07: refusals, refs, card data
+def test_audit_refusal_record_shape(h):
+    h.call("brandme.catalog.search", {"query": "linen"})
+    executed = h.audit[-1]
+    h.ex.audit_refusal(h.agent, tool="brandme.purchase.execute", arguments={"operation_id": "x"},
+                       code="tool_not_allowed_in_mode", task_id="task-1", step=3)
+    refused = h.audit[-1]
+    assert set(refused) == set(executed)  # one record shape for executed and refused proposals
+    assert refused["status"] == "refused" and refused["code"] == "tool_not_allowed_in_mode"
+    assert refused["request_id"] is None and refused["duration_ms"] == 0 and refused["step"] == 3
+    assert refused["origin"] == "assistant" and refused["delegation_id"] == h.delegation.id
+    assert refused["member_ref"] == executed["member_ref"] and len(refused["task_ref"]) == 16
+    assert "task-1" not in json.dumps(refused) and MEMBER not in json.dumps(refused)
+
+
+def _refs_in_subprocess(env_key):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    env = {k: v for k, v in os.environ.items() if k != "BRANDME_LOG_REF_KEY"}
+    if env_key:
+        env["BRANDME_LOG_REF_KEY"] = env_key
+    code = ("import os; from brandme_core.mcp import refs; refs.configure_from_env(os.environ); "
+            "print(refs.log_ref('task', 'task-1'))")
+    out = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).resolve().parents[1], env=env,
+                         capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stderr[-500:]
+    return out.stdout.strip()
+
+
+def test_log_ref_key_from_env_is_shared_across_processes():
+    import base64
+    import secrets
+    key = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip("=")  # test-only random key
+    a, b = _refs_in_subprocess(key), _refs_in_subprocess(key)
+    assert a == b and len(a) == 16
+    assert _refs_in_subprocess(None) != _refs_in_subprocess(None)  # no key: random per process
+
+
+def test_log_ref_key_rejects_bad_values():
+    import base64
+    from brandme_core.mcp import refs
+    for bad in ("not base64!", base64.urlsafe_b64encode(b"short").decode(), "Q"):
+        with pytest.raises(refs.LogRefKeyError) as e:
+            refs.configure_from_env({"BRANDME_LOG_REF_KEY": bad})
+        assert e.value.code == "log_ref_key_invalid" and bad not in str(e.value)
+    refs.log_ref("task", "x")  # this process already wrote refs with its random key
+    good = base64.urlsafe_b64encode(b"k" * 32).decode()
+    with pytest.raises(refs.LogRefKeyError) as e:
+        refs.configure_from_env({"BRANDME_LOG_REF_KEY": good})
+    assert e.value.code == "log_ref_key_already_in_use"
+    refs.configure_from_env({})  # unset keeps the process key
+
+
+def test_card_security_code_in_arguments_is_rejected(h):
+    from brandme_core.mcp.tools import contains_card_security_code, contains_payment_credential
+    for text in ("linen cvv 123", "shirt CVC2: 4567", "security code 999"):
+        status, body = h.call("brandme.catalog.search", {"query": text})
+        assert status == 400 and body["problem"]["code"] == "payment_credential_rejected", text
+    assert "123" not in json.dumps(h.audit) and "4567" not in json.dumps(h.audit)
+    assert not contains_card_security_code({"query": "size 123 linen", "id": str(uuid.uuid4())})
+    assert contains_payment_credential({"n": "4111 1111 1111 1111"})
+
+
+def test_tool_call_log_line_sanitizes_external_values(keys):
+    from brandme_core.orchestrator.runlog import MemoryRunLog
+    log = MemoryRunLog(strict=True)  # a dropped or rejected audit line would raise here
+    h = Harness(keys)
+    h.ex.audit = log.tool_call
+    inv = {"request_id": "not-a-uuid <script>", "protocol_version": MCP_PROTOCOL_VERSION, "environment": "development",
+           "tool": "evil.tool; DROP TABLE", "arguments": {"query": "x"}, "idempotency_key": None}
+    status, _ = h.ex.invoke(h.assertion(), inv)
+    assert status == 400
+    h.call("brandme.catalog.search", {"query": "linen"})
+    bad, good = log.events("mcp.tool_call")
+    assert bad["request_id"] is None and bad["tool"] == "unrecognized" and bad["status"] == "error"
+    assert bad["retention"] == "security_audit_180d" and bad["level"] == "warning"
+    assert good["tool"] == "brandme.catalog.search" and good["status"] == "ok" and good["delegation_ref"]
+    assert "DROP" not in json.dumps(log.lines) and h.delegation.id not in json.dumps(log.lines)
