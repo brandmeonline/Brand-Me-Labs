@@ -21,7 +21,20 @@ case "$service" in
     docker run --rm -e BRANDME_MODE=development --entrypoint python "$image" -c "from uuid import uuid4; from brandme_core.domains.rights.projection import apply_observation; from brandme_core.domains.privacy.privacy import MyDataService; from brandme_core.events import EventEnvelope; j = str(uuid4()); EventEnvelope(event_type='privacy.deletion.requested', schema_version='1', aggregate_type='deletion_job', aggregate_id=j, aggregate_version=1, environment='development', actor_ref='service:privacy', correlation_id=j, privacy_class='restricted', payload={'job_id': j, 'scope': 'account'}).validate(); print('core rights/privacy imports and packaged event schema OK')"
     ;;
   console)
-    docker run --rm --entrypoint node "$image" -e "const r = require('module').createRequire(require.resolve('next/package.json')); const sharp = r('sharp'); Promise.all(['avif', 'webp'].map(format => sharp({create: {width: 2, height: 2, channels: 3, background: {r: 1, g: 2, b: 3}}}).toFormat(format).toBuffer())).then(buffers => { if (buffers.some(b => !b.length)) throw new Error('empty codec output'); console.log('Next.js', r('next/package.json').version, 'sharp', sharp.versions.sharp, 'native image codecs OK'); }).catch(e => { console.error(e); process.exit(1); });"
+    docker run --rm -i --entrypoint node "$image" - <<'NODE'
+const { createRequire } = require('node:module');
+const { resolve } = require('node:path');
+const appRequire = createRequire(resolve('brandme-console/server.js'));
+const nextRequire = createRequire(appRequire.resolve('next/package.json'));
+const sharp = nextRequire('sharp');
+Promise.all(['avif', 'webp'].map(format =>
+  sharp({ create: { width: 2, height: 2, channels: 3, background: { r: 1, g: 2, b: 3 } } })
+    .toFormat(format).toBuffer()
+)).then(buffers => {
+  if (buffers.some(b => !b.length)) throw new Error('empty codec output');
+  console.log('Next.js', nextRequire('next/package.json').version, 'sharp', sharp.versions.sharp, 'native image codecs OK');
+}).catch(error => { console.error(error); process.exit(1); });
+NODE
     cid=$(docker run -d -e HOSTNAME=0.0.0.0 -p 127.0.0.1:33002:3002 "$image")
     trap 'docker rm -f "$cid" >/dev/null' EXIT
     for attempt in $(seq 1 30); do
