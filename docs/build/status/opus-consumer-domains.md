@@ -156,3 +156,51 @@ New tests: `test_persona_privacy.py` (registry, category export/delete, idempote
 - **PD-07** A single gateway→domain principal transport needs to be chosen by foundation (see above).
 - **PD-08** `brandme_core/domains/media` has no reserved migration number (foundation README: "propose at integration"). This lane's brief allows only V002–V005, so try-on/media tables will be placed in **V003_wardrobe** unless foundation reserves a number first.
 - PD-02 is **closed** (interleaved in Members).
+
+## Stage 3 — Persona HTTP surface (internal router + unmounted gateway router) and guest migration — 2026-10-23
+**Python (internal, UNMOUNTED): `brandme_core/domains/persona/api.py` → `create_persona_router(persona, guest, resolve_principal)`**
+- Paths mirror the foundation-generated OpenAPI `persona` tag:
+  - `GET`/`PATCH /me/persona` (ETag; If-Match → 428/409)
+  - `POST /me/persona/preview`
+  - `GET /me/persona/evidence?cursor&limit` (opaque cursor, default 24, max 100)
+  - `POST /me/persona/evidence/{id}/suppress` (Idempotency-Key)
+  - `POST /me/persona/reset` (If-Match + Idempotency-Key)
+  - `POST /me/persona/snapshots` (Idempotency-Key, 201)
+  - `GET /recommendations` (`next_cursor: null`, a single ranked page)
+  - `POST /recommendations/{id}/feedback` (Idempotency-Key; `{id}` = catalog product id, since recommendations are computed per request)
+- Lane additions, **proposed for `packages/contracts` (PD-09)**:
+  - `GET /me/persona/snapshots/{id}/diff` and `POST /me/persona/snapshots/{id}/restore`: BM-PER-009, inspect then apply as a new version
+  - `POST /me/persona/contexts` and `PATCH /me/persona/contexts/{id}`: ch.01 §4.2 context overrides
+  - `POST /me/persona/adaptations/{axis}/accept`: ch.01 §4.2, first bounded adaptation needs confirmation
+  - `POST /me/guest-migration`: ch.01 §3.1, BM-ONB-004
+- Response shapes: the generated OpenAPI leaves them to the owning lane. Paginated lists are `{items, next_cursor}`. The profile DTO is `{profile (exact #PersonaProfile), axes[], constraints, context_overrides[], adaptation_proposals[], exists}`.
+- `persona/http.py` is the lane-shared plumbing:
+  - problem+json for every domain error (including `extra` members)
+  - `X-Request-Id`, `X-Brandme-Environment`, `Cache-Control: private, no-store`
+  - JSON parse errors return 422
+  - blocking Spanner calls run off the event loop
+  - the principal is injected (PD-07)
+
+**Guest migration (`persona/onboarding.py`, BM-ONB-004)**
+- Idempotent at the domain level, not only per key: `GuestMigrations` (member, namespace), plus a unique index so a namespace can be claimed by only one account.
+- A second sign-in with a *new* Idempotency-Key returns `already_migrated` and writes nothing.
+- Account choices always win; guest values fill only unanswered axes.
+- Other domains plug in as sections that apply in the same transaction (wardrobe will register saved products, outfits and closet theme). Unknown sections are rejected.
+
+**Gateway (UNMOUNTED): `brandme-gateway/src/routes/v1/persona.ts` → `personaRouter(client: DomainClient)`**
+- Uses foundation `requirePrincipal`, `problems` and `handle` read-only; `index.ts` is not touched.
+- Checks scopes `profile:read`/`profile:write`, If-Match (428), Idempotency-Key (16–128, otherwise 400 `idempotency_key_invalid`) and UUID path params (otherwise 404, never forwarded).
+- Rejects identity fields in the body, allowlists query parameters, and relays domain status, ETag and problem bodies unchanged.
+- Exports `DomainClient`/`forwardTo`/`relay`/`requireScope`/`ifMatch`/`idempotencyKey`/`uuidParam`/`objectBody` for this lane's other routers.
+- Mount at integration with `router.use(personaRouter(domainClient))` after `principalMiddleware`.
+
+**Evidence**
+| Check | Result |
+|---|---|
+| `pytest tests/test_persona_*.py tests/foundation -W error::…UnhandledThreadException` (pinned venv, emulator 1.5.28) | **158 passed, 3 skipped** (privacy-lane tests not run on this branch) |
+| `tests/test_persona_api.py` | **10 passed**. 401; ETag and private headers; 428/409 with mergeable fields; 422 for allowlist and invalid JSON; Idempotency-Key required, short key 400, replay identical; cursor pagination over 5 items and bad cursor/limit 422; recommendations + `not_me` feedback; guest migration twice → 1 row and 1 event; account wins; **5 concurrent migrations → exactly one `migrated`**; another member → 422 `guest_namespace_claimed` |
+| Gateway, Node 24.21.0 / pnpm 10.34.6 (`pnpm install --frozen-lockfile --filter @brandme/gateway...`): `tsc --noEmit` | exit 0 |
+| `eslint src/routes/v1/persona*.ts` | exit 0 |
+| `vitest run` (whole gateway) | **25 passed** (18 foundation + 7 `persona.test.ts`) |
+
+Acceptance: **BM-ONB-004 passed (integration)**. BM-ONB-007 stays passed: `/recommendations` needs no model key.

@@ -321,6 +321,51 @@ def require_idempotency_key(key: Optional[str]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Opaque cursors (ch.03 §6: opaque, stable tie-breaking, default 24 / max 100)
+# ---------------------------------------------------------------------------
+
+
+def encode_cursor(*parts: Any) -> str:
+    import base64
+
+    wire = [iso(p) if isinstance(p, datetime) else p for p in parts]
+    raw = json.dumps(wire, separators=(",", ":")).encode()
+    return base64.urlsafe_b64encode(raw).decode().rstrip("=")
+
+
+def decode_cursor(cursor: Any, *, kinds: Tuple[str, ...]) -> Tuple[Any, ...]:
+    """Decode and type-check a cursor; ``kinds`` items are 'ts', 'id', 'int' or 'str'."""
+    import base64
+
+    bad = ValidationFailed("cursor is not valid", extra={"field": "cursor"})
+    if not isinstance(cursor, str) or not (1 <= len(cursor) <= 512):
+        raise bad
+    try:
+        parts = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
+    except Exception:
+        raise bad from None
+    if not isinstance(parts, list) or len(parts) != len(kinds):
+        raise bad
+    out = []
+    for kind, v in zip(kinds, parts):
+        if kind == "ts":
+            out.append(parse_iso(v, name="cursor"))
+        elif kind == "id":
+            out.append(require_uuid(v, name="cursor"))
+        elif kind == "int":
+            if isinstance(v, bool) or not isinstance(v, int):
+                raise bad
+            out.append(v)
+        elif kind == "str":
+            if not isinstance(v, str) or len(v) > 256:
+                raise bad
+            out.append(v)
+        else:
+            raise ValueError(kind)
+    return tuple(out)
+
+
+# ---------------------------------------------------------------------------
 # Transactions
 # ---------------------------------------------------------------------------
 

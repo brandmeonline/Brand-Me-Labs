@@ -20,7 +20,10 @@ from .kernel import (
     BOOL,
     INT,
     STR,
+    TS,
     Clock,
+    decode_cursor,
+    encode_cursor,
     CommandContext,
     DetailedVersionConflict,
     InvalidTransition,
@@ -136,6 +139,13 @@ class PersonaService:
         self.candidate_source = candidate_source or (lambda _p: ())
         self.wardrobe_source = wardrobe_source
         self.revoked_consents = revoked_consents
+
+    def _run(self, principal: Principal, operation: str, idempotency_key: Optional[str], request: Mapping[str, Any], fn):
+        """Command with optional Idempotency-Key (contract-required on some endpoints)."""
+        if idempotency_key is None:
+            return command(self.db, principal, fn)
+        response, _replayed = idempotent_command(self.db, principal, operation, idempotency_key, request, fn)
+        return response
 
     # ------------------------------------------------------------------ load
 
@@ -430,36 +440,54 @@ class PersonaService:
         return self._dto(p, self.clock.now())
 
     def list_evidence(self, principal: Principal) -> List[Dict[str, Any]]:
+        """All evidence (newest first). The API uses ``list_evidence_page``."""
+        out: List[Dict[str, Any]] = []
+        cursor = None
+        while True:
+            page = self.list_evidence_page(principal, cursor=cursor, limit=100)
+            out.extend(page["items"])
+            cursor = page["next_cursor"]
+            if cursor is None:
+                return out
+
+    def list_evidence_page(self, principal: Principal, *, cursor: Optional[str] = None, limit: int = 24) -> Dict[str, Any]:
         require_scope(principal, "profile:read")
+        limit = require_strict_int(limit, name="limit", lo=1, hi=100)
+        after = decode_cursor(cursor, kinds=("ts", "id")) if cursor else None
 
         def read(snap):
-            out = []
-            for r in query(
-                snap,
+            sql = (
                 "SELECT evidence_id, source_type, source_ref, purpose, axis_contributions, weight, model_version, "
-                "observed_at, expires_at, suppression_state, suppressed_at FROM PersonaEvidence "
-                "WHERE member_id=@m ORDER BY observed_at DESC, evidence_id",
-                {"m": principal.member_id},
-                {"m": STR},
-            ):
-                out.append(
-                    {
-                        "evidence_id": r[0],
-                        "source_type": r[1],
-                        "source_ref": r[2],
-                        "purpose": r[3],
-                        "axis_contributions": json_value(r[4]) or {},
-                        "weight": r[5],
-                        "model_version": r[6],
-                        "observed_at": iso(r[7]),
-                        "expires_at": iso(r[8]),
-                        "suppression_state": r[9],
-                        "suppressed_at": iso(r[10]),
-                    }
-                )
-            return out
+                "observed_at, expires_at, suppression_state, suppressed_at FROM PersonaEvidence WHERE member_id=@m "
+            )
+            params: Dict[str, Any] = {"m": principal.member_id, "n": limit + 1}
+            types: Dict[str, Any] = {"m": STR, "n": INT}
+            if after:
+                sql += "AND (observed_at < @t OR (observed_at = @t AND evidence_id > @e)) "
+                params.update(t=after[0], e=after[1])
+                types.update(t=TS, e=STR)
+            sql += "ORDER BY observed_at DESC, evidence_id LIMIT @n"
+            return query(snap, sql, params, types)
 
-        return run_read(self.db, read)
+        rows = run_read(self.db, read)
+        items = [
+            {
+                "evidence_id": r[0],
+                "source_type": r[1],
+                "source_ref": r[2],
+                "purpose": r[3],
+                "axis_contributions": json_value(r[4]) or {},
+                "weight": r[5],
+                "model_version": r[6],
+                "observed_at": iso(r[7]),
+                "expires_at": iso(r[8]),
+                "suppression_state": r[9],
+                "suppressed_at": iso(r[10]),
+            }
+            for r in rows[:limit]
+        ]
+        nxt = encode_cursor(rows[limit - 1][7], rows[limit - 1][0]) if len(rows) > limit else None
+        return {"items": items, "next_cursor": nxt}
 
     # -------------------------------------------------------------- commands
 
@@ -758,8 +786,9 @@ class PersonaService:
 
         return command(self.db, principal, txn_fn)
 
-    def suppress_evidence(self, principal: Principal, evidence_id: str) -> Dict[str, Any]:
+    def suppress_evidence(self, principal: Principal, evidence_id: str, *, idempotency_key: Optional[str] = None) -> Dict[str, Any]:
         require_scope(principal, "profile:write")
+        evidence_id = require_uuid(evidence_id, name="evidence_id")
 
         def txn_fn(txn, ctx: CommandContext):
             now = self.clock.now()
@@ -803,11 +832,13 @@ class PersonaService:
             p.updated_at = now
             return self._dto(p, now)
 
-        return command(self.db, principal, txn_fn)
+        return self._run(principal, "persona.evidence.suppress", idempotency_key, {"evidence_id": evidence_id}, txn_fn)
 
     # --------------------------------------------------------------- reset
 
-    def reset(self, principal: Principal, if_match: Optional[str], scope: str, confirm: bool) -> Dict[str, Any]:
+    def reset(
+        self, principal: Principal, if_match: Optional[str], scope: str, confirm: bool, *, idempotency_key: Optional[str] = None
+    ) -> Dict[str, Any]:
         require_scope(principal, "profile:write")
         if scope not in RESET_SCOPES:
             raise ValidationFailed(f"scope must be one of {RESET_SCOPES}")
@@ -869,11 +900,11 @@ class PersonaService:
             p.updated_at = now
             return self._dto(p, now)
 
-        return command(self.db, principal, txn_fn)
+        return self._run(principal, "persona.reset", idempotency_key, {"scope": scope, "if_match": if_match}, txn_fn)
 
     # ----------------------------------------------------------- snapshots
 
-    def create_snapshot(self, principal: Principal, name: str) -> Dict[str, Any]:
+    def create_snapshot(self, principal: Principal, name: str, *, idempotency_key: Optional[str] = None) -> Dict[str, Any]:
         require_scope(principal, "profile:write")
         if not isinstance(name, str) or not (1 <= len(name.strip()) <= 80):
             raise ValidationFailed("snapshot name must be 1-80 characters")
@@ -909,7 +940,7 @@ class PersonaService:
             )
             return {"snapshot_id": sid, "saved_name": name.strip(), "profile_version": str(p.version), "summary": summary}
 
-        return command(self.db, principal, txn_fn)
+        return self._run(principal, "persona.snapshot.create", idempotency_key, {"name": name}, txn_fn)
 
     def snapshot_diff(self, principal: Principal, snapshot_id: str) -> Dict[str, Any]:
         require_scope(principal, "profile:read")
