@@ -62,18 +62,18 @@ mainnet writes" (`docs/design/brandme/06-delivery-verification.md:115`).
 | # | Gap | Blocks first deploy? | Where it is fixed |
 |---|---|---|---|
 | G1 | Cluster existence, mode, version, Workload Identity pool and dataplane are unconfirmed. | Yes | C-3 / C-6 (founder) |
-| G2 | The current deploy job cannot succeed: it installs `./brandme-umbrella`, whose subcharts and `values/values-prod.yaml` do not exist (helm 3.22.1: "missing in charts/ directory…", "open values/values-prod.yaml: no such file"); it pins `global.image.tag=v1.2.3` while metadata-action pushes `1.2.3`/`1.2`/`sha-…` (`ci-cd.yml:246-251` vs `:329`); it rolls out `brandme-core` (celery beat) and `brandme-agents` (a CLI) (`:336-337`); JSON key, no environment, no concurrency. | Yes | Section E patch (needs the `ci-cd.yml` owner and a token with `workflow` scope) |
+| G2 | The current deploy job cannot succeed: it installs `./brandme-umbrella`, whose subcharts and `values/values-prod.yaml` do not exist (helm 3.22.1: "missing in charts/ directory…", "open values/values-prod.yaml: no such file"); it pins `global.image.tag=v1.2.3` while metadata-action pushes `1.2.3`/`1.2`/`sha-…` (`ci-cd.yml:246-251` vs `:329`); it rolls out `brandme-core` (celery beat) and `brandme-agents` (a CLI) (`:336-337`); JSON key, no environment, no concurrency. | Yes (job now gated off) | **Section E applied in this change set:** the deploy job uses the new chart, deploys by digest, runs under `environment: sandbox` with WIF, and runs only when a `v*` tag AND `vars.BM_DEPLOY_ENABLED == 'true'`. Until the founder sets that variable, a tag cannot start a half-configured deploy. |
 | G3 | No repo artifact provisions the data plane the code needs: Spanner instance/database, three Pub/Sub topics (≥ 24 h retention), the export bucket with its exact policy, Secret Manager secrets, per-workload GSAs and IAM, WIF. | Yes | C-5…C-17 |
 | G4 | Migration numbering (D3). | Yes (before the first `up`) | Founder decision, then lane merge |
 | G5 | No Midnight Preprod contract address exists (`docs/build/evidence/midnight-integration-2026-10-22.md:53`). read-api and exports refuse to start without one; chain starts but reports the capability `unavailable`. | Yes for read-api/exports | D7, then `values-sandbox.yaml` |
 | G6 | No OIDC issuer/audience; the gateway refuses strict modes without them (verified: "OIDC_ISSUER is required; OIDC_AUDIENCE is required"). | Yes for gateway | D5, then `values-sandbox.yaml` |
 | G7 | The console bakes its API URLs at build time and CI passes none, so browsers would call `http://localhost:3000` (`brandme-console/lib/api.ts:11-14`; `ci-cd.yml:258`). `console.enabled: false` in `values-sandbox.yaml`. | No (console off) | Console build args (console owner) |
-| G8 | The gateway rate limiter runs before `/healthz` and keys on `req.ip` without `trust proxy` (`brandme-gateway/src/index.ts:54-57`, `middleware/rateLimiter.ts:92-95`). Behind a Google load balancer all clients would share the proxies' addresses. Ingress is off by default. | No (ingress off) | Gateway lane, before enabling ingress |
+| G8 | **Fixed in this change set (gateway package):** the limiter exempts `/health`/`/healthz`, keys members by principal and addresses by `req.ip` with a configurable `TRUST_PROXY` (`brandme-gateway/src/middleware/rateLimiter.ts`, `src/config/index.ts:36-66`). The chart passes `gateway.trustProxy` and refuses `ingress.enabled` without it (`templates/validate.yaml`). The GKE value (2) is documented, not observed on a cluster. | No | Confirm `req.ip` on first ingress deploy |
 | G9 | The gateway exits immediately on SIGTERM (`brandme-gateway/src/index.ts:98`). The chart adds a 5 s `preStop` sleep so endpoints are removed first; in-flight requests still drop at exit. | No | Gateway lane: drain on SIGTERM |
 | G10 | Observed locally: with no ADC and no emulator, the gateway logs "listening" and then dies on an unhandled rejection from the Spanner client ("Could not load the default credentials"). With Workload Identity this should not occur, but a broken binding shows as a restart loop after the startup probe has briefly passed. | No | Gateway lane: fail before listening |
-| G11 | The gateway does not refuse `SPANNER_EMULATOR_HOST` in sandbox/production (it only adjusts session flags, `middleware/identity/store.ts:91-98`; `mode.ts` has no emulator check). Verified: it served `/healthz` in `BRANDME_MODE=sandbox` against the emulator. The chart never sets it. | No | Gateway lane: mirror the Python services' refusal |
+| G11 | **Fixed in this change set (gateway package):** strict modes refuse `SPANNER_EMULATOR_HOST`, `FIRESTORE_EMULATOR_HOST` and `PUBSUB_EMULATOR_HOST` (`brandme-gateway/src/middleware/mode.ts`). | No | — |
 | G12 | The two workers have no health endpoint, so a hung worker is not detected. They exit non-zero on failed startup checks; the chart uses `minReadySeconds: 30` so a crash during startup blocks the rollout. | No | Core lane: heartbeat or health port |
-| G13 | The shared boot guard has no audited inventory for read_api, privacy_exports, events worker or gateway and refuses them in strict modes (`brandme_core/config.py:340-342`); chain's entry is stale. The chart therefore runs no `preflight` init container. | No | B5 guard work: register these services first |
+| G13 | **Fixed in this change set (Python package):** `brandme_core/config.py` now carries audited inventories for read_api, privacy_exports, events_worker and gateway, and the stale chain entries are replaced (Midnight SANDBOX, Cardano UNCONFIGURED). chain/read-api/exports pass `preflight` in sandbox only (test networks); production stays refused. The chart still runs no `preflight` init container; adding one needs `ENVIRONMENT=BRANDME_MODE` and each service's network variable. | No | Optional init container after first deploy |
 | G14 | No Pub/Sub subscriptions or consumers exist; the outbox README asks for subscriptions before publishing (`brandme_core/events/README.md:15-26`). Topic retention (≥ 24 h, required by `brandme_core/events/pubsub.py:94-103`) is the only replay window until consumers exist. | No | Consumer owners |
 | G15 | The Firestore projection writer has no process entrypoint, so Firestore is not provisioned or deployed here. | No | Foundation lane, later |
 | G16 | No secret-delivery mechanism is installed (D4). | Yes | C-15 |
@@ -82,10 +82,12 @@ mainnet writes" (`docs/design/brandme/06-delivery-verification.md:115`).
 | G19 | Spanner custom role permissions (C-12) are derived from `roles/spanner.databaseUser` minus schema rights; not exercised live. | Maybe | First deploy (`--check` + logs) |
 | G20 | The core image installs the whole foundation lock, including test tools (pytest, black, datamodel-code-generator). | No | Split a runtime-only lock |
 | G21 | Base images are pinned by tag (`python:3.11.15-slim`, `node:24.21.0-bookworm-slim`), not digest; third-party actions are not SHA-pinned; no Dependabot/Renovate. | No | Foundation follow-up |
-| G22 | `.cache/` is not gitignored; `scripts/validate-helm.sh` writes `.cache/tools`. | No | `.gitignore` owner |
+| G22 | **Fixed in this change set:** `.cache/` is in `.gitignore` and `.dockerignore`. | No | — |
 | G23 | The consumer frontend has no Dockerfile and no image. | No | Frontend owner |
 | G24 | `build-images` still publishes with the JSON key. Moving it to WIF needs a second provider condition (`refs/heads/main`). | No | Secrets packet (B4) |
 | G25 | The export API cannot check that its token differs from the read API and chain tokens, because those are not in its pod. Distinctness depends on generating independent values (C-14). | No | C-14 |
+| G26 | The gateway's write-side calls have no server among the deployed processes. `POST /challenges`, `/assets/{id}/transfers` and `/assets/{id}/reprint-quotes` go to `RIGHTS_SERVICE_URL` (`brandme-gateway/src/routes/v1/ownership.ts:44`, `assets.ts:55`, `assets.ts:71`), and `POST /deletion` goes to `PRIVACY_SERVICE_URL` (`routes/v1/privacy.ts:110`). The chart points both URLs at the read API (`templates/gateway.yaml`), which serves only GET routes (`brandme_core/read_api/app.py:95-117`). In sandbox those routes would get 404/405. | No (reads work) | midnight-rights / privacy lanes: name the write-side service |
+| G27 | **Inference, not tested:** `@google-cloud/spanner` 9.0.0 (gateway, chain) may export client-side metrics to Cloud Monitoring by default. If it does, GSAs without `monitoring.timeSeries.create` will log export errors. Grant `roles/monitoring.metricWriter` to those GSAs, or turn the client metrics off. | No | First deploy logs |
 
 ## C. Exact founder / console actions (in order)
 
@@ -394,11 +396,11 @@ then delete the `GCP_SA_KEY` secret in GitHub.
 | C-8, C-9, C-11, C-14 | Nothing: `values-sandbox.yaml` already uses `brandme-sandbox` (instance and database), the three topic IDs, the `bm-sbx-*` GSAs and the `brandme-sandbox-rts-*` Secret names. | — |
 | C-10 | Replace `REPLACE_ME_SUFFIX` in `privacyExports.bucket`. | Foundation |
 | D5 | Fill `gateway.oidc.issuer` and `gateway.oidc.audience`. | Foundation |
-| D6 | Fill `gateway.publicOrigins` (https). Later, for C-19: `ingress.enabled`, `staticIpName`, hosts — only after G8. | Foundation / gateway |
+| D6 | Fill `gateway.publicOrigins` (https). Later, for C-19: `ingress.enabled`, `staticIpName`, hosts and `gateway.trustProxy` (G8; the chart refuses ingress without it). | Foundation / gateway |
 | D7 | Fill `midnight.contractAddress` (64 lowercase hex). | Midnight-rights |
 | C-16, C-17 | Apply the section E patch to `ci-cd.yml` (needs a token with `workflow` scope). | ci-cd.yml owner |
 | Console build args (G7) | `console.enabled: true` in `values-sandbox.yaml`; add `console` to the rollout loop in E. | Console owner |
-| Any time | Add `.cache/` to `.gitignore` (G22). | .gitignore owner |
+| Done | `.cache/` is in `.gitignore` and `.dockerignore` (G22). | — |
 | After the first green deploy | Update CLAUDE.md's service table with evidence (run URL, `kubectl` output); never before. | Parent |
 
 While the committed `values-sandbox.yaml` contains any `REPLACE_ME`,
@@ -407,7 +409,7 @@ it asserts the committed file renders and validates. A separate negative test
 keeps proving that any `REPLACE_ME` value is refused. (The deploy job passes
 `gcp.projectId` from `vars.BM_GCP_PROJECT_ID`, so that placeholder may stay.)
 
-## E. Proposed `ci-cd.yml` patch (not applied; this lane does not own the file)
+## E. `ci-cd.yml` deploy patch (applied in this change set; gated off until `vars.BM_DEPLOY_ENABLED == 'true'`)
 
 Two parts. The result was linted with actionlint 1.7.7 on a scratch copy: no
 new findings (the only finding, SC2034 at the Firestore step, already exists

@@ -62,6 +62,7 @@ jobs:
           - 9010:9010
     env:
       SPANNER_EMULATOR_HOST: localhost:9010
+      BRANDME_REQUIRE_EMULATORS: '1'
     steps:
       - uses: actions/checkout@v4
 
@@ -157,7 +158,7 @@ jobs:
         run: |
           launcher=$(python scripts/python/fetch_firestore_emulator.py .cache/firestore-emulator)
           nohup "$launcher" start --host=127.0.0.1 --port=8080 > .cache/firestore-emulator.log 2>&1 &
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8080/ >/dev/null && break; sleep 1; done
+          for _ in $(seq 1 60); do curl -sf http://127.0.0.1:8080/ >/dev/null && break; sleep 1; done
           python -c "import socket; socket.create_connection(('127.0.0.1', 8080), timeout=10).close()"
 
       # Every test under tests/, once. Known-broken tests are quarantined (owner + blocker) in tests/conftest.py
@@ -243,7 +244,7 @@ jobs:
         run: |
           launcher=$(python scripts/python/fetch_firestore_emulator.py .cache/firestore-emulator)
           nohup "$launcher" start --host=127.0.0.1 --port=8080 > .cache/firestore-emulator.log 2>&1 &
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8080/ >/dev/null && break; sleep 1; done
+          for _ in $(seq 1 60); do curl -sf http://127.0.0.1:8080/ >/dev/null && break; sleep 1; done
           python -c "import socket; socket.create_connection(('127.0.0.1', 8080), timeout=10).close()"
 
       - name: pnpm check
@@ -287,8 +288,14 @@ jobs:
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [test-gateway, test-core, foundation-check, test-chain, test-frontend, security-scan]
+    needs: [test-gateway, test-core, test-chain, test-frontend, security-scan]
     timeout-minutes: 40
+    # Matrix legs write distinct output names, so the job outputs combine.
+    outputs:
+      digest-gateway: ${{ steps.publish.outputs.digest-gateway }}
+      digest-core: ${{ steps.publish.outputs.digest-core }}
+      digest-chain: ${{ steps.publish.outputs.digest-chain }}
+      digest-console: ${{ steps.publish.outputs.digest-console }}
     env:
       PUBLISH_IMAGES: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
 
@@ -355,62 +362,120 @@ jobs:
         run: gcloud auth configure-docker --quiet
 
       - name: Publish verified images
+        id: publish
         if: env.PUBLISH_IMAGES == 'true'
         env:
           IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+          SERVICE: ${{ matrix.service }}
         run: |
+          set -euo pipefail
+          digest=""
           while IFS= read -r tag; do
-            docker push "$tag"
+            out=$(docker push "$tag")
+            printf '%s\n' "$out"
+            pushed=$(printf '%s\n' "$out" | sed -nE 's/^.*: digest: (sha256:[a-f0-9]{64}) size: [0-9]+$/\1/p' | tail -n 1)
+            [[ "$pushed" =~ ^sha256:[a-f0-9]{64}$ ]] || { echo "registry reported no digest for $tag" >&2; exit 1; }
+            [ -z "$digest" ] || [ "$digest" = "$pushed" ] || { echo "tags of one build resolved to different digests" >&2; exit 1; }
+            digest=$pushed
           done <<< "$IMAGE_TAGS"
+          echo "digest-${SERVICE}=${digest}" >> "$GITHUB_OUTPUT"
 
   # ==========================================
   # Deploy to GKE
   # ==========================================
 
   deploy:
-    name: Deploy to GKE
+    name: Deploy to GKE (sandbox)
     runs-on: ubuntu-latest
     needs: [build-images]
-    if: startsWith(github.ref, 'refs/tags/v')
-
+    # A v* tag alone is not enough: the founder sets the repo variable
+    # BM_DEPLOY_ENABLED=true only after every step in
+    # docs/build/deploy/gke-verification-packet.md section C is done.
+    if: startsWith(github.ref, 'refs/tags/v') && vars.BM_DEPLOY_ENABLED == 'true'
+    environment: sandbox
+    concurrency:
+      group: deploy-sandbox
+      cancel-in-progress: false
+    timeout-minutes: 30
+    # A job-level block replaces the workflow-level one: restate contents.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        if: github.event_name == 'push'
+      # Installs pinned, checksum-verified helm/kubeconform into .cache/tools
+      # and runs the same offline gate as the 'Deploy manifests' workflow.
+      - name: Validate chart offline
+        run: bash scripts/validate-helm.sh
+
+      - name: Render this exact release (fails on any unfilled REPLACE_ME)
+        env:
+          DIGEST_GATEWAY: ${{ needs.build-images.outputs.digest-gateway }}
+          DIGEST_CORE: ${{ needs.build-images.outputs.digest-core }}
+          DIGEST_CHAIN: ${{ needs.build-images.outputs.digest-chain }}
+          DIGEST_CONSOLE: ${{ needs.build-images.outputs.digest-console }}
+          BM_GCP_PROJECT_ID: ${{ vars.BM_GCP_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          for d in "$DIGEST_GATEWAY" "$DIGEST_CORE" "$DIGEST_CHAIN" "$DIGEST_CONSOLE"; do
+            [[ "$d" =~ ^sha256:[a-f0-9]{64}$ ]] || { echo "missing or malformed image digest from build-images" >&2; exit 1; }
+          done
+          {
+            echo "--namespace=brandme"
+            echo "--values=brandme-infra/helm/brandme/values-sandbox.yaml"
+            echo "--set-string=gcp.projectId=${BM_GCP_PROJECT_ID}"
+            echo "--set-string=images.registry=${REGISTRY}/${GCP_PROJECT_ID}"
+            echo "--set-string=images.gateway.digest=${DIGEST_GATEWAY}"
+            echo "--set-string=images.core.digest=${DIGEST_CORE}"
+            echo "--set-string=images.chain.digest=${DIGEST_CHAIN}"
+            echo "--set-string=images.console.digest=${DIGEST_CONSOLE}"
+          } > "$RUNNER_TEMP/release-args"
+          mapfile -t args < "$RUNNER_TEMP/release-args"
+          .cache/tools/bin/helm template brandme brandme-infra/helm/brandme "${args[@]}" > "$RUNNER_TEMP/release.yaml"
+          grep -c '^kind: Deployment$' "$RUNNER_TEMP/release.yaml"
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation, no key)
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ vars.BM_GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.BM_GCP_DEPLOYER_SA }}
+          project_id: ${{ vars.BM_GCP_PROJECT_ID }}
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
         with:
-          cluster_name: ${{ env.GKE_CLUSTER }}
-          location: ${{ env.GCP_REGION }}
+          cluster_name: ${{ vars.BM_GKE_CLUSTER }}
+          location: ${{ vars.BM_GCP_REGION }}
+          project_id: ${{ vars.BM_GCP_PROJECT_ID }}
 
-      - name: Install Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: '3.13.0'
-
-      - name: Deploy with Helm
-        working-directory: ./brandme-infra/helm
+      # Migrations run first as the chart's pre-install/pre-upgrade hook Job
+      # (runner.py up); helm stops before any workload changes if it fails.
+      # The namespace is created by the founder (packet C-7), not here.
+      - name: Migrate, then roll out by digest
         run: |
-          helm upgrade --install brandme ./brandme-umbrella \
-            --namespace brandme \
-            --create-namespace \
-            --values values/values-prod.yaml \
-            --set-string global.image.tag=${{ github.ref_name }} \
-            --wait \
-            --timeout 10m
+          set -euo pipefail
+          mapfile -t args < "$RUNNER_TEMP/release-args"
+          .cache/tools/bin/helm upgrade --install brandme brandme-infra/helm/brandme "${args[@]}" \
+            --wait --wait-for-jobs --timeout 15m --history-max 10
+          kubectl -n brandme logs job/brandme-migrations --tail=40
 
-      - name: Verify deployment
+      - name: Verify rollout and in-cluster checks
         run: |
-          kubectl rollout status deployment/brandme-gateway -n brandme
-          kubectl rollout status deployment/brandme-core -n brandme
-          kubectl rollout status deployment/brandme-agents -n brandme
-          kubectl rollout status deployment/brandme-chain -n brandme
-          kubectl rollout status deployment/brandme-console -n brandme
+          set -euo pipefail
+          for d in gateway chain read-api exports-api exports-worker events-worker; do
+            kubectl -n brandme rollout status "deployment/brandme-$d" --timeout=5m
+          done
+          kubectl -n brandme exec deploy/brandme-read-api -- python -m brandme_core.read_api --check
+          kubectl -n brandme exec deploy/brandme-exports-worker -- python -m brandme_core.privacy_exports --check
+          kubectl -n brandme exec deploy/brandme-events-worker -- python -m brandme_core.events.worker --check
+
+      - name: Diagnostics on failure (no secret values)
+        if: failure()
+        run: |
+          kubectl -n brandme get deploy,pods,jobs -o wide || true
+          kubectl -n brandme get events --sort-by=.lastTimestamp | tail -n 60 || true
+          .cache/tools/bin/helm -n brandme history brandme --max 5 || true
 
   # ==========================================
   # Security Scanning

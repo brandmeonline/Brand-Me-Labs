@@ -9,6 +9,7 @@
 //                                                  BRANDME_REQUIRE_EMULATORS=1: an unreachable emulator fails the run
 //                                                  BRANDME_CHECK_SKIP_PYTHON=1 or --no-python: skip the pytest step
 //                                                  (CI foundation-check only; CI test-core runs the full suite)
+//   node scripts/brandme.mjs workspace [--with-pnpm] [--json]  pnpm workspace + toolchain governance guard
 //   node scripts/brandme.mjs migrate               apply Spanner migrations
 //   node scripts/brandme.mjs evidence              acceptance status summary from recorded results
 import { spawn, spawnSync } from 'node:child_process';
@@ -141,6 +142,8 @@ async function setup(mode) {
   const remaining = checkRuntimes();
   if (remaining.length) fail(`missing prerequisites:\n  - ${remaining.join('\n  - ')}`);
   console.log(c.ok('✓ runtimes'));
+  if (run(process.execPath, ['scripts/check-workspace.mjs']).status !== 0) fail('workspace governance check failed (fixes above; docs/build/workspace-governance.md)');
+  console.log(c.ok('✓ workspace governance'));
   if (run('pnpm', ['install', '--frozen-lockfile']).status !== 0) fail('pnpm install --frozen-lockfile failed');
   console.log(c.ok('✓ node dependencies (frozen lockfile)'));
   const envLocal = join(ROOT, '.env.local');
@@ -294,10 +297,11 @@ async function check() {
   }
   const notRun = [!emulator && 'Spanner', !firestore && 'Firestore', !pubsub && 'Pub/Sub'].filter(Boolean);
   const steps = [
-    // PARENT INSERTION POINT (foundation lane): the workspace guard and the credential-manifest check steps are
-    // added here, ahead of the suites, by a separate change. Nothing for them runs yet.
+    ['workspace + toolchain governance', process.execPath, ['scripts/check-workspace.mjs', '--with-pnpm']],
     ['spec package validator', PY, ['docs/design/brandme/contracts/validate_spec.py']],
     ['contract + token drift', 'pnpm', ['contracts:check']],
+    ['credential manifest', process.execPath, ['scripts/check-credential-manifest.mjs']],
+    ['guard self-tests', process.execPath, ['--test', 'scripts/check-workspace.test.mjs', 'scripts/check-credential-manifest.test.mjs']],
     ['packages type-check', 'pnpm', ['--filter', './packages/*', 'type-check']],
     ['packages tests' + (firestore ? '' : ' (security-rules suite skipped)'), 'pnpm', ['--filter', './packages/*', 'test']],
     ['gateway type-check', 'pnpm', ['--filter', '@brandme/gateway', 'type-check']],
@@ -375,6 +379,7 @@ const commands = {
   smoke,
   check,
   links,
+  workspace: () => process.exit(run(process.execPath, ['scripts/check-workspace.mjs', ...args.slice(1)]).status ?? 1),
   migrate: () => migrate(baseEnv(opt('mode', 'development'))),
   evidence,
   'not-yet': () => notYet(args[1], args[2]),

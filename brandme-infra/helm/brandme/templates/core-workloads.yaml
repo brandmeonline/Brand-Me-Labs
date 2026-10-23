@@ -34,7 +34,7 @@ inconsistent setting, an emulator in a strict mode, or an unapplied schema.
 {{ include "brandme.coreDeployment" (dict "root" $root "component" "exports-api" "cfg" .Values.exportsApi "command" (list "python" "-m" "brandme_core.privacy_exports") "env" (printf "- name: PORT\n  value: %q\n%s" (toString .Values.exportsApi.port) $exportEnv) "http" true "grace" 30) }}
 {{- end }}
 {{- if .Values.exportsWorker.enabled }}
-{{- /* ExportConfig.from_env validates PRIVACY_EXPORT_SERVICE_TOKEN for the worker too (privacy_exports/config.py:84-87). Leases are 120s (README "Correctness"). */}}
+{{- /* ExportConfig.from_env validates PRIVACY_EXPORT_SERVICE_TOKEN for the worker too (privacy_exports/config.py:41-44). Leases are 120s (README "Correctness"). */}}
 ---
 {{ include "brandme.coreDeployment" (dict "root" $root "component" "exports-worker" "cfg" .Values.exportsWorker "command" (list "python" "-m" "brandme_core.privacy_exports" "--worker") "env" $exportEnv "http" false "grace" 150) }}
 {{- end }}

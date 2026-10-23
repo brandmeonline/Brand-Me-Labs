@@ -9,6 +9,9 @@ Renders nothing. Fails the whole render on values that must never deploy.
 {{- if and .Values.ingress.enabled (not .Values.gateway.enabled) -}}
 {{- fail "ingress.enabled requires gateway.enabled" -}}
 {{- end -}}
+{{- if and .Values.ingress.enabled (not .Values.gateway.trustProxy) -}}
+{{- fail "ingress.enabled requires gateway.trustProxy (otherwise every client shares the load balancer's address in the rate limiter)" -}}
+{{- end -}}
 {{- if .Values.gateway.enabled -}}
 {{- range .Values.gateway.publicOrigins -}}
 {{- if not (hasPrefix "https://" .) -}}
@@ -22,7 +25,7 @@ Renders nothing. Fails the whole render on values that must never deploy.
 {{- if or .Values.exportsApi.enabled .Values.exportsWorker.enabled -}}
 {{- $bucket := include "brandme.req" (list .Values.privacyExports.bucket "privacyExports.bucket") -}}
 {{- if not (hasPrefix (printf "brandme-%s-exports-" $mode) $bucket) -}}
-{{- fail (printf "privacyExports.bucket %q must start with brandme-%s-exports- (brandme_core/privacy_exports/config.py:82)" $bucket $mode) -}}
+{{- fail (printf "privacyExports.bucket %q must start with brandme-%s-exports- (brandme_core/privacy_exports/config.py:39)" $bucket $mode) -}}
 {{- end -}}
 {{- end -}}
 {{- if .Values.eventsWorker.enabled -}}

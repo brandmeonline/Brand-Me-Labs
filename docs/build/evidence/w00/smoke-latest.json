@@ -1,5 +1,5 @@
 {
-  "started_at": "2026-10-05T18:38:00.643Z",
+  "started_at": "2026-10-23T23:36:02.309Z",
   "mode": "development",
   "steps": [
     {
@@ -15,12 +15,12 @@
     {
       "name": "gateway → brain → Spanner health",
       "result": "passed",
-      "detail": "[{\"name\":\"gateway.spanner\",\"status\":\"ok\",\"duration_ms\":3241},{\"name\":\"brain.health\",\"status\":\"ok\",\"duration_ms\":25}]"
+      "detail": "[{\"name\":\"gateway.spanner\",\"status\":\"ok\",\"duration_ms\":2935},{\"name\":\"brain.health\",\"status\":\"ok\",\"duration_ms\":30}]"
     },
     {
       "name": "dev session (labelled simulation)",
       "result": "passed",
-      "detail": "member 7baf2b10-6872-493c-bfe3-d369d87afaa5"
+      "detail": "member 5f1814cc-c806-4cce-90a3-915123485694"
     },
     {
       "name": "PATCH /me with If-Match + CSRF",
@@ -38,6 +38,6 @@
       "detail": "member.created,member.updated"
     }
   ],
-  "finished_at": "2026-10-05T18:38:13.858Z",
+  "finished_at": "2026-10-23T23:36:16.022Z",
   "result": "passed"
 }

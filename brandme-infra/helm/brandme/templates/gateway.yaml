@@ -72,6 +72,10 @@ spec:
               value: {{ join "," $c.publicOrigins | quote }}
             - name: CORS_ORIGINS
               value: {{ join "," (default $c.publicOrigins $c.corsOrigins) | quote }}
+            {{- with $c.trustProxy }}
+            - name: TRUST_PROXY
+              value: {{ . | toString | quote }}
+            {{- end }}
             {{- include "brandme.spannerEnv" . | nindent 12 }}
             {{- if .Values.chain.enabled }}
             - name: CHAIN_SERVICE_URL

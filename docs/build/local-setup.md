@@ -9,7 +9,7 @@ Verified 2026-10-05 from a fresh `git clone` in two cases: emulator already runn
 | Node | 24.21.0 (`.nvmrc`) | `nvm use` / `fnm use` |
 | pnpm | 10.34.6 | `corepack enable` (uses `packageManager`) |
 | Python | 3.11 + `uv` (preferred) or `python3.11 -m venv` | setup builds `.venv` from `scripts/python/requirements.lock` (hashed) |
-| Spanner emulator | 1.5.28 | started automatically through Docker; or `gcloud emulators spanner start` |
+| Spanner emulator | 1.5.45 | started automatically through Docker; or `gcloud emulators spanner start` |
 
 ## Commands
 

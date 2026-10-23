@@ -10,10 +10,10 @@ Status legend: **installed+tested** = in a committed lockfile and exercised by `
 |---|---|---|---|
 | Node.js | **24.21.0** (Active LTS "Krypton") | nodejs.org/dist/index.json; tarball SHA-256 `fd8e59d5…cb2d6` verified against SHASUMS256.txt | installed+tested (`.nvmrc`, `.node-version`, CI `node-version-file`) |
 | pnpm | **10.34.6** | npm `pnpm` dist-tag `latest-10`. pnpm 12 exists; 10.x chosen for action/CI maturity and lockfile v9 | installed+tested (`packageManager`) |
-
-**How the toolchain pins are enforced.** `packageManager` (`pnpm@10.34.6`) selects pnpm for corepack and for CI's `pnpm/action-setup`; CI installs Node from `.nvmrc`; and `checkRuntimes()` in `scripts/brandme.mjs` refuses `pnpm setup:demo` / `pnpm dev` unless Node is exactly `.nvmrc`, pnpm is exactly `packageManager` and Python is 3.11. `engines` is advisory only: `pnpm-workspace.yaml` sets `engineStrict: false`, and the ranges are wider than the pins (root `engines.node` is `>=20.0.0 <25`). `pnpm check` and `pnpm smoke` do not call `checkRuntimes()`.
 | Python | **3.11.15** | matches existing service code (`python:3.11-slim` Dockerfiles) | installed+tested (`.venv`; compose `python:3.11.15-slim`) |
 | TypeScript | **5.9.3** (single resolved version across the workspace) | openapi-typescript 7.13.0 peers `typescript ^5.x`; TS 6/7 not adopted | installed+tested |
+
+**How the toolchain pins are enforced.** `packageManager` (`pnpm@10.34.6`) selects pnpm for corepack and for CI's `pnpm/action-setup`; CI installs Node from `.nvmrc`; and `checkRuntimes()` in `scripts/brandme.mjs` refuses `pnpm setup:demo` / `pnpm dev` unless Node is exactly `.nvmrc`, pnpm is exactly `packageManager` and Python is 3.11. `engines` is advisory only: `pnpm-workspace.yaml` sets `engineStrict: false`, and the ranges are wider than the pins (root `engines.node` is `>=20.0.0 <25`). `pnpm check` and `pnpm smoke` do not call `checkRuntimes()`.
 
 Lockfiles: `pnpm-lock.yaml` (lockfile v9, pnpm 10.34.6, the whole workspace including `brandme-frontend` and `packages/*`); `scripts/python/requirements.lock` (uv-compiled, `--require-hashes`). The older per-package npm/yarn locks are not used. `.gitignore` excludes `package-lock.json`/`yarn.lock`.
 
@@ -56,7 +56,7 @@ The spec's dated tuple (ch.04 §1) is reproduced below with npm availability on 
 
 | Component | Pin | Status |
 |---|---|---|
-| Cloud Spanner emulator | `gcr.io/cloud-spanner-emulator/emulator:1.5.45` (changed from 1.5.28 on 2026-10-23 so the developer script matches every CI service container) | installed+tested (V001–V014 apply, full `tests/` suite, gateway emulator suites, smoke; CI `test-gateway`, `test-core`, `foundation-check`, chain `durable-store`) |
+| Cloud Spanner emulator | `gcr.io/cloud-spanner-emulator/emulator:1.5.45` (changed from 1.5.28 on 2026-10-23 so the developer script matches every CI service container) | installed+tested (V001–V014 apply, full `tests/` suite, gateway emulator suites, smoke; CI `test-gateway`, `test-core`, chain `durable-store`; the new CI `foundation-check` job was verified only by a local replay before its first GitHub run) |
 | Firestore emulator | gcloud component `cloud-firestore-emulator 1.20.0` (SDK 530.0.0); compose image `gcr.io/google.com/cloudsdktool/google-cloud-cli:587.0.0-emulators` | gcloud component used for the baseline wardrobe tests. The compose image tag was verified to exist but not run |
 | NATS | `nats:2.10.29-alpine` (compose `events` profile) | verified tag exists; not run |
 | Node image | `node:24.21.0-bookworm-slim` | verified tag exists; compose path not executed here |

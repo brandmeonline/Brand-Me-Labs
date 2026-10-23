@@ -42,10 +42,12 @@ these processes yet (`brandme_core/config.py:340-342`) and would refuse them.
   `secretRefs`. The chart renders no Secret and contains no secret value. Those
   Secrets are synced from Secret Manager (GKE secret sync add-on or External
   Secrets Operator; packet step C-15).
-- Every pod: own ServiceAccount (Workload Identity annotation), non-root
-  numeric UID, `RuntimeDefault` seccomp, no privilege escalation, all
-  capabilities dropped, read-only root filesystem with an `emptyDir` `/tmp`,
-  requests and limits, a PodDisruptionBudget (`maxUnavailable: 1`).
+- Every pod: own ServiceAccount (with a Workload Identity annotation, except
+  the console's, which calls no Google API), non-root numeric UID,
+  `RuntimeDefault` seccomp, no privilege escalation, all capabilities dropped,
+  read-only root filesystem with an `emptyDir` `/tmp`, requests and limits.
+  Every Deployment also gets a PodDisruptionBudget (`maxUnavailable: 1`); the
+  migrations Job does not.
 - Default-deny NetworkPolicy for the namespace plus explicit allows
   (load balancer → gateway/console only when ingress is on; gateway → chain,
   read-api, exports-api; DNS; GKE metadata server; HTTPS egress outside private ranges).

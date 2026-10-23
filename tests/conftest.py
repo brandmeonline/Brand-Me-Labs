@@ -145,7 +145,7 @@ QUARANTINE = [
         "owner": "unowned-legacy",
         "raises": "TypeError",
         "blocker": "WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array "
-                   "(brandme_core/firestore/wardrobe.py:279), which Firestore rejects; founder decision: delete or fix",
+                   "(brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix",
         "targets": [
             "tests/test_wardrobe.py::test_add_cube_to_wardrobe",
             "tests/test_wardrobe.py::test_update_face",

@@ -155,7 +155,7 @@ describe('throttled responses', () => {
     expect((await request(direct).get('/x').set('X-Forwarded-For', '203.0.113.8')).status).toBe(429);
   });
 
-  it('keeps read-only and data-export access open once the member budget is spent', async () => {
+  it('keeps read-only, data-export and sign-out access open once the member budget is spent', async () => {
     const app = limitedApp(principalRateLimiter(limits));
     const as = (r: request.Test) => r.set('X-Test-Member', 'm-a');
     expect((await as(request(app).post('/api/v1/wardrobe/items'))).status).toBe(200);
@@ -164,7 +164,9 @@ describe('throttled responses', () => {
     expect((await as(request(app).post('/api/v1/me/exports'))).status).toBe(200);
     expect((await as(request(app).get('/api/v1/me/exports/0b9c7a52-6a4e-4f8e-9f53-3d8f1f0f2a11/download'))).status).toBe(200);
     expect((await as(request(app).head('/api/v1/me/data'))).status).toBe(200);
+    expect((await as(request(app).delete('/api/v1/session'))).status).toBe(200);
     // Deletion and other mutations stay budgeted.
+    expect((await as(request(app).post('/api/v1/session'))).status).toBe(429);
     expect((await as(request(app).post('/api/v1/me/deletion'))).status).toBe(429);
     expect((await as(request(app).patch('/api/v1/me'))).status).toBe(429);
   });

@@ -241,6 +241,10 @@ gcloud-config/
 *credentials*.json
 gha-creds-*.json
 *wallet*.json
+client_secret*.json
+*secrets*.json
+*token*.json
+!**/design-tokens.json
 
 # ========================================
 # NATS & Event Streaming

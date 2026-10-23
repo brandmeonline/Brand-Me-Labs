@@ -43,6 +43,7 @@ gateway:
   publicOrigins:
     - https://app.example.invalid
     - https://console.example.invalid
+  trustProxy: 2
 
 chain:
   gcpServiceAccount: bm-sbx-rts-chain

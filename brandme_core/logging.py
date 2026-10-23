@@ -30,7 +30,7 @@ Personal identifiers -> stable pseudonym ``"h:" + 12 hex``
 
 Pseudonyms
     ``h:`` + the first 12 hex characters of HMAC-SHA256(salt, value). The
-    salt is ``BRANDME_LOG_PSEUDONYM_SALT`` when it is set to at least 16
+    salt is ``BRANDME_LOG_PSEUDONYM_KEY`` when it is set to at least 16
     characters (one deployment then correlates the same member across
     processes); otherwise a random per-process salt is drawn at import, so
     pseudonyms correlate only within one process lifetime. Treat a configured
@@ -63,7 +63,7 @@ from typing import Any, Dict, Mapping, Optional
 REDACTED = "[REDACTED]"
 TRUNCATED = "[TRUNCATED]"
 MAX_DEPTH = 32
-SALT_ENV = "BRANDME_LOG_PSEUDONYM_SALT"
+SALT_ENV = "BRANDME_LOG_PSEUDONYM_KEY"
 
 SECRET_STEMS: tuple[str, ...] = (
     "token",

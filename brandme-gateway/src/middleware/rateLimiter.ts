@@ -138,14 +138,17 @@ export function isHealthProbe(req: Request): boolean {
 
 const READ_ONLY = new Set(['GET', 'HEAD', 'OPTIONS']);
 const EXPORT_PATH = /^\/api\/v1\/me\/exports(?:\/|$)/i;
+const SESSION_PATH = /^\/api\/v1\/session\/?$/i;
 
 /**
  * Essential access kept open under budget exhaustion (ch.03 §9): read-only
- * requests and the member's data export (POST /api/v1/me/exports and the
- * export job/download routes). Deletion and other mutations are budgeted.
+ * requests, the member's data export (POST /api/v1/me/exports and the export
+ * job/download routes) and sign-out (DELETE /api/v1/session), so a member is
+ * never stuck in a session. Deletion and other mutations are budgeted.
  */
 export function isEssentialAccess(req: Request): boolean {
-  return READ_ONLY.has(req.method) || EXPORT_PATH.test(fullPath(req));
+  return READ_ONLY.has(req.method) || EXPORT_PATH.test(fullPath(req))
+    || (req.method === 'DELETE' && SESSION_PATH.test(fullPath(req)));
 }
 
 export interface RateLimiterOptions {

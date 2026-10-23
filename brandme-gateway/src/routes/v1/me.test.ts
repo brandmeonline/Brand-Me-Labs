@@ -32,6 +32,9 @@ async function reachable(hostPort: string): Promise<boolean> {
 }
 
 const up = await reachable(emulator);
+if (process.env.BRANDME_REQUIRE_EMULATORS === '1' && !up) {
+  throw new Error(`BRANDME_REQUIRE_EMULATORS=1 but the Spanner emulator is not reachable at ${emulator}`);
+}
 const databaseId = `gw-${randomUUID().slice(0, 8)}`;
 const python = process.env.BRANDME_PYTHON ?? (existsSync(resolve(REPO, '.venv/bin/python')) ? resolve(REPO, '.venv/bin/python') : 'python3');
 const ORIGIN = 'http://localhost:3000';

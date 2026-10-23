@@ -282,6 +282,11 @@ A name is secret-shaped when it matches
   - lower-case env-object reads
   - SDKs that read a key implicitly (for example LangChain reading
     `ANTHROPIC_API_KEY`)
+  - compose files outside the root `docker-compose*.yml` (for example
+    `brandme-chain/tests/network/compose.yml`)
+- Two read forms escape detection: JS destructuring
+  (`const { X_TOKEN } = process.env`) and an aliased Python import
+  (`from os import environ as E; E['X']`). Neither occurs in the tree today.
 
 Tests: `node --test scripts/check-credential-manifest.test.mjs` runs the checker
 against synthetic git repositories.

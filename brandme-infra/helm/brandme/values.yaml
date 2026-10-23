@@ -31,7 +31,7 @@ spanner:
 
 midnight:
   # read API and exports refuse mainnet (read_api/config.py:38,
-  # privacy_exports/config.py:79). preview | preprod | undeployed.
+  # privacy_exports/config.py:35-37). preview | preprod | undeployed.
   network: preprod
   # 64 lowercase hex characters. Required when readApi, exportsApi or
   # exportsWorker is enabled; optional for chain (it then reports the Midnight
@@ -108,6 +108,11 @@ gateway:
   # https origins only in strict modes (mode.ts:47).
   publicOrigins: []
   corsOrigins: []
+  # TRUST_PROXY for req.ip behind a proxy (brandme-gateway/src/config/index.ts:36-66).
+  # Empty = off (no ingress). Behind a GKE external Application Load Balancer the
+  # documented value is 2 (client, GFE); confirm req.ip on the cluster first.
+  # Required when ingress.enabled, so rate limits never key on the proxy.
+  trustProxy: ""
   resources:
     requests: {cpu: 250m, memory: 256Mi}
     limits: {cpu: "1", memory: 512Mi}
@@ -166,7 +171,7 @@ exportsWorker:
 
 privacyExports:
   # Dedicated bucket, must start with brandme-<mode>-exports-
-  # (brandme_core/privacy_exports/config.py:81-83).
+  # (brandme_core/privacy_exports/config.py:38-40).
   bucket: ""
 
 eventsWorker:
