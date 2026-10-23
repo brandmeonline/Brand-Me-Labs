@@ -221,3 +221,74 @@ node brandme-frontend/lib/testing/verify-controls.mjs
 ```
 
 Next integration assignment: consume foundation's published token CSS/client exports once its commits and approved manifest/toolchain changes are brought into this branch; keep package sources read-only. Then implement W03 against the mounted persona and guest-migration APIs, not a second local imitation of domain persistence. Before claiming W01, run the two browser suites in an approved runtime, inspect the actual viewport-bottom captures and gallery screenshots, fix findings, and add real-device/screen-reader evidence. Existing token/font/CSP and spatial-component interface requests above remain open unless satisfied by an integrated authoritative export.
+
+## Stage 8 — published shell contract and consumer completion work (2026-10-23)
+
+Founder handoff: `Consumer UI — Astra.md`. Starting HEAD `da2f430e`.
+Scope includes W01 publication, first review-ready PR, journey UI, a11y/visual CI,
+and same-origin gateway integration. Dev/test credentials are authorized; no
+production credentials, customer data, real purchases or messages are needed.
+
+### Console shell layout contract 1.1.0 — public code artifact
+
+**Stable import:** `@/components/console-contract` in `brandme-console`.
+Exports: `ConsolePageHeader`, `ConsolePageHeaderProps`,
+`CONSOLE_SHELL_CONTRACT` (literal version `1.1.0`, landmark ID, CSS helpers,
+reserved navigation paths and legacy exclusions). Source metadata lives in
+`brandme-console/lib/console-contract.ts`; the live shell and navigation consume
+it. The existing `@/components/console-page-header` import remains compatible.
+
+```tsx
+import { ConsolePageHeader, CONSOLE_SHELL_CONTRACT } from '@/components/console-contract'
+
+export default function DomainPage() {
+  // Authorize domain reads separately; the contract confers no permission.
+  return <section data-shell-contract={CONSOLE_SHELL_CONTRACT.version}>
+    <ConsolePageHeader eyebrow="Operations" title="Domain queue"
+      description="Authorized records and their current state." />
+    {/* Domain content; no nested main, global navigation, html or body. */}
+  </section>
+}
+```
+
+Contract invariants remain the eight v1 rules in Stage 1. In particular: shell
+owns the skip link, navigation and single `main#console-content`; the page owns
+its single h1, loading/error/denied/empty/stale states and server authorization.
+Wide tables must use a labeled, keyboard-focusable `console-table-region`.
+No server secrets, inferred role or operator record may enter shell props.
+Dark/light tokens, keyboard dialog behavior and legacy pass-through are part
+of the contract. Domain subtrees stay owned by their backend lanes.
+
+**Changelog:**
+- `1.0.0` (2026-10-05): prose contract and compatible header implementation.
+- `1.1.0` (2026-10-23): first versioned public code entry point and exported props;
+  shared metadata drives shell/nav; correct reward-dispute nav to
+  `/rewards-disputes` (PD-19, the backend lane's actual owned route).
+
+Semver: landmark/ownership or required-prop breaks require a major version;
+additive exports/slots a minor; compatible fixes a patch. Record future changes
+here and update the code version in the same commit. Local domain headers remain
+valid under v1's optional-header rule until the founder's enforce/retire decision.
+Recommendation: adopt this import when integrating each domain, retain existing
+content and authorization, then retire duplicate header implementations.
+
+**W01 contract publication: delivered. W01 release acceptance: still open** until
+the supported framework/token integration and current browser checks pass;
+real-device and screen-reader evidence must remain separately identified.
+
+### Integration reconciliation
+
+The latest consumer-domain work is on `claude/opus-consumer-domains-1csp2g`
+(`dafd3b1`), ahead of its bench branch. Its persona, wardrobe, social and rewards
+gateway routers explicitly ship **unmounted**. The current main and W11 gateway
+do not mount them; foundation sessions also lack their full scopes. The frontend
+must not report those data sources live merely because a router file exists.
+Build against the published interfaces, use real session transport where mounted,
+and retain explicit unconfigured/denied/error states. Backend mount and service
+transport remain an integration dependency; no backend-owned source is edited.
+
+### Credential manifest
+
+No credential created at this checkpoint. Any later dev/test entry must record
+name, scope, storage location and date, never its value. Never commit session
+cookies, CSRF tokens, provider keys, test secrets or unredacted request logs.

@@ -1,15 +1,10 @@
-import type { ReactNode } from 'react'
+import type { ConsolePageHeaderProps } from '../lib/console-contract'
 export function ConsolePageHeader({
   eyebrow,
   title,
   description,
   actions,
-}: {
-  eyebrow?: string
-  title: string
-  description?: string
-  actions?: ReactNode
-}) {
+}: ConsolePageHeaderProps) {
   return (
     <header className="console-page-header">
       <div>

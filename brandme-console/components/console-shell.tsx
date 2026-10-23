@@ -7,6 +7,7 @@ import { Menu, X, SunMoon } from 'lucide-react'
 import { useExperiencePreferences } from '../../brandme-frontend/lib/client/experience-preferences'
 
 import { consoleNavigation } from '@/lib/navigation'
+import { CONSOLE_SHELL_CONTRACT, isLegacyConsolePath } from '@/lib/console-contract'
 
 export function ConsoleShell({
   children,
@@ -29,12 +30,7 @@ export function ConsoleShell({
     }
   }, [pathname])
   // Preserve legacy public proof and dashboard layout contracts, without nesting main/nav.
-  if (
-    pathname === '/dashboard' ||
-    pathname.startsWith('/dashboard/') ||
-    pathname === '/proof' ||
-    pathname.startsWith('/proof/')
-  )
+  if (isLegacyConsolePath(pathname))
     return <>{children}</>
   const links = consoleNavigation.map(({ href, label }) => (
     <Link
@@ -65,7 +61,7 @@ export function ConsoleShell({
         : 'system'
   return (
     <div className="console-shell">
-      <a className="console-skip" href="#console-content">
+      <a className="console-skip" href={`#${CONSOLE_SHELL_CONTRACT.mainId}`}>
         Skip to content
       </a>
       <aside className="console-rail">
@@ -129,7 +125,7 @@ export function ConsoleShell({
             <SunMoon size={20} aria-hidden="true" />
           </button>
         </header>
-        <main id="console-content" ref={main} tabIndex={-1}>
+        <main id={CONSOLE_SHELL_CONTRACT.mainId} ref={main} tabIndex={-1}>
           {children}
         </main>
       </div>
