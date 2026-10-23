@@ -155,6 +155,27 @@ def test_partial_cancellation_before_capture_reduces_the_capture(w):
     assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000 - pay.captured.amount_minor, "USD")
 
 
+@pytest.mark.parametrize("credit_back", [False, True])
+@pytest.mark.parametrize("delivery", ["only_the_last", "late"])
+def test_a_reduced_capture_is_credited_even_when_captured_is_never_observed_alone(w, delivery, credit_back):
+    """Webhooks are hints, lost or late: the first re-read after authorization may already show a refund."""
+    d, ag = w.delegate(lim=limits(refund_credit_back=credit_back))
+    quote, res = _buy(w, ag, line("overshirt"), line("bag"), line("dress"))
+    order = _order(w, res)
+    ref = order.provider_order_ref
+    earlier = [w.provider.cancel(ref, "demo-bag-m"), w.provider.ship(ref)]  # the capture is total - bag
+    w.provider.arm(Behavior.REFUND, source_variant_ref="demo-dress-m", quantity=1)
+    last = w.provider.refund(ref)
+    for deliveries in (earlier + [last] if delivery == "late" else [last]):
+        _hook(w, deliveries)  # "late": every re-read happens after the refund
+    o = w.store.get("orders", order.id)
+    pay = _held(w, ref)
+    assert o.payment_status == "partially_refunded" and pay.captured == Money(quote.total.amount_minor - BAG, "USD")
+    # The bag was never taken, whatever the refund policy; the dress refund returns only under credit-back.
+    spent = pay.captured.amount_minor - (pay.refunded.amount_minor if credit_back else 0)
+    assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000 - spent, "USD")
+
+
 def test_refund_before_delivery_cancels_units_instead_of_returning_them(w):
     _, res = _buy(w, w.member, line("overshirt"), line("bag"))
     order = _order(w, res)
