@@ -3,7 +3,7 @@
 Reserved by the opus-foundation lane. The framework provides **no logic** here.
 
 - **Owning lane:** consumer-domains / spatial-ar
-- **Migration number:** V017 (MediaObjects, TryOnJobs and TryOnConsents are created in the wardrobe migration) (`brandme-data/spanner/migrations/`)
+- **Migration number:** V003 (MediaObjects, TryOnJobs and TryOnConsents are created in the wardrobe migration) (`brandme-data/spanner/migrations/`)
 - **Entities (ch.03 §4):** MediaAsset, upload quarantine, derivatives manifest, try-on job records
 
 Contract for the owning lane:

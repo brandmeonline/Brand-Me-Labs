@@ -3,7 +3,7 @@
 Reserved by the opus-foundation lane. The framework provides **no logic** here.
 
 - **Owning lane:** consumer-domains
-- **Migration number:** V018 (renumbered from V004 to follow main V014) (`brandme-data/spanner/migrations/`)
+- **Migration number:** V004 (`brandme-data/spanner/migrations/`)
 - **Entities (ch.03 §4):** Relationship, Decision, DecisionResponse, ShareGrant, Notification
 
 Contract for the owning lane:

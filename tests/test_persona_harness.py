@@ -4,7 +4,7 @@ social, rewards, media). Not a test module itself; pytest collects nothing here.
 
 Each test session creates a fresh, uniquely named database and applies every
 migration in ``brandme-data/spanner/migrations`` (foundation V001 + this lane's
-V002 and V016..V019, plus whatever other lanes have merged) through the foundation
+V002..V005, plus whatever other lanes have merged) through the foundation
 migration runner and its checksum ledger, i.e. from an empty schema.
 
 If the emulator is unreachable, Spanner-backed tests are skipped with an

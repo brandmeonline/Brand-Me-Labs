@@ -3,7 +3,7 @@
 Reserved by the opus-foundation lane. The framework provides **no logic** here.
 
 - **Owning lane:** consumer-domains
-- **Migration number:** V019 (renumbered from V005 to follow main V014) (`brandme-data/spanner/migrations/`)
+- **Migration number:** V005 (`brandme-data/spanner/migrations/`)
 - **Entities (ch.03 §4):** RewardAccount, RewardEntry, BadgeAward, BenefitReservation
 
 Contract for the owning lane:

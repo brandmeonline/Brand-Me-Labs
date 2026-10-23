@@ -1,10 +1,12 @@
 """Upgrade path for databases that already applied main's migrations.
 
-The runner rejects checksum drift on applied files and, outside development,
-refuses migrations numbered below the highest applied one. So this lane's
-schema must arrive as new, higher-numbered files: V002 stays exactly as
-existing databases applied it, and V016..V019 add the member link and the
-wardrobe, social and rewards tables.
+V002 must stay byte-identical to what those databases applied: the runner
+rejects checksum drift on an applied file. This lane's schema arrives in its
+reserved V003-V005 (the persona member link opens V003). Those numbers sit below
+main's V006-V014, so a database that applied main first can take them only with
+``--allow-out-of-order``, which the runner refuses in sandbox/production. That
+ordering rule belongs to the foundation runner; the test pins today's behaviour
+so a change on either side is noticed.
 """
 
 from __future__ import annotations
@@ -19,7 +21,7 @@ from brandme_core.domains.persona.kernel import FixedClock, member_principal
 from brandme_core.domains.persona.service import PersonaService
 from test_persona_harness import INSTANCE, MEMBER_SCOPES, PROJECT, count, emulator_up, insert_member, load_runner
 
-LANE_VERSIONS = (16, 17, 18, 19)
+LANE_VERSIONS = (3, 4, 5)
 
 
 @pytest.fixture
@@ -28,42 +30,36 @@ def empty_db():
         pytest.skip("Spanner emulator not reachable; upgrade-path test NOT RUN")
     from google.cloud import spanner
 
-    instance = spanner.Client(project=PROJECT).instance(INSTANCE)
+    client = spanner.Client(project=PROJECT)
+    instance = client.instance(INSTANCE)
     if not instance.exists():
-        spanner.Client(project=PROJECT).instance(
-            INSTANCE, configuration_name=f"projects/{PROJECT}/instanceConfigs/emulator-config", node_count=1
-        ).create().result(120)
+        client.instance(INSTANCE, configuration_name=f"projects/{PROJECT}/instanceConfigs/emulator-config", node_count=1).create().result(120)
     db = instance.database("up" + uuid.uuid4().hex[:20])
     db.create().result(120)
     yield db
     db.drop()
 
 
-def test_lane_migrations_follow_every_other_applied_version():
-    versions = [m.version for m in load_runner().load_migrations()]
-    others = [v for v in versions if v not in LANE_VERSIONS]
-    assert set(LANE_VERSIONS) <= set(versions)
-    # If this fails, another lane merged a higher version first: renumber this lane's files above it.
-    assert min(LANE_VERSIONS) > max(others)
-
-
-def test_database_on_main_upgrades_without_drift_or_out_of_order(empty_db):
+def test_database_on_main_upgrades_without_checksum_drift(empty_db):
     runner = load_runner()
     every = runner.load_migrations()
     base = [m for m in every if m.version not in LANE_VERSIONS]
-    assert runner.migrate_up(empty_db, base, applied_by="upgrade-test", log=lambda *_: None) == [m.version for m in base]
+    quiet = {"applied_by": "upgrade-test", "log": lambda *_: None}
+    assert runner.migrate_up(empty_db, base, **quiet) == [m.version for m in base]
 
-    # Existing persona data written on the old schema survives the upgrade.
+    # Existing persona data written on main's V002 survives the upgrade.
     member = member_principal(insert_member(empty_db), MEMBER_SCOPES)
     PersonaService(empty_db, clock=FixedClock(datetime(2026, 10, 5, tzinfo=timezone.utc))).patch(
         member, '"0"', {"changes": [{"axis": "expression", "value": 60, "locked": False}], "client_revision": "u"})
 
-    applied = runner.migrate_up(empty_db, every, applied_by="upgrade-test", log=lambda *_: None)  # strict: no out-of-order
-    assert applied == list(LANE_VERSIONS)
-    assert runner.migrate_up(empty_db, every, applied_by="upgrade-test", log=lambda *_: None) == []
+    # Strict mode refuses the reserved gap (not checksum drift: V002 is unchanged).
+    with pytest.raises(runner.MigrationError, match="out-of-order"):
+        runner.migrate_up(empty_db, every, **quiet)
+    assert runner.migrate_up(empty_db, every, allow_out_of_order=True, **quiet) == list(LANE_VERSIONS)
+    assert runner.migrate_up(empty_db, every, **quiet) == []
     assert count(empty_db, "SELECT COUNT(*) FROM PersonaAxes WHERE member_id=@m AND declared_value IS NOT NULL", m=member.member_id) == 1
 
-    # V016's link: deleting the member removes the profile and its interleaved rows.
+    # V003's member link: deleting the member removes the profile and its interleaved rows.
     empty_db.run_in_transaction(lambda t: t.execute_update(
         "DELETE FROM Members WHERE member_id=@m", params={"m": member.member_id}, param_types={"m": param_types.STRING}))
     assert count(empty_db, "SELECT COUNT(*) FROM PersonaProfiles WHERE member_id=@m", m=member.member_id) == 0

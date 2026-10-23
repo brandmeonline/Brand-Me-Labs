@@ -3,7 +3,7 @@
 Reserved by the opus-foundation lane. The framework provides **no logic** here.
 
 - **Owning lane:** consumer-domains
-- **Migration number:** V002 (unchanged since stage 1) plus V016 (member link and constraints) (`brandme-data/spanner/migrations/`)
+- **Migration number:** V002 (unchanged since stage 1); the member link and constraints open V003 (`brandme-data/spanner/migrations/`)
 - **Entities (ch.03 §4):** PersonaProfile, PersonaEvidence, PersonaSnapshot, BodyProfile; backfill of the two legacy Users persona columns
 
 Contract for the owning lane:

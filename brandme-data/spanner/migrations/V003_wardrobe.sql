@@ -1,3 +1,19 @@
+-- Persona member link (opus-consumer-domains). V002 must stay byte-identical
+-- to what existing databases applied (the runner rejects checksum drift), and
+-- the foundation registry reserves no further persona number, so the persona
+-- follow-up lives at the top of this lane's next reserved migration.
+-- Spanner cannot convert an existing table to an interleaved one, so the link
+-- is a foreign key with ON DELETE CASCADE: a persona cannot exist without a
+-- V001 member and is removed with it (its interleaved children cascade too).
+-- Adding the key validates existing rows: a database holding persona rows for
+-- nonexistent members fails here and must be cleaned first.
+
+ALTER TABLE PersonaProfiles ADD CONSTRAINT ck_persona_budget CHECK (budget_ceiling_minor IS NULL OR budget_ceiling_minor >= 0);
+
+ALTER TABLE PersonaProfiles ADD CONSTRAINT ck_persona_version CHECK (version >= 1);
+
+ALTER TABLE PersonaProfiles ADD CONSTRAINT FK_PersonaProfiles_Members FOREIGN KEY (member_id) REFERENCES Members (member_id) ON DELETE CASCADE;
+
 -- V003 wardrobe, closet placement, outfits, packing and try-on media
 -- (owner: opus-consumer-domains lane). Chapter 03 §4 "Catalog, wardrobe and
 -- social"; chapter 01 §5; chapter 02 §4.5 placement contract.
