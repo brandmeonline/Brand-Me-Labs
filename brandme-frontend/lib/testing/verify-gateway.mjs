@@ -1,9 +1,25 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { gatewayBase, proxyGateway } from '../server/gateway-proxy.ts'
+import { downloadDataExport, invalidateAccountRequests } from '../client/gateway.ts'
+import { createHash } from 'node:crypto'
 const env={NODE_ENV:'development',BRANDME_MODE:'development',BRANDME_GATEWAY_URL:'http://127.0.0.1:3001'}
 const req=(path,method='GET',headers={},body)=>new Request(`http://localhost:3000/api/v1/${path}`,{method,headers,...(body?{body:JSON.stringify(body)}:{})})
 const headers={origin:'http://localhost:3000','content-type':'application/json','x-csrf-token':'test-csrf'}
+test('export download verifies exact bytes and rejects a corrupt package',async t=>{
+  const id='12345678-1234-4234-8234-123456789012',body='{"categories":{}}',hash=createHash('sha256').update(body).digest('hex')
+  const fetch=t.mock.method(globalThis,'fetch',async(url,options)=>{assert.equal(url,`/api/v1/me/exports/${id}/download`);assert.equal(options.cache,'no-store');assert.equal(options.credentials,'same-origin');return new Response(body)})
+  assert.equal(await (await downloadDataExport(id,hash)).text(),body)
+  fetch.mock.mockImplementation(async()=>new Response('{}'))
+  await assert.rejects(downloadDataExport(id,hash),/verification failed/)
+})
+test('an account change discards an in-flight export before any file is returned',async t=>{
+  const body='{"categories":{}}',hash=createHash('sha256').update(body).digest('hex'),deferred=Promise.withResolvers()
+  t.mock.method(globalThis,'fetch',()=>deferred.promise)
+  const result=downloadDataExport('12345678-1234-4234-8234-123456789012',hash)
+  invalidateAccountRequests();deferred.resolve(new Response(body))
+  await assert.rejects(result,error=>error.code==='account_changed')
+})
 test('unconfigured services fail without inventing data',async()=>{let calls=0;const r=await proxyGateway(req('me'),['me'],{},async()=>{calls++;return Response.json({})});assert.equal(r.status,503);assert.equal(calls,0)})
 test('upstream URL rejects credentials, unapproved protocols and nonlocal insecure hosts',()=>{for(const url of ['http://example.com','https://user:password@example.com','https://example.com/arbitrary','file:///etc/passwd'])assert.throws(()=>gatewayBase({...env,BRANDME_GATEWAY_URL:url}))})
 test('unsafe requests require same-origin and CSRF before touching the gateway',async()=>{for(const h of [{},{...headers,origin:'https://foreign.example'},{...headers,'sec-fetch-site':'cross-site'},{origin:headers.origin,'content-type':'application/json'}]){let calls=0;const r=await proxyGateway(req('me','PATCH',h,{}),['me'],env,async()=>{calls++;return Response.json({})});assert.equal(r.status,403);assert.equal(calls,0)}})

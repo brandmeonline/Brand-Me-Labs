@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import type {components} from '@brandme/contracts'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useResource } from '@/lib/client/use-resource'
@@ -29,7 +30,7 @@ export function Circle(){
     </section><p role="status">{message}</p></div>
 }
 export function DecisionComposer(){
-  const friends=useResource<{items:Relationship[]}>('/relationships'),wardrobe=useResource<{items:{item_id:string;title:string;collection:string}[]}>('/wardrobe/items')
+  const friends=useResource<{items:Relationship[]}>('/relationships'),wardrobe=useResource<{items:components['schemas']['WardrobeItem'][]}>('/wardrobe/items')
   const [selected,setSelected]=useState<string[]>([]),[item,setItem]=useState(''),[prompt,setPrompt]=useState('Does this work for me?'),[busy,setBusy]=useState(false),[message,setMessage]=useState('')
   const key=useRef<string|null>(null),router=useRouter()
   const eligible=friends.data?.items.filter(f=>f.state==='accepted')??[]
@@ -37,7 +38,7 @@ export function DecisionComposer(){
     key.current??=crypto.randomUUID();const d=await command<Decision>('/decisions',{subject_type:'wardrobe_item',subject_id:item,prompt,recipient_ids:selected,duration_seconds:300,discussion_mode:'blind_until_response'},{key:key.current});router.push(`/circle/decisions/${d.decision_id}`)
   }catch(err){setMessage(explainError(err))}finally{setBusy(false)}}}>
     <p>The five-minute window starts when the server accepts your request. Only selected friends can respond. No external notifications are sent by this page.</p>
-    <ResourceState {...wardrobe} retry={wardrobe.reload}/><Select required label="Item from my wardrobe" value={item} onChange={e=>{setItem(e.target.value);key.current=null}}><option value="">Choose an item</option>{wardrobe.data?.items.map(i=><option key={i.item_id} value={i.item_id}>{i.title} · {i.collection}</option>)}</Select>
+    <ResourceState {...wardrobe} retry={wardrobe.reload}/><Select required label="Item from my wardrobe" value={item} onChange={e=>{setItem(e.target.value);key.current=null}}><option value="">Choose an item</option>{wardrobe.data?.items.map(i=><option key={i.id} value={i.id}>{i.title} · {i.collection}</option>)}</Select>
     <Input label="Your question" value={prompt} maxLength={240} required onChange={e=>{setPrompt(e.target.value);key.current=null}}/>
     <fieldset><legend>Ask up to 12 friends</legend><ResourceState {...friends} retry={friends.reload}/>{eligible.length===0&&<p>No eligible friends yet. Connect with someone in your Circle first.</p>}
       {eligible.map(f=><label className="bm-checkbox-label" key={f.member_id}><input type="checkbox" checked={selected.includes(f.member_id)} disabled={busy||!selected.includes(f.member_id)&&selected.length>=12} onChange={e=>{setSelected(s=>e.target.checked?[...s,f.member_id]:s.filter(id=>id!==f.member_id));key.current=null}}/>Member {f.member_id.slice(0,8)}</label>)}</fieldset>

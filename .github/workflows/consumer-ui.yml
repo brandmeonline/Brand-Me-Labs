@@ -44,7 +44,7 @@ jobs:
           pnpm --dir brandme-console exec next dev --hostname 127.0.0.1 -p 3002 > "$RUNNER_TEMP/console.log" 2>&1 &
           node brandme-frontend/lib/testing/wait-for-apps.mjs
       - name: Shell and controls accessibility, keyboard, reflow and screenshots
-        run: pnpm --dir brandme-frontend test:browser
+        run: pnpm --dir brandme-frontend test:browser && node brandme-frontend/lib/testing/verify-domain-views.mjs
       - name: Compare reviewed visual baselines
         # Bootstrap capture is explicit until the first runner images have been reviewed.
         env:

@@ -1,11 +1,14 @@
-import { AvailabilityState } from '@/components/shell/availability-state'
+import { PageHeading } from '@/components/shell/page-heading'
+import { MyData } from '@/features/privacy/my-data'
 export default function Page() {
   return (
-    <AvailabilityState
-      title={'Your data. Your decisions.'}
-      description={
-        'Account inspection, export and deletion are not connected in this preview. Display preferences are stored only on this device.'
-      }
-    />
+    <>
+      <PageHeading
+        eyebrow="My Data"
+        title="Your data. Your decisions."
+        description="Inspect the connected inventory, its sources and retention, and the actions currently available."
+      />
+      <MyData />
+    </>
   )
 }

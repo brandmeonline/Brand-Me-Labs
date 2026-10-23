@@ -32,6 +32,19 @@ async function decode<T>(response: Response): Promise<T> {
 let pending: Promise<unknown> = Promise.resolve()
 let accountVersion = 0
 export function invalidateAccountRequests() { accountVersion++ }
+
+/** Download only the requested export, verify its bytes, and discard it if identity changed. */
+export async function downloadDataExport(id: string, expectedHash: string): Promise<Blob> {
+  if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id) || !/^[a-f0-9]{64}$/.test(expectedHash)) throw new Error('Invalid export reference')
+  const version = accountVersion
+  const response = await fetch(`/api/v1/me/exports/${id}/download`, { credentials: 'same-origin', cache: 'no-store' })
+  if (!response.ok) await decode(response)
+  const bytes = await response.arrayBuffer()
+  const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('')
+  if (version !== accountVersion) throw new GatewayError(409, 'account_changed', 'Your account changed. Request the download again.')
+  if (digest !== expectedHash) throw new Error('Export verification failed')
+  return new Blob([bytes], { type: 'application/json' })
+}
 /** Serialize rotating CSRF sessions across tabs; keys remain in memory only. Never retry a write automatically. */
 export function command<T>(path: string, body: unknown = {}, options: {
   method?: 'POST' | 'PATCH' | 'PUT' | 'DELETE'; version?: string; key?: string
@@ -62,6 +75,7 @@ export function command<T>(path: string, body: unknown = {}, options: {
 export function explainError(error: unknown): string {
   if (error instanceof GatewayError) {
     if (error.code === 'account_changed') return error.message
+    if (error.code === 'reauth_required' || error.code === 'recent_auth_required') return 'Sign in again, then return to review this action.'
     if (error.status === 401) return 'Sign in to see your saved data.'
     if (error.status === 403) return 'This account does not have access to this action.'
     if (error.status === 404) return 'This record or service is not available. It may have been removed or revoked.'
