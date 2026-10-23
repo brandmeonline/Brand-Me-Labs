@@ -210,3 +210,77 @@ def test_injected_abort_does_not_duplicate_entries(spanner_db):
     assert count(spanner_db, "SELECT COUNT(*) FROM RewardEntries WHERE member_id=@m", m=friend) == 1
     assert count(spanner_db, "SELECT COUNT(*) FROM OutboxEvents WHERE event_type='reward.posted' AND JSON_VALUE(payload, '$.member_id')=@m", m=friend) == 1
     assert acct(spanner_db, friend)["available"] == 10
+
+
+def test_overlapping_fulfillment_workers_deliver_once(spanner_db):
+    """A reservation is leased before the external call: a second scheduler running
+    meanwhile skips it, and the expiry sweeper cannot release it mid-delivery."""
+    m = funded_member(spanner_db, 50)
+    svc = BenefitService(spanner_db)
+    b = benefit(spanner_db, 50, inventory=2)
+    r = svc.reserve(m, b["benefit_id"], key())
+    calls, inside, done = [], threading.Event(), threading.Event()
+    during = {}
+
+    def slow(res):
+        calls.append(res["reservation_id"])
+        inside.set()
+        done.wait(10)
+        return True
+
+    def meanwhile():
+        inside.wait(10)  # the first worker holds the lease and is inside the fulfiller
+        during["second"] = svc.run_fulfillment(slow, benefit_id=b["benefit_id"])  # sees it pending, cannot claim it
+        run_txn(spanner_db, lambda t: t.execute_update(
+            "UPDATE BenefitReservations SET expires_at=@e WHERE member_id=@m AND reservation_id=@r",
+            params={"e": server_now(t), "m": m.member_id, "r": r["reservation_id"]},
+            param_types={"e": param_types.TIMESTAMP, "m": param_types.STRING, "r": param_types.STRING}))
+        during["sweep"] = svc.expire_due()
+        done.set()
+
+    first = race([lambda: svc.run_fulfillment(slow, benefit_id=b["benefit_id"]), meanwhile])
+    assert calls == [r["reservation_id"]]
+    assert during == {"second": {"fulfilled": 0, "refunded": 0, "skipped": 1}, "sweep": {"released": 0}}
+    assert {"fulfilled": 1, "refunded": 0, "skipped": 0} in first
+    a = acct(spanner_db, m.member_id)
+    assert (a["available"], a["reserved"], a["spent"]) == (0, 0, 50)
+
+
+def test_deleting_redemptions_returns_reserved_points(spanner_db):
+    from brandme_core.domains.rewards import deletion
+
+    m = funded_member(spanner_db, 100)
+    svc = BenefitService(spanner_db)
+    b = benefit(spanner_db, 40, inventory=3)
+    svc.reserve(m, b["benefit_id"], key())
+    assert acct(spanner_db, m.member_id)["reserved"] == 40
+    run_txn(spanner_db, lambda t: deletion.delete_category(t, m.member_id, "rewards.redemptions"))
+    a = acct(spanner_db, m.member_id)  # acct() also asserts account == journal
+    assert (a["available"], a["reserved"]) == (100, 0)
+    assert count(spanner_db, "SELECT COUNT(*) FROM BenefitReservations WHERE member_id=@m", m=m.member_id) == 0
+    assert {x["benefit_id"]: x for x in svc.list_benefits(m)["items"]}[b["benefit_id"]]["remaining"] == 3
+
+    # Account deletion deletes the ledger first: nothing is recreated afterwards.
+    m2 = funded_member(spanner_db, 50)
+    svc.reserve(m2, b["benefit_id"], key())
+    for cat in ("rewards.ledger", "rewards.redemptions"):
+        run_txn(spanner_db, lambda t, cat=cat: deletion.delete_category(t, m2.member_id, cat))
+    for table in ("RewardAccounts", "RewardEntries", "BenefitReservations"):
+        assert count(spanner_db, f"SELECT COUNT(*) FROM {table} WHERE member_id=@m", m=m2.member_id) == 0
+
+
+def test_frozen_ledger_refuses_debit_corrections(spanner_db):
+    from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
+
+    m = funded_member(spanner_db, 50)
+    rewards = RewardsService(spanner_db)
+    d = rewards.open_dispute(m, {"category": "other", "message": "question"})
+    run_txn(spanner_db, lambda t: t.insert("ProcessingFreezes", columns=("subject_ref", "category", "reason", "deletion_job_id", "created_at"),
+                                           values=[(m.member_id, "*", "deletion", str(uuid.uuid4()), COMMIT_TIMESTAMP)]))
+    ops = member_principal(insert_member(spanner_db), OPS)
+    for body in ({"outcome": "correction", "signed_points": -20, "note": "n", "evidence_ref": "e"},
+                 {"outcome": "no_change", "note": "n", "evidence_ref": "e"}):
+        with pytest.raises(DetailedInvalidTransition) as e:
+            rewards.resolve_dispute(ops, d["dispute_id"], body)
+        assert e.value.code == "processing_frozen"
+    assert count(spanner_db, "SELECT COUNT(*) FROM RewardEntries WHERE member_id=@m AND kind='correction'", m=m.member_id) == 0

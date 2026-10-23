@@ -59,6 +59,7 @@ from .operators import require_operator
 
 BENEFIT_COLS = ("benefit_id", "kind", "title", "description", "cost_points", "inventory_total", "inventory_reserved", "inventory_fulfilled",
                 "funded", "sponsor", "active", "available_until", "reservation_ttl_seconds", "version")
+CLAIM_LEASE = timedelta(minutes=5)
 RES_COLS = ("member_id", "reservation_id", "benefit_id", "cost_points", "state", "expires_at", "release_reason", "version", "created_at", "settled_at")
 KINDS = ("room_finish", "composition_template", "partner")
 
@@ -182,8 +183,9 @@ class BenefitService:
     # ------------------------------------------------------------ settlement
 
     def settle(self, reservation_id: Any, *, succeeded: bool, reason: str = "fulfillment_failed",
-               environment: str = "development") -> Dict[str, Any]:
-        """Record the fulfillment outcome once (worker path)."""
+               environment: str = "development", claim_token: Optional[str] = None) -> Dict[str, Any]:
+        """Record the fulfillment outcome once (worker path). While a fulfillment
+        lease is live only its holder (``claim_token``) can settle."""
         reservation_id = require_uuid(reservation_id, name="reservation_id")
         principal = service_principal("benefit-fulfillment", environment=environment)
 
@@ -195,6 +197,10 @@ class BenefitService:
             r = dict(zip(RES_COLS, rows[0]))
             if r["state"] != "pending":
                 return {**_res_dto(r), "changed": False}
+            token, until = query(txn, "SELECT claim_token, claimed_until FROM BenefitReservations WHERE member_id=@m AND reservation_id=@r",
+                                 {"m": r["member_id"], "r": reservation_id}, {"m": STR, "r": STR})[0]
+            if until is not None and until > server_now(txn) and token != claim_token:
+                return {**_res_dto(r), "changed": False}  # another worker is delivering it
             return {**self._settle(txn, ctx, r, succeeded, reason), "changed": True}
 
         return command(self.db, principal, tx)
@@ -225,11 +231,29 @@ class BenefitService:
                  {"member_id": member, "reservation_id": rid, "benefit_id": r["benefit_id"], "cost_points": cost}, "member_private")
         return _res_dto({**r, "state": state, "release_reason": why, "version": r["version"] + 1})
 
+    def _claim(self, member_id: str, reservation_id: str, environment: str) -> Optional[str]:
+        """Take the fulfillment lease if the reservation is still pending, unexpired
+        and unclaimed (or its lease lapsed). Returns the token, or None."""
+        principal = service_principal("benefit-fulfillment", environment=environment)
+
+        def tx(txn, ctx: CommandContext):
+            rows = query(txn, "SELECT state, expires_at, claimed_until FROM BenefitReservations WHERE member_id=@m AND reservation_id=@r",
+                         {"m": member_id, "r": reservation_id}, {"m": STR, "r": STR})
+            now = server_now(txn)
+            if not rows or rows[0][0] != "pending" or rows[0][1] <= now or (rows[0][2] is not None and rows[0][2] > now):
+                return None
+            token = new_id()
+            txn.update("BenefitReservations", columns=("member_id", "reservation_id", "claim_token", "claimed_until"),
+                       values=[(member_id, reservation_id, token, now + CLAIM_LEASE)])
+            return token
+
+        return command(self.db, principal, tx)
+
     def expire_due(self, *, limit: int = 100, environment: str = "development") -> Dict[str, int]:
         """Release pending reservations past their server-time expiry."""
         due = run_read(self.db, lambda s: query(
             s, "SELECT reservation_id FROM BenefitReservations@{FORCE_INDEX=BenefitReservationsByStateExpiry} "
-               "WHERE state='pending' AND expires_at <= @n ORDER BY expires_at LIMIT @l",
+               "WHERE state='pending' AND expires_at <= @n AND (claimed_until IS NULL OR claimed_until <= @n) ORDER BY expires_at LIMIT @l",
             {"n": server_now(s), "l": limit}, {"n": TS, "l": INT}))
         n = 0
         for (rid,) in due:
@@ -239,8 +263,11 @@ class BenefitService:
     def run_fulfillment(self, fulfiller: Callable[[Dict[str, Any]], bool], *, benefit_id: Optional[str] = None, limit: int = 50,
                         environment: str = "development") -> Dict[str, int]:
         """Durable job: each pending reservation (optionally of one benefit, since
-        fulfillers differ by benefit) is fulfilled outside any transaction, then
-        settled once. A fulfiller exception counts as a failure."""
+        fulfillers differ by benefit) is claimed with a lease in a transaction,
+        fulfilled outside any transaction, then settled once by the lease holder.
+        A fulfiller exception counts as a failure. The lease stops overlapping
+        workers; a crash after delivery but before settlement is retried after
+        the lease, so fulfillers must be idempotent on ``reservation_id``."""
         only = "AND benefit_id=@b " if benefit_id else ""
         pending = run_read(self.db, lambda s: query(
             s, f"SELECT {', '.join(RES_COLS)} FROM BenefitReservations@{{FORCE_INDEX=BenefitReservationsByStateExpiry}} "
@@ -249,10 +276,14 @@ class BenefitService:
         counts = {"fulfilled": 0, "refunded": 0, "skipped": 0}
         for row in pending:
             r = _res_dto(dict(zip(RES_COLS, row)))
+            token = self._claim(row[0], r["reservation_id"], environment)
+            if token is None:
+                counts["skipped"] += 1
+                continue
             try:
                 ok = bool(fulfiller(r))
             except Exception:  # noqa: BLE001 - a failed provider call is an outcome, not a crash
                 ok = False
-            out = self.settle(r["reservation_id"], succeeded=ok, environment=environment)
+            out = self.settle(r["reservation_id"], succeeded=ok, environment=environment, claim_token=token)
             counts["skipped" if not out["changed"] else ("fulfilled" if ok else "refunded")] += 1
         return counts

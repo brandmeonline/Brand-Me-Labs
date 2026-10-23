@@ -8,13 +8,16 @@ are operator data and are not part of the member's export.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, Dict, List
 
 from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
 
 from brandme_core.domains import DataCategory as FoundationDataCategory, register_data_category
-from brandme_core.domains.persona.kernel import STR, iso, query, run_read, run_txn
+from brandme_core.domains.persona.kernel import STR, iso, query, run_read, run_txn, stable_id
 from brandme_core.domains.persona.privacy_guard import record_scope_refusal
+
+from . import ledger
 
 DOMAIN = "rewards"
 _M = {"m": STR}
@@ -91,8 +94,20 @@ def delete_category(txn, member_id: str, category: str) -> int:
         return txn.execute_update("DELETE FROM BadgeAwards WHERE member_id=@m", params=m, param_types=_M)
     if category == "rewards.redemptions":
         pending: Dict[str, int] = {}
-        for (bid,) in query(txn, "SELECT benefit_id FROM BenefitReservations WHERE member_id=@m AND state='pending'", m, _M):
+        held = query(txn, "SELECT reservation_id, benefit_id, cost_points FROM BenefitReservations WHERE member_id=@m AND state='pending'", m, _M)
+        for _rid, bid, _cost in held:
             pending[bid] = pending.get(bid, 0) + 1
+        # Points a pending reservation holds go back to the member through a
+        # release entry, as a failed fulfillment would. When the ledger category
+        # was already deleted (account deletion) there is no balance to restore.
+        if held and query(txn, "SELECT 1 FROM RewardAccounts WHERE member_id=@m", m, _M):
+            acct = ledger.load_account(txn, member_id)
+            total = sum(cost for _rid, _bid, cost in held)
+            for rid, bid, cost in held:
+                ledger.insert_entry(txn, member_id=member_id, entry_id=stable_id("reward-release", rid), kind="release", state="posted",
+                                    points=cost, available_delta=cost, reserved_delta=-cost, reservation_id=rid,
+                                    outcome_reason="privacy_deleted", evidence_refs=[f"benefit:{bid}"], actor_ref="service:privacy")
+            ledger.save_account(txn, replace(acct, reserved=acct.reserved - total, available=acct.available + total))
         for bid, k in pending.items():
             cur = query(txn, "SELECT inventory_reserved, version FROM Benefits WHERE benefit_id=@b", {"b": bid}, {"b": STR})
             if cur:

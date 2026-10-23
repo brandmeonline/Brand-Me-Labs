@@ -230,7 +230,11 @@ class RewardsService:
             require_not_self(operator, d["member_id"])
             if d["state"] != "open":
                 return _dispute_dto(d)
-            if points > 0:  # a credit adds data; a debit or "no change" reduces or leaves it
+            # Any resolution writes member data: the dispute's outcome, and for a
+            # correction of either sign a ledger entry (a debit on an already
+            # deleted ledger would recreate the account).
+            guard_write(txn, d["member_id"], "rewards.disputes")
+            if points:
                 guard_write(txn, d["member_id"], "rewards.ledger")
             corr = ledger.correction(txn, ctx, d["member_id"], dispute_id, points, note, [f"evidence:{evidence}"]) if points else None
             state = "resolved_correction" if corr else "resolved_no_change"
