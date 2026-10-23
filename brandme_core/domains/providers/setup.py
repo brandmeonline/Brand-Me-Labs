@@ -512,11 +512,12 @@ class ProviderSetupService:
         with self._lock:
             if conn.provider_id in self._hydrated:
                 return
-            self._hydrated.add(conn.provider_id)
-        snap = self.store.snapshot(self.environment, conn.provider_id)
+        snap = self.store.snapshot(self.environment, conn.provider_id)  # a failed read is retried next time
         self._sync(conn, snap)
         for status in snap.capabilities.values():
             self.registry.set_capability(conn.provider_id, status)
+        with self._lock:
+            self._hydrated.add(conn.provider_id)
 
     def _sync(self, conn: ProviderConnection, snap: SetupSnapshot) -> None:
         """Committed setup → in-process connection and adapter (never capability states)."""
