@@ -394,3 +394,98 @@ The emulator rejected a query on the NULL_FILTERED `DecisionsByStateClose` index
 - **PD-09 (extended)**: social lane endpoints listed above, plus `target_member_id` as the request field for relationships and blocks.
 - **PD-10**: share expiry bounds (5 min–365 d) and the 200-active-share cap are lane choices; the contracts do not specify them.
 - **PD-11**: 410 `share_unavailable` with `reason` for revoked/expired/removed shares reached by a valid token or an authorized member; 404 for anything else.
+
+## Stage 6 — Rewards: ledger, caps, reversals, badges, benefits, disputes (W05 backend, part 2) — 2026-10-23
+**Migration `V005_rewards.sql`** (applies from empty after V001–V004 through the runner). Member rows are interleaved in `Members`:
+- `RewardAccounts`: reducer row; CHECK `available ≥ 0`, `reserved ≥ 0`, `recovery_due ≥ 0`
+- `RewardEntries`: append-only journal (`credit`/`reversal`/`reserve`/`redeem`/`release`/`correction`; state `posted`/`capped`/`excluded`). It has unique NULL_FILTERED indexes on the cause `(member, rule, version, qualifying event)` and on `reverses_entry_id`.
+- `RewardFacts`
+- `BadgeAwards`
+- `Benefits`: CHECK that a partner benefit is funded and names a sponsor; inventory CHECKs
+- `BenefitReservations`
+- `RewardDisputes`
+
+**Domain (`brandme_core/domains/rewards/`)**
+- `rules.py` mirrors `contracts/reward-rules.json`; `test_rules_mirror_the_contract` compares the two field by field. Caps use **UTC** windows on the qualifying server event time: calendar day, ISO week from Monday 00:00, calendar month. The member's timezone is never consulted. `referral_activated` and `optional_research_contribution` are listed with `available: false`: no referral system or funded campaign exists, so they never settle.
+- `ledger.py`:
+  - **Cause uniqueness.** A credit's primary key is derived from the cause key (or from member+rule+version for lifetime-once rules), so a duplicate cause collides inside the settling transaction. The unique cause index backs this up.
+  - A credit first pays down `recovery_due`.
+  - A **reversal is a new linked entry**. It takes what it can from `available` and records the shortfall as `recovery_due`, so spendable points never go negative and are never a cash debt. It is idempotent per original entry.
+  - Operator corrections are reasoned entries tied to a dispute.
+  - `consistency()` checks the account equals the sum of the journal.
+  - Spanner reads in a read/write transaction do not see that transaction's buffered mutations. A per-transaction overlay (fresh on every retry attempt, verified in the client's `run_in_transaction`) makes later checks in the same settlement see what it just wrote.
+- `consumer.py`: inbox consumer `rewards.ledger`, one transaction per delivery (`first_delivery` → rules → badges → reward events). Event mapping:
+
+  | Event | Outcome |
+  |---|---|
+  | member-declared `persona.updated` / `persona.guest.migrated`, plus first own `outfit.version.created` or migrated saved look | **100 setup once** |
+  | `wardrobe.item.created`/`updated` into `owned` | **25 once**; want / on-the-way never qualify |
+  | `outfit.proposal.accepted` | **25** to the proposer: never self, one per owner→proposer pair per UTC day (disclosed policy), 100/day |
+  | `decision.closed` | **10** per eligible respondent, identical for yes/pass/alternative (the event carries no choices), 100/day; a `repeat_request` gives an `excluded` entry |
+
+  Inactive or frozen members get nothing (privacy guard `rewards.ledger`).
+- `badges.py`: all six badges with visible criteria (version 1), evidence references, earned date and revocation.
+
+  | Badge | Evidence |
+  |---|---|
+  | First Reflection | first member-saved persona |
+  | Closet Curator | 10 placed owned items |
+  | Trusted Eye | 20 valid responses across ≥ 5 decisions; capped responses count as participation |
+  | Style Collaborator | 5 accepted proposals |
+  | Care Keeper | approved-workflow repair |
+  | Material Story | reviewer-accepted product-history contribution |
+
+  A badge is revoked only when a verified reversal removes its evidence.
+- `benefits.py`:
+  - Reserve checks points and inventory **atomically** in one transaction, with `Idempotency-Key`.
+  - The pending reservation is the durable fulfillment work item. `run_fulfillment` calls the fulfiller outside any transaction; `settle` records the outcome once.
+  - Success moves points reserved → spent. Failure, a fulfiller exception or expiry (`expire_due`) moves reserved → available and returns the inventory unit.
+  - Partner benefits cannot exist unfunded.
+- `service.py`:
+  - member reads: summary with honest labelling ("not currency…"), entries cursor, badge progress, next milestone, rules and the recovery policy
+  - member disputes (`rewards:write`, no agent delegation, ≤ 5 open)
+  - operator commands (`moderation:admin`; aal2 outside development; never delegated; **self-review refused**): dispute queue/resolution with a reasoned correction, member ledger audit, linked reversal, reviewer acceptance of catalog corrections (50, 250/ISO week) and product-history contributions
+  - verified repairs only from a **service principal whose issuer is on the approved list**; the default list is empty, so no repair can award until a workflow is approved
+- `deletion.py`: 4 W10 categories. Deletion returns a pending reservation's inventory unit to the benefit.
+- `api.py`:
+  - member router: `GET /rewards`, `POST /benefits/{id}/reservations` (ch.03), plus `/rewards/entries`, `/rewards/reservations`, `/rewards/disputes`, `GET /benefits` (PD-09)
+  - separate **ops router** under `/ops`
+  - there is **no member route that awards or edits points**
+
+**Gateway (UNMOUNTED):** `routes/v1/rewards.ts` → `rewardsRouter(client)` + `rewardsOpsRouter(client)`.
+- Reservation bodies must be empty; the cost comes from the server-side benefit.
+- Disputes are member-only.
+- Ops routes require `moderation:admin`, no delegation, and aal2 outside development.
+
+**Evidence** (pinned venv: spanner 3.40.1, pytest 7.4.3; emulator 1.5.28)
+| Check | Result |
+|---|---|
+| This branch: `pytest tests/test_persona_*.py tests/test_wardrobe_*.py tests/test_social_*.py tests/test_rewards_*.py tests/foundation -W error::…UnhandledThreadException` | **261 passed, 7 skipped**. The 7 skips are 6 privacy-lane and 1 spatial-manifest check, NOT RUN here. Rewards suites green 3 runs in a row. |
+| W11 `bec80b1` overlay with spatial manifests, lane suites + `test_privacy.py` + `test_rights.py` | **197 passed, 0 skipped** |
+| Gateway: `tsc --noEmit` 0; `eslint src` 0; `vitest run src/routes/v1` | **35 passed** (+5 `rewards.test.ts`) |
+
+| Acceptance / exit evidence | Result | Test |
+|---|---|---|
+| BM-LOY-001 setup 100 and first owned item 25, once, with evidence and rule version | passed (integration). Driven by the **real** persona/wardrobe/outfit outbox rows; wishlist item and provisioned profile earn nothing; redelivery changes nothing. | `test_setup_and_first_owned_item_post_once_with_evidence`, `test_provisioned_or_inferred_profile_does_not_count_as_saved` |
+| BM-LOY-002 / **exit: 10 concurrent duplicates → one ledger cause, correct balance** | passed (integration, threads) | `test_ten_parallel_duplicates_change_the_balance_once`: 10 simultaneous deliveries → 1 processed, 9 `duplicate_delivery`, 1 entry, balance 10, 1 inbox receipt. `test_same_cause_through_different_events_settles_once`: 6 different events racing the lifetime-once rule → 1 award. `test_injected_abort_does_not_duplicate_entries`: ABORTED after buffering → 1 entry, 1 `reward.posted`. |
+| BM-LOY-003 / **exit: caps** | passed (integration) | `test_daily_response_cap_and_utc_reset`: 12 responses → 10 posted + 2 `capped` = 100, then 00:00 UTC opens a new window. `test_weekly_and_monthly_caps`: 6 corrections → 250/ISO week, 5 repairs → 200/month. `test_cap_windows_are_utc_and_ignore_member_timezone`. |
+| BM-LOY-004 yes and pass earn equal points | passed (integration; real decision → close → outbox → consumer) | `test_yes_and_pass_earn_equal_points` |
+| BM-LOY-005 cannot self-award via API | **API half passed**: no award/edit routes (Python 404/405, gateway 404); members, delegated or aal1-production operators, self-review and member-as-repair-workflow all refused; duplicate contribution settles once. **Firestore half not_run**: no Firestore rules or reward projection exist in the repo. | `test_member_routes_and_no_award_route`, `test_untrusted_paths_cannot_award`, `rewards.test.ts` |
+| BM-LOY-006 all six badges, criteria and evidence inspectable | passed (integration) | `test_all_six_badges_with_inspectable_evidence` |
+| BM-LOY-007 / **exit: racing redemptions never go negative** | passed (integration, threads): 100 points vs two 60-point benefits at once (repeated 3×) → exactly one; 150 points vs 10 concurrent 50-point reservations → exactly 3; inventory 2 vs 4 members → exactly 2; same key ×5 → one reservation | `test_two_benefits_race_for_insufficient_points`, `test_ten_concurrent_reservations_never_overspend`, `test_inventory_is_reserved_atomically` |
+| BM-LOY-008 failed fulfillment releases once, visible status | passed (integration): failed and fulfilled side by side; a second settle or worker run changes nothing; 8 racing settlements → 1; expiry release | `test_failed_fulfillment_releases_once_with_visible_status`, `test_concurrent_settlements_resolve_once`, `test_expired_reservations_are_released` |
+| BM-LOY-009 / **exit: reversals** | passed (integration): original preserved plus linked reversal. Spent points become `recovery_due` 40 with available 0; the next award pays recovery first; idempotent; the badge is revoked, then re-earned from new evidence; reversals cannot be reversed. | `test_reversal_is_linked_and_spent_points_become_recovery_due` |
+| BM-LOY-010 benefits without research consent | **server half**: no core function depends on rewards or consent; research rule unavailable. Browser half belongs to the UI lane: not_run | — |
+| Exit: idempotency keys | passed (reservation replay over HTTP and concurrently) | `test_reserve_over_http`, `test_ten_concurrent_reservations_never_overspend` |
+
+**Not done / honest limits**
+- Console pages `brandme-console/app/(ops)/{moderation,rewards-disputes}` are not built yet. The shell they must plug into (`console-page-header`, console identity adapter) exists only on `bench/astra-consumer-ui-20261005`, not on this lane's base. Planned after W08, verified against an overlay of that shell.
+- Reward projection to Firestore (and its security rules) does not exist. The ledger is API-only.
+- No referral or research campaign system; those two rules never settle.
+- Return-driven reversal of `first_owned_item` (a returned order unit) is not automatic. An operator can reverse it with evidence.
+
+**Proposed deviations added**
+- **PD-12** `rewards:write` scope for member writes that can never award (benefit reservation, dispute). ch.03 lists only `rewards:read`. Also: foundation first-party sessions currently grant only `profile:*` and `privacy:manage` (`brandme-gateway/src/middleware/session.ts:113`). Integration must add `wardrobe:*`, `outfits:*`, `social:*`, `rewards:read`, `rewards:write`, or none of this lane's routes are reachable by members.
+- **PD-13** Operator authority = `moderation:admin` + aal2 outside development + no delegation + no self-review (ch.03 lists `moderation:admin` as console-only operator authority but does not define reward reviewer roles).
+- **PD-14** Proposal anti-collusion policy: one award per owner→proposer pair per UTC day (disclosed in the rule text). Capped and pair-excluded results are recorded as zero-point entries, so members can see why.
+- **PD-15** Material Story is earned from a reviewer-accepted *product-history* contribution, which carries no points: the rule table has no product-history rule. Catalog corrections earn points under `catalog_correction_accepted`.
