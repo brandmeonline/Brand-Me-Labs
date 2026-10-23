@@ -1,4 +1,7 @@
 # Owned by the opus-foundation lane. Toolchain pins: docs/build/compatibility-lock.md
+# Registration, lockfile and conflict rules: docs/build/workspace-governance.md
+# (enforced by scripts/check-workspace.mjs; every tracked package.json must match a
+# glob below or be a STANDALONE entry in that script).
 packages:
   - 'brandme-gateway'
   - 'brandme-chain'
