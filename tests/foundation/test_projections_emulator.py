@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from brandme_core.events.projections import (
-    Delete, ProjectionError, ProjectionRegistry, ProjectionSpec, ProjectionStore, Upsert,
+    Delete, ProjectionError, ProjectionRegistry, ProjectionSpec, ProjectionStore, Upsert, is_private_field,
 )
 
 
@@ -54,16 +54,20 @@ def test_monotonic_upserts_ignore_redelivered_and_older_versions(store):
     assert store.get(PROFILE, key)["source_version"] == 3
 
 
+def _copy(store, share_id, member="friend-1"):
+    return store.get(SHARED_OUTFIT, {"share_id": share_id}, recipient=member)
+
+
 def test_revocation_deletes_share_and_blocks_resurrection(store):
     share_id = "s-" + uuid.uuid4().hex
     assert store.apply(_share(share_id, 1)) == "applied"
-    assert store.get(SHARED_OUTFIT, {"share_id": share_id})["audience"] == ["friend-1"]
+    assert _copy(store, share_id)["title"] == "Look"
     assert store.apply(Delete(SHARED_OUTFIT, {"share_id": share_id}, 2)) == "applied"
-    assert store.get(SHARED_OUTFIT, {"share_id": share_id}) is None
+    assert _copy(store, share_id) is None
     # A delayed older update must not bring the revoked share back.
     assert store.apply(_share(share_id, 1, title="stale")) == "revoked"
     assert store.apply(_share(share_id, 2, title="stale")) == "revoked"
-    assert store.get(SHARED_OUTFIT, {"share_id": share_id}) is None
+    assert _copy(store, share_id) is None
     # A genuinely newer re-share (new grant revision) is allowed.
     assert store.apply(_share(share_id, 3, title="again")) == "applied"
 
@@ -72,7 +76,7 @@ def test_superseded_revocation_does_not_delete_newer_view(store):
     share_id = "s-" + uuid.uuid4().hex
     store.apply(_share(share_id, 5))
     assert store.apply(Delete(SHARED_OUTFIT, {"share_id": share_id}, 4)) == "stale"
-    assert store.get(SHARED_OUTFIT, {"share_id": share_id}) is not None
+    assert _copy(store, share_id) is not None
 
 
 def test_shared_projections_refuse_private_fields_and_require_audience(store):
@@ -86,7 +90,40 @@ def test_shared_projections_refuse_private_fields_and_require_audience(store):
     with pytest.raises(ProjectionError, match="audience"):
         store.apply(Upsert(SHARED_OUTFIT, {"share_id": share_id}, {"title": "x"}, 1,
                            expires_at=datetime.now(timezone.utc)))
-    assert store.get(SHARED_OUTFIT, {"share_id": share_id}) is None
+    assert _copy(store, share_id) is None
+
+
+def test_shared_copies_are_per_recipient_and_carry_no_audience(store):
+    share_id = "s-" + uuid.uuid4().hex
+    store.apply(_share(share_id, 1, audience=("bo", "cy")))
+    for member in ("bo", "cy"):
+        copy = _copy(store, share_id, member)
+        assert copy["title"] == "Look"
+        assert not any(is_private_field(k) for k in copy), copy
+        assert "bo" not in str(copy) and "cy" not in str(copy)
+    # Dropping a recipient removes their copy on the next version.
+    store.apply(_share(share_id, 2, audience=("bo",)))
+    assert _copy(store, share_id, "bo")["source_version"] == 2
+    assert _copy(store, share_id, "cy") is None
+    with pytest.raises(ProjectionError, match="unique"):
+        store.apply(_share(share_id, 3, audience=("bo", "bo")))
+
+
+def test_shared_expiry_must_be_timezone_aware(store):
+    with pytest.raises(ProjectionError, match="timezone-aware"):
+        store.apply(Upsert(SHARED_OUTFIT, {"share_id": "s-" + uuid.uuid4().hex}, {"title": "x"}, 1,
+                           audience_member_ids=("bo",), expires_at=datetime.utcnow() + timedelta(days=1)))
+
+
+@pytest.mark.parametrize("name", ["ownerId", "owner", "memberId", "walletAddress", "bodyMeasurements",
+                                  "purchase_price", "Audience", "recipientIds", "ShippingAddress"])
+def test_private_fields_are_caught_in_any_naming_style(store, name):
+    with pytest.raises(ProjectionError):
+        ProjectionSpec("x", "shared", "shared/{share_id}", frozenset({name}))
+    spec = ProjectionSpec("ok", "shared", "shared/{share_id}", frozenset({"items"}))
+    with pytest.raises(ProjectionError, match="private field"):
+        store.apply(Upsert(spec, {"share_id": "s-" + uuid.uuid4().hex}, {"items": [{name: "v"}]}, 1,
+                           audience_member_ids=("bo",), expires_at=datetime.now(timezone.utc) + timedelta(days=1)))
 
 
 def test_specs_reject_unsafe_shapes():
@@ -96,6 +133,8 @@ def test_specs_reject_unsafe_shapes():
         ProjectionSpec("x", "member_private", "shared/{id}", frozenset({"a"}))
     with pytest.raises(ProjectionError):
         ProjectionSpec("x", "shared", "shared/{share_id}/views", frozenset({"a"}))
+    with pytest.raises(ProjectionError, match="exactly"):  # rules serve only shared/{id}/recipients/{uid}
+        ProjectionSpec("x", "shared", "shared/{share_id}/views/{view_id}", frozenset({"a"}))
     with pytest.raises(ProjectionError):
         PROFILE.path({"member_id": "../escape"})
 
@@ -109,6 +148,10 @@ def test_purge_member_removes_all_private_views(store):
     assert store.get(PROFILE, {"member_id": member}) is None
     assert store.get(PROFILE, {"member_id": other}) is not None
     assert store.purge_member(member) == 0
+    # A delayed or retried event after the purge must not recreate the member's data.
+    assert store.apply(Upsert(PROFILE, {"member_id": member}, {"display_name": "A"}, 5)) == "revoked"
+    assert store.get(PROFILE, {"member_id": member}) is None
+    assert store.apply(Upsert(PROFILE, {"member_id": other}, {"display_name": "B2"}, 2)) == "applied"
 
 
 def test_registry_routes_events_to_reducers(store):

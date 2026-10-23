@@ -156,3 +156,15 @@ Still open:
 - The gateway does not mint Firebase custom tokens (uid = member_id) yet, so clients cannot sign in to Firestore. The rules are ready for when it does.
 - No domain reducers are registered yet. Owning lanes add them alongside their events.
 - `routes/scan.ts` still returns 500 without NATS (BM-BASE-005, not this lane's file).
+
+Codex review on PR #53 (2026-10-23). Six findings:
+- **Fixed (five):**
+  - Purged members can no longer be recreated by delayed events (member-wide marker).
+  - Private-field checks now normalize names (`ownerId`, `walletAddress` and similar).
+  - Shared views are stored per recipient, so the audience list is no longer readable.
+  - Shared paths are restricted to the shape the rules serve.
+  - Expiry timestamps must be timezone-aware.
+- **Addressed by contract (one):** for version gaps, `Upsert` is documented and used as a full-snapshot replace, so a skipped version cannot leave a view partial.
+- **Guard fixed:** the rules suite now fails rather than skipping when an emulator is required, and CI also rejects a zero pass count.
+
+Evidence: projections 18 passed; rules 6 passed; CI Python set 292 passed, 0 skipped.

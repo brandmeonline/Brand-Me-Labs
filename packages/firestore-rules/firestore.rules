@@ -16,13 +16,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Shared views: single-document get by an explicit audience member,
-    // before expiry. No listing (a share id is not discoverable). Revocation
-    // deletes the document, so access ends immediately.
-    match /shared/{shareId} {
+    // Shared views: one copy per recipient, readable only by that recipient,
+    // single-document get before expiry. Copies carry no audience list or other
+    // members' IDs. No listing (a share id is not discoverable). Revocation
+    // deletes every copy, so access ends immediately.
+    match /shared/{shareId}/recipients/{memberId} {
       allow get: if request.auth != null
+        && request.auth.uid == memberId
         && resource != null
-        && request.auth.uid in resource.data.audience
         && resource.data.expires_at > request.time;
       allow list, write: if false;
     }

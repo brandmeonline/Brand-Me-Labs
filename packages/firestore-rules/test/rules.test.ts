@@ -16,6 +16,10 @@ const reachable = await new Promise<boolean>((res) => {
   s.setTimeout(1000, () => { s.destroy(); res(false); });
 });
 
+if (process.env.BRANDME_REQUIRE_EMULATORS === '1' && !reachable) {
+  throw new Error('BRANDME_REQUIRE_EMULATORS=1 but the Firestore emulator is not reachable');
+}
+
 describe('firestore.rules', { skip: reachable ? false : 'Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)' }, () => {
   let env: RulesTestEnvironment;
   const later = () => Timestamp.fromMillis(Date.now() + 3600_000);
@@ -29,8 +33,9 @@ describe('firestore.rules', { skip: reachable ? false : 'Firestore emulator not 
     await env.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
       await setDoc(doc(db, 'members/ada/views/profile'), { display_name: 'Ada', source_version: 1 });
-      await setDoc(doc(db, 'shared/share-1'), { title: 'Look', audience: ['bo'], expires_at: later(), source_version: 1 });
-      await setDoc(doc(db, 'shared/share-expired'), { title: 'Old', audience: ['bo'], expires_at: Timestamp.fromMillis(Date.now() - 1000), source_version: 1 });
+      await setDoc(doc(db, 'shared/share-1/recipients/bo'), { title: 'Look', expires_at: later(), source_version: 1 });
+      await setDoc(doc(db, 'shared/share-1/recipients/cy'), { title: 'Look', expires_at: later(), source_version: 1 });
+      await setDoc(doc(db, 'shared/share-expired/recipients/bo'), { title: 'Old', expires_at: Timestamp.fromMillis(Date.now() - 1000), source_version: 1 });
       await setDoc(doc(db, 'projection_tombstones/abc'), { source_version: 2 });
     });
   });
@@ -46,22 +51,30 @@ describe('firestore.rules', { skip: reachable ? false : 'Firestore emulator not 
     const ada = env.authenticatedContext('ada').firestore();
     await assertFails(setDoc(doc(ada, 'members/ada/views/profile'), { display_name: 'Hacked', source_version: 99 }));
     await assertFails(deleteDoc(doc(ada, 'members/ada/views/profile')));
-    await assertFails(setDoc(doc(ada, 'shared/new'), { audience: ['ada'] }));
+    await assertFails(setDoc(doc(ada, 'shared/new/recipients/ada'), { title: 'x' }));
   });
 
-  test('shared views: audience-only get, no listing, expiry enforced', async () => {
-    await assertSucceeds(getDoc(doc(env.authenticatedContext('bo').firestore(), 'shared/share-1')));
-    await assertFails(getDoc(doc(env.authenticatedContext('eve').firestore(), 'shared/share-1')));
-    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'shared/share-1')));
-    await assertFails(getDocs(collection(env.authenticatedContext('bo').firestore(), 'shared')));
-    await assertFails(getDoc(doc(env.authenticatedContext('bo').firestore(), 'shared/share-expired')));
-  });
-
-  test('revocation: once the server deletes the share, the audience loses access', async () => {
+  test('shared views: each recipient reads only their own copy, no listing, expiry enforced', async () => {
     const bo = env.authenticatedContext('bo').firestore();
-    await assertSucceeds(getDoc(doc(bo, 'shared/share-1')));
-    await env.withSecurityRulesDisabled(async (ctx) => { await deleteDoc(doc(ctx.firestore(), 'shared/share-1')); });
+    await assertSucceeds(getDoc(doc(bo, 'shared/share-1/recipients/bo')));
+    // Another recipient's copy (and so their member id) is not readable.
+    await assertFails(getDoc(doc(bo, 'shared/share-1/recipients/cy')));
+    await assertFails(getDoc(doc(env.authenticatedContext('eve').firestore(), 'shared/share-1/recipients/bo')));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'shared/share-1/recipients/bo')));
+    await assertFails(getDocs(collection(bo, 'shared/share-1/recipients')));
+    await assertFails(getDocs(collection(bo, 'shared')));
     await assertFails(getDoc(doc(bo, 'shared/share-1')));
+    await assertFails(getDoc(doc(bo, 'shared/share-expired/recipients/bo')));
+  });
+
+  test('revocation: once the server deletes the copies, the audience loses access', async () => {
+    const bo = env.authenticatedContext('bo').firestore();
+    await assertSucceeds(getDoc(doc(bo, 'shared/share-1/recipients/bo')));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(doc(ctx.firestore(), 'shared/share-1/recipients/bo'));
+      await deleteDoc(doc(ctx.firestore(), 'shared/share-1/recipients/cy'));
+    });
+    await assertFails(getDoc(doc(bo, 'shared/share-1/recipients/bo')));
   });
 
   test('tombstones and unlisted collections are closed', async () => {

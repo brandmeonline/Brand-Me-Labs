@@ -173,10 +173,12 @@ jobs:
       - name: Firestore security rules (emulator-evaluated)
         env:
           FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
+          BRANDME_REQUIRE_EMULATORS: '1'
         run: |
           pnpm install --frozen-lockfile --filter @brandme/firestore-rules...
           pnpm --filter @brandme/firestore-rules test 2>&1 | tee .cache/rules.log
           grep -Eq "skipped 0$" .cache/rules.log
+          grep -Eq "pass [1-9][0-9]*$" .cache/rules.log
 
   test-chain:
     name: Test Chain (Node/TypeScript)

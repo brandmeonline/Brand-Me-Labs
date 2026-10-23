@@ -6,17 +6,24 @@ read model that a trusted worker writes after an event commits.
 
 Guarantees implemented here:
 
-* Each document holds only the fields its ``ProjectionSpec`` allows, plus
-  ``source_version``. Shared documents also refuse private field names
-  (owner references, body data, prices, wallet/ownership history), so a
-  reducer bug cannot leak them into a friend/public view.
-* Writes are monotonic per document: an update whose ``source_version`` is not
-  newer than the stored one is ignored, so redelivered or out-of-order events
-  never roll a view back.
-* Revocation deletes the document *and* records a tombstone at that version.
-  A delayed older upsert cannot resurrect a revoked share. Tombstones live in
-  a collection that the security rules close to every client.
-* ``purge_member`` removes every private projection of a member (deletion jobs).
+* **Full snapshots.** An ``Upsert`` *replaces* the document with the complete
+  view at ``source_version``. Reducers must build that view from authoritative
+  state (or a payload that carries the whole view), never apply a delta. A
+  skipped intermediate version therefore cannot leave the view incomplete.
+* **Field-minimal.** Each document holds only the fields its spec allows.
+  Shared specs and documents also refuse private field names under any naming
+  style (``ownerId``, ``walletAddress``, ``body_measurements`` …), nested ones
+  included.
+* **Monotonic.** An update not newer than the stored document or its tombstone
+  is ignored, so redelivered or out-of-order events never roll a view back.
+* **Shared views are per recipient.** A share is written as one document per
+  audience member at ``shared/{share_id}/recipients/{member_id}``. A recipient
+  can read only their own copy, so no document carries the audience list or
+  other members' IDs.
+* **Revocation.** Deleting a share removes every recipient copy and records a
+  tombstone, so a delayed older upsert cannot resurrect it.
+* **Member deletion.** ``purge_member`` removes every private projection and
+  records a member-wide marker; later upserts for that member are refused.
 
 Clients never write projections (see packages/firestore-rules). Server
 writers also need service IAM and application checks; rules do not replace
@@ -36,17 +43,30 @@ from .envelope import EventEnvelope
 Audience = Literal["member_private", "shared"]
 
 TOMBSTONES = "projection_tombstones"
+RECIPIENTS = "recipients"
+MAX_AUDIENCE = 100  # one transaction writes every recipient copy (Firestore limit 500)
 
-# Never projected into shared documents (ch.03 §5, ch.01 §8).
-FORBIDDEN_SHARED_FIELDS = frozenset({
-    "owner_id", "member_id", "owner_ref", "subject_ref", "email", "phone", "address",
-    "body_measurements", "body_profile", "measurements", "size", "price", "amount",
-    "amount_minor", "purchase_receipt", "receipt", "closet_total", "wallet_address",
-    "chain_address", "ownership_history", "controller_commitment", "persona",
-    "declared_axes", "inferred_axes", "effective_axes",
-})
+# Stems that mark a field as private in a shared projection (ch.03 §5,
+# ch.01 §8). Keys are normalized (lowercase, alphanumerics only) and rejected
+# if they contain any stem, so ``ownerId``, ``owner_ref`` and ``walletAddress``
+# are all caught.
+FORBIDDEN_SHARED_STEMS = (
+    "owner", "member", "subject", "audience", "recipient", "email", "phone", "address",
+    "body", "measurement", "size", "price", "amount", "cost", "receipt", "total",
+    "wallet", "chain", "ownership", "controller", "commitment", "persona", "axes",
+)
 
 _SEGMENT = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+_SHARED_TEMPLATE = "shared/{share_id}"
+
+
+def _normalize(key: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(key).lower())
+
+
+def is_private_field(key: str) -> bool:
+    norm = _normalize(key)
+    return any(stem in norm for stem in FORBIDDEN_SHARED_STEMS)
 
 
 class ProjectionError(ValueError):
@@ -57,10 +77,10 @@ class ProjectionError(ValueError):
 class ProjectionSpec:
     """A projected document kind.
 
-    ``path_template`` has an even number of segments. Placeholders are filled
-    from the key; for example ``members/{member_id}/views/profile`` or
-    ``shared/{share_id}``. Member-private documents must live under
-    ``members/{member_id}/``.
+    Member-private templates address a document under ``members/{member_id}/``
+    (even segment count). A shared spec must use exactly ``shared/{share_id}``;
+    the store fans it out to per-recipient documents the security rules can
+    serve.
     """
 
     name: str
@@ -75,12 +95,12 @@ class ProjectionSpec:
         if self.audience == "member_private" and not self.path_template.startswith("members/{member_id}/"):
             raise ProjectionError(f"{self.name}: member-private projections live under members/{{member_id}}/")
         if self.audience == "shared":
-            if not self.path_template.startswith("shared/"):
-                raise ProjectionError(f"{self.name}: shared projections live under shared/")
-            leaked = self.allowed_fields & FORBIDDEN_SHARED_FIELDS
+            if self.path_template != _SHARED_TEMPLATE:
+                raise ProjectionError(f"{self.name}: shared projections use exactly {_SHARED_TEMPLATE}")
+            leaked = sorted(f for f in self.allowed_fields if is_private_field(f))
             if leaked:
-                raise ProjectionError(f"{self.name}: shared spec allows private fields {sorted(leaked)}")
-        reserved = self.allowed_fields & {"source_version", "projected_at", "audience", "expires_at"}
+                raise ProjectionError(f"{self.name}: shared spec allows private fields {leaked}")
+        reserved = self.allowed_fields & {"source_version", "projected_at", "expires_at"}
         if reserved:
             raise ProjectionError(f"{self.name}: reserved field names {sorted(reserved)}")
 
@@ -95,6 +115,8 @@ class ProjectionSpec:
 
 @dataclass(frozen=True)
 class Upsert:
+    """Replace the view with its complete state at ``source_version``."""
+
     spec: ProjectionSpec
     key: Mapping[str, str]
     fields: Mapping[str, Any]
@@ -117,6 +139,10 @@ def _tombstone_id(path: str) -> str:
     return hashlib.sha256(path.encode()).hexdigest()
 
 
+def _member_marker_id(member_id: str) -> str:
+    return hashlib.sha256(f"member-purged:{member_id}".encode()).hexdigest()
+
+
 def _json_default(value: Any) -> str:
     if isinstance(value, datetime):
         return value.isoformat()
@@ -132,7 +158,7 @@ def _validate_fields(spec: ProjectionSpec, fields: Mapping[str, Any]) -> None:
         def walk(node: Any, where: str) -> None:
             if isinstance(node, Mapping):
                 for k, v in node.items():
-                    if str(k).lower() in FORBIDDEN_SHARED_FIELDS:
+                    if is_private_field(k):
                         raise ProjectionError(f"{spec.name}: private field {where}.{k} in a shared projection")
                     walk(v, f"{where}.{k}")
             elif isinstance(node, list):
@@ -146,18 +172,32 @@ def _validate_fields(spec: ProjectionSpec, fields: Mapping[str, Any]) -> None:
         raise ProjectionError(f"{spec.name}: fields must be JSON-compatible") from exc
 
 
+def _validate_shared_upsert(op: Upsert) -> None:
+    audience = op.audience_member_ids
+    if not audience:
+        raise ProjectionError(f"{op.spec.name}: shared projection needs an explicit audience")
+    if len(audience) > MAX_AUDIENCE or len(set(audience)) != len(audience):
+        raise ProjectionError(f"{op.spec.name}: audience must be unique and at most {MAX_AUDIENCE} members")
+    for member in audience:
+        if not _SEGMENT.match(member):
+            raise ProjectionError(f"{op.spec.name}: invalid audience member id")
+    if op.expires_at is None:
+        raise ProjectionError(f"{op.spec.name}: shared projection needs expires_at")
+    if op.expires_at.tzinfo is None or op.expires_at.utcoffset() is None:
+        raise ProjectionError(f"{op.spec.name}: expires_at must be timezone-aware (UTC)")
+
+
 class ProjectionStore:
     """Trusted projection writer over a ``google.cloud.firestore.Client``."""
 
     def __init__(self, client):
         self.client = client
 
-    def _versions(self, transaction, path: str) -> tuple[int, int]:
-        doc = self.client.document(path).get(transaction=transaction)
-        stone = self.client.collection(TOMBSTONES).document(_tombstone_id(path)).get(transaction=transaction)
-        current = int(doc.get("source_version")) if doc.exists else -1
-        tomb = int(stone.get("source_version")) if stone.exists else -1
-        return current, tomb
+    def _stone(self, path: str):
+        return self.client.collection(TOMBSTONES).document(_tombstone_id(path))
+
+    def _member_marker(self, member_id: str):
+        return self.client.collection(TOMBSTONES).document(_member_marker_id(member_id))
 
     def apply(self, op: ProjectionOp) -> str:
         """Apply one op. Returns ``applied``, ``stale`` or ``revoked``."""
@@ -166,19 +206,30 @@ class ProjectionStore:
         if op.source_version < 0:
             raise ProjectionError("source_version must be >= 0")
         path = op.spec.path(op.key)
+        shared = op.spec.audience == "shared"
         if isinstance(op, Upsert):
             _validate_fields(op.spec, op.fields)
-            if op.spec.audience == "shared":
-                if not op.audience_member_ids:
-                    raise ProjectionError(f"{op.spec.name}: shared projection needs an explicit audience")
-                if op.expires_at is None:
-                    raise ProjectionError(f"{op.spec.name}: shared projection needs expires_at")
-
+            if shared:
+                _validate_shared_upsert(op)
+        recipients = self.client.collection(path + "/" + RECIPIENTS) if shared else None
+        doc_ref = None if shared else self.client.document(path)
         outcome: dict[str, str] = {}
 
         @firestore.transactional
         def run(transaction):
-            current, tomb = self._versions(transaction, path)
+            stone = self._stone(path).get(transaction=transaction)
+            tomb = int(stone.get("source_version")) if stone.exists else -1
+            if shared:
+                existing = {snap.id: snap for snap in transaction.get(recipients.select(["source_version"]))}
+                current = max((int(s.get("source_version")) for s in existing.values()), default=-1)
+            else:
+                member_id = op.key.get("member_id", "")
+                if self._member_marker(member_id).get(transaction=transaction).exists:
+                    outcome["r"] = "revoked"
+                    return
+                snap = doc_ref.get(transaction=transaction)
+                current = int(snap.get("source_version")) if snap.exists else -1
+
             if isinstance(op, Upsert):
                 if op.source_version <= tomb:
                     outcome["r"] = "revoked"
@@ -189,35 +240,59 @@ class ProjectionStore:
                 body: dict[str, Any] = dict(op.fields)
                 body["source_version"] = op.source_version
                 body["projected_at"] = firestore.SERVER_TIMESTAMP
-                if op.spec.audience == "shared":
-                    body["audience"] = list(op.audience_member_ids)
+                if shared:
                     body["expires_at"] = op.expires_at.astimezone(timezone.utc)
-                transaction.set(self.client.document(path), body)
+                    keep = set(op.audience_member_ids)
+                    for member in keep:
+                        transaction.set(recipients.document(member), body)
+                    for member, snap in existing.items():
+                        if member not in keep:
+                            transaction.delete(snap.reference)
+                else:
+                    transaction.set(doc_ref, body)
                 outcome["r"] = "applied"
+                return
+
+            # A revocation older than the stored view was superseded (the share
+            # was re-created later); applying it would delete newer data.
+            if op.source_version < current:
+                outcome["r"] = "stale"
+                return
+            if shared:
+                for snap in existing.values():
+                    transaction.delete(snap.reference)
             else:
-                # A revocation older than the stored view was superseded (the
-                # share was re-created later); applying it would delete newer data.
-                if op.source_version < current:
-                    outcome["r"] = "stale"
-                    return
-                transaction.delete(self.client.document(path))
-                transaction.set(
-                    self.client.collection(TOMBSTONES).document(_tombstone_id(path)),
-                    {"source_version": max(op.source_version, tomb), "revoked_at": firestore.SERVER_TIMESTAMP},
-                )
-                outcome["r"] = "applied"
+                transaction.delete(doc_ref)
+            transaction.set(self._stone(path), {
+                "source_version": max(op.source_version, tomb, current),
+                "revoked_at": firestore.SERVER_TIMESTAMP,
+            })
+            outcome["r"] = "applied"
 
         run(self.client.transaction())
         return outcome["r"]
 
-    def get(self, spec: ProjectionSpec, key: Mapping[str, str]) -> Optional[dict]:
-        snap = self.client.document(spec.path(key)).get()
+    def get(self, spec: ProjectionSpec, key: Mapping[str, str], recipient: Optional[str] = None) -> Optional[dict]:
+        """Read a member-private view, or one recipient's copy of a shared view."""
+        path = spec.path(key)
+        if spec.audience == "shared":
+            if recipient is None:
+                raise ProjectionError("reading a shared view needs the recipient member id")
+            path = f"{path}/{RECIPIENTS}/{recipient}"
+        snap = self.client.document(path).get()
         return snap.to_dict() if snap.exists else None
 
     def purge_member(self, member_id: str) -> int:
-        """Delete every document under ``members/{member_id}`` (deletion jobs). Idempotent."""
+        """Delete every document under ``members/{member_id}`` and block re-creation.
+
+        The member-wide marker is written first, so an upsert racing the purge is
+        refused; the recursive delete is idempotent and safe to rerun.
+        """
+        from google.cloud import firestore
+
         if not _SEGMENT.match(member_id):
             raise ProjectionError("invalid member id")
+        self._member_marker(member_id).set({"purged_at": firestore.SERVER_TIMESTAMP})
         root = self.client.collection("members").document(member_id)
         deleted = 0
         stack = [root]
@@ -238,8 +313,8 @@ Reducer = Callable[[EventEnvelope], Iterable[ProjectionOp]]
 
 @dataclass
 class ProjectionRegistry:
-    """Event type → reducer. Reducers are pure: build ops from the envelope
-    (plus authorized reads they perform themselves). They never write."""
+    """Event type → reducer. Reducers are pure: they build full-snapshot ops
+    from authorized state and never write."""
 
     reducers: dict[str, Reducer] = field(default_factory=dict)
 
