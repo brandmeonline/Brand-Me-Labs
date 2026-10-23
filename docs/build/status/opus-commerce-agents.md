@@ -439,3 +439,7 @@ stage adds them with `git add -f` (no `.gitignore` edit — that file isn't lane
 clean worktree of the pushed commit (result below). Request to whoever owns `.gitignore`: allowlist
 `brandme_core/**/schemas/**/*.json`, `brandme_core/domains/commerce/ap2_schemas/**` and `tests/fixtures/**/*.json`, so the next
 lane doesn't hit the same silent drop.
+
+Verified 2026-10-23: a clean `git worktree` of `4325a4d` (no untracked files) runs `tests/foundation` + lane suite
+**274 passed, 0 skipped**; a clean worktree of `origin/bench/opus-commerce-agents-20261005` fails collection of
+`tests/test_mcp.py` with `FileNotFoundError: brandme_core/mcp/schemas/tool_invocation.schema.json`.
