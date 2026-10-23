@@ -31,7 +31,7 @@ from brandme_core.domains.persona.kernel import (
     run_txn,
 )
 
-SAFE_KEYS = frozenset({"decision_id", "relationship_id", "outfit_id", "proposal_id", "share_id", "result", "counts", "closes_at"})
+SAFE_KEYS = frozenset({"decision_id", "relationship_id", "outfit_id", "proposal_id", "share_id", "report_id", "result", "counts", "closes_at"})
 
 
 def blocked_between(txn, a: str, b: str) -> bool:

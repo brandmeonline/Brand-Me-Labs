@@ -143,6 +143,21 @@ def parse_share(body: Any) -> Dict[str, Any]:
     }
 
 
+def revoke_grant(txn, ctx: CommandContext, g: Dict[str, Any]) -> Dict[str, Any]:
+    """Revoke inside the caller's transaction (owner revoke or moderation)."""
+    if g["revoked_at"] is not None:
+        return g
+    now = server_now(txn)
+    g.update(revoked_at=now, version=g["version"] + 1)
+    txn.update("ShareGrants", columns=("member_id", "share_id", "revoked_at", "version"), values=[(g["member_id"], g["share_id"], now, g["version"])])
+    txn.delete("SharePreviews", KeySet(keys=[[g["member_id"], g["share_id"]]]))
+    # Recipients' unread "shared with you" notices disappear with the share.
+    txn.execute_update("DELETE FROM Notifications WHERE member_id IN UNNEST(@r) AND subject_ref=@s AND type='share_received' AND read_at IS NULL",
+                       params={"r": list(g["recipient_ids"] or []), "s": f"share:{g['share_id']}"}, param_types={"r": STR_ARRAY, "s": STR})
+    ctx.emit("share.revoked", "1", "share", g["share_id"], g["version"], {"share_id": g["share_id"], "owner_id": g["member_id"]}, "member_private")
+    return g
+
+
 class ShareService:
     def __init__(self, database):
         self.db = database
@@ -293,18 +308,7 @@ class ShareService:
             g = self._grant_by_id(txn, share_id)
             if g is None or g["member_id"] != principal.member_id:
                 raise NotFound("share not found")
-            now = server_now(txn)
-            if g["revoked_at"] is not None:
-                return self._owner_dto(g, now)
-            g.update(revoked_at=now, version=g["version"] + 1)
-            txn.update("ShareGrants", columns=("member_id", "share_id", "revoked_at", "version"),
-                       values=[(g["member_id"], share_id, now, g["version"])])
-            txn.delete("SharePreviews", KeySet(keys=[[g["member_id"], share_id]]))
-            # Recipients' unread "shared with you" notices disappear with the share.
-            txn.execute_update("DELETE FROM Notifications WHERE member_id IN UNNEST(@r) AND subject_ref=@s AND type='share_received' AND read_at IS NULL",
-                               params={"r": list(g["recipient_ids"] or []), "s": f"share:{share_id}"}, param_types={"r": STR_ARRAY, "s": STR})
-            ctx.emit("share.revoked", "1", "share", share_id, g["version"], {"share_id": share_id, "owner_id": g["member_id"]}, "member_private")
-            return self._owner_dto(g, now)
+            return self._owner_dto(revoke_grant(txn, ctx, g), server_now(txn))
 
         return command(self.db, principal, tx)
 

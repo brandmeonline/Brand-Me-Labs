@@ -12,6 +12,9 @@
  * anonymous callers (public/unlisted share links); the token travels in the
  * body so it does not land in URL access logs. It should sit behind the
  * foundation rate limiter at mount time.
+ *
+ * `moderationOpsRouter` (console only) lists and resolves member reports;
+ * it needs `moderation:admin`, no delegation, and aal2 outside development.
  */
 
 import { Router, type NextFunction, type Request, type Response } from 'express';
@@ -28,11 +31,34 @@ import {
   uuidParam,
   type DomainClient,
 } from './persona';
+import { requireOperator } from './rewards';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TOKEN_RE = /^[A-Za-z0-9_-]{16,128}$/;
 const SHARE_SUBJECTS = ['outfit_version', 'wardrobe_item', 'closet_capsule', 'persona_snapshot', 'badge'];
 const AUDIENCES = ['selected_members', 'unlisted', 'public'];
+const REPORT_TARGETS: Record<string, string[]> = {
+  decision_response: ['decision_id', 'respondent_id'],
+  share: ['share_id'],
+  outfit_proposal: ['outfit_id', 'proposal_id'],
+  member: ['member_id'],
+};
+const REPORT_REASONS = ['harassment', 'spam', 'hate', 'sexual_content', 'self_harm', 'privacy', 'other'];
+
+/** A report names content the caller saw; target ids are references, never the caller's identity. */
+export function reportShape(b: Record<string, unknown>): void {
+  const extra = Object.keys(b).filter((k) => !['target_type', 'target', 'reason', 'note'].includes(k));
+  if (extra.length) throw problems.invalid(`Unknown fields: ${extra.join(', ')}.`);
+  const fields = typeof b.target_type === 'string' ? REPORT_TARGETS[b.target_type] : undefined;
+  if (!fields) throw problems.invalid('Unknown target_type.');
+  const t = b.target as Record<string, unknown> | undefined;
+  if (!t || typeof t !== 'object' || Array.isArray(t) || Object.keys(t).sort().join() !== [...fields].sort().join()) {
+    throw problems.invalid(`target must contain exactly: ${fields.join(', ')}.`);
+  }
+  if (!fields.every((f) => typeof t[f] === 'string' && UUID_RE.test(t[f] as string))) throw problems.invalid('target ids must be ids.');
+  if (typeof b.reason !== 'string' || !REPORT_REASONS.includes(b.reason)) throw problems.invalid('Unknown reason.');
+  if (b.note !== undefined && (typeof b.note !== 'string' || b.note.length > 500)) throw problems.invalid('note must be at most 500 characters.');
+}
 
 function target(req: Request): { target_member_id: string } {
   const b = objectBody(req, 1);
@@ -81,7 +107,7 @@ export function socialRouter(client: DomainClient): Router {
     }),
   );
 
-  r.use(['/relationships', '/blocks', '/shares', '/notifications'], requirePrincipal);
+  r.use(['/relationships', '/blocks', '/shares', '/notifications', '/reports'], requirePrincipal);
 
   r.get('/relationships', requireScope('social:read'), forwardTo(client, () => ({ method: 'GET', path: '/relationships' })));
   r.post('/relationships', requireScope('social:write'), forwardTo(client, (req) => ({ method: 'POST', path: '/relationships', body: target(req) })));
@@ -126,6 +152,36 @@ export function socialRouter(client: DomainClient): Router {
         throw problems.invalid('ids must list 1-100 notification ids.');
       }
       return { method: 'POST', path: '/notifications/read', body: { ids } };
+    }),
+  );
+
+  r.get('/reports', requireScope('social:read'), forwardTo(client, () => ({ method: 'GET', path: '/reports' })));
+  r.post(
+    '/reports',
+    requireScope('social:write'),
+    forwardTo(client, (req) => {
+      const b = objectBody(req, 4);
+      reportShape(b);
+      return { method: 'POST', path: '/reports', body: b };
+    }),
+  );
+  return r;
+}
+
+export function moderationOpsRouter(client: DomainClient): Router {
+  const r = Router();
+  r.use('/ops/moderation', requirePrincipal, requireOperator);
+  r.get(
+    '/ops/moderation/reports',
+    forwardTo(client, (req) => ({ method: 'GET', path: '/ops/moderation/reports', query: pickQuery(req, ['state', 'limit']) })),
+  );
+  r.post(
+    '/ops/moderation/reports/:reportId/resolve',
+    forwardTo(client, (req) => {
+      const b = objectBody(req, 2);
+      if (!['dismiss', 'remove_content', 'escalate'].includes(String(b.decision))) throw problems.invalid('Unknown decision.');
+      if (typeof b.note !== 'string' || b.note.trim().length < 1 || b.note.length > 1000) throw problems.invalid('note must be 1-1000 characters.');
+      return { method: 'POST', path: `/ops/moderation/reports/${uuidParam(req, 'reportId')}/resolve`, body: { decision: b.decision, note: b.note } };
     }),
   );
   return r;

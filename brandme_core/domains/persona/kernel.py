@@ -189,6 +189,26 @@ def require_scope(principal: Principal, scope: str) -> None:
         raise Forbidden(f"scope {scope} required")
 
 
+OPERATOR_SCOPE = "moderation:admin"
+
+
+def require_operator(principal: Principal) -> None:
+    """Console operator authority (ch.03 §3): ``moderation:admin``, an aal2 session
+    outside development, never a delegated agent or a service."""
+    if isinstance(principal, ServicePrincipal) or principal.delegation_id is not None:
+        raise Forbidden("operator session required")
+    if OPERATOR_SCOPE not in principal.scopes:
+        raise Forbidden(f"scope {OPERATOR_SCOPE} required")
+    if principal.environment != "development" and principal.assurance_level != "aal2":
+        raise Forbidden("operator actions require a recently strengthened (aal2) session")
+
+
+def require_not_self(principal: Principal, member_id: str) -> None:
+    """Operators never review or act on their own records."""
+    if principal.member_id == member_id:
+        raise Forbidden("operators cannot review or act on their own records")
+
+
 # ---------------------------------------------------------------------------
 # Clock
 # ---------------------------------------------------------------------------

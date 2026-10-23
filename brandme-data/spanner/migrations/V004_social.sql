@@ -153,3 +153,31 @@ CREATE TABLE Notifications (
 
 CREATE UNIQUE INDEX NotificationsByEvent ON Notifications (member_id, event_id, type), INTERLEAVE IN Members;
 CREATE INDEX NotificationsByCreated ON Notifications (member_id, created_at DESC), INTERLEAVE IN Members;
+
+-- Member reports of member-generated content (ch.01 §6.4) and their
+-- moderation outcome. Not interleaved: a report outlives the reporter's
+-- account (the reporter reference is anonymized on deletion).
+CREATE TABLE MemberReports (
+  report_id STRING(36) NOT NULL,
+  reporter_id STRING(36) NOT NULL,
+  target_type STRING(24) NOT NULL,
+  target_ref STRING(120) NOT NULL,
+  target_owner_id STRING(36) NOT NULL,
+  reason STRING(24) NOT NULL,
+  note STRING(500),
+  state STRING(16) NOT NULL,
+  action STRING(24),
+  resolved_by STRING(256),
+  resolution_note STRING(1000),
+  version INT64 NOT NULL,
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
+  resolved_at TIMESTAMP OPTIONS (allow_commit_timestamp = true),
+  CONSTRAINT ck_mr_target CHECK (target_type IN ('decision_response', 'share', 'outfit_proposal', 'member')),
+  CONSTRAINT ck_mr_reason CHECK (reason IN ('harassment', 'spam', 'hate', 'sexual_content', 'self_harm', 'privacy', 'other')),
+  CONSTRAINT ck_mr_state CHECK (state IN ('open', 'actioned', 'dismissed')),
+  CONSTRAINT ck_mr_action CHECK (action IS NULL OR action IN ('content_removed', 'share_revoked', 'proposal_declined', 'escalated', 'none')),
+) PRIMARY KEY (report_id);
+
+CREATE UNIQUE INDEX MemberReportsByReporterTarget ON MemberReports (reporter_id, target_ref);
+CREATE INDEX MemberReportsByState ON MemberReports (state, created_at);
+CREATE INDEX MemberReportsByOwner ON MemberReports (target_owner_id);

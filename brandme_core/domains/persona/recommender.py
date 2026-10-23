@@ -377,7 +377,7 @@ def _reasons(c: Candidate, req: RecommendationRequest, components, evidence) -> 
                 text = "A step beyond your usual picks, as you asked"
             else:
                 text = "Close to what you already like"
-            ev = [f"axis:exploration"]
+            ev = ["axis:exploration"]
         out.append({"feature": f, "text": text, "contribution": comp["contribution"], "evidence": ev})
         if len(out) >= 3:
             break

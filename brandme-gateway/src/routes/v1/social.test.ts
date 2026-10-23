@@ -13,7 +13,7 @@ import { problemHandler, requestContext } from '../../middleware/problem';
 import type { Principal } from '../../types';
 import { decisionShape, decisionsRouter } from './decisions';
 import type { DomainClient, DomainRequest, DomainResponse } from './persona';
-import { shareShape, socialRouter } from './social';
+import { moderationOpsRouter, reportShape, shareShape, socialRouter } from './social';
 
 const ID = '0b6f1a3e-7f1d-4c55-9a0e-2f6b8c1d9e10';
 const OTHER = '6d1c2b3a-4e5f-4a7b-8c9d-0e1f2a3b4c5d';
@@ -46,6 +46,7 @@ function app(client: DomainClient, scopes: string[] | null) {
   });
   a.use(socialRouter(client));
   a.use(decisionsRouter(client));
+  a.use(moderationOpsRouter(client));
   a.use(problemHandler);
   return a;
 }
@@ -153,5 +154,22 @@ describe('social/decisions routers (unmounted)', () => {
     expect((await request(a).post('/notifications/read').send({ ids: [ID] })).status).toBe(200);
     expect((await request(a).get('/notifications?limit=5&evil=1')).status).toBe(200);
     expect(client.calls[1].query).toEqual({ limit: '5' });
+  });
+
+  it('reports: typed targets, no identity fields; moderation is operator-only', async () => {
+    const report = { target_type: 'decision_response', target: { decision_id: ID, respondent_id: OTHER }, reason: 'harassment' };
+    expect(() => reportShape(report)).not.toThrow();
+    expect(() => reportShape({ ...report, target: { decision_id: ID } })).toThrow();
+    expect(() => reportShape({ ...report, target: { ...report.target, extra: ID } })).toThrow();
+    expect(() => reportShape({ ...report, reason: 'dislike' })).toThrow();
+    const a = app(client, ALL);
+    expect((await request(a).post('/reports').send({ ...report, reporter_id: ID })).status).toBe(422);
+    expect((await request(a).post('/reports').send(report)).status).toBe(200);
+    expect((await request(a).get('/ops/moderation/reports')).status).toBe(403);
+    const ops = app(client, ['moderation:admin']);
+    expect((await request(ops).get('/ops/moderation/reports?state=open&extra=1')).status).toBe(200);
+    expect(client.calls[1].query).toEqual({ state: 'open' });
+    expect((await request(ops).post(`/ops/moderation/reports/${ID}/resolve`).send({ decision: 'ban', note: 'x' })).status).toBe(422);
+    expect((await request(ops).post(`/ops/moderation/reports/${ID}/resolve`).send({ decision: 'dismiss', note: 'Not a violation' })).status).toBe(200);
   });
 });

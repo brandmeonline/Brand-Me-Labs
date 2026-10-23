@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from brandme_core.domains import DataCategory as FoundationDataCategory, register_data_category
-from brandme_core.domains.persona.kernel import STR, iso, json_value, query, run_read, run_txn
+from brandme_core.domains.persona.kernel import NIL_MEMBER, STR, iso, json_value, query, run_read, run_txn
 
 DOMAIN = "social"
 _M = {"m": STR}
@@ -48,6 +48,13 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "retention": "Until they expire, you revoke them or you delete your account",
         "on_edit": "Revoking stops access and removes the preview; downloaded copies cannot be recalled",
         "tables": ("ShareGrants", "SharePreviews"),
+    },
+    "social.reports": {
+        "title": "Reports you filed about content you saw",
+        "supplied_by": "member",
+        "retention": "Kept for moderation records; your identity is removed when you delete your account",
+        "on_edit": "Reports cannot be edited; you can see their outcome",
+        "tables": ("MemberReports",),
     },
     "social.notifications": {
         "title": "Your in-app notifications",
@@ -89,6 +96,11 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
                         "recipient_ids": list(r[5] or []), "expires_at": iso(r[6]), "revoked_at": iso(r[7]),
                         "preview": None if r[8] is None else json_value(r[8])})
         return out
+    if category == "social.reports":
+        return [{"report_id": r[0], "target_type": r[1], "target_ref": r[2], "reason": r[3], "note": r[4], "state": r[5], "action": r[6],
+                 "created_at": iso(r[7]), "resolved_at": iso(r[8])}
+                for r in query(snap, "SELECT report_id, target_type, target_ref, reason, note, state, action, created_at, resolved_at "
+                                     "FROM MemberReports WHERE reporter_id=@m ORDER BY created_at", m, _M)]
     if category == "social.notifications":
         return [{"notification_id": r[0], "type": r[1], "subject_ref": r[2], "payload": json_value(r[3]), "created_at": iso(r[4]), "read_at": iso(r[5])}
                 for r in query(snap, "SELECT notification_id, type, subject_ref, sanitized_payload, created_at, read_at FROM Notifications "
@@ -113,6 +125,15 @@ def delete_category(txn, member_id: str, category: str) -> int:
                        values=[(owner, share_id, [x for x in recips if x != member_id] or None)])
             n += 1
         return n
+    if category == "social.reports":
+        # Anonymize, do not erase: moderation records stay attributable to the outcome, not the person.
+        nil = {"m": member_id, "nil": NIL_MEMBER}
+        nt = {"m": STR, "nil": STR}
+        # The report's own id replaces the reporter (unique per row, so the
+        # (reporter, target) unique index cannot collide; unlinkable to the person).
+        n = txn.execute_update("UPDATE MemberReports SET reporter_id=report_id, note=NULL WHERE reporter_id=@m",
+                               params={"m": member_id}, param_types={"m": STR})
+        return n + txn.execute_update("UPDATE MemberReports SET target_owner_id=@nil WHERE target_owner_id=@m", params=nil, param_types=nt)
     if category == "social.notifications":
         n = txn.execute_update("DELETE FROM Notifications WHERE member_id=@m", params=m, param_types=_M)
         return n + txn.execute_update("UPDATE Notifications SET actor_member_id=NULL WHERE actor_member_id=@m", params=m, param_types=_M)
@@ -142,7 +163,8 @@ def _make_privacy_handler():
                 pd.DataCategory(
                     key=k, domain=DOMAIN, title=c["title"],
                     supplied_by=pd.Supplier.SYSTEM if c["supplied_by"] == "system" else pd.Supplier.MEMBER,
-                    visible_to=("member",), retention=c["retention"], on_edit=c["on_edit"], on_delete=pd.OnDelete.ERASE,
+                    visible_to=("member",), retention=c["retention"], on_edit=c["on_edit"],
+                    on_delete=pd.OnDelete.ANONYMIZE if k == "social.reports" else pd.OnDelete.ERASE,
                 )
                 for k, c in CATEGORIES.items()
             ]

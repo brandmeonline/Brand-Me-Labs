@@ -25,6 +25,7 @@ from brandme_core.domains.persona.kernel import DomainError, ValidationFailed
 from .decisions import DecisionService
 from .notifications import NotificationService
 from .relationships import RelationshipService
+from .reports import ReportService
 from .shares import ShareService
 
 
@@ -35,7 +36,8 @@ def _single(b, key: str):
 
 
 def create_social_router(relationships: RelationshipService, decisions: DecisionService, shares: ShareService,
-                         notifications: NotificationService, resolve_principal: PrincipalResolver) -> APIRouter:
+                         notifications: NotificationService, resolve_principal: PrincipalResolver,
+                         reports: Optional[ReportService] = None) -> APIRouter:
     r = APIRouter()
 
     # -------------------------------------------------------- relationships
@@ -145,5 +147,38 @@ def create_social_router(relationships: RelationshipService, decisions: Decision
     @r.post("/notifications/read")
     async def mark_read(request: Request):
         return await execute(request, resolve_principal, lambda p, b: notifications.mark_read(p, _single(b, "ids")), with_body=True)
+
+    # -------------------------------------------------------------- reports
+    if reports is not None:
+        @r.post("/reports")
+        async def report(request: Request):
+            return await execute(request, resolve_principal, reports.report, status=201, with_body=True)
+
+        @r.get("/reports")
+        async def my_reports(request: Request):
+            return await execute(request, resolve_principal, reports.my_reports)
+
+    return r
+
+
+def create_moderation_ops_router(reports: ReportService, resolve_principal: PrincipalResolver) -> APIRouter:
+    """Console-only (``moderation:admin``); mount behind operator auth."""
+    r = APIRouter(prefix="/ops")
+
+    @r.get("/moderation/reports")
+    async def queue(request: Request):
+        q = request.query_params
+        limit = q.get("limit")
+
+        def run(p):
+            if limit is not None and not limit.isdigit():
+                raise ValidationFailed("limit must be an integer", extra={"field": "limit"})
+            return reports.queue(p, state=q.get("state", "open"), limit=int(limit) if limit else 50)
+
+        return await execute(request, resolve_principal, run)
+
+    @r.post("/moderation/reports/{report_id}/resolve")
+    async def resolve(request: Request, report_id: str):
+        return await execute(request, resolve_principal, lambda p, b: reports.resolve(p, report_id, b), with_body=True)
 
     return r
