@@ -25,7 +25,10 @@ async function signIn(name){
   const context=await browser.newContext({viewport:{width:390,height:844}});contexts.push(context)
   const page=await context.newPage();await page.goto(`${base}/me/connections`)
   await page.getByRole('textbox',{name:'Test identity'}).fill(name)
+  const completed=page.waitForResponse(response=>response.url().endsWith('/api/v1/session/dev')&&response.request().method()==='POST')
   await page.getByRole('button',{name:'Connect development session'}).click()
+  const response=await completed
+  assert(response.ok(),`Development sign-in failed: HTTP ${response.status()}`)
   await page.getByRole('heading',{name:'Your account',exact:true}).waitFor()
   const me=await get(context,'/me')
   return {context,page,id:me.member.id}

@@ -9,6 +9,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { ResourceState } from '@/components/ui/resource-state'
 import { AXES, type Axis, type Persona, type Recommendations } from './types'
 import { RecommendationList } from './recommendations'
+import {moneyInputValue,parseMoneyInput} from '@/lib/money'
 
 export function LookingGlass() {
   const resource = useResource<Persona>('/me/persona')
@@ -22,6 +23,10 @@ function Editor({ initial, reload, snapshot, saveSnapshot }: { initial: Persona;
   const [axes, setAxes] = useState(initial.axes)
   const [learning, setLearning] = useState(initial.profile.learning_enabled)
   const [constraints, setConstraints] = useState(initial.constraints)
+  const [budget,setBudget]=useState(()=>moneyInputValue(initial.constraints.budget_ceiling_minor,initial.constraints.budget_currency||'USD'))
+  const [budgetError,setBudgetError]=useState('')
+  const [brands,setBrands]=useState(initial.constraints.excluded_brands.join(', '))
+  const [materials,setMaterials]=useState(initial.constraints.excluded_materials.join(', '))
   const [all, setAll] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -49,6 +54,12 @@ function Editor({ initial, reload, snapshot, saveSnapshot }: { initial: Persona;
     return () => { clearTimeout(timer); ++revision.current }
   }, [draft, dirty])
   function update(axis: string, patch: Partial<Axis>) { setAxes(list => list.map(a => a.axis === axis ? { ...a, ...patch } : a)) }
+  function updateBudget(value:string,currency:string){
+    setBudget(value)
+    try{const minor=parseMoneyInput(value,currency);setConstraints(c=>({...c,budget_ceiling_minor:minor,budget_currency:currency}));setBudgetError('')}
+    catch(error){setConstraints(c=>({...c,budget_currency:currency}));setBudgetError((error as Error).message)}
+  }
+  function discard(){setAxes(initial.axes);setConstraints(initial.constraints);setLearning(initial.profile.learning_enabled);setBudget(moneyInputValue(initial.constraints.budget_ceiling_minor,initial.constraints.budget_currency||'USD'));setBudgetError('');setBrands(initial.constraints.excluded_brands.join(', '));setMaterials(initial.constraints.excluded_materials.join(', '))}
   async function run(action: () => Promise<unknown>, success: string, refresh = true) {
     setBusy(true); setError(null); setMessage('')
     try { await action(); setMessage(success); if (refresh) reload() }
@@ -87,17 +98,16 @@ function Editor({ initial, reload, snapshot, saveSnapshot }: { initial: Persona;
       <p className="bm-support">Reasons come from the ranking service. A preview never saves your profile.</p>
     </aside></div>
     <section className="bm-flow-card"><h2 className="bm-section-title">Your boundaries</h2>
-      <Switch label="Learn from my activity" checked={learning} onCheckedChange={setLearning}/>
-      <Switch label="Prefer things I own" checked={constraints.prefer_owned} onCheckedChange={prefer_owned => setConstraints(c=>({...c,prefer_owned}))}/>
-      <Switch label="Use social activity for recommendations" checked={constraints.social_signals_enabled} onCheckedChange={social_signals_enabled => setConstraints(c=>({...c,social_signals_enabled}))}/>
-      <Input label="Budget ceiling in minor units" description="For USD, 15000 means $150.00. Leave blank for no ceiling." inputMode="numeric" pattern="[0-9]*" value={constraints.budget_ceiling_minor ?? ''}
-        onChange={e => { if (/^[0-9]*$/.test(e.target.value)) setConstraints(c=>({...c,budget_ceiling_minor:e.target.value || null,budget_currency:c.budget_currency || 'USD'})) }}/>
-      <Input label="Budget currency" maxLength={3} value={constraints.budget_currency ?? 'USD'} onChange={e=>setConstraints(c=>({...c,budget_currency:e.target.value.toUpperCase()}))}/>
-      <Input label="Excluded brands" description="Separate names with commas." value={constraints.excluded_brands.join(', ')} onChange={e=>setConstraints(c=>({...c,excluded_brands:e.target.value.split(',').map(v=>v.trim())}))}/>
-      <Input label="Excluded materials" value={constraints.excluded_materials.join(', ')} onChange={e=>setConstraints(c=>({...c,excluded_materials:e.target.value.split(',').map(v=>v.trim())}))}/>
+      <Switch label="Learn from my activity" disabled={busy} checked={learning} onCheckedChange={setLearning}/>
+      <Switch label="Prefer things I own" disabled={busy} checked={constraints.prefer_owned} onCheckedChange={prefer_owned => setConstraints(c=>({...c,prefer_owned}))}/>
+      <Switch label="Use social activity for recommendations" disabled={busy} checked={constraints.social_signals_enabled} onCheckedChange={social_signals_enabled => setConstraints(c=>({...c,social_signals_enabled}))}/>
+      <Input label="Budget ceiling" description="For example, 150.00 in USD. Leave blank for no ceiling." inputMode="decimal" disabled={busy} value={budget} error={budgetError||undefined} onChange={e=>updateBudget(e.target.value,constraints.budget_currency||'USD')}/>
+      <Input label="Budget currency" disabled={busy} maxLength={3} value={constraints.budget_currency ?? 'USD'} onChange={e=>updateBudget(budget,e.target.value.toUpperCase())}/>
+      <Input label="Excluded brands" disabled={busy} description="Separate names with commas." value={brands} onChange={e=>{setBrands(e.target.value);setConstraints(c=>({...c,excluded_brands:e.target.value.split(',').map(v=>v.trim()).filter(Boolean)}))}}/>
+      <Input label="Excluded materials" disabled={busy} value={materials} onChange={e=>{setMaterials(e.target.value);setConstraints(c=>({...c,excluded_materials:e.target.value.split(',').map(v=>v.trim()).filter(Boolean)}))}}/>
     </section>
-    <div className="bm-actions"><Button pending={busy} disabled={!dirty} onClick={apply}>Apply changes</Button>
-      <Button variant="secondary" disabled={busy || !dirty} onClick={()=>{setAxes(initial.axes);setConstraints(initial.constraints);setLearning(initial.profile.learning_enabled)}}>Discard draft</Button>
+    <div className="bm-actions"><Button pending={busy} disabled={!dirty||Boolean(budgetError)} onClick={apply}>Apply changes</Button>
+      <Button variant="secondary" disabled={busy || !dirty} onClick={discard}>Discard draft</Button>
       <Button variant="secondary" disabled={busy} onClick={()=>run(async()=>saveSnapshot(await command('/me/persona/snapshots',{name:'Before my next change'},{key:crypto.randomUUID()})),'Snapshot saved.',false)}>Save snapshot</Button>
       {snapshot && <Button variant="secondary" disabled={busy} onClick={()=>run(()=>command(`/me/persona/snapshots/${snapshot.snapshot_id}/restore`,{},{version:initial.profile.version}),'Snapshot restored.')}>Restore saved snapshot</Button>}
     </div>

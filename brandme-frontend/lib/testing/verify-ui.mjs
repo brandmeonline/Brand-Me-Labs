@@ -81,13 +81,29 @@ const { Dialog, Drawer } = source('../../components/ui/dialog.tsx')
 const { Toast } = source('../../components/ui/feedback.tsx')
 const { EvidenceLabel } = source('../../components/ui/evidence-label.tsx')
 const { Price } = source('../../components/ui/price.tsx')
-const { formatMoney } = source('../money.ts')
+const { formatMoney, parseMoneyInput, moneyInputValue } = source('../money.ts')
+const { validateGuest, guestPayload } = source('../../features/persona/guest-draft.ts')
 const { useNavigationClearance } = source(
   '../client/use-navigation-clearance.ts',
 )
 afterEach(() => {
   cleanup()
   document.documentElement.removeAttribute('style')
+})
+
+test('budget entry preserves exact decimal amounts and rejects rounded inputs',()=>{
+  for(const [value,currency,minor]of [['150.00','USD','15000'],['150','JPY','150'],['1.234','KWD','1234'],['9999999999999999.99','USD','999999999999999999']]){
+    assert.equal(parseMoneyInput(value,currency),minor);assert.equal(parseMoneyInput(moneyInputValue(minor,currency),currency),minor)
+  }
+  assert.equal(parseMoneyInput('','USD'),null)
+  for(const [value,currency]of [['1.234','USD'],['1.1','JPY'],['1e9','USD'],['-5','USD'],['1','ZZZ']])assert.throws(()=>parseMoneyInput(value,currency))
+})
+test('corrupt guest records cannot introduce invalid axes, looks or implicit learning',()=>{
+  const valid={id:'guest-test-namespace-123',step:3,intent:'everyday',looks:[0],room:'walnut_atelier',expression:25,color:null,fit_language:25,learning:false,saved:true}
+  assert.deepEqual(validateGuest(valid),valid)
+  for(const patch of [{looks:[20]},{looks:[0,0]},{learning:'yes'},{saved:null},{expression:101},{color:NaN},{room:'missing'},{intent:null},{step:4}])assert.equal(validateGuest({...valid,...patch}),null)
+  assert.deepEqual(guestPayload(valid).persona.declared.color,{value:null,locked:false})
+  assert.equal(guestPayload(valid).persona.learning_enabled,false)
 })
 
 test('money retains every digit and respects 0/2/3-decimal currencies', () => {

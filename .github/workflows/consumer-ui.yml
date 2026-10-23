@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: consumer-ui-${{ github.ref }}
+  group: consumer-ui-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -71,6 +71,7 @@ jobs:
       BRANDME_PYTHON: ${{ github.workspace }}/.venv/bin/python
       BRANDME_DOMAIN_REFERENCE: ${{ github.workspace }}/domain-reference
       BRANDME_GATEWAY_URL: http://127.0.0.1:3001
+      BRANDME_PUBLIC_ORIGIN: http://127.0.0.1:3000
       BRANDME_GATEWAY_HEALTH_URL: http://127.0.0.1:3001/health
       BRANDME_CONSUMER_URL: http://127.0.0.1:3000
       BRANDME_EVIDENCE_DIR: ${{ github.workspace }}/live-ui-evidence

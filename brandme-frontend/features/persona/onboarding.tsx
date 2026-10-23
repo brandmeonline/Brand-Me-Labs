@@ -6,8 +6,10 @@ import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
 import { command, explainError } from '@/lib/client/gateway'
 import { useExperiencePreferences } from '@/lib/client/experience-preferences'
+import {validateGuest,guestPayload,type GuestDraft} from './guest-draft'
 
 const KEY = 'brandme:guest:v1'
+const PENDING = 'brandme:guest-migration:v1'
 const LOOKS = [
   {name:'Quiet structure',color:'#918b75',shape:'tailored',expression:25,colorAxis:20,fit:25},
   {name:'Color in motion',color:'#9c514b',shape:'sport',expression:80,colorAxis:85,fit:65},
@@ -16,18 +18,23 @@ const LOOKS = [
   {name:'City utility',color:'#536951',shape:'sport',expression:35,colorAxis:35,fit:70},
   {name:'Artful detail',color:'#af7f3e',shape:'tailored',expression:85,colorAxis:65,fit:40},
 ] as const
-export interface GuestDraft { id:string; step:number; intent:string; looks:number[]; room:string; expression:number|null; color:number|null; fit_language:number|null; learning:boolean; saved:boolean }
 export function readGuest(): GuestDraft|null {
-  try { const v=JSON.parse(localStorage.getItem(KEY)||'null'); return v && /^[A-Za-z0-9_-]{16,64}$/.test(v.id) && Number.isInteger(v.step) && v.step>=0 && v.step<=3 && ['walnut_atelier','limestone_gallery','garden_studio','simple_view'].includes(v.room) && ['expression','color','fit_language'].every(k=>v[k]===null || Number.isInteger(v[k])&&v[k]>=0&&v[k]<=100) ? v : null } catch {return null}
+  try {return validateGuest(JSON.parse(localStorage.getItem(KEY)||'null'))} catch {return null}
 }
 export async function migrateGuest() {
-  const d=readGuest(); if(!d) return null
-  const result=await command('/me/guest-migration',{guest_namespace_id:d.id,persona:{declared:Object.fromEntries(['expression','color','fit_language'].map(k=>[k,{value:d[k as 'expression'],locked:d[k as 'expression']!==null}])),onboarding_intent:d.intent,learning_enabled:d.learning},saved_look:d.saved,
-    sections:{closet_theme:{room_template_id:d.room==='simple_view'?'walnut_atelier':d.room}}},{key:`guest-${d.id}`})
-  // Remove only after the server confirms migration. The stable namespace/key makes a repeated sign-in safe.
-  localStorage.removeItem(KEY);return result
+  let pending:GuestDraft|null=null
+  try{pending=validateGuest(JSON.parse(localStorage.getItem(PENDING)||'null'))}catch{}
+  const d=pending??readGuest(); if(!d) return null
+  // Preserve the exact request before sending: a retry after a timeout must reuse its payload and key.
+  localStorage.setItem(PENDING,JSON.stringify(d))
+  const result=await command('/me/guest-migration',guestPayload(d),{key:`guest-${d.id}`})
+  localStorage.removeItem(PENDING)
+  const current=readGuest()
+  if(current&&JSON.stringify(current)===JSON.stringify(d))localStorage.removeItem(KEY)
+  else if(current?.id===d.id)localStorage.setItem(KEY,JSON.stringify({...current,id:crypto.randomUUID()}))
+  return result
 }
-export function clearGuest() { localStorage.removeItem(KEY) }
+export function clearGuest() { localStorage.removeItem(KEY);localStorage.removeItem(PENDING) }
 function Study({ look }: {look:typeof LOOKS[number]}) { return <svg viewBox="0 0 240 140" role="img" aria-label={`${look.name}, original fictional outfit illustration`}>
   <path d={look.shape==='fluid'?'M65 15 90 15 100 43 117 115 40 115 56 43Z':'M58 15 94 15 119 40 106 54 98 44 98 100 53 100 53 44 45 54 30 40Z'} fill={look.color} stroke="currentColor" strokeWidth="1.5"/>
   {look.shape==='tailored'&&<path d="M65 15 76 44 88 15M76 44V100" fill="none" stroke="currentColor"/>}
@@ -64,7 +71,7 @@ export function Onboarding() {
       <Switch label="Learn from my activity" description="Optional. Your explicit choices remain in control." checked={d.learning} onCheckedChange={learning=>change({learning})}/>
       <div className="bm-actions"><Button onClick={()=>{change({saved:true});setMessage('Saved on this device. Sign in when you want to keep it across devices.')}}>That feels like me</Button>
         <Link className="bm-button bm-button-secondary" href="/me/connections">Save to my account</Link><Link href="/add">Add something I own</Link></div>
-      <Button variant="secondary" pending={busy} onClick={async()=>{setBusy(true);try{await migrateGuest();setMessage('Your guest choices were saved to your signed-in account.')}catch(e){setMessage(explainError(e))}finally{setBusy(false)}}}>I’m signed in — save my choices</Button>
+      <Button variant="secondary" pending={busy} onClick={async()=>{setBusy(true);try{const result=await migrateGuest();setMessage(result?'Your guest choices were saved to your signed-in account.':'There are no guest choices left to save.');if(result)setD({...d,id:crypto.randomUUID()})}catch(e){setMessage(explainError(e))}finally{setBusy(false)}}}>I’m signed in — save my choices</Button>
     </section>}
     <p role="status">{message}</p><div className="bm-actions">{draft.step>0&&<Button variant="secondary" onClick={()=>change({step:draft.step-1})}>Back</Button>}{draft.step<3&&<Button variant="secondary" onClick={()=>change({step:draft.step+1})}>Skip for now</Button>}<Link href="/today">Explore first</Link></div>
   </div>
