@@ -13,7 +13,7 @@ Ch.04 §4 allows the issuer registry, transferable entitlement and licensed repr
 
 ## Deployment in two phases (observed constraint)
 
-On the local network (node 1.0.300), a deploy transaction carrying all 15 verifier keys (~37 KB) is rejected with `1010: Invalid Transaction: Transaction would exhaust the block limits`. With 8 keys (~21 KB) it is accepted. `deployRightsContract` therefore:
+On the local network (node 1.0.300; not re-measured on 1.0.400, where the two-phase deploy below is unchanged), a deploy transaction carrying all 15 verifier keys (~37 KB) is rejected with `1010: Invalid Transaction: Transaction would exhaust the block limits`. With 8 keys (~21 KB) it is accepted. `deployRightsContract` therefore:
 
 1. deploys with the 8 core circuits (`DEPLOY_CIRCUITS`);
 2. inserts the other 7 keys with signed contract-maintenance transactions (`submitInsertVerifierKeyTx`);
