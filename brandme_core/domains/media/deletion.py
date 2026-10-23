@@ -12,13 +12,17 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from brandme_core.domains import DataCategory as FoundationDataCategory, register_data_category
-from brandme_core.domains.persona.kernel import STR, iso, query, run_read, run_txn
+from brandme_core.domains.persona.kernel import STR, STR_ARRAY, iso, query, run_read, run_txn
 from brandme_core.domains.persona.privacy_guard import record_scope_refusal
 
 DOMAIN = "media"
 _M = {"m": STR}
 _STORE: Optional[Any] = None
 _DB: Optional[Any] = None
+_PROVIDERS: Optional[Any] = None
+
+PROVIDER_RETAINS = ("the try-on provider cannot delete on request; its copy follows the provider's published retention terms, "
+                    "and Brand.Me no longer holds any reference to it")
 
 CATEGORIES: Dict[str, Dict[str, Any]] = {
     "media.tryon_consents": {
@@ -38,12 +42,14 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
 }
 
 
-def configure_store(store: Any, db: Any = None) -> None:
-    """The media service registers its object store (and database) so the
-    privacy deletion can purge blobs after its transaction commits."""
-    global _STORE, _DB
+def configure_store(store: Any, db: Any = None, providers: Any = None) -> None:
+    """The media service registers its object store, database and provider
+    registry so the privacy deletion can purge blobs and ask providers to
+    delete their copies after its transaction commits."""
+    global _STORE, _DB, _PROVIDERS
     _STORE = store
     _DB = db if db is not None else _DB
+    _PROVIDERS = providers if providers is not None else _PROVIDERS
 
 
 def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]:
@@ -71,7 +77,16 @@ def delete_category(txn, member_id: str, category: str) -> int:
     if category == "media.tryon_consents":
         return txn.execute_update("DELETE FROM TryOnConsents WHERE member_id=@m", params=m, param_types=_M)
     if category == "media.tryon_media":
-        n = txn.execute_update("DELETE FROM TryOnJobs WHERE member_id=@m", params=m, param_types=_M)
+        # A job a provider may still hold keeps a minimal row (provider and its
+        # reference only) until the provider confirms deletion after commit;
+        # ``purge_provider_jobs`` then removes it. Every other job goes now.
+        n = txn.execute_update(
+            "UPDATE TryOnJobs SET state='deleted', provider_deletion='requested', saved=FALSE, item_id=NULL, product_id=NULL, "
+            "input_media_ref=NULL, output_media_ref=NULL, error_code=NULL, expires_at=NULL, updated_at=PENDING_COMMIT_TIMESTAMP() "
+            "WHERE member_id=@m AND provider_job_ref IS NOT NULL AND (provider_deletion IS NULL OR provider_deletion IN ('requested', 'failed'))",
+            params=m, param_types=_M)
+        n += txn.execute_update("DELETE FROM TryOnJobs WHERE member_id=@m AND (provider_job_ref IS NULL OR IFNULL(provider_deletion, '') != 'requested')",
+                                params=m, param_types=_M)
         # Tombstone first; ``purge_member`` removes blobs after commit, then the rows.
         return n + txn.execute_update("UPDATE MediaObjects SET state='deleted', saved=FALSE, deleted_at=CURRENT_TIMESTAMP() "
                                       "WHERE member_id=@m AND deleted_at IS NULL", params=m, param_types=_M)
@@ -91,10 +106,47 @@ def purge_member(db, member_id: str) -> Dict[str, Any]:
     return {"done": True, "purged": len(rows)}
 
 
+def purge_provider_jobs(db, member_id: str) -> Dict[str, Any]:
+    """After commit: ask each provider to delete jobs left by ``delete_category``.
+    A confirmed or impossible deletion removes the local row; a failed one stays
+    ``requested`` for the next run."""
+    rows = run_read(db, lambda s: query(s, "SELECT job_id, provider_id, provider_job_ref FROM TryOnJobs WHERE member_id=@m "
+                                           "AND state='deleted' AND provider_deletion='requested'", {"m": member_id}, _M))
+    if rows and _PROVIDERS is None:
+        return {"done": False, "pending": len(rows), "detail": "try-on provider not wired; provider deletion pending"}
+    deleted, retained, failed = [], [], 0
+    for job_id, provider_id, ref in rows:
+        provider = _PROVIDERS.get(provider_id)
+        if provider is None or not provider.terms.supports_deletion:
+            retained.append(job_id)
+            continue
+        try:
+            ok = bool(provider.delete(ref))
+        except Exception:  # noqa: BLE001 - provider errors are retried, never surfaced
+            ok = False
+        if ok:
+            deleted.append(job_id)
+        else:
+            failed += 1
+    gone = deleted + retained
+    if gone:
+        run_txn(db, lambda t: t.execute_update("DELETE FROM TryOnJobs WHERE member_id=@m AND job_id IN UNNEST(@j)",
+                                               params={"m": member_id, "j": gone}, param_types={"m": STR, "j": STR_ARRAY}))
+    return {"done": failed == 0, "provider_deleted": len(deleted), "provider_retains": len(retained), "pending": failed}
+
+
+def purge_all(db, member_id: str) -> Dict[str, Any]:
+    blobs, jobs = purge_member(db, member_id), purge_provider_jobs(db, member_id)
+    detail = "; ".join(x["detail"] for x in (blobs, jobs) if x.get("detail")) or (
+        "provider deletion pending; retried on the next run" if jobs["pending"] else "blobs purged and provider copies deleted")
+    return {"done": blobs["done"] and jobs["done"], "purged": blobs.get("purged", 0) + jobs.get("provider_deleted", 0),
+            "exception": PROVIDER_RETAINS if jobs.get("provider_retains") else None, "detail": detail}
+
+
 def _delete(db, member_id: str, category: str) -> int:
     n = run_txn(db, lambda t: delete_category(t, member_id, category))
     if category == "media.tryon_media":
-        purge_member(db, member_id)
+        purge_all(db, member_id)
     return n
 
 
@@ -133,8 +185,8 @@ def build_privacy_handler():
                 return pd.DeletionOutcome(category, 0, done=True, detail="no blobs for this category")
             if _DB is None:
                 return pd.DeletionOutcome(category, 0, done=False, detail="media service not wired; blobs pending purge")
-            out = purge_member(_DB, ctx.subject_ref)
-            return pd.DeletionOutcome(category, out.get("purged", 0), done=out["done"], detail=out.get("detail", "blobs purged"))
+            out = purge_all(_DB, ctx.subject_ref)
+            return pd.DeletionOutcome(category, out["purged"], done=out["done"], exception=out["exception"], detail=out["detail"])
 
         def reapply_tombstone(self, txn, tombstone):
             if tombstone.record_keys:

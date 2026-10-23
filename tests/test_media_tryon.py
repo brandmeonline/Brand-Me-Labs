@@ -356,3 +356,54 @@ def test_privacy_lane_freeze_stops_uploads_and_dispatch(spanner_db, env):
     got = svc.get_job(me, j["job_id"])
     assert got["state"] == "cancelled" and got["error_code"] == "processing_frozen"
     assert all(u[0] != j["job_id"] for u in provider.uploads)
+
+
+def test_deletion_asks_the_provider_to_delete_an_in_flight_job(spanner_db, env, monkeypatch):
+    svc, store, provider, me, item = env
+    _, j = job(svc, provider, me, item)
+    svc.dispatch_queued()  # the provider now holds a copy; the job is still processing
+    ref = next(x["provider_job_ref"] for x in svc.jobs_for(me.member_id) if x["job_id"] == j["job_id"])
+    assert ref
+    calls = []
+    monkeypatch.setattr(provider, "delete", lambda r: calls.append(r) or False)  # first attempt fails
+    cats = {c.name: c for c in data_categories() if c.domain == "media"}
+    cats["media.tryon_media"].delete(spanner_db, me.member_id)
+    assert calls == [ref]
+    (left,) = svc.jobs_for(me.member_id)
+    assert (left["state"], left["provider_deletion"], left["input_media_ref"], left["item_id"]) == ("deleted", "requested", None, None)
+    monkeypatch.undo()
+    out = deletion.purge_provider_jobs(spanner_db, me.member_id)
+    assert (out["done"], out["provider_deleted"], out["pending"]) == (True, 1, 0)
+    assert ref in provider.deleted and svc.jobs_for(me.member_id) == []
+
+
+def test_provider_without_deletion_is_reported_not_hidden(spanner_db, env, monkeypatch):
+    svc, store, provider, me, item = env
+    job(svc, provider, me, item)
+    svc.dispatch_queued()
+
+    class NoDelete:
+        terms = type("T", (), {"supports_deletion": False})()
+
+    monkeypatch.setattr(deletion, "_PROVIDERS", type("R", (), {"get": staticmethod(lambda _pid: NoDelete())})())
+    run_txn(spanner_db, lambda t: deletion.delete_category(t, me.member_id, "media.tryon_media"))
+    out = deletion.purge_all(spanner_db, me.member_id)
+    assert out["done"] and out["exception"] == deletion.PROVIDER_RETAINS
+    assert svc.jobs_for(me.member_id) == []
+
+
+def test_failed_dispatch_deletes_the_input_now(spanner_db, env, monkeypatch):
+    svc, store, provider, me, item = env
+    photo, j = job(svc, provider, me, item)
+    blob = next(r for r in store.objects if r.startswith(f"members/{me.member_id}/"))
+
+    def boom(*_a, **_k):
+        raise RuntimeError("provider down")
+
+    monkeypatch.setattr(provider, "submit", boom)
+    svc.dispatch_queued()
+    got = svc.get_job(me, j["job_id"])
+    assert (got["state"], got["error_code"]) == ("failed", "provider_error")
+    assert blob not in store.objects  # not left for the 24 h sweeper
+    assert count(spanner_db, "SELECT COUNT(*) FROM MediaObjects WHERE member_id=@m AND media_id=@i AND deleted_at IS NULL",
+                 m=me.member_id, i=photo["media_id"]) == 0

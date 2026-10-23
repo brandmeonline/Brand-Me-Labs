@@ -87,7 +87,7 @@ class MediaService:
         self.daily_job_limit = daily_job_limit
         from . import deletion
 
-        deletion.configure_store(store, database)
+        deletion.configure_store(store, database, providers)
 
     # ----------------------------------------------------------------- rows
 
@@ -514,12 +514,16 @@ class MediaService:
                     return "cancelled", None, refs
                 provider = self.providers.get(j["provider_id"])
                 media = self._media(txn, member_id, j["input_media_ref"])
+                failure = None
                 if provider is None or not provider.approved or c["terms_version"] != provider.terms.terms_version:
-                    self._set_job(txn, ctx, j, state="failed", error_code="provider_unavailable")
-                    return "failed", None, []
-                if media is None or media["deleted_at"] is not None or media["expires_at"] <= now:
-                    self._set_job(txn, ctx, j, state="failed", error_code="input_expired")
-                    return "failed", None, []
+                    failure = "provider_unavailable"
+                elif media is None or media["deleted_at"] is not None or media["expires_at"] <= now:
+                    failure = "input_expired"
+                if failure:
+                    # Processing ended: the job's inputs go now, not at the 24 h sweep.
+                    refs = [self._tombstone(txn, ctx, med, "processed", now) for med in self._job_media(txn, member_id, job_id)]
+                    self._set_job(txn, ctx, j, state="failed", error_code=failure)
+                    return "failed", None, refs
                 self._set_job(txn, ctx, j, state="processing")
                 return "submit", (j, media["storage_ref"]), []
 
@@ -540,14 +544,17 @@ class MediaService:
             def record(txn, ctx: CommandContext, j=j, pref=pref, err=err):
                 cur = self._job(txn, j["member_id"], j["job_id"])
                 if cur is None or cur["state"] != "processing":
-                    return "orphan" if pref else "skipped"
+                    return ("orphan" if pref else "skipped"), []
                 if err:
+                    now = server_now(txn)
+                    refs = [self._tombstone(txn, ctx, med, "processed", now) for med in self._job_media(txn, cur["member_id"], cur["job_id"])]
                     self._set_job(txn, ctx, cur, state="failed", error_code=err)
-                    return "failed"
+                    return "failed", refs
                 self._set_job(txn, ctx, cur, provider_job_ref=pref)
-                return "submitted"
+                return "submitted", []
 
-            result = command(self.db, worker, record)
+            result, failed_refs = command(self.db, worker, record)
+            self._purge(failed_refs)
             if result == "orphan":  # deleted while we were uploading: ask the provider to delete it too
                 self._provider_delete({**j, "provider_job_ref": pref, "provider_deletion": "requested"})
                 result = "skipped"

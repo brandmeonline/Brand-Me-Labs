@@ -43,14 +43,16 @@ def consumer_privacy_handlers() -> List[Any]:
     return handlers
 
 
-def register_consumer_domains(registry: Any, *, database: Any = None, media_store: Any = None) -> List[str]:
+def register_consumer_domains(registry: Any, *, database: Any = None, media_store: Any = None,
+                              media_providers: Any = None) -> List[str]:
     """Register persona/wardrobe/social/rewards/media in ``registry``. Returns the
-    domain names covered. ``database``/``media_store`` let deletion purge try-on
-    blobs after commit; without them media deletion reports blobs as pending."""
+    domain names covered. ``database``/``media_store``/``media_providers`` let
+    deletion purge try-on blobs and ask providers to delete their copies after
+    commit; without them media deletion reports that work as pending."""
     from brandme_core.domains.media import deletion as media_deletion
 
-    if database is not None or media_store is not None:
-        media_deletion.configure_store(media_store, database)
+    if database is not None or media_store is not None or media_providers is not None:
+        media_deletion.configure_store(media_store, database, media_providers)
     known = {c.key for c in registry.categories()}
     for handler in consumer_privacy_handlers():
         if all(c.key in known for c in handler.categories()):
