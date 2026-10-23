@@ -9,6 +9,7 @@ import base64
 import ipaddress
 import json
 import re
+import time
 from typing import Mapping
 from urllib.parse import urlsplit
 
@@ -66,6 +67,7 @@ class PubSubPublisher:
         self.session.trust_env = False  # no ambient proxy or .netrc credentials
 
     def _request(self, method: str, topic: str, suffix: str = "", body=None) -> dict:
+        deadline = time.monotonic() + self.timeout
         kwargs = {} if self.emulated else {"max_allowed_time": self.timeout}
         with self.session.request(method, self.endpoint + topic + suffix, json=body,
                                   timeout=self.timeout, allow_redirects=False, stream=True, **kwargs) as response:
@@ -73,7 +75,11 @@ class PubSubPublisher:
             if not 200 <= response.status_code < 300:
                 raise RuntimeError("pubsub_request_unconfirmed")
             data = bytearray()
-            for chunk in response.iter_content(2048):
+            # Small replies: check wall time per byte so a slowly trickled body
+            # cannot keep renewing the socket's inactivity timeout indefinitely.
+            for chunk in response.iter_content(1):
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("pubsub_response_timeout")
                 data.extend(chunk)
                 if len(data) > MAX_ACK_BYTES:
                     raise RuntimeError("pubsub_response_invalid")
@@ -88,8 +94,13 @@ class PubSubPublisher:
     def check_topics(self) -> None:
         """Refuse an unprovisioned/misrouted target; never create cloud resources."""
         for topic in self.topics.values():
-            if self._request("GET", topic).get("name") != topic:
+            info = self._request("GET", topic)
+            if info.get("name") != topic:
                 raise RuntimeError("pubsub_topic_mismatch")
+            retention = info.get("messageRetentionDuration", "")
+            if (not isinstance(retention, str) or not re.fullmatch(r"[0-9]+(?:\.[0-9]{1,9})?s", retention)
+                    or float(retention[:-1]) < 86400):
+                raise RuntimeError("pubsub_topic_retention_required")
 
     def __call__(self, event: EventEnvelope) -> None:
         if event.environment != self.environment or event.privacy_class not in self.topics:

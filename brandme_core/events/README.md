@@ -19,8 +19,10 @@ the broker**, not that a consumer applied a business effect.
 4. All three topics are **private infrastructure**. Even public-class envelopes
    carry internal actor/correlation references: never expose them directly to
    browsers, public subscribers or analytics. Separate their IAM policies. Create
-   subscriptions before publishing or enable topic retention; broker acceptance
-   alone does not guarantee future consumption. Configure retention and
+   subscriptions before publishing and enable at least **24 hours of topic
+   retention** (`messageRetentionDuration: "86400s"`). Startup refuses topics
+   without this recovery window; broker acceptance alone does not guarantee
+   future consumption. Configure retention and
    subscription retry/dead-letter policies for the data being processed.
 5. Sandbox/production use Application Default Credentials from the workload
    service identity. Grant `pubsub.topics.publish` and `pubsub.topics.get` on only
@@ -56,13 +58,15 @@ commerce implementations still need catalog alignment and real subscribers.
   assigns a new `messageId`: consumers must deduplicate the application ID with
   `first_delivery` in the **same transaction as their effects**, then acknowledge
   the subscription after commit. Recheck current authorization/deletion freezes
-  before effects. Handle out-of-order aggregate versions. There is no distributed
+  before effects, and validate the closed envelope, expected environment and
+  privacy class at ingress. Handle out-of-order aggregate versions. There is no distributed
   exactly-once claim or automatic dead-letter replay.
 - Closed payload validation runs before transport. Events cap at 256 KiB and
   broker replies at 16 KiB; redirects and ambient proxies are disabled. Requests
   and credential refresh use a five-second timeout. Logs exclude raw payloads,
   exception bodies, URLs, member IDs and event IDs.
 - Monitor pending age, dead count, lease recovery and `dispatch_unavailable` logs.
+  Database-wide failures back off with jitter to one minute; idle polls do not log.
   Investigate current policy before replay. Broker retention, subscriptions,
   authenticated business handlers and cloud alerting remain deployment work.
 

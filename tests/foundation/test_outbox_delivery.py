@@ -3,15 +3,18 @@ import base64
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import os
 from pathlib import Path
 import socket
 import subprocess
 import sys
+import threading
 import time
 import uuid
 
 from google.cloud.spanner_v1 import COMMIT_TIMESTAMP, JsonObject, KeySet, param_types
+from google.api_core.exceptions import InvalidArgument, NotFound
 import pytest
 import requests
 
@@ -177,6 +180,89 @@ def test_publisher_rejects_cross_environment_and_mixed_privacy_topics():
         PubSubPublisher(dict.fromkeys(mapping, mapping["public"]), "development", emulator_host="127.0.0.1:8085")
 
 
+@pytest.mark.parametrize("status,body,redirect", [
+    (200, b'{"messageIds":[]}', False),
+    (200, b'{"messageIds":[null]}', False),
+    (200, b'{"messageIds":["one","two"]}', False),
+    (200, b'not-json', False),
+    (200, b' ' * (16 * 1024 + 1), False),
+    (403, b'provider-token=DO_NOT_PERSIST private data', False),
+    (302, b'provider-token=DO_NOT_PERSIST', True),
+])
+def test_transport_rejects_invalid_ack_and_redirect_without_leaking_body(status, body, redirect):
+    calls = []
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            calls.append(self.path)
+            self.rfile.read(int(self.headers['Content-Length']))
+            self.send_response(status)
+            if redirect: self.send_header('Location', '/must-not-follow')
+            self.send_header('Content-Length', str(len(body))); self.end_headers()
+            self.wfile.write(body)
+        def log_message(self, *_): pass
+    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+    publisher = PubSubPublisher(topics(), 'development', emulator_host=f'127.0.0.1:{server.server_port}')
+    try:
+        with pytest.raises(RuntimeError) as error:
+            publisher(event())
+        assert 'DO_NOT_PERSIST' not in str(error.value) and 'http' not in str(error.value)
+        assert len(calls) == 1
+    finally:
+        publisher.close(); server.shutdown(); server.server_close(); thread.join(timeout=2)
+
+
+def test_transport_stops_slow_response_body_and_rejects_cross_environment_before_http():
+    calls = []
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            calls.append(self.path)
+            self.rfile.read(int(self.headers['Content-Length']))
+            body = b'{"messageIds":["123456789"]}'
+            self.send_response(200); self.send_header('Content-Length', str(len(body))); self.end_headers()
+            try:
+                for byte in body:
+                    self.wfile.write(bytes([byte])); self.wfile.flush(); time.sleep(.03)
+            except (BrokenPipeError, ConnectionResetError): pass
+        def log_message(self, *_): pass
+    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+    publisher = PubSubPublisher(topics(), 'development', emulator_host=f'127.0.0.1:{server.server_port}', timeout_seconds=.15)
+    try:
+        with pytest.raises(PermanentDeliveryError): publisher(event('production'))
+        assert not calls
+        started = time.monotonic()
+        with pytest.raises(RuntimeError, match='pubsub_response_timeout'): publisher(event())
+        assert time.monotonic() - started < 1
+    finally:
+        publisher.close(); server.shutdown(); server.server_close(); thread.join(timeout=2)
+
+
+@requires_spanner
+def test_inbox_receipt_and_effect_roll_back_together(outbox_db):
+    ev = event(); consumer = 'rollback-' + uuid.uuid4().hex[:8]
+    def fail(tx):
+        assert first_delivery(tx, consumer, ev)
+        tx.insert('AuditEntries', ('audit_id', 'occurred_at', 'environment', 'actor_ref', 'action'),
+                  [[ev.event_id, COMMIT_TIMESTAMP, 'development', 'service:test-consumer', 'event.applied']])
+        raise ValueError('business invariant refused effect')
+    with pytest.raises(ValueError): outbox_db.run_in_transaction(fail)
+    with outbox_db.snapshot(multi_use=True) as snap:
+        assert not list(snap.read('InboxReceipts', ('event_id',), KeySet(keys=[[consumer, ev.event_id]])))
+        assert not list(snap.read('AuditEntries', ('audit_id',), KeySet(keys=[[ev.event_id]])))
+    assert outbox_db.run_in_transaction(lambda tx: first_delivery(tx, consumer, ev))
+
+
+@requires_spanner
+def test_startup_rejects_missing_or_incomplete_schema(runner, empty_database, tmp_path):
+    with pytest.raises((InvalidArgument, NotFound)): verify_schema(empty_database)
+    runner.migrate_up(empty_database, log=lambda *_: None)
+    verify_schema(empty_database)
+    with empty_database.batch() as batch:
+        batch.update('SchemaMigrations', ('version', 'state'), [[13, 'applying']])
+    with pytest.raises(RuntimeError, match='outbox_schema_unavailable'): verify_schema(empty_database)
+
+
 @pytest.fixture(scope="module")
 def pubsub_server(tmp_path_factory):
     binary = os.environ.get("PUBSUB_EMULATOR_BIN")
@@ -204,7 +290,7 @@ def pubsub_server(tmp_path_factory):
 def provision(host, mapping):
     subscriptions = {}
     for privacy, topic in mapping.items():
-        assert requests.put(f"http://{host}/v1/{topic}", json={}, timeout=5).status_code == 200
+        assert requests.put(f"http://{host}/v1/{topic}", json={"messageRetentionDuration": "86400s"}, timeout=5).status_code == 200
         sub = topic.replace("/topics/", "/subscriptions/") + "-test"
         assert requests.put(f"http://{host}/v1/{sub}", json={"topic": topic}, timeout=5).status_code == 200
         subscriptions[privacy] = sub
@@ -263,7 +349,7 @@ def test_real_pubsub_lost_ack_retries_stable_id_and_inbox_effect_once(outbox_db,
 
 
 @requires_spanner
-def test_real_worker_process_restarts_delivers_rights_event_and_stops(outbox_db, pubsub_server, tmp_path):
+def test_real_worker_process_restarts_delivers_privacy_event_and_stops(outbox_db, pubsub_server, tmp_path):
     mapping = topics("-" + uuid.uuid4().hex[:8]); subs = provision(pubsub_server, mapping)
     ev = EventEnvelope(event_type="privacy.deletion.requested", schema_version="1", aggregate_type="deletion_job",
         aggregate_id=str(uuid.uuid4()), aggregate_version=1, environment="development", actor_ref="service:privacy",
@@ -291,3 +377,27 @@ def test_real_worker_process_restarts_delivers_rights_event_and_stops(outbox_db,
     logs = logfile.read_text()
     assert '"status": "ready"' in logs and ev.event_id not in logs and ev.aggregate_id not in logs
     assert read(outbox_db, ev)["attempts"] == 2
+
+
+@requires_spanner
+def test_worker_refuses_unprovisioned_topic_before_claiming(outbox_db, pubsub_server):
+    ev = event(); insert(outbox_db, ev)
+    mapping = topics('-missing-' + uuid.uuid4().hex[:8])
+    env = {**os.environ, **config_env(), 'SPANNER_DATABASE_ID': outbox_db.database_id,
+           'SPANNER_EMULATOR_HOST': os.environ['SPANNER_EMULATOR_HOST'], 'PUBSUB_EMULATOR_HOST': pubsub_server,
+           **{'OUTBOX_PUBSUB_TOPIC_' + c.upper(): t for c, t in mapping.items()}}
+    result = subprocess.run([sys.executable, '-m', 'brandme_core.events.worker', '--once'],
+                            env=env, capture_output=True, text=True, timeout=15)
+    assert result.returncode == 2 and 'startup_refused' in result.stdout
+    assert 'http' not in result.stdout + result.stderr and ev.event_id not in result.stdout + result.stderr
+    assert read(outbox_db, ev)['status'] == 'pending' and read(outbox_db, ev)['attempts'] == 0
+
+
+def test_publisher_refuses_topics_without_retention(pubsub_server):
+    mapping = topics('-no-retention-' + uuid.uuid4().hex[:8])
+    for topic in mapping.values():
+        assert requests.put(f'http://{pubsub_server}/v1/{topic}', json={}, timeout=5).status_code == 200
+    publisher = PubSubPublisher(mapping, 'development', emulator_host=pubsub_server)
+    try:
+        with pytest.raises(RuntimeError, match='pubsub_topic_retention_required'): publisher.check_topics()
+    finally: publisher.close()

@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import random
 import signal
 import threading
 from dataclasses import asdict, dataclass
@@ -84,18 +85,24 @@ def run(config: WorkerConfig, *, once: bool = False, check: bool = False) -> int
         if check:
             return 0
         dispatcher = OutboxDispatcher(db, publisher, environment=config.environment, event_types=config.event_types)
+        failures = 0
         while not stop.is_set():
+            delay = config.poll_seconds
             try:
                 result = dispatcher.run_once(should_stop=stop.is_set)
-                print(json.dumps({"status": "dispatch", **asdict(result)}), flush=True)
+                failures = 0
+                if once or any(asdict(result).values()):
+                    print(json.dumps({"status": "dispatch", **asdict(result)}), flush=True)
             except Exception:
                 # Database/provider errors may contain credentials or private values.
                 print('{"status":"dispatch_unavailable"}', flush=True)
                 if once:
                     return 1
+                failures += 1
+                delay = min(60, config.poll_seconds * 2 ** min(failures, 6)) * random.uniform(.75, 1)
             if once:
                 return 0 if result.failed == result.dead == result.stale == 0 else 1
-            stop.wait(config.poll_seconds)
+            stop.wait(delay)
         return 0
     finally:
         if publisher is not None:
