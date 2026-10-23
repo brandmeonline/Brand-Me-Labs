@@ -1,9 +1,10 @@
 /** Authenticated boundary for the v1 rights and My Data routers. */
 import type { Request } from 'express';
+import { createHash } from 'node:crypto';
 import type { GatewayConfig } from '../config';
 import type { Principal } from '../types';
 import { ApiProblem, problems } from '../middleware/problem';
-import type { UpstreamClient, V1Deps } from '../routes/v1/chain';
+import type { ExportClient, UpstreamClient, V1Deps } from '../routes/v1/chain';
 
 const principal = (req: Request): Principal | undefined => req.res?.locals.principal;
 
@@ -71,6 +72,47 @@ export function rightsDependencies(cfg: GatewayConfig, doFetch: typeof fetch = f
       chain: client(cfg.chainUrl, undefined, doFetch, false),
       rights: client(cfg.rightsServiceUrl, cfg.rightsServiceToken, doFetch, true),
       privacy: client(cfg.privacyServiceUrl, cfg.privacyServiceToken, doFetch, true),
+      exports: exportClient(cfg.privacyExportServiceUrl, cfg.privacyExportServiceToken, doFetch),
+    },
+  };
+}
+
+function exportClient(base: string | undefined, token: string | undefined, doFetch: typeof fetch): ExportClient {
+  return {
+    ...client(base, token, doFetch, true, 15000),
+    async download(path, headers) {
+      if (!base || !token) throw problems.unavailable('Exports are not configured.');
+      try {
+        const response = await doFetch(`${base.replace(/\/$/, '')}${path}`, { redirect: 'error', signal: AbortSignal.timeout(15000),
+          headers: { ...headers, authorization: `Bearer ${token}` } });
+        if (response.status !== 200) {
+          await response.body?.cancel();
+          if (response.status === 404) throw problems.notFound();
+          if ([409, 410, 429].includes(response.status)) throw new ApiProblem(response.status, 'export_unavailable', 'Export unavailable', 'This export cannot be downloaded.');
+          throw new Error('unavailable');
+        }
+        const digest = response.headers.get('x-export-sha256') ?? '';
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('missing response');
+        const chunks: Uint8Array[] = [];
+        let size = 0;
+        try {
+          if (!/^[0-9a-f]{64}$/.test(digest) || !response.headers.get('content-type')?.startsWith('application/json')) throw new Error('invalid response');
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            size += value.byteLength;
+            if (size > 2 * 1024 * 1024) throw new Error('oversized response');
+            chunks.push(value);
+          }
+        } finally { await reader.cancel(); }
+        const bytes = Buffer.concat(chunks);
+        if (!size || createHash('sha256').update(bytes).digest('hex') !== digest) throw new Error('integrity failure');
+        return { bytes, sha256: digest };
+      } catch (error) {
+        if (error instanceof ApiProblem) throw error;
+        throw problems.unavailable('The export could not be verified.');
+      }
     },
   };
 }

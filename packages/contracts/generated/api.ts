@@ -538,7 +538,7 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        /** Rights category inventory with explicit partial coverage and unavailable write capabilities */
+        /** Rights category inventory with explicit partial coverage and checked export capability */
         get: operations["getMyDataInventory"];
         put?: never;
         post?: never;
@@ -591,8 +591,59 @@ export type paths = {
         };
         get?: never;
         put?: never;
-        /** requestExport */
+        /** Request an explicit selected-category rights export after recent authentication */
         post: operations["requestExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/exports/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getMyExportStatus */
+        get: operations["getMyExportStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/exports/{jobId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download authenticated JSON attachment after recent authentication; expires 24 hours after request */
+        get: operations["downloadMyExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/exports/capability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getMyExportCapability */
+        get: operations["getMyExportCapability"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1437,8 +1488,8 @@ export type components = {
             capabilities: {
                 /** @constant */
                 deletion: "unavailable";
-                /** @constant */
-                export: "unavailable";
+                /** @enum {string} */
+                export: "unavailable" | "selected_categories";
             };
             categories: components["schemas"]["MyDataCategoryRead"][];
             coverage: {
@@ -1593,6 +1644,181 @@ export type components = {
             /** @enum {string} */
             network: "undeployed" | "preview" | "preprod" | "mainnet";
             next_cursor: string | null;
+        };
+        SelectedRightsExportCapability: {
+            categories: ("rights.control_links" | "rights.operations" | "rights.transfers" | "rights.reprint_jobs" | "rights.chain_commitments")[];
+            contract_address: string;
+            /** @enum {string} */
+            environment: "demo" | "development" | "sandbox" | "production";
+            /** @constant */
+            full_account: false;
+            /** @enum {string} */
+            network: "undeployed" | "preview" | "preprod";
+            /** @constant */
+            selected_categories_only: true;
+            /** @constant */
+            status: "available";
+        };
+        SelectedRightsExportPackage: {
+            /** Format: date-time */
+            captured_at: string;
+            coverage: {
+                /** @constant */
+                domains: [
+                    "rights"
+                ];
+                /** @constant */
+                full_account: false;
+                /** @constant */
+                selected_categories_only: true;
+            };
+            /** @enum {string} */
+            environment: "demo" | "development" | "sandbox" | "production";
+            /** Format: uuid */
+            job_id: string;
+            ownership_backup: string;
+            /** @constant */
+            schema: "brandme.selected-rights-export/v1";
+            sections: ({
+                /** @constant */
+                category: "rights.control_links";
+                /** @constant */
+                public_references_only: false;
+                records: {
+                    /** Format: uuid */
+                    asset_id: string | null;
+                    contract_address: string;
+                    entitlement_id: string;
+                    epoch: string;
+                    last_tx_id: string;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                    status: string;
+                }[];
+                scope: {
+                    contract_address: string;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                };
+            } | {
+                /** @constant */
+                category: "rights.chain_commitments";
+                /** @constant */
+                public_references_only: true;
+                records: {
+                    contract_address: string;
+                    entitlement_id: string;
+                    epoch: string;
+                    last_tx_id: string;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                }[];
+                scope: {
+                    contract_address: string;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                };
+            } | {
+                /** @constant */
+                category: "rights.operations";
+                /** @constant */
+                public_references_only: false;
+                records: {
+                    circuit: string;
+                    contract_address: string;
+                    /** Format: date-time */
+                    created_at: string;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                    /** Format: uuid */
+                    operation_id: string;
+                    state: string;
+                    tx_id: string | null;
+                }[];
+                scope: {
+                    contract_address: string;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                };
+            } | {
+                /** @constant */
+                category: "rights.transfers";
+                /** @constant */
+                public_references_only: false;
+                records: {
+                    /** Format: date-time */
+                    created_at: string;
+                    entitlement_id: string;
+                    /** Format: uuid */
+                    intent_id: string;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                    state: string;
+                }[];
+                scope: {
+                    contract_address: null;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                };
+            } | {
+                /** @constant */
+                category: "rights.reprint_jobs";
+                /** @constant */
+                public_references_only: false;
+                records: {
+                    /** Format: date-time */
+                    created_at: string;
+                    entitlement_id: string;
+                    /** Format: uuid */
+                    job_id: string;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                    quantity: string;
+                    state: string;
+                }[];
+                scope: {
+                    contract_address: null;
+                    /** @enum {string} */
+                    network: "undeployed" | "preview" | "preprod";
+                };
+            })[];
+            /** Format: uuid */
+            subject_ref: string;
+        };
+        SelectedRightsExportRequest: {
+            categories: ("rights.control_links" | "rights.operations" | "rights.transfers" | "rights.reprint_jobs" | "rights.chain_commitments")[];
+        };
+        SelectedRightsExportStatus: {
+            categories: ("rights.control_links" | "rights.operations" | "rights.transfers" | "rights.reprint_jobs" | "rights.chain_commitments")[];
+            /** Format: date-time */
+            completed_at: string | null;
+            coverage: {
+                /** @constant */
+                domains: [
+                    "rights"
+                ];
+                /** @constant */
+                full_account: false;
+                /** @constant */
+                selected_categories_only: true;
+            };
+            download_available: boolean;
+            /** @enum {string} */
+            environment: "demo" | "development" | "sandbox" | "production";
+            /** Format: date-time */
+            expires_at: string;
+            /** @enum {string|null} */
+            failure_code: null | "export_failed" | "export_too_large" | "export_restricted" | "attempts_exhausted";
+            /** Format: uuid */
+            job_id: string;
+            /** @enum {string} */
+            network: "undeployed" | "preview" | "preprod";
+            package_bytes: number | null;
+            package_sha256: string | null;
+            /** Format: date-time */
+            requested_at: string;
+            /** @enum {string} */
+            state: "requested" | "building" | "ready" | "failed" | "expired";
         };
         SessionInfo: {
             /** @enum {string} */
@@ -4367,7 +4593,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelectedRightsExportRequest"];
+            };
+        };
         responses: {
             /** @description Success */
             202: {
@@ -4375,7 +4605,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["SelectedRightsExportStatus"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not authenticated */
@@ -4398,6 +4637,264 @@ export interface operations {
             };
             /** @description Idempotency key reused with a different request */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid domain transition or field */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Throttled */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Provider or dependency unavailable; safe retry or handoff */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyExportStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: components["schemas"]["Identifier"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectedRightsExportStatus"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden by object policy or mode */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not found or not visible to caller */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Throttled */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Provider or dependency unavailable; safe retry or handoff */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    downloadMyExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: components["schemas"]["Identifier"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "private, no-store";
+                    /** @description JSON attachment with opaque job filename */
+                    "Content-Disposition"?: string;
+                    /** @description SHA-256 of the exact downloaded bytes */
+                    "X-Export-SHA256"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectedRightsExportPackage"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden by object policy or mode */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not found or not visible to caller */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Export expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Throttled */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Provider or dependency unavailable; safe retry or handoff */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyExportCapability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectedRightsExportCapability"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden by object policy or mode */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

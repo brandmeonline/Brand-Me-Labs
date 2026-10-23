@@ -4,6 +4,7 @@ import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair, type KeyLike } 
 import { createApp } from '../../index';
 import { loadConfig } from '../../config';
 import { IdentityStore, sha256 } from '../../middleware/identity/store';
+import { createHash } from 'node:crypto';
 
 const memberId = '11111111-1111-4111-8111-111111111111';
 const jobId = '22222222-2222-4222-8222-222222222222';
@@ -32,6 +33,7 @@ function setup(options: { configured?: boolean; upstream?: (url: string) => Resp
     CHAIN_SERVICE_URL: 'http://chain.internal', ...(options.configured === false ? {} : {
       RIGHTS_SERVICE_URL: 'http://rights.internal', PRIVACY_SERVICE_URL: 'http://privacy.internal', RIGHTS_SERVICE_TOKEN: token,
       PRIVACY_SERVICE_TOKEN: 'privacy-' + token, CHAIN_SERVICE_TOKEN: 'chain-' + token,
+      PRIVACY_EXPORT_SERVICE_URL: 'http://exports.internal', PRIVACY_EXPORT_SERVICE_TOKEN: 'exports-' + token,
     }) });
   return { app: createApp(cfg, store, { jwks, fetchImpl: fetchImpl as typeof fetch }), fetchImpl };
 }
@@ -82,17 +84,21 @@ describe('mounted rights and My Data authentication boundary', () => {
 
   it.each([undefined, Math.floor(Date.now() / 1000) - 601, Math.floor(Date.now() / 1000) + 60])('requires recent auth_time, not token issuance time (%s)', async (auth_time) => {
     const { app, fetchImpl } = setup();
-    const r = await request(app).post('/api/v1/me/exports').auth(await signed({ scope: 'privacy:manage', auth_time }), { type: 'bearer' }).send({});
+    const r = await request(app).post('/api/v1/me/exports').auth(await signed({ scope: 'privacy:manage', auth_time }), { type: 'bearer' })
+      .set('Idempotency-Key', 'test-export-idempotency-key').set('x-reauth-at', '1900-01-01T00:00:00Z')
+      .send({ categories: ['rights.control_links'] });
     expect(r.status).toBe(401); expect(r.body.code).toBe('reauth_required'); expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('forwards trusted recent authentication to My Data', async () => {
     const { app, fetchImpl } = setup(); const auth_time = Math.floor(Date.now() / 1000);
-    const r = await request(app).post('/api/v1/me/exports').auth(await signed({ scope: 'privacy:manage', auth_time }), { type: 'bearer' }).send({});
+    const r = await request(app).post('/api/v1/me/exports').auth(await signed({ scope: 'privacy:manage', auth_time }), { type: 'bearer' })
+      .set('Idempotency-Key', 'test-export-idempotency-key').set('x-reauth-at', '1900-01-01T00:00:00Z')
+      .send({ categories: ['rights.control_links'] });
     expect(r.status).toBe(200);
     const init = (fetchImpl.mock.calls as unknown as [string, RequestInit][])[0]![1];
     expect(JSON.parse(init.body as string).reauth_at).toBe(new Date(auth_time * 1000).toISOString());
-    expect(init.headers).toMatchObject({ authorization: `Bearer privacy-${token}`, 'x-subject-ref': memberId });
+    expect(init.headers).toMatchObject({ authorization: `Bearer exports-${token}`, 'x-subject-ref': memberId, 'idempotency-key': 'test-export-idempotency-key' });
   });
 
   it('never relabels entitlements from another network', async () => {
@@ -158,5 +164,16 @@ describe('mounted rights and My Data authentication boundary', () => {
   it('does not allow a Mainnet capability to enable write routes', async () => {
     const { app } = setup({ upstream: () => Response.json({ status: 'available', network: 'mainnet', reasons: [] }) });
     expect((await request(app).get('/api/v1/chain/capability')).body.status).toBe('read_only');
+  });
+
+  it.each(['digest', 'size', 'content-type'])('rejects invalid export download %s without releasing bytes', async (kind) => {
+    const content = kind === 'size' ? 'x'.repeat(2 * 1024 * 1024 + 1) : '{"private":"must-not-release"}';
+    const digest = kind === 'digest' ? '0'.repeat(64) : createHash('sha256').update(content).digest('hex');
+    const { app } = setup({ upstream: () => new Response(content, { headers: {
+      'content-type': kind === 'content-type' ? 'text/html' : 'application/json', 'x-export-sha256': digest,
+    } }) });
+    const r = await request(app).get(`/api/v1/me/exports/${jobId}/download`)
+      .auth(await signed({ scope: 'privacy:manage', auth_time: Math.floor(Date.now() / 1000) }), { type: 'bearer' });
+    expect(r.status).toBe(503); expect(r.text).not.toContain('must-not-release');
   });
 });

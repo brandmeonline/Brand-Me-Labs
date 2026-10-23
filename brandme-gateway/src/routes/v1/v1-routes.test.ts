@@ -11,6 +11,7 @@ import { createOwnershipRouter } from './ownership';
 import { createAssetsRouter } from './assets';
 import { createRightsRouter } from './rights';
 import { createPrivacyRouter } from './privacy';
+import { problemHandler } from '../../middleware/problem';
 
 let capability: unknown = { status: 'available', reasons: [], badge: 'Preprod test network', network: 'preprod' };
 const calls: { path: string; body?: unknown; headers?: Record<string, string> }[] = [];
@@ -40,7 +41,8 @@ const deps: V1Deps = {
   },
   subjectOf: (req) => req.header('x-test-subject') ?? undefined,
   authTimeOf: () => new Date(),
-  upstream: { chain: fake('chain'), rights: fake('rights'), privacy: fake('privacy') },
+  upstream: { chain: fake('chain'), rights: fake('rights'), privacy: fake('privacy'),
+    exports: { ...fake('exports'), download: async () => { throw new Error('unused'); } } },
 };
 
 let server: Server;
@@ -53,6 +55,7 @@ beforeAll(async () => {
   app.use('/v1/assets', createAssetsRouter(deps));
   app.use('/v1/rights', createRightsRouter(deps));
   app.use('/v1/me', createPrivacyRouter(deps));
+  app.use(problemHandler);
   server = app.listen(0);
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
@@ -120,7 +123,8 @@ describe('v1 rights/privacy routers (unmounted)', () => {
   it('My Data export/deletion require privacy:manage and recent re-auth', async () => {
     expect((await req('POST', '/v1/me/exports', {}, member('rights:read'))).status).toBe(403);
     expect((await req('POST', '/v1/me/exports', {}, member('privacy:manage', { 'x-test-auth-age': '3600' }))).status).toBe(401);
-    expect((await req('POST', '/v1/me/exports', {}, member('privacy:manage', { 'x-test-auth-age': '30' }))).status).toBe(202);
+    expect((await req('POST', '/v1/me/exports', { categories: ['rights.control_links'] },
+      member('privacy:manage', { 'x-test-auth-age': '30', 'idempotency-key': 'export-test-key-123456789' }))).status).toBe(202);
     expect((await req('POST', '/v1/me/deletion', { scope: 'account' }, member('privacy:manage', { 'x-test-auth-age': '30' }))).status).toBe(400); // confirm required
     expect((await req('POST', '/v1/me/deletion', { scope: 'category', confirm: true }, member('privacy:manage', { 'x-test-auth-age': '30' }))).status).toBe(400);
     const ok = await req('POST', '/v1/me/deletion', { scope: 'account', confirm: true }, member('privacy:manage', { 'x-test-auth-age': '30' }));

@@ -20,6 +20,8 @@ case "$service" in
     docker run --rm --entrypoint python "$image" -m pip check
     docker run --rm --entrypoint python "$image" -m brandme_core.events.worker --help
     docker run --rm --entrypoint python "$image" -m brandme_core.read_api --help
+    docker run --rm --entrypoint python "$image" -m brandme_core.privacy_exports --help
+    docker run --rm --entrypoint python "$image" -c "from brandme_core.privacy_exports.app import create_app; from brandme_core.privacy_exports.storage import PrivateStore; print('selected rights export API and worker imports OK')"
     docker run --rm --entrypoint python "$image" -c "from brandme_core.read_api.app import create_app; from brandme_core.read_api.config import ReadConfig; print('authenticated read API runtime imports OK')"
     docker run --rm -i --entrypoint python "$image" - <<'PY'
 from fastapi.testclient import TestClient
@@ -41,6 +43,19 @@ with TestClient(create_app(UnavailableDatabase(), config)) as client:
     assert response.status_code == 503 and response.json() == {'error': 'dependency_unavailable'}
     assert response.headers['cache-control'] == 'no-store'
 print('packaged read API HTTP authentication and redaction OK')
+from brandme_core.privacy_exports.app import create_app as create_export_app
+from brandme_core.privacy_exports.config import ExportConfig
+export_config = ExportConfig('development', 'test', 'test', 'test', 'preprod', 'ab' * 32,
+                             'brandme-development-exports-test', 'export-test-credential-32-characters')
+with TestClient(create_export_app(UnavailableDatabase(), export_config, None)) as client:
+    assert client.get('/capability').status_code == 401
+    response = client.get('/capability', headers={
+        'Authorization': 'Bearer ' + export_config.token,
+        'X-Subject-Ref': '11111111-1111-4111-8111-111111111111',
+    })
+    assert response.status_code == 503 and response.json() == {'error': 'dependency_unavailable'}
+    assert response.headers['cache-control'] == 'private, no-store'
+print('packaged export API HTTP authentication and redaction OK')
 PY
     docker run --rm -e BRANDME_MODE=development --entrypoint python "$image" -c "from uuid import uuid4; from brandme_core.domains.rights.projection import apply_observation; from brandme_core.domains.privacy.privacy import MyDataService; from brandme_core.events import EventEnvelope; j = str(uuid4()); EventEnvelope(event_type='privacy.deletion.requested', schema_version='1', aggregate_type='deletion_job', aggregate_id=j, aggregate_version=1, environment='development', actor_ref='service:privacy', correlation_id=j, privacy_class='restricted', payload={'job_id': j, 'scope': 'account'}).validate(); print('core rights/privacy imports and packaged event schema OK')"
     ;;
