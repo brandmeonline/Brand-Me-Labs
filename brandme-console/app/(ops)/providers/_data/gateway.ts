@@ -30,7 +30,7 @@ async function problemDetail(r: Response, fallback: string): Promise<string> {
 export async function loadFromGateway<T>(path: string): Promise<Loaded<T>> {
   const base = process.env.BRANDME_GATEWAY_URL
   if (!base) return { state: 'not_connected' }
-  const auth = headers().get('authorization')
+  const auth = (await headers()).get('authorization')
   if (!auth || !auth.startsWith('Bearer ')) return { state: 'unauthenticated' }
   let r: Response
   try {

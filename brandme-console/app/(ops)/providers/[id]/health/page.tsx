@@ -6,8 +6,8 @@ import { LoadState } from '../../_data/states'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ProviderHealthPage({ params }: { params: { id: string } }) {
-  const id = encodeURIComponent(params.id)
+export default async function ProviderHealthPage({ params }: { params: Promise<{ id: string }> }) {
+  const id = encodeURIComponent((await params).id)
   const result = await loadFromGateway<ProviderHealth>(`/providers/${id}/health`)
   return (
     <>

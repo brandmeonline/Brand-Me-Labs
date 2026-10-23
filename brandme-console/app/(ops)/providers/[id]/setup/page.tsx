@@ -15,8 +15,8 @@ const LABELS: Record<string, string> = {
 }
 const STATE: Record<string, string> = { done: 'Done', todo: 'Not done', not_needed: 'Not needed' }
 
-export default async function ProviderSetupPage({ params }: { params: { id: string } }) {
-  const id = encodeURIComponent(params.id)
+export default async function ProviderSetupPage({ params }: { params: Promise<{ id: string }> }) {
+  const id = encodeURIComponent((await params).id)
   const result = await loadFromGateway<ProviderSetup>(`/providers/${id}/setup`)
   return (
     <>
