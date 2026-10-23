@@ -24,7 +24,7 @@ There is no stub, simulation or fallback mode. Missing capability is reported by
 pnpm install                        # repo root; Node >= 22
 pnpm --filter @brandme/chain test:midnight:local   # compile (pinned compactc), manifest check, all local suites
 
-# Live local network (Docker): node 1.0.300 + indexer 4.3.5 + proof-server 8.1.0
+# Live local network (Docker): node 1.0.400 + indexer 4.3.5 + proof-server 8.1.3
 bash scripts/local-network.sh up
 export $(bash scripts/local-network.sh env)
 pnpm test:midnight:network          # deploy → issue → prove → transfer → reprint → restore, writes evidence/*.json

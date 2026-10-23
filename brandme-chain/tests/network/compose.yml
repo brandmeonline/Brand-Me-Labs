@@ -1,9 +1,9 @@
 # Local Midnight network (node + indexer) for `pnpm test:midnight:network`; started by scripts/local-network.sh.
-# Pinned to the support-matrix Preview pairing (node 1.0.300 + indexer 4.3.5): the
+# Pinned to the support-matrix Preview pairing (node 1.0.400 + indexer 4.3.5): the
 # Preprod indexer 4.3.302 is not published as a standalone image. SDK tuple is identical.
 services:
   node:
-    image: midnightntwrk/midnight-node:1.0.300@sha256:593ca8484074b771c2643a1b5744474a266ec923c0946d3a1382ee25d11cf7c7
+    image: midnightntwrk/midnight-node:1.0.400@sha256:915b117f955859a0ab7f34230ca12b43ef7474c84e29463256efcfc7b757040f
     ports: ['9944']
     environment:
       CFG_PRESET: 'dev'

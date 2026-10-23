@@ -13,7 +13,7 @@ Ch.04 §4 allows the issuer registry, transferable entitlement and licensed repr
 
 ## Deployment in two phases (observed constraint)
 
-On the local network (node 1.0.300), a deploy transaction carrying all 15 verifier keys (~37 KB) is rejected with `1010: Invalid Transaction: Transaction would exhaust the block limits`. With 8 keys (~21 KB) it is accepted. `deployRightsContract` therefore:
+On the local network (node 1.0.300; not re-measured on 1.0.400, where the two-phase deploy below is unchanged), a deploy transaction carrying all 15 verifier keys (~37 KB) is rejected with `1010: Invalid Transaction: Transaction would exhaust the block limits`. With 8 keys (~21 KB) it is accepted. `deployRightsContract` therefore:
 
 1. deploys with the 8 core circuits (`DEPLOY_CIRCUITS`);
 2. inserts the other 7 keys with signed contract-maintenance transactions (`submitInsertVerifierKeyTx`);
@@ -55,7 +55,7 @@ The holder commitment includes the epoch. After a transfer the old holder's secr
 
 | Proving mode | Who sees holder/issuer secrets |
 |---|---|
-| Local proof server (`midnightntwrk/proof-server:8.1.0` on the user's machine or companion) | Only that machine |
+| Local proof server (`midnightntwrk/proof-server:8.1.3` on the user's machine or companion) | Only that machine |
 | Wallet-provided proving through the DApp connector | The wallet/prover the user selected |
 | Remote/managed prover | **The prover operator sees every witness input.** Requires a separate disclosure naming the operator plus explicit consent (ch.04 §3). Not enabled, and never a silent fallback |
 
