@@ -1,11 +1,3 @@
-import { AvailabilityState } from '@/components/shell/availability-state'
-export default function Page() {
-  return (
-    <AvailabilityState
-      title={'Let’s start with you.'}
-      description={
-        'Style setup is not available in this preview. You can explore Today without a wallet, camera or account.'
-      }
-    />
-  )
-}
+import { PageHeading } from '@/components/shell/page-heading'
+import { Onboarding } from '@/features/persona/onboarding'
+export default function Page(){return <><PageHeading eyebrow="Be More U" title="A wardrobe that feels like you." description="A few choices to get started. Every one stays editable."/><Onboarding/></>}

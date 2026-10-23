@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import '@brandme/design-system/tokens.css'
 import '@/components/ui/primitives.css'
+import '@/components/ui/flows.css'
 import { AppShell } from '@/components/shell/app-shell'
 import { ExperiencePreferencesProvider } from '@/lib/client/experience-preferences'
 import { preferenceBootstrap } from '@/lib/client/preference-bootstrap'

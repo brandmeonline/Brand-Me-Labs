@@ -1,0 +1,19 @@
+{
+  "name": "@brandme/provider-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Provider capability vocabulary and adapter interfaces (no SDKs, no secrets)",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@brandme/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "5.9.3"
+  }
+}

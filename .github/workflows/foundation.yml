@@ -1,0 +1,69 @@
+# Foundation gate (opus-foundation lane): pinned toolchain, contract/token
+# drift, type checks, unit tests and Spanner-emulator integration tests, plus
+# the gateway → brain → Spanner smoke. Emulator suites never silently skip
+# here: the emulator service is always present.
+name: Foundation
+
+on:
+  pull_request:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.28
+        ports: ['9010:9010', '9020:9020']
+    env:
+      SPANNER_EMULATOR_HOST: localhost:9010
+      BRANDME_PYTHON: ${{ github.workspace }}/.venv/bin/python
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - uses: pnpm/action-setup@v4  # version from package.json packageManager
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.15'
+
+      - name: Python venv from hashed lock
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --require-hashes -r scripts/python/requirements.lock
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm check
+        run: pnpm check
+
+      - name: Smoke (gateway → brain → Spanner, restart persistence, outbox)
+        run: pnpm smoke
+
+      - name: Workspace builds
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: pnpm -r build
+
+      - name: Mode guard refuses production with simulated trust paths
+        run: |
+          set +e
+          BRANDME_MODE=production .venv/bin/python -m brandme_core.config preflight --service orchestrator
+          test $? -eq 3
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: foundation-evidence
+          path: docs/build/evidence/w00/smoke-latest.json

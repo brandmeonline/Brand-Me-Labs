@@ -87,13 +87,16 @@ export function ExperiencePreferencesProvider({
           : 'light'
         : preferences.theme
     document.documentElement.dataset.bmMotion = preferences.motion
+    document.documentElement.dataset.theme = document.documentElement.dataset.bmTheme
+    document.documentElement.dataset.motion =
+      preferences.motion === 'reduce' || osReduced ? 'reduced' : 'system'
     document.documentElement.dataset.bmContrast = preferences.highContrast
       ? 'high'
       : 'standard'
     document.documentElement.dataset.bmSimpleView = String(
       preferences.simpleView,
     )
-  }, [preferences, initialized, osDark])
+  }, [preferences, initialized, osDark, osReduced])
   function update(patch: Partial<Preferences>) {
     const next = { ...preferences, ...patch }
     setPreferences(next)

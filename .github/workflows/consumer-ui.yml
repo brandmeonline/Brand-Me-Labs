@@ -1,0 +1,58 @@
+name: Consumer UI
+
+on:
+  pull_request:
+    paths: ['brandme-frontend/**', 'brandme-console/**', 'packages/**', 'pnpm-lock.yaml', '.github/workflows/consumer-ui.yml']
+  push:
+    branches: ['bench/astra-consumer-ui-20261005']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consumer-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shell:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      BRANDME_MODE: development
+      BRANDME_CONSUMER_URL: http://127.0.0.1:3000
+      BRANDME_CONSOLE_URL: http://127.0.0.1:3002
+      BRANDME_EVIDENCE_DIR: ${{ runner.temp }}/consumer-ui-evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - name: Component behavior and gateway security
+        run: pnpm --dir brandme-frontend test:ui && pnpm --dir brandme-frontend test:gateway
+      - name: Consumer and console production builds
+        run: pnpm --dir brandme-frontend build && pnpm --dir brandme-console build
+      - name: Install pinned browser
+        run: pnpm --dir brandme-frontend exec playwright install --with-deps chromium
+      - name: Start development galleries
+        run: |
+          mkdir -p "$BRANDME_EVIDENCE_DIR"
+          pnpm --dir brandme-frontend exec next dev --hostname 127.0.0.1 -p 3000 > "$RUNNER_TEMP/consumer.log" 2>&1 &
+          pnpm --dir brandme-console exec next dev --hostname 127.0.0.1 -p 3002 > "$RUNNER_TEMP/console.log" 2>&1 &
+          node brandme-frontend/lib/testing/wait-for-apps.mjs
+      - name: Shell and controls accessibility, keyboard, reflow and screenshots
+        run: pnpm --dir brandme-frontend test:browser
+      - name: Compare reviewed visual baselines
+        # Bootstrap capture is explicit until the first runner images have been reviewed.
+        env:
+          BRANDME_VISUAL_CAPTURE_ONLY: '1'
+        run: node brandme-frontend/lib/testing/verify-visual.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consumer-ui-${{ github.sha }}
+          path: ${{ runner.temp }}/consumer-ui-evidence
+          retention-days: 14

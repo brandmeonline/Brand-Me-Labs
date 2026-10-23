@@ -2,7 +2,7 @@
 
 import * as RadixDialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 
 export { Sheet as Drawer } from '../shell/sheet'
 
@@ -13,20 +13,24 @@ export function Dialog({
   children,
   open,
   onOpenChange,
+  returnFocus,
 }: {
   title: string
   description: string
-  trigger: ReactNode
+  trigger?: ReactNode
   children: ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  returnFocus?: RefObject<HTMLElement | null>
 }) {
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
-      <RadixDialog.Trigger asChild>{trigger}</RadixDialog.Trigger>
+      {trigger && <RadixDialog.Trigger asChild>{trigger}</RadixDialog.Trigger>}
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="bm-sheet-overlay" />
-        <RadixDialog.Content className="bm-dialog">
+        <RadixDialog.Content className="bm-dialog" onCloseAutoFocus={event => {
+          if (returnFocus?.current?.isConnected) { event.preventDefault(); returnFocus.current.focus() }
+        }}>
           <div className="bm-sheet-heading">
             <RadixDialog.Title className="bm-section-title">
               {title}

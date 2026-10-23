@@ -1,11 +1,3 @@
-import { AvailabilityState } from '@/components/shell/availability-state'
-export default function Page() {
-  return (
-    <AvailabilityState
-      title={'Good contributions matter.'}
-      description={
-        'Rewards are not connected in this preview. No points or badges have been awarded.'
-      }
-    />
-  )
-}
+import { PageHeading } from '@/components/shell/page-heading'
+import { Rewards } from '@/features/rewards/rewards'
+export default function Page(){return <><PageHeading eyebrow="Brand.Me" title="Good style. Good company." description="Rewards grounded in contributions, with evidence you can inspect."/><Rewards/></>}

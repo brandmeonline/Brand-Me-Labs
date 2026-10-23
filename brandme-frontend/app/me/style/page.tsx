@@ -1,11 +1,3 @@
-import { AvailabilityState } from '@/components/shell/availability-state'
-export default function Page() {
-  return (
-    <AvailabilityState
-      title={'Your Looking Glass.'}
-      description={
-        'Style editing is not connected in this preview. No preference changes or inferred profile have been saved.'
-      }
-    />
-  )
-}
+import { PageHeading } from '@/components/shell/page-heading'
+import { LookingGlass } from '@/features/persona/looking-glass'
+export default function Page() { return <><PageHeading eyebrow="Me / Looking Glass" title="More you. On your terms." description="Twelve preferences, with a clear distinction between what you choose and what Brand.Me learns."/><LookingGlass/></> }

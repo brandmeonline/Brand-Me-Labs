@@ -1,5 +1,5 @@
-// Read-only bridge until foundation publishes the design-system export.
-import tokens from '../../docs/design/brandme/contracts/design-tokens.json'
+// Foundation is the token authority; this adapter preserves the shell's v1 names.
+import { tokens } from '@brandme/design-system'
 export { tokens }
 export function designTokenCss(): string {
   const colors = (mode: 'light' | 'dark') =>

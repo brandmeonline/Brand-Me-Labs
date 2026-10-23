@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import '@brandme/design-system/tokens.css'
 import '@/components/console-shell.css'
 import { ConsoleShell } from '@/components/console-shell'
 import {

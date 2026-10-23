@@ -38,12 +38,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version-file: '.nvmrc'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        uses: pnpm/action-setup@v4  # version from package.json packageManager
 
       - name: Install dependencies
         working-directory: ./brandme-gateway
@@ -97,12 +95,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version-file: '.nvmrc'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        uses: pnpm/action-setup@v4  # version from package.json packageManager
 
       - name: Install dependencies
         working-directory: ./brandme-chain
@@ -218,6 +214,9 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
 
@@ -230,6 +229,6 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'

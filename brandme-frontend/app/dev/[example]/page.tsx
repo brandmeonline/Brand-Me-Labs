@@ -17,12 +17,13 @@ export function generateStaticParams() {
     : []
 }
 
-export default function ComponentsPage({
+export default async function ComponentsPage({
   params,
 }: {
-  params: { example: string }
+  params: Promise<{ example: string }>
 }) {
-  if (process.env.NODE_ENV !== 'development' || params.example !== 'components')
+  const { example } = await params
+  if (process.env.NODE_ENV !== 'development' || example !== 'components')
     notFound()
   return (
     <>
