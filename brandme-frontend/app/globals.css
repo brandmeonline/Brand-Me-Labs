@@ -206,7 +206,8 @@ figure {
   position: fixed;
   inset: auto 0 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* Enlarged text can form extra rows instead of splitting destination names. */
+  grid-template-columns: repeat(auto-fit, minmax(3.75rem, 1fr));
   background: var(--bm-surface);
   border-top: 1px solid var(--bm-line);
   min-height: var(--bm-nav-height);

@@ -252,6 +252,8 @@ try {
           )
         }
         await page.keyboard.press('Escape')
+        await dialog.waitFor({ state: 'hidden' })
+        await page.waitForFunction(element => element === document.activeElement, await trigger.elementHandle())
         assert((await dialog.count()) === 0, 'Escape did not close dialog')
         assert(
           await trigger.evaluate((e) => e === document.activeElement),
@@ -387,16 +389,17 @@ try {
           new URL(page.url()).pathname === '/discover',
           'Shop redirect missing',
         )
-        assert(
-          (await page.locator('main').innerText()).includes('not connected'),
-          'Catalog displayed unsupported readiness',
-        )
+        await page.getByRole('textbox', { name: 'What are you looking for?' }).fill('linen')
+        await page.getByRole('button', { name: 'Search authorized catalogs' }).click()
+        await page.getByRole('alert').filter({ hasText: 'not connected' }).waitFor()
+        assert((await page.locator('main article').count()) === 0, 'Unavailable catalog invented products')
         await page.goto(consumer + '/stash')
         assert(
           new URL(page.url()).pathname === '/closet',
           'Stash redirect missing',
         )
         await page.goto(consumer + '/me/data')
+        await page.getByRole('alert').filter({ hasText: 'not connected' }).waitFor()
         assert(
           (await page.locator('main').innerText()).includes('not connected'),
           'Privacy readiness overstated',
@@ -429,6 +432,8 @@ try {
         )
       }
       await page.keyboard.press('Escape')
+      await dialog.waitFor({ state: 'hidden' })
+      await page.waitForFunction(element => element === document.activeElement, await trigger.elementHandle())
       assert(
         await trigger.evaluate((e) => e === document.activeElement),
         'Console focus not restored',

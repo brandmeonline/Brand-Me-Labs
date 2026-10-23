@@ -34,6 +34,9 @@ async function signIn(name){
   return {context,page,id:me.member.id}
 }
 try{
+  for(const route of ['/me/persona','/wardrobe/items','/relationships','/decisions','/rewards'])
+    assert.equal((await fetch(`${base}/api/v1${route}`)).status,401,`${route} must be mounted behind authentication`)
+  checks.push('All consumer domain routes are mounted and reject anonymous reads')
   const suffix=randomUUID().slice(0,8)
   const alice=await signIn(`ui_alice_${suffix}`),bob=await signIn(`ui_bob_${suffix}`)
   checks.push('Two independent development sessions resolve distinct persisted members')
@@ -77,7 +80,9 @@ try{
   await alice.page.goto(`${base}/circle/decisions/new`)
   await alice.page.getByRole('combobox',{name:'Item from my wardrobe'}).selectOption(intake.items[0].id)
   await alice.page.getByRole('checkbox').check()
+  const created=alice.page.waitForResponse(response=>response.url().endsWith('/api/v1/decisions')&&response.request().method()==='POST')
   await alice.page.getByRole('button',{name:'Start five-minute decision'}).click()
+  assert((await created).ok(),'The real decision command must succeed before navigation')
   await alice.page.waitForURL(/\/circle\/decisions\/[a-f0-9-]{36}$/)
   const decisionId=new URL(alice.page.url()).pathname.split('/').pop()
   const decision=await get(alice.context,`/decisions/${decisionId}`)

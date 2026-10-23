@@ -14,10 +14,10 @@ const require=createRequire(path.join(root,'package.json'))
 const express=require('express')
 const source=relative=>import(pathToFileURL(path.join(root,'src',relative)).href)
 const [{loadConfig},{IdentityStore},{apiV1},{requestContext,problemHandler},{principalMiddleware},
-  {personaRouter},{wardrobeRouter},{outfitsRouter},{socialRouter},{rewardsRouter}]=await Promise.all([
+  {personaRouter},{wardrobeRouter},{outfitsRouter},{socialRouter},{decisionsRouter},{rewardsRouter}]=await Promise.all([
   source('config/index.ts'),source('middleware/identity/store.ts'),source('routes/v1/index.ts'),
   source('middleware/problem.ts'),source('middleware/session.ts'),source('routes/v1/persona.ts'),
-  source('routes/v1/wardrobe.ts'),source('routes/v1/outfits.ts'),source('routes/v1/social.ts'),source('routes/v1/rewards.ts')])
+  source('routes/v1/wardrobe.ts'),source('routes/v1/outfits.ts'),source('routes/v1/social.ts'),source('routes/v1/decisions.ts'),source('routes/v1/rewards.ts')])
 const cfg=loadConfig(process.env)
 const store=new IdentityStore({projectId:cfg.spannerProjectId,instanceId:cfg.spannerInstanceId,databaseId:cfg.spannerDatabaseId,mode:cfg.mode})
 const client={async request(spec){
@@ -41,6 +41,6 @@ app.use('/api/v1',requestContext(cfg.mode),express.json({limit:'256kb'}),princip
   if(principal?.via==='session'&&principal.identityProvider==='dev'&&principal.environment==='development')
     principal.scopes=['profile:read','profile:write','wardrobe:read','wardrobe:write','outfits:read','outfits:write','social:read','social:write','rewards:read','privacy:manage']
   next()
-},personaRouter(client),wardrobeRouter(client),outfitsRouter(client),socialRouter(client),rewardsRouter(client),apiV1({cfg,store}))
+},personaRouter(client),wardrobeRouter(client),outfitsRouter(client),socialRouter(client),decisionsRouter(client),rewardsRouter(client),apiV1({cfg,store}))
 app.use(problemHandler)
 app.listen(3001,'127.0.0.1',()=>console.log('Development gateway ready on loopback; identity is simulated, domain persistence uses Spanner.'))

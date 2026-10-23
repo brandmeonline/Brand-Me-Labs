@@ -124,10 +124,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="bm-avatar" aria-hidden="true">
               U
             </span>
-            <div>
-              Explore first
-              <span className="bm-support">No account connected</span>
-            </div>
+            <Link href="/me/connections">
+              Your account
+              <span className="bm-support">Connection settings</span>
+            </Link>
           </div>
         </aside>
       )}
