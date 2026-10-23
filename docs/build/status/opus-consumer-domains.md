@@ -759,3 +759,17 @@ The founder delegated all 21 questions to the lane ("use your best judgement on 
 | 19 | **Next lane build: a GCS-backed `MediaStore`** (signed URLs, lifecycle, purge), developed against a local GCS emulator and then a dev bucket (Q14). | Lane, next. |
 | 20 | **Defer the Firestore reward projection.** Rewards are read from Spanner. | Deferred. |
 | 21 | **Unwired rules (referral, research) are not advertised.** Their ids stay reserved and refuse to settle. | Done: the member `rules` list holds only wired rules (tested). |
+
+## Stage 10 — `main` merged in, PR #52 retargeted to `main` (Q17) — 2026-10-23
+- **Merge.** `09ad4e1` merges `main` 5174ec2 into the lane branch (no rebase). Both the lane base `d839267` and foundation `67327e4` were already ancestors of `main`. There were no textual conflicts: the lane's V002 supersedes `main`'s stage-1 V002, and V003–V005 fill the gap before V006. PR #52 now targets `main`. Its diff is the lane's work only (110 files) and it reports mergeable/clean.
+- **Semantic conflict found and fixed.** `main`'s dependency patch (#46) moved the console to **Next 15.5.28**. There, page `params`/`searchParams` and `cookies()`/`headers()` are async, so the ops pages failed `next build`. `315879c` awaits them; behaviour is unchanged.
+- **Rulings applied in the lane** (`bce7514`): PD-09/10/11 are marked ratified in `social.policy`, and the member rules table lists only wired rules.
+
+**Evidence on the merged tree (in place, not an overlay)**
+| Check | Result |
+|---|---|
+| Lane suites + `test_privacy*`, `test_rights*`, `test_read_api`, `tests/foundation/` (Spanner emulator 1.5.28, real Pub/Sub emulator 0.8.37) | **482 passed, 0 skipped** |
+| Gateway: full `vitest run`, `tsc --noEmit`, `eslint src` | **91 passed** (`main`'s + lane); 0; 0 |
+| `pnpm install --frozen-lockfile`; `pnpm check` | 0; 0 (spec validator, contract/token drift, packages, gateway, python foundation, docs links) |
+| `pnpm --filter @brandme/console build` (Next 15.5.28) | 0 after `315879c` (failed before it) |
+| Browser smoke, this branch's console with no UI-lane overlay, `next start` + the lane's Python ops routers on the emulator | **13/13**. The pages render unstyled on `main`: shell tokens and classes are absent until consumer-ui lands (Q1). |
