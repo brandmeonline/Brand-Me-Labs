@@ -421,10 +421,12 @@ Image digests come from the Docker Hub tag API. The same API returns the digests
 - **After the pin change:** type-check passes; unit suites 90/90.
 - **Durable operation store:** `pnpm --filter @brandme/chain test:spanner` on Spanner emulator 1.5.45: 3 files / 26 tests.
 - **Python lane suites:** `tests/test_privacy*.py` and `tests/test_rights*.py`, with dependencies from `scripts/python/requirements.lock`: 99/99.
-- **Network verification with the new pins: in progress.**
-  - Both images are pulled by the pinned digests, and Docker verified their content against them.
-  - An isolation run with node 1.0.400 and the previous proof server 8.1.0 is under way; the run with proof server 8.1.3 follows.
-  - This entry will be updated with the results and the evidence file.
+- **Network verification with the new pins.** Both images were pulled by the pinned digests, so Docker verified their content.
+  - **Isolation run** (node 1.0.400 with the previous proof server 8.1.0): 7/7 in 551 s. Its evidence file was not kept, because its tuple label read 8.1.3 from `toolchain.json`.
+  - **Final run** through `scripts/local-network.sh`: **7/7 in 556 s**. The running services reported node `1.0.400-87c0fbdb` and proof server `8.1.3`, with indexer 4.3.5.
+    - Evidence: `brandme-chain/evidence/undeployed-2026-10-23T12-13-38-231Z.json`. Its tuple labels now come from `toolchain.json` and `package.json`, and its source sha256 matches the manifest.
+    - One behaviour differs from the 2026-10-10 evidence. The losing concurrent acceptance is recorded as `Reconciling` ("broadcast pending; do not resubmit") instead of `Failed`, following the reconciliation added in #44/#45. Exactly one acceptance still finalizes.
+- **CI on `240a967`:** all 17 checks green or skipped, including the lane gate, the durable operation store, the Python suites and all five Docker image builds.
 
 ### Still open
 - **Preprod writes.** Still not observed. `pnpm test:midnight:preprod` refuses to start without `MIDNIGHT_BLOCKFROST_PROJECT_ID` (a Blockfrost Midnight Preprod token) and `MN_PREPROD_SEEDS` (three or more distinct funded test seeds with tNIGHT and DUST). Neither is set in this environment.
