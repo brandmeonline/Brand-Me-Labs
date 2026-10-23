@@ -85,6 +85,12 @@ def _composition(body: Mapping[str, Any]) -> Dict[str, Any]:
     return {"item_refs": refs, "layer_order": [str(x) for x in layer], "substitutes": subs, "occasion": occasion, "notes": notes}
 
 
+def _all_refs(comp: Mapping[str, Any]) -> List[str]:
+    """Every item an outfit version names: its items and each substitute."""
+    alts = [x for v in (comp["substitutes"] or {}).values() for x in v]
+    return list(dict.fromkeys([*comp["item_refs"], *alts]))
+
+
 class OutfitService:
     def __init__(self, database, *, clock: Clock = None, proposal_policy: ProposalPolicy = _deny):
         self.db = database
@@ -186,7 +192,7 @@ class OutfitService:
             if not member_active(txn, owner):
                 raise NotFound("member not found")
             guard_write(txn, owner, "wardrobe.outfits")
-            self._check_items(txn, owner, comp["item_refs"])
+            self._check_items(txn, owner, _all_refs(comp))
             outfit_id = new_id()
             txn.insert(
                 "Outfits",
@@ -256,7 +262,7 @@ class OutfitService:
             guard_write(txn, principal.member_id, "wardrobe.outfits")
             if expected != o["head_version"]:
                 raise DetailedVersionConflict("outfit has a newer version", o["head_version"])
-            self._check_items(txn, principal.member_id, comp["item_refs"])
+            self._check_items(txn, principal.member_id, _all_refs(comp))
             v = o["head_version"] + 1
             self._insert_version(txn, ctx, principal.member_id, outfit_id, v, comp, principal.member_id, None)
             txn.update("Outfits", columns=("member_id", "outfit_id", "head_version", "version", "updated_at"),
@@ -298,7 +304,9 @@ class OutfitService:
                 raise NotFound("outfit not found")
             guard_write(txn, principal.member_id, "wardrobe.proposals_authored")
             guard_write(txn, owner, "wardrobe.outfits")
-            if int(base) > o["head_version"]:
+            if not 1 <= int(base) <= o["head_version"] or not query(
+                txn, "SELECT 1 FROM OutfitVersions WHERE member_id=@m AND outfit_id=@o AND version_no=@v",
+                {"m": owner, "o": outfit_id, "v": int(base)}, {"m": STR, "o": STR, "v": INT}):
                 raise ValidationFailed("base_version does not exist", extra={"field": "base_version"})
             if query(
                 txn,
@@ -308,7 +316,7 @@ class OutfitService:
                 {"m": STR, "o": STR, "p": STR, "d": STR},
             ):
                 raise DetailedInvalidTransition("you already proposed this exact look", code="duplicate_proposal")
-            self._check_items(txn, owner, comp["item_refs"])
+            self._check_items(txn, owner, _all_refs(comp))
             proposal_id = new_id()
             txn.insert(
                 "OutfitProposals",

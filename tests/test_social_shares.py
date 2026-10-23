@@ -226,3 +226,32 @@ def test_pd11_override_makes_gone_shares_indistinguishable(spanner_db, closet, m
     with pytest.raises(NotFound) as e:
         shares.open_by_token(s["token"])
     assert not isinstance(e.value, ShareUnavailable) and str(e.value) == "share not found"
+
+
+def test_deleting_shared_source_data_revokes_shares_and_their_previews(spanner_db, closet):
+    from brandme_core.domains.persona import deletion as persona_deletion
+    from brandme_core.domains.wardrobe import deletion as wardrobe_deletion
+
+    owner, _, _, outfit_id, (shirt, _, _) = closet
+    shares = ShareService(spanner_db)
+    item_share = shares.create(owner, {"subject_type": "wardrobe_item", "subject_id": shirt, "audience": "public", "allowed_fields": ["title"],
+                                       "recipient_ids": [], "expires_at": later(days=1)}, key())
+    outfit_share = shares.create(owner, {"subject_type": "outfit_version", "subject_id": outfit_id, "audience": "unlisted",
+                                         "allowed_fields": ["title", "items"], "recipient_ids": [], "expires_at": later(days=1)}, key())
+    assert shares.open_by_token(outfit_share["token"])["fields"]["items"]
+    run_txn(spanner_db, lambda t: wardrobe_deletion.delete_category(t, owner.member_id, "wardrobe.items"))
+    for s in (item_share, outfit_share):
+        with pytest.raises(ShareUnavailable) as e:
+            shares.open_by_token(s["token"])
+        assert e.value.extra == {"reason": "revoked"}
+    assert count(spanner_db, "SELECT COUNT(*) FROM SharePreviews WHERE member_id=@m", m=owner.member_id) == 0
+
+    persona = PersonaService(spanner_db, clock=FixedClock(datetime(2026, 10, 5, 12, tzinfo=timezone.utc)))
+    persona.patch(owner, '"0"', {"changes": [{"axis": "expression", "value": 78, "locked": False}], "client_revision": "del"})
+    snap = persona.create_snapshot(owner, "Autumn")
+    snap_share = shares.create(owner, {"subject_type": "persona_snapshot", "subject_id": snap["snapshot_id"], "audience": "unlisted",
+                                       "allowed_fields": ["declared_axes"], "recipient_ids": [], "expires_at": later(days=1)}, key())
+    run_txn(spanner_db, lambda t: persona_deletion.delete_category(t, owner.member_id, "persona.snapshots"))
+    with pytest.raises(ShareUnavailable):
+        shares.open_by_token(snap_share["token"])
+    assert count(spanner_db, "SELECT COUNT(*) FROM SharePreviews WHERE member_id=@m", m=owner.member_id) == 0

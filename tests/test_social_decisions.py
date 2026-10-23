@@ -334,3 +334,27 @@ def test_rate_limits_and_repeat_flag(spanner_db, circle):
 
 def test_production_clock_is_spanner():
     assert isinstance(DecisionService(None).clock, SpannerTxnClock)
+
+
+def test_opening_a_draft_drops_unreachable_recipients_and_rechecks_repeats(spanner_db, circle):
+    owner, friends, item, _ = circle
+    rel = RelationshipService(spanner_db)
+    clock = FixedTxnClock(NOW)
+    svc = DecisionService(spanner_db, clock=clock)
+    agent = member_principal(owner.member_id, MEMBER_SCOPES, delegation_id=str(uuid.uuid4()))
+    draft = svc.create(agent, body(item, friends[:2], prompt="Drafted?"), key())
+    early = svc.create(agent, body(item, friends[:2], prompt="Drafted?"), key())  # identical, also unsent
+    assert draft["repeat_request"] is False and early["repeat_request"] is False  # unsent drafts are never repeats
+    rel.remove(owner, friends[1].member_id)  # no longer friends when the draft is sent
+    opened = svc.open_draft(owner, draft["decision_id"])
+    assert opened["repeat_request"] is False
+    with pytest.raises(NotFound):  # the dropped recipient can neither read nor answer it
+        svc.get(friends[1], draft["decision_id"])
+    with pytest.raises(NotFound):
+        svc.respond(friends[1], draft["decision_id"], {"choice": "yes"})
+    assert draft["decision_id"] not in [d["decision_id"] for d in svc.list(friends[1])["items"]]
+    assert svc.respond(friends[0], draft["decision_id"], {"choice": "pass"})["revision"] == 1
+    # The identical draft sent afterwards is a repeat of the one actually sent first.
+    clock.set(NOW + timedelta(seconds=300))
+    svc.close_due()
+    assert svc.open_draft(owner, early["decision_id"])["repeat_request"] is True

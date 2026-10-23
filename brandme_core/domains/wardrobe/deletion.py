@@ -117,7 +117,11 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
 def delete_category(txn, member_id: str, category: str) -> int:
     m = {"m": member_id}
     if category == "wardrobe.items":
-        n = txn.execute_update("DELETE FROM ClosetPlacements WHERE member_id=@m", params=m, param_types=_M)
+        from brandme_core.domains.social.shares import revoke_for_deleted_subjects
+
+        # Item shares lose their subject; outfit previews embed item fields.
+        n = revoke_for_deleted_subjects(txn, member_id, ("wardrobe_item", "outfit_version"))
+        n += txn.execute_update("DELETE FROM ClosetPlacements WHERE member_id=@m", params=m, param_types=_M)
         n += txn.execute_update("DELETE FROM WardrobeOrderLinks WHERE member_id=@m", params=m, param_types=_M)
         n += txn.execute_update("DELETE FROM WardrobeItems WHERE member_id=@m", params=m, param_types=_M)
         return n
@@ -125,7 +129,10 @@ def delete_category(txn, member_id: str, category: str) -> int:
         n = txn.execute_update("DELETE FROM ClosetPlacements WHERE member_id=@m", params=m, param_types=_M)
         return n + txn.execute_update("DELETE FROM ClosetLayouts WHERE member_id=@m", params=m, param_types=_M)
     if category == "wardrobe.outfits":
-        return txn.execute_update("DELETE FROM Outfits WHERE member_id=@m", params=m, param_types=_M)  # versions/proposals cascade
+        from brandme_core.domains.social.shares import revoke_for_deleted_subjects
+
+        n = revoke_for_deleted_subjects(txn, member_id, ("outfit_version",))
+        return n + txn.execute_update("DELETE FROM Outfits WHERE member_id=@m", params=m, param_types=_M)  # versions/proposals cascade
     if category == "wardrobe.proposals_authored":
         # Anonymize, do not erase another member's outfit history.
         n = txn.execute_update(

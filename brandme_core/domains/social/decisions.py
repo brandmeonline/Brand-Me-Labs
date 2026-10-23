@@ -273,9 +273,8 @@ class DecisionService:
             self._check_subject(txn, creator, req["subject_type"], req["subject_id"])
             if not as_draft:
                 self._check_limits(txn, creator, now)
-            prior = query(txn, "SELECT decision_id FROM Decisions WHERE member_id=@m AND request_fingerprint=@f "
-                               "AND COALESCE(opened_at, created_at) >= @since ORDER BY created_at DESC LIMIT 1",
-                          {"m": creator, "f": fp, "since": now - self.limits.repeat_window}, {"m": STR, "f": STR, "since": TS})
+            # A draft's repetition is decided when it is sent (open_draft), not now.
+            prior = None if as_draft else self._repeat_of(txn, creator, fp, now, None)
             decision_id = stable_id("decision", creator, ctx.correlation_id)
             opened = None if as_draft else now
             closes = None if as_draft else now + timedelta(seconds=DURATION_SECONDS)
@@ -283,7 +282,7 @@ class DecisionService:
                 "member_id": creator, "decision_id": decision_id, "subject_type": req["subject_type"], "subject_id": req["subject_id"],
                 "prompt": req["prompt"], "discussion_mode": req["discussion_mode"], "duration_seconds": DURATION_SECONDS,
                 "state": "draft" if as_draft else "open", "created_by_actor": principal.actor_ref, "request_fingerprint": fp,
-                "repeat_of": prior[0][0] if prior else None, "opened_at": opened, "closes_at": closes, "closed_at": None,
+                "repeat_of": prior, "opened_at": opened, "closes_at": closes, "closed_at": None,
                 "close_reason": None, "yes_count": 0, "pass_count": 0, "alternative_count": 0, "requester_outcome": None, "version": 1,
             }
             txn.insert("Decisions", columns=(*DEC_COLS, "created_at", "updated_at"),
@@ -309,6 +308,15 @@ class DecisionService:
             notify(txn, recipient_id=r, event_id=ev.event_id, type_="decision_request", actor_member_id=d["member_id"],
                    subject_ref=f"decision:{d['decision_id']}", payload={"decision_id": d["decision_id"], "closes_at": iso(d["closes_at"])})
 
+    def _repeat_of(self, txn, creator: str, fp: str, now: datetime, exclude: Optional[str]) -> Optional[str]:
+        """The most recent identical request this member actually sent inside the
+        repeat window. Unsent drafts never count."""
+        rows = query(txn, "SELECT decision_id FROM Decisions WHERE member_id=@m AND request_fingerprint=@f AND opened_at IS NOT NULL "
+                          "AND opened_at >= @since AND decision_id != @x ORDER BY opened_at DESC LIMIT 1",
+                     {"m": creator, "f": fp, "since": now - self.limits.repeat_window, "x": exclude or ""},
+                     {"m": STR, "f": STR, "since": TS, "x": STR})
+        return rows[0][0] if rows else None
+
     def open_draft(self, principal: Principal, decision_id: Any) -> Dict[str, Any]:
         """The member, in their own session, sends a draft an agent prepared."""
         require_scope(principal, "social:write")
@@ -325,15 +333,18 @@ class DecisionService:
             guard_write(txn, principal.member_id, "social.decisions")
             now = self.clock.now(txn)
             self._check_limits(txn, principal.member_id, now)
-            recipients = [a["recipient_id"] for a in self._audience(txn, d) if not a["removed"] and are_friends(txn, d["member_id"], a["recipient_id"])]
+            active = [a["recipient_id"] for a in self._audience(txn, d) if not a["removed"]]
+            recipients = [r for r in active if are_friends(txn, d["member_id"], r) and processing_allowed(txn, r, "social.decisions")]
             if not recipients:
                 raise DetailedInvalidTransition("no eligible recipients remain", code="ineligible_recipients")
             closes = now + timedelta(seconds=DURATION_SECONDS)
-            d.update(state="open", opened_at=now, closes_at=closes, version=d["version"] + 1)
-            txn.update("Decisions", columns=("member_id", "decision_id", "state", "opened_at", "closes_at", "version", "updated_at"),
-                       values=[(d["member_id"], decision_id, "open", now, closes, d["version"], COMMIT_TIMESTAMP)])
-            txn.update("DecisionAudience", columns=("member_id", "decision_id", "recipient_id", "closes_at"),
-                       values=[(d["member_id"], decision_id, r, closes) for r in recipients])
+            repeat_of = self._repeat_of(txn, d["member_id"], d["request_fingerprint"], now, decision_id)
+            d.update(state="open", opened_at=now, closes_at=closes, repeat_of=repeat_of, version=d["version"] + 1)
+            txn.update("Decisions", columns=("member_id", "decision_id", "state", "opened_at", "closes_at", "repeat_of", "version", "updated_at"),
+                       values=[(d["member_id"], decision_id, "open", now, closes, repeat_of, d["version"], COMMIT_TIMESTAMP)])
+            # Recipients who stopped being reachable leave the audience, so they cannot read or answer it.
+            txn.update("DecisionAudience", columns=("member_id", "decision_id", "recipient_id", "closes_at", "removed"),
+                       values=[(d["member_id"], decision_id, r, closes, r not in recipients) for r in active])
             self._announce(txn, ctx, d, recipients)
             return self._dto(txn, d, principal.member_id, "creator", now)
 

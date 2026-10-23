@@ -207,8 +207,12 @@ def delete_category(txn, member_id: str, category: str) -> int:
         )
         n += txn.execute_update("DELETE FROM PersonaContextOverrides WHERE member_id=@m", params=m, param_types=_M)
         n += txn.execute_update(
+            # The two processing switches reset to the protective value, not the
+            # new-profile default: deleting declared data never re-enables learning
+            # the member had turned off. They can switch it back on.
             "UPDATE PersonaProfiles SET budget_ceiling_minor = NULL, budget_currency = NULL, excluded_brands = [], "
             "excluded_materials = [], excluded_categories = [], goals = [], prefer_owned = FALSE, "
+            "learning_enabled = FALSE, social_signals_enabled = FALSE, "
             "onboarding_intent = NULL, version = version + 1, updated_at = PENDING_COMMIT_TIMESTAMP() WHERE member_id=@m",
             params=m,
             param_types=_M,
@@ -240,7 +244,11 @@ def delete_category(txn, member_id: str, category: str) -> int:
         )
         return n
     if category == "persona.snapshots":
-        return txn.execute_update("DELETE FROM PersonaSnapshots WHERE member_id=@m", params=m, param_types=_M)
+        from brandme_core.domains.social.shares import revoke_for_deleted_subjects
+
+        # Snapshot share previews embed the snapshot's declared axes.
+        n = revoke_for_deleted_subjects(txn, member_id, ("persona_snapshot",))
+        return n + txn.execute_update("DELETE FROM PersonaSnapshots WHERE member_id=@m", params=m, param_types=_M)
     if category == "persona.feedback":
         return txn.execute_update("DELETE FROM RecommendationFeedback WHERE member_id=@m", params=m, param_types=_M)
     raise KeyError(category)

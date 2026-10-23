@@ -27,7 +27,7 @@ from __future__ import annotations
 import hashlib
 import secrets
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from google.cloud.spanner_v1 import COMMIT_TIMESTAMP, JsonObject, KeySet
 
@@ -167,6 +167,23 @@ def revoke_grant(txn, ctx: CommandContext, g: Dict[str, Any]) -> Dict[str, Any]:
                        params={"r": list(g["recipient_ids"] or []), "s": f"share:{g['share_id']}"}, param_types={"r": STR_ARRAY, "s": STR})
     ctx.emit("share.revoked", "1", "share", g["share_id"], g["version"], {"share_id": g["share_id"], "owner_id": g["member_id"]}, "member_private")
     return g
+
+
+def revoke_for_deleted_subjects(txn, member_id: str, subject_types: Sequence[str]) -> int:
+    """Privacy deletion of the data behind a member's shares (wardrobe items,
+    outfits, persona snapshots): revoke those shares, drop their cached
+    previews and recipients' unread notices, inside the deleting transaction.
+    No event is emitted: the deletion receipt is the record."""
+    ids = [r[0] for r in query(txn, "SELECT share_id FROM ShareGrants WHERE member_id=@m AND subject_type IN UNNEST(@t)",
+                               {"m": member_id, "t": list(subject_types)}, {"m": STR, "t": STR_ARRAY})]
+    if not ids:
+        return 0
+    p, t = {"m": member_id, "s": ids}, {"m": STR, "s": STR_ARRAY}
+    n = txn.execute_update("UPDATE ShareGrants SET revoked_at = CURRENT_TIMESTAMP(), version = version + 1 "
+                           "WHERE member_id=@m AND share_id IN UNNEST(@s) AND revoked_at IS NULL", params=p, param_types=t)
+    n += txn.execute_update("DELETE FROM SharePreviews WHERE member_id=@m AND share_id IN UNNEST(@s)", params=p, param_types=t)
+    return n + txn.execute_update("DELETE FROM Notifications WHERE type='share_received' AND read_at IS NULL AND subject_ref IN UNNEST(@r)",
+                                  params={"r": [f"share:{i}" for i in ids]}, param_types={"r": STR_ARRAY})
 
 
 class ShareService:

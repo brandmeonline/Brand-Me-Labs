@@ -68,6 +68,9 @@ def test_export_then_category_delete_through_registered_callables(svc, member, s
     cats["persona.declared"].delete(spanner_db, member.member_id)
     after = svc.get(member)
     assert after["profile"]["declared_axes"]["expression"] is None and after["profile"]["locked_axes"] == []
+    # Processing switches are reset to off, so the deleted declarations cannot resurface through learning.
+    declared = list(cats["persona.declared"].export(spanner_db, member.member_id))[0]
+    assert (declared["learning_enabled"], declared["social_signals_enabled"]) == (False, False)
     cats["persona.snapshots"].delete(spanner_db, member.member_id)
     assert list(cats["persona.snapshots"].export(spanner_db, member.member_id)) == []
 

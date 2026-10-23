@@ -101,3 +101,23 @@ def test_care_and_packing_persist_privately(world, spanner_db):
     assert payloads and not any("2026-11" in p or "Lisbon" in p for p in payloads)  # trip details never in events
     with pytest.raises(ValidationFailed):
         outfits.create_packing_list(owner, {"title": "x", "starts_on": "2026-11-06", "ends_on": "2026-11-02"}, key())
+
+
+def test_proposal_base_version_must_exist(world):
+    owner, friend, _, items, outfits, _ = world
+    o = outfits.create_outfit(owner, {"title": "Look", "item_refs": items[:2]}, key())
+    for base in ("0", "2"):
+        with pytest.raises(ValidationFailed):
+            outfits.propose(friend, o["outfit_id"], {"base_version": base, "item_refs": items[:3]}, key())
+    assert outfits.propose(friend, o["outfit_id"], {"base_version": "1", "item_refs": items[:3]}, key())["proposal_id"]
+
+
+def test_substitutes_must_be_the_owners_active_items(world, spanner_db):
+    owner, friend, _, items, outfits, w = world
+    theirs = w.create_items(friend, {"source": "manual", "title": "Borrowed", "category": "top"}, key())["items"][0]["id"]
+    for alt in (theirs, str(uuid.uuid4())):
+        with pytest.raises(ValidationFailed):
+            outfits.create_outfit(owner, {"title": "Look", "item_refs": items[:2], "substitutes": {items[0]: [alt]}}, key())
+    o = outfits.create_outfit(owner, {"title": "Look", "item_refs": items[:2], "substitutes": {items[0]: [items[3]]}}, key())
+    with pytest.raises(ValidationFailed):  # also on a new version
+        outfits.create_version(owner, o["outfit_id"], '"1"', {"item_refs": items[:2], "substitutes": {items[1]: [theirs]}})
