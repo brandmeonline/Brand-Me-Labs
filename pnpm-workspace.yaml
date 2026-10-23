@@ -28,3 +28,7 @@ overrides:
   "minimatch@9": "9.0.7"
   "postcss@8": "8.5.23"
   "@babel/core@7": "7.29.6"
+  # firebase 13.1.0 (dev-only, @brandme/firestore-rules) pins grpc-js ~1.9, which is
+  # affected by GHSA high/low advisories fixed in >=1.13.6. Dedupe onto the
+  # workspace's existing 1.14.6; validated by the emulator rules suite.
+  "@grpc/grpc-js@1.9": "1.14.6"

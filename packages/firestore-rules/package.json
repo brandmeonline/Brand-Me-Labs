@@ -1,0 +1,18 @@
+{
+  "name": "@brandme/firestore-rules",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Firestore security rules for Brand.Me UI projections, tested against the emulator",
+  "type": "module",
+  "files": ["firestore.rules"],
+  "scripts": {
+    "test": "node --test --test-reporter=spec test/*.test.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "@types/node": "24.19.1",
+    "firebase": "13.1.0",
+    "typescript": "5.9.3"
+  }
+}

@@ -92,3 +92,19 @@ funded Midnight transactions.
 Primary references: [publish API](https://cloud.google.com/pubsub/docs/reference/rest/v1/projects.topics/publish),
 [emulator](https://cloud.google.com/pubsub/docs/emulator),
 [authentication transport](https://googleapis.dev/python/google-auth/latest/reference/google.auth.transport.requests.html).
+
+## Firestore projections
+
+`brandme_core/events/projections.py` turns committed events into Firestore read models for timely UI updates (spec ch.03 §5):
+
+- **Spec.** `ProjectionSpec(name, audience, path_template, allowed_fields)` declares one document kind. Member-private kinds live under `members/{member_id}/`. Shared kinds use exactly `shared/{share_id}`.
+- **Full snapshots.** `Upsert` replaces the whole view at `source_version`. Reducers build it from authoritative state, never as a delta, so a skipped version cannot leave a view incomplete.
+- **Monotonic.** Writes apply only when newer than the stored view and any tombstone. Redelivery and out-of-order events return `stale` or `revoked`.
+- **Shared views per recipient.** Each share is written as `shared/{share_id}/recipients/{member_id}`, one copy per audience member. Copies carry no audience list or member IDs. Removing a member from the audience deletes their copy.
+- **Private-field refusal.** Shared specs and documents reject private names in any style. Keys are normalized and checked against stems: owner, member, wallet, body, price, address, audience and similar. Nested keys are checked too.
+- **Expiry.** `expires_at` must be timezone-aware.
+- **Revocation.** `Delete(...)` removes every copy and records a tombstone, so older updates cannot resurrect the share. A delete older than the current view is ignored (`stale`).
+- **Member deletion.** `purge_member(member_id)` first writes a member-wide marker and then removes every private projection. Later upserts for that member return `revoked`.
+- **Reducers.** Register pure reducers per event type (`ProjectionRegistry.register`) and apply them after `first_delivery` dedupe.
+
+Client access is defined in `packages/firestore-rules`. Tests: `tests/foundation/test_projections_emulator.py` (needs `FIRESTORE_EMULATOR_HOST`).

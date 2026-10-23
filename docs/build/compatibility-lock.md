@@ -81,3 +81,12 @@ The spec's dated tuple (ch.04 §1) is reproduced below with npm availability on 
 3. **pydantic models** generated from the spec cannot express JSON Schema `if/then`. Python services validate with `jsonschema` first (`packages/contracts/README.md`).
 4. **pnpm 10** blocks dependency lifecycle scripts. The allowlist is in `pnpm-workspace.yaml` (`onlyBuiltDependencies`: esbuild, unrs-resolver, protobufjs, @parcel/watcher, sharp).
 5. **Security audit:** production findings and all critical findings now block CI and image publishing. Lower-severity findings remain visible; see `dependency-audit-2026-10-23.md` for the remaining upstream issues and exact verification. This is not a claim that every transitive dependency is vulnerability-free.
+
+## Additions 2026-10-23 (opus-foundation round 2)
+
+| Component | Pin | Status |
+|---|---|---|
+| Cloud Firestore emulator | gcloud component `cloud-firestore-emulator` **1.22.0** (`google-cloud-sdk-cloud-firestore-emulator-20260717053915.tar.gz`, SHA-256 `e962450b…ca91ba` from rapid `components-2.json`), fetched by `scripts/python/fetch_firestore_emulator.py` | installed+tested (projection + rules suites; CI `test-core`) |
+| firebase (JS, dev-only) | 13.1.0 | installed+tested (`@brandme/firestore-rules`) |
+| @firebase/rules-unit-testing | 6.0.0 (peers `firebase ^13`) | installed+tested |
+| @grpc/grpc-js override | `@grpc/grpc-js@1.9` → **1.14.6** in `pnpm-workspace.yaml` (firebase pins `~1.9`, affected by advisories fixed in ≥1.13.6) | rules suite passes; `pnpm audit` advisory set identical to `main` |
