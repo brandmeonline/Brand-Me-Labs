@@ -380,3 +380,20 @@ def test_card_security_code_in_arguments_is_rejected(h):
     assert "123" not in json.dumps(h.audit) and "4567" not in json.dumps(h.audit)
     assert not contains_card_security_code({"query": "size 123 linen", "id": str(uuid.uuid4())})
     assert contains_payment_credential({"n": "4111 1111 1111 1111"})
+
+
+def test_tool_call_log_line_sanitizes_external_values(keys):
+    from brandme_core.orchestrator.runlog import MemoryRunLog
+    log = MemoryRunLog(strict=True)  # a dropped or rejected audit line would raise here
+    h = Harness(keys)
+    h.ex.audit = log.tool_call
+    inv = {"request_id": "not-a-uuid <script>", "protocol_version": MCP_PROTOCOL_VERSION, "environment": "development",
+           "tool": "evil.tool; DROP TABLE", "arguments": {"query": "x"}, "idempotency_key": None}
+    status, _ = h.ex.invoke(h.assertion(), inv)
+    assert status == 400
+    h.call("brandme.catalog.search", {"query": "linen"})
+    bad, good = log.events("mcp.tool_call")
+    assert bad["request_id"] is None and bad["tool"] == "unrecognized" and bad["status"] == "error"
+    assert bad["retention"] == "security_audit_180d" and bad["level"] == "warning"
+    assert good["tool"] == "brandme.catalog.search" and good["status"] == "ok" and good["delegation_ref"]
+    assert "DROP" not in json.dumps(log.lines) and h.delegation.id not in json.dumps(log.lines)

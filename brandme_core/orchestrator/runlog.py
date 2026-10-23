@@ -1,0 +1,278 @@
+"""Assistant run log: one fixed-schema JSON line per record on stdout (ch.03 §11 "LLM execution").
+
+Lines follow the foundation worker pattern (``events/worker.py``): a closed field set per event,
+validated before writing, so a new field cannot leak by accident. A line that fails validation
+is replaced by ``assistant.runlog_rejected`` carrying only the event name. Logging never fails a
+task: write errors are counted in ``dropped``.
+
+What a line may hold: fixed codes, counts, durations, versions, keyed refs (``mcp.refs.log_ref``)
+and two correlation keys logged raw on purpose, the gateway request id and the provider's request
+id. What it never holds: prompts, the goal, model text or thinking, refusal explanations, tool
+arguments or results, provider text, exception text, URLs, hosts, headers, keys, the proxy URL,
+or raw member, task, delegation and event ids.
+
+The platform log pipeline routes on ``retention``: ``request_log_30d`` and ``security_audit_180d``
+are the spec's proposed classes (ch.03 §11); enforcing them is deployment work.
+"""
+
+from __future__ import annotations
+
+import io
+import json
+import re
+import sys
+import threading
+import uuid
+from datetime import datetime, timezone
+from typing import Any, Callable, Dict, List, Mapping, Optional, Protocol, TextIO, Tuple
+
+from brandme_core.mcp.refs import log_ref
+from brandme_core.mcp.tools import KNOWN_TOOL_NAMES, UNKNOWN_TOOL
+
+SCHEMA = "brandme.assistant.run_log.v1"
+UNRECOGNIZED = "unrecognized"
+
+_REF16 = re.compile(r"^[0-9a-f]{16}$")
+_CODE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
+_MODEL_ID = re.compile(r"^[a-z0-9][a-z0-9.-]{0,63}$")
+_PROVIDER_REQUEST_ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
+_SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
+_API_VERSION = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_PROMPT_VERSION = re.compile(r"^[0-9a-f]{12}$")
+_CLIENT_ID = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+
+STOP_REASONS = frozenset({"end_turn", "max_tokens", "stop_sequence", "tool_use", "pause_turn", "refusal",
+                          "model_context_window_exceeded", "other"})
+REFUSAL_CATEGORIES = frozenset({"cyber", "bio", "frontier_llm", "reasoning_extraction", "general_harms", "other"})
+PLANNER_LABELS = frozenset({"deterministic", "model:anthropic", "custom"})
+TASK_STATES = frozenset({"queued", "running", "awaiting_approval", "completed", "cancelled", "failed"})
+
+
+def _uuid(v: Any) -> bool:
+    try:
+        return isinstance(v, str) and str(uuid.UUID(v)) == v
+    except ValueError:
+        return False
+
+
+def _count(v: Any) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool) and v >= 0
+
+
+def _rx(pattern: "re.Pattern[str]") -> Callable[[Any], bool]:
+    return lambda v: isinstance(v, str) and bool(pattern.match(v))
+
+
+def _one_of(values) -> Callable[[Any], bool]:
+    allowed = frozenset(values)
+    return lambda v: isinstance(v, str) and v in allowed
+
+
+def _model(v: Any) -> bool:
+    return v == UNRECOGNIZED or _rx(_MODEL_ID)(v)
+
+
+def _proposal_tool(v: Any) -> bool:
+    return isinstance(v, str) and (v in KNOWN_TOOL_NAMES or v == UNKNOWN_TOOL)
+
+
+def _audited_tool(v: Any) -> bool:
+    return _proposal_tool(v) or v == UNRECOGNIZED
+
+
+_MODES = ("research", "prepare", "buy_within_rules")
+# field -> (validator, nullable)
+Spec = Dict[str, Tuple[Callable[[Any], bool], bool]]
+EVENTS: Dict[str, Tuple[str, Spec]] = {
+    "assistant.planner_selected": ("request_log_30d", {
+        "planner": (_one_of(PLANNER_LABELS), False), "provider": (_one_of({"anthropic"}), True),
+        "model": (_model, True), "effort": (_one_of({"low", "medium", "high"}), True),
+        "sdk_version": (_rx(_SEMVER), True), "api_version": (_rx(_API_VERSION), True),
+        "reason": (_one_of({"configured", "default"}), False),
+    }),
+    "assistant.model_call": ("request_log_30d", {
+        "request_id": (_uuid, True), "task_ref": (_rx(_REF16), False), "member_ref": (_rx(_REF16), False),
+        "mode": (_one_of(_MODES), False), "step": (_count, False),
+        "provider": (_one_of({"anthropic"}), False), "model": (_model, False), "model_served": (_model, True),
+        "sdk_version": (_rx(_SEMVER), False), "api_version": (_rx(_API_VERSION), False),
+        "prompt_version": (_rx(_PROMPT_VERSION), False), "tool_schema_version": (_rx(_SEMVER), False),
+        "effort": (_one_of({"low", "medium", "high"}), False), "prompt_ref": (_rx(_REF16), True),
+        "provider_request_id": (_rx(_PROVIDER_REQUEST_ID), True), "duration_ms": (_count, False),
+        "input_tokens": (_count, False), "output_tokens": (_count, False),
+        "cache_read_input_tokens": (_count, False), "cache_creation_input_tokens": (_count, False),
+        "thinking_tokens": (_count, True), "reserved_tokens": (_count, False),
+        "reserved_cost_micro_usd": (_count, False), "cost_micro_usd": (_count, False),
+        "cost_basis": (_one_of({"usage", "reserved_upper_bound", "none"}), False),
+        "task_tokens_total": (_count, False), "task_cost_micro_usd_total": (_count, False),
+        "stop_reason": (_one_of(STOP_REASONS), True), "refusal_category": (_one_of(REFUSAL_CATEGORIES), True),
+        "tool_use_blocks": (_count, False), "text_blocks": (_count, False), "unknown_tools": (_count, False),
+        "tool_calls": (_count, False), "proposed_tool": (_proposal_tool, True), "code": (_rx(_CODE), False),
+    }),
+    "assistant.task_end": ("request_log_30d", {
+        "request_id": (_uuid, True), "task_ref": (_rx(_REF16), False), "member_ref": (_rx(_REF16), False),
+        "mode": (_one_of(_MODES), False), "planner": (_one_of(PLANNER_LABELS), False),
+        "state": (_one_of(TASK_STATES), False), "code": (_rx(_CODE), False), "model_steps": (_count, False),
+        "tool_calls": (_count, False), "refused_calls": (_count, False), "duration_ms": (_count, False),
+        "tokens_total": (_count, False), "cost_micro_usd_total": (_count, False),
+    }),
+    "mcp.tool_call": ("security_audit_180d", {
+        "request_id": (_uuid, True), "tool": (_audited_tool, False), "client_id": (_rx(_CLIENT_ID), True),
+        "member_ref": (_rx(_REF16), False), "task_ref": (_rx(_REF16), True), "delegation_ref": (_rx(_REF16), True),
+        "step": (_count, True), "status": (_one_of({"ok", "error", "refused"}), False),
+        "code": (_rx(_CODE), True), "origin": (_one_of({"mcp", "assistant"}), False),
+        "duration_ms": (_count, False), "arguments_digest": (_rx(_REF16), False),
+    }),
+}
+REJECTED = "assistant.runlog_rejected"
+_ENVIRONMENTS = frozenset({"demo", "development", "sandbox", "production"})
+
+
+class RunLogViolation(ValueError):
+    """Raised by a strict ``MemoryRunLog`` (tests) instead of writing ``runlog_rejected``."""
+
+
+class RunLog(Protocol):
+    def planner_selected(self, **fields: Any) -> None: ...
+
+    def model_call(self, **fields: Any) -> None: ...
+
+    def task_end(self, **fields: Any) -> None: ...
+
+    def tool_call(self, audit_record: Mapping[str, Any]) -> None: ...
+
+
+def _level(event: str, f: Mapping[str, Any]) -> str:
+    if event == "assistant.model_call":
+        return "info" if f.get("code") == "ok" else "warning"
+    if event == "assistant.task_end":
+        return "warning" if f.get("state") == "failed" else "info"
+    if event == "mcp.tool_call":
+        return "info" if f.get("status") == "ok" else "warning"
+    return "warning" if event == REJECTED else "info"
+
+
+def tool_call_fields(record: Mapping[str, Any]) -> Dict[str, Any]:
+    """The audit record as a run-log line. Sanitized before validation: an external MCP client's
+    malformed request id or tool name becomes null / ``unrecognized``, so its audit line is
+    never dropped."""
+    tool = record.get("tool")
+    code = record.get("code")
+    client = record.get("client_id")
+    delegation = record.get("delegation_id")
+    step = record.get("step")
+    return {
+        "request_id": record.get("request_id") if _uuid(record.get("request_id")) else None,
+        "tool": tool if _proposal_tool(tool) else UNRECOGNIZED,
+        "client_id": None if client is None else (client if _rx(_CLIENT_ID)(client) else UNRECOGNIZED),
+        "member_ref": record.get("member_ref"), "task_ref": record.get("task_ref"),
+        "delegation_ref": log_ref("delegation", delegation) if isinstance(delegation, str) and delegation else None,
+        "step": step if _count(step) else None, "status": record.get("status"),
+        "code": None if code is None else (code if _rx(_CODE)(code) else UNRECOGNIZED),
+        "origin": record.get("origin"), "duration_ms": record.get("duration_ms"),
+        "arguments_digest": record.get("arguments_digest"),
+    }
+
+
+class JsonLineRunLog:
+    def __init__(self, *, environment: str, stream: Optional[TextIO] = None,
+                 wall: Callable[[], datetime] = lambda: datetime.now(timezone.utc)):
+        if environment not in _ENVIRONMENTS:
+            raise ValueError("unknown environment")
+        self.environment = environment
+        self._stream = stream  # None: sys.stdout at write time
+        self._wall = wall
+        self._lock = threading.Lock()
+        self.dropped = 0
+
+    # -- events ------------------------------------------------------------------
+    def planner_selected(self, **fields: Any) -> None:
+        self._emit("assistant.planner_selected", fields)
+
+    def model_call(self, **fields: Any) -> None:
+        self._emit("assistant.model_call", fields)
+
+    def task_end(self, **fields: Any) -> None:
+        self._emit("assistant.task_end", fields)
+
+    def tool_call(self, audit_record: Mapping[str, Any]) -> None:
+        """An ``McpToolExecutor`` audit sink."""
+        try:
+            fields = tool_call_fields(audit_record)
+        except Exception:
+            fields = {}
+        self._emit("mcp.tool_call", fields)
+
+    # -- emission ----------------------------------------------------------------
+    def _emit(self, event: str, fields: Mapping[str, Any]) -> None:
+        retention, spec = EVENTS[event]
+        if not self._valid(spec, fields):
+            self._violation(event)
+            return
+        self._write(self._line(event, retention, dict(fields)))
+
+    @staticmethod
+    def _valid(spec: Spec, fields: Mapping[str, Any]) -> bool:
+        if set(fields) != set(spec):
+            return False
+        for name, (check, nullable) in spec.items():
+            v = fields[name]
+            if v is None:
+                if not nullable:
+                    return False
+            elif not check(v):
+                return False
+        return True
+
+    def _violation(self, event: str) -> None:
+        self._write(self._line(REJECTED, "request_log_30d",
+                               {"rejected_event": event, "code": "runlog_schema_violation"}))
+
+    def _line(self, event: str, retention: str, fields: Dict[str, Any]) -> Dict[str, Any]:
+        return {"schema": SCHEMA, "event": event, "ts": self._wall().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "retention": retention, "environment": self.environment, "level": _level(event, fields), **fields}
+
+    def _write(self, line: Dict[str, Any]) -> None:
+        text = json.dumps(line, sort_keys=True, separators=(",", ":"), ensure_ascii=True) + "\n"
+        try:
+            with self._lock:
+                stream = self._stream if self._stream is not None else sys.stdout
+                stream.write(text)
+                stream.flush()
+        except Exception:  # logging never fails a task
+            self.dropped += 1
+
+
+class MemoryRunLog(JsonLineRunLog):
+    """Same validation; ``lines`` holds the parsed dicts. ``strict`` raises on a violation."""
+
+    def __init__(self, *, environment: str = "development", strict: bool = False,
+                 wall: Callable[[], datetime] = lambda: datetime.now(timezone.utc)):
+        super().__init__(environment=environment, stream=io.StringIO(), wall=wall)
+        self.strict = strict
+        self.lines: List[Dict[str, Any]] = []
+
+    def _violation(self, event: str) -> None:
+        if self.strict:
+            raise RunLogViolation(event)
+        super()._violation(event)
+
+    def _write(self, line: Dict[str, Any]) -> None:
+        super()._write(line)
+        self.lines.append(json.loads(json.dumps(line)))
+
+    def events(self, name: str) -> List[Dict[str, Any]]:
+        return [line for line in self.lines if line["event"] == name]
+
+
+class NullRunLog:
+    def planner_selected(self, **fields: Any) -> None:
+        pass
+
+    def model_call(self, **fields: Any) -> None:
+        pass
+
+    def task_end(self, **fields: Any) -> None:
+        pass
+
+    def tool_call(self, audit_record: Mapping[str, Any]) -> None:
+        pass

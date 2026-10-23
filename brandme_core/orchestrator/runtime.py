@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 from brandme_core.domains.commerce.delegation import AssistanceMode
 from brandme_core.domains.commerce.errors import CommerceError
+from brandme_core.domains.commerce.money import Money
 from brandme_core.domains.commerce.principal import Principal, is_first_party
 from brandme_core.mcp.authz import MCP_PROTOCOL_VERSION
 from brandme_core.mcp.tools import McpToolExecutor, _contains_payment_credential
@@ -58,6 +59,13 @@ class PlannerError(Exception):
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
+
+
+@dataclass(frozen=True)
+class TaskConstraints:
+    """Member-set limits a task carries. ``price_ceiling`` is the all-in total the member will
+    consider (``budget_hint``): same currency, no FX, enforced by the runtime at ``purchase.request``."""
+    price_ceiling: Optional[Money] = None
 
 
 @dataclass(frozen=True)
