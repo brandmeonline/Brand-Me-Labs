@@ -351,3 +351,50 @@ cookies, CSRF tokens, provider keys, test secrets or unredacted request logs.
 - `9a93d926fdc45672351f5bb97d267681598d0fc6` is fully green: Foundation [39995504475](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39995504475), Module Regression [39995495991](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39995495991), Consumer UI [39995504339](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39995504339). Consumer UI passed both production builds, 29 component/security tests, all 14 shell checks, four gallery viewport suites, the complete live-domain journey, and the HTTP-test-double catalog/product/inbox/reservation/My Data journeys at 390/1440 px in both themes. Product decoding and same-key reservation retry/focus now have browser execution evidence. The browser-only installation succeeded on both jobs.
 - Downloaded the complete **74-image** shell/gallery/domain capture and inspected the live mobile screens, consumer/console light/dark layouts, controls and enlarged-text navigation, plus product and privacy views. Capture review found a transient focused skip link in a domain screenshot: normalize focus and scroll only after behavioral/axe assertions, await fonts and disable animations for deterministic static captures. Keep all keyboard assertions. Also retain the account avatar as an accessible link in the compact 1024 px rail (the prior label selector still targeted its old wrapper); add a real keyboard-navigation and rail-overflow check at that width. Translate recommendation basis codes into plain-language copy using the authoritative domain's three published values.
 - Visual comparison remains explicitly **NOT_RUN** for this capture checkpoint. After inspecting the successor captures, commit the PNG baselines and remove capture mode; comparison must reject both missing baselines and missing current captures. The separate live screenshots are evidence only, not pixel baselines, because they contain real development timestamps and identifiers. Real-device, screen-reader and production acceptance remain separate open gates. No new credential created.
+
+### Stage 13 — reviewed visual baselines
+
+- Capture source `cfdecb6597b3bba6814e6ab69a0f87117757555d` passed Foundation [39996399865](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39996399865), Module Regression [39996390196](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39996390196) and Consumer UI [39996399843](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39996399843). The latter now includes **15 shell checks**, four controls-gallery viewport suites, both full UI-test-double journeys and the complete real-service journey. PR checks tested merge candidate `b1793602c27ff07be0b98769033e07f784c412d2` against the specified base.
+- Reviewed artifact `12520486317` (ZIP SHA-256 `fcb962a593d563dfc565a5c5de2e4efafbfd12162ced200084ca758505ea8acd`): all 74 images in overview sheets, with full-size inspection of representative mobile/desktop light/dark, enlarged-text, controls, catalog/product, rewards and privacy views. The transient skip-link capture is gone. Commit these unchanged PNGs in `brandme-frontend/lib/testing/baselines/`: **38 shell, 8 controls, 28 domain-view** images. Live screenshots remain separate because their identifiers and timestamps vary.
+- Remove workflow capture mode. The mandatory comparison rejects missing/extra captures, dimension changes and pixel differences above the documented threshold; it never updates baselines itself. Current code and capture checks are green; the successor commit must still prove the first independent CI pixel comparison before visual-regression acceptance is claimed. Manual real-device/screen-reader acceptance, production mounts, live commerce/privacy integration and assistant/checkout/order completion remain open.
+- Local comparison wiring passed on all 74 reviewed images; deliberate missing-capture and changed-pixel checks both failed as required. This validates the comparator's failure paths, not an independent browser run.
+
+### Founder check-in — decisions and recommended defaults
+
+W01's versioned contract is published, PR #56 is open, and the frontend's real development-gateway journey has passed. Continue with these defaults unless the founder changes direction; these questions do not authorize production changes or imply the remaining integrations are complete.
+
+Direction (1–7):
+
+1. Enforce the shared console shell contract or retire it? **Default: enforce v1.1.0 through compatible adoption in each domain's integration PR.**
+2. Prioritize the personal wardrobe/Circle journey or shopping for the next milestone? **Default: personal wardrobe/Circle.**
+3. Keep three guided onboarding axes or expose all twelve immediately? **Default: three initially, all twelve editable afterward.**
+4. Optimize the first experience for everyday members or fashion specialists? **Default: everyday members, with deeper controls available.**
+5. Keep Circle decisions fixed at five minutes or add duration choices? **Default: five minutes until usage evidence supports more choices.**
+6. Make rewards a primary destination or supporting recognition? **Default: supporting recognition, with balances and evidence accessible.**
+7. Emphasize editorial inspiration or task completion on Today? **Default: task completion first, followed by clearly labeled editorial inspiration.**
+
+Integration and security (8–14):
+
+8. Move the verified consumer composition into the shared development gateway now or keep it isolated until the domain merge? **Default: domain owners integrate the mounts with their merge; retain the isolated regression harness.**
+9. Extend foundation identity for the shared development environment or introduce a separate identity adapter? **Default: extend foundation identity; simulated sign-in remains development-only.**
+10. Should the catalog service supply canonical product/variant capability links or should a separate mapping service own them? **Default: the catalog service supplies authoritative links.**
+11. Prioritize complete quote/order readers or assistant streaming in the commerce integration? **Default: complete quote terms and order readers first.**
+12. Start assistant delegation with research only or bounded purchase authority? **Default: research only, with explicit scopes; purchase authority requires a separate reviewed flow.**
+13. Ship clearly scoped selected-category privacy tools or wait for whole-account coverage? **Default: selected-category tools, with coverage and retained-data limits explicit.**
+14. Who owns rotation and revocation of development credentials after integration? **Default: each domain owner, tracked in the existing name/scope/storage/date manifest.**
+
+Scope and sequencing (15–21):
+
+15. After the visual gate, prioritize shared-gateway integration or additional UI routes? **Default: shared-gateway integration and end-to-end contract closure.**
+16. Prioritize redeemable benefit inventory or contribution/reward history? **Default: history first; reservations require an owned, available inventory.**
+17. Require real-device and screen-reader evidence before external release or permit an internal preview first? **Default: internal preview now, those evidence gates before external release.**
+18. Migrate local console headers in each domain integration PR or in one later batch? **Default: each integration PR, preserving its authorization and content.**
+19. Implement catalog-to-wardrobe handoff or checkout first once canonical links exist? **Default: wardrobe handoff first.**
+20. Keep PR #56 on the designated integration base or retarget it? **Default: keep the specified base until the founder's cross-lane integration plan changes.**
+21. Start the next pilot with the internal team or selected external members? **Default: internal team until manual accessibility and shared-service gates pass.**
+
+Next steps for the top three decisions:
+
+- **#1 Enforce:** version-check imports and migrate duplicate headers as domain PRs integrate. **Retire:** document a successor ownership contract, preserve landmarks/accessibility, and remove shared-header imports only after consumers migrate.
+- **#2 Wardrobe/Circle:** close catalog-to-owned-item mapping and shared mounts, then verify the save/ask/respond loop. **Shopping:** first obtain canonical identities, complete quote terms and order readers, then build review/approval/receipt UI with explicit delegated authority.
+- **#3 Three axes:** keep the current short guest flow and verify its handoff to the full editor. **All twelve:** expand the guided flow with resumable progress and optional answers, then rerun mobile/keyboard and guest-migration coverage.
