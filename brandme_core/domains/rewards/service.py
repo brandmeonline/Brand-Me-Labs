@@ -27,6 +27,7 @@ from brandme_core.domains.persona.kernel import (
     command,
     decode_cursor,
     encode_cursor,
+    guard_write,
     iso,
     member_active,
     new_id,
@@ -160,6 +161,7 @@ class RewardsService:
         def tx(txn, ctx: CommandContext):
             if not member_active(txn, m):
                 raise NotFound("member not found")
+            guard_write(txn, m, "rewards.disputes")
             if entry_id and ledger.entry(txn, m, entry_id) is None:
                 raise NotFound("entry not found")
             open_n = query(txn, "SELECT COUNT(*) FROM RewardDisputes WHERE member_id=@m AND state='open'", {"m": m}, {"m": STR})[0][0]
@@ -226,6 +228,8 @@ class RewardsService:
             require_not_self(operator, d["member_id"])
             if d["state"] != "open":
                 return _dispute_dto(d)
+            if points > 0:  # a credit adds data; a debit or "no change" reduces or leaves it
+                guard_write(txn, d["member_id"], "rewards.ledger")
             corr = ledger.correction(txn, ctx, d["member_id"], dispute_id, points, note, [f"evidence:{evidence}"]) if points else None
             state = "resolved_correction" if corr else "resolved_no_change"
             txn.update("RewardDisputes", columns=("member_id", "dispute_id", "state", "resolution_note", "resolved_by", "correction_entry_id",
@@ -272,6 +276,7 @@ class RewardsService:
         def tx(txn, ctx: CommandContext):
             if not member_active(txn, member_id):
                 raise NotFound("member not found")
+            guard_write(txn, member_id, "rewards.ledger")
             now = server_now(txn)
             if kind == "catalog_correction":
                 out = ledger.credit(txn, ctx, member_id, RULES["catalog_correction_accepted"], f"contribution:{ref}", now,
@@ -294,6 +299,7 @@ class RewardsService:
         def tx(txn, ctx: CommandContext):
             if not member_active(txn, member_id):
                 raise NotFound("member not found")
+            guard_write(txn, member_id, "rewards.ledger")
             out = ledger.credit(txn, ctx, member_id, RULES["verified_repair"], f"repair:{ref}", server_now(txn),
                                 [f"repair:{ref}", f"issuer:{issuer_ref}"])
             return {**out, "badges": badges.evaluate(txn, ctx, member_id, ("care_keeper",))}

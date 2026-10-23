@@ -42,3 +42,16 @@ def assert_processing_allowed(txn: Any, member_id: str, category: str, basis_tim
     except ProcessingFrozenError as exc:
         raise ProcessingFrozen(str(exc)) from exc
     return True
+
+
+WHOLE_CATEGORY_ONLY = ("this domain deletes whole categories only; a record-level request was not applied "
+                       "so nothing was over-deleted")
+
+
+def record_scope_refusal(pd: Any, ctx: Any, category: str) -> Any:
+    """The privacy orchestrator may narrow a deletion to ``record_keys``. This
+    lane's handlers delete whole categories, so a narrowed request returns a
+    truthful exception outcome instead of silently deleting more than asked."""
+    if getattr(ctx, "record_keys", ()):
+        return pd.DeletionOutcome(category, 0, done=True, exception=WHOLE_CATEGORY_ONLY)
+    return None

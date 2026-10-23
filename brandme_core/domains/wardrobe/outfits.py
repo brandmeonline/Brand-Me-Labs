@@ -34,6 +34,7 @@ from brandme_core.domains.persona.kernel import (
     idempotent_command,
     iso,
     json_value,
+    guard_write,
     member_active,
     new_id,
     parse_revision,
@@ -184,6 +185,7 @@ class OutfitService:
         def txn_fn(txn, ctx: CommandContext):
             if not member_active(txn, owner):
                 raise NotFound("member not found")
+            guard_write(txn, owner, "wardrobe.outfits")
             self._check_items(txn, owner, comp["item_refs"])
             outfit_id = new_id()
             txn.insert(
@@ -251,6 +253,7 @@ class OutfitService:
             o = self._outfit(txn, principal.member_id, outfit_id)
             if o is None or o["archived"]:
                 raise NotFound("outfit not found")
+            guard_write(txn, principal.member_id, "wardrobe.outfits")
             if expected != o["head_version"]:
                 raise DetailedVersionConflict("outfit has a newer version", o["head_version"])
             self._check_items(txn, principal.member_id, comp["item_refs"])
@@ -293,6 +296,8 @@ class OutfitService:
             # Same 404 whether the outfit is missing or the proposer may not see it.
             if o is None or o["archived"] or not self.proposal_policy(txn, owner, principal.member_id):
                 raise NotFound("outfit not found")
+            guard_write(txn, principal.member_id, "wardrobe.proposals_authored")
+            guard_write(txn, owner, "wardrobe.outfits")
             if int(base) > o["head_version"]:
                 raise ValidationFailed("base_version does not exist", extra={"field": "base_version"})
             if query(
@@ -355,6 +360,7 @@ class OutfitService:
             o = self._outfit(txn, owner, outfit_id)
             if o is None or o["archived"]:
                 raise NotFound("outfit not found")
+            guard_write(txn, owner, "wardrobe.outfits")
             rows = query(
                 txn,
                 "SELECT proposer_member_id, item_refs, layer_order, notes, state FROM OutfitProposals "
@@ -427,6 +433,7 @@ class OutfitService:
             })
 
         def txn_fn(txn, ctx: CommandContext):
+            guard_write(txn, principal.member_id, "wardrobe.packing")
             if not member_active(txn, principal.member_id):
                 raise NotFound("member not found")
             item_ids = [e["item_id"] for e in entries if e["item_id"]]
@@ -460,6 +467,7 @@ class OutfitService:
             rows = query(txn, "SELECT version FROM PackingLists WHERE member_id=@m AND list_id=@l", {"m": principal.member_id, "l": list_id}, {"m": STR, "l": STR})
             if not rows:
                 raise NotFound("packing list not found")
+            guard_write(txn, principal.member_id, "wardrobe.packing")
             if rows[0][0] != expected:
                 raise DetailedVersionConflict("packing list changed", rows[0][0])
             if not query(txn, "SELECT 1 FROM PackingEntries WHERE member_id=@m AND list_id=@l AND entry_id=@e",

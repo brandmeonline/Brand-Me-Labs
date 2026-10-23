@@ -15,6 +15,7 @@ from typing import Any, Dict, List
 
 from brandme_core.domains import DataCategory as FoundationDataCategory, register_data_category
 from brandme_core.domains.persona.kernel import NIL_MEMBER, STR, iso, json_value, query, run_read, run_txn
+from brandme_core.domains.persona.privacy_guard import record_scope_refusal
 
 DOMAIN = "wardrobe"
 _M = {"m": STR}
@@ -103,11 +104,11 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
         ]
     if category == "wardrobe.packing":
         lists = []
-        for l in query(snap, "SELECT list_id, title, starts_on, ends_on FROM PackingLists WHERE member_id=@m ORDER BY list_id", m, _M):
+        for pl in query(snap, "SELECT list_id, title, starts_on, ends_on FROM PackingLists WHERE member_id=@m ORDER BY list_id", m, _M):
             entries = query(snap, "SELECT entry_id, outfit_id, item_id, quantity, state FROM PackingEntries WHERE member_id=@m AND list_id=@l",
-                            {"m": member_id, "l": l[0]}, {"m": STR, "l": STR})
-            lists.append({"list_id": l[0], "title": l[1], "starts_on": l[2].isoformat() if l[2] else None,
-                          "ends_on": l[3].isoformat() if l[3] else None,
+                            {"m": member_id, "l": pl[0]}, {"m": STR, "l": STR})
+            lists.append({"list_id": pl[0], "title": pl[1], "starts_on": pl[2].isoformat() if pl[2] else None,
+                          "ends_on": pl[3].isoformat() if pl[3] else None,
                           "entries": [{"entry_id": e[0], "outfit_id": e[1], "item_id": e[2], "quantity": e[3], "state": e[4]} for e in entries]})
         return lists
     raise KeyError(category)
@@ -150,7 +151,8 @@ for _key, _c in CATEGORIES.items():
     ))
 
 
-def _make_privacy_handler():
+def build_privacy_handler():
+    """A fresh handler instance, or None when the privacy lane is absent."""
     try:
         from brandme_core.domains.privacy import deletion as pd
     except ImportError:
@@ -173,20 +175,32 @@ def _make_privacy_handler():
             return pd.ExportSection(category, export_category(snapshot, ctx.subject_ref, category))
 
         def delete(self, txn, ctx, category):
-            return pd.DeletionOutcome(category, delete_category(txn, ctx.subject_ref, category))
+            return record_scope_refusal(pd, ctx, category) or pd.DeletionOutcome(category, delete_category(txn, ctx.subject_ref, category))
 
         def purge_derived(self, ctx, category):
             return pd.DeletionOutcome(category, 0, done=True, detail="wardrobe keeps no derived stores; try-on media is purged by the media domain")
 
         def reapply_tombstone(self, txn, tombstone):
+            if tombstone.record_keys:
+                return 0  # record-level deletions are refused by delete(); nothing to reapply
             return delete_category(txn, tombstone.subject_ref, tombstone.category)
 
-    handler = WardrobePrivacyHandler()
+    return WardrobePrivacyHandler()
+
+
+def _register_default():
+    handler = build_privacy_handler()
+    if handler is None:
+        return None
+    from brandme_core.domains.privacy import deletion as pd
+
     try:
         pd.register_domain(handler)
     except pd.PrivacyRegistryError:
+        # Already registered (module re-import) or a lane-local stand-in owns the
+        # keys (e.g. the privacy lane's test fixture); never register twice.
         return None
     return handler
 
 
-PRIVACY_HANDLER = _make_privacy_handler()
+PRIVACY_HANDLER = _register_default()

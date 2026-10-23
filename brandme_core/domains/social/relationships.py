@@ -26,6 +26,8 @@ from brandme_core.domains.persona.kernel import (
     Principal,
     command,
     iso,
+    guard_write,
+    processing_allowed,
     member_active,
     query,
     require_scope,
@@ -71,9 +73,10 @@ class RelationshipService:
             raise DetailedInvalidTransition("you cannot befriend yourself", code="self_relationship")
 
         def tx(txn, ctx: CommandContext):
-            # Missing, inactive and blocked look the same to the requester.
-            if not member_active(txn, target) or blocked_between(txn, me, target):
+            # Missing, inactive, blocked and deletion-pending look the same to the requester.
+            if not member_active(txn, target) or blocked_between(txn, me, target) or not processing_allowed(txn, target, "social.relationships"):
                 raise NotFound("member not found")
+            guard_write(txn, me, "social.relationships")
             existing = self._pair(txn, me, target)
             rid = relationship_id(me, target)
             if existing:
@@ -109,8 +112,9 @@ class RelationshipService:
             if state != "requested_in":
                 # The requester cannot accept their own request.
                 raise NotFound("request not found")
-            if blocked_between(txn, me, other):
+            if blocked_between(txn, me, other) or not processing_allowed(txn, other, "social.relationships"):
                 raise NotFound("request not found")
+            guard_write(txn, me, "social.relationships")
             for a, b in ((me, other), (other, me)):
                 txn.update("Relationships", columns=("member_id", "other_member_id", "state", "accepted_at", "version"),
                            values=[(a, b, "accepted", COMMIT_TIMESTAMP, version + 1)])

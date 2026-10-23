@@ -25,6 +25,7 @@ from google.cloud.spanner_v1 import COMMIT_TIMESTAMP, KeySet
 from brandme_core.domains import DataCategory as FoundationDataCategory, register_data_category
 
 from .kernel import STR, iso, json_value, query, run_read, run_txn
+from .privacy_guard import record_scope_refusal
 
 DOMAIN = "persona"
 
@@ -259,6 +260,30 @@ def delete_member(txn, member_id: str) -> Dict[str, Any]:
     return {"domain": DOMAIN, "deleted": counts, "retained": [], "tombstoned": True}
 
 
+_LEFT_IN_PROFILE = (
+    "SELECT 1 FROM PersonaEvidence WHERE member_id=@m LIMIT 1",
+    "SELECT 1 FROM PersonaSnapshots WHERE member_id=@m LIMIT 1",
+    "SELECT 1 FROM RecommendationFeedback WHERE member_id=@m LIMIT 1",
+    "SELECT 1 FROM PersonaContextOverrides WHERE member_id=@m LIMIT 1",
+    "SELECT 1 FROM PersonaAxes WHERE member_id=@m AND (declared_value IS NOT NULL OR inferred_value IS NOT NULL) LIMIT 1",
+)
+
+
+def remove_account_shell(txn, member_id: str, job_id: str) -> int:
+    """Whole-account privacy deletion runs per category, which leaves an empty
+    profile row (reset axes, suppression fingerprints). Once every persona
+    category is empty in an account-scoped job, drop that row as ``delete_member``
+    does. A category-scoped job keeps it: the member still has a profile.
+    ``DeletionJobs`` is the privacy lane's job table (V009)."""
+    if not query(txn, "SELECT 1 FROM DeletionJobs WHERE job_id=@j AND scope='account'", {"j": job_id}, {"j": STR}):
+        return 0
+    m = {"m": member_id}
+    if not query(txn, "SELECT 1 FROM PersonaProfiles WHERE member_id=@m", m, _M) or any(query(txn, q, m, _M) for q in _LEFT_IN_PROFILE):
+        return 0
+    delete_member(txn, member_id)
+    return 1
+
+
 # ---------------------------------------------- foundation registration
 
 
@@ -289,7 +314,8 @@ for _key, _c in CATEGORIES.items():
 # ------------------------------------------- privacy-lane registration
 
 
-def _make_privacy_handler():
+def build_privacy_handler():
+    """A fresh handler instance, or None when the privacy lane is absent."""
     try:
         from brandme_core.domains.privacy import deletion as pd
     except ImportError:
@@ -319,7 +345,11 @@ def _make_privacy_handler():
             return pd.ExportSection(category, export_category(snapshot, ctx.subject_ref, category))
 
         def delete(self, txn, ctx, category: str):
-            return pd.DeletionOutcome(category, delete_category(txn, ctx.subject_ref, category))
+            refused = record_scope_refusal(pd, ctx, category)
+            if refused:
+                return refused
+            n = delete_category(txn, ctx.subject_ref, category)
+            return pd.DeletionOutcome(category, n + remove_account_shell(txn, ctx.subject_ref, ctx.job_id))
 
         def purge_derived(self, ctx, category: str):
             # No Firestore projection, cache or object storage is owned by the
@@ -327,9 +357,20 @@ def _make_privacy_handler():
             return pd.DeletionOutcome(category, 0, done=True, detail="persona keeps no derived stores")
 
         def reapply_tombstone(self, txn, tombstone) -> int:
-            return delete_category(txn, tombstone.subject_ref, tombstone.category)
+            if tombstone.record_keys:
+                return 0  # record-level deletions are refused by delete(); nothing to reapply
+            n = delete_category(txn, tombstone.subject_ref, tombstone.category)
+            return n + remove_account_shell(txn, tombstone.subject_ref, tombstone.deletion_job_id)
 
-    handler = PersonaPrivacyHandler()
+    return PersonaPrivacyHandler()
+
+
+def _register_default():
+    handler = build_privacy_handler()
+    if handler is None:
+        return None
+    from brandme_core.domains.privacy import deletion as pd
+
     try:
         pd.register_domain(handler)
     except pd.PrivacyRegistryError:
@@ -339,5 +380,5 @@ def _make_privacy_handler():
     return handler
 
 
-PRIVACY_HANDLER = _make_privacy_handler()
+PRIVACY_HANDLER = _register_default()
 

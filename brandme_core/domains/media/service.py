@@ -41,6 +41,7 @@ from brandme_core.domains.persona.kernel import (
     RateLimited,
     ValidationFailed,
     command,
+    guard_write,
     idempotent_command,
     iso,
     member_active,
@@ -244,6 +245,7 @@ class MediaService:
             cur = self._media(txn, m, media_id)
             if cur is None or cur["state"] != "awaiting_upload" or cur["deleted_at"] is not None:
                 return cur, None
+            guard_write(txn, m, "media.tryon_media")
             now = server_now(txn)
             if code:
                 purge = self._tombstone(txn, ctx, cur, "rejected", now)
@@ -391,6 +393,7 @@ class MediaService:
                 raise NotFound("job not found")
             if j["saved"]:
                 return self._job_dto(j)
+            guard_write(txn, m, "media.tryon_media")
             if j["state"] != "succeeded" or not j["output_media_ref"] or j["expires_at"] <= server_now(txn):
                 raise DetailedInvalidTransition("only a finished, unexpired preview can be saved", code="not_saveable")
             out = self._media(txn, m, j["output_media_ref"])

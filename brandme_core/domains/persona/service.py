@@ -35,6 +35,7 @@ from .kernel import (
     idempotent_command,
     iso,
     json_value,
+    guard_write,
     member_active,
     new_id,
     parse_revision,
@@ -490,13 +491,15 @@ class PersonaService:
 
     # -------------------------------------------------------------- commands
 
-    def _writable(self, txn, member_id: str) -> None:
-        """A persona exists only for an active V001 member and never after deletion."""
+    def _writable(self, txn, member_id: str, category: str = "persona.declared") -> None:
+        """A persona exists only for an active V001 member and never after deletion;
+        a pending privacy request freezes member writes too (W10)."""
         if self._tombstoned(txn, member_id) or not member_active(txn, member_id):
             raise NotFound("profile not found")
+        guard_write(txn, member_id, category)
 
-    def _begin(self, txn, principal: Principal, if_match: Optional[str]) -> _Profile:
-        self._writable(txn, principal.member_id)
+    def _begin(self, txn, principal: Principal, if_match: Optional[str], category: str = "persona.declared") -> _Profile:
+        self._writable(txn, principal.member_id, category)
         p = self._load(txn, principal.member_id)
         if if_match is not None:
             base = parse_revision(if_match)
@@ -791,7 +794,7 @@ class PersonaService:
 
         def txn_fn(txn, ctx: CommandContext):
             now = self.clock.now()
-            p = self._begin(txn, principal, None)
+            p = self._begin(txn, principal, None, "persona.evidence")
             rows = query(
                 txn,
                 "SELECT source_fingerprint, suppression_state, axis_contributions FROM PersonaEvidence "
@@ -847,7 +850,7 @@ class PersonaService:
 
         def txn_fn(txn, ctx: CommandContext):
             now = self.clock.now()
-            p = self._begin(txn, principal, if_match)
+            p = self._begin(txn, principal, if_match, "persona.inferred" if scope == "inference" else "persona.declared")
             if not p.exists:
                 raise InvalidTransition("there is no saved profile to reset")
             if scope in ("inference", "all"):
@@ -910,7 +913,7 @@ class PersonaService:
 
         def txn_fn(txn, ctx: CommandContext):
             now = self.clock.now()
-            p = self._begin(txn, principal, None)
+            p = self._begin(txn, principal, None, "persona.snapshots")
             if not p.exists:
                 raise InvalidTransition("save your style before taking a snapshot")
             eff = resolve_effective(p.axes, p.overrides, p.learning_enabled, now)
@@ -1208,7 +1211,7 @@ class PersonaService:
         request = {"product_id": product_id, "category": category, "signal": signal}
 
         def txn_fn(txn, ctx: CommandContext):
-            p = self._begin(txn, principal, None)
+            p = self._begin(txn, principal, None, "persona.feedback")
             if not p.exists:
                 raise InvalidTransition("save your style before giving feedback")
             fid = new_id()

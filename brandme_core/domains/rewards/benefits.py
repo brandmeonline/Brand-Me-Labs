@@ -35,6 +35,7 @@ from brandme_core.domains.persona.kernel import (
     Principal,
     ValidationFailed,
     command,
+    guard_write,
     idempotent_command,
     iso,
     member_active,
@@ -140,6 +141,7 @@ class BenefitService:
         def tx(txn, ctx: CommandContext):
             if not member_active(txn, member):
                 raise NotFound("member not found")
+            guard_write(txn, member, "rewards.redemptions")
             now = server_now(txn)
             b = _benefit(txn, benefit_id)
             if b is None or not b["active"]:

@@ -14,6 +14,7 @@ from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
 
 from brandme_core.domains import DataCategory as FoundationDataCategory, register_data_category
 from brandme_core.domains.persona.kernel import STR, iso, query, run_read, run_txn
+from brandme_core.domains.persona.privacy_guard import record_scope_refusal
 
 DOMAIN = "rewards"
 _M = {"m": STR}
@@ -112,7 +113,8 @@ for _key, _c in CATEGORIES.items():
     ))
 
 
-def _make_privacy_handler():
+def build_privacy_handler():
+    """A fresh handler instance, or None when the privacy lane is absent."""
     try:
         from brandme_core.domains.privacy import deletion as pd
     except ImportError:
@@ -135,20 +137,32 @@ def _make_privacy_handler():
             return pd.ExportSection(category, export_category(snapshot, ctx.subject_ref, category))
 
         def delete(self, txn, ctx, category):
-            return pd.DeletionOutcome(category, delete_category(txn, ctx.subject_ref, category))
+            return record_scope_refusal(pd, ctx, category) or pd.DeletionOutcome(category, delete_category(txn, ctx.subject_ref, category))
 
         def purge_derived(self, ctx, category):
             return pd.DeletionOutcome(category, 0, done=True, detail="no derived stores outside Spanner")
 
         def reapply_tombstone(self, txn, tombstone):
+            if tombstone.record_keys:
+                return 0  # record-level deletions are refused by delete(); nothing to reapply
             return delete_category(txn, tombstone.subject_ref, tombstone.category)
 
-    handler = RewardsPrivacyHandler()
+    return RewardsPrivacyHandler()
+
+
+def _register_default():
+    handler = build_privacy_handler()
+    if handler is None:
+        return None
+    from brandme_core.domains.privacy import deletion as pd
+
     try:
         pd.register_domain(handler)
     except pd.PrivacyRegistryError:
+        # Already registered (module re-import) or a lane-local stand-in owns the
+        # keys (e.g. the privacy lane's test fixture); never register twice.
         return None
     return handler
 
 
-PRIVACY_HANDLER = _make_privacy_handler()
+PRIVACY_HANDLER = _register_default()

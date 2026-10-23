@@ -33,6 +33,7 @@ from brandme_core.domains.persona.kernel import (
     RateLimited,
     ValidationFailed,
     command,
+    guard_write,
     iso,
     member_active,
     new_id,
@@ -131,6 +132,7 @@ class ReportService:
         def tx(txn, ctx: CommandContext):
             if not member_active(txn, me):
                 raise NotFound("member not found")
+            guard_write(txn, me, "social.reports")
             ref, owner = self._resolve_target(txn, me, target_type, target)
             existing = query(txn, f"SELECT {', '.join(COLS)} FROM MemberReports@{{FORCE_INDEX=MemberReportsByReporterTarget}} "
                                   "WHERE reporter_id=@r AND target_ref=@t", {"r": me, "t": ref}, {"r": STR, "t": STR})

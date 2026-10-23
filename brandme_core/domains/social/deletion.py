@@ -16,6 +16,7 @@ from typing import Any, Dict, List
 
 from brandme_core.domains import DataCategory as FoundationDataCategory, register_data_category
 from brandme_core.domains.persona.kernel import NIL_MEMBER, STR, iso, json_value, query, run_read, run_txn
+from brandme_core.domains.persona.privacy_guard import record_scope_refusal
 
 DOMAIN = "social"
 _M = {"m": STR}
@@ -133,7 +134,11 @@ def delete_category(txn, member_id: str, category: str) -> int:
         # (reporter, target) unique index cannot collide; unlinkable to the person).
         n = txn.execute_update("UPDATE MemberReports SET reporter_id=report_id, note=NULL WHERE reporter_id=@m",
                                params={"m": member_id}, param_types={"m": STR})
-        return n + txn.execute_update("UPDATE MemberReports SET target_owner_id=@nil WHERE target_owner_id=@m", params=nil, param_types=nt)
+        # Reports about this member keep their outcome; the member's id leaves both
+        # the owner and the canonical ref ("member:<id>", ".../response:<id>").
+        # The per-report replacement keeps the (reporter, target_ref) index unique.
+        return n + txn.execute_update("UPDATE MemberReports SET target_owner_id=@nil, target_ref=REPLACE(target_ref, @m, CONCAT('deleted-', report_id)) "
+                                      "WHERE target_owner_id=@m", params=nil, param_types=nt)
     if category == "social.notifications":
         n = txn.execute_update("DELETE FROM Notifications WHERE member_id=@m", params=m, param_types=_M)
         return n + txn.execute_update("UPDATE Notifications SET actor_member_id=NULL WHERE actor_member_id=@m", params=m, param_types=_M)
@@ -149,7 +154,8 @@ for _key, _c in CATEGORIES.items():
     ))
 
 
-def _make_privacy_handler():
+def build_privacy_handler():
+    """A fresh handler instance, or None when the privacy lane is absent."""
     try:
         from brandme_core.domains.privacy import deletion as pd
     except ImportError:
@@ -173,21 +179,33 @@ def _make_privacy_handler():
             return pd.ExportSection(category, export_category(snapshot, ctx.subject_ref, category))
 
         def delete(self, txn, ctx, category):
-            return pd.DeletionOutcome(category, delete_category(txn, ctx.subject_ref, category))
+            return record_scope_refusal(pd, ctx, category) or pd.DeletionOutcome(category, delete_category(txn, ctx.subject_ref, category))
 
         def purge_derived(self, ctx, category):
             # Share previews live in Spanner and are deleted with the grant; no other cache exists in this lane.
             return pd.DeletionOutcome(category, 0, done=True, detail="no derived stores outside Spanner")
 
         def reapply_tombstone(self, txn, tombstone):
+            if tombstone.record_keys:
+                return 0  # record-level deletions are refused by delete(); nothing to reapply
             return delete_category(txn, tombstone.subject_ref, tombstone.category)
 
-    handler = SocialPrivacyHandler()
+    return SocialPrivacyHandler()
+
+
+def _register_default():
+    handler = build_privacy_handler()
+    if handler is None:
+        return None
+    from brandme_core.domains.privacy import deletion as pd
+
     try:
         pd.register_domain(handler)
     except pd.PrivacyRegistryError:
+        # Already registered (module re-import) or a lane-local stand-in owns the
+        # keys (e.g. the privacy lane's test fixture); never register twice.
         return None
     return handler
 
 
-PRIVACY_HANDLER = _make_privacy_handler()
+PRIVACY_HANDLER = _register_default()

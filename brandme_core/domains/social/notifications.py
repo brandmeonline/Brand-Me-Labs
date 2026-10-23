@@ -22,6 +22,7 @@ from brandme_core.domains.persona.kernel import (
     encode_cursor,
     iso,
     json_value,
+    processing_allowed,
     new_id,
     query,
     require_scope,
@@ -52,6 +53,8 @@ def notify(txn, *, recipient_id: str, event_id: str, type_: str, actor_member_id
         raise ValueError(f"notification payload keys not allowed: {sorted(unsafe)}")
     if actor_member_id and blocked_between(txn, recipient_id, actor_member_id):
         return False
+    if not processing_allowed(txn, recipient_id, "social.notifications"):
+        return False  # deletion pending for the recipient: skip, never fail the actor's action
     if query(txn, "SELECT 1 FROM Notifications WHERE member_id=@m AND event_id=@e AND type=@t",
              {"m": recipient_id, "e": event_id, "t": type_}, {"m": STR, "e": STR, "t": STR}):
         return False

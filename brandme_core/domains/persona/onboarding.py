@@ -31,6 +31,7 @@ from .kernel import (
     ValidationFailed,
     canonical_digest,
     idempotent_command,
+    guard_write,
     member_active,
     query,
     reject_non_finite,
@@ -140,6 +141,7 @@ class GuestMigrationService:
             svc = self.persona
             if svc._tombstoned(txn, member_id) or not member_active(txn, member_id):
                 raise NotFound("member not found")
+            guard_write(txn, member_id, "persona.declared")
             prior = query(
                 txn,
                 "SELECT member_id, payload_digest FROM GuestMigrations@{FORCE_INDEX=GuestMigrationsByNamespace} "

@@ -46,6 +46,8 @@ from brandme_core.domains.persona.kernel import (
     command,
     idempotent_command,
     iso,
+    guard_write,
+    processing_allowed,
     member_active,
     query,
     reject_non_finite,
@@ -259,10 +261,12 @@ class DecisionService:
         def tx(txn, ctx: CommandContext):
             if not member_active(txn, creator):
                 raise NotFound("member not found")
+            guard_write(txn, creator, "social.decisions")
             now = self.clock.now(txn)
             if creator in req["recipient_ids"]:
                 raise ValidationFailed("you cannot ask yourself; use a private comparison instead", extra={"field": "recipient_ids"})
-            ineligible = sorted(r for r in req["recipient_ids"] if not are_friends(txn, creator, r))
+            ineligible = sorted(r for r in req["recipient_ids"]
+                                if not are_friends(txn, creator, r) or not processing_allowed(txn, r, "social.decisions"))
             if ineligible:
                 raise DetailedInvalidTransition("recipients must be friends you can reach", code="ineligible_recipients",
                                                 extra={"ineligible_recipient_ids": ineligible})
@@ -318,6 +322,7 @@ class DecisionService:
                 raise NotFound("decision not found")
             if d["state"] != "draft":
                 raise DetailedInvalidTransition(f"decision is {d['state']}", code="not_a_draft")
+            guard_write(txn, principal.member_id, "social.decisions")
             now = self.clock.now(txn)
             self._check_limits(txn, principal.member_id, now)
             recipients = [a["recipient_id"] for a in self._audience(txn, d) if not a["removed"] and are_friends(txn, d["member_id"], a["recipient_id"])]
@@ -349,6 +354,7 @@ class DecisionService:
             if d["member_id"] == me:
                 raise DetailedInvalidTransition("you cannot answer your own request", code="self_response")
             self._visible(txn, d, me)
+            guard_write(txn, me, "social.decisions")
             now = self.clock.now(txn)
             if d["state"] != "open" or now >= d["closes_at"]:
                 raise DetailedInvalidTransition("this decision has closed", code="decision_closed",
@@ -500,6 +506,7 @@ class DecisionService:
                 raise NotFound("decision not found")
             if d["state"] != "closed":
                 raise DetailedInvalidTransition("record the outcome after the decision closes", code="not_closed")
+            guard_write(txn, principal.member_id, "social.decisions")
             txn.update("Decisions", columns=("member_id", "decision_id", "requester_outcome", "updated_at"),
                        values=[(d["member_id"], decision_id, outcome, COMMIT_TIMESTAMP)])
             return {"decision_id": decision_id, "requester_outcome": outcome, "label": "self-reported"}

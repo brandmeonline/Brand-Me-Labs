@@ -528,3 +528,30 @@ def member_active(txn, member_id: str) -> bool:
     """V001 Members row exists and the account accepts new personal data."""
     rows = query(txn, "SELECT account_state FROM Members WHERE member_id=@m", {"m": member_id}, {"m": STR})
     return bool(rows) and rows[0][0] == "active"
+
+
+def guard_write(txn, member_id: str, category: str, *, basis_time: Optional[datetime] = None) -> None:
+    """W10: every writer of a member's personal or derived data calls this inside
+    the same read/write transaction as the write. A processing freeze (deletion
+    accepted) or a newer deletion tombstone refuses the write with
+    ``processing_frozen``. ``basis_time`` is when the input was observed (queued
+    jobs); member-initiated writes use the server time of this transaction."""
+    from .privacy_guard import ProcessingFrozen, assert_processing_allowed
+
+    try:
+        assert_processing_allowed(txn, member_id, category, basis_time or server_now(txn))
+    except ProcessingFrozen:
+        raise DetailedInvalidTransition("this change is paused while a privacy request is processed",
+                                        code="processing_frozen") from None
+
+
+def processing_allowed(txn, member_id: str, category: str, *, basis_time: Optional[datetime] = None) -> bool:
+    """Non-raising form for side writes that should be skipped, not failed
+    (e.g. a notification to a member whose deletion is pending)."""
+    from .privacy_guard import ProcessingFrozen, assert_processing_allowed
+
+    try:
+        assert_processing_allowed(txn, member_id, category, basis_time or server_now(txn))
+    except ProcessingFrozen:
+        return False
+    return True
