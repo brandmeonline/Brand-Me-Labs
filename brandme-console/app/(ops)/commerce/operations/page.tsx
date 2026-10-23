@@ -2,7 +2,7 @@
 // Read-only: reconciliation runs in the commerce worker through each provider's
 // idempotency key. This page never retries or re-submits a purchase, and it
 // shows no member identifiers.
-import { ConsolePageHeader } from '@/components/console-page-header'
+import { PageHeader } from '../../providers/_data/page-header'
 import { age, loadFromGateway, type OperationsQueue, type QueueOperation } from '../../providers/_data/gateway'
 import { LoadState } from '../../providers/_data/states'
 
@@ -56,7 +56,7 @@ export default async function CommerceOperationsPage() {
   const result = await loadFromGateway<OperationsQueue>('/commerce/ops/queue')
   return (
     <>
-      <ConsolePageHeader
+      <PageHeader
         eyebrow="Commerce"
         title="Purchases that need attention"
         description="Unknown outcomes are resolved by asking the retailer about the same idempotency key. Nothing here re-sends a purchase."

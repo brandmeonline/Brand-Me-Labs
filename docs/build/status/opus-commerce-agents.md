@@ -719,3 +719,17 @@ routing; `lib/` would be swallowed by the global ignore rule.
   - With the existing partial-shipment and refund tests, BM-COM-011 ("partial shipment, exchange and refund → correct
     order lines and wardrobe quantities with evidence") is covered against the simulator. No live provider is
     verified.
+
+### S12 fix — console type-check on this branch (CI `regression`, 2026-10-23)
+
+My S12 pages imported the shell's optional `@/components/console-page-header`. That component exists only on astra's
+unmerged bench branch, so `regression` → `brandme-console: type-check` failed on `72e593e` (TS2307 in all five
+pages). The scratch-merge evidence hid it, because astra's files were present there.
+
+**Fixed:** a lane-owned `app/(ops)/providers/_data/page-header.tsx` renders the same markup and shell classes
+(`console-page-header`, `console-eyebrow`, `console-page-actions`). The contract makes the shell header optional, so
+this stays within it.
+
+**Re-verified:**
+- On this branch: `bash scripts/regression/modules/brandme_console.sh` ✅.
+- In the astra scratch merge: `tsc` ✅, `next build` ✅, Chromium smoke **28/28**.

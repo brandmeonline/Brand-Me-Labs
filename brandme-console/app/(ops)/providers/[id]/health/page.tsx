@@ -1,6 +1,6 @@
 // /providers/[id]/health — capability states and the evidence behind them (lane: opus-commerce-agents).
 import Link from 'next/link'
-import { ConsolePageHeader } from '@/components/console-page-header'
+import { PageHeader } from '../../_data/page-header'
 import { capabilityLabel, loadFromGateway, type ProviderHealth } from '../../_data/gateway'
 import { LoadState } from '../../_data/states'
 
@@ -11,7 +11,7 @@ export default async function ProviderHealthPage({ params }: { params: { id: str
   const result = await loadFromGateway<ProviderHealth>(`/providers/${id}/health`)
   return (
     <>
-      <ConsolePageHeader
+      <PageHeader
         eyebrow="Provider health"
         title={result.state === 'ok' ? `Health: ${result.data.provider_id}` : 'Provider health'}
         description="Verified means evidence from a real sandbox or production operation, or a conformance run. A simulation never counts."

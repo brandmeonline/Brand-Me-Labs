@@ -1,6 +1,6 @@
 // /providers/[id] — one provider's sanitized record (lane: opus-commerce-agents).
 import Link from 'next/link'
-import { ConsolePageHeader } from '@/components/console-page-header'
+import { PageHeader } from '../_data/page-header'
 import { capabilityLabel, loadFromGateway, type ProviderDetail } from '../_data/gateway'
 import { LoadState } from '../_data/states'
 
@@ -12,7 +12,7 @@ export default async function ProviderPage({ params }: { params: { id: string } 
   if (result.state !== 'ok') {
     return (
       <>
-        <ConsolePageHeader eyebrow="Providers" title="Provider" />
+        <PageHeader eyebrow="Providers" title="Provider" />
         <LoadState result={result} backHref="/providers" />
       </>
     )
@@ -21,7 +21,7 @@ export default async function ProviderPage({ params }: { params: { id: string } 
   const protocols = Object.entries(p.protocols)
   return (
     <>
-      <ConsolePageHeader
+      <PageHeader
         eyebrow="Providers"
         title={p.display_name}
         description={p.disclosure}

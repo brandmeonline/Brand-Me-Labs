@@ -1,6 +1,6 @@
 // /providers — registered providers and their effective capabilities (lane: opus-commerce-agents).
 import Link from 'next/link'
-import { ConsolePageHeader } from '@/components/console-page-header'
+import { PageHeader } from './_data/page-header'
 import { EXECUTABLE, loadFromGateway, type ProviderRow } from './_data/gateway'
 import { LoadState } from './_data/states'
 
@@ -18,7 +18,7 @@ export default async function ProvidersPage() {
   const result = await loadFromGateway<{ items: ProviderRow[] }>('/providers')
   return (
     <>
-      <ConsolePageHeader
+      <PageHeader
         eyebrow="Providers"
         title="Retail and data providers"
         description="What each provider is actually allowed and verified to do in this environment. A provider is never connected by a switch here."

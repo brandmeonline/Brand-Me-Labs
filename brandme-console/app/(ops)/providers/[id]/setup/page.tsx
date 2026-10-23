@@ -1,6 +1,6 @@
 // /providers/[id]/setup — setup checklist, read-only in this release (lane: opus-commerce-agents).
 import Link from 'next/link'
-import { ConsolePageHeader } from '@/components/console-page-header'
+import { PageHeader } from '../../_data/page-header'
 import { loadFromGateway, type ProviderSetup } from '../../_data/gateway'
 import { LoadState } from '../../_data/states'
 
@@ -20,7 +20,7 @@ export default async function ProviderSetupPage({ params }: { params: { id: stri
   const result = await loadFromGateway<ProviderSetup>(`/providers/${id}/setup`)
   return (
     <>
-      <ConsolePageHeader
+      <PageHeader
         eyebrow="Provider setup"
         title={result.state === 'ok' ? `Setup: ${result.data.provider_id}` : 'Provider setup'}
         description="Each item comes from the server's provider record. Nothing on this page can mark a step done."
