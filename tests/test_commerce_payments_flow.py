@@ -716,6 +716,40 @@ def test_lost_capture_response_blocks_shipping_until_reconciled(w):
     assert _calls(w, "capture") == [("capture", payment_key(_base(w, res), "capture"))]
 
 
+def test_a_pending_capture_is_not_re_sent_inside_its_settle_window(w):
+    _, res = _buy(w, w.member)
+    order = _order(w, res)
+    _lose_request(w, "capture")
+    for _ in range(2):  # lost, then refused locally: the same key is not sent again inside the window
+        with pytest.raises(ProviderError) as e:
+            w.provider.ship(order.provider_order_ref)
+        assert e.value.kind is ProviderErrorKind.OUTCOME_UNKNOWN
+    key = payment_key(_base(w, res), "capture")
+    assert _calls(w, "capture") == [("capture", key)]
+    w.clock.advance(minutes=3)  # absent after the window: reconciliation re-sends the same key once
+    _hook(w, w.provider.ship(order.provider_order_ref))
+    assert _calls(w, "capture") == [("capture", key)] * 2
+    assert w.store.get("orders", order.id).payment_status == "captured"
+    rec = w.provider._orders[order.provider_order_ref]
+    assert rec.pending == {} and w.provider.rail_health()["needs_operator"] == 0
+
+
+def test_an_absent_money_op_past_the_key_horizon_waits_for_an_operator(w):
+    _, res = _buy(w, w.member)
+    order = _order(w, res)
+    _lose_request(w, "capture")
+    with pytest.raises(ProviderError):
+        w.provider.ship(order.provider_order_ref)
+    w.clock.advance(hours=23, minutes=1)  # beyond the processor's idempotency-key retention: never re-sent
+    for _ in range(2):
+        with pytest.raises(ProviderError) as e:
+            w.provider.ship(order.provider_order_ref)
+        assert e.value.kind is ProviderErrorKind.OUTCOME_UNKNOWN
+    assert len(_calls(w, "capture")) == 1
+    assert w.provider.rail_health()["needs_operator"] == 1 and w.provider.rail_health()["pending_money_ops"] == 1
+    assert not w.provider.fulfillment.record(order.provider_order_ref).shipped_any
+
+
 def test_void_failure_during_submit_keeps_operation_unknown(w):
     stock = dict(w.provider._stock)
     d, ag = w.delegate(lim=limits())

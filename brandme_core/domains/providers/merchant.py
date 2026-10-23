@@ -204,10 +204,22 @@ class ComposedMerchantAdapter:
                 "brandme_simulated_merchant": "true" if self.simulation else "false"}
 
     # -- money ops ---------------------------------------------------------------------
-    def _send(self, rec: MerchantOrder, op: PendingMoneyOp) -> PaymentState:
-        """Record the op, call the processor with the lock released, and settle the record by the answer."""
+    def _send(self, rec: MerchantOrder, op: PendingMoneyOp, *, retry: bool = False) -> PaymentState:
+        """Record the op, call the processor with the lock released, and settle the record by the answer.
+
+        An op already pending under the same key is not sent again inside its settle window, except by
+        reconciliation (``retry``); its first send time is kept, so the resend horizon is never extended.
+        """
         with self._lock:
-            op.last_sent_at = self._clock()
+            now = self._clock()
+            existing = rec.pending.get(op.key)
+            if existing is not None:
+                if now - existing.first_sent_at >= RESEND_HORIZON:  # the processor may have forgotten the key
+                    raise _unknown("payment outcome needs an operator")
+                if not retry and now - existing.last_sent_at < SETTLE_WINDOW:
+                    raise _unknown("payment outcome pending")
+                op.first_sent_at = existing.first_sent_at
+            op.last_sent_at = now
             rec.pending[op.key] = op
             cur = rec.total.currency
         try:
@@ -248,7 +260,7 @@ class ComposedMerchantAdapter:
                         rec.release_reason = op.reason
             elif now - op.last_sent_at >= SETTLE_WINDOW and now - op.first_sent_at < RESEND_HORIZON:
                 try:
-                    self._send(rec, op)  # the same key and amount: never a second effect
+                    self._send(rec, op, retry=True)  # the same key and amount: never a second effect
                 except ProviderError:
                     pass  # still unknown (kept) or refused (counted)
             # absent beyond the horizon: kept for an operator (rail_health.needs_operator)
@@ -257,8 +269,8 @@ class ComposedMerchantAdapter:
         now = self._clock()
         return PendingMoneyOp(kind, key, amount, reason, now, now)
 
-    def _void(self, rec: MerchantOrder, reason: str) -> PaymentState:
-        return self._send(rec, self._op("void", payment_key(rec.idempotency_key, "void"), 0, reason))
+    def _void(self, rec: MerchantOrder, reason: str, *, retry: bool = False) -> PaymentState:
+        return self._send(rec, self._op("void", payment_key(rec.idempotency_key, "void"), 0, reason), retry=retry)
 
     # -- fulfillment ---------------------------------------------------------------------
     def _open_fulfillment(self, rec: MerchantOrder) -> None:
@@ -399,7 +411,7 @@ class ComposedMerchantAdapter:
         pay = self.payments.lookup(rec.payment_ref)
         if pay.status in ("authorized", "requires_action", "unknown"):
             try:
-                pay = self._void(rec, rec.release_reason or "not_authorized")
+                pay = self._void(rec, rec.release_reason or "not_authorized", retry=True)
             except ProviderError:
                 raise ProviderError(ProviderErrorKind.TRANSIENT, "payment void pending") from None
         with self._lock:
