@@ -18,13 +18,17 @@ import { relay, subjectOr401, type V1Deps } from './chain';
 
 const REAUTH_SECONDS = 600;
 
-const exportSchema = z.object({ categories: z.array(z.string().regex(/^[a-z_]+\.[a-z_]+$/)).max(100).optional() }).strict();
+const categoriesSchema = z.array(z.string().regex(/^[a-z_]+\.[a-z_]+$/)).min(1).max(100)
+  .refine((values) => new Set(values).size === values.length, { message: 'categories must be distinct' });
+const exportSchema = z.object({ categories: categoriesSchema.optional() }).strict();
 const deletionSchema = z.object({
   scope: z.enum(['account', 'category']),
-  categories: z.array(z.string().regex(/^[a-z_]+\.[a-z_]+$/)).max(100).optional(),
+  categories: categoriesSchema.optional(),
   confirm: z.literal(true),
 }).strict().refine((b) => b.scope === 'account' || (b.categories && b.categories.length > 0), {
   message: 'category deletion needs at least one category',
+}).refine((b) => b.scope !== 'account' || b.categories === undefined, {
+  message: 'account deletion cannot include category filters',
 });
 
 export function createPrivacyRouter(deps: V1Deps): IRouter {
