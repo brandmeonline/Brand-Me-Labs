@@ -10,7 +10,7 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from .contracts import CAPABILITIES, CAPABILITY_STATES, EXECUTABLE_STATES, VERIFYING_EVIDENCE
 

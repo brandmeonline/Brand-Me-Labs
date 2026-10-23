@@ -731,12 +731,14 @@ class CommerceService:
                 quote_hash=quote.quote_hash, expected_total=quote.total, payment_token_ref=None,
                 lines=tuple(CartLineRequest(l.variant_id, l.source_variant_ref, l.quantity) for l in quote.lines)))
         except ProviderError as exc:
+            err = exc  # the callback may be retried; it must not depend on the except-clause binding
+
             def _failed(tx):
                 current = tx.get("operations", op.id)
-                if exc.transmitted or exc.kind is ProviderErrorKind.OUTCOME_UNKNOWN:
-                    return self._transition(tx, current, "outcome_unknown", reason=exc.kind.value)
+                if err.transmitted or err.kind is ProviderErrorKind.OUTCOME_UNKNOWN:
+                    return self._transition(tx, current, "outcome_unknown", reason=err.kind.value)
                 self._release_budget(tx, op.id)
-                return self._transition(tx, current, "rejected", reason=exc.kind.value)
+                return self._transition(tx, current, "rejected", reason=err.kind.value)
             return self.store.run(_failed)
         except Exception:
             # Unclassified failure after the request may have left: never assume it did not.

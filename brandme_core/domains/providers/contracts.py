@@ -8,9 +8,9 @@ Python source for the future ``packages/provider-contracts`` TypeScript package.
 from __future__ import annotations
 
 import enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple, runtime_checkable
+from typing import Any, Mapping, Optional, Protocol, Sequence, Tuple, runtime_checkable
 
 from brandme_core.domains.commerce.money import Money
 from brandme_core.domains.commerce.quote import CheckoutTerms
