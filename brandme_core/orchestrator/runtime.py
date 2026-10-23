@@ -28,7 +28,7 @@ from brandme_core.domains.commerce.delegation import AssistanceMode
 from brandme_core.domains.commerce.errors import CommerceError
 from brandme_core.domains.commerce.principal import Principal, is_first_party
 from brandme_core.mcp.authz import MCP_PROTOCOL_VERSION
-from brandme_core.mcp.tools import McpToolExecutor
+from brandme_core.mcp.tools import McpToolExecutor, _contains_payment_credential
 
 MODE_TOOLS = {
     AssistanceMode.RESEARCH: frozenset({"brandme.catalog.search", "brandme.order.status"}),
@@ -45,6 +45,14 @@ MAX_SECONDS = 30.0
 
 class IdempotencyReuse(PermissionError):
     """The same idempotency key was used for a different task."""
+
+
+class PlannerError(Exception):
+    """A planner cannot continue; ``code`` is a fixed, member-safe reason code."""
+
+    def __init__(self, code: str):
+        super().__init__(code)
+        self.code = code
 
 
 @dataclass(frozen=True)
@@ -122,6 +130,9 @@ class AssistantRuntime:
         delegation = self.executor.commerce.store.get("delegations", principal.delegation_id)
         if delegation.mode is not mode:
             raise PermissionError("task mode differs from the delegation's mode")
+        if _contains_payment_credential(goal):
+            # Card data never enters task events, logs or a model prompt (ch.05 §6, BM-COM-018).
+            raise PermissionError("remove payment card details from the request")
         digest = hashlib.sha256(f"{mode.value}\n{goal[:1000]}".encode()).hexdigest()
         slot = (principal.member_id, principal.delegation_id, idempotency_key) if idempotency_key else None
         with self._lock:
@@ -178,6 +189,7 @@ class AssistantRuntime:
                 return task
             task.state = "running"
         allowed = MODE_TOOLS[task.mode]
+        max_seconds = float(getattr(planner, "max_seconds", MAX_SECONDS))
         observations: List[Dict[str, Any]] = []
         calls, started = 0, time.monotonic()
         while True:
@@ -185,11 +197,18 @@ class AssistantRuntime:
                 task.state = "cancelled"
                 self._emit(task, "cancelled", {"detail": "No new actions will be taken; sent actions keep reconciling."})
                 return task
-            proposals = planner.next_calls(task, observations)
+            if task.state == "awaiting_approval":
+                break  # the member decides next; nothing more to plan
+            try:
+                proposals = planner.next_calls(task, observations)
+            except PlannerError as exc:
+                task.state = "failed"
+                self._emit(task, "error", {"code": exc.code})
+                return task
             if not proposals:
                 break
             for p in proposals:
-                if calls >= MAX_CALLS or time.monotonic() - started > MAX_SECONDS:
+                if calls >= MAX_CALLS or time.monotonic() - started > max_seconds:
                     task.state = "failed"
                     self._emit(task, "error", {"code": "task_budget_exhausted"})
                     return task

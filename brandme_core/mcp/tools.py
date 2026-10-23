@@ -169,6 +169,27 @@ def _luhn(digits: str) -> bool:
     return total % 10 == 0
 
 
+def mask_payment_credentials(text: str) -> str:
+    """``text`` with Luhn-valid 13-19 digit card numbers replaced (UUIDs are left intact)."""
+    uuids: List[str] = []
+
+    def _hold(m: "re.Match[str]") -> str:
+        uuids.append(m.group())
+        return f"\x00{len(uuids) - 1}\x00"
+
+    held = _UUID_RE.sub(_hold, text)
+
+    def _mask(m: "re.Match[str]") -> str:
+        run = m.group()
+        d = re.sub(r"\D", "", run)
+        if not (13 <= len(d) <= 19 and _luhn(d)):
+            return run
+        return "[card number removed]" + run[len(run.rstrip(" -")):]  # keep the separator after it
+
+    masked = _PAN_RE.sub(_mask, held)
+    return re.sub("\x00(\\d+)\x00", lambda m: uuids[int(m.group(1))], masked)
+
+
 def _contains_payment_credential(value: Any) -> bool:
     if isinstance(value, str):
         # Identifiers are not card data: remove UUIDs so their digit runs cannot
