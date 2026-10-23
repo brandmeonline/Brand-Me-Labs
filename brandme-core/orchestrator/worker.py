@@ -9,6 +9,15 @@ import json
 import os
 import uuid
 from typing import List, Dict
+
+# Boot guard before anything else: BRANDME_MODE is required, and sandbox /
+# production refuse here because call_tx_builder fabricates Cardano/Midnight
+# hashes. Compose serves this module (uvicorn worker:app). The import fails,
+# so no app object exists.
+from brandme_core.boot import guard
+
+BRANDME_MODE = guard("orchestrator")
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
