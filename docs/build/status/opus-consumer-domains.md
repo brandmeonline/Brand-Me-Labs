@@ -545,3 +545,54 @@ The expiry indexes are now ordinary indexes, because the emulator refuses NULL_F
 **Proposed deviations added**
 - **PD-16** Try-on and media use the `wardrobe:read`/`wardrobe:write` scopes; ch.03 defines no media scope.
 - **PD-17** Consent travels in the `POST /try-on/jobs` body, and one standing consent per provider and terms version is reused. A terms change requires re-consent (`consent_outdated`).
+
+## Stage 8 — Member reports, moderation and the operator console pages — 2026-10-23
+**Reports and moderation (social, V004 `MemberReports`).** ch.01 §6.4 requires report/mute/block on member-generated content, and the console needs a moderation queue.
+- **Who can report what.** A member can report only content they can see:
+  - a response on a decision they created or were invited to
+  - a share sent to them
+  - a proposal on their own outfit
+  - a member they have a relationship row with, or a block with
+
+  There is one report per reporter and target, and at most 20 per UTC day. A report never auto-hides content, and the reported member never learns who reported them or that a report exists.
+- **Operator resolution** (`moderation:admin`, aal2 outside development, never delegated, never their own report and never a report about themselves):
+  - dismiss
+  - remove content: redact the response note while keeping the vote, revoke the share through the shared `revoke_grant`, or decline and redact the proposal
+  - escalate: member conduct only; no account actions exist in this lane
+
+  Each resolution is attributed and notifies the reporter (`report_resolved`).
+- **Privacy.** `social.reports` is anonymized, not erased. The reporter id is replaced by the report's own id, which is unlinkable and cannot collide on the unique `(reporter, target)` index, and the note is removed. Content owners are anonymized the same way.
+- **Kernel.** Operator checks moved into the lane kernel (`require_operator`, `require_not_self`); `rewards.operators` re-exports them.
+- **Routes.**
+  - Python: `POST`/`GET /reports` and `create_moderation_ops_router` (`/ops/moderation/reports`, `/resolve`).
+  - Gateway `social.ts`: `/reports` (typed targets, exact target keys, identity fields refused) and `moderationOpsRouter`.
+
+**Console subtrees (contract v1 from `docs/build/status/astra-consumer-ui.md`)**
+- `brandme-console/app/(ops)/moderation/`
+  - `page.tsx`: report queue with Open/Actioned/Dismissed tabs; a resolve form per report (`actions.ts` server action)
+  - `loading.tsx` and `error.tsx`
+  - `_lib/ops-gateway.ts`: server-only client. It forwards the operator's own cookie/bearer to the gateway `/api/v1/ops/*` and maps 401/403/unset-URL to honest states.
+  - `_lib/states.tsx`: shared unconnected, signed-out, denied and failed states
+  - `_lib/ops.module.css`: shell `--bm-*` tokens only
+- `brandme-console/app/(ops)/rewards-disputes/`
+  - `page.tsx`: dispute queue; "no change" or a reasoned correction entry with an evidence reference
+  - `members/[memberId]/page.tsx`: ledger audit showing the reducer consistency check, account facts and the journal, with a linked-reversal form on reversible entries only
+  - `actions.ts`, `loading.tsx`, `error.tsx`
+- **Contract v1 compliance.** Each page renders exactly one `<h1>` via `ConsolePageHeader` and adds no `<main>`/rail. Wide tables sit in a labelled, focusable `console-table-region`. Pages assume no role: every read and action is authorized by the gateway and domain with the operator's own session.
+
+**Evidence**
+| Check | Result |
+|---|---|
+| This branch, `pytest tests/test_social_reports.py tests/test_social_privacy_api.py` | **7 passed, 1 skipped** (privacy-lane check NOT RUN here). Covers visibility rules, dedupe, no disclosure to the reported member, removal per target type, escalation-only for members, attributed resolution with reporter notification, and anonymization by two reporters of the same target without collision. |
+| Gateway `vitest run src/routes/v1`; `tsc --noEmit`; `eslint src` | **40 passed**; tsc 0; eslint 0 |
+| Console overlay: these subtrees copied onto `bench/astra-consumer-ui-20261005@a37ec2b` (the shell lives only there), per-app `npm install`, Next 14.2.35 | `tsc --noEmit` exit 0; `next build` exit 0 (`ƒ /moderation`, `ƒ /rewards-disputes`, `ƒ /rewards-disputes/members/[memberId]`). `next lint` not run: the console has no ESLint config, which the UI lane owns. |
+| Browser smoke (scratch harness; Chromium 1194 via playwright-core, `next start`; the console calls this lane's Python ops routers under `/api/v1` on the Spanner emulator, with a test-only cookie resolver standing in for the gateway hop, whose routers are covered by vitest) | **13/13**: signed-out state; single `h1`; member without role sees the denied state; report listed → remove content → note redacted and actioned outcome shown; dispute listed → +50 correction → ledger consistent with credit + correction → reversal recorded as a third linked entry; no page-level horizontal scroll at 390 px. Screenshots were inspected at 1440 and 390 px. |
+
+**Not done / honest limits**
+- The console→gateway operator credential transport is not defined (PD-18 below). The pages forward the incoming cookie/authorization, which works only if console and gateway share a cookie domain or the integrator adds a server-side token exchange.
+- The browser smoke bypassed the TypeScript gateway hop (unmounted routers), and it ran against the UI lane's shell from another branch, not on this lane's base. It is not evidence for the final mounted stack.
+- Mute is not implemented. Member conduct escalations have no downstream owner yet.
+
+**Proposed deviations added**
+- **PD-18** Console→gateway operator auth transport: shared cookie domain vs server-side token exchange. Foundation or UI lane to decide; the pages need one header-forwarding change either way.
+- **PD-19** Route mismatch. The shell's `lib/navigation.ts` links `/rewards/disputes`, but this lane's brief owns `app/(ops)/rewards-disputes`, which serves `/rewards-disputes`. The pages were built at the owned path. Proposal: the shell nav points to `/rewards-disputes`, or the brief is updated to own `app/(ops)/rewards/disputes`. Moving the folder is a one-line change.
