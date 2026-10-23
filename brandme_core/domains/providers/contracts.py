@@ -36,7 +36,7 @@ class ProviderErrorKind(str, enum.Enum):
     CONTRACT_RESTRICTED = "contract_restricted"
     THROTTLED = "throttled"
     TRANSIENT = "transient"
-    MALFORMED_RESPONSE = "malformed_response"
+    MALFORMED_RESPONSE = "malformed_provider_response"
     OUTCOME_UNKNOWN = "outcome_unknown"
 
 

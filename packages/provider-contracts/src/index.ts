@@ -1,13 +1,18 @@
 // Provider capability vocabulary and narrow adapter interfaces
 // (docs/design/brandme/05-commerce-agents-connectors.md §1). Interfaces only:
-// no SDKs, no network side effects, no secrets. Lane 3 (commerce/providers)
-// extends these after the foundation merge.
+// no SDKs, no network side effects, no secrets. Normalized payloads mirror the
+// Python provider contracts (brandme_core/domains/providers/contracts.py);
+// tests/test_providers.py checks the shared vocabularies stay identical.
 import type { components } from '@brandme/contracts';
 
 export type Environment = components['schemas']['Environment'];
 export type Money = components['schemas']['Money'];
-export type CapabilityName = components['schemas']['Capability']['name'];
-export type CapabilityState = components['schemas']['Capability']['state'];
+export type Capability = components['schemas']['Capability'];
+export type CapabilityName = Capability['name'];
+export type CapabilityState = Capability['state'];
+/** Sanitized provider DTO the browser receives: no credentials, accounts or contract terms. */
+export type ProviderPublic = components['schemas']['ProviderPublic'];
+export type CheckoutQuote = components['schemas']['CheckoutQuote'];
 
 export const CAPABILITY_NAMES = [
   'catalog.search', 'catalog.detail', 'catalog.feed', 'catalog.images', 'catalog.3d',
@@ -16,6 +21,27 @@ export const CAPABILITY_NAMES = [
   'affiliate.attribution', 'receipts.import', 'tryon.photo', 'tryon.live',
   'rights.issue', 'rights.transfer', 'rights.reprint', 'manufacture.quote', 'manufacture.submit',
 ] as const satisfies readonly CapabilityName[];
+
+export const CAPABILITY_STATES = [
+  'unconfigured', 'sandbox', 'verified', 'degraded', 'suspended', 'unsupported',
+] as const satisfies readonly CapabilityState[];
+
+/** States in which an operation may actually run. Everything else is refused or handed off. */
+export const EXECUTABLE_STATES = ['sandbox', 'verified', 'degraded'] as const satisfies readonly CapabilityState[];
+
+/** Evidence that can move a capability to `verified`. Simulation never qualifies. */
+export const VERIFYING_EVIDENCE = ['sandbox_operation', 'production_operation', 'conformance_suite'] as const;
+export type VerifyingEvidence = (typeof VERIFYING_EVIDENCE)[number];
+
+/** The provider's status for one capability; an unlisted capability is `unsupported`, never assumed available. */
+export function capabilityOf(provider: ProviderPublic, name: CapabilityName): Capability {
+  return provider.capabilities.find((c) => c.name === name)
+    ?? { name, state: 'unsupported', reason_code: 'not_offered_by_provider', last_checked_at: null, evidence_ref: null };
+}
+
+export function canExecute(provider: ProviderPublic, name: CapabilityName): boolean {
+  return (EXECUTABLE_STATES as readonly CapabilityState[]).includes(capabilityOf(provider, name).state);
+}
 
 /** How an adapter instance was built. Chosen once at startup by dependency injection. */
 export type AdapterMode = 'live' | 'sandbox' | 'simulated';
@@ -29,15 +55,11 @@ export interface AdapterDescriptor {
   capabilities: readonly CapabilityName[];
 }
 
-export type ProviderErrorKind =
-  | 'unsupported'
-  | 'not_configured'
-  | 'unauthorized'
-  | 'contract_restricted'
-  | 'throttled'
-  | 'transient'
-  | 'malformed_provider_response'
-  | 'outcome_unknown';
+export const PROVIDER_ERROR_KINDS = [
+  'unsupported', 'not_configured', 'unauthorized', 'contract_restricted', 'throttled', 'transient',
+  'malformed_provider_response', 'outcome_unknown',
+] as const;
+export type ProviderErrorKind = (typeof PROVIDER_ERROR_KINDS)[number];
 
 export class ProviderError extends Error {
   readonly kind: ProviderErrorKind;
@@ -45,12 +67,19 @@ export class ProviderError extends Error {
   readonly retryable: boolean;
   /** Redacted reference to stored provider evidence; never a raw response body. */
   readonly evidence_ref: string | null;
-  constructor(kind: ProviderErrorKind, provider: string, message: string, evidence_ref: string | null = null) {
+  /**
+   * True when the request may have reached the provider. The outcome is then
+   * unknown: reconcile through the same idempotency key, never blindly retry.
+   */
+  readonly transmitted: boolean;
+  constructor(kind: ProviderErrorKind, provider: string, message: string, evidence_ref: string | null = null,
+              transmitted = false) {
     super(message);
     this.name = 'ProviderError';
     this.kind = kind;
     this.provider = provider;
-    this.retryable = kind === 'throttled' || kind === 'transient';
+    this.transmitted = transmitted || kind === 'outcome_unknown';
+    this.retryable = !this.transmitted && (kind === 'throttled' || kind === 'transient');
     this.evidence_ref = evidence_ref;
   }
 }
@@ -76,36 +105,164 @@ export interface OperationContext {
   signal?: AbortSignal;
 }
 
-// Normalized payloads are deliberately minimal here; owning lanes refine them.
+// ------------------------------------------------------------ catalog / inventory
 export interface ProductRef { provider: string; merchant_ref: string; source_product_id: string; source_variant_id: string | null }
-export interface CatalogPage<T> { items: T[]; next_cursor: string | null }
+
+export type Availability = 'in_stock' | 'out_of_stock' | 'unknown' | 'discontinued';
+
+/** One normalized source variant. A feed price is an observation, never a quote. */
+export interface SourceVariant {
+  provider_id: string;
+  merchant_id: string;
+  source_product_id: string;
+  source_variant_id: string;
+  brand: string;
+  title: string;
+  category: string;
+  size_system: string | null;
+  size_label: string | null;
+  color: string | null;
+  gtin: string | null;
+  product_url: string;
+  image_urls: string[];
+  price: Money | null;
+  availability: Availability;
+  source_updated_at: string;
+  /** Which display/cache/transform rights the provider granted for this record. */
+  rights_policy_ref: string;
+  /** Untrusted provider text: data for display, never instructions to an agent. */
+  description: string;
+}
+
+export interface CatalogPage<T> {
+  items: T[];
+  next_cursor: string | null;
+  /** [source_product_id, source_variant_id] removed at the source; ingestion tombstones them. */
+  tombstones?: [string, string][];
+}
+
+export interface InventoryObservation { source_variant_id: string; available_quantity: number | null; observed_at: string }
 
 export interface CatalogProvider {
   readonly descriptor: AdapterDescriptor;
-  search(query: { text?: string; category?: string; cursor?: string; limit: number }, ctx: OperationContext): Promise<ProviderResult<CatalogPage<ProductRef>>>;
-  detail(ref: ProductRef, ctx: OperationContext): Promise<ProviderResult<unknown>>;
+  search(query: { text?: string; category?: string; cursor?: string; limit: number }, ctx: OperationContext): Promise<ProviderResult<CatalogPage<SourceVariant>>>;
+  detail(ref: ProductRef, ctx: OperationContext): Promise<ProviderResult<SourceVariant[]>>;
+}
+export interface CatalogFeedProvider {
+  readonly descriptor: AdapterDescriptor;
+  feedPage(cursor: string | null, ctx: OperationContext): Promise<ProviderResult<CatalogPage<SourceVariant>>>;
 }
 export interface InventoryProvider {
   readonly descriptor: AdapterDescriptor;
-  availability(ref: ProductRef, ctx: OperationContext): Promise<ProviderResult<{ available: boolean; checked_at: string }>>;
+  check(source_variant_ids: string[], ctx: OperationContext): Promise<ProviderResult<InventoryObservation[]>>;
 }
+
+// ------------------------------------------------------------ cart / checkout
+export interface CartLineRequest {
+  /** Brand.Me variant UUID. */
+  variant_id: string;
+  source_variant_ref: string;
+  quantity: number;
+}
+export interface ProviderCart { provider_cart_ref: string; merchant_id: string; lines: CartLineRequest[] }
+
 export interface CartProvider {
   readonly descriptor: AdapterDescriptor;
-  createCart(lines: { ref: ProductRef; quantity: number }[], ctx: OperationContext): Promise<ProviderResult<{ provider_cart_ref: string; revision: string }>>;
-  replaceCart(provider_cart_ref: string, expected_revision: string, lines: { ref: ProductRef; quantity: number }[], ctx: OperationContext): Promise<ProviderResult<{ revision: string }>>;
+  createCart(merchant_id: string, lines: CartLineRequest[], ctx: OperationContext): Promise<ProviderResult<ProviderCart>>;
+  /** Full replacement; providers with line-level edits are normalized behind it. Callers guard with the cart revision. */
+  replaceCart(provider_cart_ref: string, lines: CartLineRequest[], ctx: OperationContext): Promise<ProviderResult<ProviderCart>>;
 }
+
+export interface CheckoutTerms {
+  returnable: boolean;
+  return_window_days: number | null;
+  policy_ref: string | null;
+  /** The default fashion scope refuses recurring charges. */
+  recurring: boolean;
+}
+export interface QuotedLine { variant_id: string; source_variant_ref: string; quantity: number; unit_price: Money; title: string; category: string }
+
+/** A fresh provider quote. Commerce normalizes it into a `CheckoutQuote` and computes the canonical hash. */
+export interface ProviderQuote {
+  merchant_id: string;
+  payee_ref: string;
+  lines: QuotedLine[];
+  tax: Money;
+  shipping: Money;
+  discount: Money;
+  delivery_ref: string;
+  terms: CheckoutTerms;
+  checkout_reference: string;
+  expires_at: string;
+  observed_at: string;
+  evidence_ref: string | null;
+}
+
+export interface SubmitRequest {
+  /** Persisted with the submission intent before network I/O and reused on every retry. */
+  idempotency_key: string;
+  checkout_reference: string;
+  quote_hash: string;
+  expected_total: Money;
+  /** Scoped provider token reference; never a PAN, CVV or raw credential. */
+  payment_token_ref: string | null;
+}
+export interface SubmitAck { accepted: boolean; provider_order_ref: string | null; reason_code: string | null; observed_at: string; evidence_ref: string | null }
+
 export interface CheckoutProvider {
   readonly descriptor: AdapterDescriptor;
-  quote(provider_cart_ref: string, ctx: OperationContext): Promise<ProviderResult<components['schemas']['CheckoutQuote']>>;
-  /** Must persist intent before I/O; a timeout after transmission is ProviderError('outcome_unknown'). */
-  submit(quote_hash: string, approval_ref: string, ctx: OperationContext): Promise<ProviderResult<{ provider_order_ref: string }>>;
-  handoffUrl?(provider_cart_ref: string, ctx: OperationContext): Promise<ProviderResult<{ continue_url: string }>>;
+  quote(cart: ProviderCart, ctx: OperationContext): Promise<ProviderResult<ProviderQuote>>;
+  /** A timeout after transmission rejects with ProviderError('outcome_unknown', …, transmitted = true). */
+  submit(request: SubmitRequest, ctx: OperationContext): Promise<ProviderResult<SubmitAck>>;
 }
+
+/** Link-out checkout (e.g. an affiliate publisher deep link). Never implies Brand.Me placed the order. */
+export interface HandoffLink { url: string; label: string; disclosure: string; affiliate: boolean }
+export interface CheckoutHandoffProvider {
+  readonly descriptor: AdapterDescriptor;
+  handoff(source_product_id: string, source_variant_id: string | null, ctx: OperationContext): Promise<ProviderResult<HandoffLink>>;
+}
+
+// ------------------------------------------------------------------- orders
+export type OrderStatus = 'accepted' | 'rejected' | 'cancelled';
+export type PaymentStatus = 'unknown' | 'authorized' | 'captured' | 'partially_refunded' | 'refunded' | 'failed';
+
+export interface ObservedLine {
+  source_variant_ref: string;
+  quantity_ordered: number;
+  quantity_shipped: number;
+  quantity_delivered: number;
+  quantity_returned: number;
+  /** Set on a line created by an exchange; the original line's history is retained. */
+  exchanged_from_ref: string | null;
+}
+/** The provider's current record. Applied monotonically; webhook order is never trusted. */
+export interface OrderObservation {
+  provider_order_ref: string;
+  order_status: OrderStatus;
+  payment_status: PaymentStatus;
+  lines: ObservedLine[];
+  refunded_total: Money;
+  observed_at: string;
+  evidence_ref: string | null;
+}
+export interface WebhookEvent { provider_id: string; event_id: string; event_type: string; provider_order_ref: string; occurred_at: string }
+
 export interface OrderProvider {
   readonly descriptor: AdapterDescriptor;
-  getOrder(provider_order_ref: string, ctx: OperationContext): Promise<ProviderResult<unknown>>;
-  verifyWebhook?(headers: Record<string, string>, raw_body: Uint8Array): Promise<{ event_id: string; occurred_at: string; payload: unknown }>;
+  /** Reconciliation for `outcome_unknown`; `null` means the provider authoritatively has no order for the key. */
+  lookupByIdempotencyKey(idempotency_key: string, ctx: OperationContext): Promise<ProviderResult<OrderObservation | null>>;
+  getOrder(provider_order_ref: string, ctx: OperationContext): Promise<ProviderResult<OrderObservation>>;
+  /** Verifies signature and replay window; consumers dedupe on (provider_id, event_id), then re-read the order. */
+  verifyWebhook?(headers: Record<string, string>, raw_body: Uint8Array): Promise<WebhookEvent>;
 }
+export interface ReturnsProvider {
+  readonly descriptor: AdapterDescriptor;
+  /** A return request is not a refund; refund state changes only on a later observation. */
+  requestReturn(provider_order_ref: string, source_variant_ref: string, quantity: number, ctx: OperationContext): Promise<ProviderResult<null>>;
+}
+
+// ------------------------------------- declared for other lanes; payloads are theirs
 export interface ReceiptImporter { readonly descriptor: AdapterDescriptor; importReceipt(object_ref: string, ctx: OperationContext): Promise<ProviderResult<unknown>> }
 export interface TryOnProvider { readonly descriptor: AdapterDescriptor; submit(input: { person_object_ref: string; product_object_ref: string; consent_id: string }, ctx: OperationContext): Promise<ProviderResult<{ job_ref: string }>>; cancel(job_ref: string, ctx: OperationContext): Promise<void> }
 export interface RightsIssuer { readonly descriptor: AdapterDescriptor; issue(request: unknown, ctx: OperationContext): Promise<ProviderResult<{ chain_operation_id: string }>> }

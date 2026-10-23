@@ -544,3 +544,35 @@ opus-foundation, which owns `scripts/`:
 3. Drop the `|| echo` in `ci-cd.yml:87`, or remove that job if `foundation.yml` is the gate.
 
 Until then, this file's local results (emulator + oracle, from a clean worktree) are the only evidence for this lane.
+
+## Stage S10 — `packages/provider-contracts` normalized payloads (2026-10-23)
+
+**Done.** Package `type-check` (tsc 5.9.3) and `test` both pass, 7/7, on Node **24.21.0**. That is the repo's
+`.nvmrc`; the binary was fetched from nodejs.org and its SHA-256 checked against the release `SHASUMS256.txt`, because
+the container only had Node 22. Python suite: **353 passed, 0 skipped**.
+
+- **Added:**
+  - Capability states, `EXECUTABLE_STATES`, `VERIFYING_EVIDENCE`, `PROVIDER_ERROR_KINDS`.
+  - `ProviderPublic` / `Capability` / `CheckoutQuote` re-exports from `@brandme/contracts`.
+  - `capabilityOf()` / `canExecute()`: an unlisted capability reads as `unsupported`.
+  - Normalized payloads mirroring `brandme_core/domains/providers/contracts.py`: `SourceVariant`, `CatalogPage` (with
+    tombstones), `InventoryObservation`, `CartLineRequest`, `ProviderCart`, `QuotedLine`, `ProviderQuote`,
+    `CheckoutTerms`, `SubmitRequest`, `SubmitAck`, `HandoffLink`, `ObservedLine`, `OrderObservation`, `WebhookEvent`.
+  - Interfaces `CatalogFeedProvider`, `CheckoutHandoffProvider`, `ReturnsProvider`.
+- **Changed:**
+  - The commerce interfaces use those payloads instead of `unknown`.
+  - `CheckoutProvider.submit` takes a `SubmitRequest`.
+  - `CartProvider` uses full replacement, guarded by the domain revision, as in Python.
+  - `OrderProvider` gains `lookupByIdempotencyKey`, for reconciliation.
+  - `ProviderError` gains `transmitted`, which is always set for `outcome_unknown`; a transmitted request is never
+    `retryable`. No TypeScript code consumed the old signatures (`grep` across the repo).
+  - Other lanes' interfaces (`ReceiptImporter`, `TryOnProvider`, `RightsIssuer`, `ManufacturingProvider`,
+    `ContextProvider`) are unchanged.
+- **Vocabulary alignment:** Python `ProviderErrorKind.MALFORMED_RESPONSE` is now `"malformed_provider_response"`,
+  matching the TS package and ch.05 §1 wording. MCP problem code: `provider_malformed_provider_response`.
+- **Drift guard:** `tests/test_providers.py::test_typescript_provider_contracts_share_the_python_vocabulary` parses the
+  TS source and asserts the capability names, states, executable states, verifying evidence and error kinds equal the
+  Python ones.
+
+Files: `packages/provider-contracts/{src/index.ts,test/guard.test.ts,README.md}`,
+`brandme_core/domains/providers/contracts.py`, `tests/test_providers.py`.

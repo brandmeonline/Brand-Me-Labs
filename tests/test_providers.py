@@ -187,3 +187,27 @@ def test_checkout_redirect_must_be_registered():  # BM-COM-013
                 "http://shop.example/x", "https://shop.example:444/x", "//evil.example"):
         with pytest.raises(UnsafeUrl):
             validate_redirect(bad, hosts)
+
+
+def test_typescript_provider_contracts_share_the_python_vocabulary():
+    """packages/provider-contracts must not drift from the Python contracts."""
+    import re
+    from pathlib import Path
+
+    from brandme_core.domains.providers.contracts import (
+        CAPABILITIES, CAPABILITY_STATES, EXECUTABLE_STATES, ProviderErrorKind,
+    )
+    from brandme_core.domains.providers.registry import VERIFYING_EVIDENCE
+
+    src = (Path(__file__).resolve().parents[1] / "packages/provider-contracts/src/index.ts").read_text()
+
+    def ts_list(name):
+        m = re.search(rf"export const {name} = \[(.*?)\] as const", src, re.S)
+        assert m, name
+        return re.findall(r"'([^']+)'", m.group(1))
+
+    assert ts_list("CAPABILITY_NAMES") == list(CAPABILITIES)
+    assert ts_list("CAPABILITY_STATES") == list(CAPABILITY_STATES)
+    assert set(ts_list("EXECUTABLE_STATES")) == set(EXECUTABLE_STATES)
+    assert set(ts_list("VERIFYING_EVIDENCE")) == set(VERIFYING_EVIDENCE)
+    assert ts_list("PROVIDER_ERROR_KINDS") == [k.value for k in ProviderErrorKind]
