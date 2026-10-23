@@ -159,6 +159,24 @@ def test_export_is_allowlisted_and_scoped_to_the_member(my_data):
     assert sections[ORDERS]["notes"]  # truthful about the merchant's own copy
 
 
+def test_export_shows_cancelled_units_on_order_lines(my_data):
+    svc, w = my_data
+    _, quote, op = w.prepared(w.member, line("overshirt"), line("bag"))
+    res = w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=w.approve(op).id,
+                                 idempotency_key="privacy-cancel-buy-0001")
+    order = w.store.get("orders", res.order_id)
+    w.provider.arm(Behavior.PARTIAL_FULFILLMENT, source_variant_ref="demo-bag-m", quantity=0)
+    for headers, body in w.provider.ship(order.provider_order_ref):  # the overshirt ships, the bag does not
+        w.svc.handle_webhook("demo_atelier", headers, body)
+    out = w.svc.request_cancellation(w.member, order.id, idempotency_key="privacy-cancel-key-0001")
+    assert (out["status"], out["units_cancelled"]) == ("partially_cancelled", 1)
+    records = svc.export(MEMBER, _real_now())["package"]["categories"][ORDERS]["records"]
+    lines = {r["source_variant_ref"]: r for r in records if r["type"] == "order_line"}
+    # Same facts as the order page: the bag was cancelled, not still owed.
+    assert {ref: (r["quantity_ordered"], r["quantity_shipped"], r["quantity_cancelled"])
+            for ref, r in lines.items()} == {"demo-overshirt-m": (1, 1, 0), "demo-bag-m": (1, 0, 1)}
+
+
 def test_category_deletion_receipt_is_truthful_and_self_contained(my_data):
     svc, w = my_data
     d, ag = w.delegate()
