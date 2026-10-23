@@ -403,6 +403,26 @@ def test_total_package_bound_is_not_a_truncated_success(db, setup, monkeypatch):
     assert not state.objects
 
 
+def test_adc_refresh_transport_also_disables_proxies_netrc_and_redirects(monkeypatch):
+    from google.auth.credentials import AnonymousCredentials
+    import google.auth
+    import requests
+    monkeypatch.setattr(google.auth, "default", lambda **_kwargs: (AnonymousCredentials(), "test-project"))
+    config = ExportConfig("sandbox", "test-project", "test", "test", "preprod", CONTRACT, "brandme-sandbox-exports-test", TOKEN)
+    store = PrivateStore(config)
+    try:
+        assert store.session.trust_env is False and store.auth_session.trust_env is False
+        calls = []
+        def capture(_session, *args, **kwargs):
+            calls.append((args, kwargs))
+            return object()
+        monkeypatch.setattr(requests.Session, "request", capture)
+        store.auth_session.request("POST", "https://oauth2.googleapis.com/token", allow_redirects=True)
+        assert calls[0][1]["allow_redirects"] is False
+    finally:
+        store.close()
+
+
 def test_config_and_actual_cli_worker_api(db, setup):
     service, _, _, config = setup
     env = {**os.environ, "BRANDME_MODE": "development", "ENVIRONMENT": "development", "SPANNER_PROJECT_ID": config.project,

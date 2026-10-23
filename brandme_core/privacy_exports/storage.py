@@ -18,9 +18,21 @@ class StorageError(Exception):
         super().__init__("export_storage_unavailable")
 
 
+class CredentialSession(requests.Session):
+    """ADC refresh has a separate transport; harden it as well as object I/O."""
+    def __init__(self):
+        super().__init__()
+        self.trust_env = False
+
+    def request(self, *args, **kwargs):
+        kwargs["allow_redirects"] = False
+        return super().request(*args, **kwargs)
+
+
 class PrivateStore:
     def __init__(self, config):
         self.config = config
+        self.auth_session = None
         self.emulated = bool(config.storage_emulator)
         if self.emulated:
             p = urlsplit("http://" + config.storage_emulator)
@@ -36,9 +48,11 @@ class PrivateStore:
             self.session = requests.Session()
         else:
             import google.auth
-            from google.auth.transport.requests import AuthorizedSession
+            from google.auth.transport.requests import AuthorizedSession, Request
             credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/devstorage.read_write"])
-            self.session = AuthorizedSession(credentials, refresh_timeout=5, max_refresh_attempts=0)
+            self.auth_session = CredentialSession()
+            self.session = AuthorizedSession(credentials, auth_request=Request(self.auth_session),
+                                             refresh_timeout=5, max_refresh_attempts=0)
             self.base = "https://storage.googleapis.com"
         self.session.trust_env = False
         self.bucket_path = f"/storage/v1/b/{config.bucket}"
@@ -146,3 +160,5 @@ class PrivateStore:
 
     def close(self):
         self.session.close()
+        if self.auth_session is not None:
+            self.auth_session.close()
