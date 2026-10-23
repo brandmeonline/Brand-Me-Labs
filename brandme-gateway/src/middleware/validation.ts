@@ -14,6 +14,9 @@ const ajv = new Ajv2020({ strict: false, allErrors: true });
 addFormats(ajv);
 ajv.addSchema({ $id: 'brandme-api', components: openapi.components }, 'brandme-api');
 
+/** Path templates of every contract operation, relative to /api/v1 (e.g. /members/{memberId}/block). */
+export const contractPaths: readonly string[] = Object.freeze(Object.keys(openapi.paths));
+
 export function validator(schemaName: string) {
   if (!openapi.components.schemas[schemaName]) throw new Error(`unknown contract schema ${schemaName}`);
   const fn = ajv.getSchema(`brandme-api#/components/schemas/${schemaName}`);
