@@ -155,11 +155,12 @@ class LocalAtelierProvider:
     setup_profile = SETUP_PROFILE
 
     def __init__(self, clock: Callable[[], datetime], *, quote_ttl: timedelta = timedelta(minutes=10),
-                 payments: Optional[PaymentProcessor] = None):
+                 payments: Optional[PaymentProcessor] = None, environment: str = "development"):
         self._clock = clock
-        self.payments: PaymentProcessor = payments or SimulatedPaymentProcessor(clock)
+        self.environment = environment
+        self.payments: PaymentProcessor = payments or SimulatedPaymentProcessor(clock, environment=environment)
         # The party paid for a quote (bound into its hash). Brand.Me is never the payee.
-        self.payee_ref = "demo-payee" if self.payments.simulation else "demo-atelier-stripe-test"
+        self.payee_ref = self.payments.descriptor.payee_ref
         self._lock = threading.RLock()
         self._quote_ttl = quote_ttl
         # Generated per process; never committed. Signs this simulator's webhooks only.
@@ -360,7 +361,7 @@ class LocalAtelierProvider:
         try:
             pay = self.payments.authorize(PaymentAuthorization(
                 payment_key(base, "authorize"), request.expected_total, self.payee_ref, ref, instrument,
-                {"brandme_merchant": MERCHANT_ID, "brandme_simulated_merchant": "true"}))
+                {"brandme_merchant": MERCHANT_ID, "brandme_simulated_merchant": "true"}, self.environment))
         except ProviderError as exc:
             if exc.transmitted or exc.kind is ProviderErrorKind.OUTCOME_UNKNOWN:
                 raise ProviderError(ProviderErrorKind.OUTCOME_UNKNOWN, "payment outcome unknown",
@@ -427,10 +428,8 @@ class LocalAtelierProvider:
             return None  # authoritatively no order for this key
         if o.order_status == "pending":
             # The payment response was lost: find it by purpose. Never re-send the authorization.
-            pay = self.payments.find(o.ref)
+            pay = self.payments.find(o.ref, settled=self._clock() - o.created_at >= PAYMENT_SETTLE_WINDOW)
             if pay is None:
-                if self._clock() - o.created_at < PAYMENT_SETTLE_WINDOW:
-                    raise ProviderError(ProviderErrorKind.TRANSIENT, "payment outcome not yet visible")
                 self._settle(o, None, "payment_not_found")
                 return None
             if not self._settle(o, pay, None).accepted:
@@ -666,15 +665,15 @@ class LocalAtelierProvider:
         if verify is None:
             raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "this payment rail sends no webhooks")
         event = verify(h, body)
-        obj = event.data.object
-        payment_ref = obj.id if getattr(obj, "object", None) == "payment_intent" else getattr(obj, "payment_intent", None)
+        if event is None:
+            raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "this payment rail sends no webhooks")
         with self._lock:
-            order_ref = self._by_payment.get(str(payment_ref)) if payment_ref else None
+            order_ref = self._by_payment.get(event.payment_ref) if event.payment_ref else None
         if order_ref is None:
             raise ProviderError(ProviderErrorKind.UNSUPPORTED, "event for a payment this merchant does not hold")
-        occurred = datetime.fromtimestamp(int(event.created), tz=timezone.utc)
-        return WebhookEvent(PROVIDER_ID, f"{self.payments.processor_id}:{event.id}"[:256],
-                            f"payment.{event.type}"[:80], order_ref, occurred, {"source": self.payments.processor_id})
+        return WebhookEvent(PROVIDER_ID, f"{event.processor_id}:{event.event_id}"[:256],
+                            f"payment.{event.event_type}"[:80], order_ref, event.occurred_at,
+                            {"source": event.processor_id})
 
 
     # -- connection tests (operator setup console) -------------------------------

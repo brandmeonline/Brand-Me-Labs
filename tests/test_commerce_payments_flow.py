@@ -5,11 +5,8 @@ payment status. These run on both stores with the simulated rail; the same flow
 against Stripe test mode is the live test at the bottom (needs ``STRIPE_TEST_SECRET_KEY``).
 """
 
-import hashlib
-import hmac
 import json
 import os
-import time
 from datetime import timedelta
 
 import pytest
@@ -22,7 +19,7 @@ from brandme_core.domains.providers.local_atelier import (
     PAYMENT_SETTLE_WINDOW, Behavior, LocalAtelierProvider, local_atelier_connection, payment_key,
 )
 from brandme_core.domains.providers.payments import TEST_CARD_NEEDS_AUTHENTICATION
-from brandme_core.domains.providers.payments.simulated import PaymentBehavior, SimulatedPaymentProcessor
+from brandme_core.domains.providers.payments.simulated import PaymentBehavior
 from tests.fixtures.commerce.harness import limits, line, world
 from tests.fixtures.commerce.stores import _spanner_db, commerce_store  # noqa: F401  (fixtures)
 
@@ -165,25 +162,17 @@ def test_authentication_required_is_voided_never_redirected():
     assert voided == [("void", "bm-sca-00000000000001:void")]
 
 
-class _StripeSignedRail(SimulatedPaymentProcessor):
-    """Simulated payments that deliver Stripe-signed events: exercises the webhook plumbing offline."""
-    processor_id = "stripe_test"
-
-    def __init__(self, clock, secret):
-        super().__init__(clock)
-        from brandme_core.domains.providers.payments.stripe_test import StripeTestPaymentProcessor
-        self._verifier = StripeTestPaymentProcessor("sk_test_" + "0" * 24, webhook_secret=secret,
-                                                    base_url="http://127.0.0.1:9")
-
-    def verify_webhook(self, headers, body):
-        return self._verifier.verify_webhook(headers, body)
-
-
 def test_stripe_payment_events_reach_the_order_once_and_only_as_a_hint():
-    pytest.importorskip("stripe")
-    secret = "whsec_" + "7" * 32
+    """FIXTURE DOUBLE, NOT STRIPE: the Stripe processor over StripeSemanticsDouble, events signed locally."""
+    from brandme_core.domains.providers.payments.stripe_test import StripeTestConfig, StripeTestPaymentProcessor
+    from tests.fixtures.providers import stripe_events
+    from tests.fixtures.providers.stripe_double import StripeSemanticsDouble
+
+    secret = stripe_events.webhook_secret()
     w = world()
-    rail = _StripeSignedRail(w.clock, secret)
+    double = StripeSemanticsDouble(w.clock)
+    rail = StripeTestPaymentProcessor(StripeTestConfig("sk_" + "test_" + "0" * 24, webhook_secrets=(secret,)),
+                                      wire=double, environment="development", clock=w.clock)
     w.provider = LocalAtelierProvider(w.clock, payments=rail)
     w.registry._connections.clear()
     w.registry.register(local_atelier_connection(w.provider, "development", w.clock.now))
@@ -191,16 +180,13 @@ def test_stripe_payment_events_reach_the_order_once_and_only_as_a_hint():
     order = w.store.get("orders", res.order_id)
     pi = w.provider._orders[order.provider_order_ref].payment_ref
     w.provider.capture(order.provider_order_ref)  # the processor changes state; Stripe would notify
-    event = {"id": "evt_test_1", "object": "event", "type": "payment_intent.succeeded", "livemode": False,
-             "created": int(time.time()), "data": {"object": {"id": pi, "object": "payment_intent"}}}
-    body = json.dumps(event).encode()
-    ts = int(time.time())
-    sig = hmac.new(secret.encode(), f"{ts}.".encode() + body, hashlib.sha256).hexdigest()
-    headers = {"stripe-signature": f"t={ts},v1={sig}"}
+    at = int(w.clock.now.timestamp())
+    headers, body = stripe_events.payment_intent_event(double.intents[pi], "payment_intent.succeeded", secret, at,
+                                                       event_id="evt_1TestDuplicate")
     before = len(w.store.outbox())
     first = w.svc.handle_webhook("demo_atelier", headers, body)
     again = w.svc.handle_webhook("demo_atelier", headers, body)  # duplicate delivery
-    assert first.state == "applied" and again.event_id == first.event_id == "stripe_test:evt_test_1"
+    assert first.state == "applied" and again.event_id == first.event_id == "stripe_test:evt_1TestDuplicate"
     assert len(w.store.rows("webhook_receipts")) == 1 and len(w.store.outbox()) == before + 1
     assert w.store.get("orders", order.id).payment_status == "captured"  # re-read, not taken from the event
     with pytest.raises(ProviderError):

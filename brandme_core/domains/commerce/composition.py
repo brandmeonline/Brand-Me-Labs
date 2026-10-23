@@ -45,20 +45,22 @@ class CommerceProviders:
     demo_atelier: Optional[LocalAtelierProvider]
 
 
-def payment_processor(rail: str, env: Mapping[str, str], clock: Callable[[], datetime]) -> PaymentProcessor:
+def payment_processor(rail: str, env: Mapping[str, str], clock: Callable[[], datetime],
+                      environment: str = "development") -> PaymentProcessor:
     if rail == "simulated":
         from brandme_core.domains.providers.payments.simulated import SimulatedPaymentProcessor
-        return SimulatedPaymentProcessor(clock)
+        return SimulatedPaymentProcessor(clock, environment=environment)
     if rail == "stripe_test":
-        key = env.get("STRIPE_TEST_SECRET_KEY")
-        if not key:
-            raise CompositionError("stripe_test_not_configured")
-        from brandme_core.domains.providers.payments.stripe_test import StripeTestPaymentProcessor
+        from brandme_core.domains.providers.payments.stripe_test import (
+            StripeKeyRefused, StripeTestConfig, StripeTestPaymentProcessor,
+        )
         try:
-            return StripeTestPaymentProcessor(key, webhook_secret=env.get("STRIPE_TEST_WEBHOOK_SECRET") or None,
-                                              clock=clock)
-        except ValueError:
-            raise CompositionError("stripe_key_refused") from None
+            cfg = StripeTestConfig.from_env(env)
+        except StripeKeyRefused as e:
+            raise CompositionError("stripe_test_not_configured" if e.code == "stripe_key_missing"
+                                   else "stripe_key_refused") from None
+        from brandme_core.domains.providers.payments.stripe_wire import SdkStripeWire
+        return StripeTestPaymentProcessor(cfg, wire=SdkStripeWire(cfg), environment=environment, clock=clock)
     raise CompositionError("payments_rail_unknown")
 
 
@@ -75,6 +77,7 @@ def build_providers(environment: str, *, env: Mapping[str, str],
     rail = rail or "simulated"
     if rail not in RAILS:
         raise CompositionError("payments_rail_unknown")
-    provider = LocalAtelierProvider(clock, payments=payment_processor(rail, env, clock))
+    provider = LocalAtelierProvider(clock, payments=payment_processor(rail, env, clock, environment),
+                                    environment=environment)
     registry.register(local_atelier_connection(provider, environment, clock()))
     return CommerceProviders(registry, rail, provider)
