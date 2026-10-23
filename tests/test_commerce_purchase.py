@@ -47,10 +47,10 @@ def test_prepare_mode_builds_cart_and_requests_but_cannot_execute(w):
     assert op.state == "awaiting_approval"
     approval = w.approve(op)
     with pytest.raises(Forbidden):  # no commerce:purchase scope in prepare mode
-        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="k1")
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="k1-0000000000000")
     assert w.provider.submit_calls == []
     assert approval.delegation_ref is None  # the member, not the agent, completes a prepared purchase
-    done = w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=approval.id, idempotency_key="k2")
+    done = w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=approval.id, idempotency_key="k2-0000000000000")
     assert done.state == "accepted"
 
 
@@ -69,7 +69,7 @@ def test_cannot_purchase_without_valid_approval(w):  # BM-COM-006
     _, _, op = w.prepared(ag)
     for bogus in ("approved", "true", "00000000-0000-4000-8000-000000000000"):
         with pytest.raises(ApprovalInvalid):
-            w.svc.execute_purchase(ag, operation_id=op.id, approval_id=bogus, idempotency_key="k-" + bogus)
+            w.svc.execute_purchase(ag, operation_id=op.id, approval_id=bogus, idempotency_key="k-00000000000000" + bogus)
     assert w.provider.submit_calls == []
     assert w.store.rows("reservations") == []  # no spend reservation consumed
 
@@ -104,7 +104,7 @@ def test_full_purchase_binds_exact_terms_and_emits_wardrobe_incoming(w):  # BM-C
     assert approval.allowed_total == quote.total and approval.merchant_id == quote.merchant_id
     assert approval.nonce and approval.expires_at == quote.expires_at
     assert approval.materiality_rule == "brandme.quote.material.v1"
-    done = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="buy-1")
+    done = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="buy-1-0000000000")
     assert done.state == "accepted"
     order = w.svc.get_order(w.member, done.order_id)
     assert order.payment_status == "unknown"  # acceptance is not payment
@@ -118,13 +118,13 @@ def test_duplicate_execute_with_same_key_returns_same_operation(w):
     d, ag = w.delegate()
     _, _, op = w.prepared(ag)
     approval = w.approve(op)
-    a = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="same")
-    b = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="same")
+    a = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="same-00000000000")
+    b = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="same-00000000000")
     assert a.id == b.id and len(w.provider.submit_calls) == 1
     with pytest.raises(IdempotencyConflict):
-        w.svc.execute_purchase(ag, operation_id="other", approval_id=approval.id, idempotency_key="same")
+        w.svc.execute_purchase(ag, operation_id="other", approval_id=approval.id, idempotency_key="same-00000000000")
     with pytest.raises(ApprovalInvalid):  # approval consumed once
-        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="different")
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="different-000000")
 
 
 # ---------------------------------------------------------- material term changes
@@ -137,9 +137,9 @@ def test_price_change_after_approval_requires_new_quote(w):  # BM-COM-005 + fail
     assert new_quote.quote_hash != quote.quote_hash
     new_op = w.svc.request_purchase(ag, new_quote.id)
     with pytest.raises(ApprovalInvalid):  # old approval cannot buy the new terms
-        w.svc.execute_purchase(ag, operation_id=new_op.id, approval_id=old.id, idempotency_key="x1")
+        w.svc.execute_purchase(ag, operation_id=new_op.id, approval_id=old.id, idempotency_key="x1-0000000000000")
     # Executing the old operation reaches the provider, which authoritatively refuses the stale price.
-    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=old.id, idempotency_key="x2")
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=old.id, idempotency_key="x2-0000000000000")
     assert res.state == "rejected" and res.reason_code == "price_changed"
     assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000, "USD")  # released
 
@@ -154,7 +154,7 @@ def test_agent_cannot_mutate_approved_terms(w):
         w.store.put("quotes", quote.id, (member, replace(q, lines=(replace(q.lines[0], quantity=2,
                     line_total=q.lines[0].unit_price.times(2)),))))
     with pytest.raises(ApprovalInvalid) as e:
-        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="m1")
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="m1-0000000000000")
     assert e.value.code == "quote_changed" and w.provider.submit_calls == []
 
 
@@ -183,7 +183,7 @@ def test_expiry_between_approval_and_execution(w):
     approval = w.approve(op)
     w.clock.advance(minutes=11)
     with pytest.raises(ApprovalInvalid):
-        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="late")
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="late-00000000000")
     assert w.provider.submit_calls == []
 
 
@@ -202,7 +202,7 @@ def test_stock_loss_after_approval_rejected_by_provider(w):
     _, _, op = w.prepared(ag)
     approval = w.approve(op)
     w.provider.arm(Behavior.STOCK_LOSS, source_variant_ref="demo-overshirt-m")
-    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="s")
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="s-00000000000000")
     assert res.state == "rejected" and res.reason_code == "out_of_stock"
 
 
@@ -211,7 +211,7 @@ def test_rejected_authorization(w):  # failure: rejected auth
     _, _, op = w.prepared(ag)
     approval = w.approve(op)
     w.provider.arm(Behavior.REJECTED_AUTH)
-    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="r")
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="r-00000000000000")
     assert res.state == "rejected" and res.reason_code == "payment_authorization_declined"
     assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000, "USD")
 
@@ -264,7 +264,7 @@ def test_two_agents_cannot_overspend_shared_budget(w):  # BM-COM-007
     def run(op, approval, i):
         try:
             results.append(w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id,
-                                                  idempotency_key=f"c{i}"))
+                                                  idempotency_key=f"concurrent-{i:06d}"))
         except CommerceError as exc:
             errors.append(exc)
 
@@ -286,7 +286,7 @@ def test_revocation_before_submission_cancels_without_side_effect(w):  # BM-COM-
     w.svc.revoke_delegation(w.member, d.id)
     assert w.svc.get_operation(w.member, op.id).state == "cancelled"
     with pytest.raises(DelegationInvalid):
-        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="rv")
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="rv-0000000000000")
     assert w.provider.submit_calls == []
 
 
@@ -304,7 +304,7 @@ def test_revocation_racing_submission_stops_unsent_work(w):
         return original(op_, quote, principal)
 
     w.svc._submit = revoke_then_submit
-    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="race")
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="race-00000000000")
     assert res.state == "cancelled" and res.reason_code == "delegation_revoked"
     assert w.provider.submit_calls == []
     assert all(e.state == "released" for e in w.store.rows("reservations"))
@@ -329,14 +329,14 @@ def test_timeout_after_accept_reconciles_to_one_order(w):  # BM-COM-009 + failur
     _, quote, op = w.prepared(ag)
     approval = w.approve(op)
     w.provider.arm(Behavior.TIMEOUT_AFTER_ACCEPT)
-    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="t")
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="t-00000000000000")
     assert res.state == "outcome_unknown"
     # Budget stays reserved while unknown; the same quote cannot be bought again.
     assert [e.state for e in w.store.rows("reservations")] == ["reserved"]
     op2 = w.svc.request_purchase(ag, quote.id)
     a2 = w.approve(op2)
     with pytest.raises(IdempotencyConflict) as e:
-        w.svc.execute_purchase(ag, operation_id=op2.id, approval_id=a2.id, idempotency_key="t2")
+        w.svc.execute_purchase(ag, operation_id=op2.id, approval_id=a2.id, idempotency_key="t2-0000000000000")
     assert e.value.code == "purchase_in_progress"
     done = w.svc.reconcile(op.id)
     assert done.state == "accepted"
@@ -351,7 +351,7 @@ def _accepted_order(w, *lines_):
     d, ag = w.delegate()
     _, _, op = w.prepared(ag, *(lines_ or [line()]))
     approval = w.approve(op)
-    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="o-" + op.id)
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="o-00000000000000" + op.id)
     return d, res, w.store.get("orders", res.order_id)
 
 
@@ -411,7 +411,7 @@ def test_refund_before_delayed_fulfillment_keeps_facts_independent(w):  # BM-COM
 def test_refund_credit_back_follows_grant_policy(w):
     d, ag = w.delegate(lim=limits(refund_credit_back=True))
     _, _, op = w.prepared(ag)
-    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=w.approve(op).id, idempotency_key="cb")
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=w.approve(op).id, idempotency_key="cb-0000000000000")
     order = w.store.get("orders", res.order_id)
     w.provider.arm(Behavior.REFUND)
     w.svc.handle_webhook("demo_atelier", *w.provider.refund(order.provider_order_ref)[0])
@@ -446,7 +446,7 @@ def test_unclassified_submit_error_becomes_unknown_then_reconciles(w):
         raise ConnectionResetError("socket closed")  # ... but our side lost the response
 
     w.provider.submit = flaky
-    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="u1")
+    res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="u1-0000000000000")
     assert res.state == "outcome_unknown"
     w.provider.submit = real_submit
     assert w.svc.reconcile(op.id).state == "accepted" and len(w.store.rows("orders")) == 1
@@ -458,7 +458,7 @@ def test_stale_submitting_after_crash_is_reconciled(w):
     approval = w.approve(op)
     w.svc._submit = lambda *a, **k: (_ for _ in ()).throw(SystemExit("crash before provider I/O"))
     with pytest.raises(SystemExit):
-        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="crash")
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="crash-0000000000")
     assert w.svc.get_operation(w.member, op.id).state == "submitting"
     assert w.svc.reconcile(op.id).state == "submitting"  # not stale yet
     w.clock.advance(minutes=3)

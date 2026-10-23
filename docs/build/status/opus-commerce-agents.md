@@ -374,3 +374,68 @@ through `run_command` (outbox in the same transaction), tests parametrized over 
 S10 `packages/provider-contracts` extension · S11 routers aligned to foundation middleware + unmounted Python domain
 HTTP adapter · S12 console `(ops)/providers/**` and `(ops)/commerce/operations` per shell contract v1 ·
 S13 simulator exchange behavior (BM-COM-011 exchange case).
+
+## Stage S8 — Commerce on the foundation principal, errors, event registry, data categories (2026-10-23)
+
+**Done.** Lane + foundation suite: **274 passed, 0 skipped** (Spanner emulator 1.5.58, official AP2 SDK oracle;
+baseline 246, +28 new). Exit-evidence tests from S1–S5 are unchanged in intent; only fixtures moved to the new
+principal and 16-char idempotency keys.
+
+- **Principal.** `brandme_core/domains/commerce/principal.py` is now a thin helper over
+  `brandme_core.domains.base.Principal`: `is_first_party` (= `session_id` set, no delegation), `is_agent`,
+  `validate_principal`, `meets_assurance`. Deviation from S7 point 1: the module is kept as the single home of those
+  rules instead of being deleted; it defines no principal type of its own. The old `issuer`/`first_party_session`
+  fields are gone everywhere (`grep` clean).
+- **Binding.** `CommerceService.bind(principal)` runs first in every public method: environment check; first-party
+  passes through; an agent needs a `client_id` and is resolved to its **one** active delegation for
+  `(member_id, client_id)` (a supplied `delegation_id` must be that grant). `create_delegation` refuses a second active
+  grant for the same pair (`409 active_delegation_exists`); expiry or revocation frees the slot. Agents cannot create
+  or revoke grants (`not_trusted_surface`); revoked agents cannot read operations/orders either.
+- **Scopes.** First-party sessions are not scope-gated (foundation sessions carry only `profile:*`/`privacy:manage`,
+  test `test_profile_only_session_can_buy_for_itself`). Agents need the scope in **both** the token and the
+  delegation (`test_agent_scope_is_token_and_grant_intersection`, MCP `test_token_scope_beyond_grant_is_not_honoured`).
+- **Assurance.** Trusted-surface approval: `aal2`, or foundation `simulated` only in `demo`/`development` and only when
+  the operation's provider is a simulation (`reauthentication_required` otherwise). AP2 device-key registration never
+  accepts `simulated` — those keys sign real mandates.
+- **Errors.** `commerce/errors.py` subclasses foundation `DomainError` (`NotFound`, `Forbidden`, `InvalidTransition`,
+  `VersionConflict` → `revision_conflict`, `IdempotencyConflict` → `idempotency_key_reused`); new `InvalidRequest`
+  (400) and `DelegationConflict` (409). One problem+json vocabulary for any adapter that maps `DomainError`.
+- **Idempotency.** Keys follow the foundation contract (16–128 chars, `idempotency_key_invalid`); scope is
+  `(actor_ref, environment, operation, key)`, same shape as `run_idempotent_command`, so the delegation is part of the
+  scope (ch.03 §6). MCP `tool_invocation.schema.json` `idempotency_key.minLength` 8 → 16.
+- **Events.** Outbox rows are foundation `EventEnvelope`s validated on emit (domain schema + registered closed payload +
+  `FORBIDDEN_PAYLOAD_KEYS`). Registered in `commerce/events.py`, all `member_private`: `commerce.delegation.created`,
+  `commerce.delegation.revoked` (renamed from `delegation.*`), `commerce.quote.ready`,
+  `commerce.purchase.approval_requested`, `commerce.purchase.authorized`, `commerce.order.observed` (the wardrobe
+  lane's input: per-line ordered/shipped/delivered/returned, `wardrobe_effect` incoming/arrived/returned/updated,
+  acquisition evidence refs). `actor_ref` is foundation's `member:<id>[/delegation:<id>]`.
+- **Data categories.** `commerce/data_categories.py` registers `commerce.agent_grants`, `commerce.carts_quotes`,
+  `commerce.orders` with their V007 tables and truthful retention text (financial evidence kept per jurisdiction /
+  provider agreement; merchant-held records outside Brand.Me's control). **`export`/`delete` are not wired yet** — they
+  need the Spanner store (S9).
+- **MCP / orchestrator.** `ExecutorAssertionVerifier` builds the foundation principal with `session_id=None` and
+  **rejects** a session-bound principal on the MCP hop (401); `delegation_id` in the assertion is optional
+  (`executor_assertion.schema.json` updated). `McpToolExecutor._dispatch` binds before the scope check and audits the
+  resolved delegation. `AssistantRuntime` refuses member sessions (tasks run under a grant) and a task mode that
+  differs from the grant's mode.
+
+Files: `brandme_core/domains/commerce/{principal,errors,events,data_categories,delegation,store,service}.py`,
+`brandme_core/mcp/{authz,tools}.py`, `brandme_core/mcp/schemas/{executor_assertion,tool_invocation}.schema.json`,
+`brandme_core/orchestrator/runtime.py`, `tests/fixtures/commerce/harness.py`, `tests/test_commerce_principal.py` (new),
+`tests/test_{mcp,commerce_assistant,commerce_purchase,commerce_ap2}.py`.
+
+Still open from S7 plan: S9 Spanner store (+ data-category export/delete), S10, S11 (TS routers still use the round-1
+`req.principal`/`firstPartySession` shape until then), S12, S13.
+
+### S8 defect found in round 1: lane JSON files were never committed
+
+The root `.gitignore` ignores `*.json` (with a short allowlist). Round 1 (PR #35, merged as `7c61afd`) therefore
+shipped code that reads **25 files that were not in git**: the vendored AP2 v0.2 schemas
+(`brandme_core/domains/commerce/ap2_schemas/{ap2,ucp}/**` — only `NOTICE.md` landed), the MCP wire schemas
+(`brandme_core/mcp/schemas/{tool_invocation,executor_assertion}.schema.json`) and
+`tests/fixtures/providers/impact_feed_fictional.json`. My S1–S6 test counts came from a working tree that had them; a
+fresh checkout of `bench/opus-commerce-agents-20261005` cannot import the MCP executor or validate AP2 mandates. This
+stage adds them with `git add -f` (no `.gitignore` edit — that file isn't lane-owned) and re-runs the suite from a
+clean worktree of the pushed commit (result below). Request to whoever owns `.gitignore`: allowlist
+`brandme_core/**/schemas/**/*.json`, `brandme_core/domains/commerce/ap2_schemas/**` and `tests/fixtures/**/*.json`, so the next
+lane doesn't hit the same silent drop.

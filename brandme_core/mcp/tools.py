@@ -268,6 +268,10 @@ class McpToolExecutor:
                                     "error", problem=_problem(400, "malformed_invocation", e.message[:300])).to_wire()
         tool = invocation["tool"]
         status, outcome = self._dispatch(principal, invocation)
+        try:
+            principal = self.commerce.bind(principal)  # audit the resolved delegation
+        except CommerceError:
+            pass
         self.audit({
             "request_id": request_id, "tool": tool, "client_id": principal.client_id,
             "member_ref": hashlib.sha256(principal.member_id.encode()).hexdigest()[:16],
@@ -308,7 +312,15 @@ class McpToolExecutor:
             jsonschema.Draft202012Validator(spec.input_schema, format_checker=jsonschema.FormatChecker()).validate(args)
         except jsonschema.ValidationError as e:
             return 400, ToolOutcome(rid, tool, "error", problem=_problem(400, "invalid_arguments", e.message[:300]))
-        missing = sorted(set(spec.scopes) - principal.scopes)
+        try:
+            principal = self.commerce.bind(principal)  # resolve the caller's one active delegation
+        except CommerceError as e:
+            return e.status, ToolOutcome(rid, tool, "error", problem=_problem(e.status, e.code, e.detail))
+        delegation = self.commerce.store.get("delegations", principal.delegation_id or "")
+        if delegation is None:  # first-party sessions use the trusted UI, never this hop
+            return 403, ToolOutcome(rid, tool, "error", problem=_problem(
+                403, "delegation_required", "MCP tools run only under a member-granted delegation"))
+        missing = sorted(set(spec.scopes) - (principal.scopes & delegation.scopes))
         if missing:
             err = AuthError(403, "insufficient_scope", "additional scope required", scope=" ".join(spec.scopes))
             return 403, ToolOutcome(rid, tool, "error", problem=_problem(
@@ -329,7 +341,6 @@ class McpToolExecutor:
 
     # -- handlers --------------------------------------------------------------
     def _catalog_search(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
-        self.commerce.require_active_delegation(p)
         wanted = set(a.get("provider_ids") or [])
         now = self.commerce.clock()
         items, unavailable = [], []
@@ -386,7 +397,6 @@ class McpToolExecutor:
         return self._op_status(p, op)
 
     def _order_status(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
-        self.commerce.require_active_delegation(p)
         return self._op_status(p, self.commerce.get_operation(p, a["operation_id"]))
 
     def _op_status(self, p: Principal, op) -> Dict[str, Any]:

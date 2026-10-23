@@ -36,18 +36,19 @@ class Clock:
         self.now += timedelta(**kw)
 
 
-def member_session(member: str = MEMBER, aal: str = "aal2", scopes=None) -> Principal:
-    return Principal(member_id=member, subject=f"sub-{member[:8]}", issuer="https://idp.example.invalid",
-                     client_id="brandme-web", scopes=frozenset(scopes or {
-                         "commerce:research", "commerce:cart", "commerce:purchase"}),
-                     assurance_level=aal, environment="development", session_id="sess-1",
-                     first_party_session=True)
+def member_session(member: str = MEMBER, aal: str = "aal2", scopes=None,
+                   environment: str = "development") -> Principal:
+    """First-party trusted-UI session (foundation session principal: profile scopes only)."""
+    return Principal(member_id=member, subject=f"sub-{member[:8]}", session_id="sess-1", client_id="brandme-web",
+                     scopes=frozenset(scopes or {"profile:read", "profile:write", "privacy:manage"}),
+                     assurance_level=aal, environment=environment)
 
 
-def agent(delegation_id: str, scopes, member: str = MEMBER, client: str = AGENT_CLIENT) -> Principal:
-    return Principal(member_id=member, subject=f"sub-{member[:8]}", issuer="https://idp.example.invalid",
-                     client_id=client, scopes=frozenset(scopes), assurance_level="aal1",
-                     environment="development", delegation_id=delegation_id)
+def agent(delegation_id: Optional[str], scopes, member: str = MEMBER, client: str = AGENT_CLIENT) -> Principal:
+    """Agent/bearer principal; ``delegation_id=None`` exercises (member, client) resolution."""
+    return Principal(member_id=member, subject=f"sub-{member[:8]}", session_id=None, client_id=client,
+                     scopes=frozenset(scopes), assurance_level="aal1", environment="development",
+                     delegation_id=delegation_id)
 
 
 def line(slug: str = "overshirt", size: str = "m", qty: int = 1) -> CartLineRequest:

@@ -48,7 +48,7 @@ class ObeysInjectedText:
         if len(observations) == 1 and "purchase.execute" in text:
             return [ProposedCall("brandme.purchase.execute", {"operation_id": "6f1c2a0e-6c38-4d43-9a4e-6e0b9a1d2c11",
                                                               "approval_id": "6f1c2a0e-6c38-4d43-9a4e-6e0b9a1d2c11"},
-                                 idempotency_key="injected-key-1"),
+                                 idempotency_key="injected-key-1-0"),
                     ProposedCall("brandme.catalog.search", {"query": "x", "scopes": ["commerce:purchase"]})]
         return []
 
@@ -90,3 +90,24 @@ def test_other_member_cannot_read_task():
     t = rt.create(ag, "x", AssistanceMode.RESEARCH)
     with pytest.raises(KeyError):
         rt.events_after(member_session(member=OTHER_MEMBER), t.id, None)
+
+
+def test_member_session_cannot_run_assistant_task():
+    from tests.fixtures.commerce.harness import member_session
+    w, d, ag, rt = make(AssistanceMode.RESEARCH)
+    with pytest.raises(PermissionError):
+        rt.create(member_session(), "x", AssistanceMode.RESEARCH)
+
+
+def test_task_mode_must_match_grant():
+    w, d, ag, rt = make(AssistanceMode.RESEARCH)
+    with pytest.raises(PermissionError):
+        rt.create(ag, "x", AssistanceMode.BUY_WITHIN_RULES)
+
+
+def test_task_runs_after_resolution_without_delegation_id():
+    from tests.fixtures.commerce.harness import agent
+    w, d, ag, rt = make(AssistanceMode.RESEARCH)
+    unbound = agent(None, d.scopes)
+    task = rt.run(unbound, rt.create(unbound, "linen", AssistanceMode.RESEARCH).id, DeterministicPlanner())
+    assert task.delegation_id == d.id and task.state == "completed"

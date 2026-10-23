@@ -9,7 +9,7 @@ from typing import FrozenSet, Optional, Tuple
 
 from .errors import DelegationInvalid, Forbidden
 from .money import Money
-from .principal import Principal
+from .principal import Principal, is_agent
 
 
 class AssistanceMode(str, enum.Enum):
@@ -92,7 +92,7 @@ def build_delegation(*, granting: Principal, delegation_id: str, client_id: str,
                      limits: Optional[DelegationLimits], now: datetime,
                      expires_at: datetime) -> AgentDelegation:
     """Only a first-party trusted-UI session may create a grant."""
-    if granting.is_agent:
+    if is_agent(granting):
         raise Forbidden("agents cannot create or widen delegations")
     if expires_at <= now:
         raise DelegationInvalid("expiry must be in the future")

@@ -23,7 +23,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 from brandme_core.domains.commerce.delegation import AssistanceMode
-from brandme_core.domains.commerce.principal import Principal
+from brandme_core.domains.commerce.errors import CommerceError
+from brandme_core.domains.commerce.principal import Principal, is_first_party
 from brandme_core.mcp.authz import MCP_PROTOCOL_VERSION
 from brandme_core.mcp.tools import McpToolExecutor
 
@@ -107,11 +108,24 @@ class AssistantRuntime:
     def create(self, principal: Principal, goal: str, mode: AssistanceMode) -> AssistantTask:
         if principal.environment != self.environment:
             raise PermissionError("environment mismatch")
+        principal = self._bind(principal)
+        delegation = self.executor.commerce.store.get("delegations", principal.delegation_id)
+        if delegation.mode is not mode:
+            raise PermissionError("task mode differs from the delegation's mode")
         task = AssistantTask(str(uuid.uuid4()), principal.member_id, principal.delegation_id, mode, goal[:1000])
         self._emit(task, "goal", {"goal": task.goal, "mode": mode.value})
         with self._lock:
             self._tasks[task.id] = task
         return task
+
+    def _bind(self, principal: Principal) -> Principal:
+        """Tasks run only as an agent under the member's active delegation."""
+        if is_first_party(principal):
+            raise PermissionError("assistant tasks run under a delegation, not a member session")
+        try:
+            return self.executor.commerce.bind(principal)
+        except CommerceError as exc:
+            raise PermissionError(exc.detail) from None
 
     def get(self, principal: Principal, task_id: str) -> AssistantTask:
         task = self._tasks.get(task_id)
@@ -128,6 +142,7 @@ class AssistantRuntime:
         return [e for e in self.get(principal, task_id).events if after is None or e.seq > after]
 
     def run(self, principal: Principal, task_id: str, planner: Planner) -> AssistantTask:
+        principal = self._bind(principal)
         task = self.get(principal, task_id)
         if principal.delegation_id != task.delegation_id:
             raise PermissionError("task bound to a different delegation")

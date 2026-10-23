@@ -21,7 +21,7 @@ from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple
 
 import jwt
 
-from brandme_core.domains.commerce.principal import Principal
+from brandme_core.domains.commerce.principal import Principal, validate_principal
 
 MCP_PROTOCOL_VERSION = "2026-07-28"
 EXECUTOR_AUDIENCE = "brandme:mcp-executor"
@@ -184,15 +184,20 @@ class ExecutorAssertionVerifier:
             raise AuthError(401, "invalid_token", "principal claim malformed")
         if p.get("environment") != self.environment:
             raise AuthError(401, "invalid_token", "assertion environment mismatch")
+        if p.get("session_id") is not None:
+            # MCP callers are never the trusted surface; a session here is a gateway bug.
+            raise AuthError(401, "invalid_token", "session-bound principal on the MCP hop")
         try:
-            return Principal(
-                member_id=p["member_id"], subject=p["subject"], issuer=p["issuer"], client_id=p["client_id"],
+            principal = Principal(
+                member_id=p["member_id"], subject=p["subject"], session_id=None, client_id=p["client_id"],
                 scopes=frozenset(p.get("scopes", [])), assurance_level=p.get("assurance_level", "aal1"),
-                environment=p["environment"], session_id=p.get("session_id"),
-                delegation_id=p.get("delegation_id"),
-                first_party_session=False)  # MCP callers are never the trusted surface
+                environment=p["environment"], delegation_id=p.get("delegation_id"))
+            validate_principal(principal)
         except (KeyError, ValueError, TypeError):
             raise AuthError(401, "invalid_token", "principal claim incomplete") from None
+        if not principal.client_id or not p.get("issuer"):
+            raise AuthError(401, "invalid_token", "principal claim incomplete")
+        return principal
 
 
 def sign_executor_assertion(*, private_key: Any, kid: str, gateway_issuer: str, principal: Dict[str, Any],

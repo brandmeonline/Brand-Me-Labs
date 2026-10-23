@@ -108,12 +108,13 @@ class Harness:
                                   audit=self.audit.append)
 
     def assertion(self, *, scopes=None, member=MEMBER, delegation_id="__default__", key=None, ttl=30, jti=None,
-                  aud_override=None):
+                  aud_override=None, extra=None):
         principal = {"member_id": member, "subject": "sub-2ad9041e", "issuer": "https://idp.example.invalid",
                      "client_id": self.agent.client_id,
                      "scopes": sorted(scopes if scopes is not None else self.delegation.scopes),
                      "assurance_level": "aal1", "environment": "development",
-                     "delegation_id": self.delegation.id if delegation_id == "__default__" else delegation_id}
+                     "delegation_id": self.delegation.id if delegation_id == "__default__" else delegation_id,
+                     **(extra or {})}
         if aud_override:
             now = int(time.time())
             return jwt.encode({"iss": GW_ISSUER, "aud": aud_override, "iat": now, "exp": now + 30,
@@ -181,7 +182,7 @@ def test_assertion_replay_ttl_and_forgery_rejected(h, keys):
 def test_scope_enforced_per_tool(h):
     status, body = h.call("brandme.purchase.execute",
                           {"operation_id": str(uuid.uuid4()), "approval_id": str(uuid.uuid4())},
-                          key="k-12345678", scopes=["commerce:research"])
+                          key="k-12345678-00000", scopes=["commerce:research"])
     assert status == 403 and body["problem"]["code"] == "insufficient_scope"
     assert 'scope="commerce:purchase"' in body["problem"]["www_authenticate"]
 
@@ -194,7 +195,7 @@ def test_agent_flow_research_prepare_then_member_approval(h):
     status, body = h.call("brandme.cart.create", {
         "provider_id": "demo_atelier", "merchant_id": item["merchant_id"],
         "lines": [{"variant_id": item["variant_id"], "source_variant_ref": "demo-overshirt-m", "quantity": 1}]},
-        key="cart-key-0001")
+        key="cart-key-0001-00")
     cart_id = body["structured_content"]["cart_id"]
     status, body = h.call("brandme.checkout.quote", {"cart_id": cart_id})
     quote = body["structured_content"]["quote"]
@@ -203,17 +204,17 @@ def test_agent_flow_research_prepare_then_member_approval(h):
     assert body["structured_content"]["state"] == "awaiting_approval"
     # Without approval: cannot execute, cannot fabricate one.
     status, body = h.call("brandme.purchase.execute", {"operation_id": op_id, "approval_id": str(uuid.uuid4())},
-                          key="exec-key-0001")
+                          key="exec-key-0001-00")
     assert status == 422 and h.w.provider.submit_calls == []
     status, body = h.call("brandme.purchase.execute",
                           {"operation_id": op_id, "approval_id": str(uuid.uuid4()), "approved": True},
-                          key="exec-key-0002")
+                          key="exec-key-0002-00")
     assert status == 400
     # Member approves on the trusted surface (not via MCP).
     op = h.w.svc.get_operation(h.w.member, op_id)
     approval = h.w.approve(op)
     status, body = h.call("brandme.purchase.execute", {"operation_id": op_id, "approval_id": approval.id},
-                          key="exec-key-0003")
+                          key="exec-key-0003-00")
     assert status == 200 and body["structured_content"]["state"] == "accepted"
     status, body = h.call("brandme.order.status", {"operation_id": op_id})
     assert body["structured_content"]["order"]["payment_status"] == "unknown"
@@ -230,12 +231,12 @@ def test_malicious_product_text_stays_data(keys):  # BM-COM-017
     assert "\x07" not in item["description"]["text"]
     # A planner that obeys the text still has only the delegation's scopes.
     status, body = h.call("brandme.purchase.execute",
-                          {"operation_id": str(uuid.uuid4()), "approval_id": str(uuid.uuid4())}, key="inj-key-0001")
+                          {"operation_id": str(uuid.uuid4()), "approval_id": str(uuid.uuid4())}, key="inj-key-0001-000")
     assert status == 403 and body["problem"]["code"] == "insufficient_scope"
     status, body = h.call("brandme.cart.create", {"provider_id": "demo_atelier", "merchant_id": "fictional-demo-merchant",
                                                   "lines": [{"variant_id": item["variant_id"],
                                                              "source_variant_ref": "demo-overshirt-m", "quantity": 1}]},
-                          key="inj-key-0002")
+                          key="inj-key-0002-000")
     assert status == 403
     assert h.w.store.get("delegations", h.delegation.id).scopes == frozenset({"commerce:research"})
     assert set(body) == {"request_id", "tool", "status", "problem"}  # no data, no secrets on refusal
@@ -279,3 +280,38 @@ def test_uuids_are_not_mistaken_for_card_numbers():
     assert not any(_contains_payment_credential(str(uuid.uuid4())) for _ in range(20000))
     assert _contains_payment_credential({"note": "4111-1111-1111-1111"})
     assert _contains_payment_credential({"note": "id 8e694893-5172-4174-836b-6d317187f777 card 4111111111111111"})
+
+
+# ---------------------------------------------------- S8: foundation principal
+def test_session_bound_principal_rejected_on_mcp_hop(h):
+    status, body = h.call("brandme.catalog.search", {"query": "linen"}, extra={"session_id": "sess-1"})
+    assert status == 401 and body["problem"]["code"] == "invalid_token"
+
+
+def test_assertion_without_delegation_id_resolves_active_grant(h):
+    status, body = h.call("brandme.catalog.search", {"query": "linen"}, delegation_id=None)
+    assert status == 200
+    assert h.audit[-1]["delegation_id"] == h.delegation.id
+
+
+def test_assertion_for_client_without_grant_is_refused(h):
+    h.w.svc.revoke_delegation(h.w.member, h.delegation.id)
+    status, body = h.call("brandme.catalog.search", {"query": "linen"}, delegation_id=None)
+    assert status == 403 and body["problem"]["code"] == "delegation_required"
+
+
+def test_token_scope_beyond_grant_is_not_honoured(keys):
+    h = Harness(keys, mode=AssistanceMode.PREPARE)
+    status, body = h.call("brandme.purchase.execute",
+                          {"operation_id": str(uuid.uuid4()), "approval_id": str(uuid.uuid4())},
+                          key="beyond-grant-00001",
+                          scopes=sorted(h.delegation.scopes | {"commerce:purchase"}))
+    assert status == 403 and body["problem"]["code"] == "insufficient_scope"
+
+
+def test_short_idempotency_key_is_malformed(h):
+    status, body = h.call("brandme.cart.create", {
+        "provider_id": "demo_atelier", "merchant_id": "fictional-demo-merchant",
+        "lines": [{"variant_id": str(uuid.uuid4()), "source_variant_ref": "demo-overshirt-m", "quantity": 1}]},
+        key="short-key")
+    assert status == 400 and body["problem"]["code"] == "malformed_invocation"

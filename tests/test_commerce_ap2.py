@@ -66,7 +66,7 @@ def test_valid_mandates_produce_bound_approval_and_purchase(setup):
     approval = w.svc.approve_with_ap2(ag, operation_id=op.id, checkout_mandate=cm, payment_mandate=pm)
     assert approval.method == "ap2_mandate" and approval.quote_hash == quote.quote_hash
     assert approval.protocol_payload_hash.startswith("sha256:")
-    done = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="ap2-exec")
+    done = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="ap2-exec-0000000")
     assert done.state == "accepted"
 
 

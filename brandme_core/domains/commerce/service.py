@@ -2,7 +2,11 @@
 
 Invariants enforced here:
 
-* Identity comes only from ``Principal``; no method accepts a member/user id.
+* Identity comes only from the foundation ``Principal``; no method accepts a
+  member/user id. Every public method binds the principal first: a first-party
+  session acts as the member; any other caller is an agent and is resolved to
+  its one active delegation for (member, client). Agent scopes are the
+  intersection of token scopes and delegation scopes.
 * An agent can research and prepare carts; it cannot approve, and it can only
   execute a purchase that a first-party trusted surface approved for the exact
   canonical quote hash.
@@ -34,25 +38,28 @@ from brandme_core.domains.providers.registry import ProviderRegistry, RegistryEr
 from .delegation import (
     DEFAULT_EXCLUDED_CATEGORIES, AgentDelegation, AssistanceMode, DelegationLimits, build_delegation,
 )
+from brandme_core.events import EventEnvelope
+
+from . import data_categories as _data_categories  # noqa: F401  (registers My Data categories)
+from . import events as _events  # noqa: F401  (registers commerce event types)
 from .errors import (
-    ApprovalInvalid, BudgetExceeded, CapabilityUnavailable, CommerceError, DelegationInvalid,
-    Forbidden, IdempotencyConflict, InvalidQuote, NotFound, VersionConflict,
+    ApprovalInvalid, BudgetExceeded, CapabilityUnavailable, CommerceError, DelegationConflict,
+    DelegationInvalid, Forbidden, IdempotencyConflict, InvalidQuote, InvalidRequest, NotFound, VersionConflict,
 )
 from .money import Money, sum_money
-from .principal import Principal
+from .principal import Principal, is_agent, is_first_party, meets_assurance, validate_principal
 from .quote import MATERIALITY_RULE, CheckoutQuote, QuoteLine
 from .records import (
     IN_FLIGHT, ApprovalChallenge, BudgetEntry, Cart, IdempotencyRecord, Order, OrderLine,
     PurchaseApproval, PurchaseOperation, WebhookReceipt, check_transition,
 )
-from .store import InMemoryCommerceStore, OutboxEvent, new_id
+from .store import InMemoryCommerceStore, new_id
 
 Clock = Callable[[], datetime]
 
 APPROVAL_CHALLENGE_TTL = timedelta(minutes=5)
 STALE_SUBMITTING = timedelta(minutes=2)
 MAX_CART_LINES = 50
-_AAL = {"aal1": 1, "aal2": 2, "aal3": 3}
 _PAYMENT_RANK = {"unknown": 0, "authorized": 1, "captured": 2, "partially_refunded": 3, "refunded": 4}
 
 
@@ -78,34 +85,63 @@ class CommerceService:
     def _event(self, event_type: str, aggregate_type: str, aggregate_id: str, version: int,
                actor: Principal | str, payload: Dict[str, Any], correlation_id: Optional[str] = None,
                privacy_class: str = "member_private") -> None:
-        actor_ref = actor if isinstance(actor, str) else (
-            f"member:{actor.member_id}" if not actor.is_agent else f"client:{actor.client_id}")
-        self.store.emit(OutboxEvent(
-            event_id=new_id(), event_type=event_type, schema_version="1",
-            aggregate_type=aggregate_type, aggregate_id=aggregate_id, aggregate_version=version,
-            occurred_at=self.clock(), environment=self.environment, actor_ref=actor_ref,
-            correlation_id=correlation_id or new_id(), causation_id=None,
-            privacy_class=privacy_class, payload=payload))
+        self.store.emit(EventEnvelope(
+            event_type=event_type, schema_version="1", aggregate_type=aggregate_type,
+            aggregate_id=aggregate_id, aggregate_version=version, environment=self.environment,
+            actor_ref=actor if isinstance(actor, str) else actor.actor_ref,
+            correlation_id=correlation_id or new_id(), privacy_class=privacy_class, payload=payload,
+            occurred_at=self.clock()))
 
-    def _require_env(self, principal: Principal) -> None:
+    def bind(self, principal: Principal) -> Principal:
+        """Resolve who is acting: first-party sessions pass through; agents get their delegation."""
+        return self._bind(principal)[0]
+
+    def _bind(self, principal: Principal) -> Tuple[Principal, Optional[AgentDelegation]]:
+        try:
+            validate_principal(principal)
+        except (TypeError, ValueError) as exc:
+            raise Forbidden(str(exc), code="invalid_principal") from None
         if principal.environment != self.environment:
             raise Forbidden("principal environment mismatch")
+        if is_first_party(principal):
+            return principal, None
+        if not principal.client_id:
+            raise DelegationInvalid("agent principal without a client", code="delegation_required")
+        now = self.clock()
+        if principal.delegation_id is not None:
+            d = self.store.get("delegations", principal.delegation_id)
+            if d is None:
+                raise DelegationInvalid("unknown delegation")
+        else:
+            d = self._active_delegation(principal.member_id, principal.client_id, now)
+            if d is None:
+                raise DelegationInvalid("no active delegation for this client", code="delegation_required")
+        bound = replace(principal, delegation_id=d.id)
+        d.require_active_for(bound, now)
+        return bound, d
 
-    def _require_scope(self, principal: Principal, scope: str) -> None:
-        if not principal.has_scope(scope):
+    def _active_delegation(self, member_id: str, client_id: str, now: datetime) -> Optional[AgentDelegation]:
+        active = [d for d in self.store.rows("delegations")
+                  if d.member_id == member_id and d.client_id == client_id and d.is_active(now)]
+        if len(active) > 1:  # prevented by create_delegation; refuse rather than guess
+            raise DelegationInvalid("ambiguous delegation for this client", code="delegation_ambiguous")
+        return active[0] if active else None
+
+    def _authorize(self, principal: Principal, scope: str) -> Tuple[Principal, Optional[AgentDelegation]]:
+        """Bind, then gate agents on ``scope`` in both the token and the delegation.
+
+        A first-party session is the member acting on Brand.Me's own UI; its
+        authority is the member's, not an OAuth scope.
+        """
+        principal, d = self._bind(principal)
+        if d is not None and (scope not in principal.scopes or scope not in d.scopes):
             raise Forbidden(f"missing scope {scope}", code="insufficient_scope")
+        return principal, d
 
-    def require_active_delegation(self, principal: Principal) -> Optional[AgentDelegation]:
-        """Agents must act through an active delegation; first-party sessions need none."""
-        if principal.delegation_id is None:
-            if principal.is_agent:
-                raise DelegationInvalid("agent principal without delegation")
-            return None
-        d = self.store.get("delegations", principal.delegation_id)
-        if d is None:
-            raise DelegationInvalid("unknown delegation")
-        d.require_active_for(principal, self.clock())
-        return d
+    def _require_first_party(self, principal: Principal, detail: str, code: str) -> Principal:
+        if is_agent(principal):
+            raise Forbidden(detail, code=code)
+        return self._bind(principal)[0]
 
     def _require_capability(self, provider_id: str, capability: str) -> Any:
         try:
@@ -130,7 +166,10 @@ class CommerceService:
         digest = _digest(dict(request))
         if not key:
             return None, None, digest
-        scope = (principal.member_id, self.environment, operation, principal.delegation_id or "-", key)
+        if not 16 <= len(key) <= 128:  # foundation Idempotency-Key contract
+            raise InvalidRequest("Idempotency-Key must be 16-128 characters", code="idempotency_key_invalid")
+        # Same key shape as foundation run_idempotent_command: (actor_ref, environment, operation, key).
+        scope = (principal.actor_ref, self.environment, operation, key)
         rec = self.store.get("idempotency", scope)
         if rec is None:
             return scope, None, digest
@@ -142,19 +181,23 @@ class CommerceService:
     def create_delegation(self, principal: Principal, *, client_id: str, mode: AssistanceMode,
                           allowed_providers: Iterable[str], limits: Optional[DelegationLimits],
                           expires_at: datetime) -> AgentDelegation:
-        self._require_env(principal)
+        principal = self._require_first_party(principal, "agents cannot create or widen delegations",
+                                              "not_trusted_surface")
         d = build_delegation(granting=principal, delegation_id=new_id(), client_id=client_id,
                              mode=mode, allowed_providers=frozenset(allowed_providers),
                              limits=limits, now=self.clock(), expires_at=expires_at)
         with self.store.transaction():
+            # One active grant per (member, client): an agent's authority is never ambiguous.
+            if self._active_delegation(principal.member_id, client_id, self.clock()) is not None:
+                raise DelegationConflict("this client already has an active delegation; revoke it first")
             self.store.put("delegations", d.id, d)
-            self._event("delegation.created", "AgentDelegation", d.id, 1, principal,
+            self._event("commerce.delegation.created", "AgentDelegation", d.id, 1, principal,
                         {"delegation_id": d.id, "mode": d.mode.value, "client_id": client_id})
         return d
 
     def revoke_delegation(self, principal: Principal, delegation_id: str) -> AgentDelegation:
-        if principal.is_agent:
-            raise Forbidden("agents cannot revoke delegations")
+        principal = self._require_first_party(principal, "agents cannot revoke delegations",
+                                              "not_trusted_surface")
         with self.store.transaction():
             d = self._own("delegations", delegation_id, principal)
             if d.revoked_at is not None:
@@ -168,16 +211,14 @@ class CommerceService:
                     self._transition(op, "cancelled", reason="delegation_revoked")
                     self._release_budget(op.id)
                     self._void_approval(op.approval_id)
-            self._event("delegation.revoked", "AgentDelegation", d.id, d.version, principal,
+            self._event("commerce.delegation.revoked", "AgentDelegation", d.id, d.version, principal,
                         {"delegation_id": d.id})
         return d
 
     # ------------------------------------------------------------------ carts
     def create_cart(self, principal: Principal, *, provider_id: str, merchant_id: str,
                     lines: Sequence[CartLineRequest], idempotency_key: Optional[str] = None) -> Cart:
-        self._require_env(principal)
-        self._require_scope(principal, "commerce:cart")
-        d = self.require_active_delegation(principal)
+        principal, d = self._authorize(principal, "commerce:cart")
         if d is not None:
             if d.mode is AssistanceMode.RESEARCH:
                 raise Forbidden("research delegation cannot build carts")
@@ -204,8 +245,7 @@ class CommerceService:
 
     def update_cart(self, principal: Principal, cart_id: str, *, if_match: int,
                     lines: Sequence[CartLineRequest]) -> Cart:
-        self._require_scope(principal, "commerce:cart")
-        self.require_active_delegation(principal)
+        principal, _ = self._authorize(principal, "commerce:cart")
         self._validate_lines(lines)
         cart = self._own("carts", cart_id, principal)
         if cart.revision != if_match:
@@ -235,8 +275,7 @@ class CommerceService:
 
     # ----------------------------------------------------------------- quotes
     def quote_cart(self, principal: Principal, cart_id: str) -> CheckoutQuote:
-        self._require_scope(principal, "commerce:cart")
-        self.require_active_delegation(principal)
+        principal, _ = self._authorize(principal, "commerce:cart")
         cart = self._own("carts", cart_id, principal)
         conn = self._require_capability(cart.provider_id, "price.quote")
         from brandme_core.domains.providers.contracts import ProviderCart
@@ -274,6 +313,10 @@ class CommerceService:
         return quote
 
     def get_quote(self, principal: Principal, quote_id: str) -> CheckoutQuote:
+        principal, _ = self._authorize(principal, "commerce:research")
+        return self._quote(principal, quote_id)
+
+    def _quote(self, principal: Principal, quote_id: str) -> CheckoutQuote:
         row = self.store.get("quotes", quote_id)
         if row is None or row[0] != principal.member_id:
             raise NotFound("quote not found")
@@ -282,9 +325,8 @@ class CommerceService:
     # -------------------------------------------------------- purchase request
     def request_purchase(self, principal: Principal, quote_id: str) -> PurchaseOperation:
         """Agent or member asks for approval. Creates no approval, spends nothing."""
-        self._require_scope(principal, "commerce:cart")
-        d = self.require_active_delegation(principal)
-        quote = self.get_quote(principal, quote_id)
+        principal, d = self._authorize(principal, "commerce:cart")
+        quote = self._quote(principal, quote_id)
         quote.verify_seal()
         quote.ensure_fresh(self.clock())
         if d is not None:
@@ -309,12 +351,12 @@ class CommerceService:
     # ------------------------------------------------- trusted approval surface
     def open_approval_challenge(self, principal: Principal, operation_id: str) -> ApprovalChallenge:
         """Rendered only by Brand.Me's deterministic approval UI (AP2 trusted surface)."""
-        if principal.is_agent:
-            raise Forbidden("only the member's trusted surface can open an approval", code="not_trusted_surface")
+        principal = self._require_first_party(principal, "only the member's trusted surface can open an approval",
+                                              "not_trusted_surface")
         op = self._own("operations", operation_id, principal)
         if op.state != "awaiting_approval":
             raise ApprovalInvalid(f"operation is {op.state}")
-        quote = self.get_quote(principal, op.quote_id)
+        quote = self._quote(principal, op.quote_id)
         quote.verify_seal()
         now = self.clock()
         quote.ensure_fresh(now)
@@ -328,15 +370,17 @@ class CommerceService:
 
     def approve(self, principal: Principal, *, operation_id: str, challenge_id: str, nonce: str,
                 displayed_quote_hash: str) -> PurchaseApproval:
-        if principal.is_agent:
-            raise Forbidden("agents cannot approve purchases", code="not_trusted_surface")
-        if _AAL.get(principal.assurance_level, 0) < _AAL[self.approval_requires_assurance]:
+        principal = self._require_first_party(principal, "agents cannot approve purchases", "not_trusted_surface")
+        op = self._own("operations", operation_id, principal)
+        # Foundation's ``simulated`` dev identity may approve only simulated providers in local environments.
+        if not meets_assurance(principal, self.approval_requires_assurance,
+                               simulation_ok=self._is_simulation(op.provider_id)):
             raise ApprovalInvalid("reauthentication required", code="reauthentication_required")
         now = self.clock()
         with self.store.transaction():
             op = self._own("operations", operation_id, principal)
             ch = self._own("challenges", challenge_id, principal)
-            quote = self.get_quote(principal, op.quote_id)
+            quote = self._quote(principal, op.quote_id)
             if ch.used or now >= ch.expires_at:
                 raise ApprovalInvalid("approval challenge expired or used")
             if not secrets.compare_digest(ch.nonce, nonce):
@@ -369,8 +413,12 @@ class CommerceService:
     # ------------------------------------------------------ AP2-backed approval
     def register_surface_key(self, principal: Principal, public_jwk: Mapping[str, Any]) -> str:
         """Member registers the trusted-surface device key that signs their AP2 mandates."""
-        if principal.is_agent or _AAL.get(principal.assurance_level, 0) < _AAL["aal2"]:
-            raise Forbidden("only a reauthenticated member session can register a signing key")
+        principal = self._require_first_party(
+            principal, "only a reauthenticated member session can register a signing key", "not_trusted_surface")
+        # A device key signs real AP2 mandates: simulated identities never qualify.
+        if not meets_assurance(principal, "aal2", simulation_ok=False):
+            raise Forbidden("only a reauthenticated member session can register a signing key",
+                            code="reauthentication_required")
         from jwcrypto.jwk import JWK
         key = JWK(**dict(public_jwk))
         if key.has_private or key.get("kty") != "EC" or key.get("crv") != "P-256":
@@ -386,10 +434,11 @@ class CommerceService:
         """Map verified AP2 v0.2 closed mandates to an approval bound to the canonical quote hash."""
         from jwcrypto.jwk import JWK
         from . import ap2
+        principal, _ = self._authorize(principal, "commerce:cart")
         op = self._own("operations", operation_id, principal)
         if op.state != "awaiting_approval":
             raise ApprovalInvalid(f"operation is {op.state}")
-        quote = self.get_quote(principal, op.quote_id)
+        quote = self._quote(principal, op.quote_id)
         quote.verify_seal()
         now = self.clock()
         quote.ensure_fresh(now)
@@ -442,14 +491,13 @@ class CommerceService:
     def execute_purchase(self, principal: Principal, *, operation_id: str, approval_id: str,
                          idempotency_key: str) -> PurchaseOperation:
         if not idempotency_key:
-            raise CommerceError("Idempotency-Key is required", code="idempotency_key_required")
-        self._require_scope(principal, "commerce:purchase")
+            raise InvalidRequest("Idempotency-Key is required", code="idempotency_key_required")
+        principal, delegation = self._authorize(principal, "commerce:purchase")
         request = {"operation_id": operation_id, "approval_id": approval_id}
         scope, prior, digest = self._idempotent(principal, "purchase.execute", idempotency_key, request)
         if prior:
             return self.store.get("operations", prior)
 
-        delegation = self.require_active_delegation(principal)
         now = self.clock()
         with self.store.transaction():
             op = self._own("operations", operation_id, principal)
@@ -464,7 +512,7 @@ class CommerceService:
                 raise ApprovalInvalid("approval bound to a different delegation")
             if now >= approval.expires_at:
                 raise ApprovalInvalid("approval expired", code="approval_expired")
-            quote = self.get_quote(principal, op.quote_id)
+            quote = self._quote(principal, op.quote_id)
             quote.ensure_fresh(now)
             current_hash = quote.compute_hash()
             if not (approval.quote_hash == op.quote_hash == quote.quote_hash == current_hash):
@@ -701,6 +749,7 @@ class CommerceService:
     # ---------------------------------------------------------------- returns
     def request_return(self, principal: Principal, order_id: str, source_variant_ref: str,
                        quantity: int) -> Dict[str, Any]:
+        principal, _ = self._authorize(principal, "commerce:cart")
         order = self._own("orders", order_id, principal)
         line = next((l for l in order.lines if l.source_variant_ref == source_variant_ref), None)
         if line is None or not 1 <= quantity <= line.quantity_ordered - line.quantity_returned:
@@ -804,8 +853,16 @@ class CommerceService:
             if a is not None and a.state == "issued":
                 self.store.put("approvals", a.id, replace(a, state="void"))
 
+    def _is_simulation(self, provider_id: str) -> bool:
+        try:
+            return bool(self.registry.get(provider_id).simulation)
+        except RegistryError:
+            return False
+
     def get_operation(self, principal: Principal, operation_id: str) -> PurchaseOperation:
+        principal, _ = self._authorize(principal, "commerce:research")
         return self._own("operations", operation_id, principal)
 
     def get_order(self, principal: Principal, order_id: str) -> Order:
+        principal, _ = self._authorize(principal, "commerce:research")
         return self._own("orders", order_id, principal)
