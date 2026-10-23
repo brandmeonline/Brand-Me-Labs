@@ -1126,19 +1126,31 @@ class CommerceService:
 
     # ----------------------------------------------------------------- budget
     def available_budget(self, delegation: AgentDelegation, reader: Any = None) -> Money:
+        """The cap less what purchases reserved in the rolling window, in-flight ones included.
+
+        A credit (void, expired hold, reduced capture, refund credited back) is observed after
+        the purchase it offsets, so it counts in that purchase's window, not its own: a credit
+        for a reservation that has left the window adds no headroom now. A purchase's credits
+        never give back more than it consumed.
+        """
         limits = delegation.limits
         if limits is None:
             return Money.zero("USD")
         window_start = self.clock() - timedelta(seconds=limits.window_seconds)
-        spent = 0
+        held: Dict[str, int] = {}  # per operation: reserved or consumed in the window
+        consumed: Dict[str, int] = {}
+        credited: Dict[str, int] = {}
         for e in (reader or self.store).budget_entries(delegation.id):
-            if e.created_at < window_start:
-                continue
+            op, amount = e.operation_id, e.amount.amount_minor
             if e.kind == "reservation" and e.state in ("reserved", "consumed"):
-                spent += e.amount.amount_minor
+                if e.created_at >= window_start:
+                    held[op] = held.get(op, 0) + amount
+                    if e.state == "consumed":
+                        consumed[op] = consumed.get(op, 0) + amount
             elif e.kind == "credit" and e.state == "credited":
-                spent -= e.amount.amount_minor
-        return Money(max(0, limits.max_cumulative.amount_minor - max(0, spent)), limits.currency)
+                credited[op] = credited.get(op, 0) + amount
+        spent = sum(amount - min(credited.get(op, 0), consumed.get(op, 0)) for op, amount in held.items())
+        return Money(max(0, limits.max_cumulative.amount_minor - spent), limits.currency)
 
     def _reserve_budget(self, tx: Any, delegation: AgentDelegation, op_id: str, amount: Money) -> None:
         # Inside the transaction: the availability read and the reservation write are atomic.
