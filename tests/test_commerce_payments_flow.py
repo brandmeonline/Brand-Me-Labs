@@ -758,6 +758,38 @@ def test_a_pending_capture_is_not_re_sent_inside_its_settle_window(w):
     assert rec.pending == {} and w.provider.rail_health()["needs_operator"] == 0
 
 
+@pytest.mark.parametrize("path", ["merchant_cancel", "armed_refund", "member"])
+def test_units_are_never_cancelled_while_a_capture_is_unsettled(w, path):
+    """A pending capture is re-sent with its stored amount, so a cancel waits for it, then refunds the units."""
+    quote, res = _buy(w, w.member, line("overshirt"), line("bag"))
+    order = _order(w, res)
+    ref = order.provider_order_ref
+    _lose_request(w, "capture")
+    with pytest.raises(ProviderError):
+        w.provider.ship(ref)  # the capture for the whole order never arrives
+
+    def cancel_bag():
+        if path == "merchant_cancel":
+            return _hook(w, w.provider.cancel(ref, "demo-bag-m"))
+        if path == "armed_refund":  # the bag has not shipped: it is cancelled, not returned
+            w.provider.arm(Behavior.REFUND, source_variant_ref="demo-bag-m", quantity=1)
+            return _hook(w, w.provider.refund(ref))
+        return w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)  # every unshipped unit
+    with pytest.raises(ProviderError) as e:  # inside the settle window the lost capture may still land
+        cancel_bag()
+    assert e.value.kind is ProviderErrorKind.TRANSIENT and not e.value.transmitted
+    assert w.provider.fulfillment.record(ref).open_units() == 2  # nothing was cancelled
+    assert w.store.get("operations", res.id).state == "accepted"
+    w.clock.advance(minutes=3)
+    cancel_bag()  # the capture is settled first (re-sent under its key), then the cancelled units are refunded
+    if path != "member":
+        _hook(w, w.provider.ship(ref))
+    pay = _held(w, ref)
+    owed = 0 if path == "member" else quote.total.amount_minor - BAG
+    assert pay.captured.amount_minor - pay.refunded.amount_minor == owed  # never charged for a cancelled unit
+    assert _calls(w, "capture") == [("capture", payment_key(_base(w, res), "capture"))] * 2
+
+
 def test_an_absent_money_op_past_the_key_horizon_waits_for_an_operator(w):
     _, res = _buy(w, w.member)
     order = _order(w, res)

@@ -18,6 +18,7 @@ Money rules:
 * Capture once, at the first shipment, for the total minus the value of units
   cancelled before capture. Void when every unit is cancelled before capture,
   or when the hold expires. Refund only after capture, for units no longer owed.
+  Nothing is cancelled while a capture is unsettled (its re-send keeps its amount).
 * An authorization is never re-sent: an unknown one is found by reads. A
   capture, void or refund whose answer was lost stays a pending money op
   (recorded before the call) and is settled by reading its effect; it is
@@ -270,6 +271,12 @@ class ComposedMerchantAdapter:
     def _op(self, kind: str, key: str, amount: int, reason: str) -> PendingMoneyOp:
         now = self._clock()
         return PendingMoneyOp(kind, key, amount, reason, now, now)
+
+    def _no_capture_in_flight(self, rec: MerchantOrder) -> None:
+        """An unsettled capture is re-sent with the amount it was first sent for, so nothing is cancelled first."""
+        with self._lock:
+            if any(op.kind == "capture" for op in rec.pending.values()):
+                raise ProviderError(ProviderErrorKind.TRANSIENT, "payment capture pending; nothing cancelled")
 
     def _void(self, rec: MerchantOrder, reason: str, *, retry: bool = False) -> PaymentState:
         return self._send(rec, self._op("void", payment_key(rec.idempotency_key, "void"), 0, reason), retry=retry)
@@ -566,6 +573,7 @@ class ComposedMerchantAdapter:
 
     def _cancel(self, rec: MerchantOrder, ref: Optional[str], qty: Optional[int], key: str) -> None:
         self._settle_pending(rec)
+        self._no_capture_in_flight(rec)
         pay = self.payments.lookup(rec.payment_ref)
         res = self._cancel_units(rec, ref, qty, key)
         value = sum(self.line_value_minor(r, u) for r, u in res.cancelled)
@@ -634,6 +642,7 @@ class ComposedMerchantAdapter:
             raise RuntimeError("arm Behavior.REFUND first")
         rec = self._live(order_ref)
         self._settle_pending(rec)
+        self._no_capture_in_flight(rec)
         fr = self._record(rec)
         pay = self.payments.lookup(rec.payment_ref)
         ref = params.get("source_variant_ref")
