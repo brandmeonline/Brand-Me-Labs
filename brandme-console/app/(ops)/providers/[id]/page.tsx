@@ -1,7 +1,7 @@
 // /providers/[id] — one provider's sanitized record (lane: opus-commerce-agents).
 import Link from 'next/link'
 import { PageHeader } from '../_data/shell'
-import { capabilityLabel, loadFromGateway, type ProviderDetail } from '../_data/gateway'
+import { capabilityLabel, loadFromGateway, railLabel, STRIPE_TEST_NOTICE, type ProviderDetail } from '../_data/gateway'
 import { LoadState } from '../_data/states'
 
 export const dynamic = 'force-dynamic'
@@ -37,6 +37,12 @@ export default async function ProviderPage({ params }: { params: Promise<{ id: s
           <p>Deterministic local adapter for demo and development. It never places a real order and is refused in sandbox and production.</p>
         </section>
       )}
+      {p.payment_rail?.mode === 'sandbox' && (
+        <section className="console-notice" aria-labelledby="rail-heading">
+          <h2 id="rail-heading">Stripe test mode</h2>
+          <p>{STRIPE_TEST_NOTICE}</p>
+        </section>
+      )}
       <section className="console-section" aria-labelledby="record-heading">
         <h2 id="record-heading">Record</h2>
         <dl>
@@ -50,6 +56,12 @@ export default async function ProviderPage({ params }: { params: Promise<{ id: s
           <dd>{p.access_level}</dd>
           <dt>Credential</dt>
           <dd>{p.credential_configured ? 'Configured (reference held server-side)' : 'None configured'}</dd>
+          <dt>Payment rail</dt>
+          <dd>
+            {p.payment_rail
+              ? `${railLabel(p.payment_rail)}; webhooks ${p.payment_rail.webhooks_configured ? 'configured' : 'not configured'}`
+              : 'None (the merchant handles payment outside Brand.Me)'}
+          </dd>
           <dt>Protocols</dt>
           <dd>{protocols.length ? protocols.map(([k, v]) => `${k} ${v}`).join(', ') : 'None verified'}</dd>
           <dt>Allowed redirect hosts</dt>
