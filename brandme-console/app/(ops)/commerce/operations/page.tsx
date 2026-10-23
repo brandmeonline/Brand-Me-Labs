@@ -2,7 +2,7 @@
 // Read-only: reconciliation runs in the commerce worker through each provider's
 // idempotency key. This page never retries or re-submits a purchase, and it
 // shows no member identifiers.
-import { PageHeader } from '../../providers/_data/page-header'
+import { PageHeader } from '../../providers/_data/shell'
 import { age, loadFromGateway, type OperationsQueue, type QueueOperation } from '../../providers/_data/gateway'
 import { LoadState } from '../../providers/_data/states'
 

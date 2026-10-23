@@ -1,6 +1,6 @@
 // /providers — registered providers and their effective capabilities (lane: opus-commerce-agents).
 import Link from 'next/link'
-import { PageHeader } from './_data/page-header'
+import { PageHeader } from './_data/shell'
 import { EXECUTABLE, loadFromGateway, type ProviderRow } from './_data/gateway'
 import { LoadState } from './_data/states'
 

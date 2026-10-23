@@ -1,6 +1,6 @@
 // /providers/[id]/setup — setup checklist, read-only in this release (lane: opus-commerce-agents).
 import Link from 'next/link'
-import { PageHeader } from '../../_data/page-header'
+import { PageHeader } from '../../_data/shell'
 import { loadFromGateway, type ProviderSetup } from '../../_data/gateway'
 import { LoadState } from '../../_data/states'
 

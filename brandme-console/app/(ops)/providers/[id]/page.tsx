@@ -1,6 +1,6 @@
 // /providers/[id] — one provider's sanitized record (lane: opus-commerce-agents).
 import Link from 'next/link'
-import { PageHeader } from '../_data/page-header'
+import { PageHeader } from '../_data/shell'
 import { capabilityLabel, loadFromGateway, type ProviderDetail } from '../_data/gateway'
 import { LoadState } from '../_data/states'
 

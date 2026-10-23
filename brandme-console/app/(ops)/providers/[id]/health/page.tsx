@@ -1,6 +1,6 @@
 // /providers/[id]/health — capability states and the evidence behind them (lane: opus-commerce-agents).
 import Link from 'next/link'
-import { PageHeader } from '../../_data/page-header'
+import { PageHeader } from '../../_data/shell'
 import { capabilityLabel, loadFromGateway, type ProviderHealth } from '../../_data/gateway'
 import { LoadState } from '../../_data/states'
 
