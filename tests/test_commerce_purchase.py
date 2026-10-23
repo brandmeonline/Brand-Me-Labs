@@ -464,3 +464,39 @@ def test_stale_submitting_after_crash_is_reconciled(w):
     res = w.svc.reconcile(op.id)
     assert res.state == "rejected" and res.reason_code == "not_found_at_provider"
     assert all(e.state == "released" for e in w.store.rows("reservations"))
+
+
+def test_exchange_keeps_history_and_tracks_the_replacement(w):  # BM-COM-011 exchange case
+    _, op, order = _accepted_order(w, line("overshirt", "m", 1))
+    w.svc.handle_webhook("demo_atelier", *w.provider.capture(order.provider_order_ref)[0])
+    w.svc.handle_webhook("demo_atelier", *w.provider.ship(order.provider_order_ref)[0])
+    assert w.store.get("orders", order.id).fulfillment_status == "fulfilled"
+    w.svc.handle_webhook("demo_atelier", *w.provider.exchange(order.provider_order_ref, "demo-overshirt-m",
+                                                              "demo-overshirt-l")[0])
+    o = w.store.get("orders", order.id)
+    by_ref = {l.source_variant_ref: l for l in o.lines}
+    assert by_ref["demo-overshirt-m"].quantity_returned == 1 and by_ref["demo-overshirt-m"].quantity_delivered == 1
+    replacement = by_ref["demo-overshirt-l"]
+    assert replacement.exchanged_from_ref == "demo-overshirt-m" and replacement.quantity_ordered == 1
+    assert replacement.variant_id == w.provider.variant_id_for("demo-overshirt-l")
+    assert o.payment_status == "captured" and o.refunded_total.amount_minor == 0  # an exchange moves no money
+    assert o.fulfillment_status == "partially_fulfilled"  # the replacement is not delivered yet
+    ev = _events(w, "commerce.order.observed")[-1].payload
+    assert ev["wardrobe_effect"] == "exchanged"
+    assert {l["source_variant_ref"]: l["exchanged_from_ref"] for l in ev["lines"]} == {
+        "demo-overshirt-m": None, "demo-overshirt-l": "demo-overshirt-m"}
+    assert ev["acquisition_evidence"]  # every observation carries provider evidence refs
+    w.svc.handle_webhook("demo_atelier", *w.provider.ship(order.provider_order_ref)[0])
+    o = w.store.get("orders", order.id)
+    assert o.fulfillment_status == "fulfilled"
+    assert {l.source_variant_ref: l.quantity_delivered for l in o.lines} == {"demo-overshirt-m": 1, "demo-overshirt-l": 1}
+    assert _events(w, "commerce.order.observed")[-1].payload["wardrobe_effect"] == "arrived"
+
+
+def test_uneven_or_undelivered_exchange_is_refused_by_the_provider(w):
+    _, op, order = _accepted_order(w, line("overshirt", "m", 1))
+    with pytest.raises(ProviderError):  # nothing delivered yet
+        w.provider.exchange(order.provider_order_ref, "demo-overshirt-m", "demo-overshirt-l")
+    w.svc.handle_webhook("demo_atelier", *w.provider.ship(order.provider_order_ref)[0])
+    with pytest.raises(ProviderError):  # different price: a return plus a new purchase
+        w.provider.exchange(order.provider_order_ref, "demo-overshirt-m", "demo-trousers-m")

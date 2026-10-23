@@ -53,7 +53,8 @@ ORDER_OBSERVED = register(
         "order_status": {"enum": ["accepted", "rejected", "cancelled"]},
         "payment_status": {"enum": ["unknown", "authorized", "captured", "partially_refunded", "refunded", "failed"]},
         "fulfillment_status": {"enum": ["unfulfilled", "partially_fulfilled", "fulfilled"]},
-        "wardrobe_effect": {"enum": ["incoming", "arrived", "returned", "updated"]},
+        # exchanged: an original line was returned and a replacement line (exchanged_from_ref) added.
+        "wardrobe_effect": {"enum": ["incoming", "arrived", "returned", "exchanged", "updated"]},
         "lines": {"type": "array", "minItems": 1, "maxItems": 100, "items": _ORDER_LINE},
         "acquisition_evidence": {"type": "array", "maxItems": 50, "items": _REF},
     }, ("order_id", "operation_id", "member_id", "provider_id", "order_status", "payment_status",

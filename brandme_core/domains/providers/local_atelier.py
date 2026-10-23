@@ -19,6 +19,11 @@ PARTIAL_FULFILLMENT    ship/deliver only part of an order's quantity
 REFUND                 refund all or part of an order (with return evidence)
 EXPIRED_QUOTE          next quote expires almost immediately
 =====================  ======================================================
+
+``exchange()`` simulates an even exchange (same price, e.g. another size): the
+original line records the return, a new line records the replacement with
+``exchanged_from_ref``, and no money moves. A different-priced exchange is
+refused; that is a return plus a new purchase.
 """
 
 from __future__ import annotations
@@ -333,6 +338,34 @@ class LocalAtelierProvider:
                                    quantity_delivered=max(l.quantity_delivered, qty if deliver else 0)))
             o.lines = new
         return self._webhook(order_ref, "fulfillment.updated")
+
+    def exchange(self, order_ref: str, source_variant_ref: str, new_source_variant_ref: str,
+                 quantity: int = 1) -> List[Tuple[Dict[str, str], bytes]]:
+        with self._lock:
+            o = self._orders[order_ref]
+            original = next((l for l in o.lines if l.source_variant_ref == source_variant_ref), None)
+            if original is None or not 1 <= quantity <= original.quantity_delivered - original.quantity_returned:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "only delivered, unreturned units exchange")
+            if new_source_variant_ref not in self._variants:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "unknown replacement variant")
+            if self._price[new_source_variant_ref] != self._price[source_variant_ref]:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED,
+                                    "uneven exchange: return and buy the replacement instead")
+            if self._stock[new_source_variant_ref] < quantity:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "replacement out of stock")
+            self._stock[new_source_variant_ref] -= quantity
+            self._stock[source_variant_ref] += quantity
+            new = []
+            for l in o.lines:
+                if l.source_variant_ref == source_variant_ref:
+                    l = replace(l, quantity_returned=l.quantity_returned + quantity)
+                new.append(l)
+            existing = next((l for l in new if l.source_variant_ref == new_source_variant_ref), None)
+            if existing is not None:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "replacement already on this order")
+            new.append(ObservedLine(new_source_variant_ref, quantity, exchanged_from_ref=source_variant_ref))
+            o.lines = new
+        return self._webhook(order_ref, "exchange.created")
 
     def refund(self, order_ref: str) -> List[Tuple[Dict[str, str], bytes]]:
         params = self._take(Behavior.REFUND)

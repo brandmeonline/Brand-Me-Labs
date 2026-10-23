@@ -725,16 +725,24 @@ class CommerceService:
         self.store.run(lambda tx: tx.put("webhook_receipts", key, applied))
         return applied
 
+    def _variant_resolver(self, provider_id: str) -> Callable[[str], Optional[str]]:
+        try:
+            fn = getattr(self.registry.get(provider_id).adapter, "variant_id_for", None)
+        except RegistryError:
+            fn = None
+        return fn if fn is not None else (lambda _ref: None)
+
     def _apply_observation(self, order_id: str, obs: OrderObservation, actor: str) -> Order:
         def _tx(tx):
             order = tx.get("orders", order_id)
+            resolve = self._variant_resolver(order.provider_id)  # pure lookup, no provider I/O
             by_ref = {l.source_variant_ref: l for l in order.lines}
             new_lines: List[OrderLine] = []
             for ol in obs.lines:
                 prev = by_ref.pop(ol.source_variant_ref, None)
                 if prev is None:
                     # Exchange creates a new variant relationship; history is retained.
-                    new_lines.append(OrderLine(None, ol.source_variant_ref, ol.quantity_ordered,
+                    new_lines.append(OrderLine(resolve(ol.source_variant_ref), ol.source_variant_ref, ol.quantity_ordered,
                                                ol.quantity_shipped, ol.quantity_delivered,
                                                ol.quantity_returned, ol.exchanged_from_ref))
                     continue
@@ -780,7 +788,10 @@ class CommerceService:
                     self._transition(tx, op, target)
                 except CommerceError:
                     pass  # summary state is advisory; order facts above are authoritative
-            effect = ("returned" if sum(l.quantity_returned for l in lines) > sum(l.quantity_returned for l in prev_order.lines)
+            previous_refs = {l.source_variant_ref for l in prev_order.lines}
+            exchanged = any(l.exchanged_from_ref and l.source_variant_ref not in previous_refs for l in lines)
+            effect = ("exchanged" if exchanged
+                      else "returned" if sum(l.quantity_returned for l in lines) > sum(l.quantity_returned for l in prev_order.lines)
                       else "arrived" if delivered > sum(l.quantity_delivered for l in prev_order.lines)
                       else "updated")
             self._order_event(tx, order, actor, effect=effect)

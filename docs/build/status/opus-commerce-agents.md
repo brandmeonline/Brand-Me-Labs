@@ -692,3 +692,30 @@ routing; `lib/` would be swallowed by the global ignore rule.
   - Screen readers, real devices, a real gateway with mounted routers, and an operator identity provider: `not_run`.
   - `networkidle` never settles on these pages because the shell's nav links prefetch other lanes' unbuilt routes.
     That is shell behavior, noted for astra, and harmless here.
+
+## Stage S13 — Simulator exchange; BM-COM-011 exchange case (2026-10-23)
+
+**Done.** Python suite: **374 passed, 0 skipped**.
+
+- **Simulator** (`LocalAtelierProvider.exchange`): an even exchange, same price (e.g. another size), of delivered,
+  unreturned units.
+  - The original line records the return; a replacement line is added with `exchanged_from_ref`.
+  - Stock moves. **No money moves.** A signed `exchange.created` webhook follows.
+  - Refused: a different price (that is a return plus a new purchase), undelivered units, an unknown or out-of-stock
+    replacement.
+- **Domain:**
+  - Replacement lines get their Brand.Me `variant_id` from the provider's own resolver. This is a pure lookup with no
+    I/O, so it is safe inside the transaction. They previously arrived as `null`.
+  - `commerce.order.observed` gains `wardrobe_effect: "exchanged"`. Schema v1 is not yet consumed by another lane, so
+    the enum was widened in place.
+  - Order fulfillment drops to `partially_fulfilled` until the replacement is delivered, then returns to `fulfilled`
+    (`arrived`).
+  - The purchase operation's summary state stays `fulfilled`. The state machine has no edge back, and the summary is
+    advisory while the order facts are authoritative.
+- **Tests** (both stores):
+  - `test_exchange_keeps_history_and_tracks_the_replacement`: history kept; payment untouched; event lines carry
+    `exchanged_from_ref` and evidence refs.
+  - `test_uneven_or_undelivered_exchange_is_refused_by_the_provider`.
+  - With the existing partial-shipment and refund tests, BM-COM-011 ("partial shipment, exchange and refund → correct
+    order lines and wardrobe quantities with evidence") is covered against the simulator. No live provider is
+    verified.
