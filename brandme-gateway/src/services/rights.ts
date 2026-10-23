@@ -22,6 +22,14 @@ function client(base: string | undefined, token: string | undefined, doFetch: ty
         await response.body?.cancel();
         throw new Error('upstream failure');
       }
+      if (response.status >= 400) {
+        await response.body?.cancel();
+        // Status is useful; arbitrary provider error bodies are not safe to
+        // expose. Keep the gateway's public Problem contract on every route.
+        if (response.status === 404) throw problems.notFound();
+        if (response.status === 401 || response.status === 403) throw problems.unavailable('The service could not authorize this request.');
+        throw new ApiProblem(response.status, 'upstream_request_rejected', 'Request rejected', 'The service could not complete this request.');
+      }
       if (response.status === 204) return { status: 200, body: null };
       const reader = response.body?.getReader();
       if (!reader) throw new Error('missing response');
@@ -37,7 +45,8 @@ function client(base: string | undefined, token: string | undefined, doFetch: ty
         }
       } finally { await reader.cancel(); }
       return { status: response.status, body: JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown };
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiProblem) throw error;
       throw problems.unavailable('The service is temporarily unavailable.');
     }
   };
@@ -61,7 +70,7 @@ export function rightsDependencies(cfg: GatewayConfig, doFetch: typeof fetch = f
       operations: client(`${cfg.chainUrl.replace(/\/$/, '')}/midnight`, cfg.chainServiceToken, doFetch, true, 15000),
       chain: client(cfg.chainUrl, undefined, doFetch, false),
       rights: client(cfg.rightsServiceUrl, cfg.rightsServiceToken, doFetch, true),
-      privacy: client(cfg.privacyServiceUrl, cfg.rightsServiceToken, doFetch, true),
+      privacy: client(cfg.privacyServiceUrl, cfg.privacyServiceToken, doFetch, true),
     },
   };
 }

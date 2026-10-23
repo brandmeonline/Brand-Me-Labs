@@ -531,6 +531,23 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/me/data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rights category inventory with explicit partial coverage and unavailable write capabilities */
+        get: operations["getMyDataInventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/deletion": {
         parameters: {
             query?: never;
@@ -542,6 +559,23 @@ export type paths = {
         put?: never;
         /** requestDeletion */
         post: operations["requestDeletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/deletion/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getMyDeletionStatus */
+        get: operations["getMyDeletionStatus"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -908,6 +942,40 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/rights/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** listMyEntitlements */
+        get: operations["listMyEntitlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rights/reprint-jobs/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getMyReprintJob */
+        get: operations["getMyReprintJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/session": {
         parameters: {
             query?: never;
@@ -1207,6 +1275,30 @@ export type components = {
             choice: "yes" | "pass" | "alternative";
             note?: string;
         } & unknown;
+        DeletionOutcomeRead: {
+            derived_purged: string | null;
+            rows_affected: string | null;
+            /** @enum {string} */
+            status: "pending_records" | "pending_derived" | "exception" | "not_erasable" | "retained" | "deleted";
+        };
+        DeletionStatusRead: {
+            categories: string[];
+            /** Format: date-time */
+            completed_at: string | null;
+            /** @enum {string} */
+            environment: "demo" | "development" | "sandbox" | "production";
+            /** Format: uuid */
+            job_id: string;
+            outcomes: {
+                [key: string]: components["schemas"]["DeletionOutcomeRead"];
+            } | null;
+            /** Format: date-time */
+            requested_at: string;
+            /** @enum {string} */
+            scope: "account" | "category";
+            /** @enum {string} */
+            state: "requested" | "running" | "completed" | "completed_with_exceptions" | "failed";
+        };
         /** @description demo/development only: creates a session for a fictional test identity. Refused in sandbox/production. */
         DevSessionCreate: {
             test_identity: string;
@@ -1327,6 +1419,71 @@ export type components = {
             amount_minor: string;
             currency: string;
         };
+        MyDataCategoryRead: {
+            domain: string;
+            key: string;
+            /** @enum {string} */
+            on_delete: "erase" | "anonymize" | "retain_legal" | "not_erasable_public_ledger";
+            on_edit: string;
+            personal: boolean;
+            retention: string;
+            retention_basis: string | null;
+            /** @enum {string} */
+            supplied_by: "member" | "inferred" | "provider" | "partner" | "system";
+            title: string;
+            visible_to: string[];
+        };
+        MyDataInventoryRead: {
+            capabilities: {
+                /** @constant */
+                deletion: "unavailable";
+                /** @constant */
+                export: "unavailable";
+            };
+            categories: components["schemas"]["MyDataCategoryRead"][];
+            coverage: {
+                domains: string[];
+                /** @constant */
+                full_account: false;
+            };
+            /** @enum {string} */
+            environment: "demo" | "development" | "sandbox" | "production";
+        };
+        PassportClaimRead: {
+            assurance: string;
+            /** Format: uuid */
+            claim_id: string;
+            /** @enum {string} */
+            environment: "demo" | "development" | "sandbox" | "production";
+            evidence_ref: string | null;
+            /** Format: date-time */
+            expires_at: string | null;
+            facet: string;
+            network: ("undeployed" | "preview" | "preprod" | "mainnet") | null;
+            /** Format: date-time */
+            observed_at: string;
+            source: string;
+            /** @enum {string} */
+            state: "current" | "expired" | "revoked";
+            statement: string;
+            test_network: boolean;
+            value: unknown;
+            what_this_means: string;
+        };
+        PassportClaimsRead: {
+            /** @constant */
+            api: "brandme.passport.claims/v1";
+            /** Format: uuid */
+            asset_id: string;
+            /** @enum {string} */
+            environment: "demo" | "development" | "sandbox" | "production";
+            /** @enum {string} */
+            network: "undeployed" | "preview" | "preprod" | "mainnet";
+            next_cursor: string | null;
+            statements: components["schemas"]["PassportClaimRead"][];
+            /** @enum {string} */
+            viewer: "public" | "owner";
+        };
         PersonaChange: {
             axis: components["schemas"]["AxisKey"];
             locked: boolean;
@@ -1384,7 +1541,59 @@ export type components = {
             /** Format: uuid */
             variant_id: string;
         };
+        ReprintJobRead: {
+            /** Format: date-time */
+            created_at: string;
+            entitlement_id: string;
+            /** @enum {string} */
+            environment: "demo" | "development" | "sandbox" | "production";
+            /** Format: uuid */
+            job_id: string;
+            manufacturer_id: string;
+            /** @enum {string} */
+            network: "undeployed" | "preview" | "preprod" | "mainnet";
+            payment_state: string;
+            /** @description Lossless non-negative int64 decimal string. */
+            quantity: string;
+            /** @enum {string} */
+            state: "eligibility_check" | "quoted" | "approved" | "reserved" | "rights_consuming" | "rights_consumed" | "accepted" | "manufacturing" | "quality_review" | "shipped" | "delivered" | "cancel_requested" | "cancelled" | "failed" | "disputed";
+            /** @description Lossless non-negative int64 decimal string. */
+            units_attested: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
         Revision: string;
+        RightsEntitlementRead: {
+            /** Format: uuid */
+            asset_id: string | null;
+            entitlement_id: string;
+            /** @description Lossless non-negative int64 decimal string. */
+            epoch: string;
+            /** Format: date-time */
+            finalized_at: string;
+            issuer_id: string;
+            /** @description Lossless non-negative int64 decimal string. */
+            last_block_height: string;
+            last_tx_id: string;
+            reprintable: boolean;
+            /** @enum {string} */
+            status: "active" | "revoked";
+            transferable: boolean;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        RightsEntitlementsRead: {
+            badge?: string;
+            /** @enum {string} */
+            capability?: "available" | "read_only" | "unavailable";
+            contract_address: string;
+            /** @enum {string} */
+            environment: "demo" | "development" | "sandbox" | "production";
+            items: components["schemas"]["RightsEntitlementRead"][];
+            /** @enum {string} */
+            network: "undeployed" | "preview" | "preprod" | "mainnet";
+            next_cursor: string | null;
+        };
         SessionInfo: {
             /** @enum {string} */
             assurance_level: "simulated" | "aal1" | "aal2";
@@ -1519,7 +1728,10 @@ export interface operations {
     };
     getPassport: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 assetId: components["schemas"]["Identifier"];
@@ -1534,11 +1746,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["PassportClaimsRead"];
                 };
             };
-            /** @description Not authenticated */
-            401: {
+            /** @description Invalid cursor or page limit */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2175,6 +2387,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Invalid cursor or page limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not authenticated */
@@ -3129,6 +3350,15 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
+            /** @description Invalid cursor or page limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Not authenticated */
             401: {
                 headers: {
@@ -3938,6 +4168,62 @@ export interface operations {
             };
         };
     };
+    getMyDataInventory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyDataInventoryRead"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden by object policy or mode */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Throttled */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Provider or dependency unavailable; safe retry or handoff */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     requestDeletion: {
         parameters: {
             query?: never;
@@ -3978,6 +4264,73 @@ export interface operations {
             };
             /** @description Idempotency key reused with a different request */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Throttled */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Provider or dependency unavailable; safe retry or handoff */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyDeletionStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: components["schemas"]["Identifier"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletionStatusRead"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden by object policy or mode */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not found or not visible to caller */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4237,6 +4590,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Invalid cursor or page limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not authenticated */
@@ -4802,6 +5164,15 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
+            /** @description Invalid cursor or page limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Not authenticated */
             401: {
                 headers: {
@@ -4915,6 +5286,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Invalid cursor or page limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not authenticated */
@@ -5209,6 +5589,15 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
+            /** @description Invalid cursor or page limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Not authenticated */
             401: {
                 headers: {
@@ -5344,6 +5733,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Invalid cursor or page limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not authenticated */
@@ -5625,6 +6023,141 @@ export interface operations {
             };
             /** @description Forbidden by object policy or mode */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Throttled */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Provider or dependency unavailable; safe retry or handoff */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyEntitlements: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RightsEntitlementsRead"];
+                };
+            };
+            /** @description Invalid cursor or page limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden by object policy or mode */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Throttled */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Provider or dependency unavailable; safe retry or handoff */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyReprintJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: components["schemas"]["Identifier"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReprintJobRead"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden by object policy or mode */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not found or not visible to caller */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6246,6 +6779,15 @@ export interface operations {
                         items: components["schemas"]["WardrobeItem"][];
                         next_cursor: string | null;
                     };
+                };
+            };
+            /** @description Invalid cursor or page limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not authenticated */

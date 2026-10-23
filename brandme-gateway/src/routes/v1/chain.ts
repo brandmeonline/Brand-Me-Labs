@@ -76,7 +76,7 @@ export function subjectOr401(deps: V1Deps, req: Request, res: Response): string 
 }
 
 export function relay(res: Response, r: UpstreamResponse): void {
-  res.status(r.status).json(r.body);
+  res.set('Cache-Control', 'no-store').status(r.status).json(r.body);
 }
 
 export function createChainRouter(deps: V1Deps): IRouter {

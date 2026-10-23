@@ -205,6 +205,7 @@ gcloud-config/
 !docs/design/brandme/contracts/design-tokens.json
 !docs/design/brandme/contracts/domain.schema.json
 !docs/design/brandme/contracts/reward-rules.json
+!packages/contracts/src/read-schemas.json
 
 # Service account keys (NEVER commit)
 *-service-account.json

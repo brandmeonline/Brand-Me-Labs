@@ -2,8 +2,10 @@
 
 `MyDataService` is a Python orchestration library over the V009 Spanner tables.
 The gateway routes under `/api/v1/me` enforce a verified member principal,
-`privacy:manage`, and recent `auth_time` for export and deletion. A deployed,
-authenticated backend behind those routes is **still required**. Do not expose
+`privacy:manage`, and recent `auth_time` for export and deletion. The
+[authenticated read backend](../../read_api/README.md) now provides partial rights
+inventory and member-scoped deletion status. Deploying it remains required.
+Export/deletion command composition is **still unavailable**. Do not expose
 these library methods directly to callers or accept a caller-supplied subject.
 
 ## Current behavior

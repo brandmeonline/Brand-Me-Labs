@@ -19,7 +19,7 @@ const fake = (name: string): UpstreamClient => ({
   async get(path, headers) {
     calls.push({ path: `${name}:${path}`, headers });
     if (name === 'chain' && path === '/midnight/capability') return { status: 200, body: capability };
-    return { status: 200, body: { ok: true } };
+    return { status: 200, body: { ok: true, network: 'preprod' } };
   },
   async post(path, body, headers) {
     calls.push({ path: `${name}:${path}`, body, headers });
