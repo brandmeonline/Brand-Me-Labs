@@ -30,11 +30,11 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "tables": ("Relationships",),
     },
     "social.blocks": {
-        "title": "Members you blocked",
+        "title": "Members you blocked or muted",
         "supplied_by": "member",
-        "retention": "Until you unblock them or delete your account",
-        "on_edit": "Unblocking does not restore a friendship",
-        "tables": ("MemberBlocks",),
+        "retention": "Until you unblock or unmute them, or delete your account",
+        "on_edit": "Unblocking does not restore a friendship; a muted member is never told",
+        "tables": ("MemberBlocks", "MemberMutes"),
     },
     "social.decisions": {
         "title": "Decisions you asked and answers you gave",
@@ -74,8 +74,10 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
                 for r in query(snap, "SELECT other_member_id, relationship_id, state, created_at, accepted_at FROM Relationships "
                                      "WHERE member_id=@m ORDER BY other_member_id", m, _M)]
     if category == "social.blocks":
-        return [{"blocked_member_id": r[0], "created_at": iso(r[1])}
-                for r in query(snap, "SELECT blocked_member_id, created_at FROM MemberBlocks WHERE member_id=@m ORDER BY blocked_member_id", m, _M)]
+        return ([{"kind": "block", "blocked_member_id": r[0], "created_at": iso(r[1])}
+                 for r in query(snap, "SELECT blocked_member_id, created_at FROM MemberBlocks WHERE member_id=@m ORDER BY blocked_member_id", m, _M)]
+                + [{"kind": "mute", "muted_member_id": r[0], "created_at": iso(r[1])}
+                   for r in query(snap, "SELECT muted_member_id, created_at FROM MemberMutes WHERE member_id=@m ORDER BY muted_member_id", m, _M)])
     if category == "social.decisions":
         asked = []
         for d in query(snap, "SELECT decision_id, subject_type, subject_id, prompt, discussion_mode, state, opened_at, closes_at, closed_at, "
@@ -114,7 +116,8 @@ def delete_category(txn, member_id: str, category: str) -> int:
     if category == "social.relationships":
         return txn.execute_update("DELETE FROM Relationships WHERE member_id=@m OR other_member_id=@m", params=m, param_types=_M)
     if category == "social.blocks":
-        return txn.execute_update("DELETE FROM MemberBlocks WHERE member_id=@m OR blocked_member_id=@m", params=m, param_types=_M)
+        n = txn.execute_update("DELETE FROM MemberBlocks WHERE member_id=@m OR blocked_member_id=@m", params=m, param_types=_M)
+        return n + txn.execute_update("DELETE FROM MemberMutes WHERE member_id=@m OR muted_member_id=@m", params=m, param_types=_M)
     if category == "social.decisions":
         n = txn.execute_update("DELETE FROM DecisionResponses WHERE respondent_id=@m", params=m, param_types=_M)
         n += txn.execute_update("DELETE FROM DecisionAudience WHERE recipient_id=@m", params=m, param_types=_M)

@@ -82,6 +82,22 @@ describe('social/decisions routers (unmounted)', () => {
     expect((await request(a).post('/relationships/not-a-uuid/accept')).status).toBe(404);
   });
 
+  it('mute forwards only target_member_id and needs social:write', async () => {
+    expect((await request(app(client, null)).get('/mutes')).status).toBe(401);
+    expect((await request(app(client, ['social:read'])).post('/mutes').send({ target_member_id: OTHER })).status).toBe(403);
+    const a = app(client, ALL);
+    expect((await request(a).post('/mutes').send({ target_member_id: OTHER, notify: true })).status).toBe(422);
+    expect((await request(a).post('/mutes').send({ target_member_id: OTHER })).status).toBe(200);
+    expect((await request(a).delete('/mutes/not-a-uuid')).status).toBe(404);
+    expect((await request(a).delete(`/mutes/${OTHER}`)).status).toBe(200);
+    expect((await request(a).get('/mutes')).status).toBe(200);
+    expect(client.calls.map((c) => [c.method, c.path, c.body])).toEqual([
+      ['POST', '/mutes', { target_member_id: OTHER }],
+      ['DELETE', `/mutes/${OTHER}`, undefined],
+      ['GET', '/mutes', undefined],
+    ]);
+  });
+
   it('decision create: exactly 300 s, 1-12 unique recipients, Idempotency-Key', async () => {
     expect(() => decisionShape(decision)).not.toThrow();
     for (const bad of [

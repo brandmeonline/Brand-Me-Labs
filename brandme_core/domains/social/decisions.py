@@ -543,16 +543,22 @@ class DecisionService:
                 ids = [r[0] for r in query(s, "SELECT decision_id FROM DecisionAudience@{FORCE_INDEX=DecisionAudienceByRecipient} "
                                               "WHERE recipient_id=@m AND NOT removed ORDER BY closes_at DESC LIMIT 50",
                                            {"m": principal.member_id}, {"m": STR})]
-            out = []
+            muted = set() if role == "mine" else {r[0] for r in query(s, "SELECT muted_member_id FROM MemberMutes WHERE member_id=@m",
+                                                                      {"m": principal.member_id}, {"m": STR})}
+            out, hidden = [], 0
             for i in ids:
                 d = self._locate(s, i)
                 if d is None:
+                    continue
+                if d["member_id"] in muted:
+                    hidden += 1  # still readable and answerable by id; only the list hides it
                     continue
                 try:
                     out.append(self._dto(s, d, principal.member_id, self._visible(s, d, principal.member_id), now))
                 except NotFound:
                     continue
             out.sort(key=lambda x: (x["state"] != "open", -(x["remaining_seconds"] or 0)))
-            return out
+            return out, hidden
 
-        return {"items": run_read(self.db, read), "next_cursor": None}
+        items, hidden = run_read(self.db, read)
+        return {"items": items, "hidden_muted": hidden, "next_cursor": None}

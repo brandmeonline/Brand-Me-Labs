@@ -33,6 +33,19 @@ CREATE TABLE MemberBlocks (
 
 CREATE INDEX MemberBlocksByBlocked ON MemberBlocks (blocked_member_id, member_id);
 
+-- Mute (ch.01 §6.4) is one-sided and private: the muted member is not told and
+-- keeps every permission; the muter stops getting their notifications and
+-- their asks leave the muter's circle list.
+CREATE TABLE MemberMutes (
+  member_id STRING(36) NOT NULL,
+  muted_member_id STRING(36) NOT NULL,
+  created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
+  CONSTRAINT ck_mute_self CHECK (member_id != muted_member_id),
+) PRIMARY KEY (member_id, muted_member_id),
+  INTERLEAVE IN PARENT Members ON DELETE CASCADE;
+
+CREATE INDEX MemberMutesByMuted ON MemberMutes (muted_member_id, member_id);
+
 -- opened_at / closes_at are server times (Spanner CURRENT_TIMESTAMP in the
 -- opening transaction); clients only display the remaining interval.
 CREATE TABLE Decisions (

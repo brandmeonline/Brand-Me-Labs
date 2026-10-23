@@ -147,8 +147,10 @@ class RelationshipService:
         rows = run_read(self.db, lambda s: query(
             s, "SELECT other_member_id, relationship_id, state, created_at, accepted_at FROM Relationships WHERE member_id=@m ORDER BY other_member_id",
             {"m": principal.member_id}, {"m": STR}))
-        return {"items": [{"member_id": r[0], "relationship_id": r[1], "state": r[2], "created_at": iso(r[3]), "accepted_at": iso(r[4])}
-                          for r in rows], "next_cursor": None}
+        muted = {r[0] for r in run_read(self.db, lambda s: query(s, "SELECT muted_member_id FROM MemberMutes WHERE member_id=@m",
+                                                               {"m": principal.member_id}, {"m": STR}))}
+        return {"items": [{"member_id": r[0], "relationship_id": r[1], "state": r[2], "created_at": iso(r[3]), "accepted_at": iso(r[4]),
+                           "muted": r[0] in muted} for r in rows], "next_cursor": None}
 
     def block(self, principal: Principal, target_member_id: Any) -> Dict[str, Any]:
         require_scope(principal, "social:write")
@@ -184,6 +186,42 @@ class RelationshipService:
             return {"blocked": True, "already": False, "audience_removals": removed, "share_removals": revoked, "notifications_withdrawn": withdrawn}
 
         return command(self.db, principal, tx)
+
+    def mute(self, principal: Principal, target_member_id: Any) -> Dict[str, Any]:
+        """One-sided and private (ch.01 §6.4): no event, no notification, and the
+        muted member keeps every permission. Their notifications to the caller
+        stop and their asks leave the caller's circle list."""
+        require_scope(principal, "social:write")
+        target = require_uuid(target_member_id, name="member_id")
+        me = principal.member_id
+        if target == me:
+            raise DetailedInvalidTransition("you cannot mute yourself", code="self_mute")
+
+        def tx(txn, ctx: CommandContext):
+            if query(txn, "SELECT 1 FROM MemberMutes WHERE member_id=@a AND muted_member_id=@b", {"a": me, "b": target}, {"a": STR, "b": STR}):
+                return {"muted": True, "already": True}
+            if not member_active(txn, target) or not processing_allowed(txn, target, "social.blocks"):
+                raise NotFound("member not found")
+            txn.insert("MemberMutes", columns=("member_id", "muted_member_id", "created_at"), values=[(me, target, COMMIT_TIMESTAMP)])
+            return {"muted": True, "already": False}
+
+        return command(self.db, principal, tx)
+
+    def unmute(self, principal: Principal, target_member_id: Any) -> Dict[str, Any]:
+        require_scope(principal, "social:write")
+        target = require_uuid(target_member_id, name="member_id")
+
+        def tx(txn, ctx: CommandContext):
+            txn.delete("MemberMutes", KeySet(keys=[[principal.member_id, target]]))
+            return {"muted": False}
+
+        return command(self.db, principal, tx)
+
+    def list_mutes(self, principal: Principal) -> Dict[str, Any]:
+        require_scope(principal, "social:read")
+        rows = run_read(self.db, lambda s: query(s, "SELECT muted_member_id, created_at FROM MemberMutes WHERE member_id=@m ORDER BY created_at",
+                                                 {"m": principal.member_id}, {"m": STR}))
+        return {"items": [{"member_id": r[0], "muted_at": iso(r[1])} for r in rows], "next_cursor": None}
 
     def unblock(self, principal: Principal, target_member_id: Any) -> Dict[str, Any]:
         require_scope(principal, "social:write")

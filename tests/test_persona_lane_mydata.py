@@ -116,6 +116,8 @@ def seed(db, store, provider):
 
     rel = RelationshipService(db)
     rel.accept(friend, rel.request(gone, friend.member_id)["relationship_id"])
+    rel.mute(friend, gone.member_id)  # someone else's mute of the member
+    rel.mute(gone, insert_member(db))  # the member's own mute
     decisions = DecisionService(db)
     theirs = decisions.create(friend, {"subject_type": "wardrobe_item", "subject_id": f_item, "prompt": "Scarf?",
                                        "recipient_ids": [gone.member_id], "duration_seconds": 300, "discussion_mode": "open"}, key())
@@ -156,7 +158,7 @@ MEMBER_COLUMNS = {
     "PersonaProfiles": "member_id", "WardrobeItems": "member_id", "Outfits": "member_id",
     "Relationships": "member_id", "Decisions": "member_id", "DecisionResponses": "respondent_id",
     "DecisionAudience": "recipient_id", "ShareGrants": "member_id", "Notifications": "member_id",
-    "MemberReports": "reporter_id", "RewardAccounts": "member_id", "RewardEntries": "member_id",
+    "MemberReports": "reporter_id", "MemberMutes": "muted_member_id", "RewardAccounts": "member_id", "RewardEntries": "member_id",
     "BenefitReservations": "member_id", "RewardDisputes": "member_id", "TryOnConsents": "member_id",
     "TryOnJobs": "member_id", "MediaObjects": "member_id",
 }

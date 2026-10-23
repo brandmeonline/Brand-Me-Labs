@@ -1,7 +1,7 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * /api/v1 relationships, blocks, shares and notifications — UNMOUNTED router
+ * /api/v1 relationships, blocks, mutes, shares and notifications — UNMOUNTED router
  * (lane: opus-consumer-domains). Mount at integration after principalMiddleware:
  *
  *   router.use(socialRouter(domainClient));
@@ -107,7 +107,7 @@ export function socialRouter(client: DomainClient): Router {
     }),
   );
 
-  r.use(['/relationships', '/blocks', '/shares', '/notifications', '/reports'], requirePrincipal);
+  r.use(['/relationships', '/blocks', '/mutes', '/shares', '/notifications', '/reports'], requirePrincipal);
 
   r.get('/relationships', requireScope('social:read'), forwardTo(client, () => ({ method: 'GET', path: '/relationships' })));
   r.post('/relationships', requireScope('social:write'), forwardTo(client, (req) => ({ method: 'POST', path: '/relationships', body: target(req) })));
@@ -123,6 +123,10 @@ export function socialRouter(client: DomainClient): Router {
   );
   r.post('/blocks', requireScope('social:write'), forwardTo(client, (req) => ({ method: 'POST', path: '/blocks', body: target(req) })));
   r.delete('/blocks/:memberId', requireScope('social:write'), forwardTo(client, (req) => ({ method: 'DELETE', path: `/blocks/${uuidParam(req, 'memberId')}` })));
+  // Mute is private to the caller: the muted member is never told (ch.01 §6.4).
+  r.get('/mutes', requireScope('social:read'), forwardTo(client, () => ({ method: 'GET', path: '/mutes' })));
+  r.post('/mutes', requireScope('social:write'), forwardTo(client, (req) => ({ method: 'POST', path: '/mutes', body: target(req) })));
+  r.delete('/mutes/:memberId', requireScope('social:write'), forwardTo(client, (req) => ({ method: 'DELETE', path: `/mutes/${uuidParam(req, 'memberId')}` })));
 
   r.get('/shares', requireScope('social:read'), forwardTo(client, () => ({ method: 'GET', path: '/shares' })));
   r.post(

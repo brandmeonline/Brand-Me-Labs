@@ -44,6 +44,12 @@ def blocked_between(txn, a: str, b: str) -> bool:
     ))
 
 
+def muted_by(txn, member_id: str, other: str) -> bool:
+    """True when ``member_id`` muted ``other`` (one-sided; ``other`` is never told)."""
+    return bool(query(txn, "SELECT 1 FROM MemberMutes WHERE member_id=@m AND muted_member_id=@o",
+                      {"m": member_id, "o": other}, {"m": STR, "o": STR}))
+
+
 def notify(txn, *, recipient_id: str, event_id: str, type_: str, actor_member_id: Optional[str], subject_ref: Optional[str],
            payload: Mapping[str, Any]) -> bool:
     """Insert one notification unless the recipient blocked/was blocked by the actor
@@ -51,7 +57,7 @@ def notify(txn, *, recipient_id: str, event_id: str, type_: str, actor_member_id
     unsafe = set(payload) - SAFE_KEYS
     if unsafe:
         raise ValueError(f"notification payload keys not allowed: {sorted(unsafe)}")
-    if actor_member_id and blocked_between(txn, recipient_id, actor_member_id):
+    if actor_member_id and (blocked_between(txn, recipient_id, actor_member_id) or muted_by(txn, recipient_id, actor_member_id)):
         return False
     if not processing_allowed(txn, recipient_id, "social.notifications"):
         return False  # deletion pending for the recipient: skip, never fail the actor's action

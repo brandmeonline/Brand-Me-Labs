@@ -3,7 +3,7 @@ Internal social router (UNMOUNTED).
 
 ch.03 §6 inventory: ``POST /decisions``, ``POST /decisions/{id}/responses``,
 ``POST /shares``, ``DELETE /shares/{id}``. Lane additions (proposal PD-09):
-relationships, blocks, decision read/list/open-draft/close/cancel/outcome,
+relationships, blocks, mutes, decision read/list/open-draft/close/cancel/outcome,
 share list/member-open/link-resolve and notifications.
 
 ``POST /shares/resolve`` takes the link token in the body (not the path) so it
@@ -65,6 +65,18 @@ def create_social_router(relationships: RelationshipService, decisions: Decision
     @r.delete("/blocks/{member_id}")
     async def unblock(request: Request, member_id: str):
         return await execute(request, resolve_principal, lambda p: relationships.unblock(p, member_id))
+
+    @r.get("/mutes")
+    async def list_mutes(request: Request):
+        return await execute(request, resolve_principal, relationships.list_mutes)
+
+    @r.post("/mutes")
+    async def mute(request: Request):
+        return await execute(request, resolve_principal, lambda p, b: relationships.mute(p, _single(b, "target_member_id")), with_body=True)
+
+    @r.delete("/mutes/{member_id}")
+    async def unmute(request: Request, member_id: str):
+        return await execute(request, resolve_principal, lambda p: relationships.unmute(p, member_id))
 
     # ------------------------------------------------------------ decisions
     @r.get("/decisions")

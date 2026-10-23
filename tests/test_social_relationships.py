@@ -154,3 +154,46 @@ def test_notifications_mark_read_only_touches_own_rows(spanner_db):
     assert notes.list(b)["items"][0]["read_at"] is not None
     with pytest.raises(ValidationFailed):
         notes.mark_read(b, [])
+
+
+def test_mute_is_private_and_only_quiets_the_muter(spanner_db):
+    """ch.01 §6.4: mute stops a member's notifications and asks reaching the muter; nothing else changes."""
+    rel = RelationshipService(spanner_db)
+    decisions = DecisionService(spanner_db, clock=FixedTxnClock(NOW))
+    notes = NotificationService(spanner_db)
+    a, b = person(spanner_db), person(spanner_db)
+    befriend(rel, a, b)
+    item = WardrobeService(spanner_db).create_items(a, {"source": "manual", "title": "Coat", "category": "outerwear"}, key())["items"][0]["id"]
+    with pytest.raises(DetailedInvalidTransition) as e:
+        rel.mute(b, b.member_id)
+    assert e.value.code == "self_mute"
+    with pytest.raises(NotFound):
+        rel.mute(b, str(uuid.uuid4()))
+    events_before = count(spanner_db, "SELECT COUNT(*) FROM OutboxEvents WHERE aggregate_id IN UNNEST([@a, @b])", a=a.member_id, b=b.member_id)
+
+    assert rel.mute(b, a.member_id) == {"muted": True, "already": False}
+    assert rel.mute(b, a.member_id)["already"] is True
+    assert [m["member_id"] for m in rel.list_mutes(b)["items"]] == [a.member_id]
+    assert [i["muted"] for i in rel.list(b)["items"]] == [True]
+    # A is never told and keeps every permission.
+    assert rel.list_mutes(a)["items"] == [] and [i["muted"] for i in rel.list(a)["items"]] == [False]
+    assert count(spanner_db, "SELECT COUNT(*) FROM OutboxEvents WHERE aggregate_id IN UNNEST([@a, @b])",
+                 a=a.member_id, b=b.member_id) == events_before
+    d = decisions.create(a, {"subject_type": "wardrobe_item", "subject_id": item, "prompt": "Keep?", "recipient_ids": [b.member_id],
+                             "duration_seconds": 300, "discussion_mode": "open"}, key())
+    # B gets no notification and the ask leaves B's circle list, but stays readable and answerable by id.
+    assert "decision_request" not in [n["type"] for n in notes.list(b)["items"]]
+    listed = decisions.list(b)
+    assert listed["items"] == [] and listed["hidden_muted"] == 1
+    assert decisions.get(b, d["decision_id"])["decision_id"] == d["decision_id"]
+    assert decisions.respond(b, d["decision_id"], {"choice": "pass"})["revision"] == 1
+    # B's own asks still reach A: mute is one-sided.
+    b_item = WardrobeService(spanner_db).create_items(b, {"source": "manual", "title": "Hat", "category": "accessory"}, key())["items"][0]["id"]
+    decisions.create(b, {"subject_type": "wardrobe_item", "subject_id": b_item, "prompt": "Hat?", "recipient_ids": [a.member_id],
+                         "duration_seconds": 300, "discussion_mode": "open"}, key())
+    assert "decision_request" in [n["type"] for n in notes.list(a)["items"]] and len(decisions.list(a)["items"]) == 1
+
+    rel.unmute(b, a.member_id)
+    rel.unmute(b, a.member_id)  # idempotent
+    assert rel.list_mutes(b)["items"] == [] and decisions.list(b)["hidden_muted"] == 0
+    assert [x["decision_id"] for x in decisions.list(b)["items"]] == [d["decision_id"]]
