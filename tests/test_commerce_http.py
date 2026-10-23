@@ -193,10 +193,65 @@ def test_provider_console_requires_operator_role_and_never_shows_secrets(h):
     health = h.call("provider.health", {"provider_id": PROVIDER_ID}, admin).json()
     assert "checkout.submit" in health["executable"]
     setup = h.call("provider.setup.get", {"provider_id": PROVIDER_ID}, admin).json()
-    assert setup["editable"] is False and {i["key"] for i in setup["items"]} >= {"credential", "data_use_rights"}
+    assert setup["editable"] is True and setup["simulation"] is True
+    assert [s["key"] for s in setup["sections"]] == ["enables", "prerequisites", "credentials", "data_use", "tests",
+                                                    "activation"]
     r = h.call("provider.setup.update", {"provider_id": PROVIDER_ID, "access_level": "approved_publisher"}, admin)
-    assert r.status_code == 501 and r.json()["code"] == "not_implemented"
+    assert r.status_code == 400 and r.json()["code"] == "setup_field_not_applicable"  # a simulation has no access levels
     assert h.call("provider.get", {"provider_id": "nordstrom_api"}, admin).status_code == 404
+    assert h.call("provider.setup.get", {"provider_id": "nordstrom_api"}, admin).status_code == 404
+
+
+SECRET_REF = "projects/brandme-dev-fictional/secrets/impact-publisher/versions/3"
+
+
+def test_provider_setup_and_connection_tests_over_http(h):
+    from brandme_core.domains.providers import nordstrom
+    h.w.registry.register(nordstrom.connection("development"))
+    admin = h.bearer(["provider:admin"], client_id="ops-console")
+    for op, body in (("provider.verify", {"provider_id": PROVIDER_ID, "capability": "catalog.search",
+                                          "mode": "read_only_test"}),
+                     ("provider.setup.update", {"provider_id": "nordstrom_impact", "program_application_opened": True}),
+                     ("provider.runs", {"provider_id": PROVIDER_ID})):
+        assert h.call(op, body).status_code == 403  # the member session is not an operator
+    run = h.call("provider.verify", {"provider_id": PROVIDER_ID, "capability": "catalog.search",
+                                     "mode": "read_only_test"}, admin)
+    assert run.status_code == 201 and run.headers["cache-control"] == "private, no-store"
+    body = run.json()
+    assert body["result"] == "passed" and body["capability_state"]["state"] == "sandbox"
+    assert {"ran_at", "environment", "capability", "sanitized_summary", "evidence_ref"} <= set(body)
+    runs = h.call("provider.runs", {"provider_id": PROVIDER_ID, "capability": "catalog.search"}, admin).json()
+    assert [r["run_id"] for r in runs["items"]] == [body["run_id"]]
+    bad = h.call("provider.verify", {"provider_id": PROVIDER_ID, "capability": "checkout.buy_now",
+                                     "mode": "read_only_test"}, admin)
+    assert bad.status_code == 400 and bad.json()["code"] == "unknown_capability"
+    refused = h.call("provider.setup.update", {"provider_id": PROVIDER_ID, "activate": "price.quote"}, admin)
+    assert refused.status_code == 409 and refused.json()["code"] == "activation_test_required"
+    assert refused.headers["content-type"].startswith("application/problem+json")
+    activated = h.call("provider.setup.update", {"provider_id": PROVIDER_ID, "activate": "catalog.search"}, admin)
+    assert activated.status_code == 200
+    items = {i["key"]: i for s in activated.json()["sections"] for i in s["items"]}
+    assert items["activate:catalog.search"]["state"] == "done"
+
+    secret = h.call("provider.setup.update", {"provider_id": "nordstrom_impact",
+                                              "credential_secret_ref": "sk_live_51Hfictionalfictional"}, admin)
+    assert secret.status_code == 400 and secret.json()["code"] == "secret_value_refused"
+    assert "sk_live" not in secret.text
+    ok = h.call("provider.setup.update", {"provider_id": "nordstrom_impact", "credential_secret_ref": SECRET_REF},
+                admin, {"If-Match": '"0"'})
+    assert ok.status_code == 200 and ok.json()["credential_configured"] is True
+    assert SECRET_REF not in ok.text and "impact-publisher" not in ok.text
+    stale = h.call("provider.setup.update", {"provider_id": "nordstrom_impact", "account_ref": "fictional-account"},
+                   admin, {"If-Match": '"0"'})
+    assert stale.status_code == 409 and stale.json()["code"] == "revision_conflict"
+    injected = h.call("provider.setup.update", {"provider_id": "nordstrom_impact",
+                                                "capabilities": {"catalog.feed": "verified"}}, admin)
+    assert injected.status_code == 400 and injected.json()["code"] == "unexpected_field"
+    gated = h.call("provider.verify", {"provider_id": "nordstrom_impact", "capability": "catalog.feed",
+                                       "mode": "read_only_test"}, admin).json()
+    assert gated["result"] == "blocked" and gated["reason_code"] == "publisher_approval_required"
+    health = h.call("provider.health", {"provider_id": "nordstrom_impact"}, admin).json()
+    assert health["executable"] == []  # configured is not verified
 
 
 def test_capabilities_summary_is_honest_about_simulation(h):

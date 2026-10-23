@@ -27,6 +27,15 @@ CAPABILITY_STATES: Tuple[str, ...] = (
 )
 # States in which an operation may actually be executed.
 EXECUTABLE_STATES = frozenset({"sandbox", "verified", "degraded"})
+# Evidence kinds that can justify ``verified``/``sandbox`` (the registry decides which).
+VERIFYING_EVIDENCE = frozenset({"sandbox_operation", "production_operation", "conformance_suite"})
+# Evidence a connection test may record that can never verify a capability: reaching a
+# host, or checking a link against allowed hosts, proves nothing about the operation.
+NON_VERIFYING_EVIDENCE = frozenset({"host_reachability", "link_validation", "none"})
+EVIDENCE_KINDS = VERIFYING_EVIDENCE | NON_VERIFYING_EVIDENCE
+PROBE_RESULTS: Tuple[str, ...] = ("passed", "failed", "blocked")
+PROBE_MODES: Tuple[str, ...] = ("read_only_test", "staging_ingestion")
+SETUP_SECTIONS: Tuple[str, ...] = ("enables", "prerequisites", "credentials", "data_use", "tests", "activation")
 
 
 class ProviderErrorKind(str, enum.Enum):
@@ -318,3 +327,79 @@ class ContextProvider(Protocol):
     provider_id: str
 
     def context(self, request: Mapping[str, Any]) -> ProviderResult: ...
+
+
+# --- operator setup and connection tests (ch.05 §8) ---------------------------
+
+@dataclass(frozen=True)
+class ProbeResult:
+    """What one connection test observed for one exact capability.
+
+    ``evidence_ref`` points at what the test produced (never a provider body);
+    ``sanitized_summary`` is operator display text without secrets or personal data.
+    Only a ``passed`` result with a verifying evidence kind can move a capability.
+    """
+
+    result: str  # passed | failed | blocked
+    evidence_kind: str
+    evidence_ref: str
+    sanitized_summary: str
+    reason_code: Optional[str] = None  # why it failed or was blocked
+
+    def __post_init__(self) -> None:
+        if self.result not in PROBE_RESULTS:
+            raise ValueError(f"unknown probe result {self.result!r}")
+        if self.evidence_kind not in EVIDENCE_KINDS:
+            raise ValueError(f"unknown evidence kind {self.evidence_kind!r}")
+        if self.result == "blocked" and self.evidence_kind != "none":
+            raise ValueError("a blocked test ran nothing, so it has no evidence")
+
+    @property
+    def verifies(self) -> bool:
+        return self.result == "passed" and self.evidence_kind in VERIFYING_EVIDENCE
+
+
+@runtime_checkable
+class VerifiableProvider(Protocol):
+    """An adapter that can exercise one capability without side effects outside itself.
+
+    ``probe`` must never place an order, move money, submit a checkout or send a
+    message; a capability without such a test returns ``blocked``. Adapters without
+    ``probe`` have no connection test, and the setup service records ``blocked``.
+    """
+
+    provider_id: str
+
+    def probe(self, capability: str, mode: str, now: datetime) -> ProbeResult: ...
+
+
+@dataclass(frozen=True)
+class SetupField:
+    """One operator-entered setup step, completed by the ``SetupUpdate`` field ``field``."""
+
+    key: str  # ProviderSetupItems.item_key
+    section: str  # prerequisites | credentials
+    label: str
+    field: str
+    action: str  # the concrete step shown while it is missing
+    required_for: Optional[frozenset] = None  # capabilities that cannot activate without it; None = all
+    after: Tuple[str, ...] = ()  # setup keys that must be done first
+
+
+@dataclass(frozen=True)
+class SetupProfile:
+    """What an adapter needs before its capabilities can be activated.
+
+    An adapter declares it as ``setup_profile``; it may also implement
+    ``apply_setup(values)`` to receive saved, server-only setup values.
+    """
+
+    summary: str  # "what this enables", including what is not offered
+    access_levels: Tuple[str, ...] = ()  # () = fixed by the adapter
+    approval_levels: frozenset = frozenset()  # access levels that need approval evidence first
+    gated_capabilities: frozenset = frozenset()  # need an access level in approval_levels
+    fields: Tuple[SetupField, ...] = ()
+    data_use_rights: Tuple[str, ...] = ()  # each marked by an operator; () = fixed by the adapter
+    data_use_required_for: frozenset = frozenset()
+    # Rows that need no operator action: (section, key, label, state, detail).
+    fixed_rows: Tuple[Tuple[str, str, str, str, str], ...] = ()

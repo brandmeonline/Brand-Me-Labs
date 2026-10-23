@@ -18,7 +18,7 @@ import {
   createHttpCommerceDomainClient, principalClaim, WEBHOOK_HEADER,
 } from './commerce';
 import { createDelegationsRouter } from './delegations';
-import { createProvidersRouter } from './providers';
+import { createProvidersRouter, looksLikeSecret } from './providers';
 
 const MEMBER: Principal = {
   memberId: '2ad9041e-561e-527b-aa0d-5a7fda5f710b', subject: '2ad9041e-561e-527b-aa0d-5a7fda5f710b',
@@ -208,6 +208,63 @@ describe('delegations, providers, catalog, assistant', () => {
       { credential_secret_ref: 'projects/p/secrets/impact/versions/1' });
     expect(ok.status).toBe(200);
     expect(op.calls[0]).toMatchObject({ op: 'provider.setup.update', body: { provider_id: 'nordstrom_impact' } });
+  });
+
+  it('setup routes refuse secret-looking values in every reference field and forward only clean input', async () => {
+    const mount = (a: express.Express, c: CommerceDomainClient) => a.use('/providers', createProvidersRouter(c));
+    const op = await app({ ...AGENT, clientId: 'ops-console', scopes: ['provider:admin'] }, mount);
+    const secrets = ['sk_live_51Hfictionalfictional', 'whsec_fictionalfictional', 'sk-ant-api03-fictional',
+      '-----BEGIN PRIVATE KEY-----', 'h7YY5HL19qb3tVflAQzkyNyHkmcmACZr', 'a4161b0ea2c520f9d8d618877cdd6ba908e47dee'];
+    for (const field of ['account_ref', 'approval_evidence_ref', 'catalog_ref', 'endpoint_descriptor_ref']) {
+      for (const value of secrets) {
+        const r = await op.call('PATCH', '/providers/nordstrom_impact/setup', { [field]: value });
+        expect(r.status, `${field}=${value}`).toBe(422);
+        expect(await r.text()).not.toContain(value);
+      }
+    }
+    const secretName = await op.call('PATCH', '/providers/nordstrom_impact/setup',
+      { credential_secret_ref: 'projects/brandme-dev/secrets/sk_live_fictional/versions/1' });
+    expect(secretName.status).toBe(422);
+    for (const body of [{}, { activate: 'checkout.buy_now' }, { activate: 'catalog.feed', access_level: 'link_only' },
+      { capabilities: { 'catalog.feed': 'verified' } }, { data_use: { display_images: true } }]) {
+      expect((await op.call('PATCH', '/providers/nordstrom_impact/setup', body)).status, JSON.stringify(body)).toBe(422);
+    }
+    expect(op.calls).toHaveLength(0);
+    const ok = await op.call('PATCH', '/providers/nordstrom_impact/setup',
+      { account_ref: 'fictional-impact-account', program_application_opened: true }, { 'If-Match': '"3"' });
+    expect(ok.status).toBe(200);
+    expect(op.calls[0]).toMatchObject({ op: 'provider.setup.update', ifMatch: '"3"',
+      body: { provider_id: 'nordstrom_impact', account_ref: 'fictional-impact-account', program_application_opened: true } });
+    expect((await op.call('PATCH', '/providers/demo_atelier/setup', { activate: 'catalog.search' })).status).toBe(200);
+    expect(op.calls[1]).toMatchObject({ op: 'provider.setup.update', body: { provider_id: 'demo_atelier', activate: 'catalog.search' } });
+  });
+
+  it('connection tests name one exact capability and mode; runs are listed with a bounded query', async () => {
+    const mount = (a: express.Express, c: CommerceDomainClient) => a.use('/providers', createProvidersRouter(c));
+    const m = await app(MEMBER, mount);
+    expect((await m.call('POST', '/providers/demo_atelier/verification-runs',
+      { capability: 'catalog.search', mode: 'read_only_test' })).status).toBe(403);
+    server?.close();
+    const op = await app({ ...AGENT, clientId: 'ops-console', scopes: ['provider:admin'] }, mount, { status: 201, body: { run_id: q } });
+    for (const body of [{ capability: 'catalog.everything', mode: 'read_only_test' }, { capability: 'catalog.search', mode: 'ping' },
+      { capability: 'catalog.search', mode: 'read_only_test', result: 'passed' }, { mode: 'read_only_test' }]) {
+      expect((await op.call('POST', '/providers/demo_atelier/verification-runs', body)).status, JSON.stringify(body)).toBe(422);
+    }
+    expect(op.calls).toHaveLength(0);
+    const run = await op.call('POST', '/providers/demo_atelier/verification-runs', { capability: 'price.quote', mode: 'read_only_test' });
+    expect(run.status).toBe(201);
+    expect(op.calls[0]).toMatchObject({ op: 'provider.verify', body: { provider_id: 'demo_atelier', capability: 'price.quote', mode: 'read_only_test' } });
+    expect((await op.call('GET', '/providers/demo_atelier/verification-runs?limit=500')).status).toBe(422);
+    expect((await op.call('GET', '/providers/demo_atelier/verification-runs?capability=catalog.search&limit=5')).status).toBe(201);
+    expect(op.calls[1]).toMatchObject({ op: 'provider.runs', body: { provider_id: 'demo_atelier', capability: 'catalog.search', limit: 5 } });
+  });
+
+  it('secret detection matches the domain heuristic on references that must pass', () => {
+    for (const ok of ['projects/brandme-dev-fictional/secrets/impact-publisher/versions/3', 'impact-approval-2026-10-05-nordstrom',
+      'fictional-nordstrom-catalog', '9b1f3a52-3f1e-4d2a-9e64-0b1d2c3e4f50']) {
+      expect(looksLikeSecret(ok), ok).toBe(false);
+    }
+    expect(looksLikeSecret('ghp_ClNcuV9ZKlqQgx2eEbgc5j7vZyTEAFmGSWmW')).toBe(true);
   });
 
   it('operations queue needs the commerce:operator role, even for a member session', async () => {

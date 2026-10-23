@@ -33,6 +33,7 @@ from brandme_core.domains.base import DomainError
 from brandme_core.domains.providers.catalog import search_catalog, untrusted_text
 from brandme_core.domains.providers.contracts import CartLineRequest, ProviderError
 from brandme_core.domains.providers.registry import RegistryError
+from brandme_core.domains.providers.setup import SETUP_UPDATE_FIELDS, ProviderSetupService
 from brandme_core.mcp.authz import DOMAIN_AUDIENCE, AuthError, ExecutorAssertionVerifier
 from brandme_core.orchestrator.runtime import IdempotencyReuse
 
@@ -138,13 +139,16 @@ Handler = Callable[[Principal, Dict[str, Any], Mapping[str, str]], Tuple[int, An
 
 class CommerceHttpApi:
     def __init__(self, *, service: CommerceService, verifier: ExecutorAssertionVerifier,
-                 runtime: Any = None, planner_factory: Optional[Callable[[], Any]] = None):
+                 runtime: Any = None, planner_factory: Optional[Callable[[], Any]] = None,
+                 setup_store: Any = None):
         if verifier.audience != DOMAIN_AUDIENCE or not verifier.allow_session:
             raise ValueError("the commerce domain hop needs a verifier for brandme:commerce-domain with sessions")
         self.svc = service
         self.verifier = verifier
         self.runtime = runtime
         self.planner_factory = planner_factory
+        # Operator setup and connection tests; the store defaults to in-memory (InMemoryProviderSetupStore).
+        self.setup = ProviderSetupService(service.registry, setup_store, clock=service.clock)
         # operation -> (allowed argument names, handler)
         self.ops: Dict[str, Tuple[frozenset, Handler]] = {
             "cart.create": (frozenset({"provider_id", "merchant_id", "lines"}), self._cart_create),
@@ -170,8 +174,9 @@ class CommerceHttpApi:
             "provider.get": (frozenset({"provider_id"}), self._provider_get),
             "provider.health": (frozenset({"provider_id"}), self._provider_health),
             "provider.setup.get": (frozenset({"provider_id"}), self._provider_setup_get),
-            "provider.setup.update": (None, self._not_built),  # type: ignore[dict-item]
-            "provider.verify": (None, self._not_built),  # type: ignore[dict-item]
+            "provider.setup.update": (frozenset({"provider_id"}) | SETUP_UPDATE_FIELDS, self._provider_setup_update),
+            "provider.verify": (frozenset({"provider_id", "capability", "mode"}), self._provider_verify),
+            "provider.runs": (frozenset({"provider_id", "capability", "limit"}), self._provider_runs),
             "commerce.ops.queue": (frozenset(), lambda p, a, h: (200, self.svc.operator_queue(p))),
             "assistant.task.create": (frozenset({"goal", "assistance_mode", "budget_hint"}), self._task_create),
             "assistant.task.cancel": (frozenset({"task_id"}), self._task_cancel),
@@ -417,26 +422,29 @@ class CommerceHttpApi:
 
     def _provider_setup_get(self, p, a, h):
         self._require_admin(p)
-        c = self._connection(str(a.get("provider_id", "")))
-        # The checklist is derived from the registry; the editable setup workflow (V006
-        # ProviderSetupItems) is not built yet, so nothing here can be marked done by hand.
-        items = [
-            {"key": "access_level", "state": "done" if c.access_level != "unconfigured" else "todo",
-             "value": c.access_level},
-            {"key": "operator_account", "state": "done" if c.operator_account_ref else "todo"},
-            {"key": "credential", "state": "done" if c.credential_ref else ("not_needed" if c.simulation else "todo")},
-            {"key": "data_use_rights", "state": "done" if c.data_use else "todo",
-             "value": {k: bool(v) for k, v in dict(c.data_use).items()}},
-            {"key": "verification_evidence",
-             "state": "done" if any(s.state == "verified" for s in c.capabilities.values()) else "todo"},
-        ]
-        return 200, {"provider_id": c.provider_id, "items": items, "editable": False,
-                     "note": "Setup changes go through the operator workflow, which is not built in this release."}
+        return 200, self.setup.get_setup(p, str(a.get("provider_id", "")))
 
-    def _not_built(self, p, a, h):
+    def _provider_setup_update(self, p, a, h):
+        """Partial save, or ``{"activate": capability}`` alone. Saving never changes a capability state."""
         self._require_admin(p)
-        return 501, problem_body(501, "not_implemented",
-                                 "The provider setup/verification workflow is not built in this release.")
+        if_match = self._if_match(h) if h.get("if-match") else None  # optional lost-update guard
+        fields = {k: v for k, v in a.items() if k != "provider_id"}
+        return 200, self.setup.update_setup(p, str(a.get("provider_id", "")), fields, if_match=if_match)
+
+    def _provider_verify(self, p, a, h):
+        self._require_admin(p)
+        self._need(a, "capability", "mode")
+        return 201, self.setup.run_verification(p, str(a.get("provider_id", "")), a["capability"], a["mode"])
+
+    def _provider_runs(self, p, a, h):
+        self._require_admin(p)
+        try:
+            limit = int(a.get("limit", 20))
+        except (TypeError, ValueError):
+            raise InvalidRequest("limit must be an integer") from None
+        capability = a.get("capability")
+        return 200, self.setup.list_runs(p, str(a.get("provider_id", "")),
+                                         capability=str(capability) if capability else None, limit=limit)
 
     # -- assistant -------------------------------------------------------------------
     def _assistant_principal(self, p: Principal) -> Principal:
