@@ -70,6 +70,8 @@ class ProviderConnection:
     adapter: Any = None  # server-only adapter instance
     protocols: Mapping[str, str] = field(default_factory=dict)  # e.g. {"ap2": "0.2"} only when verified/simulated
     merchant_public_keys: Mapping[str, Any] = field(default_factory=dict)  # merchant_id -> checkout JWT key
+    # Server and operator only (a PaymentRailDescriptor): the merchant's payment rail. Never in to_public().
+    payment_rail: Any = None
     version: int = 1
 
     def capability(self, name: str) -> CapabilityStatus:

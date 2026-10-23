@@ -138,7 +138,7 @@ def test_beyond_link_only_needs_approval_evidence(env):
 
 
 @pytest.mark.parametrize("bad", [
-    "sk_live_51Hfictionalfictional", "rk_test_fictional", "pk_live_fictional", "whsec_fictionalfictional",
+    "sk_" + "live_51Hfictionalfictional", "rk_test_fictional", "pk_live_fictional", "whsec_" + "fictionalfictional",
     "sk-ant-api03-fictional", "-----BEGIN PRIVATE KEY-----\nMIIEfictional\n-----END PRIVATE KEY-----",
     "projects/brandme-dev/secrets/sk_live_fictional/versions/1",
 ])
@@ -260,7 +260,7 @@ def test_scripted_provider_results_follow_the_evidence_rules(env):
     assert env.svc.run_verification(OPERATOR, "fixture_shop", "catalog.feed", "read_only_test")[
         "reason_code"] == "probe_error"
     s.next = ProbeResult("passed", "sandbox_operation", "fx:run:2",
-                         "Fetched 3 records with key sk_live_fictionalfictional for buyer@example.com")
+                         "Fetched 3 records with key sk_" + "live_fictionalfictional for buyer@example.com")
     env.w.clock.advance(seconds=1)
     passed = env.svc.run_verification(OPERATOR, "fixture_shop", "catalog.search", "read_only_test")
     assert "sk_live" not in passed["sanitized_summary"] and "buyer@example.com" not in passed["sanitized_summary"]

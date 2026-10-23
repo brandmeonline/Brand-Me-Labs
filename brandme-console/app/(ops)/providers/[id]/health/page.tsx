@@ -39,6 +39,27 @@ export default async function ProviderHealthPage({ params }: { params: Promise<{
               <p>None. Members see a handoff or an unavailable state instead.</p>
             )}
           </section>
+          {result.data.rail_health && (
+            <section className="console-section" aria-labelledby="rail-health-heading">
+              <h2 id="rail-health-heading">Payment rail</h2>
+              <p>
+                {result.data.payment_rail?.label ?? 'Payment rail'}. Counters are for this process only; a money operation
+                with an unknown outcome is never retried with a new key.
+              </p>
+              <dl>
+                <dt>Money operations awaiting their outcome</dt>
+                <dd>{result.data.rail_health.pending_money_ops}</dd>
+                <dt>Needs an operator (past the retry window)</dt>
+                <dd>{result.data.rail_health.needs_operator}</dd>
+                <dt>Orphan holds released</dt>
+                <dd>{result.data.rail_health.orphans_voided}</dd>
+                <dt>Processor events acknowledged as not ours</dt>
+                <dd>{result.data.rail_health.webhooks_ignored}</dd>
+                <dt>Money operations refused by the processor</dt>
+                <dd>{result.data.rail_health.money_ops_refused}</dd>
+              </dl>
+            </section>
+          )}
           <section className="console-section" aria-labelledby="evidence-heading">
             <h2 id="evidence-heading">Evidence by capability</h2>
             <div className="console-table-region" role="region" aria-labelledby="evidence-heading" tabIndex={0}>

@@ -729,7 +729,8 @@ class CommerceService:
             ack = adapter.submit(SubmitRequest(
                 idempotency_key=op.provider_idempotency_key, checkout_reference=quote.checkout_reference,
                 quote_hash=quote.quote_hash, expected_total=quote.total, payment_token_ref=None,
-                lines=tuple(CartLineRequest(l.variant_id, l.source_variant_ref, l.quantity) for l in quote.lines)))
+                lines=tuple(CartLineRequest(l.variant_id, l.source_variant_ref, l.quantity) for l in quote.lines),
+                payee_ref=quote.payee_ref))  # the payee the member approved
         except ProviderError as exc:
             err = exc  # the callback may be retried; it must not depend on the except-clause binding
 
@@ -815,11 +816,13 @@ class CommerceService:
             existing = tx.get("webhook_receipts", key)
             if existing is not None:
                 return existing, False
-            receipt = WebhookReceipt(provider_id, event.event_id, event.event_type, self.clock(), "pending_reconcile")
+            # A verified event that is not about this adapter's orders is acknowledged, never applied.
+            state = "pending_reconcile" if getattr(event, "relevant", True) else "ignored"
+            receipt = WebhookReceipt(provider_id, event.event_id, event.event_type, self.clock(), state)
             tx.put("webhook_receipts", key, receipt)
             return receipt, True
         receipt, fresh = self.store.run(_receive)
-        if not fresh:
+        if not fresh or receipt.state == "ignored":
             return receipt
         order = self.store.order_by_provider_ref(provider_id, event.provider_order_ref)
         if order is None:
@@ -901,7 +904,9 @@ class CommerceService:
             order = replace(order, lines=lines, payment_status=payment, refunded_total=refunded,
                             fulfillment_status=fulfillment, order_status=order_status,
                             last_observed_at=obs.observed_at,
-                            evidence_refs=order.evidence_refs + ((obs.evidence_ref,) if obs.evidence_ref else ()),
+                            evidence_refs=order.evidence_refs + (
+                                (obs.evidence_ref,) if obs.evidence_ref and obs.evidence_ref not in order.evidence_refs
+                                else ()),
                             version=order.version + 1)
             tx.put("orders", order.id, order)
             self._mark_returns_received(tx, order.id, prev_order.lines, lines)
@@ -954,7 +959,7 @@ class CommerceService:
                        "delivered": l.quantity_delivered, "returned": l.quantity_returned,
                        "cancelled": l.quantity_cancelled, "exchanged_from_ref": l.exchanged_from_ref}
                       for l in order.lines],
-            "acquisition_evidence": list(order.evidence_refs),
+            "acquisition_evidence": list(order.evidence_refs)[-50:],  # the event schema holds at most 50
         })
 
     # ---------------------------------------------------------------- returns

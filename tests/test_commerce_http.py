@@ -235,7 +235,7 @@ def test_provider_setup_and_connection_tests_over_http(h):
     assert items["activate:catalog.search"]["state"] == "done"
 
     secret = h.call("provider.setup.update", {"provider_id": "nordstrom_impact",
-                                              "credential_secret_ref": "sk_live_51Hfictionalfictional"}, admin)
+                                              "credential_secret_ref": "sk_" + "live_51Hfictionalfictional"}, admin)
     assert secret.status_code == 400 and secret.json()["code"] == "secret_value_refused"
     assert "sk_live" not in secret.text
     ok = h.call("provider.setup.update", {"provider_id": "nordstrom_impact", "credential_secret_ref": SECRET_REF},

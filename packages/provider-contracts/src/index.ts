@@ -268,6 +268,8 @@ export interface SubmitRequest {
    * provider-side cart no longer matches them: the cart can change outside Brand.Me.
    */
   lines: CartLineRequest[];
+  /** The payee the member approved (the quote's `payee_ref`); a merchant refuses a changed payee before any payment. */
+  payee_ref?: string | null;
 }
 export interface SubmitAck { accepted: boolean; provider_order_ref: string | null; reason_code: string | null; observed_at: string; evidence_ref: string | null }
 
@@ -313,7 +315,11 @@ export interface OrderObservation {
   observed_at: string;
   evidence_ref: string | null;
 }
-export interface WebhookEvent { provider_id: string; event_id: string; event_type: string; provider_order_ref: string; occurred_at: string }
+export interface WebhookEvent {
+  provider_id: string; event_id: string; event_type: string; provider_order_ref: string; occurred_at: string;
+  /** false: verified, not about this adapter's orders; acknowledged and ignored. */
+  relevant?: boolean;
+}
 
 export interface OrderProvider {
   readonly descriptor: AdapterDescriptor;
@@ -353,5 +359,131 @@ export function assertAdapterAllowed(environment: Environment, d: AdapterDescrip
   }
   if (d.mode === 'simulated' && !d.simulation_label?.trim()) {
     throw new Error(`simulated adapter ${d.provider_id} has no visible simulation label`);
+  }
+}
+
+// ------------------------------------------ merchant-internal collaborators (NOT capabilities)
+// A merchant adapter may compose a payment processor and a fulfillment provider. The commerce
+// service never calls them, and no capability name exists for them; their effects reach Brand.Me
+// only as OrderObservation fields. These interfaces are internal to merchant adapters.
+
+/** `OrderObservation.payment_status` values. */
+export const ORDER_PAYMENT_STATUSES = [
+  'unknown', 'authorized', 'captured', 'partially_refunded', 'refunded', 'voided', 'failed',
+] as const satisfies readonly PaymentStatus[];
+export const PAYMENT_STATES = [
+  'authorized', 'captured', 'partially_refunded', 'refunded', 'voided', 'failed', 'requires_action', 'unknown',
+] as const;
+export type PaymentState = (typeof PAYMENT_STATES)[number];
+export const RELEASE_REASONS = [
+  'merchant_void', 'authorization_expired', 'orphan_authorization', 'binding_mismatch', 'authentication_required',
+  'not_authorized', 'partial_capture_remainder',
+] as const;
+export type ReleaseReason = (typeof RELEASE_REASONS)[number];
+export const PAYMENT_OPS = ['authorize', 'capture', 'void', 'refund'] as const;
+/** How a processor was built. `live` is not representable in this build: no real money moves. */
+export const RAIL_MODES = ['simulated', 'sandbox'] as const;
+export type RailMode = (typeof RAIL_MODES)[number];
+
+/** What a merchant's payment rail is, for startup checks and operators. Never keys, secrets or accounts. */
+export interface PaymentRailDescriptor {
+  processor_id: string;
+  mode: RailMode;
+  environment: Environment;
+  /** Visible to members and operators; non-blank, at most 200 characters. */
+  label: string;
+  /** The party paid for a quote; bound into every quote hash. */
+  payee_ref: string;
+  currencies: string[];
+  api_version: string | null;
+  webhooks_configured: boolean;
+}
+export interface PaymentAuthorization {
+  /** The idempotency key travels in ctx.idempotency_key. */
+  amount: Money;
+  payee_ref: string;
+  purpose_ref: string;
+  /** Processor-held test PaymentMethod id. Never PAN/CVV; never shown to a model. */
+  payment_token_ref: string;
+  metadata: Record<string, string>;
+  environment: Environment;
+  capture: 'manual';
+}
+export interface PaymentObservation {
+  /** Processor object id; '' when a decline created none. */
+  payment_ref: string;
+  status: PaymentState;
+  authorized: Money;
+  captured: Money;
+  /** Succeeded refunds only. */
+  refunded: Money;
+  released: Money | null;
+  release_reason: ReleaseReason | null;
+  decline_code: string | null;
+  capture_before: string | null;
+  observed_at: string;
+  /** Constant per purpose; never a processor object id. */
+  evidence_ref: string | null;
+  test_mode: true;
+}
+export interface PaymentEvent {
+  processor_id: string; event_id: string; event_type: string; payment_ref: string | null; purpose_ref: string | null;
+  environment: Environment | null; occurred_at: string;
+}
+export interface PaymentProcessor {
+  readonly descriptor: PaymentRailDescriptor;
+  /** A decline resolves with status 'failed'. A sent call with no answer rejects with ProviderError('outcome_unknown', …, transmitted = true). */
+  authorize(r: PaymentAuthorization, ctx: OperationContext): Promise<PaymentObservation>;
+  capture(payment_ref: string, amount: Money, ctx: OperationContext): Promise<PaymentObservation>;
+  void(payment_ref: string, reason: ReleaseReason, ctx: OperationContext): Promise<PaymentObservation>;
+  refund(payment_ref: string, amount: Money, ctx: OperationContext): Promise<PaymentObservation>;
+  lookup(payment_ref: string, ctx: OperationContext): Promise<PaymentObservation>;
+  /** null only when absence is authoritative (settled); otherwise rejects 'transient'. Never re-sends. */
+  find(purpose_ref: string, settled: boolean, ctx: OperationContext): Promise<PaymentObservation | null>;
+  operationEffect(payment_ref: string, idempotency_key: string, ctx: OperationContext): Promise<'applied' | 'absent'>;
+  /** null: no signature in this processor's scheme. */
+  verifyWebhook(headers: Record<string, string>, raw_body: Uint8Array): Promise<PaymentEvent | null>;
+}
+
+export interface FulfillmentLine {
+  source_variant_ref: string; ordered: number; shipped: number; delivered: number; returned: number; cancelled: number;
+  exchanged_from_ref: string | null;
+}
+/** The source of truth per line. Counters only grow; a variant is never edited in place. */
+export interface FulfillmentRecord { fulfillment_id: string; order_ref: string; lines: FulfillmentLine[]; observed_at: string; evidence_ref: string }
+export interface FulfillmentRequest { order_ref: string; lines: CartLineRequest[]; /** Opaque; never an address. */ delivery_ref: string }
+export interface ReturnAuthorization {
+  return_ref: string; order_ref: string; source_variant_ref: string; quantity: number; status: 'requested' | 'refused';
+  observed_at: string;
+}
+export interface ExchangeRequest { order_ref: string; from_ref: string; to_ref: string; quantity: number }
+export interface FulfillmentProvider {
+  readonly fulfillment_id: string;
+  open(r: FulfillmentRequest, ctx: OperationContext): Promise<FulfillmentRecord>;
+  record(order_ref: string, ctx: OperationContext): Promise<FulfillmentRecord>;
+  /** null/null cancels every open unit. */
+  cancelUnshipped(order_ref: string, source_variant_ref: string | null, quantity: number | null, ctx: OperationContext): Promise<{ cancelled: [string, number][] }>;
+  authorizeReturn(order_ref: string, source_variant_ref: string, quantity: number, ctx: OperationContext): Promise<ReturnAuthorization>;
+  requestExchange(r: ExchangeRequest, ctx: OperationContext): Promise<FulfillmentRecord>;
+  verifyWebhook?(headers: Record<string, string>, raw_body: Uint8Array): Promise<{ event_id: string; event_type: string; order_ref: string; occurred_at: string } | null>;
+}
+
+const RAIL_ALLOWED: Record<Environment, readonly RailMode[]> = {
+  demo: ['simulated', 'sandbox'],
+  development: ['simulated', 'sandbox'],
+  sandbox: ['sandbox'],
+  production: [],
+};
+
+/** Startup check for a merchant's payment rail: environment match, allowed mode, visible label. Never falls back. */
+export function assertPaymentRailAllowed(environment: Environment, rail: PaymentRailDescriptor): void {
+  if (rail.environment !== environment) {
+    throw new Error(`payment rail ${rail.processor_id} built for ${rail.environment}, process is ${environment}`);
+  }
+  if (!RAIL_ALLOWED[environment].includes(rail.mode)) {
+    throw new Error(`payment rail ${rail.processor_id} mode ${rail.mode} is not allowed in ${environment}`);
+  }
+  if (!rail.label.trim() || rail.label.length > 200) {
+    throw new Error(`payment rail ${rail.processor_id} needs a visible label of at most 200 characters`);
   }
 }

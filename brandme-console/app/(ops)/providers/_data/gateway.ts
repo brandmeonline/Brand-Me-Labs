@@ -126,11 +126,31 @@ export type ProviderRow = {
   simulation: boolean
 }
 
+// The merchant's payment rail (operator only; never in the public provider DTO). Not a capability.
+export type PaymentRail = {
+  processor_id: string
+  mode: 'simulated' | 'sandbox'
+  label: string
+  currencies: string[]
+  api_version: string | null
+  webhooks_configured: boolean
+}
+
+// Process-local counters from the merchant adapter: stuck money operations surface here.
+export type RailHealth = {
+  pending_money_ops: number
+  needs_operator: number
+  orphans_voided: number
+  webhooks_ignored: number
+  money_ops_refused: number
+}
+
 export type ProviderDetail = ProviderRow & {
   protocols: Record<string, string>
   allowed_redirect_hosts: string[]
   credential_configured: boolean
   version: string
+  payment_rail?: PaymentRail | null
 }
 
 export type ProviderHealth = {
@@ -139,6 +159,15 @@ export type ProviderHealth = {
   capabilities: CapabilityRow[]
   executable: string[]
   simulation: boolean
+  payment_rail?: PaymentRail | null
+  rail_health?: RailHealth | null
+}
+
+export const STRIPE_TEST_NOTICE =
+  'Payments use Stripe test mode. No real money moves; only Stripe test cards are used. Capability state is sandbox, never verified.'
+
+export function railLabel(r: PaymentRail): string {
+  return r.mode === 'sandbox' ? `${r.label} (${r.processor_id}, API ${r.api_version ?? 'unpinned'})` : r.label
 }
 
 export type SetupItem = {
