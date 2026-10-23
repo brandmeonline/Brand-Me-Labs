@@ -47,9 +47,13 @@ async function boundedBody(stream: ReadableStream<Uint8Array> | null, limit: num
 
 export async function proxyGateway(request: Request, parts: string[],
   env: Record<string, string | undefined>, fetchImpl: typeof fetch = fetch): Promise<Response> {
-  if (!parts.length || !ROOTS.has(parts[0]) || parts.some(p => !/^[a-zA-Z0-9_-]{1,128}$/.test(p)))
+  const catalogId = parts.length === 3 && parts[0] === 'catalog' && parts[1] === 'products'
+  if (!parts.length || !ROOTS.has(parts[0]) || parts.some((p,i) => !(catalogId && i === 2
+    ? /^[a-zA-Z0-9_-]{1,80}:[a-zA-Z0-9_-]{1,128}$/.test(p) : /^[a-zA-Z0-9_-]{1,128}$/.test(p))))
     return problem(404, 'not_found', 'This service is not available.')
   // No operator APIs, account grants, provider activation or arbitrary upstream URLs.
+  if (parts[0] === 'commerce' && parts[1] === 'ops')
+    return problem(404, 'not_found', 'This service is not available.')
   if (parts[0] === 'providers' && !READ.has(request.method))
     return problem(405, 'method_not_allowed', 'Provider setup belongs in Operations.')
   const isDevSession = parts.join('/') === 'session/dev'
@@ -69,7 +73,7 @@ export async function proxyGateway(request: Request, parts: string[],
   let base: URL | null
   try { base = gatewayBase(env) } catch { return problem(503, 'gateway_unconfigured', 'Account services are not connected.') }
   if (!base) return problem(503, 'gateway_unconfigured', 'Account services are not connected.')
-  const url = new URL(parts.join('/'), base)
+  const url = new URL(parts.map(encodeURIComponent).join('/'), base)
   url.search = new URL(request.url).search
   if (url.search.length > 2048) return problem(400, 'invalid_query', 'The request is too long.')
   const headers = new Headers({ Accept: 'application/json' })

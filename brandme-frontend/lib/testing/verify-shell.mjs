@@ -282,6 +282,7 @@ try {
         const requests = []
         page.on('request', (req) => requests.push(req.url()))
         await page.goto(consumer + '/settings')
+        await page.waitForFunction(() => document.documentElement.dataset.bmPreferencesReady === 'true')
         const main = page.locator('main')
         const dark = main.getByRole('radio', { name: 'Dark', exact: true })
         await dark.focus()
@@ -289,6 +290,7 @@ try {
         await main.getByRole('switch', { name: /Reduce motion/ }).check()
         await main.getByRole('switch', { name: /Prefer Simple View/ }).check()
         await page.reload()
+        await page.waitForFunction(() => document.documentElement.dataset.bmPreferencesReady === 'true')
         await main.getByRole('radio', { name: 'Dark', exact: true }).waitFor()
         assert(
           await main

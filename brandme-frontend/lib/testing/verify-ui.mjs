@@ -83,6 +83,7 @@ const { EvidenceLabel } = source('../../components/ui/evidence-label.tsx')
 const { Price } = source('../../components/ui/price.tsx')
 const { formatMoney, parseMoneyInput, moneyInputValue } = source('../money.ts')
 const { validateGuest, guestPayload } = source('../../features/persona/guest-draft.ts')
+const {ExperiencePreferencesProvider,useExperiencePreferences}=source('../client/experience-preferences.tsx')
 const { useNavigationClearance } = source(
   '../client/use-navigation-clearance.ts',
 )
@@ -104,6 +105,22 @@ test('corrupt guest records cannot introduce invalid axes, looks or implicit lea
   for(const patch of [{looks:[20]},{looks:[0,0]},{learning:'yes'},{saved:null},{expression:101},{color:NaN},{room:'missing'},{intent:null},{step:4}])assert.equal(validateGuest({...valid,...patch}),null)
   assert.deepEqual(guestPayload(valid).persona.declared.color,{value:null,locked:false})
   assert.equal(guestPayload(valid).persona.learning_enabled,false)
+})
+
+test('rapid preference changes compose and survive a fresh provider mount',async()=>{
+  const originalMedia=globalThis.matchMedia,originalStorage=globalThis.localStorage
+  Object.defineProperty(globalThis,'localStorage',{configurable:true,value:dom.window.localStorage})
+  globalThis.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}})
+  localStorage.clear()
+  function Controls(){const {preferences,update,ready}=useExperiencePreferences();return h('button',{disabled:!ready,onClick:()=>{update({theme:'dark'});update({motion:'reduce'});update({simpleView:true})}},`${preferences.theme}/${preferences.motion}/${preferences.simpleView}`)}
+  try{
+    const view=render(h(ExperiencePreferencesProvider,null,h(Controls)))
+    await userEvent.setup().click(screen.getByRole('button',{name:'system/system/false'}))
+    assert.ok(screen.getByRole('button',{name:'dark/reduce/true'}))
+    assert.deepEqual(JSON.parse(localStorage.getItem('brandme:experience:v1')),{theme:'dark',motion:'reduce',simpleView:true,highContrast:false})
+    view.unmount();render(h(ExperiencePreferencesProvider,null,h(Controls)))
+    assert.ok(screen.getByRole('button',{name:'dark/reduce/true'}))
+  }finally{cleanup();globalThis.matchMedia=originalMedia;Object.defineProperty(globalThis,'localStorage',{configurable:true,value:originalStorage})}
 })
 
 test('money retains every digit and respects 0/2/3-decimal currencies', () => {

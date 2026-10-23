@@ -104,15 +104,24 @@ try {
         })
         await trigger.click()
         const dialog = page.getByRole('dialog')
+        await dialog.waitFor({ state: 'visible' })
+        await page.waitForFunction(() =>
+          document.querySelector('[role="dialog"]')?.contains(document.activeElement),
+        )
         for (let i = 0; i < 16; i++) {
           await page.keyboard.press('Tab')
           assert.ok(
             await dialog.evaluate((element) =>
               element.contains(document.activeElement),
             ),
+            `${type}, Tab ${i + 1}: focus escaped to ${await page.evaluate(() => document.activeElement?.outerHTML)}`,
           )
         }
         await page.keyboard.press('Escape')
+        await dialog.waitFor({ state: 'hidden' })
+        await page.waitForFunction((label) =>
+          document.activeElement?.textContent === label, `Open example ${type}`,
+        )
         assert.ok(
           await trigger.evaluate(
             (element) => element === document.activeElement,

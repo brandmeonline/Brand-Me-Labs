@@ -1,11 +1,14 @@
-import { AvailabilityState } from '@/components/shell/availability-state'
+import { PageHeading } from "@/components/shell/page-heading";
+import { Discover } from "@/features/commerce/catalog";
 export default function Page() {
   return (
-    <AvailabilityState
-      title={'A world to discover.'}
-      description={
-        'The catalog is not connected in this preview. There are no live offers or verified prices to browse yet.'
-      }
-    />
-  )
+    <>
+      <PageHeading
+        eyebrow="Discover"
+        title="A world to discover."
+        description="Search connected catalogs with source, freshness and provider disclosures in view."
+      />
+      <Discover />
+    </>
+  );
 }

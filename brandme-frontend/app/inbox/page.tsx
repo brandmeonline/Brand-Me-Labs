@@ -1,11 +1,14 @@
-import { AvailabilityState } from '@/components/shell/availability-state'
+import { PageHeading } from "@/components/shell/page-heading";
+import { Inbox } from "@/features/social/inbox";
 export default function Page() {
   return (
-    <AvailabilityState
-      title={'A little space for what matters.'}
-      description={
-        'Notifications are not connected in this preview. No messages or friend responses have been fetched.'
-      }
-    />
-  )
+    <>
+      <PageHeading
+        eyebrow="Your updates"
+        title="Keep in touch with your world."
+        description="Decisions, requests and account updates, visible only to you."
+      />
+      <Inbox />
+    </>
+  );
 }

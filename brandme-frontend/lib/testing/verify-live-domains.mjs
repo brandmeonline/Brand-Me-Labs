@@ -92,7 +92,13 @@ try{
   await alice.page.goto(`${base}/rewards`)
   await alice.page.getByRole('heading',{name:'Your badges',exact:true}).waitFor()
   checks.push('Actual outbox/inbox settlement awards setup and first-item points once; Pass earns the same response rule')
-  for(const route of ['/today','/me/style','/circle','/rewards','/me/connections']){
+  const unreadBefore=(await get(alice.context,'/notifications?limit=24')).items.filter(n=>!n.read_at).length
+  assert(unreadBefore>0,'Relationship and decision changes should produce in-app updates')
+  await alice.page.goto(`${base}/inbox`)
+  await alice.page.getByRole('button',{name:'Mark as read',exact:true}).first().click()
+  await eventually(async()=>assert.equal((await get(alice.context,'/notifications?limit=24')).items.filter(n=>!n.read_at).length,unreadBefore-1))
+  checks.push('Inbox displays real domain notifications and persists an explicit mark-as-read command')
+  for(const route of ['/today','/me/style','/circle','/rewards','/me/connections','/inbox']){
     await alice.page.goto(base+route,{waitUntil:'networkidle'})
     const audit=await new AxeBuilder({page:alice.page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()
     assert.deepEqual(audit.violations.map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)})),[],route)
@@ -108,4 +114,8 @@ try{
   checks.push('Sign-out revokes the real session')
   await writeFile(path.join(output,'live-results.json'),JSON.stringify({source:'real development HTTP and Spanner emulator',checks},null,2))
   checks.forEach(check=>console.log(`PASS ${check}`))
+}catch(error){
+  await writeFile(path.join(output,'live-results.json'),JSON.stringify({source:'real development HTTP and Spanner emulator',checks,failed:true,error:error.message},null,2))
+  for(const [index,context] of contexts.entries())for(const [pageIndex,page] of context.pages().entries())await page.screenshot({path:path.join(output,`failure-${index}-${pageIndex}.png`),fullPage:true}).catch(()=>{})
+  throw error
 }finally{await Promise.all(contexts.map(context=>context.close()));await browser.close()}
