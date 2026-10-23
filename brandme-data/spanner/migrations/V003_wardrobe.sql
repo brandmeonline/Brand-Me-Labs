@@ -242,6 +242,7 @@ CREATE TABLE TryOnJobs (
   saved BOOL NOT NULL,
   expires_at TIMESTAMP,
   error_code STRING(64),
+  provider_deletion STRING(24),
   version INT64 NOT NULL,
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
   updated_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
@@ -250,7 +251,7 @@ CREATE TABLE TryOnJobs (
 ) PRIMARY KEY (member_id, job_id),
   INTERLEAVE IN PARENT Members ON DELETE CASCADE;
 
-CREATE NULL_FILTERED INDEX TryOnJobsByExpiry ON TryOnJobs (expires_at, state);
+CREATE INDEX TryOnJobsByStateExpiry ON TryOnJobs (state, expires_at);
 
 -- App-owned media objects (originals + derivatives) with a deletion manifest.
 CREATE TABLE MediaObjects (
@@ -258,15 +259,25 @@ CREATE TABLE MediaObjects (
   media_id STRING(36) NOT NULL,
   job_id STRING(36),
   kind STRING(24) NOT NULL,
+  state STRING(16) NOT NULL,
   storage_ref STRING(512) NOT NULL,
+  content_type STRING(32),
   content_hash STRING(64),
   bytes INT64,
+  rejection_code STRING(48),
   saved BOOL NOT NULL,
   expires_at TIMESTAMP,
   deleted_at TIMESTAMP,
+  purged_at TIMESTAMP,
+  version INT64 NOT NULL,
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
   CONSTRAINT ck_mo_kind CHECK (kind IN ('tryon_input', 'tryon_output', 'tryon_derivative', 'wardrobe_photo')),
+  CONSTRAINT ck_mo_state CHECK (state IN ('awaiting_upload', 'verified', 'rejected', 'deleted')),
+  CONSTRAINT ck_mo_saved CHECK (saved OR expires_at IS NOT NULL OR deleted_at IS NOT NULL),
 ) PRIMARY KEY (member_id, media_id),
   INTERLEAVE IN PARENT Members ON DELETE CASCADE;
 
-CREATE NULL_FILTERED INDEX MediaObjectsByExpiry ON MediaObjects (expires_at);
+-- Sweeper indexes: unsaved objects past expiry, and deleted objects whose blobs still need purging.
+CREATE INDEX MediaObjectsByExpiry ON MediaObjects (deleted_at, expires_at);
+CREATE INDEX MediaObjectsByPurge ON MediaObjects (purged_at, deleted_at);
+CREATE INDEX MediaObjectsByJob ON MediaObjects (member_id, job_id), INTERLEAVE IN Members;

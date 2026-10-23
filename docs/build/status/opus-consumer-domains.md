@@ -489,3 +489,59 @@ The emulator rejected a query on the NULL_FILTERED `DecisionsByStateClose` index
 - **PD-13** Operator authority = `moderation:admin` + aal2 outside development + no delegation + no self-review (ch.03 lists `moderation:admin` as console-only operator authority but does not define reward reviewer roles).
 - **PD-14** Proposal anti-collusion policy: one award per owner→proposer pair per UTC day (disclosed in the rule text). Capped and pair-excluded results are recorded as zero-point entries, so members can see why.
 - **PD-15** Material Story is earned from a reviewer-accepted *product-history* contribution, which carries no points: the rule table has no product-history rule. Catalog corrections earn points under `catalog_correction_accepted`.
+
+## Stage 7 — Try-on server: consent, jobs, retention, deletion (W08 server side) — 2026-10-23
+**Schema.** V003 media tables (PD-08) gained the columns this stage needs:
+- `MediaObjects`: `state`, `content_type`, `rejection_code`, `purged_at`, `version`, plus CHECK *saved ∨ expiring ∨ deleted*
+- `TryOnJobs`: `provider_deletion`
+
+The expiry indexes are now ordinary indexes, because the emulator refuses NULL_FILTERED index queries. V003 is unmerged and unapplied anywhere persistent, so editing it in place is safe.
+
+**Domain (`brandme_core/domains/media/`)**
+- `store.py`:
+  - a `MediaStore` interface: constrained upload target, stat, read, write, delete
+  - private object paths `members/{id}/media/{id}` (no file name, no public URL)
+  - magic-byte type check for JPEG/PNG/WebP, 10 MB cap
+  - **`MemoryMediaStore` is a labelled simulation**; no production object store is configured in this repo
+- `providers.py`: a `TryOnProvider` interface (terms, region, retention disclosure, deletion support) and a registry that only uses an *approved* provider. **No provider is approved here.** No Vertex `virtual-try-on-001` adapter ships: no account, region or terms exist to verify one. `SimulatedTryOnProvider` is a labelled test double that records every upload.
+- `service.py`:
+  - **Uploads.** An idempotent create mints a fresh constrained URL per response; the URL is never stored in the idempotency record. Completion verifies size, type and hash outside any transaction; rejected bytes are purged. `GET /media/jobs/{id}` returns status only.
+  - **Jobs.** Creation needs `consent.accepted === true` for the approved provider's *current* `provider_id` and `terms_version` (otherwise `consent_required`/`consent_outdated` with the disclosure). Each input photo serves one job, and there is a daily spend limit (default 10). `calibrated_fit` is refused with `capability_unavailable` and creates nothing; `live_overlay` is refused with `on_device_only`, so the server accepts no frames.
+  - **Dispatch.** Consent is re-checked in the claiming transaction right before the upload: revoked consent, privacy freeze or unapproved provider means no upload. Provider calls and blob I/O run outside transactions, and outcomes are recorded with state re-checks. A job deleted mid-upload has its provider copy deleted; a late output is dropped.
+  - **Results.** Labelled `generated_visual_preview` (`…_simulated` with the double) with text "Generated visual preview. Not a fit or size guarantee." Retrieval goes through an authorized route only (private, no-store). Saving is explicit; unsaved results expire 24 h after job creation (server time). The input is deleted as soon as processing ends.
+  - **Delete** follows a manifest: the job and every linked object are tombstoned in one transaction, then blobs are purged, then provider deletion is requested (`confirmed`/`failed`/`unsupported`/`not_sent` recorded). Consent revocation cancels queued jobs and deletes their photos.
+  - **Sweepers:** `expire_due` (unsaved media/jobs past expiry, with provider deletion) and `purge_pending` (blob purge retry).
+- `deletion.py`: W10 categories `media.tryon_consents` and `media.tryon_media`. Rows are deleted or tombstoned in the transaction; blobs are purged after commit through the store registered by `MediaService`, then the rows are removed.
+- `api.py` (unmounted): ch.03 `POST /media/uploads` (201), `GET /media/jobs/{id}`, `POST /try-on/jobs` (202), `DELETE /try-on/jobs/{id}` (204). Lane additions (PD-09): upload complete, capabilities, job get/result/save, consents list/revoke.
+
+**Gateway (UNMOUNTED):** `routes/v1/media.ts` → `mediaRouter(client)` and `routes/v1/tryon.ts` → `tryOnRouter(client)`.
+- Bounded upload shape.
+- Consent shape required; `calibrated_fit` and `live_overlay` are refused at the edge and never forwarded.
+- Result bytes are relayed only for `image/png|jpeg|webp`, with `private, no-store`.
+- **Ownership note:** the foundation endpoint inventory (`packages/contracts/scripts/endpoints.mjs:93-94`) tags `/try-on/jobs` as owner `spatial-ar`. This lane's brief assigns the W08 *server* side here and lists `tryon.ts` as lane-owned. The client UI remains the spatial lane's.
+
+**Evidence** (pinned venv; emulator 1.5.28)
+| Check | Result |
+|---|---|
+| This branch: lane suites (persona, wardrobe, social, rewards, media) + `tests/foundation` | **272 passed, 7 skipped** before the freeze test was added (privacy-lane/spatial checks NOT RUN here); `test_media_tryon.py` alone **11 passed, 1 skipped**, 3 runs in a row |
+| W11 `bec80b1` overlay: lane suites + `test_privacy.py` + `test_rights.py` | **209 passed, 0 skipped**. Includes the freeze test: a frozen member cannot upload, and a job queued before the freeze is cancelled at dispatch with no upload. |
+| Gateway: `tsc --noEmit` 0; `eslint src` 0; `vitest run src/routes/v1` | **39 passed** (+4 `tryon.test.ts`) |
+
+| Acceptance / exit evidence | Result | Test |
+|---|---|---|
+| BM-AR-007 no provider upload without explicit consent | passed (integration). Missing, false, non-boolean and outdated consent create no job. A consent revoked before dispatch cancels the job with no upload and deletes the photo. Freeze → no upload (W11). | `test_no_provider_upload_without_explicit_consent`, `test_privacy_lane_freeze_stops_uploads_and_dispatch` |
+| BM-AR-008 approved provider job labelled, saved only by choice | **server half passed with the simulated provider** (label, explicit save, unsaved by default, owner-only retrieval). Real-provider half **not_run**: no approved provider exists. | `test_photo_job_is_labelled_and_saved_only_by_choice` |
+| BM-AR-009 calibrated fit unavailable | passed (domain + HTTP + gateway; nothing created, never relabelled) | `test_unavailable_modes_and_unconfigured_provider`, `test_http_surface`, `tryon.test.ts` |
+| BM-AR-010 delete saved image removes originals/derivatives | passed (integration, simulated store): manifest, blobs gone, provider deletion confirmed, result 404, idempotent; deletion during processing leaves no orphan | `test_delete_saved_preview_follows_the_manifest`, `test_delete_while_processing_leaves_no_orphans` |
+| BM-DATA-009 / **exit: unsaved media expiry demonstrable** | passed (integration). `expires_at` = creation + 24 h by server time. After moving the expiry to Spanner-now − 1 µs, the sweeper tombstones and purges the unsaved output and the never-completed upload, marks the job `expired` and confirms provider deletion. The saved preview is untouched. No unpurged tombstones remain. Provider retention is disclosed from provider terms, never promised. | `test_unsaved_media_expires_and_saved_media_stays` |
+| Exit: try-on consent/job/deletion flow | passed (see above) plus HTTP end to end | `test_http_surface` |
+| BM-AR-001..006 (labels in UI, device AR, camera lifecycle, tracking) | not this lane (spatial-ar UI, devices) | — |
+
+**Honest limits**
+- No real provider and no real object store: all provider and blob behaviour is proven against labelled simulation doubles. Production needs an approved provider adapter and a private-bucket store adapter with V4 signed URLs, then a re-run of these tests against them.
+- Workers (`dispatch_queued`, `collect_processing`, `expire_due`, `purge_pending`) are callables. Integration must schedule them.
+- Media export returns metadata. Image bytes need the export lane's authenticated download.
+
+**Proposed deviations added**
+- **PD-16** Try-on and media use the `wardrobe:read`/`wardrobe:write` scopes; ch.03 defines no media scope.
+- **PD-17** Consent travels in the `POST /try-on/jobs` body, and one standing consent per provider and terms version is reused. A terms change requires re-consent (`consent_outdated`).
