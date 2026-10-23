@@ -117,6 +117,11 @@ CREATE TABLE BenefitReservations (
   version INT64 NOT NULL,
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
   settled_at TIMESTAMP OPTIONS (allow_commit_timestamp = true),
+  -- Fulfillment lease: a worker claims a pending reservation (server time)
+  -- before calling an external fulfiller, so overlapping schedulers cannot both
+  -- deliver it and the expiry sweeper cannot release it mid-delivery.
+  claim_token STRING(36),
+  claimed_until TIMESTAMP,
   CONSTRAINT ck_br_state CHECK (state IN ('pending', 'fulfilled', 'refunded')),
   CONSTRAINT ck_br_cost CHECK (cost_points > 0),
 ) PRIMARY KEY (member_id, reservation_id),

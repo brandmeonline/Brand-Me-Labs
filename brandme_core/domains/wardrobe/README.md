@@ -3,7 +3,7 @@
 Reserved by the opus-foundation lane. The framework provides **no logic** here.
 
 - **Owning lane:** consumer-domains
-- **Migration number:** V003 (`brandme-data/spanner/migrations/`)
+- **Migration number:** V017 (renumbered from V003 to follow main V014) (`brandme-data/spanner/migrations/`)
 - **Entities (ch.03 §4):** WardrobeItem, AssetInstance links, ClosetLayout, ClosetPlacement, Outfit/OutfitVersion
 
 Contract for the owning lane:
