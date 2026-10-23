@@ -102,7 +102,8 @@ def order_wire(o: Order) -> Dict[str, Any]:
             "lines": [{"variant_id": l.variant_id, "source_variant_ref": l.source_variant_ref,
                        "ordered": l.quantity_ordered, "shipped": l.quantity_shipped,
                        "delivered": l.quantity_delivered, "returned": l.quantity_returned,
-                       "exchanged_from_ref": l.exchanged_from_ref} for l in o.lines],
+                       "cancelled": l.quantity_cancelled, "exchanged_from_ref": l.exchanged_from_ref}
+                      for l in o.lines],
             "version": str(o.version)}
 
 
@@ -122,10 +123,10 @@ def delegation_wire(d) -> Dict[str, Any]:
 
 def _summary_state(conn, capability: str) -> str:
     st = conn.capability(capability).state
-    if st in ("verified",):
+    if st == "verified":
         return "available"
     if st == "sandbox":
-        return "simulated" if conn.simulation else "available"
+        return "simulated"  # a sandbox (test-mode) capability is never "available" (ch.05 §11)
     if st == "degraded":
         return "degraded"
     if st == "unsupported":
@@ -387,10 +388,12 @@ class CommerceHttpApi:
                               "simulation_label": conn.disclosure if conn.simulation else None})
         # Aggregate entry the member UI shows next to identity/persistence (see gateway me.ts).
         submit = [c for c in conns if c.can_execute("checkout.submit")]
-        if any(not c.simulation for c in submit):
+        if any(c.capability("checkout.submit").state == "verified" for c in submit):
             agg = ("available", "provider_checkout_verified", None)
+        elif any(c.simulation for c in submit):
+            agg = ("simulated", "simulated_provider_only", next(c for c in submit if c.simulation).disclosure[:200])
         elif submit:
-            agg = ("simulated", "simulated_provider_only", submit[0].disclosure)
+            agg = ("simulated", "provider_sandbox_only", submit[0].disclosure[:200] or None)
         elif any(c.can_execute("checkout.handoff") for c in conns):
             agg = ("unconfigured", "handoff_only", None)
         else:
@@ -410,16 +413,20 @@ class CommerceHttpApi:
         c = self._connection(str(a.get("provider_id", "")))
         return 200, dict(c.to_public(), access_level=c.access_level, simulation=c.simulation,
                          protocols=dict(c.protocols), allowed_redirect_hosts=list(c.allowed_redirect_hosts),
-                         credential_configured=c.credential_ref is not None, version=str(c.version))
+                         credential_configured=c.credential_ref is not None, version=str(c.version),
+                         payment_rail=c.payment_rail.to_operator() if c.payment_rail else None)
 
     def _provider_health(self, p, a, h):
         self._require_admin(p)
         c = self._connection(str(a.get("provider_id", "")))
         caps = [c.capabilities[k] for k in sorted(c.capabilities)]
+        health = getattr(c.adapter, "rail_health", None)
         return 200, {"provider_id": c.provider_id, "environment": c.environment,
                      "capabilities": [dict(s.to_public(), evidence_kind=s.evidence_kind) for s in caps],
                      "executable": sorted(s.name for s in caps if c.can_execute(s.name)),
-                     "simulation": c.simulation}
+                     "simulation": c.simulation,
+                     "payment_rail": c.payment_rail.to_operator() if c.payment_rail else None,
+                     "rail_health": health() if callable(health) else None}
 
     def _provider_setup_get(self, p, a, h):
         self._require_admin(p)
