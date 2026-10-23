@@ -36,6 +36,11 @@ EVIDENCE_KINDS = VERIFYING_EVIDENCE | NON_VERIFYING_EVIDENCE
 PROBE_RESULTS: Tuple[str, ...] = ("passed", "failed", "blocked")
 PROBE_MODES: Tuple[str, ...] = ("read_only_test", "staging_ingestion")
 SETUP_SECTIONS: Tuple[str, ...] = ("enables", "prerequisites", "credentials", "data_use", "tests", "activation")
+# ``OrderObservation.payment_status`` values. ``voided``: an authorization released before capture
+# (cancelled order or expired hold); no money moved.
+ORDER_PAYMENT_STATUSES: Tuple[str, ...] = (
+    "unknown", "authorized", "captured", "partially_refunded", "refunded", "voided", "failed",
+)
 
 
 class ProviderErrorKind(str, enum.Enum):
@@ -199,6 +204,9 @@ class SubmitRequest:
     # The exact quoted lines. An adapter must refuse a checkout whose provider-side
     # cart no longer matches them (the cart can change outside Brand.Me's control).
     lines: Tuple["CartLineRequest", ...] = ()
+    # The payee the member approved (the quote's ``payee_ref``). A merchant refuses a checkout
+    # whose payee changed since the quote (``payee_changed``) before any payment I/O.
+    payee_ref: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -251,8 +259,7 @@ class ObservedLine:
 class OrderObservation:
     provider_order_ref: str
     order_status: str  # accepted | rejected | cancelled
-    # authorized | captured | partially_refunded | refunded | voided (released before capture) | failed | unknown
-    payment_status: str
+    payment_status: str  # one of ORDER_PAYMENT_STATUSES
     lines: Tuple[ObservedLine, ...]
     refunded_total: Money
     observed_at: datetime
@@ -268,6 +275,9 @@ class WebhookEvent:
     provider_order_ref: str
     occurred_at: datetime
     payload: Mapping[str, Any]
+    # False: verified, but not about this adapter's orders (e.g. another app on the same
+    # processor account). The service acknowledges it with an ``ignored`` receipt.
+    relevant: bool = True
 
 
 @runtime_checkable

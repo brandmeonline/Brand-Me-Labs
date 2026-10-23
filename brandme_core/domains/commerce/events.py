@@ -40,12 +40,13 @@ PURCHASE_AUTHORIZED = register(
            ("operation_id", "approval_id", "quote_hash")),
     "member_private")
 
+# Schema version 1 is extended only compatibly: ``cancelled`` was added after the first v1
+# payloads, so it is optional and a line without it has 0 cancelled units.
 _ORDER_LINE = closed({
     "variant_id": {"anyOf": [UUID, {"type": "null"}]}, "source_variant_ref": _REF,
     "ordered": {"type": "integer", "minimum": 1, "maximum": 99}, "shipped": _QTY, "delivered": _QTY,
     "returned": _QTY, "cancelled": _QTY, "exchanged_from_ref": {"anyOf": [_REF, {"type": "null"}]},
-}, ("variant_id", "source_variant_ref", "ordered", "shipped", "delivered", "returned", "cancelled",
-    "exchanged_from_ref"))
+}, ("variant_id", "source_variant_ref", "ordered", "shipped", "delivered", "returned", "exchanged_from_ref"))
 
 ORDER_OBSERVED = register(
     "commerce.order.observed", "1",

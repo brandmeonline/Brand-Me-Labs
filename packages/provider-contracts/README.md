@@ -36,4 +36,20 @@ adapter modes by environment:
 
 An adapter built for another environment is refused. There is no runtime fallback from live to simulated.
 
+## Merchant-internal collaborators
+
+A merchant adapter may compose a `PaymentProcessor` and a `FulfillmentProvider`. These are **not** capabilities: the
+commerce service never calls them, no capability name exists for them, and their effects reach Brand.Me only as
+`OrderObservation` fields (`payment_status`, `refunded_total`, `captured_total`, line quantities).
+
+- `ORDER_PAYMENT_STATUSES` (7 values, including `voided`) is what an order may report; `PAYMENT_STATES` adds the
+  processor-only `requires_action` and `unknown`.
+- `PaymentRailDescriptor` describes a rail for startup checks and operators; it never carries keys or accounts.
+  `RAIL_MODES` is `simulated` | `sandbox`: a live rail is not representable.
+- `assertPaymentRailAllowed(environment, rail)`: demo/development allow both modes, sandbox only `sandbox`,
+  production neither. The label must be visible (non-blank, at most 200 characters).
+- A processor never re-sends an authorization: a lost response is resolved by `find` (reads only). A capture, void
+  or refund with an unknown outcome is resolved by `operationEffect`, and re-sent with the same key only when absent.
+  The idempotency key travels in `ctx.idempotency_key`.
+
 Sole writer: the opus-commerce-agents lane (`docs/build/status/opus-commerce-agents.md`).
