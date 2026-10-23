@@ -173,8 +173,10 @@ jobs:
         working-directory: brandme-chain
         run: pnpm install --frozen-lockfile
 
-      # Informational only.
-      - name: Run pnpm audit
+      # Production findings and all critical advisories block the gate.
+      # Lower-severity development findings remain visible for remediation.
+      - name: Reject production and critical dependency advisories
         working-directory: brandme-chain
-        run: pnpm audit --audit-level=high
-        continue-on-error: true
+        run: |
+          pnpm audit --prod
+          pnpm audit --audit-level=critical

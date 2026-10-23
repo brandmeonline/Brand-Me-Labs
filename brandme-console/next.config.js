@@ -10,7 +10,7 @@
 const path = require('path');
 const nextConfig = {
   output: 'standalone',
-  experimental: { outputFileTracingRoot: path.join(__dirname, '..') },
+  outputFileTracingRoot: path.join(__dirname, '..'),
   reactStrictMode: true,
   poweredByHeader: false,
 

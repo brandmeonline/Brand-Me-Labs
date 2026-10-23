@@ -1,6 +1,6 @@
 # Compatibility lock
 
-**Owner:** opus-foundation lane. **Check date:** 2026-10-05. Versions come from the npm registry, nodejs.org, PyPI, and the gcr/Docker registries on that date. They are **pinned values, not "latest" policies**. Executable pins live in the lockfiles listed below; this file explains them.
+**Owner:** opus-foundation lane. **Baseline check date:** 2026-10-05. Next.js and test-tool security pins were rechecked on 2026-10-23; other historical registry notes below retain their baseline date. Versions come from the npm registry, nodejs.org, PyPI, and the gcr/Docker registries on that date. They are **pinned values, not "latest" policies**. Executable pins live in the lockfiles listed below; this file explains them.
 
 Status legend: **installed+tested** = in a committed lockfile and exercised by `pnpm check` / `pnpm smoke` on the check date. **target (not installed)** = resolved for the lane that will install it; not yet compatibility-tested here.
 
@@ -19,8 +19,10 @@ Lockfiles: `pnpm-lock.yaml` (lockfile v9, pnpm 10.34.6, the whole workspace incl
 
 | Component | Pin | Status / note |
 |---|---|---|
-| Next.js (consumer target) | **16.3.8** (stable; `engines.node >=20.9.0`) | **target (not installed)**. `brandme-frontend` still resolves **14.0.4** (npm marks it deprecated). The upgrade is the frontend lane's isolated W01 change |
-| Next.js (console, current) | 14.2.35 (from `^14.1.0`) | installed; builds on Node 24 |
+| Next.js (frontend and console) | **15.5.28** (Maintenance LTS security release) | Installed together on 2026-10-23; retains the existing React 18.3.1 compatibility range. Both production builds are required by CI |
+| Vitest / coverage / UI | **3.2.7** | Chain and gateway use matching test packages; critical UI-server advisory patched |
+| Tinypool | **2.1.2** | Workspace override for worker-options pollution fixes; validated by chain/gateway/Spanner suites |
+| PostCSS / minimatch v9 | **8.5.23 / 9.0.7** | Scoped overrides for source-map disclosure and pattern backtracking advisories |
 | React / React DOM (target) | **19.3.0** | target. R3F 9.8.1 peers `react >=19 <19.4`; Next 16.3.8 peers `^19.0.0`. Current apps resolve 18.3.1 |
 | Three.js | **0.186.1** | target (spatial lane) |
 | @react-three/fiber | **9.8.1** (stable v9 line; not v10 alpha/canary) | target |
@@ -28,6 +30,7 @@ Lockfiles: `pnpm-lock.yaml` (lockfile v9, pnpm 10.34.6, the whole workspace incl
 | @google/model-viewer | **4.3.1** | target |
 | @mediapipe/tasks-vision | **1.0.1** (not the nightly) | target; models must be self-hosted and versioned |
 | @tanstack/react-query | 5.104.1 | target (spec ch.03 frontend state default) |
+| UUID (gateway) / Babel core | **11.1.1 / 7.29.6** | UUID retains CommonJS exports and bundled types; Babel override stays within v7 |
 | Express (gateway/chain) | 4.22.3 | installed+tested |
 
 ## Midnight tuple
@@ -77,4 +80,4 @@ The spec's dated tuple (ch.04 §1) is reproduced below with npm availability on 
 2. **Spanner emulator 1.5.28** rejects the legacy `CREATE PROPERTY GRAPH` statement and all PostgreSQL-style partial indexes in `brandme-data/spanner/schema.sql` (baseline report F1–F3).
 3. **pydantic models** generated from the spec cannot express JSON Schema `if/then`. Python services validate with `jsonschema` first (`packages/contracts/README.md`).
 4. **pnpm 10** blocks dependency lifecycle scripts. The allowlist is in `pnpm-workspace.yaml` (`onlyBuiltDependencies`: esbuild, unrs-resolver, protobufjs, @parcel/watcher, sharp).
-5. **Next 14.0.4** (frontend) builds on Node 24 but is deprecated upstream. The frontend lane must upgrade to the target row above.
+5. **Security audit:** production findings and all critical findings now block CI and image publishing. Lower-severity findings remain visible; see `dependency-audit-2026-10-23.md` for the remaining upstream issues and exact verification. This is not a claim that every transitive dependency is vulnerability-free.
