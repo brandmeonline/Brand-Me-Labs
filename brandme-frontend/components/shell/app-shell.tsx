@@ -120,15 +120,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav aria-label="Explore" className="bm-secondary-nav">
             {links('secondary')}
           </nav>
-          <div className="bm-rail-foot">
+          <Link href="/me/connections" className="bm-rail-foot" aria-label="Your account connection settings">
             <span className="bm-avatar" aria-hidden="true">
               U
             </span>
-            <Link href="/me/connections">
+            <span className="bm-rail-foot-label">
               Your account
               <span className="bm-support">Connection settings</span>
-            </Link>
-          </div>
+            </span>
+          </Link>
         </aside>
       )}
       <div className="bm-workspace">

@@ -923,7 +923,7 @@ figure {
   }
   .bm-rail .bm-wordmark-period,
   .bm-rail-motto,
-  .bm-rail-foot > div,
+  .bm-rail-foot-label,
   .bm-rail .bm-nav-link span {
     display: none;
   }
@@ -1023,7 +1023,7 @@ figure {
   .bm-rail-foot {
     justify-content: flex-start;
   }
-  .bm-rail-foot > div {
+  .bm-rail-foot-label {
     display: block;
   }
   .bm-workspace-body {

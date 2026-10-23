@@ -378,6 +378,20 @@ try {
       }
     },
   )
+  await check('compact desktop account link fits and remains keyboard accessible', async () => {
+    const context = await browser.newContext({viewport:{width:1024,height:768}})
+    try {
+      const page = await context.newPage()
+      await page.goto(consumer + '/today', {waitUntil:'networkidle'})
+      const account = page.getByRole('link', {name:'Your account connection settings',exact:true})
+      await account.focus()
+      assert(await account.evaluate(e=>e===document.activeElement),'Account link cannot receive focus')
+      assert(await page.locator('.bm-rail').evaluate(e=>e.scrollWidth<=e.clientWidth),'Compact navigation has horizontal overflow')
+      await noOverflow(page)
+      await page.keyboard.press('Enter')
+      await page.waitForURL('**/me/connections')
+    } finally { await context.close() }
+  })
   await check(
     'legacy redirects and unavailable stages are honest',
     async () => {

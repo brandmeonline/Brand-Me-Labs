@@ -55,7 +55,10 @@ try{
           const a=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()
           assert.deepEqual(a.violations.map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)})),[],`${name}/${width}/${theme}`)
           assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name}: horizontal overflow`)
-          await page.screenshot({path:path.join(output,`${name}-${width}-${theme}.png`),fullPage:true})
+          // Functional focus checks run before this capture. Normalize scroll/focus for stable page baselines.
+          await page.evaluate(()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur();window.scrollTo(0,0)})
+          await page.evaluate(()=>document.fonts.ready)
+          await page.screenshot({path:path.join(output,`${name}-${width}-${theme}.png`),fullPage:true,animations:'disabled'})
         }
       }
       await page.goto(`${base}/discover`)
@@ -117,7 +120,7 @@ try{
       await page.getByText('rights.operations: retained · 0 records affected',{exact:true}).waitFor()
       await audit('deletion')
       assert.deepEqual(errors,[])
-      console.log(`PASS UI test doubles at ${width}px: catalog text, inbox references, scoped exports, verified download, account switch, retained deletion outcomes and axe`)
+      console.log(`PASS UI test doubles at ${width}px: catalog text, inbox references, reservation retry/focus, scoped exports, verified download, account switch, retained deletion outcomes and axe`)
     }catch(error){
       for(const [index,page]of context.pages().entries())await page.screenshot({path:path.join(output,`failure-fixture-${width}-${index}.png`),fullPage:true}).catch(()=>{})
       await writeFile(path.join(output,`failure-fixture-${width}.json`),JSON.stringify({error:error.message,urls:context.pages().map(page=>page.url())},null,2))

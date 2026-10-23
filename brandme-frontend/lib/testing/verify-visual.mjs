@@ -17,6 +17,10 @@ if(process.env.BRANDME_VISUAL_CAPTURE_ONLY==='1'){
 }
 await mkdir(path.join(current,'diff'),{recursive:true})
 const failures=[]
+const expectedFiles=(await readdir(baseline)).filter(p=>p.endsWith('.png')).sort()
+for(const file of expectedFiles){
+  if(!files.includes(file))failures.push(`${file}: current capture missing`)
+}
 for(const file of files){
   const actual=PNG.sync.read(await readFile(path.join(current,file)))
   let expected
