@@ -33,6 +33,12 @@ permissions:
   contents: read
   security-events: write
 
+# An explicit `shell: bash` runs steps as `bash -eo pipefail`; the implicit default is `bash -e` without
+# pipefail, under which `cmd | tee log` reports tee's status and hides a failing cmd.
+defaults:
+  run:
+    shell: bash
+
 env:
   GCP_PROJECT_ID: lux-realestate-app
   GCP_REGION: us-east1
@@ -120,14 +126,17 @@ jobs:
   test-core:
     name: Test Core (Python/FastAPI)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     services:
       spanner:
         image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
         ports:
           - 9010:9010
+          - 9020:9020
     env:
       SPANNER_EMULATOR_HOST: localhost:9010
+      # REST endpoint for the migration-ledger suite (tests/test_commerce_migrations.py).
+      SPANNER_EMULATOR_REST: http://localhost:9020
     steps:
       - uses: actions/checkout@v4
 
@@ -151,7 +160,9 @@ jobs:
           for i in $(seq 1 60); do curl -sf http://127.0.0.1:8080/ >/dev/null && break; sleep 1; done
           python -c "import socket; socket.create_connection(('127.0.0.1', 8080), timeout=10).close()"
 
-      - name: Test foundation, rights, and privacy
+      # Every test under tests/, once. Known-broken tests are quarantined (owner + blocker) in tests/conftest.py
+      # and listed in the QUARANTINED block of the summary; with BRANDME_REQUIRE_EMULATORS=1 any other skip fails.
+      - name: Test full Python suite (tests/)
         env:
           PUBSUB_EMULATOR_BIN: .cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
           FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
@@ -160,7 +171,7 @@ jobs:
           python scripts/python/fetch_pubsub_emulator.py
           test -x "$PUBSUB_EMULATOR_BIN"
           java -version
-          python -m pytest tests/foundation tests/test_rights.py tests/test_privacy.py tests/test_privacy_recovery.py tests/test_rights_cube_filter.py tests/test_read_api.py tests/test_privacy_exports.py -q --timeout=120 -ra
+          python -m pytest tests -q --timeout=300 -ra
 
       - name: Setup Node.js for Firestore rules tests
         uses: actions/setup-node@v4
@@ -178,7 +189,70 @@ jobs:
           pnpm install --frozen-lockfile --filter @brandme/firestore-rules...
           pnpm --filter @brandme/firestore-rules test 2>&1 | tee .cache/rules.log
           grep -Eq "skipped 0$" .cache/rules.log
+          grep -Eq "fail 0$" .cache/rules.log
           grep -Eq "pass [1-9][0-9]*$" .cache/rules.log
+
+  # The foundation gate (scripts/brandme.mjs check + smoke): spec validator, contract/token drift, package and
+  # gateway type checks and tests, docs links, and the gateway -> brain -> Spanner smoke. The pytest step of
+  # `pnpm check` is skipped here only, because test-core runs the same full suite; locally `pnpm check` runs it.
+  foundation-check:
+    name: Foundation check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
+        ports:
+          - 9010:9010
+          - 9020:9020
+    env:
+      SPANNER_EMULATOR_HOST: localhost:9010
+      SPANNER_EMULATOR_REST: http://localhost:9020
+      FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
+      BRANDME_PYTHON: ${{ github.workspace }}/.venv/bin/python
+      BRANDME_REQUIRE_EMULATORS: '1'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Python venv from the hashed lock
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --require-hashes -r scripts/python/requirements.lock
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Require Spanner emulator
+        run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
+
+      - name: Start pinned Firestore emulator (security-rules suite)
+        run: |
+          launcher=$(python scripts/python/fetch_firestore_emulator.py .cache/firestore-emulator)
+          nohup "$launcher" start --host=127.0.0.1 --port=8080 > .cache/firestore-emulator.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8080/ >/dev/null && break; sleep 1; done
+          python -c "import socket; socket.create_connection(('127.0.0.1', 8080), timeout=10).close()"
+
+      - name: pnpm check
+        env:
+          BRANDME_CHECK_SKIP_PYTHON: '1'
+        run: pnpm check
+
+      - name: pnpm smoke (gateway -> brain -> Spanner, restart persistence, outbox)
+        run: pnpm smoke
 
   test-chain:
     name: Test Chain (Node/TypeScript)
@@ -213,7 +287,7 @@ jobs:
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [test-gateway, test-core, test-chain, test-frontend, security-scan]
+    needs: [test-gateway, test-core, foundation-check, test-chain, test-frontend, security-scan]
     timeout-minutes: 40
     env:
       PUBLISH_IMAGES: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
@@ -345,18 +419,46 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
+      # Blocking gates. Same digest-pinned image as chain-tests.yml, so a local `docker run` of these exact
+      # commands reproduces CI. They run on the checkout only (no install), i.e. committed files.
+      # --file-patterns adds the hashed venv lock: Trivy's pip analyzer only reads files named requirements.txt.
+      # .trivyignore.yaml holds the dated, owned, path-scoped baseline; it is not loaded by the report below.
+      - name: Block on fixable CRITICAL vulnerabilities
+        run: >-
+          docker run --rm -v "$GITHUB_WORKSPACE:/src:ro" -w /src
+          aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+          fs --scanners vuln --severity CRITICAL --ignore-unfixed --exit-code 1 --no-progress
+          --ignorefile .trivyignore.yaml --file-patterns 'pip:requirements\.lock$' .
+
+      # Repo-wide (the repository is public). trivy-secret.yaml turns off Trivy's built-in allow rules that
+      # skip test, example and Markdown paths.
+      - name: Block on committed secrets (repo-wide)
+        run: >-
+          docker run --rm -v "$GITHUB_WORKSPACE:/src:ro" -w /src
+          aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+          fs --scanners secret --secret-config trivy-secret.yaml --exit-code 1 --no-progress .
+
+      # Report (not a gate): every severity, uploaded to code scanning even when a gate above failed.
+      # Action pinned to the commit of its signed v0.36.0 release tag (git ls-remote, 2026-10-23); `version`
+      # pins the Trivy release to the one in the image above.
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_FILE_PATTERNS: 'pip:requirements\.lock$'
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
+          version: 'v0.75.0'
 
       - name: Upload Trivy results to GitHub Security
+        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'

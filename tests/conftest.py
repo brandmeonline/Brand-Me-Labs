@@ -2,12 +2,23 @@
 Brand.Me Test Configuration
 ==========================
 
-Pytest fixtures for Spanner and Firestore emulators.
+Pytest fixtures for Spanner and Firestore emulators, plus the honest-CI rules
+for the whole ``tests/`` tree:
+
+* ``QUARANTINE``: every known-broken test, with an owner lane and a blocker.
+  Nothing is skipped silently; the terminal summary prints a QUARANTINED block.
+* ``BRANDME_REQUIRE_EMULATORS=1`` (CI): a skipped test fails the run unless its
+  reason matches ``SKIP_ALLOWLIST``.
 """
 
+import ast
+import builtins
+import importlib
 import os
+import socket
 import pytest
 import asyncio
+from collections import Counter
 from typing import Generator, AsyncGenerator
 import sys
 from pathlib import Path
@@ -24,6 +35,331 @@ os.environ.setdefault('SPANNER_INSTANCE_ID', 'brandme-instance')
 os.environ.setdefault('SPANNER_DATABASE_ID', 'brandme-db')
 os.environ.setdefault('FIRESTORE_EMULATOR_HOST', 'localhost:8080')
 os.environ.setdefault('FIRESTORE_PROJECT_ID', 'brandme-dev')
+
+
+# ---------------------------------------------------------------------------
+# Quarantine registry
+# ---------------------------------------------------------------------------
+# One entry per (owner, blocker). Targets are pytest node ids relative to the
+# repo root: "tests/x.py::test_name" (all parametrizations) or "tests/x.py"
+# (every test in the module).
+#
+# kind "xfail": the tests still run, under pytest.mark.xfail(strict=True,
+#   raises=<raises>). They must fail with exactly that exception. Any other
+#   failure fails the run, and a pass is XPASS(strict), which also fails the
+#   run: a fixed test forces its entry to be deleted here.
+# kind "collect_ignore": only for modules that fail at import time (xfail
+#   cannot catch those). Applied only while the file named by "while_missing"
+#   is absent, so the quarantine lifts itself when the blocker lands.
+#
+# Re-verified 2026-10-23 at 744d593 with CI's env (Spanner 1.5.45 + REST,
+# Firestore 1.22.0, Pub/Sub, BRANDME_REQUIRE_EMULATORS=1). The lane PRs that
+# fix a blocker must delete the matching entry in the same PR.
+QUARANTINE = [
+    {
+        "kind": "xfail",
+        "owner": "consumer-domains",
+        "raises": "FileNotFoundError",
+        "blocker": "tests/fixtures/persona/catalog_candidates.json was never committed (it was hidden by the old "
+                   "blanket *.json .gitignore rule, now allowlisted); the lane must commit the fixture",
+        "targets": [
+            "tests/test_persona_recommender.py::test_deterministic_and_input_order_invariant",
+            "tests/test_persona_recommender.py::test_hard_budget_and_exclusions_are_never_violated",
+            "tests/test_persona_recommender.py::test_reasons_reference_actual_scoring_evidence",
+            "tests/test_persona_recommender.py::test_no_wardrobe_means_no_wardrobe_reason",
+            "tests/test_persona_recommender.py::test_neutral_start_is_honest",
+            "tests/test_persona_recommender.py::test_sponsorship_is_labelled_and_never_boosts_score",
+            "tests/test_persona_recommender.py::test_diversity_caps",
+            "tests/test_persona_recommender.py::test_declared_preference_changes_ranking",
+            "tests/test_persona_service.py::test_suppression_changes_recommendations_and_blocks_reuse",
+            "tests/test_persona_service.py::test_budget_and_exclusions_flow_through_to_recommendations",
+            "tests/test_persona_service.py::test_not_me_feedback_hides_product_and_is_idempotent",
+            "tests/test_persona_service.py::test_preview_is_read_only",
+        ],
+    },
+    {
+        "kind": "xfail",
+        "owner": "consumer-domains",
+        "raises": "AttributeError",
+        "blocker": "AbortOnceDB injects Aborted(errors=['injected']); the locked google-cloud-spanner 3.40.1 retry path "
+                   "(session._get_retry_delay) calls .trailing_metadata() on that str, so the retry never happens",
+        "targets": [
+            "tests/test_persona_service.py::test_transaction_retry_does_not_duplicate_outbox",
+        ],
+    },
+    {
+        "kind": "xfail",
+        "owner": "commerce-agents",
+        "raises": "FileNotFoundError",
+        "blocker": "vendored AP2 schemas brandme_core/domains/commerce/ap2_schemas/**/*.json are not on main "
+                   "(gitignored when written); they arrive with PR #51",
+        "targets": [
+            "tests/test_commerce_ap2.py::test_vendored_schemas_are_the_pinned_official_ones",
+            "tests/test_commerce_ap2.py::test_valid_mandates_produce_bound_approval_and_purchase",
+            "tests/test_commerce_ap2.py::test_replayed_mandate_rejected",
+            "tests/test_commerce_ap2.py::test_merchant_checkout_not_matching_quote_rejected",
+            "tests/test_commerce_ap2.py::test_merchant_jwt_must_be_es256_and_merchant_signed",
+            "tests/test_commerce_ap2.py::test_payment_mandate_terms",
+            "tests/test_commerce_ap2.py::test_payment_bound_to_other_checkout_rejected",
+            "tests/test_commerce_ap2.py::test_expired_or_overlong_mandate",
+            "tests/test_commerce_ap2.py::test_wrong_vct_and_schema_violation",
+            "tests/test_commerce_ap2.py::test_key_binding_requires_matching_aud_and_nonce",
+        ],
+    },
+    {
+        "kind": "xfail",
+        "owner": "commerce-agents",
+        "raises": "FileNotFoundError",
+        "blocker": "tests/fixtures/providers/impact_feed_fictional.json is not on main (gitignored when written); "
+                   "it arrives with PR #51",
+        "targets": [
+            "tests/test_providers.py::test_feed_replay_and_tombstone",
+            "tests/test_providers.py::test_stale_feed_price_is_labeled_not_a_quote",
+        ],
+    },
+    {
+        "kind": "collect_ignore",
+        "owner": "commerce-agents",
+        "while_missing": "brandme_core/mcp/schemas/tool_invocation.schema.json",
+        "blocker": "brandme_core/mcp/tools.py reads brandme_core/mcp/schemas/tool_invocation.schema.json at import; "
+                   "the MCP schemas arrive with PR #51",
+        "targets": [
+            "tests/test_mcp.py",
+            "tests/test_commerce_assistant.py",
+            "tests/test_commerce_protocols.py",
+        ],
+    },
+    {
+        "kind": "xfail",
+        "owner": "unowned-legacy",
+        "raises": "google.api_core.exceptions.NotFound",
+        "blocker": "no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema "
+                   "(brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "targets": [
+            "tests/test_consent_graph.py",
+            "tests/test_provenance.py",
+        ],
+    },
+    {
+        "kind": "xfail",
+        "owner": "unowned-legacy",
+        "raises": "TypeError",
+        "blocker": "WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array "
+                   "(brandme_core/firestore/wardrobe.py:279), which Firestore rejects; founder decision: delete or fix",
+        "targets": [
+            "tests/test_wardrobe.py::test_add_cube_to_wardrobe",
+            "tests/test_wardrobe.py::test_update_face",
+            "tests/test_wardrobe.py::test_transfer_cube",
+            "tests/test_wardrobe.py::test_get_all_cubes",
+            "tests/test_wardrobe.py::test_visibility_update",
+        ],
+    },
+]
+
+# Legacy modules with no emulator guard of their own: without the emulator they
+# hang until --timeout or fail with a connection error (which would also break
+# their strict-xfail `raises`). They are skipped with a reason instead, like
+# every newer emulator suite; with BRANDME_REQUIRE_EMULATORS=1 that skip fails.
+EMULATOR_MODULES = {
+    "tests/test_consent_graph.py": "SPANNER_EMULATOR_HOST",
+    "tests/test_provenance.py": "SPANNER_EMULATOR_HOST",
+    "tests/test_wardrobe.py": "FIRESTORE_EMULATOR_HOST",
+}
+
+# With BRANDME_REQUIRE_EMULATORS=1 a skip fails the run unless its reason
+# contains one of these strings. Each needs an owner and a reason.
+SKIP_ALLOWLIST = {
+    # commerce-agents: the official AP2 SDK oracle needs its own pinned
+    # interpreter (AP2_SDK_PYTHON); CI does not provide one yet.
+    "AP2_SDK_PYTHON": "commerce-agents",
+}
+
+_TESTS_DIR = Path(__file__).resolve().parent
+
+
+def _collect_ignored_entries():
+    """collect_ignore entries whose blocking file is still absent."""
+    return [e for e in QUARANTINE if e["kind"] == "collect_ignore"
+            and not (REPO_ROOT / e["while_missing"]).exists()]
+
+
+# pytest reads this module-level name; paths are relative to this directory.
+collect_ignore = [str((REPO_ROOT / t).relative_to(_TESTS_DIR))
+                  for e in _collect_ignored_entries() for t in e["targets"]]
+
+
+def _require_emulators() -> bool:
+    return os.environ.get("BRANDME_REQUIRE_EMULATORS") == "1"
+
+
+def _resolve_exception(dotted: str):
+    if "." not in dotted:
+        return getattr(builtins, dotted)
+    module, _, name = dotted.rpartition(".")
+    return getattr(importlib.import_module(module), name)
+
+
+def _count_test_functions(path: Path) -> int:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    count = 0
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test"):
+            count += 1
+        elif isinstance(node, ast.ClassDef) and node.name.startswith("Test"):
+            count += sum(1 for n in node.body
+                         if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name.startswith("test"))
+    return count
+
+
+_reachable_cache = {}
+
+
+def _emulator_reachable(variable: str) -> bool:
+    if variable not in _reachable_cache:
+        host, _, port = os.environ.get(variable, "").partition(":")
+        try:
+            with socket.create_connection((host, int(port)), timeout=1):
+                _reachable_cache[variable] = True
+        except (OSError, ValueError):
+            _reachable_cache[variable] = False
+    return _reachable_cache[variable]
+
+
+def _matches(nodeid: str, target: str) -> bool:
+    if "::" not in target:
+        return nodeid.startswith(target + "::")
+    return nodeid == target or nodeid.startswith(target + "[")
+
+
+_QUARANTINED = pytest.StashKey[dict]()
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(session, config, items):
+    """Mark quarantined tests strict-xfail and reject stale registry entries."""
+    quarantined = {}
+    matched = set()
+    modules = {}
+    for item in items:
+        module_path = item.nodeid.split("::", 1)[0]
+        if getattr(item, "module", None) is not None:
+            modules.setdefault(module_path, item.module)
+        variable = EMULATOR_MODULES.get(module_path)
+        if variable and not _emulator_reachable(variable):
+            item.add_marker(pytest.mark.skip(
+                reason=f"emulator not reachable ({variable}={os.environ.get(variable, '')}); legacy suite not run"))
+            continue
+        for entry in QUARANTINE:
+            if entry["kind"] != "xfail":
+                continue
+            target = next((t for t in entry["targets"] if _matches(item.nodeid, t)), None)
+            if target is None:
+                continue
+            matched.add(target)
+            reason = f"QUARANTINED [{entry['owner']}] {entry['blocker']}"
+            item.add_marker(pytest.mark.xfail(strict=True, raises=_resolve_exception(entry["raises"]), reason=reason))
+            quarantined[item.nodeid] = entry
+            break
+    stale = []
+    for entry in QUARANTINE:
+        for target in entry["targets"]:
+            module_path, _, name = target.partition("::")
+            if not (REPO_ROOT / module_path).exists():
+                stale.append(f"{target} ({module_path} does not exist)")
+            elif entry["kind"] == "xfail" and name and target not in matched and module_path in modules \
+                    and not hasattr(modules[module_path], name):
+                stale.append(f"{target} (no such test in {module_path})")
+    if stale:
+        raise pytest.UsageError("stale QUARANTINE entries in tests/conftest.py; delete or fix them:\n  "
+                                + "\n  ".join(stale))
+    config.stash[_QUARANTINED] = quarantined
+
+
+def _skip_reason(report) -> str:
+    longrepr = report.longrepr
+    if isinstance(longrepr, tuple) and len(longrepr) == 3:
+        return str(longrepr[2])
+    return str(longrepr)
+
+
+def _forbidden_skip(report) -> bool:
+    if not (report.skipped and _require_emulators()) or hasattr(report, "wasxfail"):
+        return False
+    reason = _skip_reason(report)
+    return not any(key in reason for key in SKIP_ALLOWLIST)
+
+
+def _skip_failure_message(report) -> str:
+    return (f"BRANDME_REQUIRE_EMULATORS=1 forbids this skip: {_skip_reason(report)}\n"
+            "Provide the missing dependency, or add an owned entry to SKIP_ALLOWLIST in tests/conftest.py.")
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    """Outermost wrapper: sees the report after xfail handling, so XFAIL is never turned into a failure."""
+    outcome = yield
+    report = outcome.get_result()
+    if _forbidden_skip(report):
+        report.longrepr = _skip_failure_message(report)
+        report.outcome = "failed"
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_make_collect_report(collector):
+    """Module-level skips (pytest.skip(allow_module_level=True), importorskip) count too."""
+    outcome = yield
+    report = outcome.get_result()
+    if _forbidden_skip(report):
+        report.longrepr = _skip_failure_message(report)
+        report.outcome = "failed"
+
+
+def pytest_report_header(config):
+    ignored = sum(len(e["targets"]) for e in _collect_ignored_entries())
+    xfail = sum(len(e["targets"]) for e in QUARANTINE if e["kind"] == "xfail")
+    return (f"brandme quarantine: {xfail} strict-xfail targets, {ignored} modules not collected "
+            f"(tests/conftest.py QUARANTINE); BRANDME_REQUIRE_EMULATORS={os.environ.get('BRANDME_REQUIRE_EMULATORS', '')}")
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    quarantined = config.stash.get(_QUARANTINED, {})
+    xfailed = [r for r in terminalreporter.stats.get("xfailed", []) if r.nodeid in quarantined]
+    ignored = _collect_ignored_entries()
+    per_owner = Counter(quarantined[r.nodeid]["owner"] for r in xfailed)
+    ignored_modules = Counter()
+    ignored_functions = Counter()
+    for entry in ignored:
+        for target in entry["targets"]:
+            ignored_modules[entry["owner"]] += 1
+            ignored_functions[entry["owner"]] += _count_test_functions(REPO_ROOT / target)
+    allowed_skips = Counter()
+    for report in terminalreporter.stats.get("skipped", []):
+        if hasattr(report, "wasxfail"):
+            continue
+        reason = _skip_reason(report)
+        for key, owner in SKIP_ALLOWLIST.items():
+            if key in reason:
+                allowed_skips[f"{key} ({owner})"] += 1
+    if not (xfailed or ignored or allowed_skips):
+        return
+    owners = ", ".join(f"{owner}: {n}" for owner, n in sorted(per_owner.items())) or "none"
+    tr = terminalreporter
+    tr.write_sep("=", "quarantine (not run as passing; see tests/conftest.py QUARANTINE)", yellow=True)
+    tr.write_line(f"QUARANTINED: {len(xfailed)} tests (owner: count {owners})")
+    for entry in QUARANTINE:
+        if entry["kind"] != "xfail":
+            continue
+        n = sum(1 for r in xfailed if quarantined[r.nodeid] is entry)
+        if n:
+            tr.write_line(f"  xfail[{entry['raises']}] {entry['owner']}: {n} - {entry['blocker']}")
+    if ignored:
+        summary = ", ".join(f"{owner}: {ignored_modules[owner]} modules / {ignored_functions[owner]} test functions"
+                            for owner in sorted(ignored_modules))
+        tr.write_line(f"QUARANTINED (not collected): {sum(ignored_modules.values())} modules ({summary})")
+        for entry in ignored:
+            tr.write_line(f"  collect_ignore {entry['owner']}: {', '.join(entry['targets'])} - {entry['blocker']}")
+    if allowed_skips:
+        tr.write_line("ALLOWLISTED SKIPS: " + ", ".join(f"{k}: {n}" for k, n in sorted(allowed_skips.items())))
 
 
 @pytest.fixture(scope="session")
