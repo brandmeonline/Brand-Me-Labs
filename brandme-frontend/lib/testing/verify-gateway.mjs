@@ -25,10 +25,12 @@ test('upstream URL rejects credentials, unapproved protocols and nonlocal insecu
 test('unsafe requests require same-origin and CSRF before touching the gateway',async()=>{for(const h of [{},{...headers,origin:'https://foreign.example'},{...headers,'sec-fetch-site':'cross-site'},{origin:headers.origin,'content-type':'application/json'}]){let calls=0;const r=await proxyGateway(req('me','PATCH',h,{}),['me'],env,async()=>{calls++;return Response.json({})});assert.equal(r.status,403);assert.equal(calls,0)}})
 test('operator routes and path traversal are not forwarded',async()=>{for(const parts of [['ops','rewards'],['commerce','ops','queue'],['me','..'],['me','%2e%2e'],['me','a/b'],['http:']])assert.equal((await proxyGateway(req('me'),parts,env)).status,404)})
 test('catalog composite IDs are encoded within the one published product route',async()=>{
-  const parts=['catalog','products','local_atelier:linen-jacket']
-  const r=await proxyGateway(req(parts.join('/')),parts,env,async(url)=>{assert.equal(new URL(url).pathname,'/api/v1/catalog/products/local_atelier%3Alinen-jacket');return Response.json({variants:[]})})
-  assert.equal(r.status,200)
-  for(const p of [['me','other:identity'],['catalog','products','https://host'],['catalog','products','local:../private']])assert.equal((await proxyGateway(req('me'),p,env)).status,404)
+  for(const id of ['local_atelier:linen-jacket','local_atelier%3Alinen-jacket']){
+    const parts=['catalog','products',id]
+    const r=await proxyGateway(req(parts.join('/')),parts,env,async(url)=>{assert.equal(new URL(url).pathname,'/api/v1/catalog/products/local_atelier%3Alinen-jacket');return Response.json({variants:[]})})
+    assert.equal(r.status,200)
+  }
+  for(const p of [['me','other:identity'],['catalog','products','https://host'],['catalog','products','local:../private'],['catalog','products','local_atelier%253Alinen-jacket'],['catalog','products','local%3A..%2Fprivate'],['catalog','products','%invalid']])assert.equal((await proxyGateway(req('me'),p,env)).status,404)
 })
 test('only session cookie and explicit headers reach the fixed gateway',async()=>{let called=false;const r=await proxyGateway(req('me','PATCH',{...headers,cookie:'tracking=private; bm_session=fake; unrelated=private',authorization:'Bearer never-forward','if-match':'"12"','idempotency-key':'test-operation-123'},{}),['me'],env,async(url,init)=>{called=true;assert.equal(String(url),'http://127.0.0.1:3001/api/v1/me');assert.equal(init.headers.get('cookie'),'bm_session=fake');assert.equal(init.headers.get('authorization'),null);assert.equal(init.headers.get('if-match'),'"12"');assert.equal(init.redirect,'manual');return Response.json({version:'13'},{headers:{etag:'"13"'}})});assert(called);assert.equal(r.headers.get('cache-control'),'private, no-store');assert.equal(r.headers.get('etag'),'"13"')})
 test('development identity is unavailable from production builds and strict environments',async()=>{for(const e of [{...env,NODE_ENV:'production'},{...env,BRANDME_MODE:'sandbox'},{...env,BRANDME_MODE:'production'}])assert.equal((await proxyGateway(req('session/dev','POST',headers,{}),['session','dev'],e)).status,404)})

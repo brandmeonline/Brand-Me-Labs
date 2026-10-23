@@ -1,11 +1,18 @@
-import { PageHeading } from "@/components/shell/page-heading";
-import { ProductDetail } from "@/features/commerce/catalog";
+import { PageHeading } from '@/components/shell/page-heading'
+import { ProductDetail } from '@/features/commerce/catalog'
+import { notFound } from 'next/navigation'
 export default async function Page({
   params,
 }: {
-  params: Promise<{ productId: string }>;
+  params: Promise<{ productId: string }>
 }) {
-  const { productId } = await params;
+  const { productId } = await params
+  let id: string
+  try {
+    id = decodeURIComponent(productId)
+  } catch {
+    notFound()
+  }
   return (
     <>
       <PageHeading
@@ -13,7 +20,7 @@ export default async function Page({
         title="The details matter."
         description="Exact variants and provider observations, with their limits in view."
       />
-      <ProductDetail id={productId} />
+      <ProductDetail id={id} />
     </>
-  );
+  )
 }

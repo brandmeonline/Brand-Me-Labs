@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {createRequire} from 'node:module'
-import {mkdir} from 'node:fs/promises'
+import {mkdir,writeFile} from 'node:fs/promises'
 import path from 'node:path'
 const require=createRequire(new URL('../../package.json',import.meta.url))
 const {chromium}=require('playwright')
@@ -23,13 +23,17 @@ try{
   for(const width of [390,1440]){
     const context=await browser.newContext({viewport:{width,height:900},timezoneId:'UTC'})
     try{
-      let corrupt=false,marked=false,holdDownload=false,releaseDownload
+      let corrupt=false,marked=false,holdDownload=false,releaseDownload,reserveAttempts=0
       const requests=[]
       await context.route('**/api/v1/**',async route=>{
         const req=route.request(),url=new URL(req.url()),p=decodeURIComponent(url.pathname.replace('/api/v1',''))
         const reply=(data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)})
         if(req.method()!=='GET')requests.push({path:p,key:req.headers()['idempotency-key'],body:req.postDataJSON()})
         if(p==='/session')return reply({csrf_token:'test-double-csrf'})
+        if(p==='/rewards')return reply({account:{available:reserveAttempts>1?50:100,reserved:reserveAttempts>1?50:0,lifetime_earned:100,recovery_due:0},points_are:'Points are not cash.',entries:{items:[]},badges:[],next_milestone:null,recovery_policy:'Explicit UI test double.'})
+        if(p==='/benefits')return reply({items:[{benefit_id:id,title:'Test tailoring benefit',description:'UI test double only.',cost_points:50,available:reserveAttempts<2}]})
+        if(p==='/rewards/reservations')return reply({items:reserveAttempts>1?[{reservation_id:id,state:'reserved',release_reason:null}]:[]})
+        if(p===`/benefits/${id}/reservations`){reserveAttempts++;return reserveAttempts===1?reply({code:'outcome_unknown',title:'The result is not confirmed. Refresh the record before trying again.'},503):reply({reservation_id:id,state:'reserved'})}
         if(p==='/catalog/search')return reply({items:[item],unavailable_providers:[{provider_id:'offline_provider',reason_code:'unavailable',handoff:'none'}],note:'Authorized catalog observations.'})
         if(p==='/catalog/products/test_provider:linen-jacket')return reply({provider_id:item.provider_id,source_product_id:item.source_product_id,simulation:true,disclosure:item.disclosure,variants:[item]})
         if(p==='/notifications/read'){marked=true;return reply({updated:1})}
@@ -71,6 +75,20 @@ try{
       await page.getByText('Marked as read.',{exact:true}).waitFor()
       assert.equal(await page.getByRole('link',{name:'Open update',exact:true}).count(),1,'Unknown subject references must not produce links')
       await audit('inbox')
+      await page.goto(`${base}/rewards`)
+      await page.getByRole('button',{name:'Review benefit',exact:true}).click()
+      await page.getByRole('button',{name:'Confirm reservation',exact:true}).click()
+      await page.getByRole('dialog').getByText('The result is not confirmed. Refresh the record before trying again.',{exact:true}).waitFor()
+      await page.getByRole('button',{name:'Close Reserve this benefit',exact:true}).click()
+      await page.getByRole('dialog').waitFor({state:'hidden'})
+      await page.getByRole('button',{name:'Review benefit',exact:true}).click()
+      await page.getByRole('button',{name:'Confirm reservation',exact:true}).click()
+      await page.getByText('Benefit reserved. Fulfillment is shown separately.',{exact:true}).waitFor()
+      const attempts=requests.filter(r=>r.path===`/benefits/${id}/reservations`)
+      assert.equal(attempts.length,2);assert.equal(attempts[0].key,attempts[1].key,'An unconfirmed reservation keeps its idempotency key across dialog reopen')
+      await page.getByText('reserved',{exact:true}).waitFor()
+      await page.waitForFunction(()=>document.activeElement?.textContent?.trim()==='Reservation status')
+      await audit('rewards')
       await page.goto(`${base}/me/data`)
       await page.getByRole('checkbox',{name:'Include Your ownership operations'}).check()
       assert.equal(await page.getByRole('button',{name:/delete|erase|request deletion/i}).count(),0)
@@ -90,7 +108,8 @@ try{
       corrupt=false;holdDownload=true
       const requested=page.waitForRequest(req=>req.url().endsWith('/download'))
       await page.getByRole('button',{name:'Download verified JSON export'}).click();await requested
-      while(!releaseDownload)await new Promise(resolve=>setTimeout(resolve,10))
+      for(let attempt=0;!releaseDownload&&attempt<100;attempt++)await new Promise(resolve=>setTimeout(resolve,50))
+      assert.equal(typeof releaseDownload,'function','The download test double must receive the request')
       await page.evaluate(()=>window.dispatchEvent(new Event('brandme:account-change')))
       releaseDownload()
       await page.getByText('Your account changed. Request the download again.',{exact:true}).waitFor()
@@ -99,6 +118,10 @@ try{
       await audit('deletion')
       assert.deepEqual(errors,[])
       console.log(`PASS UI test doubles at ${width}px: catalog text, inbox references, scoped exports, verified download, account switch, retained deletion outcomes and axe`)
+    }catch(error){
+      for(const [index,page]of context.pages().entries())await page.screenshot({path:path.join(output,`failure-fixture-${width}-${index}.png`),fullPage:true}).catch(()=>{})
+      await writeFile(path.join(output,`failure-fixture-${width}.json`),JSON.stringify({error:error.message,urls:context.pages().map(page=>page.url())},null,2))
+      throw error
     }finally{await context.close()}
   }
 }finally{await browser.close()}

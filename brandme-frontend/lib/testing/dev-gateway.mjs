@@ -39,7 +39,7 @@ app.use('/api/v1',requestContext(cfg.mode),express.json({limit:'256kb'}),princip
   const principal=res.locals.principal
   // Explicit simulated first-party session policy for this local harness; never used by production.
   if(principal?.via==='session'&&principal.identityProvider==='dev'&&principal.environment==='development')
-    principal.scopes=['profile:read','profile:write','wardrobe:read','wardrobe:write','outfits:read','outfits:write','social:read','social:write','rewards:read','privacy:manage']
+    principal.scopes=['profile:read','profile:write','wardrobe:read','wardrobe:write','outfits:read','outfits:write','social:read','social:write','rewards:read','rewards:write','privacy:manage']
   next()
 },personaRouter(client),wardrobeRouter(client),outfitsRouter(client),socialRouter(client),decisionsRouter(client),rewardsRouter(client),apiV1({cfg,store}))
 app.use(problemHandler)

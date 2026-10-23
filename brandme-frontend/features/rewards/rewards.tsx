@@ -1,24 +1,238 @@
 'use client'
-import { useRef,useState } from 'react'
+import { useRef, useState } from 'react'
 import { useResource } from '@/lib/client/use-resource'
-import { command,explainError } from '@/lib/client/gateway'
+import { command, explainError } from '@/lib/client/gateway'
 import { ResourceState } from '@/components/ui/resource-state'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
-interface Entry{entry_id:string;points:number;kind:string;state:string;rule_id:string;reason:string|null;evidence_refs:string[];reverses_entry_id:string|null}
-interface Summary{account:{available:number;reserved:number;lifetime_earned:number;recovery_due:number};points_are:string;entries:{items:Entry[]};badges:{badge_id:string;title:string;criteria:string;earned:boolean;evidence_refs:string[]}[];next_milestone:{text:string}|null;recovery_policy:string}
-interface Benefit{benefit_id:string;title:string;description:string;cost_points:number;available:boolean}
-export function Rewards(){const r=useResource<Summary>('/rewards'),benefits=useResource<{items:Benefit[]}>('/benefits'),reservations=useResource<{items:{reservation_id:string;state:string;release_reason:string|null}[]}>('/rewards/reservations')
-  const [selected,setSelected]=useState<Benefit|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),key=useRef<string|null>(null)
-  const returnFocus=useRef<HTMLButtonElement|null>(null)
-  async function reserve(){if(!selected)return;setBusy(true);try{key.current??=crypto.randomUUID();await command(`/benefits/${selected.benefit_id}/reservations`,{},{key:key.current});setMessage('Benefit reserved. Fulfillment is shown separately.');setSelected(null);r.reload();reservations.reload();benefits.reload()}catch(e){setMessage(explainError(e))}finally{setBusy(false)}}
-  return <div className="bm-flow-stack"><ResourceState {...r} retry={r.reload}/>{r.data&&<>
-    <section className="bm-flow-card"><h2 className="bm-section-title">Useful contributions, recognized.</h2><dl className="bm-facts"><dt>Available points</dt><dd>{r.data.account.available}</dd><dt>Reserved</dt><dd>{r.data.account.reserved}</dd><dt>Lifetime earned</dt><dd>{r.data.account.lifetime_earned}</dd><dt>Recovery due</dt><dd>{r.data.account.recovery_due}</dd></dl><p>{r.data.points_are}</p>{r.data.next_milestone&&<p>Next: {r.data.next_milestone.text}</p>}</section>
-    <section><h2 className="bm-section-title">Your badges</h2><div className="bm-choice-grid">{r.data.badges.map((b,i)=><article key={b.badge_id} className="bm-flow-card"><svg className="bm-badge-art" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4 54 17 54 45 32 60 10 45 10 17Z" fill="none" stroke="currentColor" strokeWidth="2"/><circle cx="32" cy="29" r={9+i} fill="none" stroke="currentColor"/><path d="M23 40 32 25 41 40M22 45H42" fill="none" stroke="currentColor" strokeWidth="2"/></svg><h3>{b.title}</h3><p>{b.earned?'Earned':'Not earned yet'}</p><p>{b.criteria}</p><details><summary>View evidence</summary><ul>{b.evidence_refs.map(e=><li key={e}>{e}</li>)}</ul></details></article>)}</div></section>
-    <section className="bm-flow-card"><h2 className="bm-section-title">Point history</h2>{r.data.entries.items.length===0?<p>No contributions have settled yet.</p>:<ul>{r.data.entries.items.map(e=><li key={e.entry_id}>{e.points} points · {e.kind} · {e.state} · {e.rule_id.replaceAll('_',' ')}{e.reverses_entry_id?' · linked reversal':''}{e.reason?` · ${e.reason}`:''}<details><summary>Evidence</summary><ul>{e.evidence_refs.map(ref=><li key={ref}>{ref}</li>)}</ul></details></li>)}</ul>}<p className="bm-support">{r.data.recovery_policy}</p></section>
-  </>}<section><h2 className="bm-section-title">Benefits</h2><ResourceState {...benefits} retry={benefits.reload}/>{benefits.data?.items.length===0&&<p>No benefits are available right now. Your points remain yours.</p>}
-    {benefits.data?.items.map(b=><article className="bm-flow-card" key={b.benefit_id}><h3>{b.title}</h3><p>{b.description}</p><p>{b.cost_points} points</p><Button disabled={!b.available||!r.data||r.data.account.available<b.cost_points} onClick={event=>{returnFocus.current=event.currentTarget;key.current=null;setSelected(b)}}>Review benefit</Button></article>)}</section>
-    {selected&&<Dialog title="Reserve this benefit" description={`${selected.title} costs ${selected.cost_points} points. The server checks balance and inventory before reserving.`} returnFocus={returnFocus} open onOpenChange={open=>{if(!open)setSelected(null)}}><Button pending={busy} onClick={reserve}>Confirm reservation</Button></Dialog>}
-    <p role="status">{message}</p><section><h2 className="bm-section-title">Reservation status</h2><ResourceState {...reservations} retry={reservations.reload}/>{reservations.data?.items.map(v=><p key={v.reservation_id}>{v.state}{v.release_reason?` — ${v.release_reason}`:''}</p>)}</section>
-  </div>
+interface Entry {
+  entry_id: string
+  points: number
+  kind: string
+  state: string
+  rule_id: string
+  reason: string | null
+  evidence_refs: string[]
+  reverses_entry_id: string | null
+}
+interface Summary {
+  account: {
+    available: number
+    reserved: number
+    lifetime_earned: number
+    recovery_due: number
+  }
+  points_are: string
+  entries: { items: Entry[] }
+  badges: {
+    badge_id: string
+    title: string
+    criteria: string
+    earned: boolean
+    evidence_refs: string[]
+  }[]
+  next_milestone: { text: string } | null
+  recovery_policy: string
+}
+interface Benefit {
+  benefit_id: string
+  title: string
+  description: string
+  cost_points: number
+  available: boolean
+}
+export function Rewards() {
+  const r = useResource<Summary>('/rewards'),
+    benefits = useResource<{ items: Benefit[] }>('/benefits'),
+    reservations = useResource<{
+      items: {
+        reservation_id: string
+        state: string
+        release_reason: string | null
+      }[]
+    }>('/rewards/reservations')
+  const [selected, setSelected] = useState<Benefit | null>(null),
+    [busy, setBusy] = useState(false),
+    [message, setMessage] = useState(''),
+    keys = useRef(new Map<string, string>())
+  const returnFocus = useRef<HTMLElement | null>(null)
+  const reservationHeading = useRef<HTMLHeadingElement | null>(null)
+  async function reserve() {
+    if (!selected) return
+    setBusy(true)
+    try {
+      if (!keys.current.has(selected.benefit_id))
+        keys.current.set(selected.benefit_id, crypto.randomUUID())
+      await command(
+        `/benefits/${selected.benefit_id}/reservations`,
+        {},
+        { key: keys.current.get(selected.benefit_id) },
+      )
+      keys.current.delete(selected.benefit_id)
+      setMessage('Benefit reserved. Fulfillment is shown separately.')
+      returnFocus.current = reservationHeading.current
+      setSelected(null)
+      r.reload()
+      reservations.reload()
+      benefits.reload()
+    } catch (e) {
+      setMessage(explainError(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="bm-flow-stack">
+      <ResourceState {...r} retry={r.reload} />
+      {r.data && (
+        <>
+          <section className="bm-flow-card">
+            <h2 className="bm-section-title">
+              Useful contributions, recognized.
+            </h2>
+            <dl className="bm-facts">
+              <dt>Available points</dt>
+              <dd>{r.data.account.available}</dd>
+              <dt>Reserved</dt>
+              <dd>{r.data.account.reserved}</dd>
+              <dt>Lifetime earned</dt>
+              <dd>{r.data.account.lifetime_earned}</dd>
+              <dt>Recovery due</dt>
+              <dd>{r.data.account.recovery_due}</dd>
+            </dl>
+            <p>{r.data.points_are}</p>
+            {r.data.next_milestone && <p>Next: {r.data.next_milestone.text}</p>}
+          </section>
+          <section>
+            <h2 className="bm-section-title">Your badges</h2>
+            <div className="bm-choice-grid">
+              {r.data.badges.map((b, i) => (
+                <article key={b.badge_id} className="bm-flow-card">
+                  <svg
+                    className="bm-badge-art"
+                    viewBox="0 0 64 64"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M32 4 54 17 54 45 32 60 10 45 10 17Z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <circle
+                      cx="32"
+                      cy="29"
+                      r={9 + i}
+                      fill="none"
+                      stroke="currentColor"
+                    />
+                    <path
+                      d="M23 40 32 25 41 40M22 45H42"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                  <h3>{b.title}</h3>
+                  <p>{b.earned ? 'Earned' : 'Not earned yet'}</p>
+                  <p>{b.criteria}</p>
+                  <details>
+                    <summary>View evidence</summary>
+                    <ul>
+                      {b.evidence_refs.map((e) => (
+                        <li key={e}>{e}</li>
+                      ))}
+                    </ul>
+                  </details>
+                </article>
+              ))}
+            </div>
+          </section>
+          <section className="bm-flow-card">
+            <h2 className="bm-section-title">Point history</h2>
+            {r.data.entries.items.length === 0 ? (
+              <p>No contributions have settled yet.</p>
+            ) : (
+              <ul>
+                {r.data.entries.items.map((e) => (
+                  <li key={e.entry_id}>
+                    {e.points} points · {e.kind} · {e.state} ·{' '}
+                    {e.rule_id.replaceAll('_', ' ')}
+                    {e.reverses_entry_id ? ' · linked reversal' : ''}
+                    {e.reason ? ` · ${e.reason}` : ''}
+                    <details>
+                      <summary>Evidence</summary>
+                      <ul>
+                        {e.evidence_refs.map((ref) => (
+                          <li key={ref}>{ref}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="bm-support">{r.data.recovery_policy}</p>
+          </section>
+        </>
+      )}
+      <section>
+        <h2 className="bm-section-title">Benefits</h2>
+        <ResourceState {...benefits} retry={benefits.reload} />
+        {benefits.data?.items.length === 0 && (
+          <p>No benefits are available right now. Your points remain yours.</p>
+        )}
+        {benefits.data?.items.map((b) => (
+          <article className="bm-flow-card" key={b.benefit_id}>
+            <h3>{b.title}</h3>
+            <p>{b.description}</p>
+            <p>{b.cost_points} points</p>
+            <Button
+              disabled={
+                !b.available ||
+                !r.data ||
+                r.data.account.available < b.cost_points
+              }
+              onClick={(event) => {
+                returnFocus.current = event.currentTarget
+                setMessage('')
+                setSelected(b)
+              }}
+            >
+              Review benefit
+            </Button>
+          </article>
+        ))}
+      </section>
+      {selected && (
+        <Dialog
+          title="Reserve this benefit"
+          description={`${selected.title} costs ${selected.cost_points} points. The server checks balance and inventory before reserving.`}
+          returnFocus={returnFocus}
+          open
+          onOpenChange={(open) => {
+            if (!open && !busy) setSelected(null)
+          }}
+        >
+          <Button pending={busy} onClick={reserve}>
+            Confirm reservation
+          </Button>
+          <p role="status">{message}</p>
+        </Dialog>
+      )}
+      <p role="status">{message}</p>
+      <section>
+        <h2 ref={reservationHeading} tabIndex={-1} className="bm-section-title">
+          Reservation status
+        </h2>
+        <ResourceState {...reservations} retry={reservations.reload} />
+        {reservations.data?.items.map((v) => (
+          <p key={v.reservation_id}>
+            {v.state}
+            {v.release_reason ? ` — ${v.release_reason}` : ''}
+          </p>
+        ))}
+      </section>
+    </div>
+  )
 }

@@ -47,6 +47,9 @@ async function boundedBody(stream: ReadableStream<Uint8Array> | null, limit: num
 
 export async function proxyGateway(request: Request, parts: string[],
   env: Record<string, string | undefined>, fetchImpl: typeof fetch = fetch): Promise<Response> {
+  // Next route parameters can retain URL escapes. Decode once, then validate each segment.
+  try { parts = parts.map(part => decodeURIComponent(part)) }
+  catch { return problem(404, 'not_found', 'This service is not available.') }
   const catalogId = parts.length === 3 && parts[0] === 'catalog' && parts[1] === 'products'
   if (!parts.length || !ROOTS.has(parts[0]) || parts.some((p,i) => !(catalogId && i === 2
     ? /^[a-zA-Z0-9_-]{1,80}:[a-zA-Z0-9_-]{1,128}$/.test(p) : /^[a-zA-Z0-9_-]{1,128}$/.test(p))))

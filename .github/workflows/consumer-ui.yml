@@ -36,7 +36,9 @@ jobs:
       - name: Consumer and console production builds
         run: pnpm --dir brandme-frontend build && pnpm --dir brandme-console build
       - name: Install pinned browser
-        run: pnpm --dir brandme-frontend exec playwright install --with-deps chromium
+        # Ubuntu 24.04 runners already provide Chromium's required shared libraries.
+        # Browser launch remains mandatory; avoid unrelated apt/font upgrades on each run.
+        run: pnpm --dir brandme-frontend exec playwright install chromium
       - name: Start development galleries
         run: |
           mkdir -p "$BRANDME_EVIDENCE_DIR"
@@ -95,7 +97,7 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install --require-hashes -r scripts/python/requirements.lock
           ln -s "$GITHUB_WORKSPACE/brandme-gateway/node_modules" "$BRANDME_DOMAIN_REFERENCE/brandme-gateway/node_modules"
-          pnpm --dir brandme-frontend exec playwright install --with-deps chromium
+          pnpm --dir brandme-frontend exec playwright install chromium
       - name: Start unchanged domain sources with real emulator persistence
         run: |
           mkdir -p "$BRANDME_EVIDENCE_DIR"
