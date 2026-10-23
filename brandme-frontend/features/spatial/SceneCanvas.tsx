@@ -1,6 +1,6 @@
 "use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as T from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { CameraRig } from "./CameraRig";
@@ -225,20 +225,6 @@ function PhotoObject({
     </mesh>
   ) : null;
 }
-function ContextLoss({ onFallback }: { onFallback: (reason: string) => void }) {
-  const gl = useThree((s) => s.gl);
-  useEffect(() => {
-    const lost = (event: Event) => {
-      event.preventDefault();
-      onFallback(
-        "Graphics were interrupted. Simple View keeps every item and action available.",
-      );
-    };
-    gl.domElement.addEventListener("webglcontextlost", lost);
-    return () => gl.domElement.removeEventListener("webglcontextlost", lost);
-  }, [gl, onFallback]);
-  return null;
-}
 function Monitor({
   tier,
   onDowngrade,
@@ -298,6 +284,19 @@ export default function SceneCanvas({
     [active, setActive] = useState(true),
     [stats, setStats] = useState("Loading room");
   const host = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    // Capture on the DOM host before the asynchronous renderer mounts. A
+    // listener inside the scene misses context loss during initialization.
+    const element = host.current;
+    const lost = (event: Event) => {
+      event.preventDefault();
+      onFallback(
+        "Graphics were interrupted. Simple View keeps every item and action available.",
+      );
+    };
+    element?.addEventListener("webglcontextlost", lost, true);
+    return () => element?.removeEventListener("webglcontextlost", lost, true);
+  }, [onFallback]);
   useEffect(() => {
     setTier(
       innerWidth >= 1100 ? "desktop" : innerWidth >= 700 ? "standard" : "entry",
@@ -324,8 +323,8 @@ export default function SceneCanvas({
       )
       .filter((i) => {
         const a = assets.find((a) => a.slug === i.assetSlug);
-        const display = i.placement.semanticGroup === "shelf.folded"
-          ? a?.folded ?? a : a;
+        const display =
+          i.placement.semanticGroup === "shelf.folded" ? (a?.folded ?? a) : a;
         calls += display?.drawCalls ?? 1;
         triangles += display?.triangleCount ?? 2;
         return (
@@ -393,8 +392,10 @@ export default function SceneCanvas({
         {shown.map((item) => {
           const a = assets.find((a) => a.slug === item.assetSlug);
           const p = item.placement;
-          const modelUrl = p.semanticGroup === "shelf.folded" && a?.folded
-            ? a.folded.glb : a?.lowGlb;
+          const modelUrl =
+            p.semanticGroup === "shelf.folded" && a?.folded
+              ? a.folded.glb
+              : a?.lowGlb;
           return (
             <group
               key={item.id}
@@ -434,7 +435,6 @@ export default function SceneCanvas({
             </group>
           );
         })}
-        <ContextLoss onFallback={onFallback} />
         <CameraRig
           room={room}
           view={namedView}

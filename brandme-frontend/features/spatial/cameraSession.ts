@@ -1,3 +1,4 @@
+import { poseAnchor } from "./poseGeometry";
 export type CameraState =
   | "not_started"
   | "permission_requested"
@@ -20,6 +21,7 @@ export class CameraSession {
   private timer?: ReturnType<typeof setInterval>;
   private deadline?: ReturnType<typeof setTimeout>;
   private generation = 0;
+  private frameDeadline?: ReturnType<typeof setTimeout>;
   private inFlight = false;
   private smooth?: OverlayAnchor;
   private visibility = () => {
@@ -64,6 +66,15 @@ export class CameraSession {
         return;
       }
       this.stream = stream;
+      stream.getVideoTracks().forEach((track) =>
+        track.addEventListener(
+          "ended",
+          () => {
+            if (this.stream === stream) this.stop();
+          },
+          { once: true },
+        ),
+      );
       this.video.srcObject = stream;
       await this.video.play();
       if (generation !== this.generation) return;
@@ -75,7 +86,7 @@ export class CameraSession {
           "Local tracking took too long to start. Your camera was stopped.",
         );
       }, 15000);
-      this.worker = new Worker(new URL("./pose.worker.ts", import.meta.url));
+      this.worker = new Worker("/demo/vision/pose-worker.js");
       this.worker.onmessage = (event) => {
         if (generation !== this.generation) return;
         const m = event.data;
@@ -89,10 +100,16 @@ export class CameraSession {
         }
         if (m.type === "pose") {
           this.inFlight = false;
-          this.update(m.landmarks);
+          clearTimeout(this.frameDeadline);
+          if (m.count > 1) {
+            this.smooth = undefined;
+            this.pose(null);
+            this.state("low_confidence", "Keep just one person in view.");
+          } else this.update(m.landmarks);
         }
       };
       this.worker.onerror = () => {
+        if (generation !== this.generation) return;
         this.stop();
         this.state(
           "unsupported",
@@ -126,57 +143,42 @@ export class CameraSession {
         const bitmap = await createImageBitmap(this.video);
         if (generation !== this.generation || !this.worker) {
           bitmap.close();
-          this.inFlight = false;
           return;
         }
+        this.frameDeadline = setTimeout(() => {
+          this.stop();
+          this.state(
+            "unsupported",
+            "Tracking stopped responding. Your camera was stopped.",
+          );
+        }, 5000);
         this.worker.postMessage(
           { type: "frame", bitmap, timestamp: performance.now() },
           [bitmap],
         );
       } catch {
-        this.inFlight = false;
+        if (generation === this.generation) this.inFlight = false;
       }
     }, 50);
   }
   private update(points: { x: number; y: number; visibility?: number }[]) {
     if (!points.length) {
+      this.smooth = undefined;
       this.pose(null);
       this.state("lost");
       return;
     }
-    const [left, right, hipL, hipR] = [
-      points[11],
-      points[12],
-      points[23],
-      points[24],
-    ];
-    if (
-      !left ||
-      !right ||
-      !hipL ||
-      !hipR ||
-      [left, right, hipL, hipR].some((p) => (p.visibility ?? 0) < 0.65)
-    ) {
+    const next = poseAnchor(
+      points,
+      this.video.videoWidth || 640,
+      this.video.videoHeight || 480,
+    );
+    if (!next) {
+      this.smooth = undefined;
       this.pose(null);
       this.state("low_confidence");
       return;
     }
-    const next = {
-      x: 1 - (left.x + right.x) / 2,
-      y: (left.y + right.y) / 2,
-      width: Math.min(0.7, Math.max(0.1, Math.abs(left.x - right.x) * 1.7)),
-      height: Math.min(
-        0.8,
-        Math.max(0.1, (hipL.y + hipR.y - left.y - right.y) * 0.65),
-      ),
-      angle: Math.max(
-        -0.45,
-        Math.min(
-          0.45,
-          Math.atan2(right.y - left.y, Math.abs(right.x - left.x)),
-        ),
-      ),
-    };
     if (this.smooth)
       for (const key of ["x", "y", "width", "height", "angle"] as const) {
         const delta = Math.max(
@@ -193,6 +195,7 @@ export class CameraSession {
     this.generation++;
     clearInterval(this.timer);
     clearTimeout(this.deadline);
+    clearTimeout(this.frameDeadline);
     this.timer = undefined;
     this.worker?.postMessage({ type: "stop" });
     this.worker?.terminate();

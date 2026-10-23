@@ -10,11 +10,13 @@ export function ModelPreview({
   asset,
   roomAR = false,
   verifiedDevice = false,
+  deviceTest = false,
   onError,
 }: {
   asset: Asset;
   roomAR?: boolean;
   verifiedDevice?: boolean;
+  deviceTest?: boolean;
   onError: (message: string) => void;
 }) {
   const host = useRef<HTMLDivElement>(null),
@@ -48,7 +50,8 @@ export function ModelPreview({
           "camera-orbit": "8deg 86deg auto",
         }))
           element.setAttribute(key, value);
-        if (roomAR && verifiedDevice) element.setAttribute("ar", "");
+        if (roomAR && (verifiedDevice || deviceTest))
+          element.setAttribute("ar", "");
         const loaded = () => {
           setReady(true);
           setCapable(isSecureContext && element.canActivateAR);
@@ -92,9 +95,15 @@ export function ModelPreview({
       live = false;
       cleanup();
     };
-  }, [asset, roomAR, verifiedDevice, onError]);
+  }, [asset, roomAR, verifiedDevice, deviceTest, onError]);
   async function startAR() {
-    if (!ready || !capable || !verifiedDevice || !viewer.current) return;
+    if (
+      !ready ||
+      !capable ||
+      (!verifiedDevice && !deviceTest) ||
+      !viewer.current
+    )
+      return;
     try {
       sessionStorage.setItem(
         "brandme.ar.return",
@@ -121,12 +130,19 @@ export function ModelPreview({
             this is not body try-on.
           </p>
           <button
-            disabled={!ready || !capable || !verifiedDevice}
+            disabled={!ready || !capable || (!verifiedDevice && !deviceTest)}
             onClick={() => void startAR()}
           >
-            Place in my room
+            {deviceTest ? "Test native room placement" : "Place in my room"}
           </button>
-          {!verifiedDevice && (
+          {deviceTest && (
+            <p className={styles.notice}>
+              Development device test. Native AR is unverified; record the
+              result before any capability activation. No calibrated scale
+              claim.
+            </p>
+          )}
+          {!verifiedDevice && !deviceTest && (
             <p className={styles.notice}>
               Native room placement has not been verified for this device in
               this build. Quick Look, Scene Viewer and WebXR remain gated until

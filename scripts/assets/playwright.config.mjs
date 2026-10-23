@@ -17,14 +17,13 @@ export default defineConfig({
     [
       "json",
       {
-        outputFile: path.join(
-          root,
-          "scripts/assets/evidence/browser-results.json",
-        ),
+        outputFile: path.resolve(root,
+          process.env.SPATIAL_EVIDENCE_FILE || "scripts/assets/evidence/browser-results.json"),
       },
     ],
   ],
-  outputDir: path.join(root, "scripts/assets/evidence/runs"),
+  outputDir: path.resolve(root,
+    process.env.SPATIAL_RUN_DIR || "scripts/assets/evidence/runs"),
   use: {
     baseURL: "http://127.0.0.1:4178",
     viewport: { width: 1440, height: 900 },

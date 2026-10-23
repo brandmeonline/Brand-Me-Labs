@@ -40,6 +40,20 @@
             "optional": true
           }
         }
+      },
+      "next@15.5.28": {
+        "peerDependencies": {
+          "@types/react": "^19.0.0",
+          "@types/react-dom": "^19.0.0"
+        },
+        "peerDependenciesMeta": {
+          "@types/react": {
+            "optional": true
+          },
+          "@types/react-dom": {
+            "optional": true
+          }
+        }
       }
     }
   }

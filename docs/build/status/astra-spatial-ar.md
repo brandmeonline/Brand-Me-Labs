@@ -274,3 +274,143 @@ Restored implementation:
 - PR **#36 remains open, draft and mergeable**, against `docs/brandme-full-experience-2026-10-05`. The five toolchain files plus this lane status are the entire repair. No implementation upload remains outstanding, and no lane logic, test, compiler configuration, asset or other-lane manifest changed. This receipt is a documentation-only follow-up; its own push-triggered regression must also be checked at the latest branch head before reporting completion.
 - Precise next owned feature remains **shoe-shelf collision admission** described in Stage 11: shared availability checks for add/move/destination UI using existing authored bounds, preservation of existing layouts, rejection of overlapping new placements, separated-slot or Unplaced alternatives, and transaction/idempotency/concurrency tests. Do not regenerate completed assets or resume the already completed toolchain repair.
 - Foundation/API/domain integration and native-device/provider gates remain explicit and open. Calibrated fit remains unavailable; OutfitEditor v1 is preserved. No PR was merged and no deployment occurred.
+
+### Stage 15 — founder ultra-plan execution (2026-10-23, in progress)
+
+- Resumed the attached founder brief at verified remote `a78433d66e8c41963abd1f62f810f920ecdc6ee1`, using an isolated worktree. PR #36 remains draft. Existing assets and the completed CI repair are preserved.
+- Ordered scope: reviewable guest asset/editor/try-on milestone; actual local pose inference; dev photo-provider job flow; measurement/calibration preparation; native device-session protocol. No production activation, user photos, merge, or deployment.
+- Implementing authored-bound shoe-shelf admission in repository and destination UI first. Existing layouts are preserved. New checks will cover failed-write immutability, retries, idempotency and concurrent reservations.
+- Pose default: same-origin, pinned MediaPipe 0.10.35 runtime with version-1 lite model; an original AI-generated synthetic adult is the only person-image fixture. Runtime/model payloads are reproducibly downloaded for dev, hash checked, and excluded from source until model redistribution terms are confirmed. No real-device or population accuracy claim.
+- Credential manifest: none created yet. Local inference needs no credential. Photo-provider credentials, if acquired, will be dev-only and server-only; values never belong in this file.
+- This checkpoint is not completion evidence. Tests, provider access and device measurements remain pending; final receipts will supersede it.
+
+### Stage 16 — implemented development boundary and review findings (2026-10-23)
+
+- Shoe-shelf admission now uses the original authored bounds, placement quaternion/scale and 1 cm horizontal clearance. The repository's atomic add/move and destination UI share the same check. Existing layouts are not rewritten. Separated destinations and Unplaced remain usable; failed writes, inverse Undo, replay and concurrent reservations are exercised. This is not general packing or shelf-edge validation.
+- Local pose inference is real: a same-origin classic worker runs pinned MediaPipe `0.10.35` with `pose_landmarker_lite/float16/1` on CPU. Runtime archive SHA-512 and model SHA-256 are checked by `scripts/assets/prepare-vision.py`. All six downloaded payloads remain gitignored. Four original GLBs were exported as transparent front overlays with hanger meshes removed; original room/garment binaries were not regenerated. Only upper-body garments are supported. There is no arm occlusion, rigging, body measurement, calibrated size or fit claim.
+- Camera startup is explicit; backgrounding, exit, late permission resolution, stream ending and worker errors stop tracks. Tracking has a frame timeout and hides the overlay on absent, ambiguous or low-confidence landmarks. The test uses a synthetic canvas video stream through the actual camera/worker UI, then verifies track shutdown. Frames and landmarks are not uploaded.
+- The local-only photo adapter targets Google's `virtual-try-on-001:predict` API. It requires a dev project, server token, region and retention disclosure before exposing upload controls. It accepts only the SHA-matching synthetic fixture and four original garment overlays. Explicit consent, same-origin mutations, HttpOnly owner session, bounded input/output, no redirects, single image per call, a persistent 10-attempt/day budget and operation-id replay protection precede external submission. Budget reservations survive process restart; timeouts are unknown outcomes with no automatic retry/refund. Inputs are not persisted; outputs are memory-only for 24 hours or process lifetime. Saving is browser-local. Deletion removes linked guest closet references before the saved media; provider-side erasure is never promised. Lost status polling releases the busy UI without submitting another job.
+- **Photo evidence is conformance evidence using an injected provider double. No live Google generation, account access, regional availability, actual retention agreement, price or quota has been verified.** No Google Cloud connector, CLI credentials or configured project/token was available in this session. The adapter remains disabled. This is the precise remaining external integration gate, not a completed live provider demo.
+- Measurement preparation accepts three independent readings for height, chest, waist, hip, shoulder width and inseam in centimeters; rejects nonfinite/out-of-range inputs or spread over 2 cm; exports only on user action and clears on exit. Median values and a minimum 1 cm uncertainty are preparation heuristics, not validated error estimates. A separate versioned garment comparison propagates uncertainty without returning a fit verdict. Synthetic test arithmetic: chest 100 cm ±1 cm and garment 108 cm ±0.5 cm gives an ease interval [6.5, 9.5] cm. **There is no physical fit-accuracy evidence yet.** Calibrated fit stays unavailable.
+- Native AR has a dedicated development device-session route, disabled unless the explicit development mode and server flag are set. It records device/build/asset context and operator-entered outcome with `approval: false`. Normal room placement remains unverified and disabled. A device-test launch does not promote capability state.
+- The first full new regression passed 45/46. Context-loss handling was attached after renderer startup; the failing test caught the missing recovery window. Recovery now listens in the host's capture phase before the asynchronous renderer initializes. No assertion was removed. Integrated Next compilation then exposed the legacy object-or-Promise params declaration in three owned dynamic routes; they now use Next 15's Promise contract. Further build/test results and the publication receipt follow below.
+
+#### Credential manifest — values deliberately excluded
+
+| Name | Scope | Storage | Created / status (UTC) |
+|---|---|---|---|
+| Local MediaPipe inference | On-device development | No credential | 2026-10-23: none required |
+| `BRANDME_VERTEX_ACCESS_TOKEN` | Intended short-lived token for a dedicated dev project only | Server process environment or gitignored `brandme-frontend/.env.local`; never `NEXT_PUBLIC_*` | 2026-10-23: **not created / unavailable** |
+| `BRANDME_PHOTO_DEV_PROJECT`, `BRANDME_PHOTO_DEV_REGION` | Dev project and explicit allowed region | Same server-only local configuration | 2026-10-23: unconfigured; default region `us-central1` is not an availability assertion |
+| `BRANDME_PHOTO_RETENTION_NOTICE` | Actual provider/account retention disclosure | Server-only local configuration, displayed before consent | 2026-10-23: unconfigured; do not invent terms |
+
+No new secret was created, committed, logged, or sent to a browser. Once dev access exists, record credential name/scope/storage/creation date here, test revocation, and rotate it after the session. Do not raise the attempt limit or enable production automatically.
+
+#### Reproduce the development evidence
+
+Use the root-pinned Node 20–24 / pnpm `10.34.6` environment, `pnpm install --frozen-lockfile`, and the existing isolated asset-tool install described above. Do not regenerate the completed assets.
+
+```bash
+python scripts/assets/prepare-vision.py
+node scripts/assets/validate.mjs
+node scripts/assets/node_modules/typescript/bin/tsc -p scripts/assets/tsconfig.json
+node scripts/assets/node_modules/@playwright/test/cli.js install chromium
+SPATIAL_EVIDENCE_FILE=scripts/assets/evidence/ultra-browser-results.json node scripts/assets/node_modules/@playwright/test/cli.js test -c scripts/assets/playwright.config.mjs
+pnpm -C brandme-frontend exec next build
+CI=true REGRESSION_TIMEOUT=900 bash scripts/regression/run_all.sh
+```
+
+The full browser suite requires the explicit model preparation step; ordinary module CI does not download or execute the model. Tests cover the actual guest components in Vite. Next build/API smoke results are separately identified, not substituted for an authenticated foundation/domain journey. The `SPATIAL_RUN_DIR` override can keep transient traces outside the worktree.
+
+To exercise a real photo dev request after access is supplied, configure the four server variables above and `BRANDME_PHOTO_DEV_ENABLED=1`, restart a **loopback-only** development server, open `/try/overshirt`, select Photo try-on, download/reselect the supplied synthetic PNG, inspect the disclosure, consent and submit once. Record model/region, request UTC, end-to-end latency, completion/error, actual output dimensions and whether browser save → closet reference → refresh → deletion works. Never include token values or real-person images in the evidence. Confirm that denial, timeout, duplicate operation and budget exhaustion do not send an extra request. The counter lives in gitignored `scripts/assets/.photo-dev/`; do not delete it to bypass the daily cap. This adapter is single-process local development, not a hosted upload service.
+
+Sources used for the pinned integrations: [MediaPipe Pose Landmarker web documentation](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/web_js), [versioned model source](https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task), and [Google Virtual Try-On request documentation](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/capabilities/generate-virtual-try-on-images). The runtime package declares Apache-2.0; model redistribution terms still need confirmation before shipping downloaded payloads. Original demo asset rights and synthetic-input provenance are committed separately.
+
+#### One-sitting native-device protocol
+
+Prepare before the founder arrives: install pinned dependencies and model files, validate assets, record `git rev-parse HEAD`, and arrange a development host with a certificate already trusted by both devices. The installed Next 15 CLI supports the following flags; certificate files are local secrets and must not be committed:
+
+```bash
+NEXT_PUBLIC_BRANDME_MODE=development BRANDME_AR_DEVICE_TEST=1 \
+  pnpm -C brandme-frontend exec next dev --hostname 0.0.0.0 --port 3000 \
+  --experimental-https --experimental-https-key /absolute/private/dev-key.pem \
+  --experimental-https-cert /absolute/private/dev-cert.pem
+```
+
+Keep the server on a trusted private test network, with photo-provider variables absent. Confirm each phone opens `https://<dev-host>:3000/try/device-test` without a certificate warning and reports a secure context. An untrusted self-signed certificate is not a completed setup. No production build enables this route's test controls.
+
+Bring one AR-capable iPhone/iPad with Safari and one ARCore-capable Android with Chrome/Google Play Services for AR, charged, plus a helper, tape measure, known 1 m reference and a clear well-lit floor. Record exact hardware, OS/browser versions, selected native viewer and commit. Reserve approximately 45 minutes for the native checks; measurements are a separate approximately 30-minute segment if done in the same sitting.
+
+| Session step | Observable result / evidence |
+|---|---|
+| Open normal `/try/overshirt`, inspect and rotate | GLB loads, approximate fidelity is visible, normal native capability remains unverified |
+| Open device-test route, enter device details, begin | Original model loads; supported devices expose the explicitly labeled test launch |
+| iOS Quick Look and Android Scene Viewer/WebXR | Record which viewer actually opened; place on floor; capture cold-start and first-placement times; repeat three times |
+| Cancel, return, background, deny permission | Original item/revision context remains available; no accidental closet mutation; camera indicator stops after exit; usable image/3D fallback on denial |
+| Unsupported device / offline model fetch | Clear failure or disabled state, with usable return path; no infinite spinner or implied success |
+| Compare to the 1 m reference | Record observed dimensions and relative error; retain approximate scale regardless of one successful placement |
+| Export and finish | Download the evidence JSON, attach an operator recording and timing sheet, stop the dev server and remove the test flag |
+
+A pass requires the exact device/viewer/build's three successful launches and returns, denied/unsupported recovery, no context loss or unwanted camera persistence, plus review of the recording. Evidence alone does not enable public AR: an explicit reviewed capability mapping is a later change. Native timing, accuracy and camera-release claims remain **unmeasured** until this session occurs.
+
+#### Measurement and fit evidence needed from that session
+
+Collect 18 independent centimeter readings (three each: barefoot height, chest, natural waist, fullest hip, shoulder landmark width, and a documented inseam method), releasing/repositioning the tape each time. Use a helper and record method, instrument resolution, date and repeat spread. Keep personal values in the private export; do not put them in this repository. For one physically available upper-body garment, record exact maker/model/size/revision, three flat chest/waist/hem and shoulder/length measurements, seam allowances/method, material composition/stretch, and any licensed pattern or supplier size specification. A trouser inseam is a garment proxy and must not be mislabeled as body ground truth.
+
+Next compare repeated body and garment measurements with uncertainty, then collect consented observed comfort/mobility/ease outcomes (standing, seated, arm raise) and repeat measurements by a second operator if available. Report absolute measurement error against that reference and agreement with physical outcomes. A single founder session cannot establish population-level fit accuracy; no size recommendation, drape simulation or P4 designation is unlocked by repeatability alone.
+
+#### Founder check-in — 21 questions with working defaults
+
+Direction (1–7):
+
+1. Should the next review target be the guest closet and honest development preview milestone? **Default:** yes; keep authenticated/domain rollout as a separate foundation integration.
+2. Should live overlay remain an approximate visual aid while fit is unavailable? **Default:** yes; preserve the visible fidelity labels and no size recommendation.
+3. Which garment scope should lead? **Default:** the four original upper-body garments; broaden only after pose/device evidence.
+4. Should shoe-shelf admission remain bounded while broader packing is designed? **Default:** yes; preserve existing layouts and use Unplaced for overflow.
+5. Should local inference remain the first pose strategy? **Default:** yes; avoid frame uploads and benchmark CPU/device limits before a cloud alternative.
+6. What should a generated image become in the closet? **Default:** a deletable P0 Want reference, without ownership, authenticity or fit claims.
+7. What quality target should drive the next pose iteration? **Default:** target stable 15–30 Hz on named devices with explicit loss recovery; do not claim that target from this CPU fixture run.
+
+Integration and security (8–14):
+
+8. Which dev provider access should be connected next? **Default:** an existing dedicated Google Cloud dev project with Virtual Try-On access and a short-lived, least-privilege server token; if unavailable, keep the adapter disabled while selecting an accessible dev equivalent.
+9. Which provider production tier should be used? **Default:** none yet; decide only after the real dev run, terms, regional availability, actual pricing and budget review.
+10. Should photo testing remain restricted to the synthetic fixture? **Default:** yes; no real user photos or production records in this lane.
+11. What is the initial spending limit? **Default:** retain ten attempts per UTC day, one output per call and no automatic retry; set an account-level dev budget once pricing is verified.
+12. Where should provider credentials live and when should they rotate? **Default:** server environment/gitignored local configuration for this dev session, short lifetime and rotation afterward; record metadata only in the manifest.
+13. What retention and deletion promises should the UI make? **Default:** only the actual account/provider terms plus the tested app-local deletion behavior; never imply provider deletion from cancellation.
+14. Should pose payloads be included in distributable builds now? **Default:** no; retain hash-pinned local downloads until model terms and the intended distribution are reviewed.
+
+Scope and sequencing (15–21):
+
+15. Can we run the prepared native session on both iOS and Android? **Default:** one 45-minute sitting with the devices, trusted HTTPS, helper and known-size reference listed above; if only one is available, approve evidence only for that exact tested path.
+16. Can the founder supply the 18 readings and one physical garment described above? **Default:** add a separate 30-minute measurement segment, keep values private, and leave calibrated fit disabled until physical outcomes validate the method.
+17. Should the final browser suite run after every capability change? **Default:** yes; preserve all previous scenarios and add coverage for new failures rather than replace the baseline.
+18. What comes next if provider access is delayed? **Default:** publish the tested development boundary and continue device/accessibility work; do not label the provider integration live.
+19. When should this lane join authenticated storage and the product shell? **Default:** after foundation's client/token contract lands; retain guest adapter isolation until an end-to-end authenticated test passes.
+20. Which manual accessibility checks should follow? **Default:** 200% zoom, VoiceOver/NVDA, keyboard-only flow and physical touch on the two test devices.
+21. What should happen after code-review readiness? **Default:** request review with external gates explicit; no automatic merge, deployment or public AR/photo/fit activation.
+
+Priority decisions and next steps under plausible answers:
+
+| Priority question | Answer | Next action |
+|---|---|---|
+| 1 — review target | Guest development milestone | Review the bounded PR with measured local evidence and external gates listed |
+| 1 — review target | Authenticated launch required | Keep public release gated; join foundation's real repository/API and test identity, refresh and cross-device persistence before launch |
+| 1 — review target | Narrower asset/editor release | Separate the tested development integrations into a follow-up review while preserving their work |
+| 8 — dev provider | Google dev access supplied | Configure server-only access, record credential metadata, run one synthetic request and measure the actual end-to-end result |
+| 8 — dev provider | A different accessible dev provider | Verify its official schema/terms, implement a provider-specific adapter and repeat the same consent/cap/idempotency/deletion tests before a live test |
+| 8 — dev provider | No dev access yet | Keep the upload surface disabled; retain conformance evidence and continue native/accessibility work |
+| 15 — device session | Both platforms available | Run the prepared matrix in one sitting and collect independent results per device/viewer |
+| 15 — device session | Only one platform available | Validate only that exact device/path; retain the other platform's unverified gate |
+| 15 — device session | No hardware available | Keep native activation gated, retain the protocol/build and continue browser validation without fabricating device results |
+
+### Stage 17 — final browser evidence and build closure (2026-10-23)
+
+- Final full browser run after the Next authority correction: **47 passed, zero failed/skipped/flaky**, 315.5 seconds, pinned Chromium 141. All 36 earlier cases are retained alongside collision admission, real local pose inference, photo service/UI/restart handling and measurement/device gates. Report: `scripts/assets/evidence/ultra-browser-results.json`. A focused 5/5 recheck had already verified context-loss recovery and photo operations after the fixes.
+- The actual local model produced 33 landmarks on the synthetic fixture and zero poses on a blank frame. Warm inference across 11 timed samples: **87.5 ms median / 189.8 ms p95** on this container's CPU. Eight coarse landmark annotations gave 23.64 px mean error and 8/8 within a 64.512 px tolerance (15% of the approximate torso length); annotation uncertainty is 20 px. This is a reproducible single-fixture alignment check, not population accuracy, native-camera accuracy, physical measurement or fit evidence. The 15–30 Hz device target is **not met or established** by this run. Raw samples/landmarks and limits are in `pose-inference.json`; the actual overlay screenshot is `pose-preview.png` and was visually inspected.
+- Asset validation passes all 36 required paths / 12 original manifests, four additional original PNG overlays, the synthetic fixture's hash/provenance/coarse annotations, and all six locally downloaded pose payloads. `ultra-asset-validation.json` records the distinction. The downloaded runtime/model remain excluded from the source tree. Isolated owned-component TypeScript and `git diff --check` pass.
+- A fresh root frozen install reproduces the integrated build's remaining React type-resolution conflict: Next's own declarations resolve the workspace-hoisted React/DOM 18 types, while this frontend uses React/DOM 19. The existing toolchain repair is extended with optional React/DOM 19 type peers scoped only to `next@15.5.28`, matching the already-used R3F peer technique. No runtime version, compiler setting, assertion or console React 18 dependency is changed. The three owned dynamic routes also use Next 15's Promise params contract. Final frozen install, Next build and module regression results are recorded after verification; no success is inferred from a compiling bundle alone.
+- Earlier local verification attempts with temporary dependency links failed from missing sibling-module dependencies and, separately, a concurrent build replacing generated `.next` types. A genuine five-importer frozen install replaced the root/frontend links; final build and module checks are run sequentially. The transient dependency setup failure is not represented as a product regression or hidden as a passed run.
+- Integrated verification now passes: root frozen install; the complete Next 15.5.28 production build (bundle, type validity, static generation and traces); all **11 Module Regression modules**; and a real built-server Chromium/API smoke with zero browser errors. The smoke hydrates `/closet` and `/try/overshirt`, confirms photo capabilities disabled and POST 503 with no chooser, confirms live camera remains disabled in production, and confirms `/try/device-test` cannot begin a native test. The smoke exposed Next's normalized internal request hostname; the service now validates the actual loopback HTTP Host before comparing Origin, with external-host rejection and normalized-host replay coverage. No credentials were present or provider calls made. The successful full browser repeat after that correction supersedes the earlier 269.1-second run.
+- This is a code-review milestone for the guest closet and bounded development integrations. The remaining external gates are a real Google dev request, model redistribution review, the prepared native-device/measurement session, authenticated domain integration and manual accessibility checks. Calibrated fit and public native/photo activation remain unavailable. Exact publication SHA and CI links are maintained on [PR #36](https://github.com/brandmeonline/Brand-Me-Labs/pull/36); re-query its head and push-triggered checks on resumption. No merge or deployment is part of this checkpoint.

@@ -3,7 +3,7 @@ import StylePage from "../../../../features/closet/StylePage";
 export default async function Page({
   params,
 }: {
-  params: Promise<{ outfitId: string }> | { outfitId: string };
+  params: Promise<{ outfitId: string }>;
 }) {
   const { outfitId } = await params;
   return (

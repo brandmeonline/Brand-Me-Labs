@@ -5,6 +5,7 @@ import ClosetPage from "../../brandme-frontend/features/closet/ClosetPage";
 import { createGuestClosetRepository } from "../../brandme-frontend/features/closet/repository";
 import AddItemPage from "../../brandme-frontend/features/closet/AddItemPage";
 import StylePage from "../../brandme-frontend/features/closet/StylePage";
+import { NativeDeviceSession } from "../../brandme-frontend/features/spatial/NativeDeviceSession";
 import TryPage from "../../brandme-frontend/features/spatial/TryPage";
 const path = location.pathname;
 const holdSave = new URLSearchParams(location.search).get("save-hold") === "1";
@@ -22,7 +23,9 @@ const delayedGuest = {
   commit: async (...args: Parameters<typeof guest.commit>) => {
     if (holdSave && (args[0].type === "add" || args[0].type === "move")) {
       await new Promise<void>((resolve) => {
-        window.addEventListener("brandme:test-release-save", () => resolve(), { once: true });
+        window.addEventListener("brandme:test-release-save", () => resolve(), {
+          once: true,
+        });
       });
     }
     await new Promise((resolve) => setTimeout(resolve, delay));
@@ -32,6 +35,8 @@ const delayedGuest = {
 const screen =
   path === "/add" ? (
     <AddItemPage repository={delay || holdSave ? delayedGuest : undefined} />
+  ) : path === "/try/device-test" ? (
+    <NativeDeviceSession enabled={process.env.BRANDME_AR_DEVICE_TEST === "1"} />
   ) : path.startsWith("/try/") ? (
     <TryPage itemId={path.split("/")[2]} />
   ) : path.startsWith("/style") ? (

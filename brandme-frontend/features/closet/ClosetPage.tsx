@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { placementAvailability } from "../spatial/placementAvailability";
 import { useCloset } from "./useCloset";
 import { VirtualWardrobe } from "./VirtualWardrobe";
 import { eligibleGroups, roomById, rooms } from "../spatial/catalog";
@@ -579,13 +580,13 @@ export default function ClosetPage({
                           (_, i) => (
                             <option key={i} value={i}>
                               {i + 1}
-                              {snapshot.items.some(
-                                (x) =>
-                                  x.id !== selected.id &&
-                                  x.placement.semanticGroup === group &&
-                                  x.placement.slotId === i,
-                              )
-                                ? " · occupied"
+                              {!placementAvailability(
+                                snapshot,
+                                selected,
+                                group,
+                                i,
+                              ).available
+                                ? " · unavailable"
                                 : ""}
                             </option>
                           ),
@@ -601,16 +602,18 @@ export default function ClosetPage({
                           Array.from(
                             { length: anchor.capacity },
                             (_, index) => {
-                              const occupied = snapshot.items.some(
-                                (i) =>
-                                  i.id !== selected.id &&
-                                  i.placement.semanticGroup === anchor.id &&
-                                  i.placement.slotId === index,
+                              const availability = placementAvailability(
+                                snapshot,
+                                selected,
+                                anchor.id,
+                                index,
                               );
+                              const occupied = !availability.available;
                               return (
                                 <button
                                   key={`${anchor.id}:${index}`}
                                   disabled={busy || occupied}
+                                  title={availability.reason}
                                   aria-pressed={
                                     group === anchor.id && slot === index
                                   }
@@ -646,7 +649,7 @@ export default function ClosetPage({
                                   }}
                                 >
                                   {groupLabels[anchor.id]} · {index + 1}
-                                  {occupied ? " · occupied" : ""}
+                                  {occupied ? " · unavailable" : ""}
                                 </button>
                               );
                             },

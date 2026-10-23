@@ -715,3 +715,12 @@
   padding: 0;
   margin: 0;
 }
+
+.liveFrame { width: 100%; height: auto; min-height: 0; overflow: hidden; position: relative; }
+.liveFrame video { width: 100%; height: 100%; object-fit: contain; display: block; transform: scaleX(-1); }
+.liveFrame .cameraOverlay { object-fit: fill; transform-origin: top center; pointer-events: none; }
+.photoComparison {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}

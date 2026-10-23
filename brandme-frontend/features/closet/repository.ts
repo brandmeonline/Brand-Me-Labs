@@ -1,3 +1,4 @@
+import { placementAvailability } from "../spatial/placementAvailability";
 import {
   allAssets,
   defaultGroup,
@@ -13,6 +14,7 @@ import type {
   SemanticGroup,
 } from "../spatial/types";
 export type AddInput = {
+  previewMediaId?: string;
   productId: string | null;
   title: string;
   category: string;
@@ -113,21 +115,11 @@ function freeSlot(
   s: ClosetSnapshot,
   group: SemanticGroup,
   slot: number,
-  except?: string,
+  assetSlug: string | null,
+  id?: string,
 ) {
-  if (group === "unplaced") return;
-  const room = roomById(s.roomId);
-  makePlacement("check", s.roomId, group, slot, "check");
-  if (
-    s.items.some(
-      (i) =>
-        i.id !== except &&
-        i.placement.semanticGroup === group &&
-        i.placement.slotId === slot,
-    )
-  )
-    throw new Error("That slot is occupied. Choose an empty slot.");
-  return room;
+  const availability = placementAvailability(s, { assetSlug, id }, group, slot);
+  if (!availability.available) throw new Error(availability.reason);
 }
 function apply(
   snapshot: ClosetSnapshot,
@@ -173,10 +165,11 @@ function apply(
       !/^data:image\/(png|webp|jpeg);base64,/.test(x.posterUrl)
     )
       throw new Error("Use an approved image or a local photo.");
-    freeSlot(s, x.group, x.slot);
+    freeSlot(s, x.group, x.slot, x.assetSlug);
     itemId = crypto.randomUUID();
     s.items.push({
       id: itemId,
+      ...(x.previewMediaId && !a ? { previewMediaId: x.previewMediaId } : {}),
       productId: a?.id ?? null,
       title: x.title.trim(),
       category: x.category,
@@ -254,7 +247,7 @@ function apply(
         )
       )
         throw new Error("Choose a suitable destination.");
-      freeSlot(s, command.group, command.slot, item.id);
+      freeSlot(s, command.group, command.slot, item.assetSlug, item.id);
       item.placement = makePlacement(
         item.id,
         s.roomId,
@@ -316,8 +309,14 @@ export function createGuestClosetRepository(
           for (const item of state.snapshot.items) {
             const p = item.placement;
             if (p.semanticGroup !== "shelf.folded") continue;
-            const next = positionFor(roomById(p.roomId), p.semanticGroup, p.slotId);
-            if (next.some((v, i) => Math.abs(v - p.positionMeters[i]) > 0.00001)) {
+            const next = positionFor(
+              roomById(p.roomId),
+              p.semanticGroup,
+              p.slotId,
+            );
+            if (
+              next.some((v, i) => Math.abs(v - p.positionMeters[i]) > 0.00001)
+            ) {
               p.positionMeters = next;
               p.version++;
               item.version++;

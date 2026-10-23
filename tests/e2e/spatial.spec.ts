@@ -311,6 +311,7 @@ test("preview ladder gates camera, provider uploads and calibrated fit", async (
   page.on("request", (request) => {
     if (["POST", "PUT"].includes(request.method())) uploads.push(request.url());
   });
+  await page.route("**/demo/vision/manifest.json", route => route.fulfill({status:404,body:"unconfigured"}));
   await page.goto("/try/guest-overshirt");
   await expect(
     page.getByRole("button", { name: /Calibrated fit/ }),

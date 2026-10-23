@@ -3,6 +3,8 @@ import { lazy, Suspense, useCallback, useState } from "react";
 import { useCloset } from "../closet/useCloset";
 import { allAssets, photoOnly } from "./catalog";
 import { fidelityLabels } from "./types";
+import { MeasurementPreparation } from "./MeasurementPreparation";
+import { PhotoPreview } from "./PhotoPreview";
 import styles from "./spatial.module.css";
 const ModelPreview = lazy(() =>
   import("./ModelPreview").then((m) => ({ default: m.ModelPreview })),
@@ -67,13 +69,15 @@ export default function TryPage({ itemId }: { itemId: string }) {
     {
       id: "live",
       title: "Live visual overlay",
-      detail: "Local pose preview. Model and device evidence are missing.",
+      detail:
+        "Local upper-body preview. Development model; device validation pending.",
       enabled: true,
     },
     {
       id: "photo",
       title: "Photo try-on",
-      detail: "Optional generated image. Provider not connected.",
+      detail:
+        "Optional generated image. Test-only provider connection required.",
       enabled: true,
     },
     {
@@ -146,37 +150,18 @@ export default function TryPage({ itemId }: { itemId: string }) {
               <LiveOverlay asset={asset} />
             </Suspense>
           )}
-          {mode === "photo" && (
-            <div className={styles.card}>
-              <h2>A preview, never a promise of fit.</h2>
-              <p>
-                Photo try-on would send a reviewed person photo and garment
-                image to an approved image-generation provider. It requires
-                separate explicit processing consent.
-              </p>
-              <p className={styles.muted}>
-                No provider is connected. Provider region, processing terms,
-                retention and deletion support must be verified before uploads
-                can be enabled. No image chooser or upload request is active.
-              </p>
-              <p className={styles.notice}>
-                When available: review your image → choose your garment → read
-                the provider disclosure → explicitly send → compare, save or
-                discard. Unsaved results are intended to expire after 24 hours;
-                actual provider retention must be disclosed separately.
-              </p>
-              <button disabled>Photo preview unavailable</button>
-              <button onClick={() => setMode("image")}>Use item image</button>
-            </div>
-          )}
+          {mode === "measurements" && <MeasurementPreparation />}
+          {mode === "photo" && <PhotoPreview asset={asset} />}
           <span className={styles.fidelity}>
-            {mode === "image"
-              ? "Photo display"
-              : mode === "photo"
-                ? "Generative visual preview · unavailable"
-                : mode === "live"
-                  ? "Approximate visual overlay · unavailable"
-                  : fidelityLabels[asset.fidelity]}
+            {mode === "measurements"
+              ? "Measurement preparation · calibrated fit unavailable"
+              : mode === "image"
+                ? "Photo display"
+                : mode === "photo"
+                  ? "Generative visual preview · provider-gated"
+                  : mode === "live"
+                    ? "Approximate visual overlay · development"
+                    : fidelityLabels[asset.fidelity]}
           </span>
         </div>
         <aside className={styles.inspector}>
@@ -192,6 +177,9 @@ export default function TryPage({ itemId }: { itemId: string }) {
             calibrated fit. None of these previews verifies ownership or
             authenticity.
           </p>
+          <button onClick={() => setMode("measurements")}>
+            Prepare measurements
+          </button>
           <a href="/style">Build a look with this piece ↗</a>
         </aside>
       </div>

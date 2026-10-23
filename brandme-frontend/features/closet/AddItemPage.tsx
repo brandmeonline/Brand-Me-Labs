@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { placementAvailability } from "../spatial/placementAvailability";
 import { useCloset } from "./useCloset";
 import {
   allAssets,
@@ -55,8 +56,10 @@ export default function AddItemPage({
     saving = useRef(false),
     reduced = useMotionPreference(snapshot?.reducedMotion);
   const asset = allAssets.find((a) => a.slug === assetSlug)!,
-    prefetchUrl = group === "shelf.folded" && asset.folded
-      ? asset.folded.glb : asset.lowGlb,
+    prefetchUrl =
+      group === "shelf.folded" && asset.folded
+        ? asset.folded.glb
+        : asset.lowGlb,
     actualCategory = mode === "catalog" ? asset.category : category;
   useEffect(() => {
     mounted.current = true;
@@ -74,11 +77,12 @@ export default function AddItemPage({
     const free = target
       ? Array.from({ length: target.capacity }, (_, i) => i).find(
           (slot) =>
-            !snapshot.items.some(
-              (x) =>
-                x.placement.semanticGroup === target.id &&
-                x.placement.slotId === slot,
-            ),
+            placementAvailability(
+              snapshot,
+              { assetSlug: mode === "catalog" ? assetSlug : null },
+              target.id,
+              slot,
+            ).available,
         )
       : undefined;
     setGroup(free === undefined ? "unplaced" : target!.id);
@@ -412,12 +416,13 @@ export default function AddItemPage({
                   (_, i) => (
                     <option key={i} value={i}>
                       {i + 1}
-                      {snapshot.items.some(
-                        (x) =>
-                          x.placement.semanticGroup === group &&
-                          x.placement.slotId === i,
-                      )
-                        ? " · occupied"
+                      {!placementAvailability(
+                        snapshot,
+                        { assetSlug: mode === "catalog" ? assetSlug : null },
+                        group,
+                        i,
+                      ).available
+                        ? " · unavailable"
                         : ""}
                     </option>
                   ),

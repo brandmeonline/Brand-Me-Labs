@@ -8,3 +8,7 @@ evidence/runs/**/video.webm
 evidence/runs/**/error-context.md
 evidence/runs/.last-run.json
 evidence/runs/.playwright-artifacts*/
+/.photo-dev/
+!evidence/pose-inference.json
+!evidence/ultra-browser-results.json
+!evidence/ultra-asset-validation.json

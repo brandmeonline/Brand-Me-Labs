@@ -91,6 +91,7 @@ export interface Placement {
   version: number;
 }
 export interface ClosetItem {
+  previewMediaId?: string;
   id: string;
   productId: string | null;
   title: string;
