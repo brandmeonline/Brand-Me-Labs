@@ -269,11 +269,16 @@ def test_account_deletion_freezes_every_commerce_write(my_data):
 def test_queued_assistant_work_cannot_recreate_deleted_data(my_data):
     from brandme_core.domains.commerce.service import processing_basis
     svc, w = my_data
+    w.clock.now = _real_now()  # a deployment's service clock: tombstones carry Spanner commit times
     d, ag = w.delegate(AssistanceMode.PREPARE)
-    started = _real_now()  # an assistant task read its inputs here...
+    started = w.clock.now  # an assistant task read its inputs here...
     svc.run_deletion(svc.request_deletion(MEMBER, _real_now(), [CARTS_QUOTES]))  # ...then the member deleted
+    w.clock.now = _real_now()
     with processing_basis(started), pytest.raises(ProcessingRestricted):
         w.svc.create_cart(ag, provider_id="demo_atelier", merchant_id="fictional-demo-merchant", lines=[line()])
+    # The basis is what refuses it: the deletion has completed, so work based on fresh inputs may write.
+    w.svc.create_cart(ag, provider_id="demo_atelier", merchant_id="fictional-demo-merchant", lines=[line()])
+    # The runtime applies the basis to every task: tests/test_commerce_assistant_privacy.py.
 
 
 def test_privacy_job_requires_an_explicit_mode(my_data, monkeypatch):
