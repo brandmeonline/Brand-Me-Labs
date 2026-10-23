@@ -825,3 +825,61 @@ PR #51 to `main`, as the rights and foundation lanes did for their round-2 PRs (
 |---|---|---|---|---|
 | `STRIPE_TEST_SECRET_KEY` | Stripe **test mode** secret key (`sk_test_…`) for the payment adapter's live test-mode run | Cloud environment secret (to be added by the founder; not in the repo) | — | **Not present.** The agent cannot create Stripe accounts or keys from this container; live test-mode runs are `not_run` until it exists. |
 | `BRANDME_DEV_ANTHROPIC_API_KEY` | Anthropic API key for the dev model planner only | Cloud environment secret (to be added; not in the repo) | — | **Not present.** Deliberately not `ANTHROPIC_API_KEY`, which the Claude Code session itself may read. Live model runs are `not_run` until it exists. |
+
+## Stage S16 — Audited assistant path, payment rail seam, Stripe test mode, dev model planner, cancellation, provider setup (2026-10-23)
+
+Ultra Plan items 1–3, first pass, on branch head `cb88977` (pushed; PR #51 CI green on it except two Docker
+image builds still running when this was written).
+
+| Commit | What changed | Evidence (tests) |
+|---|---|---|
+| `5ab141f` | Assistant tool calls go through `McpToolExecutor.call()` (envelope validation, re-bound principal, one audit record per call with `origin`, keyed HMAC refs for member/task/arguments). The S11 note that `_dispatch` audited was wrong; this closes it. The gateway forwards a validated `X-Request-Id`; the domain applies it as the events' correlation id; assistant tasks use the task id. | `test_commerce_assistant.py` audit + correlation tests; gateway `forwards the gateway request id…` |
+| `d7ad7d1` | Ownership checks use foundation `authorize`; `assistant.task.create` is idempotent on `Idempotency-Key` (a replay returns 200, never a second run); the webhook relay forwards an allowlist of signature/timestamp headers only. | `test_assistant_task_create_is_idempotent`; gateway `relays signature and timestamp headers only…` |
+| `fa6c429`, `be4e959` | Payment seam: `PaymentProcessor` protocol with a deterministic simulated processor and a **Stripe test-mode** processor (`stripe==16.0.0`, API `2026-09-30.endive`, manual capture). The Demo Atelier merchant pays through an injected rail chosen once at startup (`BRANDME_COMMERCE_PAYMENTS` = `simulated` default, or `stripe_test`; demo/development only; misconfiguration refuses to boot, no fallback). Money model: authorize at submit, capture once at first shipment for what is still owed, void if everything is cancelled first, refund after capture; uncaptured money always returns to the grant. The Stripe key guard accepts only `sk_test_…`/`rk_test_…`; every response must be `livemode:false` or the processor latches shut. V015 gains `OrderLines.quantity_cancelled` and payment status `voided`. | `test_providers_payments.py` (simulated behaviour; key guard; stripe-mock **wire shape only**; webhook signature/replay/live refusal); `test_commerce_payments_flow.py` on both stores; live tests gated on `STRIPE_TEST_SECRET_KEY` → **not_run** |
+| `07a3fdc` | Exchanges back into an earlier variant keep every step; units with a pending return cannot also be exchanged. | `test_exchange_back_into_an_earlier_variant_keeps_every_step`, `test_units_being_returned_cannot_also_be_exchanged` |
+| `0bb033d` | Member/agent cancellation of unshipped units (ch.05 §6 "offer the actual cancellation path"): `POST /commerce/orders/:id/cancellation` (purchase authority, Idempotency-Key), domain op `order.cancel` (202). The merchant key derives from the member's key: a lost response is re-sent under the same key while unshipped units remain; a request the merchant never received is undone so it can be retried; no cancellation path → handoff. Shipped units go through returns. | 7 flow tests (both stores), `test_cancellation_reaches_the_domain_once_per_key`, gateway cancellation route test |
+| `3b5bc5e`, `de820ad` | Dev model planner behind a provider-neutral adapter; Anthropic SDK `anthropic==0.125.0`, model `claude-opus-5-5`, effort explicit, strict tools. Without `BRANDME_DEV_ANTHROPIC_API_KEY` (and `BRANDME_MODE` development/demo) the deterministic planner runs and the SDK is never imported. `de820ad` closed review defects: fail closed on every stop reason except `tool_use`; nothing in a batch runs after approval is requested; planner/executor crashes mark the task failed; invented tool names show as `unknown_tool`; run-log `task_ref` joins the audit record; cached prompt tokens count against the budget; the goal is escaped; results stay valid JSON when cut; opaque delivery/payee refs never reach the model; ambient `ANTHROPIC_CUSTOM_HEADERS` and SDK debug logging are neutralized; one planner serves many tasks; model runs go to a background runner and the create answers 202. | `test_commerce_model_planner.py` (34, scripted Messages API through the real SDK client); live test gated → **not_run** |
+| `0f75b18` | Merged the provider setup sub-lane (`1dc4245`, `5051efc`, `5145a52`): setup service with in-memory and Spanner stores (V006 tables), read-only adapter probes, `GET /providers/:id/verification-runs`, console save/test/activate forms (work without JavaScript), recent tests on the health page. A passing test never enables a capability by itself; activation needs every prerequisite and a verifying pass under 24 h old (409 with a fixed code otherwise). Operators are recorded as `operator:` + SHA-256 of the actor ref; stored references are shown only as a fingerprint and rotation time. | `test_providers_setup.py` (63, both stores), gateway provider tests, console `tsc` + `next build` |
+| `cb88977` | The submit failure callback binds its error explicitly (it may be retried; it worked only because it ran inside the `except`); unused imports removed. | ruff `E9,F` clean on lane modules |
+
+**Verification on `cb88977`** (private Spanner emulator, stripe-mock v0.206.0 present): lane suites + foundation
+**597 passed, 13 skipped** — 6 AP2 SDK-oracle tests (no `AP2_SDK_PYTHON`), 4 foundation Pub/Sub emulator
+tests (binary fetched in CI), live Stripe ×2 and live model ×1 (**not_run**: keys absent). Gateway vitest
+24/24, `tsc` and ESLint clean; provider-contracts 12/12 and `tsc` clean; console `tsc` + `next build` pass.
+A full `pytest tests/` run also shows 13 failures and 18 errors outside this lane: persona tests need
+`tests/fixtures/persona/catalog_candidates.json`, which `.gitignore` (`*.json`) keeps out of `main`;
+`test_wardrobe.py` needs `google-cloud-firestore`, not installed here; consent-graph/provenance tests expect a
+pre-created `brandme-db`. Reported to the check-in packet, not fixed here (not lane files).
+
+**Provider setup sub-lane — recorded deviations and open items** (from its report):
+- Verification-run mode and reason are stored inside `sanitized_summary` as a small versioned JSON document,
+  because V006's `ProviderVerificationRuns` has no such columns (a migration would add them).
+- Not modelled: the spec's staging-ingestion review and geographic availability marking (ch.05 §2 step 6);
+  `staging_ingestion` tests return blocked. Nordstrom `checkout.handoff` can never activate (its link check is
+  `link_validation` evidence, which never verifies a capability); publisher capabilities return blocked
+  `publisher_approval_required`, then `impact_api_client_not_built`; no network call is made.
+- Saved setup loads into each process's registry once; activation is not invalidated by a later credential
+  rotation; no deactivate/un-suspend endpoint. Two Nordstrom checklist definitions to unify.
+- Run and recorded times are explicit timestamps in `allow_commit_timestamp` columns: a service clock ahead of
+  Spanner would fail those writes (the commerce store has the same exposure).
+
+**Independent design panel (Workflow, 6 agents).** Two proposals each for (a) payment/fulfillment seams with
+Stripe test mode and (b) the model planner, then a judge per topic that re-verified citations and probed the
+SDKs. Winners: processor and fulfillment stay *behind the merchant* (ch.05:157 — Brand.Me never becomes the
+merchant of record; the closed capability vocabulary is unchanged), and a *stateless* planner (one fresh request
+per step; no thinking blocks replayed or stored). The judges listed defects in HEAD; the ones not already fixed
+by `de820ad` are being built in S17 (two implementers in separate worktrees), including: Stripe
+`IdempotencyError` treated as a definitive refusal, lost refund/capture responses never reconciled, orphan
+authorization holds, webhook timestamps from the future accepted, `STRIPE_LOG` printing request bodies, refunds
+counted before they succeed, an arbitrary Stripe `base_url`, SDK redirects/ambient proxies on the model client,
+SDK retries as unreserved paid requests, mode-refused proposals with no audit record, CVV not screened,
+and `sandbox` capabilities summarised to members as `available`.
+
+**Open (unchanged or new):**
+- Main's outbox worker imports only the foundation event catalog; publishing commerce events needs one line,
+  `import brandme_core.domains.commerce.events`, in the foundation-owned worker (pinned by a lane test).
+- S9 CI gating: `main` removed the `|| echo` masking and its gateway job runs `commerce.test.ts`; lane Python
+  suites are still not in main's `test-core` job and the lock still lacks `stripe`/`anthropic` pins; foundation
+  PR #53 adds Firestore jobs only. Status only — not re-implemented here (Ultra Plan item 5).
+- Header swap (Ultra Plan item 4): re-verification against the shell branch's newest commit `9c2bb10` (Next 15,
+  design-system workspace) is running; result recorded in S17.
