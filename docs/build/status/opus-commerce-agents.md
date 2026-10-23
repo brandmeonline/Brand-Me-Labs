@@ -502,3 +502,45 @@ the repository runner (V001 + V006 + V007); the same tests run on the in-memory 
 Files: `brandme_core/domains/commerce/{store,spanner_store,service,records,data_categories}.py` (−`spanner_budget.py`),
 `brandme-data/spanner/migrations/V007_commerce.sql`, `tests/fixtures/commerce/{stores,harness}.py`,
 `tests/test_commerce_{privacy,purchase,principal,ap2,migrations}.py`.
+
+### S9 addendum — CI does not gate this lane's tests (request to file owners)
+
+Green CI on PR #51 says nothing about the commerce lane:
+
+- `.github/workflows/ci-cd.yml:87` runs `pytest tests/ -v || echo "Tests not implemented yet"`, so any failure is
+  masked.
+- Foundation's `pnpm check` (`scripts/brandme.mjs` `check()`) runs only `tests/foundation`.
+- Foundation's hashed venv (`scripts/python/requirements.lock`) lacks four of this lane's runtime pins, so the lane
+  suite could not even import there.
+
+That is how the missing-JSON defect above stayed green. None of these files are lane-owned. Proposed patch for
+opus-foundation, which owns `scripts/`:
+
+1. `scripts/python/requirements.lock` — add these entries. Digests are from the PyPI JSON API for the exact releases.
+   `cryptography==50.0.2`, `pyyaml` and `typing-extensions` are already locked.
+   ```
+   jwcrypto==1.6.1 \
+       --hash=sha256:77e856818e514cb3d64a1043b6885a7d52f5cc37773f5e944de02103c8d3a54f \
+       --hash=sha256:a1e1570da5c2e35dbcd375ec1d2891a24de8eb35ee2c1fe8e91978efb72cfe90
+   pyjwt==2.15.1 \
+       --hash=sha256:42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193 \
+       --hash=sha256:4f259e80cdfb6b3fc18a7de51fd1ef9ec79652f25019bae68975ca2468a34df8
+   rfc8785==0.1.4 \
+       --hash=sha256:520d690b448ecf0703691c76e1a34a24ddcd4fc5bc41d589cb7c58ec651bcd48 \
+       --hash=sha256:e545841329fe0eee4f6a3b44e7034343100c12b4ec566dc06ca9735681deb4da
+   sd-jwt==0.10.4 \
+       --hash=sha256:82f93e2f570cfd31fab124e301febb81f3bcad70b10e38f5f9cff70ad659c2ce \
+       --hash=sha256:d7ae669eb5d51bceeb38e0df8ab2faddd12e3b21ab64d831b6d048fc1e00ce75
+   ```
+2. `scripts/brandme.mjs` `check()` — add a step after the foundation tests. Without an emulator, the Spanner variants
+   skip with a reason, like the foundation suites do; the AP2 SDK oracle tests skip without `AP2_SDK_PYTHON`.
+   ```js
+   ['python commerce lane tests' + (emulator ? '' : ' (emulator suites skipped)'), PY, ['-m', 'pytest',
+     'tests/test_commerce_quote.py', 'tests/test_commerce_purchase.py', 'tests/test_commerce_ap2.py',
+     'tests/test_commerce_protocols.py', 'tests/test_commerce_assistant.py', 'tests/test_commerce_migrations.py',
+     'tests/test_commerce_principal.py', 'tests/test_commerce_privacy.py', 'tests/test_providers.py',
+     'tests/test_mcp.py', '-q', '-p', 'no:cacheprovider', '--timeout=300']],
+   ```
+3. Drop the `|| echo` in `ci-cd.yml:87`, or remove that job if `foundation.yml` is the gate.
+
+Until then, this file's local results (emulator + oracle, from a clean worktree) are the only evidence for this lane.
