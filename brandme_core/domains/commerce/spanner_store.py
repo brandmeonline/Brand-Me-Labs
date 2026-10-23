@@ -32,7 +32,7 @@ from .records import (
     ApprovalChallenge, BudgetEntry, Cart, IdempotencyRecord, Order, OrderLine, PurchaseApproval,
     PurchaseOperation, ReturnRequest, WebhookReceipt,
 )
-from .store import QUERIES, QueryMixin
+from .store import IN_STORE_TRANSACTION, QUERIES, QueryMixin
 
 T = TypeVar("T")
 _MISSING = object()
@@ -605,7 +605,11 @@ class SpannerCommerceStore(QueryMixin):
     def run(self, fn: Callable[[_SpannerTx], T]) -> T:
         def attempt(transaction):
             tx = _SpannerTx(transaction)  # fresh overlay/events per attempt
-            result = fn(tx)
+            token = IN_STORE_TRANSACTION.set(True)
+            try:
+                result = fn(tx)
+            finally:
+                IN_STORE_TRANSACTION.reset(token)
             if not tx.touched and not tx.events:
                 list(transaction.execute_sql("SELECT 1"))  # begin it; an empty commit is refused
             write_events(transaction, tx.events)
@@ -616,7 +620,11 @@ class SpannerCommerceStore(QueryMixin):
     def within(transaction, fn: Callable[[_SpannerTx], T]) -> T:
         """Run ``fn`` in a caller-owned read/write transaction (the privacy orchestrator's), writing its events there."""
         tx = _SpannerTx(transaction)
-        result = fn(tx)
+        token = IN_STORE_TRANSACTION.set(True)
+        try:
+            result = fn(tx)
+        finally:
+            IN_STORE_TRANSACTION.reset(token)
         write_events(transaction, tx.events)
         return result
 

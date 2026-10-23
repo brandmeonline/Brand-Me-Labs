@@ -36,7 +36,8 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Protocol, Seque
 
 from brandme_core.domains.commerce.service import current_correlation
 from brandme_core.domains.providers.catalog import untrusted_text
-from brandme_core.mcp.tools import McpToolExecutor, audit_ref, mask_payment_credentials
+from brandme_core.mcp.refs import log_ref
+from brandme_core.mcp.tools import McpToolExecutor, mask_payment_credentials
 
 from .runtime import MODE_TOOLS, AssistantTask, DeterministicPlanner, Planner, PlannerError, ProposedCall
 
@@ -259,7 +260,7 @@ class ModelPlanner:
             "provider": self.adapter.provider, "model": self.adapter.model,
             "model_served": turn.model if turn else None,
             "provider_request_id": turn.provider_request_id if turn else None,
-            "correlation_id": current_correlation(), "task_ref": audit_ref(task.id), "mode": task.mode.value,
+            "correlation_id": current_correlation(), "task_ref": log_ref("task", task.id), "mode": task.mode.value,
             "prompt_version": PROMPT_VERSION, "step": state.model_calls,
             "duration_ms": int((self.clock() - started) * 1000),
             "input_tokens": turn.input_tokens if turn else 0, "output_tokens": turn.output_tokens if turn else 0,

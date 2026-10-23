@@ -74,3 +74,8 @@ class ProcessingRestricted(CommerceError):
 
 class CapabilityUnavailable(CommerceError):
     code, status, retryable = "capability_unavailable", 503, False
+
+
+class AssistantBusy(CommerceError):
+    """The assistant's background runner is full; the client may retry the same create later."""
+    code, status, retryable = "assistant_busy", 503, True

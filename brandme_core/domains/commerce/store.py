@@ -17,12 +17,21 @@ from __future__ import annotations
 
 import threading
 import uuid
+from contextvars import ContextVar
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Tuple, TypeVar
 
 from brandme_core.events import EventEnvelope
 
 T = TypeVar("T")
+
+# True while a ``store.run`` callback executes in this context. Code that must never do slow or
+# external I/O inside a transaction (a model call, ch.03 §5) checks it instead of trusting layout.
+IN_STORE_TRANSACTION: ContextVar[bool] = ContextVar("commerce_in_store_transaction", default=False)
+
+
+def in_store_transaction() -> bool:
+    return IN_STORE_TRANSACTION.get()
 
 TABLES = (
     "carts", "quotes", "delegations", "challenges", "approvals", "reservations", "operations", "orders",
@@ -124,6 +133,7 @@ class InMemoryCommerceStore(QueryMixin):
             outer = self._depth == 0
             snapshot = {t: dict(rows) for t, rows in self._tables.items()} if outer else None
             self._depth += 1
+            token = IN_STORE_TRANSACTION.set(True)
             try:
                 return fn(self)
             except BaseException:
@@ -131,6 +141,7 @@ class InMemoryCommerceStore(QueryMixin):
                     self._tables = snapshot  # type: ignore[assignment]
                 raise
             finally:
+                IN_STORE_TRANSACTION.reset(token)
                 self._depth -= 1
 
     # -- row access --------------------------------------------------------
