@@ -766,3 +766,62 @@ The reviewer also checked these and found them sound:
 - Spanner overlay merges.
 - Privacy jobs keeping evidence.
 - Operator roles, and the console pages forwarding only the bearer.
+
+## Stage S15 — Reconciled with `main`: My Data, migration ledger, Next 15, shell seam (2026-10-23)
+
+Founder Ultra Plan received (`Commerce Agents — Opus`). This stage is item 1, part one: bring round 2 onto
+what `main` became after round 1 merged (W11 integration `3cdde59`, the My Data framework, the Pub/Sub outbox
+worker, chain/rights work, migrations V002/V008–V014, the Next 15 console). A read-only investigation compared
+`HEAD` with `origin/main` (`5174ec2`) before any change.
+
+**Merge.** `origin/main` merged into the lane branch (`ce85fd0`). No textual conflicts: since `7c61afd` the two
+sides changed disjoint files (74 vs 247). Main made no edits to lane files, and nothing outside the lane imports
+`brandme_core.domains.commerce`, `brandme_core.mcp` or `brandme_core.orchestrator`. The semantic gaps found, and
+what was done:
+
+| Gap on `main` | Fix | Evidence |
+|---|---|---|
+| Main's runner checksums applied migrations. V007 was applied as merged, and round 2 had edited it in place (quote `terms`, three indexes). | V007 restored byte-for-byte; the round-2 schema is a new `V015_commerce_quote_terms.sql`. Rows written before V015 backfill `terms = {}`, which the store refuses to decode (`QuoteExpired`): unrecorded terms are never approvable. | `test_v007_is_unchanged_and_v015_backfills_unknown_terms` (pins V007's SHA-256, applies V015 over a populated V007) |
+| My Data on main uses `DomainPrivacyHandler` + `register_domain`. Commerce registered foundation categories, which main only reaches through a bridge that labels every category `erase`: retained orders would have been reported "deleted". | Native `CommercePrivacyHandler` registered at package import. Foundation registration removed (one path). `delete()` runs in the orchestrator's transaction (`SpannerCommerceStore.within`), with commerce's own events. Each category is self-contained. `commerce.orders` is `retain_legal` with a stated basis. A grant or quote behind an order reports an exception; a purchase still settling keeps the job open (`done=False`). `export()` reads allowlisted columns from the orchestrator's snapshot. | `tests/test_commerce_privacy.py` drives the real `MyDataService` on the V009 tables: receipts, replay, order independence, settling purchases |
+| Main requires `assert_processing_allowed` in every personal-data writer. Commerce had none. | Every member/agent write checks it inside its own transaction (`ProcessingRestricted`, 409). `processing_basis()` lets queued assistant work carry its start time. Revocation is always allowed. Provider settlement writes (acks, reconcile, webhooks, observations) are **not** guarded: they record what a provider did with money and are retained evidence. | `test_member_and_agent_writes_are_refused_while_deletion_is_pending`, `test_account_deletion_freezes_every_commerce_write`, `test_queued_assistant_work_cannot_recreate_deleted_data` |
+| Main pins `next 15.5.28`; the pages used Next 14's synchronous `params` and `headers()` (`TS2339` under 15). | `await params` / `await headers()`. | `tsc` + `next build` with main's lockfile |
+| Console header (Ultra Plan item 4). | Pages import `PageHeader` only from `providers/_data/shell.ts`. The local header mirrors shell contract **1.1.0** props and markup. Adopting the shell's `ConsolePageHeader` is one line in that module. | The pages, with that line swapped, type-check and build on the shell branch (`264b6a0`) |
+
+Main's gateway tests (vitest 3.2.7) pass with the lane routers present; the lane's 18 router tests pass under
+vitest 3.2.7 too. Python on the merged tree, emulator up: lane suites plus main's CI suites (foundation, rights,
+privacy, privacy recovery, read API, privacy exports) **587 passed, 4 skipped** (the skips are main's Pub/Sub
+emulator tests, which need the binary CI fetches).
+
+**Deviation, recorded for the founder (outside the lane's owned paths):** the brief limits this lane to
+V006/V007. Restoring V007 without losing round 2's schema needs a new migration, so this stage adds
+`V015_commerce_quote_terms.sql` and the matching one-line reservation in `tests/foundation/test_migrations.py`
+(`15: "commerce_quote_terms"`) plus a README paragraph. The integration lanes allocated V010–V014 the same way.
+Alternative if refused: fold V015 back into V007 and accept checksum drift on any database that already applied V007.
+
+**Still open from the investigation (handled in later stages of this round):**
+- Commerce events are written but main's outbox worker publishes only the foundation catalog it imports.
+- The assistant runtime calls the MCP executor's `_dispatch` directly, so model- or planner-proposed tool calls skip
+  the audit record. The S11 note saying `_dispatch` audits was wrong; the audit lives in `invoke()`.
+- Commerce events carry a random correlation id per event; the gateway does not forward `X-Request-Id`.
+- `provider.setup.update` and `provider.verify` are still `_not_built`, so the setup page cannot save or test.
+
+### Plan for the rest of this round (Ultra Plan order)
+
+1. Round 2 review-ready: event catalog alignment, audited runtime tool path with correlation, provider setup save
+   and connection tests (console forms), exchange fidelity against ch.05 §6 / BM-COM-011. Then undraft PR #51.
+2. Payment and fulfillment adapter seams, chosen by dependency injection at startup; Stripe **test mode** as the
+   first real payment adapter (refuses anything but `sk_test_` keys), with stripe-mock wire tests labelled as such.
+3. A model-backed planner behind a provider-neutral adapter (Anthropic SDK first), deterministic fallback with no
+   key, redacted run logs, token/cost budgets.
+4. Check-in packet.
+
+**PR target.** PR #51 targets `bench/opus-commerce-agents-20261005` (`7c61afd`), which `main` already contains.
+With `main` merged in, its diff against the bench branch would include main's 57 commits. Default taken: retarget
+PR #51 to `main`, as the rights and foundation lanes did for their round-2 PRs (#40, #41, #53, #54).
+
+### Credential manifest (names and scope only — never values)
+
+| Name | Scope | Stored in | Created | Status |
+|---|---|---|---|---|
+| `STRIPE_TEST_SECRET_KEY` | Stripe **test mode** secret key (`sk_test_…`) for the payment adapter's live test-mode run | Cloud environment secret (to be added by the founder; not in the repo) | — | **Not present.** The agent cannot create Stripe accounts or keys from this container; live test-mode runs are `not_run` until it exists. |
+| `BRANDME_DEV_ANTHROPIC_API_KEY` | Anthropic API key for the dev model planner only | Cloud environment secret (to be added; not in the repo) | — | **Not present.** Deliberately not `ANTHROPIC_API_KEY`, which the Claude Code session itself may read. Live model runs are `not_run` until it exists. |
