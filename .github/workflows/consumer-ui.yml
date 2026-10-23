@@ -23,7 +23,7 @@ jobs:
       BRANDME_MODE: development
       BRANDME_CONSUMER_URL: http://127.0.0.1:3000
       BRANDME_CONSOLE_URL: http://127.0.0.1:3002
-      BRANDME_EVIDENCE_DIR: ${{ runner.temp }}/consumer-ui-evidence
+      BRANDME_EVIDENCE_DIR: ${{ github.workspace }}/.consumer-ui-evidence
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -54,5 +54,5 @@ jobs:
         if: always()
         with:
           name: consumer-ui-${{ github.sha }}
-          path: ${{ runner.temp }}/consumer-ui-evidence
+          path: ${{ env.BRANDME_EVIDENCE_DIR }}
           retention-days: 14
