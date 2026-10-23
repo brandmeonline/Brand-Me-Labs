@@ -602,3 +602,133 @@ The expiry indexes are now ordinary indexes, because the emulator refuses NULL_F
 - Re-verified on this branch (Node 24.21.0, pnpm 10.34.6, `pnpm install --frozen-lockfile`): `pnpm --filter @brandme/console build` exit 0, and `pnpm check` exit 0. That covers the spec validator, contract/token drift, packages type-check/tests, gateway type-check/tests, python foundation tests and docs links.
 - Re-verified on the UI-shell overlay: tsc 0, `next build` 0, browser smoke **13/13** on the final code.
 - Commit `e13fd43` (the version before the fix) may show a red `check` run for this reason. `11860e4` supersedes it.
+
+## Stage 9 — Ultra Plan: privacy completeness, event delivery, shell adapter, PD defaults, mute, jobs — 2026-10-23
+Commits `eb12620`, `84fad9d`, `e48414a`, `b79436d`, `efa1a25` on `claude/opus-consumer-domains-1csp2g`.
+
+**Privacy (Ultra Plan item 4, My Data hooks).**
+- **Every writer is guarded.** `kernel.guard_write`/`processing_allowed` wrap the privacy lane's `assert_processing_allowed` inside the writer's own transaction and return `processing_frozen`. They cover persona, wardrobe, social, rewards and media writers.
+  - Reductions and safety actions stay open: remove, block, unblock, mute, revoke, cancel, delete, reversal.
+  - A notification to a frozen recipient is skipped and never fails the actor.
+- **Record-scoped requests are refused, not widened.** Handlers delete whole categories, so a request carrying `record_keys` returns a truthful exception outcome (`WHOLE_CATEGORY_ONLY`). It never reads or writes.
+- **Registration hook.** `persona.lane.register_consumer_domains(registry, database=, media_store=)` registers all five handlers in any `PrivacyRegistry` (e.g. `ReadService.catalog`), is idempotent, and wires media blob purge. `coverage()` reports honest completeness.
+- **Two deletion gaps found and fixed by the new end-to-end test:**
+  - An account-scoped deletion left an empty `PersonaProfiles` row. It is now dropped once every persona category is empty, including on tombstone reapply.
+  - Reports *about* a deleted member kept their id in `MemberReports.target_ref`. The id is now replaced per report.
+
+**Events (Ultra Plan item 4, coordination with PR #47's outbox).**
+- **Catalog.** On `main`, the foundation worker builds its allowlist from the foundation catalog only, so all 36 lane contracts stay `pending` (demonstrated in the test below). `python -m brandme_core.domains.persona.outbox_worker` runs the same foundation worker with the lane catalog loaded.
+- **Ingress.** `persona.ingress` is the lane subscriber. It applies these checks:
+  - closed envelope; attributes must equal the body; canonical form
+  - configured environment only; registered privacy class; contract validation
+  - the consumer applies the effect with `first_delivery` in the same transaction as the freeze recheck and stale-version check
+  - ack only after commit; rejections are never acked (subscription dead-letter policy); fixed log codes only
+
+  It ships a REST pull client (emulator in dev, ADC otherwise, no redirects or ambient proxy) and `python -m ...persona.ingress [--once]`.
+- **`commerce.order.observed` has no registered contract on `main`.** The foundation publisher would refuse it, so the wardrobe would never receive orders through Pub/Sub. Ingress validates it against a closed consumer copy of commerce's payload as emitted at `main` 5174ec2. Drift fails closed.
+
+**Shell contract (Ultra Plan item 3).** All three ops pages import `ConsolePageHeader` only from `brandme-console/app/(ops)/_shell/console-page-header.tsx`. Its props `{eyebrow?, title, description?, actions?}` and markup are the consumer-ui contract v1 §3 component exactly. The swap is one line: `export { ConsolePageHeader } from '@/components/console-page-header'`. It was proven by applying that line on the UI lane `a37ec2b` and type-checking against the real component.
+
+**PD-09/10/11 defaults (Ultra Plan item 2).** All three were already live. `brandme_core/domains/social/policy.py` now holds the PD-10 lifetime and cap and the PD-11 gone-share status, labelled pending ratification. Setting `SHARE_GONE_STATUS = 404` makes revoked, expired and removed shares indistinguishable from unknown ones (tested).
+
+**Mute (ch.01 §6.4).**
+- **Data and routes.** V004 `MemberMutes`. `POST`/`DELETE`/`GET /mutes` in the FastAPI and gateway routers. Circle entries carry `muted`.
+- **Semantics.**
+  - Mute is one-sided and private: no event, no notification, and the muted member keeps every permission.
+  - The muter stops getting the muted member's notifications.
+  - The muted member's asks leave the muter's circle list, with the count in `hidden_muted` for the `/circle` empty state, but stay readable and answerable by id.
+- **Privacy.** Mutes are exported and deleted (both directions) under `social.blocks`.
+
+**Scheduled work.** `python -m brandme_core.domains.persona.jobs [--once]` closes due decisions and releases expired reservations. Media retention and benefit fulfillment report `not_configured`: the only media store is per-process memory, and no partner fulfiller exists.
+
+**Evidence**
+| Check | Result |
+|---|---|
+| This branch: all lane suites (`tests/test_{persona,wardrobe,social,rewards,media}_*.py`), emulator 1.5.28 | **197 passed, 10 skipped**. Every skip names its missing dependency: the privacy lane (8) or PR #47 worker + Pub/Sub emulator (2). |
+| `main` 5174ec2 with this lane overlaid: lane suites + `tests/test_privacy*.py`, `test_rights*.py`, `test_read_api.py`, `tests/foundation/`. Real Pub/Sub emulator 0.8.37 via `PUBSUB_EMULATOR_BIN` | **482 passed, 0 skipped** |
+| `tests/test_persona_lane_mydata.py` (overlay) | Real data in all five domains goes through `MyDataService`: inventory equals the foundation catalog; export passes the forbidden-content scan; freeze refuses persona, wardrobe, rewards and media writers; the receipt is all `deleted`; **an INFORMATION_SCHEMA scan finds no lane STRING/ARRAY/JSON column still containing the member id**. A restore from an older backup is re-deleted by tombstone reapply, and serving resumes. Mutation check: reverting the `target_ref` fix makes the scan fail. |
+| `tests/test_persona_lane_events.py` (overlay, real Pub/Sub) | The foundation worker alone leaves lane events pending. The lane worker publishes them. The subscriber applies them once: 25 `first_owned_item` + 100 `meaningful_style_setup`. A republished event is `duplicate_delivery`. A sandbox-environment message is never acked or applied. A duplicate order observation through the subscriber *process* creates exactly one wardrobe item. Logs contain no member ids. |
+| Gateway `vitest run src/routes/v1`; `tsc --noEmit`; eslint | **41 passed**; 0; 0 |
+| Console on this branch: `tsc --noEmit`; `pnpm build` | 0; 0. The UI-lane swap type-checks: 0. |
+| PR #52 CI on `efa1a25` | `check`, `regression`, Test Core, Test Gateway, Test Chain, Security Scan: success. Trivy: failure, see below. |
+
+**Trivy.** It reports **70** alerts on every head (7 critical, 27 high, 29 medium, 7 low), not 30. `git diff 67327e4 HEAD` over every `package.json`, lockfile, `requirements*.txt`, `pyproject.toml` and Dockerfile is empty, so they come from foundation manifests. Per the plan, there was no in-lane dependency work.
+
+**Measured, not fixed (foundation-owned).** After an account deletion, **20 `member_private` `OutboxEvents` rows still name the member** (aggregate id or payload). `main` has no outbox purge or redaction. See check-in Q9.
+
+**Not done / honest limits**
+- No real media object store, try-on provider or benefit fulfiller exists. Media sweepers cannot run outside the API process.
+- BM-LOY-005's Firestore half is not built. Referral and research reward rules never settle.
+- No dev seed script. Not needed for any evidence above.
+
+## Credential manifest (founder authority, Ultra Plan)
+| Name | Scope | Where stored | Created | Rotate |
+|---|---|---|---|---|
+| — | — | — | — | — |
+
+**None created.** Every check above ran against local emulators: Spanner 1.5.28 and Google's Pub/Sub emulator 0.8.37, fetched by `main`'s pinned script with its published SHA256. No API key, service account, token or `.env` entry exists for this lane. Real integrations will need credentials (Q14). None is prod-scoped yet.
+
+## Check-in packet — 2026-10-23
+**(a) Evidence summary.**
+- **PR #52** (`efa1a25`) is green except Trivy. Trivy's 70 alerts come from manifests identical to foundation `67327e4`.
+- **Stages 2–8 are complete against the brief**, with the limits listed above. Persona, wardrobe, social (including mute and reports), rewards and the try-on server are built.
+- **Test results:**
+  - this branch: 197 passed / 10 named skips
+  - with `main`'s privacy lane and outbox: 482 passed, 0 skipped
+  - gateway: 41 vitest
+  - console: builds here, and the shell swap is proven
+- **Integration:** My Data registration and deletion with a zero-trace scan, plus real Pub/Sub delivery applied exactly once.
+- **Found for other owners:** lane contracts outside the foundation worker allowlist, the unregistered commerce order contract, and outbox rows retaining deleted members' payloads.
+
+**(b) Questions (default in bold; I build on the default until told otherwise).**
+
+*Direction*
+1. **Shell contract: enforce or retire?** **Enforce.** The consumer-ui `ConsolePageHeader` is the only page header. This lane swaps its adapter with the one-line re-export when the shell reaches the shared base, and commerce does the same. My adapter already matches props and markup exactly.
+2. **PD-09 (extended).** Ratify the lane's endpoint additions (persona, wardrobe, social, rewards, media lists in stages 3–7, plus `/mutes`), with `target_member_id` as the request field for relationships, blocks and mutes? **Ratify; the contracts lane folds them into `packages/contracts`.**
+3. **PD-10.** Share lifetime 5 min–365 d and at most 200 active shares per member? **Ratify.**
+4. **PD-11.** A gone share (revoked/expired/removed) reached by a valid token or an authorized member answers 410 `share_unavailable` with `reason`; anything else is 404? **Ratify 410.** The 404 alternative is one constant.
+5. **Mute semantics.** One-sided and private: it suppresses notifications and hides asks from the circle list, but they stay answerable by id, and the muted member never learns of it. Should mute also hide shares received and outfit proposals? **Ratify as built; no extension.**
+6. **PD-05.** Should persona learning default to on, for in-app personalization evidence only? **Keep on, disclosed in onboarding.** Privacy review can flip it with one default.
+7. **Retention after account deletion.** The lane keeps only `PersonaTombstones` (member id + time, so a racing job cannot recreate the profile) and anonymized moderation reports. **Ratify; review with privacy counsel before launch.**
+
+*Integration & security*
+
+8. **Outbox catalog.** How do the 36 lane contracts reach the outbox worker? **The foundation worker imports `brandme_core.domains.persona.lane` (one line).** I then delete `persona/outbox_worker.py`.
+9. **Outbox retention.** `OutboxEvents` keep a deleted member's `member_private` payloads indefinitely (20 rows in the test). **Foundation purges delivered rows after a fixed window (proposal: 7 days), and the privacy lane redacts the subject's undelivered payloads at deletion.** The lane will not write to the foundation's table.
+10. **`commerce.order.observed`.** It is not in a registered closed catalog, so it cannot be published and the wardrobe order path is not end-to-end. **Commerce registers it with the schema mirrored in `persona/ingress.py` `ORDER_OBSERVED_V1`;** my consumer copy then retires.
+11. **PD-12 session scopes.** **Foundation first-party sessions grant `wardrobe:*`, `outfits:*`, `social:*`, `rewards:read`, `rewards:write`.** Agents never receive `social:write` or `rewards:write`.
+12. **PD-07 / PD-18 auth transports.** **The gateway mints a short-lived, audience-bound internal JWT for gateway→Python. The console uses a server-side token exchange, not a shared cookie domain.**
+13. **Lane subscription.** Ingress never acks rejections. **Infra provisions `brandme-<env>-consumer-lane` on the member_private topic** with:
+    - a dead-letter topic after 5 attempts
+    - 7-day retention
+    - a subscriber identity holding `pubsub.subscriber` on that subscription only
+14. **Credentials.** None exist. **The founder approves dev-only equivalents when each integration starts:**
+    - a dev-project service account with subscriber rights on one subscription
+    - a dev GCS bucket with a 24 h lifecycle for try-on media
+    - no try-on provider key until a provider's terms pass review
+
+    Each is logged in the manifest. Flag: provider and storage are inherently prod-facing.
+
+*Scope & sequencing*
+
+15. **Trivy (70 alerts).** **A separate dependency PR by the foundation/UI owners. PR #52 merges with Trivy accepted as pre-existing.**
+16. **V002 replacement.** The lane's V002 replaces `main`'s stage-1 V002, which would cause a checksum mismatch on any persistent database. **No persistent DB has it: replace in place.** Otherwise I add a forward migration.
+17. **Merge path.** PR #52 targets the bench base while `main` has moved (privacy, outbox, commerce, rights). **Merge `main` into the lane branch (no rebase), retarget PR #52 to `main`, and run the 482-test overlay suite in CI with the Pub/Sub emulator.**
+18. **PD-19.** **The shell nav links `/rewards-disputes`; the folder does not move.**
+19. **Media.** **Next lane build: a GCS-backed `MediaStore` (signed URLs, lifecycle, purge) on the dev bucket from Q14.** The try-on provider stays simulated until one is approved.
+20. **BM-LOY-005 Firestore reward projection.** **Defer.** Serve rewards from Spanner and build the projection only when the foundation publishes its projection pattern.
+21. **Referral and research reward rules.** No system emits them. **Drop them from the launch rule table and keep the rule ids reserved.**
+
+**(c) Next build steps for the top three (Q1, Q8, Q17).**
+- **Q1 shell contract**
+  - *Enforce (default):* once the shell lands on the shared base, replace the adapter body with the re-export and run console `tsc`/`build` plus the 13-step browser smoke. Then remove the adapter comment block. Commerce follows the same recipe.
+  - *Retire:* move the adapter to `components/ops/page-header.tsx` with lane-owned CSS, since shell classes may go, and add a test that each ops page renders exactly one `h1`.
+  - *Keep optional (v1 §3 as is):* leave the adapter and add a markup snapshot test against the contract so drift is caught in CI.
+- **Q8 outbox catalog**
+  - *Foundation imports the lane module (default):* delete `persona/outbox_worker.py`, point the Pub/Sub test at `brandme_core.events.worker`, and add a test that all 36 lane contracts are in its allowlist.
+  - *`OUTBOX_CATALOG_MODULES` env list:* keep `brandme_core.domains.persona.lane` as the stable module name and test the env path.
+  - *A separate lane worker:* default its `OUTBOX_EVENT_TYPES` to lane types only, run it as its own Deployment, and add a test that it never claims foundation types.
+- **Q17 merge path**
+  - *Retarget to `main` (default):* merge `origin/main`, resolve V002 and persona overlaps in favour of the lane where `main` has stage-1 code, add the Pub/Sub emulator to the lane CI job, and retarget.
+  - *Stay on bench; the integrator merges:* keep the overlay evidence current after each `main` move and do nothing else.
+  - *Split the PR:* persona + wardrobe first, then social + rewards, then media + console. This is easier to review, but consumers wait on producers across PRs.
