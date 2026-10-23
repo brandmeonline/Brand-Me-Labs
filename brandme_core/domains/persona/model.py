@@ -175,7 +175,15 @@ class Evidence:
 
 
 EVIDENCE_SOURCE_TYPES = frozenset(
-    {"onboarding_choice", "saved_look", "saved_product", "wardrobe_item", "recommendation_feedback", "outfit_worn"}
+    {
+        "onboarding_choice",
+        "saved_look",
+        "saved_product",
+        "wardrobe_item",
+        "recommendation_feedback",
+        "outfit_worn",
+        "legacy_profile",
+    }
 )
 
 

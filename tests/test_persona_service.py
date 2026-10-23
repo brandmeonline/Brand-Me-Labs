@@ -9,24 +9,25 @@ from pathlib import Path
 
 import jsonschema
 import pytest
-from google.api_core.exceptions import Aborted
 
 from brandme_core.domains.persona import deletion
 from brandme_core.domains.persona.kernel import (
     FixedClock,
+    Forbidden,
     InvalidTransition,
     NotFound,
-    Principal,
+    PreconditionRequired,
     ValidationFailed,
     VersionConflict,
-    new_id,
+    member_principal,
     query,
+    run_read,
     run_txn,
 )
 from brandme_core.domains.persona.model import AXIS_KEYS
 from brandme_core.domains.persona.recommender import Candidate
 from brandme_core.domains.persona.service import PersonaService
-from test_persona_harness import spanner_db  # noqa: F401  (fixture)
+from test_persona_harness import AbortOnceDB, insert_member, spanner_db  # noqa: F401  (fixture)
 
 SCHEMA = json.loads((Path(__file__).resolve().parents[1] / "docs/design/brandme/contracts/domain.schema.json").read_text())
 FIXTURE = Path(__file__).parent / "fixtures" / "persona" / "catalog_candidates.json"
@@ -57,8 +58,8 @@ def svc(spanner_db):
 
 
 @pytest.fixture
-def member():
-    return Principal(member_id=new_id(), scopes=SCOPES)
+def member(spanner_db):
+    return member_principal(insert_member(spanner_db), SCOPES)
 
 
 def seed(svc, member, **axes):
@@ -104,6 +105,7 @@ def test_two_devices_same_version_one_wins_with_merge_guidance(svc, member):
     svc.patch(member, '"1"', {"changes": [{"axis": "expression", "value": 70, "locked": True}], "client_revision": "phone"})
     with pytest.raises(VersionConflict) as same_axis:
         svc.patch(member, '"1"', {"changes": [{"axis": "expression", "value": 20, "locked": True}], "client_revision": "laptop"})
+    assert same_axis.value.code == "revision_conflict" and same_axis.value.status == 409
     assert same_axis.value.extra == {
         "current_version": "2",
         "mergeable": False,
@@ -238,7 +240,7 @@ def test_snapshot_inspect_and_restore_as_new_version(svc, member, spanner_db):
     assert restored["profile"]["declared_axes"]["expression"] == 72
     assert outbox_count(spanner_db, member.member_id, "persona.snapshot.saved") == 1
     with pytest.raises(NotFound):
-        svc.restore_snapshot(Principal(new_id(), SCOPES), '"0"', snap["snapshot_id"])  # another member cannot see it
+        svc.restore_snapshot(member_principal(insert_member(spanner_db), SCOPES), '"0"', snap["snapshot_id"])  # another member cannot see it
 
 
 def test_budget_and_exclusions_flow_through_to_recommendations(svc, member):
@@ -262,9 +264,13 @@ def test_budget_and_exclusions_flow_through_to_recommendations(svc, member):
 def test_not_me_feedback_hides_product_and_is_idempotent(svc, member):
     seed(svc, member, expression=72)
     dress = "9572fdc7-31e0-5b80-be82-147ef4a5e69c"
-    a = svc.record_feedback(member, dress, "dress", "not_me", "k1")
-    b = svc.record_feedback(member, dress, "dress", "not_me", "k1")
+    a = svc.record_feedback(member, dress, "dress", "not_me", "feedback-key-0001")
+    b = svc.record_feedback(member, dress, "dress", "not_me", "feedback-key-0001")
     assert a == b
+    from brandme_core.domains.persona.kernel import IdempotencyConflict
+
+    with pytest.raises(IdempotencyConflict):
+        svc.record_feedback(member, dress, "dress", "interested", "feedback-key-0001")
     assert dress not in {i["product_id"] for i in svc.recommendations(member)["items"]}
 
 
@@ -326,31 +332,6 @@ def test_adaptation_requires_first_confirmation_and_is_bounded(svc, member):
     assert svc.get(member)["profile"]["declared_axes"]["color"] == 50
 
 
-class AbortOnceDB:
-    """Wraps a Database so the first attempt of each transaction raises ABORTED
-    *after* the domain callback has buffered all its mutations (incl. outbox)."""
-
-    def __init__(self, db):
-        self._db = db
-        self.attempts = 0
-
-    def __getattr__(self, name):
-        return getattr(self._db, name)
-
-    def run_in_transaction(self, fn, *a, **kw):
-        state = {"n": 0}
-
-        def wrapped(txn):
-            state["n"] += 1
-            self.attempts += 1
-            out = fn(txn)
-            if state["n"] == 1:
-                raise Aborted("injected abort after buffering mutations", errors=["injected"])
-            return out
-
-        return self._db.run_in_transaction(wrapped, *a, **kw)
-
-
 def test_transaction_retry_does_not_duplicate_outbox(spanner_db, member):
     flaky = AbortOnceDB(spanner_db)
     svc = PersonaService(flaky, clock=FixedClock(NOW))
@@ -364,10 +345,9 @@ def test_transaction_retry_does_not_duplicate_outbox(spanner_db, member):
 
 def test_deletion_tombstone_blocks_racing_inference(svc, member, spanner_db):
     seed(svc, member, expression=60)
-    exported = None
-    with spanner_db.snapshot(multi_use=True) as s:
-        exported = deletion.export_member(s, member.member_id)
-    assert exported["profile"]["version"] == "1" and len(exported["axes"]) == 12
+    exported = run_read(spanner_db, lambda s: deletion.export_member(s, member.member_id))
+    declared = exported["categories"]["persona.declared"][0]
+    assert declared["profile_version"] == "1" and len(declared["axes"]) == 12
     receipt = run_txn(spanner_db, lambda t: deletion.delete_member(t, member.member_id))
     assert receipt["tombstoned"] is True
     assert svc.ingest_evidence(member_id=member.member_id, source_type="saved_look", source_ref="late", axis_contributions={"color": 1}) == "tombstoned"
@@ -379,9 +359,60 @@ def test_deletion_tombstone_blocks_racing_inference(svc, member, spanner_db):
         assert query(s, "SELECT COUNT(*) FROM PersonaAxes WHERE member_id=@m", {"m": member.member_id}, {"m": __import__("google.cloud.spanner_v1", fromlist=["param_types"]).param_types.STRING})[0][0] == 0
 
 
-def test_missing_scope_is_rejected(svc):
-    ro = Principal(new_id(), frozenset({"profile:read"}))
-    from brandme_core.domains.persona.kernel import Forbidden
-
+def test_missing_scope_is_rejected(svc, spanner_db):
+    ro = member_principal(insert_member(spanner_db), {"profile:read"})
     with pytest.raises(Forbidden):
         svc.patch(ro, '"0"', {"changes": [], "client_revision": "x"})
+
+
+def test_missing_if_match_is_428(svc, member):
+    with pytest.raises(PreconditionRequired):
+        svc.patch(member, None, {"changes": [], "client_revision": "x"})
+
+
+def test_persona_requires_an_active_v001_member(svc, spanner_db):
+    """No persona for a non-member or a suspended account (interleaved in Members)."""
+    ghost = member_principal("11111111-2222-4333-8444-555555555555", SCOPES)
+    with pytest.raises(NotFound):
+        svc.patch(ghost, '"0"', {"changes": [], "client_revision": "x"})
+    suspended = member_principal(insert_member(spanner_db, account_state="suspended"), SCOPES)
+    with pytest.raises(NotFound):
+        svc.patch(suspended, '"0"', {"changes": [], "client_revision": "x"})
+    assert svc.ingest_evidence(member_id=suspended.member_id, source_type="saved_look", source_ref="s", axis_contributions={"color": 1}) == "tombstoned"
+
+
+def test_outbox_rows_are_valid_foundation_envelopes(svc, member, spanner_db):
+    """Events go through the foundation registry: closed payload, no persona values."""
+    from brandme_core.events import EventEnvelope
+
+    seed(svc, member, expression=60)
+    svc.create_snapshot(member, "Mine")
+    with spanner_db.snapshot() as s:
+        rows = list(s.execute_sql(
+            "SELECT event_id, event_type, schema_version, aggregate_type, aggregate_id, aggregate_version, occurred_at, "
+            "environment, actor_ref, correlation_id, causation_id, privacy_class, payload FROM OutboxEvents "
+            "WHERE aggregate_id=@a ORDER BY aggregate_version, event_type",
+            params={"a": member.member_id},
+            param_types={"a": __import__("google.cloud.spanner_v1", fromlist=["param_types"]).param_types.STRING},
+        ))
+    keys = ("event_id", "event_type", "schema_version", "aggregate_type", "aggregate_id", "aggregate_version", "occurred_at",
+            "environment", "actor_ref", "correlation_id", "causation_id", "privacy_class", "payload")
+    envs = [EventEnvelope.from_row(dict(zip(keys, r))) for r in rows]
+    assert [e.event_type for e in envs] == ["persona.snapshot.saved", "persona.updated"] or \
+        sorted(e.event_type for e in envs) == ["persona.snapshot.saved", "persona.updated"]
+    for e in envs:
+        e.validate()  # registered closed schema + forbidden-key check
+        assert e.actor_ref == f"member:{member.member_id}"
+        assert not any(isinstance(v, int) and not isinstance(v, bool) for v in e.payload.values())
+
+
+def test_inference_worker_events_are_attributed_to_the_service(svc, member, spanner_db):
+    seed(svc, member, expression=60)
+    assert svc.ingest_evidence(member_id=member.member_id, source_type="saved_look", source_ref="w", axis_contributions={"color": 5}) == "accepted"
+    with spanner_db.snapshot() as s:
+        actors = {r[0] for r in s.execute_sql(
+            "SELECT actor_ref FROM OutboxEvents WHERE aggregate_id=@a",
+            params={"a": member.member_id},
+            param_types={"a": __import__("google.cloud.spanner_v1", fromlist=["param_types"]).param_types.STRING},
+        )}
+    assert actors == {f"member:{member.member_id}", "service:persona-inference"}

@@ -5,9 +5,10 @@
 -- inferred and effective state are stored separately; NULL means
 -- unknown/unanswered, never a fabricated neutral 50.
 --
--- Depends on V001 (members). No foreign key to Members is declared yet because
--- V001 had not been published when this file was written; member_id is the
--- internal UUID from V001. See lane status file, proposed deviation PD-02.
+-- Depends on V001: PersonaProfiles is interleaved in Members (member_id is the
+-- internal UUID from V001), so a persona cannot exist without a member and is
+-- removed with it. Tombstones and guest-migration records are deliberately NOT
+-- interleaved: they must outlive the member row.
 
 CREATE TABLE PersonaProfiles (
   member_id STRING(36) NOT NULL,
@@ -27,7 +28,10 @@ CREATE TABLE PersonaProfiles (
   inferred_at TIMESTAMP,
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
   updated_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
-) PRIMARY KEY (member_id);
+  CONSTRAINT ck_persona_budget CHECK (budget_ceiling_minor IS NULL OR budget_ceiling_minor >= 0),
+  CONSTRAINT ck_persona_version CHECK (version >= 1),
+) PRIMARY KEY (member_id),
+  INTERLEAVE IN PARENT Members ON DELETE CASCADE;
 
 -- One row per (member, axis). declared_revision is the profile version at which
 -- the declared value / lock last changed; it drives mergeable-conflict guidance.

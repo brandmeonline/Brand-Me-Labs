@@ -50,6 +50,7 @@ Never edit another lane's owned files. Never edit `docs/design/brandme/**` or `c
 - Test runtime: Python 3.11.15; `google-cloud-spanner==3.71.0`, `pytest==9.1.1`, `pytest-asyncio==1.4.0`, `jsonschema==4.26.0`, `fastapi==0.142.2` (installed in the session; pins proposed below). Spanner emulator `gcr.io/cloud-spanner-emulator/emulator:1.5.28` run via Docker (`--network host`, ports 9010/9020).
 
 ## Interim shims (replace at integration — do not treat as final architecture)
+> **Superseded by Stage 2 (2026-10-23):** the kernel now wraps the foundation framework, and the interim DDL fixture is deleted. See the Stage 2 table for what remains.
 | Shim | Why | Replace with |
 |---|---|---|
 | `brandme_core/domains/persona/kernel.py` (Principal, Clock, problem errors, outbox writer, idempotency helper, `run_txn`/`run_read`) | foundation `base.py`/`events.py`/`brandme_core/events/` absent | thin re-export of foundation framework |
@@ -108,3 +109,50 @@ Reconciliation checklist, from reading `25dff5c`:
 | `tests/fixtures/persona/interim_foundation.sql` + harness | `brandme-data/spanner/migrations/runner.py` + V001 | Delete the interim DDL. The harness should run V001→V005 via the runner. |
 
 Development continues on the interim shims until the base moves. The next stages write new code behind thin seams (Principal, outbox, idempotency) so the switch-over touches only `kernel.py`.
+
+## Stage 2 — Persona reconciled with the foundation framework + W10 privacy registration — 2026-10-23
+Branch `claude/opus-consumer-domains-1csp2g`, restarted from the merged lane base `d839267` (PR #32 merged 2026-10-07). It now merges **`bench/opus-foundation-20261005` @ `67327e4`**, as the commerce-agents lane did in `1020981`. No foundation-owned file was edited.
+
+**What changed**
+- `persona/kernel.py` is now a thin adapter over the foundation framework. It uses the foundation's `Principal`, errors, `authorize`/`Grant`, `parse_if_match` (428 when missing) and `canonical_digest`. All writes go through `run_command`/`run_idempotent_command`, which commit rows and V001 `OutboxEvents` together. Idempotency now runs on the V001 `IdempotencyRecords(state, response_status, response_body)` with 16–128-character keys. The lane-specific pieces it adds are:
+  - `ValidationFailed` (422) and `RateLimited` (429)
+  - problem extension members (`DetailedVersionConflict` keeps the `mergeable`/`conflicting_axes` guidance under the foundation code `revision_conflict`)
+  - `Clock`
+  - `ServicePrincipal` (`actor_ref` `service:<name>`) for workers
+  - the PD-04 discarded-transaction retry, done by wrapping the database passed to `run_command`
+- `persona/events.py` registers the 4 event types as closed JSON schemas (`persona.updated` carries a `change_kind` enum and axis names; no values). The foundation `EventEnvelope.validate` passes on every outbox row (`test_outbox_rows_are_valid_foundation_envelopes`).
+- **V002** now interleaves `PersonaProfiles` in V001 `Members ON DELETE CASCADE` and adds CHECKs on version and budget. Tombstones and guest-migration rows stay non-interleaved so they outlive the member row. Every write requires an `active` member, otherwise 404. This closes PD-02.
+- **W10 registration (`persona/deletion.py`).** Five categories: `persona.declared`, `persona.inferred`, `persona.evidence`, `persona.snapshots`, `persona.feedback`. They are registered two ways:
+  - with the foundation `register_data_category` (export and delete callables);
+  - with the privacy lane's published `DomainPrivacyHandler`, when `brandme_core.domains.privacy` is importable.
+
+  Deleting evidence keeps the one-way fingerprints as suppression rules, so a queued job cannot re-ingest the same observations.
+- **Privacy guard (`persona/privacy_guard.py`).** Every inference, adaptation or provisioning write calls the privacy lane's `assert_processing_allowed(txn, member_id, category, basis_time)` inside its own transaction. If that module is absent (this branch), it falls back to `PersonaTombstones`. `guard_enforced()` reports which guard ran. `ingest_evidence` takes a `basis_time`.
+- **Legacy backfill (`persona/backfill.py`).** `Users.persona_warm_cold` and `Users.persona_sport_couture` are 0–1 floats where 0 = warm/sport. They become 0–100 `legacy_profile` **evidence**, in checkpointed and idempotent batches. Invalid, null and non-member rows are counted and skipped. Nothing is declared or locked (PD-06).
+- **Test harness:** the interim DDL fixture is deleted. Each session applies **every** migration from an empty database through the foundation `runner.py` and its checksum ledger, and asserts that V001 is first.
+
+**Evidence (pinned stack from `scripts/python/requirements.lock`: Python 3.11.15, google-cloud-spanner 3.40.1, pytest 7.4.3; emulator 1.5.28 per compatibility-lock)**
+| Run | Result |
+|---|---|
+| This branch: `pytest tests/test_persona_*.py tests/foundation -W error::pytest.PytestUnhandledThreadExceptionWarning` | **148 passed, 3 skipped**. The 3 skips are the privacy-lane integration tests (module absent here, so NOT RUN). Persona and foundation together passed 3 runs in a row; the concurrency subset passed 5 runs in a row. |
+| W11 integration `bec80b1` with this stage's files overlaid (scratch worktree, W11's own lock + commerce requirements): `pytest tests/test_persona_*.py tests/test_privacy.py tests/test_rights.py` | **80 passed, 0 skipped**. This includes `test_processing_freeze_blocks_inference_write`, `test_tombstone_newer_than_job_basis_blocks_write` and the privacy-registry test, all running for real. |
+| Whole W11 Python suite, overlay vs untouched baseline | Baseline **16 failed / 242 passed**; overlay **15 failed / 253 passed**. The overlay adds no new failure and fixes one: W11's copy of `test_transaction_retry_does_not_duplicate_outbox` fails on google-cloud-spanner 3.40.1 because the injected Aborted needs a `trailing_metadata` cause. The remaining 15 failures and 3 collection errors are all `test_commerce_ap2.py`/`test_providers.py`/`test_mcp.py`/`test_commerce_protocols.py`/`test_commerce_assistant.py` (missing vendored AP2 files / external prerequisites), identical before and after. |
+
+New tests: `test_persona_privacy.py` (registry, category export/delete, idempotent account delete, plus 3 privacy-lane integration tests), `test_persona_backfill.py` (scaling, no-legacy-table no-op, checkpoint/idempotency/honesty), and in `test_persona_service.py`: 428 on a missing If-Match, active-member requirement, envelope validation, service attribution of worker events.
+
+**Remaining interim pieces**
+| Piece | Status |
+|---|---|
+| `kernel._RetryingDatabase` (PD-04) | Kept. Foundation `run_command` does not retry transactions discarded before commit; foundation should adopt this or reject it. |
+| `privacy_guard` fallback to lane tombstones | Kept until the privacy lane's module and V009 reach this lane's base; then the fallback can go. |
+| Gateway→Python principal transport | **Not defined by foundation.** Commerce uses a gateway-signed executor assertion; privacy uses an `x-subject-ref` relay. This lane's routers take the transport by injection (proposal **PD-07**: foundation picks one; this lane recommends the commerce executor assertion, which is asymmetric and audience-bound). |
+
+**Integration risks for the parent / W11 (please read)**
+- **Migration order.** W11 already contains V006–V009 but not V003–V005. The runner refuses out-of-order versions unless run with `--allow-out-of-order` (refused in sandbox/production). Any *persistent* database built from W11 before V003–V005 merge would be stuck. Keep W11 databases ephemeral until this lane's V003–V005 land, or the integrator should decide the order explicitly.
+- W11 carries the stage-1 `test_persona_service.py`, which fails on the pinned spanner 3.40.1. Stage 2 fixes it.
+
+**Proposed deviations added**
+- **PD-06** Legacy persona values become suppressible `legacy_profile` evidence, not declared or locked values, because their provenance is unknown.
+- **PD-07** A single gateway→domain principal transport needs to be chosen by foundation (see above).
+- **PD-08** `brandme_core/domains/media` has no reserved migration number (foundation README: "propose at integration"). This lane's brief allows only V002–V005, so try-on/media tables will be placed in **V003_wardrobe** unless foundation reserves a number first.
+- PD-02 is **closed** (interleaved in Members).

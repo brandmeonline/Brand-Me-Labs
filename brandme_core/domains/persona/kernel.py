@@ -1,138 +1,197 @@
 """
-Consumer-domain kernel (interim).
+Consumer-domain kernel: the lane's thin adapter over the foundation framework.
 
-Shared primitives used by the persona, wardrobe, social, rewards and media
-domains: principal, clock, typed domain errors, canonical digests, the
-transactional outbox writer and the idempotency-record helper.
+The persona, wardrobe, social, rewards and media domains share this module.
+Everything with a foundation equivalent comes from the foundation framework:
+``Principal``, the error types, ``authorize``/``Grant``, If-Match parsing,
+canonical digests, ``run_command``/``run_idempotent_command`` (rows + outbox in
+one Spanner transaction) and the closed-schema event registry
+(``brandme_core.domains.events``). The V001 ``OutboxEvents`` and
+``IdempotencyRecords`` tables back them.
 
-INTERIM: the opus-foundation lane owns ``brandme_core/domains/base.py``,
-``brandme_core/domains/events.py`` and ``brandme_core/events/``. Those files did
-not exist when this lane started (see docs/build/status/opus-consumer-domains.md).
-This module mirrors the chapter-03 contracts so the domains can be built and
-tested now; at integration it should become a thin re-export of the foundation
-framework. Table names used here (``OutboxEvents``, ``IdempotencyRecords``) are
-provisioned by ``tests/fixtures/persona/interim_foundation.sql`` until V001
-lands.
+This module adds only what the framework does not provide:
+
+* ``ValidationFailed`` / ``RateLimited`` and an ``extra`` payload on errors
+  (problem+json extension members such as mergeable-conflict guidance);
+* a deterministic ``Clock`` (domain time; tests freeze it);
+* ``ServicePrincipal`` for worker commands (actor_ref ``service:<name>``);
+* strict integer / allowlist validation helpers;
+* ``command`` / ``idempotent_command`` wrappers that re-run a transaction
+  Spanner discarded before commit (proposed deviation PD-04);
+* read helpers (``run_read``, ``query``, ``json_value``).
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
+import os
+import random
+import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Mapping, Optional, Protocol
+from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Mapping, Optional, Protocol, Tuple, TypeVar
 
-from google.cloud import spanner
 from google.cloud.spanner_v1 import JsonObject, param_types
 
+from brandme_core.domains import (  # noqa: F401  (re-exported for lane modules)
+    CommandContext,
+    DomainError,
+    Forbidden,
+    Grant,
+    IdempotencyConflict,
+    InvalidTransition,
+    NotFound,
+    PreconditionRequired,
+    Principal,
+    VersionConflict,
+    authorize,
+    canonical_digest,
+    parse_if_match,
+    run_command,
+    run_idempotent_command,
+)
+from brandme_core.domains.events import UUID, closed, register as register_event_type  # noqa: F401
+
+T = TypeVar("T")
+
 ENVIRONMENTS = ("demo", "development", "sandbox", "production")
-PRIVACY_CLASSES = ("public", "member_private", "restricted")
-OUTBOX_SHARDS = 16
+NIL_MEMBER = "00000000-0000-0000-0000-000000000000"
+REVISION = {"type": "string", "pattern": "^(0|[1-9][0-9]{0,17})$"}
 
 
 # ---------------------------------------------------------------------------
-# Errors -> application/problem+json
+# Errors (extensions of the foundation hierarchy)
 # ---------------------------------------------------------------------------
 
 
-class DomainError(Exception):
-    status = 400
-    code = "bad_request"
-    title = "Bad request"
-    retryable = False
-
-    def __init__(self, detail: str, *, extra: Optional[Dict[str, Any]] = None):
-        super().__init__(detail)
-        self.detail = detail
-        self.extra = extra or {}
-
-    def to_problem(self, instance: str, request_id: str) -> Dict[str, Any]:
-        body = {
-            "type": f"https://brand.me/problems/{self.code}",
-            "title": self.title,
-            "status": self.status,
-            "code": self.code,
-            "detail": self.detail,
-            "instance": instance,
-            "request_id": request_id,
-            "retryable": self.retryable,
-        }
-        body.update(self.extra)
-        return body
+def _with_extra(err: DomainError, extra: Optional[Dict[str, Any]]) -> DomainError:
+    err.extra = dict(extra or {})
+    return err
 
 
 class ValidationFailed(DomainError):
-    status = 422
-    code = "validation_failed"
-    title = "The request is not valid"
+    status, code = 422, "validation_failed"
 
-
-class NotFound(DomainError):
-    """Also used for unauthorized private resources so existence does not leak."""
-
-    status = 404
-    code = "not_found"
-    title = "Not found"
-
-
-class VersionConflict(DomainError):
-    status = 409
-    code = "version_conflict"
-    title = "The resource changed since you loaded it"
-
-
-class IdempotencyConflict(DomainError):
-    status = 409
-    code = "idempotency_key_reused"
-    title = "Idempotency key was used with a different request"
-
-
-class InvalidTransition(DomainError):
-    status = 422
-    code = "invalid_transition"
-    title = "That action is not valid in the current state"
+    def __init__(self, detail: str, *, extra: Optional[Dict[str, Any]] = None):
+        super().__init__(detail)
+        _with_extra(self, extra)
 
 
 class RateLimited(DomainError):
-    status = 429
-    code = "rate_limited"
-    title = "Too many requests"
-    retryable = True
+    status, code, retryable = 429, "rate_limited", True
+
+    def __init__(self, detail: str, *, extra: Optional[Dict[str, Any]] = None):
+        super().__init__(detail)
+        _with_extra(self, extra)
 
 
-class Forbidden(DomainError):
-    """Use only where revealing existence is harmless (own resource, missing scope)."""
+class DetailedVersionConflict(VersionConflict):
+    """A 409 that also tells the client whether its edit can be merged."""
 
-    status = 403
-    code = "forbidden"
-    title = "Not permitted"
+    def __init__(self, detail: str, current_version: int, *, extra: Optional[Dict[str, Any]] = None):
+        super().__init__(detail, current_version=current_version)
+        _with_extra(self, {"current_version": str(current_version), **(extra or {})})
+
+
+class DetailedInvalidTransition(InvalidTransition):
+    def __init__(self, detail: str, *, code: Optional[str] = None, extra: Optional[Dict[str, Any]] = None):
+        super().__init__(detail, code=code)
+        _with_extra(self, extra)
+
+
+def problem_extras(err: Exception) -> Dict[str, Any]:
+    extra = dict(getattr(err, "extra", {}) or {})
+    cv = getattr(err, "current_version", None)
+    if cv is not None and "current_version" not in extra:
+        extra["current_version"] = str(cv)
+    return extra
+
+
+def problem_body(err: DomainError, *, instance: str, request_id: str) -> Dict[str, Any]:
+    """application/problem+json body for a domain error (ch.03 §6)."""
+    title = {
+        400: "Bad request", 403: "Not permitted", 404: "Not found", 409: "Conflict",
+        422: "The request is not valid", 428: "Precondition required", 429: "Too many requests",
+    }.get(err.status, "Error")
+    body = {
+        "type": f"https://brand.me/problems/{err.code}",
+        "title": title,
+        "status": err.status,
+        "code": err.code,
+        "detail": err.detail,
+        "instance": instance,
+        "request_id": request_id,
+        "retryable": bool(getattr(err, "retryable", False)),
+    }
+    for k, v in problem_extras(err).items():
+        body.setdefault(k, v)
+    return body
 
 
 # ---------------------------------------------------------------------------
-# Principal and clock
+# Principals
 # ---------------------------------------------------------------------------
+
+
+def member_principal(
+    member_id: str,
+    scopes: Iterable[str],
+    *,
+    environment: str = "development",
+    subject: Optional[str] = None,
+    session_id: Optional[str] = None,
+    client_id: Optional[str] = None,
+    assurance_level: str = "simulated",
+    delegation_id: Optional[str] = None,
+) -> Principal:
+    return Principal(
+        member_id=member_id,
+        subject=subject or f"dev|{member_id}",
+        session_id=session_id,
+        client_id=client_id,
+        scopes=frozenset(scopes),
+        assurance_level=assurance_level,
+        environment=environment,
+        delegation_id=delegation_id,
+    )
 
 
 @dataclass(frozen=True)
-class Principal:
-    member_id: str
-    scopes: FrozenSet[str]
-    environment: str = "development"
-    session_id: Optional[str] = None
-    client_id: Optional[str] = None
-    delegation_id: Optional[str] = None
-    operator_roles: FrozenSet[str] = frozenset()
+class ServicePrincipal(Principal):
+    """A worker/service actor. It never owns member data, so ``authorize`` on a
+    member resource fails for it unless the domain code explicitly allows the
+    service path."""
 
-    def require(self, scope: str) -> None:
-        if scope not in self.scopes:
-            raise Forbidden(f"missing scope {scope}")
+    service: str = "worker"
 
     @property
-    def actor_ref(self) -> str:
-        return f"member:{self.member_id}"
+    def actor_ref(self) -> str:  # type: ignore[override]
+        return f"service:{self.service}"
+
+
+def service_principal(service: str, *, environment: str = "development") -> ServicePrincipal:
+    return ServicePrincipal(
+        member_id=NIL_MEMBER,
+        subject=f"service|{service}",
+        session_id=None,
+        client_id=None,
+        scopes=frozenset(),
+        assurance_level="service",
+        environment=environment,
+        service=service,
+    )
+
+
+def require_scope(principal: Principal, scope: str) -> None:
+    if scope not in principal.scopes:
+        raise Forbidden(f"scope {scope} required")
+
+
+# ---------------------------------------------------------------------------
+# Clock
+# ---------------------------------------------------------------------------
 
 
 class Clock(Protocol):
@@ -145,7 +204,7 @@ class SystemClock:
 
 
 class FixedClock:
-    """Deterministic test clock. Never used outside tests/demo rebasing."""
+    """Deterministic clock for tests and demo-session rebasing; never production."""
 
     def __init__(self, at: datetime):
         if at.tzinfo is None:
@@ -174,36 +233,42 @@ def iso(dt: Optional[datetime]) -> Optional[str]:
     return utc(dt).isoformat().replace("+00:00", "Z")
 
 
+def parse_iso(value: Any, *, name: str) -> datetime:
+    if not isinstance(value, str):
+        raise ValidationFailed(f"{name} must be an RFC 3339 timestamp", extra={"field": name})
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        raise ValidationFailed(f"{name} must be an RFC 3339 timestamp", extra={"field": name}) from None
+    if dt.tzinfo is None:
+        raise ValidationFailed(f"{name} needs an explicit UTC offset", extra={"field": name})
+    return utc(dt)
+
+
 def new_id() -> str:
     return str(uuid.uuid4())
 
 
 def stable_id(namespace: str, *parts: str) -> str:
-    """Deterministic UUIDv5 for idempotent derived records."""
+    """Deterministic UUIDv5 for derived records (idempotent re-derivation)."""
     return str(uuid.uuid5(uuid.NAMESPACE_URL, "brandme:" + namespace + ":" + "|".join(parts)))
 
 
 # ---------------------------------------------------------------------------
-# Canonical encoding
+# Validation helpers
 # ---------------------------------------------------------------------------
 
 
-def _reject_non_finite(obj: Any) -> Any:
+def reject_non_finite(obj: Any) -> Any:
     if isinstance(obj, float) and not math.isfinite(obj):
         raise ValidationFailed("non-finite number in request")
-    if isinstance(obj, dict):
-        return {str(k): _reject_non_finite(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_reject_non_finite(v) for v in obj]
+    if isinstance(obj, Mapping):
+        for v in obj.values():
+            reject_non_finite(v)
+    elif isinstance(obj, (list, tuple)):
+        for v in obj:
+            reject_non_finite(v)
     return obj
-
-
-def canonical_json(obj: Any) -> str:
-    return json.dumps(_reject_non_finite(obj), sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
-
-
-def canonical_digest(obj: Any) -> str:
-    return hashlib.sha256(canonical_json(obj).encode("utf-8")).hexdigest()
 
 
 def require_strict_int(value: Any, *, name: str, lo: int, hi: int) -> int:
@@ -213,6 +278,23 @@ def require_strict_int(value: Any, *, name: str, lo: int, hi: int) -> int:
     if value < lo or value > hi:
         raise ValidationFailed(f"{name} must be between {lo} and {hi}", extra={"field": name})
     return value
+
+
+def require_uuid(value: Any, *, name: str) -> str:
+    try:
+        return str(uuid.UUID(str(value))) if isinstance(value, str) and len(value) == 36 else _bad_uuid(name)
+    except ValueError:
+        return _bad_uuid(name)
+
+
+def _bad_uuid(name: str) -> str:
+    raise ValidationFailed(f"{name} must be a UUID", extra={"field": name})
+
+
+def require_text(value: Any, *, name: str, max_len: int, min_len: int = 1) -> str:
+    if not isinstance(value, str) or not (min_len <= len(value.strip()) <= max_len):
+        raise ValidationFailed(f"{name} must be {min_len}-{max_len} characters", extra={"field": name})
+    return value.strip()
 
 
 def reject_unknown_keys(body: Mapping[str, Any], allowed: Iterable[str], *, where: str) -> None:
@@ -225,262 +307,33 @@ def reject_unknown_keys(body: Mapping[str, Any], allowed: Iterable[str], *, wher
 
 
 def parse_revision(if_match: Optional[str]) -> int:
-    if if_match is None:
-        raise ValidationFailed("If-Match is required", extra={"field": "If-Match"})
-    raw = if_match.strip()
-    if raw.startswith("W/"):
-        raise ValidationFailed("weak validators are not accepted")
-    raw = raw.strip('"')
-    if not raw.isdigit() or (len(raw) > 1 and raw[0] == "0") or len(raw) > 18:
-        raise ValidationFailed("If-Match must be a revision string", extra={"field": "If-Match"})
-    return int(raw)
+    """Foundation If-Match parsing (428 when missing); bounded to 18 digits."""
+    rev = parse_if_match(if_match)
+    if rev > 10**18:
+        raise PreconditionRequired("If-Match revision out of range")
+    return rev
+
+
+def require_idempotency_key(key: Optional[str]) -> str:
+    if not isinstance(key, str) or not (16 <= len(key) <= 128):
+        raise DomainError("Idempotency-Key must be 16-128 characters", code="idempotency_key_invalid")
+    return key
 
 
 # ---------------------------------------------------------------------------
-# Transactional outbox
+# Transactions
 # ---------------------------------------------------------------------------
-
-# Exact payload keys per event type. Payloads carry internal references and
-# minimal data only (ch.03 §5). Unknown event types or extra keys are rejected.
-EVENT_PAYLOAD_KEYS: Dict[str, FrozenSet[str]] = {}
-
-
-def register_event(event_type: str, keys: Iterable[str]) -> None:
-    keyset = frozenset(keys)
-    existing = EVENT_PAYLOAD_KEYS.get(event_type)
-    if existing is not None and existing != keyset:
-        raise RuntimeError(f"conflicting registration for {event_type}")
-    EVENT_PAYLOAD_KEYS[event_type] = keyset
-
-
-OUTBOX_COLUMNS = (
-    "shard",
-    "event_id",
-    "event_type",
-    "schema_version",
-    "aggregate_type",
-    "aggregate_id",
-    "aggregate_version",
-    "occurred_at",
-    "environment",
-    "actor_ref",
-    "correlation_id",
-    "causation_id",
-    "privacy_class",
-    "payload",
-    "status",
-    "attempts",
-    "next_attempt_at",
-    "created_at",
-)
-
-
-@dataclass
-class OutboxEvent:
-    event_type: str
-    aggregate_type: str
-    aggregate_id: str
-    aggregate_version: int
-    payload: Dict[str, Any]
-    actor_ref: str
-    environment: str
-    occurred_at: datetime
-    privacy_class: str = "member_private"
-    schema_version: str = "1"
-    correlation_id: str = field(default_factory=new_id)
-    causation_id: Optional[str] = None
-    event_id: str = field(default_factory=new_id)
-
-    def validate(self) -> None:
-        keys = EVENT_PAYLOAD_KEYS.get(self.event_type)
-        if keys is None:
-            raise RuntimeError(f"unregistered event type {self.event_type}")
-        if set(self.payload) != keys:
-            raise RuntimeError(
-                f"payload for {self.event_type} must have exactly {sorted(keys)}, got {sorted(self.payload)}"
-            )
-        if self.environment not in ENVIRONMENTS:
-            raise RuntimeError("bad environment")
-        if self.privacy_class not in PRIVACY_CLASSES:
-            raise RuntimeError("bad privacy class")
-
-    def envelope(self) -> Dict[str, Any]:
-        return {
-            "event_id": self.event_id,
-            "event_type": self.event_type,
-            "schema_version": self.schema_version,
-            "aggregate_type": self.aggregate_type,
-            "aggregate_id": self.aggregate_id,
-            "aggregate_version": str(self.aggregate_version),
-            "occurred_at": iso(self.occurred_at),
-            "environment": self.environment,
-            "actor_ref": self.actor_ref,
-            "correlation_id": self.correlation_id,
-            "causation_id": self.causation_id,
-            "privacy_class": self.privacy_class,
-            "payload": self.payload,
-        }
-
-
-def shard_for(aggregate_id: str) -> int:
-    return int(hashlib.sha256(aggregate_id.encode()).hexdigest()[:8], 16) % OUTBOX_SHARDS
-
-
-def write_outbox(txn, events: List[OutboxEvent]) -> None:
-    """Buffer outbox rows inside the caller's read/write transaction.
-
-    Because the rows are mutations in the same transaction as the domain
-    change, an aborted/retried transaction cannot leave a duplicate or orphan
-    event: either everything commits once or nothing does.
-    """
-    if not events:
-        return
-    rows = []
-    for ev in events:
-        ev.validate()
-        rows.append(
-            (
-                shard_for(ev.aggregate_id),
-                ev.event_id,
-                ev.event_type,
-                ev.schema_version,
-                ev.aggregate_type,
-                ev.aggregate_id,
-                ev.aggregate_version,
-                ev.occurred_at,
-                ev.environment,
-                ev.actor_ref,
-                ev.correlation_id,
-                ev.causation_id,
-                ev.privacy_class,
-                JsonObject(ev.payload),
-                "pending",
-                0,
-                ev.occurred_at,
-                spanner.COMMIT_TIMESTAMP,
-            )
-        )
-    txn.insert("OutboxEvents", columns=OUTBOX_COLUMNS, values=rows)
-
-
-# ---------------------------------------------------------------------------
-# Idempotency records
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class IdempotencyHit:
-    response: Dict[str, Any]
-
-
-def idempotency_lookup(txn, principal: Principal, operation: str, key: str, request_digest: str) -> Optional[IdempotencyHit]:
-    if not key or len(key) > 128:
-        raise ValidationFailed("Idempotency-Key is required (1-128 chars)", extra={"field": "Idempotency-Key"})
-    rows = list(
-        txn.execute_sql(
-            "SELECT request_digest, response FROM IdempotencyRecords "
-            "WHERE principal_ref = @p AND environment = @e AND operation = @o AND idempotency_key = @k",
-            params={"p": principal.actor_ref, "e": principal.environment, "o": operation, "k": key},
-            param_types={"p": param_types.STRING, "e": param_types.STRING, "o": param_types.STRING, "k": param_types.STRING},
-        )
-    )
-    if not rows:
-        return None
-    digest, response = rows[0]
-    if digest != request_digest:
-        raise IdempotencyConflict("this Idempotency-Key was already used for a different request")
-    return IdempotencyHit(response=_json_value(response))
-
-
-def idempotency_store(
-    txn,
-    principal: Principal,
-    operation: str,
-    key: str,
-    request_digest: str,
-    response: Dict[str, Any],
-    now: datetime,
-    retention_days: int = 30,
-) -> None:
-    txn.insert(
-        "IdempotencyRecords",
-        columns=(
-            "principal_ref",
-            "environment",
-            "operation",
-            "idempotency_key",
-            "request_digest",
-            "response",
-            "created_at",
-            "expires_at",
-        ),
-        values=[
-            (
-                principal.actor_ref,
-                principal.environment,
-                operation,
-                key,
-                request_digest,
-                JsonObject(response),
-                spanner.COMMIT_TIMESTAMP,
-                now + timedelta(days=retention_days),
-            )
-        ],
-    )
-
-
-# ---------------------------------------------------------------------------
-# Spanner helpers
-# ---------------------------------------------------------------------------
-
-
-def _json_value(v: Any) -> Any:
-    """Normalise a Spanner JSON cell to plain Python."""
-    if v is None:
-        return None
-    if isinstance(v, str):
-        return json.loads(v)
-    if isinstance(v, JsonObject):
-        if getattr(v, "_is_null", False):
-            return None
-        if getattr(v, "_is_array", False):
-            return list(v._array_value)
-        if getattr(v, "_is_scalar_value", False):
-            return v._simple_value
-        return dict(v)
-    return v
-
-
-json_value = _json_value
-
-
-def query(txn_or_snapshot, sql: str, params: Optional[Dict[str, Any]] = None, types: Optional[Dict[str, Any]] = None) -> List[tuple]:
-    return list(txn_or_snapshot.execute_sql(sql, params=params or {}, param_types=types or {}))
-
-
-STR = param_types.STRING
-INT = param_types.INT64
-TS = param_types.TIMESTAMP
-BOOL = param_types.BOOL
-
-
-def server_now(txn) -> datetime:
-    """Spanner's CURRENT_TIMESTAMP() inside the caller's transaction."""
-    return query(txn, "SELECT CURRENT_TIMESTAMP()")[0][0]
 
 
 def _rolled_back(exc: Exception) -> bool:
     """True when Spanner reports that our (uncommitted) transaction was discarded.
 
-    Production Spanner: NOT_FOUND "Transaction not found" (e.g. session
-    reclaimed). The emulator additionally discards concurrent transactions under
-    its one-writer-at-a-time policy and reports that as FAILED_PRECONDITION
-    ("...committed or rolledback", "Invalid transaction ID") or NOT_FOUND; those
-    broader messages are only treated as retryable when SPANNER_EMULATOR_HOST
-    is set.
+    Production Spanner: NOT_FOUND "Transaction not found" (session reclaimed).
+    The emulator also discards concurrent transactions under its
+    one-writer-at-a-time policy and reports FAILED_PRECONDITION ("...committed
+    or rolledback", "Invalid transaction ID") or NOT_FOUND; those broader
+    messages are retryable only when SPANNER_EMULATOR_HOST is set.
     """
-    import os
-
     from google.api_core.exceptions import FailedPrecondition, NotFound as GNotFound
 
     msg = str(exc)
@@ -491,10 +344,7 @@ def _rolled_back(exc: Exception) -> bool:
     return False
 
 
-def _retrying(call: Callable[[], Any], max_attempts: int, budget_seconds: float) -> Any:
-    import random
-    import time
-
+def _retrying(call: Callable[[], T], max_attempts: int = 40, budget_seconds: float = 60.0) -> T:
     from google.api_core.exceptions import FailedPrecondition, NotFound as GNotFound
 
     deadline = time.monotonic() + budget_seconds
@@ -509,21 +359,105 @@ def _retrying(call: Callable[[], Any], max_attempts: int, budget_seconds: float)
             time.sleep(min(0.5, 0.01 * (2 ** min(attempt, 6))) * (0.5 + random.random()))
 
 
-def run_txn(db, fn: Callable[[Any], Any], *, max_attempts: int = 40, budget_seconds: float = 60.0) -> Any:
-    """Run ``fn`` in a read/write transaction.
+class _RetryingDatabase:
+    """Passes everything through; re-runs whole transactions discarded pre-commit."""
 
-    The client library already retries ABORTED. A transaction discarded before
-    commit (see ``_rolled_back``) never committed, and ``fn`` performs no
-    external side effects, so re-running the whole function is safe.
-    """
-    return _retrying(lambda: db.run_in_transaction(fn), max_attempts, budget_seconds)
+    def __init__(self, db):
+        self._db = db
+
+    def __getattr__(self, name):
+        return getattr(self._db, name)
+
+    def run_in_transaction(self, fn, *a, **kw):
+        return _retrying(lambda: self._db.run_in_transaction(fn, *a, **kw))
 
 
-def run_read(db, fn: Callable[[Any], Any], *, max_attempts: int = 40, budget_seconds: float = 60.0) -> Any:
+def command(
+    db,
+    principal: Principal,
+    fn: Callable[[Any, CommandContext], T],
+    *,
+    correlation_id: Optional[str] = None,
+    causation_id: Optional[str] = None,
+) -> T:
+    """Foundation ``run_command``: rows + emitted events commit together."""
+    ctx = CommandContext(principal=principal, environment=principal.environment, causation_id=causation_id)
+    if correlation_id:
+        ctx.correlation_id = correlation_id
+    return run_command(_RetryingDatabase(db), ctx, fn)
+
+
+def idempotent_command(
+    db,
+    principal: Principal,
+    operation: str,
+    idempotency_key: Optional[str],
+    request: Mapping[str, Any],
+    fn: Callable[[Any, CommandContext], Dict[str, Any]],
+) -> Tuple[Dict[str, Any], bool]:
+    """Foundation ``run_idempotent_command``: returns ``(response, replayed)``."""
+    ctx = CommandContext(principal=principal, environment=principal.environment)
+    reject_non_finite(request)
+    return run_idempotent_command(
+        _RetryingDatabase(db), ctx, operation, require_idempotency_key(idempotency_key), request, fn
+    )
+
+
+def run_txn(db, fn: Callable[[Any], T]) -> T:
+    """Plain read/write transaction with no events (maintenance/test helpers)."""
+    return _retrying(lambda: db.run_in_transaction(fn))
+
+
+def run_read(db, fn: Callable[[Any], T]) -> T:
     """Run ``fn`` against a consistent multi-use read-only snapshot."""
 
     def call():
         with db.snapshot(multi_use=True) as snap:
             return fn(snap)
 
-    return _retrying(call, max_attempts, budget_seconds)
+    return _retrying(call)
+
+
+# ---------------------------------------------------------------------------
+# Spanner helpers
+# ---------------------------------------------------------------------------
+
+
+def json_value(v: Any) -> Any:
+    """Normalise a Spanner JSON cell to plain Python."""
+    if v is None:
+        return None
+    if isinstance(v, str):
+        return json.loads(v)
+    if isinstance(v, JsonObject):
+        if getattr(v, "_is_null", False):
+            return None
+        if getattr(v, "_is_array", False):
+            return list(v._array_value)
+        if getattr(v, "_is_scalar_value", False):
+            return v._simple_value
+        return json.loads(v.serialize()) if hasattr(v, "serialize") else dict(v)
+    return v
+
+
+def query(txn_or_snapshot, sql: str, params: Optional[Dict[str, Any]] = None, types: Optional[Dict[str, Any]] = None) -> List[tuple]:
+    return list(txn_or_snapshot.execute_sql(sql, params=params or {}, param_types=types or {}))
+
+
+STR = param_types.STRING
+INT = param_types.INT64
+TS = param_types.TIMESTAMP
+BOOL = param_types.BOOL
+FLOAT = param_types.FLOAT64
+STR_ARRAY = param_types.Array(param_types.STRING)
+
+
+def server_now(txn) -> datetime:
+    """Spanner's CURRENT_TIMESTAMP() inside the caller's transaction."""
+    return query(txn, "SELECT CURRENT_TIMESTAMP()")[0][0]
+
+
+def member_active(txn, member_id: str) -> bool:
+    """V001 Members row exists and the account accepts new personal data."""
+    rows = query(txn, "SELECT account_state FROM Members WHERE member_id=@m", {"m": member_id}, {"m": STR})
+    return bool(rows) and rows[0][0] == "active"
