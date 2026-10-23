@@ -31,11 +31,17 @@ import {
 } from '../../src/midnight/rights-contract.js';
 import { random32, toHex } from '../../src/midnight/bytes.js';
 import manifest from '../../contracts/artifact-manifest.json' with { type: 'json' };
+import toolchain from '../../contracts/toolchain.json' with { type: 'json' };
+import pkg from '../../package.json' with { type: 'json' };
 
 const { env, endpoints, seeds } = resolveNetwork();
 const evidence = new Evidence(endpoints.networkId, {
   badge: endpoints.badge,
-  tuple: { compactc: manifest.compactc, runtime: manifest.runtimeVersion, midnightJs: '4.1.1', proofServer: '8.1.0' },
+  tuple: {
+    compactc: manifest.compactc, runtime: manifest.runtimeVersion,
+    midnightJs: pkg.dependencies['@midnight-ntwrk/midnight-js-contracts'],
+    proofServer: toolchain.proofServerImage.split(':').pop()!,
+  },
   sourceSha256: manifest.contracts.brandme_rights.source.sha256,
 });
 

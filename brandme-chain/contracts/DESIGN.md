@@ -55,7 +55,7 @@ The holder commitment includes the epoch. After a transfer the old holder's secr
 
 | Proving mode | Who sees holder/issuer secrets |
 |---|---|
-| Local proof server (`midnightntwrk/proof-server:8.1.0` on the user's machine or companion) | Only that machine |
+| Local proof server (`midnightntwrk/proof-server:8.1.3` on the user's machine or companion) | Only that machine |
 | Wallet-provided proving through the DApp connector | The wallet/prover the user selected |
 | Remote/managed prover | **The prover operator sees every witness input.** Requires a separate disclosure naming the operator plus explicit consent (ch.04 §3). Not enabled, and never a silent fallback |
 
