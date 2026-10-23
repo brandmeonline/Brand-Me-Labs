@@ -35,14 +35,14 @@ from brandme_core.domains.providers.contracts import CartLineRequest, ProviderEr
 from brandme_core.domains.providers.registry import RegistryError
 from brandme_core.domains.providers.setup import SETUP_UPDATE_FIELDS, ProviderSetupService
 from brandme_core.mcp.authz import DOMAIN_AUDIENCE, AuthError, ExecutorAssertionVerifier
-from brandme_core.orchestrator.runtime import IdempotencyReuse
+from brandme_core.orchestrator.runtime import IdempotencyReuse, TaskConstraints
 
 from .delegation import AssistanceMode, DelegationLimits
-from .errors import Forbidden, IdempotencyConflict, InvalidRequest, NotFound
-from .money import Money
+from .errors import AssistantBusy, Forbidden, IdempotencyConflict, InvalidRequest, NotFound
+from .money import Money, MoneyError
 from .principal import Principal, is_first_party
 from .records import ApprovalChallenge, Cart, Order, PurchaseApproval, PurchaseOperation
-from .service import CommerceService, correlation
+from .service import CommerceService, _uuid_or_none, correlation
 
 PREFIX = "/internal/commerce/v1"
 ASSISTANT_CLIENT_ID = "brandme-assistant"  # Brand.Me's own assistant acts only under a grant to this client
@@ -147,7 +147,8 @@ class CommerceHttpApi:
         self.verifier = verifier
         self.runtime = runtime
         self.planner_factory = planner_factory
-        self.task_runner = task_runner  # runs planners marked ``background`` (model runs) off the request
+        # Runs planners marked ``runs_in_background`` (model runs) off the request (``BackgroundRunner``).
+        self.task_runner = task_runner
         # Operator setup and connection tests; the store defaults to in-memory (InMemoryProviderSetupStore).
         self.setup = ProviderSetupService(service.registry, setup_store, clock=service.clock)
         # operation -> (allowed argument names, handler)
@@ -460,28 +461,54 @@ class CommerceHttpApi:
         return replace(p, session_id=None, client_id=ASSISTANT_CLIENT_ID, scopes=frozenset(d.scopes),
                        delegation_id=d.id)
 
+    @staticmethod
+    def _budget_hint(raw: Any) -> Optional[Money]:
+        """``budget_hint`` is the member's all-in price ceiling: same currency, no FX (None: no ceiling)."""
+        if raw is None:
+            return None
+        try:
+            return Money.from_wire(raw)
+        except MoneyError:
+            raise InvalidRequest("budget_hint must be {amount_minor, currency}", code="invalid_budget_hint") from None
+
     def _task_create(self, p, a, h):
+        """Every create answers 202 (the task runs inline or in the background); a retried create
+        of the same task answers 200 and never runs or submits it twice."""
         self._need(a, "goal")
         agent = self._assistant_principal(p)
         key = h.get("idempotency-key")
+        rid = _uuid_or_none(h.get("x-request-id"))
+        ceiling = self._budget_hint(a.get("budget_hint"))
+        planner = self.planner_factory() if self.planner_factory is not None else None
+        label = getattr(planner, "label", "custom") if planner is not None else "deterministic"
+        background = planner is not None and bool(getattr(planner, "runs_in_background", False))
+        if background and self.task_runner is None:
+            raise InvalidRequest("this planner needs a background task runner", code="assistant_unavailable")
+        if background and not self.task_runner.has_capacity():
+            raise AssistantBusy("the assistant is busy; retry shortly")  # no task is created
         try:
             mode = AssistanceMode(a.get("assistance_mode", "research"))
-            task = self.runtime.create(agent, str(a["goal"]), mode, idempotency_key=key)
+            task = self.runtime.create(agent, str(a["goal"]), mode, idempotency_key=key,
+                                       constraints=TaskConstraints(price_ceiling=ceiling), request_id=rid,
+                                       planner_label=label)
         except IdempotencyReuse as exc:
             raise IdempotencyConflict(str(exc)) from None
         except (ValueError, PermissionError) as exc:
             raise Forbidden(str(exc) or "task refused", code="task_refused") from None
-        if task.state != "queued":  # a retried create: the task already ran (or is running)
-            return 200, {"id": task.id, "state": task.state, "mode": task.mode.value}
-        if self.planner_factory is not None:
-            planner = self.planner_factory()
-            if getattr(planner, "background", False):
-                if self.task_runner is None:
-                    raise InvalidRequest("this planner needs a background task runner", code="assistant_unavailable")
+        body = {"id": task.id, "state": task.state, "mode": task.mode.value, "planner": task.planner_label}
+        if task.state != "queued" or not self.runtime.mark_submitted(task.id):
+            return 200, body  # a retried create: the task already ran, is running or is queued
+        if planner is None:
+            return 202, body
+        if background:
+            try:
                 self.task_runner.submit(agent, task.id, planner)
-                return 202, {"id": task.id, "state": task.state, "mode": task.mode.value}
-            task = self.runtime.run(agent, task.id, planner)
-        return 201, {"id": task.id, "state": task.state, "mode": task.mode.value}
+            except AssistantBusy:
+                self.runtime.fail(task.id, "assistant_busy")
+                raise
+            return 202, dict(body, state="queued")
+        task = self.runtime.run(agent, task.id, planner)
+        return 202, dict(body, state=task.state)
 
     def _task_reader(self, p: Principal) -> Principal:
         """Members read and cancel their own tasks; the runtime checks an agent against its grant."""

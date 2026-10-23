@@ -17,7 +17,7 @@ from brandme_core.domains.commerce.http_api import ASSISTANT_CLIENT_ID, PREFIX, 
 from brandme_core.domains.providers.local_atelier import MERCHANT_ID, PROVIDER_ID
 from brandme_core.mcp.authz import DOMAIN_AUDIENCE, EXECUTOR_AUDIENCE, ExecutorAssertionVerifier, sign_executor_assertion
 from brandme_core.mcp.tools import McpToolExecutor
-from brandme_core.orchestrator import AssistantRuntime, DeterministicPlanner
+from brandme_core.orchestrator import AssistantRuntime, DeterministicPlanner, ProposedCall
 from tests.fixtures.commerce.harness import AGENT_CLIENT, MEMBER, line, world
 
 GW = "https://gateway.example.invalid"
@@ -279,7 +279,7 @@ def test_assistant_needs_a_grant_to_the_brandme_assistant(h):
                               allowed_providers={PROVIDER_ID}, limits=None,
                               expires_at=h.w.clock.now.replace(day=12))
     task = h.call("assistant.task.create", {"goal": "linen overshirt", "assistance_mode": "research"})
-    assert task.status_code == 201, task.text
+    assert task.status_code == 202, task.text  # every create is accepted (ch.05 contract)
     assert task.json()["state"] == "completed"
     events = h.call("assistant.task.events", {"task_id": task.json()["id"]}).json()["events"]
     assert any(e["type"] == "finding" for e in events)
@@ -371,7 +371,7 @@ def test_assistant_task_create_is_idempotent(h):
     key = {"Idempotency-Key": "task-create-00000001"}
     first = h.call("assistant.task.create", body, headers=key)
     again = h.call("assistant.task.create", body, headers=key)  # e.g. the gateway timed out and the client retried
-    assert first.status_code == 201 and again.status_code == 200
+    assert first.status_code == 202 and again.status_code == 200  # a retried create is 200
     assert again.json()["id"] == first.json()["id"]
     events = h.call("assistant.task.events", {"task_id": first.json()["id"]}).json()["events"]
     assert [e["type"] for e in events].count("goal") == 1
@@ -391,3 +391,100 @@ def test_cancellation_reaches_the_domain_once_per_key(h):
     assert first.status_code == again.status_code == 202
     assert first.json() == again.json() and first.json()["status"] == "cancelled"
     assert len(h.w.provider._cancellations) == 1
+
+
+# ------------------------------------------------- W07: budget hint, request id, background runs
+def _assistant_grant(h, mode=AssistanceMode.PREPARE):
+    h.w.svc.create_delegation(h.w.member, client_id=ASSISTANT_CLIENT_ID, mode=mode,
+                              allowed_providers={PROVIDER_ID}, limits=None,
+                              expires_at=h.w.clock.now.replace(year=2027))
+
+
+def test_budget_hint_is_validated_and_bound_to_the_task(h):
+    _assistant_grant(h)
+    hint = {"amount_minor": "5000", "currency": "USD"}
+    key = {"Idempotency-Key": "task-hint-000000001"}
+    r = h.call("assistant.task.create", {"goal": "an overshirt", "assistance_mode": "prepare", "budget_hint": hint},
+               headers=key)
+    assert r.status_code == 202, r.text
+    events = h.call("assistant.task.events", {"task_id": r.json()["id"]}).json()["events"]
+    assert events[0]["type"] == "goal" and events[0]["data"]["price_ceiling"] == hint
+    assert events[0]["data"]["planner"] == "deterministic"
+    # The $89 demo overshirt is over a $50 ceiling: the deterministic planner prepares nothing.
+    assert r.json()["state"] == "completed" and h.w.store.rows("carts") == []
+    for bad in ({"amount_minor": 5000, "currency": "USD"}, {"amount_minor": "50.00", "currency": "USD"},
+                {"amount_minor": "5000"}, {"amount_minor": "5000", "currency": "usd"}, "5000"):
+        r = h.call("assistant.task.create", {"goal": "x", "assistance_mode": "prepare", "budget_hint": bad})
+        assert r.status_code == 400 and r.json()["code"] == "invalid_budget_hint", bad
+    clash = h.call("assistant.task.create", {"goal": "an overshirt", "assistance_mode": "prepare",
+                                             "budget_hint": {"amount_minor": "9000", "currency": "USD"}}, headers=key)
+    assert clash.status_code == 409 and clash.json()["code"] == "idempotency_key_reused"
+
+
+class _Scripted:
+    """A model-like planner with no SDK: proposes one search, then finishes; runs in the background."""
+    label = "custom"
+    runs_in_background = True
+    max_seconds = 30.0
+
+    def __init__(self):
+        self.calls = 0
+
+    def next_calls(self, task, observations):
+        self.calls += 1
+        return [] if observations else [ProposedCall("brandme.catalog.search", {"query": "linen"})]
+
+
+def _background(h, **kw):
+    from brandme_core.orchestrator import BackgroundRunner
+    from brandme_core.orchestrator.runlog import MemoryRunLog
+    log = MemoryRunLog(strict=True)
+    h.runtime.run_log = log
+    runner = BackgroundRunner(h.runtime, **kw)
+    planner = _Scripted()
+    h.api.planner_factory, h.api.task_runner = (lambda: planner), runner
+    return runner, planner, log
+
+
+def test_model_planned_task_returns_202_and_runs_in_background(h):
+    _assistant_grant(h, AssistanceMode.RESEARCH)
+    runner, planner, log = _background(h)
+    rid = "0b7c3f2e-9d41-4e6a-8f15-2c9a4d7e1b34"
+    r = h.call("assistant.task.create", {"goal": "linen", "assistance_mode": "research"},
+               headers={"Idempotency-Key": "task-bg-0000000001", "X-Request-Id": rid})
+    assert r.status_code == 202 and r.json()["state"] == "queued" and r.json()["planner"] == "custom"
+    assert runner.drain(10)
+    events = h.call("assistant.task.events", {"task_id": r.json()["id"]}).json()["events"]
+    assert [e["type"] for e in events][-1] == "finding"
+    end = log.events("assistant.task_end")
+    assert len(end) == 1 and end[0]["request_id"] == rid and end[0]["state"] == "completed"
+    runner.shutdown()
+
+
+def test_create_retry_while_queued_does_not_submit_twice(h):
+    _assistant_grant(h, AssistanceMode.RESEARCH)
+    runner, planner, log = _background(h)
+    body, key = {"goal": "linen", "assistance_mode": "research"}, {"Idempotency-Key": "task-bg-0000000002"}
+    gate = __import__("threading").Event()
+    original = runner._job
+    runner._job = lambda *a: (gate.wait(10), original(*a))[1]  # hold the job while the client retries
+    first = h.call("assistant.task.create", body, headers=key)
+    again = h.call("assistant.task.create", body, headers=key)
+    gate.set()
+    assert runner.drain(10)
+    assert first.status_code == 202 and again.status_code == 200 and again.json()["id"] == first.json()["id"]
+    assert planner.calls == 2 and len(log.events("assistant.task_end")) == 1  # one run: search, then finish
+    runner.shutdown()
+
+
+def test_background_capacity_exhaustion_is_a_retryable_503(h):
+    _assistant_grant(h, AssistanceMode.RESEARCH)
+    runner, planner, log = _background(h, max_pending=0)
+    r = h.call("assistant.task.create", {"goal": "linen", "assistance_mode": "research"},
+               headers={"Idempotency-Key": "task-bg-0000000003"})
+    assert r.status_code == 503 and r.json()["code"] == "assistant_busy" and r.json()["retryable"] is True
+    assert h.runtime._tasks == {} and planner.calls == 0  # no task was created
+    h.api.task_runner = None
+    r = h.call("assistant.task.create", {"goal": "linen", "assistance_mode": "research"})
+    assert r.status_code == 400 and r.json()["code"] == "assistant_unavailable"
+    runner.shutdown()
