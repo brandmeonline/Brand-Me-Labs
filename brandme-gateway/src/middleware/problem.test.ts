@@ -34,6 +34,8 @@ const thrown: Record<string, () => unknown> = {
   notImplemented: () => problems.notImplemented('Not here.'),
   unavailable: () => problems.unavailable('Down.'),
   upstream: () => new ApiProblem(418, 'upstream_request_rejected', 'Request rejected', 'The service could not complete this request.'),
+  // Lane routes still pass body extras as the 6th argument (pre-2026-10-24 signature).
+  legacyExtra: () => new ApiProblem(403, 'insufficient_scope', 'Insufficient scope', 'x', false, { required_scopes: ['wardrobe:write'] }),
   unhandled: () => new Error('password=hunter2 at db.example.internal'),
 };
 
@@ -81,6 +83,13 @@ describe('problem+json bodies', () => {
     const limited = await request(app(problemHandler)).get('/p/rateLimited');
     expect(limited.headers['retry-after']).toBe('12');
     expect(limited.body).toMatchObject({ code: 'rate_limited', retryable: true });
+  });
+
+  it('accepts legacy body extras for compatibility but never sends them', async () => {
+    const r = await request(app(problemHandler)).get('/p/legacyExtra');
+    expect(r.status).toBe(403);
+    expect(Object.keys(r.body).sort()).toEqual(PROBLEM_MEMBERS);
+    expect(r.text).not.toMatch(/required_scopes|wardrobe:write/);
   });
 
   it('clamps detail to the spec bound and never sends an empty detail', async () => {

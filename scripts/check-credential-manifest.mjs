@@ -448,7 +448,7 @@ export function checkRepo({ root, manifestPath = DEFAULT_MANIFEST } = {}) {
   const trackedList = gitTracked(root);
   const tracked = new Set(trackedList);
   const relManifest = absManifest.startsWith(resolve(root) + '/') ? absManifest.slice(resolve(root).length + 1) : null;
-  if (relManifest && !tracked.has(relManifest)) warnings.push(`${relManifest}: manifest is not tracked by git (docs/build/ is gitignored by build/; add it with git add -f)`);
+  if (relManifest && !tracked.has(relManifest)) warnings.push(`${relManifest}: manifest is not tracked by git (commit it)`);
 
   const reads = [];
   for (const path of trackedList) {

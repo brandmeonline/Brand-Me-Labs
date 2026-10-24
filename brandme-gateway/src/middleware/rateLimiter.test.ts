@@ -5,7 +5,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import express from 'express';
+import express, { type Request } from 'express';
 import request from 'supertest';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
@@ -14,7 +14,7 @@ import { loadConfig } from '../config';
 import { createApp } from '../index';
 import type { IdentityStore } from './identity/store';
 import { requestContext } from './problem';
-import { TokenBucketStore, clientAddressKey, createRateLimiter, ipRateLimiter, principalRateLimiter, type RateLimiter } from './rateLimiter';
+import { TokenBucketStore, clientAddressKey, createRateLimiter, ipRateLimiter, isEssentialAccess, isHealthProbe, principalRateLimiter, type RateLimiter } from './rateLimiter';
 
 const REPO = resolve(__dirname, '../../..');
 const spec = JSON.parse(readFileSync(resolve(REPO, 'docs/design/brandme/contracts/domain.schema.json'), 'utf8'));
@@ -169,6 +169,27 @@ describe('throttled responses', () => {
     expect((await as(request(app).post('/api/v1/session'))).status).toBe(429);
     expect((await as(request(app).post('/api/v1/me/deletion'))).status).toBe(429);
     expect((await as(request(app).patch('/api/v1/me'))).status).toBe(429);
+  });
+
+  it('matches exemptions on the parsed path, so an absolute-form target cannot dodge them', () => {
+    const at = (method: string, originalUrl: string) => ({ method, originalUrl }) as unknown as Request;
+    expect(isEssentialAccess(at('DELETE', 'http://gateway.example/api/v1/session'))).toBe(true);
+    expect(isEssentialAccess(at('POST', 'http://gateway.example/api/v1/me/exports?x=1'))).toBe(true);
+    expect(isHealthProbe(at('GET', 'http://gateway.example/healthz'))).toBe(true);
+    expect(isEssentialAccess(at('POST', 'http://gateway.example/api/v1/me/deletion'))).toBe(false);
+  });
+
+  it('reports the tighter of the address and member limits in X-RateLimit-*', async () => {
+    const app = express();
+    app.use(requestContext('development'));
+    app.use((req, res, next) => { res.locals.principal = { memberId: 'm-h' }; next(); });
+    app.use(ipRateLimiter({ ...limits, rateLimitIpMaxRequests: 2 }));
+    app.use(principalRateLimiter({ ...limits, rateLimitMaxRequests: 50 }));
+    app.post('/x', (_req, res) => { res.json({ ok: true }); });
+    const r = await request(app).post('/x');
+    expect(r.status).toBe(200);
+    expect(r.headers['x-ratelimit-limit']).toBe('2');
+    expect(r.headers['x-ratelimit-remaining']).toBe('1');
   });
 });
 

@@ -231,3 +231,26 @@ def test_ensure_request_id_accepts_safe_ids_and_optional_response():
 @pytest.mark.parametrize("hostile", ["a\nfake log line", "x" * 200, "-starts-with-dash", "{\"json\":1}", " "])
 def test_ensure_request_id_replaces_unsafe_values(hostile):
     assert ensure_request_id(_Request(hostile)) != hostile
+
+
+def test_cyclic_payload_is_bounded_and_marked():
+    import time
+    d = {}
+    d["a"] = d
+    d["b"] = d
+    t0 = time.monotonic()
+    out = bm_logging.redact({"event": "x", "ctx": d})
+    assert time.monotonic() - t0 < 1.0
+    assert out["ctx"]["a"] == bm_logging.CYCLE and out["ctx"]["b"] == bm_logging.CYCLE
+    shared = {"user_id": "member-123"}
+    out = bm_logging.redact({"x": shared, "y": shared})  # shared, not cyclic: both copies kept
+    assert out["x"] == out["y"] and out["x"]["user_id"].startswith("h:")
+
+
+def test_generated_request_id_is_stable_per_request():
+    from types import SimpleNamespace
+    request = SimpleNamespace(headers={}, state=SimpleNamespace())
+    first = bm_logging.ensure_request_id(request)
+    assert bm_logging.ensure_request_id(request) == first
+    bad = SimpleNamespace(headers={"X-Request-Id": "bad id\n"}, state=SimpleNamespace())
+    assert bm_logging.ensure_request_id(bad) == bm_logging.ensure_request_id(bad) != "bad id\n"

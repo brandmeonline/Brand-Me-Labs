@@ -35,7 +35,7 @@ import type { NextFunction, Request, Response } from 'express';
 import type { GatewayConfig } from '../config';
 import { logger } from '../config/logger';
 import type { Principal } from '../types';
-import { templatePath } from './logPath';
+import { requestPath, templatePath } from './logPath';
 import { problems, resolveRequestId, sendProblem } from './problem';
 
 interface Bucket {
@@ -129,7 +129,7 @@ export function rateLimitKey(req: Request, res: Response, keyBy: 'ip' | 'princip
   return { key: clientAddressKey(req.ip ?? req.socket.remoteAddress), kind: 'ip' };
 }
 
-const fullPath = (req: Request) => (req.originalUrl.split('?')[0] || '/');
+const fullPath = requestPath;
 
 /** Kubelet liveness/readiness probes are never throttled. */
 export function isHealthProbe(req: Request): boolean {
@@ -175,9 +175,15 @@ export function createRateLimiter(opts: RateLimiterOptions): RateLimiter {
     if (opts.exempt?.(req)) return next();
     const { key, kind } = rateLimitKey(req, res, opts.keyBy);
     const result = store.take(key);
-    res.setHeader('X-RateLimit-Limit', String(opts.maxRequests));
-    res.setHeader('X-RateLimit-Remaining', String(result.remaining));
-    res.setHeader('X-RateLimit-Reset', String(Math.ceil(result.resetMs / 1000)));
+    // Two limiters can apply (address, then member). Report the tighter one so a
+    // client pacing itself by these headers is never surprised by the other.
+    const shown = res.locals.rateLimitShown as { remaining: number } | undefined;
+    if (!shown || result.remaining < shown.remaining) {
+      res.locals.rateLimitShown = { remaining: result.remaining };
+      res.setHeader('X-RateLimit-Limit', String(opts.maxRequests));
+      res.setHeader('X-RateLimit-Remaining', String(result.remaining));
+      res.setHeader('X-RateLimit-Reset', String(Math.ceil(result.resetMs / 1000)));
+    }
     if (result.allowed) return next();
     const retryAfter = Math.max(1, Math.ceil(result.retryAfterMs / 1000));
     logger.warn({

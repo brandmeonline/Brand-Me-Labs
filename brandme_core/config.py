@@ -452,11 +452,13 @@ def _gateway(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, .
         )
     issuer = (env.get("OIDC_ISSUER") or "").strip()
     audience = (env.get("OIDC_AUDIENCE") or "").strip()
-    if not issuer.startswith("https://") or not audience:
+    jwks = (env.get("OIDC_JWKS_URI") or "").strip()
+    if not issuer.startswith("https://") or not audience or (jwks and not jwks.startswith("https://")):
         return (
             AdapterRegistration(
                 TrustComponent.AUTH_IDENTITY, AdapterKind.UNCONFIGURED,
-                "brandme-gateway/src/middleware/session.ts OIDC verifier without an https OIDC_ISSUER and OIDC_AUDIENCE",
+                "brandme-gateway/src/middleware/session.ts OIDC verifier without an https OIDC_ISSUER, an OIDC_AUDIENCE "
+                "and (when set) an https OIDC_JWKS_URI",
                 required=True,
             ),
         )
@@ -469,7 +471,7 @@ def _gateway(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, .
             evidence=(
                 "The issuer's tenant (sandbox or production) is attested by deployment configuration; this "
                 "guard checks its shape only. The gateway's own guard (middleware/mode.ts:30-49) also refuses "
-                "JWT_SECRET, symmetric algorithms and non-https PUBLIC_ORIGINS."
+                "JWT_SECRET, symmetric algorithms, a non-https OIDC_JWKS_URI and non-https PUBLIC_ORIGINS/CORS_ORIGINS."
             ),
         ),
     )

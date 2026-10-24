@@ -172,7 +172,7 @@ jobs:
           python scripts/python/fetch_pubsub_emulator.py
           test -x "$PUBSUB_EMULATOR_BIN"
           java -version
-          python -m pytest tests -q --timeout=300 -ra
+          python -m pytest tests -q --timeout=300 -ra --continue-on-collection-errors
 
       - name: Setup Node.js for Firestore rules tests
         uses: actions/setup-node@v4
@@ -288,7 +288,7 @@ jobs:
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [test-gateway, test-core, test-chain, test-frontend, security-scan]
+    needs: [test-gateway, test-core, foundation-check, test-chain, test-frontend, security-scan]
     timeout-minutes: 40
     # Matrix legs write distinct output names, so the job outputs combine.
     outputs:
@@ -404,10 +404,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The env-contract stage feeds the rendered env to the core processes' own
+      # validators, so the deploy gate is the same as the 'Deploy manifests' one.
+      - name: Setup Python for the env contract
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install hashed lock
+        run: pip install --require-hashes -r scripts/python/requirements.lock
+
       # Installs pinned, checksum-verified helm/kubeconform into .cache/tools
       # and runs the same offline gate as the 'Deploy manifests' workflow.
       - name: Validate chart offline
-        run: bash scripts/validate-helm.sh
+        run: BRANDME_PYTHON="$(command -v python)" bash scripts/validate-helm.sh
 
       - name: Render this exact release (fails on any unfilled REPLACE_ME)
         env:

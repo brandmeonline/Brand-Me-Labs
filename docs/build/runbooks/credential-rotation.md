@@ -72,7 +72,7 @@ paste it into the GitHub Environment secret UI.
 
    `token_urlsafe(48)` yields 64 characters of `[A-Za-z0-9_-]`, which every
    consumer accepts:
-   - gateway: `brandme-gateway/src/config/index.ts:39-42`;
+   - gateway: `brandme-gateway/src/config/index.ts:90-93`;
    - read API: `brandme_core/read_api/config.py:35`;
    - export API: `brandme_core/privacy_exports/config.py:42`;
    - chain: `brandme-chain/src/config/index.ts:20`.

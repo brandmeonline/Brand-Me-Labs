@@ -6,6 +6,9 @@ Renders nothing. Fails the whole render on values that must never deploy.
 {{- fail "values still contain REPLACE_ME placeholders: fill every one (values-sandbox.yaml lists them) before rendering" -}}
 {{- end -}}
 {{- $mode := include "brandme.mode" . -}}
+{{- if and (eq $mode "production") (or .Values.chain.enabled .Values.readApi.enabled .Values.exportsApi.enabled .Values.exportsWorker.enabled) -}}
+{{- fail (printf "mode=production with chain/read-api/exports enabled is refused: only Midnight test networks exist (midnight.network=%s), which the shared trust inventory allows in sandbox only (brandme_core/config.py; python -m brandme_core.config preflight --service read_api)" (toString .Values.midnight.network)) -}}
+{{- end -}}
 {{- if and .Values.ingress.enabled (not .Values.gateway.enabled) -}}
 {{- fail "ingress.enabled requires gateway.enabled" -}}
 {{- end -}}
@@ -16,6 +19,16 @@ Renders nothing. Fails the whole render on values that must never deploy.
 {{- range .Values.gateway.publicOrigins -}}
 {{- if not (hasPrefix "https://" .) -}}
 {{- fail (printf "gateway.publicOrigins entry %q must be https in strict modes (brandme-gateway/src/middleware/mode.ts:47)" .) -}}
+{{- end -}}
+{{- end -}}
+{{- range .Values.gateway.corsOrigins -}}
+{{- if not (hasPrefix "https://" .) -}}
+{{- fail (printf "gateway.corsOrigins entry %q must be https in strict modes (brandme-gateway/src/middleware/mode.ts)" .) -}}
+{{- end -}}
+{{- end -}}
+{{- with .Values.gateway.oidc.jwksUri -}}
+{{- if not (hasPrefix "https://" .) -}}
+{{- fail "gateway.oidc.jwksUri must be https (plaintext signing keys could be swapped on the path)" -}}
 {{- end -}}
 {{- end -}}
 {{- if not .Values.gateway.publicOrigins -}}

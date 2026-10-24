@@ -39,7 +39,8 @@ Pseudonyms
     example ``redact_user_id`` output under an ``owner`` key) is stable.
 
 Records are copied, never mutated: callers' dicts, lists and tuples are left as
-they were. Nesting deeper than ``MAX_DEPTH`` is replaced by ``"[TRUNCATED]"``.
+they were. Nesting deeper than ``MAX_DEPTH`` is replaced by ``"[TRUNCATED]"`` and a
+container that contains itself (a cycle) by ``"[CYCLE]"``.
 Values that JSON cannot encode are logged with ``str()``.
 
 Free text is not parsed: an identifier interpolated into a message string or an
@@ -62,6 +63,7 @@ from typing import Any, Dict, Mapping, Optional
 
 REDACTED = "[REDACTED]"
 TRUNCATED = "[TRUNCATED]"
+CYCLE = "[CYCLE]"
 MAX_DEPTH = 32
 SALT_ENV = "BRANDME_LOG_PSEUDONYM_KEY"
 
@@ -164,9 +166,15 @@ def pseudonymize(value: Any) -> Any:
     return "h:" + digest[:12]
 
 
-def _walk(value: Any, depth: int, identifier: bool) -> Any:
+def _walk(value: Any, depth: int, identifier: bool, path: frozenset = frozenset()) -> Any:
     if depth > MAX_DEPTH:
         return TRUNCATED
+    if isinstance(value, (Mapping, list, tuple, set, frozenset)):
+        # A container already on the current path is a cycle; without this a
+        # payload with two back-references makes 2**MAX_DEPTH calls.
+        if id(value) in path:
+            return CYCLE
+        path = path | {id(value)}
     if isinstance(value, Mapping):
         out = {}
         for key, item in value.items():
@@ -174,10 +182,10 @@ def _walk(value: Any, depth: int, identifier: bool) -> Any:
             if kind == "secret":
                 out[key] = REDACTED
             else:
-                out[key] = _walk(item, depth + 1, identifier or kind == "identifier")
+                out[key] = _walk(item, depth + 1, identifier or kind == "identifier", path)
         return out
     if isinstance(value, (list, tuple, set, frozenset)):
-        items = [_walk(item, depth + 1, identifier) for item in value]
+        items = [_walk(item, depth + 1, identifier, path) for item in value]
         return tuple(items) if isinstance(value, tuple) else items
     if identifier:
         return pseudonymize(value)
@@ -315,11 +323,21 @@ def ensure_request_id(request, response=None) -> str:
 
     An inbound ``X-Request-Id`` is reused only if it is 1-128 characters of
     ``[A-Za-z0-9._:-]`` starting with an alphanumeric; anything else is
-    replaced with a new UUID so a client cannot inject text into logs.
+    replaced with a new UUID so a client cannot inject text into logs. The ID
+    is kept on ``request.state`` so every call for one request returns the same
+    value (a generated ID otherwise differed between middleware and handler).
     """
-    request_id = request.headers.get("X-Request-Id") or ""
-    if not _REQUEST_ID_RE.fullmatch(request_id):
-        request_id = str(uuid.uuid4())
+    state = getattr(request, "state", None)
+    request_id = getattr(state, "request_id", None) if state is not None else None
+    if not (isinstance(request_id, str) and _REQUEST_ID_RE.fullmatch(request_id)):
+        request_id = request.headers.get("X-Request-Id") or ""
+        if not _REQUEST_ID_RE.fullmatch(request_id):
+            request_id = str(uuid.uuid4())
+        if state is not None:
+            try:
+                state.request_id = request_id
+            except AttributeError:
+                pass
     if response is not None:
         response.headers["X-Request-Id"] = request_id
     return request_id

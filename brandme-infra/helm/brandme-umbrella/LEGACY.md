@@ -11,9 +11,9 @@ Evidence (helm v3.22.1, checksum-verified, run 2026-10-23):
   missing in charts/ directory: brandme-gateway, brandme-core, brandme-agents,
   brandme-chain, brandme-console`. `Chart.yaml:10-34` points at
   `file://../charts/*`, and `brandme-infra/helm/charts/` does not exist.
-- `--values values/values-prod.yaml`, used by the `Deploy to GKE` job
-  (`.github/workflows/ci-cd.yml:322-331`), fails: `open values/values-prod.yaml:
-  no such file or directory`.
+- `--values values/values-prod.yaml`, which the old `Deploy to GKE` job used
+  before 2026-10-24, fails: `open values/values-prod.yaml: no such file or
+  directory`. The deploy job now uses `brandme-infra/helm/brandme` instead.
 - `helm lint ./brandme-umbrella` still exits 0 with only a WARNING, so lint
   alone never caught this. The new chart is gated by `helm template | kubeconform`
   in `scripts/validate-helm.sh`.

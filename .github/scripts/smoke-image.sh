@@ -20,7 +20,9 @@ case "$service" in
     # Default build is the `runtime` stage: non-root, no default process.
     test "$(docker run --rm --entrypoint id "$image" -u)" = 10001
     set +e; usage=$(docker run --rm "$image" 2>&1); rc=$?; set -e
-    test "$rc" -eq 64 && grep -q 'python -m brandme_core.read_api' <<<"$usage"
+    # Explicit failure branch: under set -e a failing command that is not last in an && list is ignored.
+    test "$rc" -eq 64 && grep -q 'python -m brandme_core.read_api' <<<"$usage" \
+      || { echo "runtime default command: rc=$rc (want 64)" >&2; printf '%s\n' "$usage" >&2; exit 1; }
     echo 'runtime default command prints usage and exits 64'
     docker run --rm --entrypoint python "$image" -m pip check
     docker run --rm --entrypoint python "$image" -m brandme_core.events.worker --help

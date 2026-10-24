@@ -45,7 +45,7 @@ than inventing a parallel one:
 Known splits that still use other words (not changed here):
 
 - The gateway's legacy `environment` field maps sandbox to `staging`
-  (`brandme-gateway/src/config/index.ts:97`).
+  (`brandme-gateway/src/config/index.ts:167`).
 - brandme-chain reads `ENVIRONMENT`, not `BRANDME_MODE`
   (`brandme-chain/src/config/index.ts:15,47`).
 - Terraform and the old deploy scripts use dev/staging/prod.
@@ -137,7 +137,7 @@ passwords and names no code reads. One legacy script still reads them; see
   - `BM_DEPLOY_ENABLED` (the switch that gates the deploy job)
 
   Workflows read them as `${{ vars.NAME }}`. A secret is never stored as a variable.
-- **Retire `GCP_SA_KEY`** (`.github/workflows/ci-cd.yml:277,309`), a long-lived JSON
+- **Retire `GCP_SA_KEY`** (`.github/workflows/ci-cd.yml:358`, image publishing; the deploy job already uses WIF), a long-lived JSON
   key, in favour of Workload Identity Federation:
   - Add `permissions: id-token: write` to the jobs that authenticate. A job-level
     `permissions:` block replaces the workflow-level one, so also restate
@@ -259,8 +259,7 @@ A name is secret-shaped when it matches
 - an `active` row with no live consumer;
 - a value in a template for a secret name;
 - a credential embedded in a template URL;
-- an untracked manifest. The whole of `docs/build/` is gitignored by `build/`, so
-  new files there need `git add -f`.
+- an untracked manifest (commit it; `.gitignore` re-includes `docs/build/`).
 
 **Excluded:** generated and vendored paths only:
 

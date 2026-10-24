@@ -231,12 +231,15 @@ expect_failure "Midnight mainnet" "mainnet is not authorized" -f "$CI_VALUES" --
 expect_failure "export bucket outside brandme-<mode>-exports-" "must start with brandme-sandbox-exports-" \
   -f "$CI_VALUES" --set privacyExports.bucket=brandme-exports
 expect_failure "plain-http public origin" "must be https" -f "$CI_VALUES" --set 'gateway.publicOrigins={http://localhost:3000}'
+expect_failure "plaintext JWKS URI" "jwksUri must be https" -f "$CI_VALUES" --set gateway.oidc.jwksUri=http://idp.example.invalid/jwks
+expect_failure "plain-http CORS origin" "corsOrigins entry" -f "$CI_VALUES" --set 'gateway.corsOrigins={http://evil.example.invalid}'
 expect_failure "ingress without gateway.trustProxy" "ingress.enabled requires gateway.trustProxy" -f "$CI_VALUES" --set-string gateway.trustProxy=
 expect_failure "missing Secret name" "secretRefs.chainServiceToken.name is required" \
   -f "$CI_VALUES" --set secretRefs.chainServiceToken.name=
 expect_failure "missing Workload Identity GSA" "readApi.gcpServiceAccount is required" -f "$CI_VALUES" --set readApi.gcpServiceAccount=
 expect_failure "topic outside brandme-<mode>-" "must start with brandme-sandbox-" -f "$CI_VALUES" --set eventsWorker.topics.public=outbox-public
-expect_failure "production values with sandbox resources" "must start with brandme-production-exports-" -f "$CI_VALUES" --set mode=production
+expect_failure "production with Midnight test-network workloads" "mode=production with chain/read-api/exports enabled is refused" -f "$CI_VALUES" --set mode=production
+expect_failure "production values with sandbox resources" "must start with brandme-production-" -f "$CI_VALUES" --set mode=production --set chain.enabled=false --set readApi.enabled=false --set exportsApi.enabled=false --set exportsWorker.enabled=false
 
 if [ -n "${BRANDME_PYTHON:-}" ]; then
   log "env contract: rendered env -> each core process's own strict-mode validator ($BRANDME_PYTHON)"

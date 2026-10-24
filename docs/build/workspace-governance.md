@@ -152,6 +152,21 @@ Run on 2026-10-23 from this branch with `--root <temporary worktree>` (offline c
 
 The commerce, consumer-domains and midnight tips merge cleanly into `744d593` (`git merge-tree`), and the guard with `--with-pnpm` is clean on all three merge trees: the stale Dockerfiles exist only on the tips. The two astra tips conflict with `744d593` (consumer-ui on `pnpm-lock.yaml`; spatial on `brandme-frontend/package.json`, `package.json` and `pnpm-lock.yaml`), so they need rule 7.
 
+### Conflicts this change set adds (2026-10-24), and how to resolve them
+
+Merging this branch adds these textual conflicts on top of the ones above. Resolve
+each in favour of `main` (this branch) and keep the lane's own additions:
+
+| Lane | File | Resolution |
+|---|---|---|
+| consumer-domains (#52) | `.github/workflows/ci-cd.yml` | Keep **both** new jobs (`foundation-check` and the lane's `test-consumer-domains`); they sit at the same spot. |
+| consumer-ui, spatial-ar | `.github/workflows/module-regression.yml` | Keep `main`'s `Workspace guard` step and `permissions: contents: read`. |
+| consumer-ui, spatial-ar | `pnpm-workspace.yaml` | Keep `main`'s header comment and the `body-parser@1` / `fast-uri@3` security overrides; move any lane `pnpm.packageExtensions` here (`E_PNPM_FIELD`). |
+
+Resolving these hunks as "theirs" would silently drop the guard step and two
+security overrides; the guard then reports the missing pins only if the lockfile
+is regenerated (rule 6).
+
 ## Limits
 
 - The YAML readers are line-based. `pnpm-workspace.yaml` `packages:` and the lockfile fail closed on shapes they cannot read. The workflow reader finds `uses:` steps and their `with:` inputs in block or flow style, but a step written in an unusual layout could be missed.

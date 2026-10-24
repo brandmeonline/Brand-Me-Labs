@@ -46,11 +46,11 @@ mainnet writes" (`docs/design/brandme/06-delivery-verification.md:115`).
 | # | Fact | Evidence | How verified |
 |---|---|---|---|
 | A1 | CI pushes images to `gcr.io/lux-realestate-app/brandme-{gateway,core,agents,chain,console}` with tags `:main` and `:sha-<7>` on every push to `main`. Run 39902216424 (push, sha `5174ec2`) pushed core `sha256:a8c6a22e9e50…`, chain `sha256:69f9a96bf1b3…`, console `sha256:f6627c1f184a…`, agents `sha256:5b215c7a4d2e…`, gateway `sha256:adbf595add0e…`. | `.github/workflows/ci-cd.yml:219` (`PUBLISH_IMAGES`), `:241-251` (metadata tags), `:273-290` (JSON-key auth, push). Run log lines "The push refers to repository [gcr.io/lux-realestate-app/brandme-core]" / "main: digest: sha256:a8c6a22e…". | `gh run view 39902216424` (all build jobs `success`) and the saved run log. |
-| A2 | The CI credential is a long-lived JSON key, `secrets.GCP_SA_KEY`; no workflow has `id-token: write`. | `ci-cd.yml:32-34`, `:277`, `:309`. | Read. Which service account backs the key, and its roles, is unknown (GitHub secrets API returns 403 here). |
+| A2 | At the audited baseline (`744d593`) the CI credential was a long-lived JSON key, `secrets.GCP_SA_KEY`, and no workflow had `id-token: write`. After this change set, image publishing still uses the key; the deploy job uses WIF (`id-token: write`) and is gated by `BM_DEPLOY_ENABLED`. | Baseline `ci-cd.yml:32-34`, `:277`, `:309`; now the `build-images` and `deploy` jobs in `ci-cd.yml`. | Read. Which service account backs the key, and its roles, is unknown (GitHub secrets API returns 403 here). |
 | A3 | The `Deploy to GKE` job has never run: it only runs on `refs/tags/v*` and the repository has no tags. | `ci-cd.yml:296-300`. Run 39902216424 lists "Deploy to GKE" with conclusion `skipped`. | `git ls-remote --tags` → 0 tags; `gh run view`. |
 | A4 | Container Registry stopped accepting writes on 2025-03-18, so successful 2026 pushes to `gcr.io/lux-realestate-app` imply Artifact Registry `gcr.io` repositories exist in that project. | Google transition guide (audit map). | **Inference**, not a live check: an anonymous registry probe returns the same 401 for this project and for a nonexistent one. |
 | A5 | The repository is public (`visibility: public`); repository id `1083300600`, owner id `25632130` (used to pin WIF in C-16). | — | `gh api repos/brandmeonline/Brand-Me-Labs`. |
-| A6 | **New:** chart `brandme-infra/helm/brandme` for gateway, chain, console, read-api, exports-api, exports-worker, events-worker and a migration hook Job. | `brandme-infra/helm/brandme/` | `scripts/validate-helm.sh` passes: helm 3.22.1 lint `--strict`; 42/42 resources valid with `kubeconform -strict` against Kubernetes 1.35.0 and 1.36.0 (CI values, ingress on, GKE CRDs included); 32/32 for the filled sandbox values; 14 negative rendering tests refuse as expected; env contract OK. A deliberate typo in a core field and in a FrontendConfig field were both rejected (kubeconform exit 1). |
+| A6 | **New:** chart `brandme-infra/helm/brandme` for gateway, chain, console, read-api, exports-api, exports-worker, events-worker and a migration hook Job. | `brandme-infra/helm/brandme/` | `scripts/validate-helm.sh` passes: helm 3.22.1 lint `--strict`; 42/42 resources valid with `kubeconform -strict` against Kubernetes 1.35.0 and 1.36.0 (CI values, ingress on, GKE CRDs included); 32/32 for the filled sandbox values; 18 negative rendering tests refuse as expected (as of 2026-10-24); env contract OK. A deliberate typo in a core field and in a FrontendConfig field were both rejected (kubeconform exit 1). |
 | A7 | **New:** the core image's last stage is `runtime`, so CI's default build of `core` produces it: hash-verified install of `scripts/python/requirements.lock`, uid 10001, no `--reload`, no celery, no default process (bare run prints usage, exit 64). | `brandme-core/Dockerfile` (final stage). Compose does not build this Dockerfile (`docker-compose.yml:22-30` uses an inline Dockerfile). | Built from the repo root with `-f brandme-core/Dockerfile --build-arg NODE_VERSION=24.21.0`, no `--target` (as `ci-cd.yml:253-264`); `bash .github/scripts/smoke-image.sh core <image>` exits 0. See G for the one local build deviation. |
 | A8 | The core image runs the chart's commands as uid 10001 with a read-only root, `/tmp` tmpfs, all capabilities dropped: `runner.py up` applied V001–V014 to a fresh emulator database, `read_api --check` printed `{"status":"ready","read_only":true}`, the server answered `GET /health` 200 and an unauthenticated private read 401. | `docker run --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges …` | Ran against the local Spanner emulator (development mode; strict modes refuse emulators). |
 | A9 | The chart's rendered env satisfies each process's own strict-mode validator: `ReadConfig.from_env`, `ExportConfig.from_env` (API and worker), `WorkerConfig.from_env` + `PubSubPublisher` topic checks (reached the credential lookup), and the gateway's `loadConfig` + `checkGatewayMode` (no violations), and the chain config parser. | Python stage of `scripts/validate-helm.sh`; gateway/chain run locally with `tsx`. | Ran with fake, distinct 40-char tokens. |
@@ -84,7 +84,7 @@ mainnet writes" (`docs/design/brandme/06-delivery-verification.md:115`).
 | G21 | Base images are pinned by tag (`python:3.11.15-slim`, `node:24.21.0-bookworm-slim`), not digest; third-party actions are not SHA-pinned; no Dependabot/Renovate. | No | Foundation follow-up |
 | G22 | **Fixed in this change set:** `.cache/` is in `.gitignore` and `.dockerignore`. | No | — |
 | G23 | The consumer frontend has no Dockerfile and no image. | No | Frontend owner |
-| G24 | `build-images` still publishes with the JSON key. Moving it to WIF needs a second provider condition (`refs/heads/main`). | No | Secrets packet (B4) |
+| G24 | `build-images` still publishes with the JSON key. The provisioning script now creates a separate push identity (`bm-sbx-fnd-pusher`, artifactregistry.writer only) in its own `github-push` pool (main and `v*` tags); switching `build-images` to it is a one-step change after the founder runs the script. | No | Founder runs the script, then foundation switches build-images |
 | G25 | The export API cannot check that its token differs from the read API and chain tokens, because those are not in its pod. Distinctness depends on generating independent values (C-14). | No | C-14 |
 | G26 | The gateway's write-side calls have no server among the deployed processes. `POST /challenges`, `/assets/{id}/transfers` and `/assets/{id}/reprint-quotes` go to `RIGHTS_SERVICE_URL` (`brandme-gateway/src/routes/v1/ownership.ts:44`, `assets.ts:55`, `assets.ts:71`), and `POST /deletion` goes to `PRIVACY_SERVICE_URL` (`routes/v1/privacy.ts:110`). The chart points both URLs at the read API (`templates/gateway.yaml`), which serves only GET routes (`brandme_core/read_api/app.py:95-117`). In sandbox those routes would get 404/405. | No (reads work) | midnight-rights / privacy lanes: name the write-side service |
 | G27 | **Inference, not tested:** `@google-cloud/spanner` 9.0.0 (gateway, chain) may export client-side metrics to Cloud Monitoring by default. If it does, GSAs without `monitoring.timeSeries.create` will log export errors. Grant `roles/monitoring.metricWriter` to those GSAs, or turn the client metrics off. | No | First deploy logs |
@@ -318,17 +318,19 @@ External Secrets Operator is the other option; it is not installed anywhere.
 
 **C-16 [creates resource] Workload Identity Federation for the deploy job.** The
 condition pins the repository **and** owner by immutable numeric id, the ref to
-`v*` tags, and the GitHub Environment.
+`v*` tags, and the GitHub Environment. `scripts/provision/gcp-dev-identities.sh --apply --github-repo-id N`
+creates the same pool and provider (without the owner-id clause) plus a separate
+`github-push` pool for the image pusher (`bm-sbx-fnd-pusher`, G24); run one or the other.
 ```bash
-gcloud iam workload-identity-pools create github --project "$PROJECT_ID" --location=global --display-name="GitHub Actions"
+gcloud iam workload-identity-pools create github-deploy --project "$PROJECT_ID" --location=global --display-name="GitHub Actions deploy"
 gcloud iam workload-identity-pools providers create-oidc brandme-deploy --project "$PROJECT_ID" --location=global \
-  --workload-identity-pool=github --display-name="Brand-Me-Labs sandbox deploy" \
+  --workload-identity-pool=github-deploy --display-name="Brand-Me-Labs sandbox deploy" \
   --issuer-uri="https://token.actions.githubusercontent.com" \
   --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_id=assertion.repository_id,attribute.repository_owner_id=assertion.repository_owner_id,attribute.ref=assertion.ref,attribute.environment=assertion.environment" \
   --attribute-condition="assertion.repository_id == '$REPO_ID' && assertion.repository_owner_id == '$OWNER_ID' && assertion.ref.startsWith('refs/tags/v') && assertion.environment == 'sandbox'"
 gcloud iam service-accounts add-iam-policy-binding "$(sa bm-sbx-fnd-deployer)" --project "$PROJECT_ID" \
   --role=roles/iam.workloadIdentityUser \
-  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository_id/$REPO_ID"
+  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github-deploy/attribute.repository_id/$REPO_ID"
 # Deployer: may fetch cluster credentials; Kubernetes rights only inside the namespace.
 gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$(sa bm-sbx-fnd-deployer)" --role=roles/container.clusterViewer
 kubectl create rolebinding brandme-deployer -n "$NS" --clusterrole=admin --user="$(sa bm-sbx-fnd-deployer)"
@@ -352,7 +354,7 @@ deployer the `cloud.google.com` and `networking.gke.io` resources
 gh variable set BM_GCP_PROJECT_ID   --repo "$REPO" --body "$PROJECT_ID"
 gh variable set BM_GCP_REGION       --repo "$REPO" --body "$REGION"
 gh variable set BM_GKE_CLUSTER      --repo "$REPO" --body "$CLUSTER"
-gh variable set BM_GCP_WIF_PROVIDER --repo "$REPO" --body "projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/brandme-deploy"
+gh variable set BM_GCP_WIF_PROVIDER --repo "$REPO" --body "projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github-deploy/providers/brandme-deploy"
 gh variable set BM_GCP_DEPLOYER_SA  --repo "$REPO" --body "$(sa bm-sbx-fnd-deployer)"
 gh variable set BM_DEPLOY_ENABLED   --repo "$REPO" --body false
 ```
@@ -398,7 +400,7 @@ then delete the `GCP_SA_KEY` secret in GitHub.
 | D5 | Fill `gateway.oidc.issuer` and `gateway.oidc.audience`. | Foundation |
 | D6 | Fill `gateway.publicOrigins` (https). Later, for C-19: `ingress.enabled`, `staticIpName`, hosts and `gateway.trustProxy` (G8; the chart refuses ingress without it). | Foundation / gateway |
 | D7 | Fill `midnight.contractAddress` (64 lowercase hex). | Midnight-rights |
-| C-16, C-17 | Apply the section E patch to `ci-cd.yml` (needs a token with `workflow` scope). | ci-cd.yml owner |
+| C-16, C-17 | Section E is applied. Set `BM_DEPLOY_ENABLED=true` only after every step in section C. | Founder |
 | Console build args (G7) | `console.enabled: true` in `values-sandbox.yaml`; add `console` to the rollout loop in E. | Console owner |
 | Done | `.cache/` is in `.gitignore` and `.dockerignore` (G22). | — |
 | After the first green deploy | Update CLAUDE.md's service table with evidence (run URL, `kubectl` output); never before. | Parent |
@@ -567,7 +569,7 @@ change: CLAUDE.md's kill-list marks `agents/` "DO NOT DELETE" because
 
 Ran (all local, no cloud credentials):
 
-- `BRANDME_PYTHON=.venv/bin/python bash scripts/validate-helm.sh` (repo-root venv built from the lock) → exit 0 (lint, 4 renders × kubeconform, hardening assertions, 14 negative tests, env contract). A tampered cached helm archive failed the checksum gate and was deleted.
+- `BRANDME_PYTHON=.venv/bin/python bash scripts/validate-helm.sh` (repo-root venv built from the lock) → exit 0 (lint, 4 renders × kubeconform, hardening assertions, 18 negative tests, env contract). A tampered cached helm archive failed the checksum gate and was deleted.
 - Core image: built from the repo root with `-f brandme-core/Dockerfile --build-arg NODE_VERSION=24.21.0` and no `--target`, then `bash .github/scripts/smoke-image.sh core <image>` → exit 0. **Local deviation:** this sandbox re-terminates TLS, so the build used a scratch copy of the Dockerfile whose only change is a BuildKit secret mount of the proxy CA on the `pip install` line (`PIP_CERT`); secret mounts leave nothing in the image. Docker Hub returned 429, so `python:3.11.15-slim` came from `mirror.gcr.io` (same index digest `sha256:90744cff…`). The legacy stages were not built.
 - Core image against the local Spanner emulator as the chart runs it (A8).
 - Gateway and console images built the same way (CA mount on the `corepack`/`pnpm` build-stage lines only) and run read-only as uid 1000 (A10); existing gateway/console smoke checks pass.

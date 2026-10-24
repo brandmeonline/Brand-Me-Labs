@@ -40,11 +40,13 @@ then lints, renders, validates against Kubernetes 1.35 and 1.36 schemas
 
 ## Deploy (not yet possible)
 
-Deployment is gated on the founder actions in the packet, section C. The
-proposed CI deploy job (deploy by digest, Workload Identity Federation, GitHub
-Environment `sandbox`, `BM_DEPLOY_ENABLED` guard, migrations before rollout) is
-in section E; it is not applied to `ci-cd.yml` yet. A manual equivalent, once
-every `REPLACE_ME` in `values-sandbox.yaml` is filled:
+Deployment is gated on the founder actions in the packet, section C. The CI
+deploy job (`Deploy to GKE (sandbox)` in `.github/workflows/ci-cd.yml`: deploy by
+digest, Workload Identity Federation, GitHub Environment `sandbox`, migrations
+before rollout) is applied, but runs only on a `v*` tag **and** when the
+repository variable `BM_DEPLOY_ENABLED` is `true`, which the founder sets after
+section C. A manual equivalent, once every `REPLACE_ME` in `values-sandbox.yaml`
+is filled:
 
 ```bash
 helm upgrade --install brandme brandme-infra/helm/brandme \

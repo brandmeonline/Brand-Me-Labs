@@ -54,12 +54,15 @@ export function checkGatewayMode(cfg: GatewayConfig, env: NodeJS.ProcessEnv = pr
   if (!cfg.oidcIssuer) v.push('OIDC_ISSUER is required');
   if (!cfg.oidcAudience) v.push('OIDC_AUDIENCE is required');
   if (cfg.oidcIssuer && !cfg.oidcIssuer.startsWith('https://')) v.push('OIDC_ISSUER must be https');
+  // Signing keys fetched over plaintext could be swapped on the path, minting tokens for any subject.
+  if (cfg.oidcJwksUri && !cfg.oidcJwksUri.startsWith('https://')) v.push('OIDC_JWKS_URI must be https');
   for (const alg of cfg.oidcAlgorithms) {
     if (!/^(RS|PS|ES)(256|384|512)$|^EdDSA$/.test(alg)) v.push(`OIDC_ALGORITHMS contains disallowed '${alg}' (asymmetric only)`);
   }
   if (env.JWT_SECRET) v.push('JWT_SECRET (shared-secret token verification) is not accepted; use OIDC/JWKS');
   for (const flag of STUB_FLAGS) if (truthy(env[flag])) v.push(`${flag} enables a stub fallback`);
   for (const origin of cfg.publicOrigins) if (!origin.startsWith('https://')) v.push(`PUBLIC_ORIGINS entry '${origin}' must be https`);
+  for (const origin of cfg.corsOrigins) if (!origin.startsWith('https://')) v.push(`CORS_ORIGINS entry '${origin}' must be https`);
   for (const name of EMULATOR_HOSTS) if (String(env[name] ?? '').trim()) v.push(`${name} points at a local emulator; strict modes use real services`);
   // Violations name variables only, never token values.
   const tokens = serviceTokens(cfg);

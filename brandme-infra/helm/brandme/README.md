@@ -25,9 +25,13 @@ the credentials it needs are founder actions, listed in order in
 
 The legacy brain, policy, orchestrator, knowledge, compliance, identity and cube
 services are deliberately absent: they refuse strict modes
-(`python -m brandme_core.config preflight`, exit 3). The chart also runs no
-`preflight` init container: the shared boot guard has no audited inventory for
-these processes yet (`brandme_core/config.py:340-342`) and would refuse them.
+(`python -m brandme_core.config preflight`, exit 3). The chart runs no
+`preflight` init container: the shared inventory allows these processes in
+sandbox (packet G13), but an init container would also need `ENVIRONMENT` and
+each service's network variable. The read API, export API/worker and outbox
+worker run the same guard in-process at start (`brandme_core/boot.py`), so a
+production pod on a Midnight test network exits 3 regardless; the chart also
+refuses to render that combination (`templates/validate.yaml`).
 
 ## Guarantees enforced at render time
 

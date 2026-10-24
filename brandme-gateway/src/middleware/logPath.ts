@@ -9,6 +9,7 @@
  * is missing from the vocabulary is over-redacted, never leaked.
  */
 
+import type { Request } from 'express';
 import { contractPaths } from './validation';
 
 // Static segments served by the gateway but absent from the contract paths.
@@ -36,4 +37,17 @@ export function templatePath(url: string | undefined): string {
   });
   if (segments.length > MAX_SEGMENTS) out.push('…');
   return `/${out.join('/')}`.slice(0, MAX_LENGTH);
+}
+
+/**
+ * Path the router matched. Express accepts absolute-form request targets
+ * ("DELETE http://host/api/v1/session"); originalUrl then still carries the
+ * scheme and host, so exemptions must use the parsed pathname.
+ */
+export function requestPath(req: Pick<Request, 'originalUrl'>): string {
+  try {
+    return new URL(req.originalUrl, 'http://gateway.invalid').pathname || '/';
+  } catch {
+    return (req.originalUrl.split('?')[0] || '/');
+  }
 }

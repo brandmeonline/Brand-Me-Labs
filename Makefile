@@ -135,7 +135,7 @@ test:
 
 test-core:
 	@echo "Running the full Python suite (tests/)..."
-	$(PYTHON) -m pytest tests -q --timeout=300 -ra
+	$(PYTHON) -m pytest tests -q --timeout=300 -ra --continue-on-collection-errors
 
 test-gateway:
 	@echo "Testing brandme-gateway..."

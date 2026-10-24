@@ -15,7 +15,7 @@
 import { randomUUID } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { logger } from '../config/logger';
-import { templatePath } from './logPath';
+import { requestPath, templatePath } from './logPath';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CODE_RE = /^[a-z][a-z0-9_]{0,79}$/;
@@ -30,7 +30,13 @@ export class ApiProblem extends Error {
     public readonly title: string,
     public readonly detail: string,
     public readonly retryable = false,
-    /** Response headers sent with the problem. Never body members. */
+    /**
+     * Kept for the signature lane routes already use (main before 2026-10-24
+     * spread these into the body). The spec Problem allows no extension
+     * members, so they are never sent; sendProblem logs the dropped keys.
+     */
+    public readonly extra: Record<string, unknown> = {},
+    /** Response headers sent with the problem (ETag on 409, Retry-After on 429). */
     public readonly headers: Readonly<Record<string, string>> = {},
   ) {
     super(detail);
@@ -48,11 +54,11 @@ export const problems = {
   notFound: () => new ApiProblem(404, 'not_found', 'Not found', 'The resource does not exist or is not visible to you.'),
   /** The current revision goes in the ETag header (quoted, as If-Match expects), not the body. */
   conflict: (detail: string, currentRevision?: number | string) =>
-    new ApiProblem(409, 'revision_conflict', 'Revision conflict', detail, false, currentRevision === undefined ? {} : { ETag: `"${currentRevision}"` }),
+    new ApiProblem(409, 'revision_conflict', 'Revision conflict', detail, false, {}, currentRevision === undefined ? {} : { ETag: `"${currentRevision}"` }),
   preconditionRequired: () => new ApiProblem(428, 'if_match_required', 'If-Match required', 'Send If-Match with the current revision.'),
   invalid: (detail: string) => new ApiProblem(422, 'invalid_request', 'Invalid request', detail),
   rateLimited: (retryAfterSeconds: number) =>
-    new ApiProblem(429, 'rate_limited', 'Too many requests', `Rate limit exceeded. Retry after ${retryAfterSeconds} seconds.`, true, {
+    new ApiProblem(429, 'rate_limited', 'Too many requests', `Rate limit exceeded. Retry after ${retryAfterSeconds} seconds.`, true, {}, {
       'Retry-After': String(retryAfterSeconds),
     }),
   notImplemented: (detail: string) => new ApiProblem(501, 'not_implemented', 'Not implemented', detail),
@@ -98,7 +104,7 @@ export function problemBody(req: Request, res: Response, p: ApiProblem) {
     status: p.status,
     code: p.code,
     detail: bounded(p.detail, DETAIL_MAX, p.title),
-    instance: (req.originalUrl.split('?')[0] || '/').slice(0, INSTANCE_MAX),
+    instance: requestPath(req).slice(0, INSTANCE_MAX),
     request_id: resolveRequestId(req, res),
     retryable: p.retryable,
   };
@@ -106,6 +112,11 @@ export function problemBody(req: Request, res: Response, p: ApiProblem) {
 
 export function sendProblem(res: Response, req: Request, p: ApiProblem): void {
   const body = problemBody(req, res, p);
+  const dropped = Object.keys(p.extra);
+  if (dropped.length) {
+    // Loud, not silent: a route still relies on body extensions the contract forbids.
+    logger.warn({ requestId: body.request_id, code: p.code, droppedMembers: dropped }, 'problem extension members dropped (spec Problem has none; use a header)');
+  }
   for (const [name, value] of Object.entries(p.headers)) res.setHeader(name, value);
   if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-store');
   res.status(p.status).type('application/problem+json').send(JSON.stringify(body));

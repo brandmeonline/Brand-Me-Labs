@@ -172,6 +172,16 @@ SKIP_ALLOWLIST = {
     # commerce-agents: the official AP2 SDK oracle needs its own pinned
     # interpreter (AP2_SDK_PYTHON); CI does not provide one yet.
     "AP2_SDK_PYTHON": "commerce-agents",
+    # commerce-agents (PR #51): live Stripe test mode and the pinned stripe-mock
+    # binary need credentials or a binary CI does not hold; the lane reports
+    # these as not_run, never as passed. Missing Python packages are NOT
+    # allowlisted: pin them in scripts/python/requirements.in.
+    "not_run: STRIPE_TEST_SECRET_KEY absent": "commerce-agents",
+    "stripe-mock": "commerce-agents",
+    "not_run: the model": "commerce-agents",
+    # consumer-domains (PR #52) / spatial-ar: the room manifests arrive with the
+    # spatial lane (PR #36); delete this entry when they reach main.
+    "spatial-lane room manifests not present": "consumer-domains",
 }
 
 _TESTS_DIR = Path(__file__).resolve().parent
@@ -240,6 +250,11 @@ def pytest_collection_modifyitems(session, config, items):
     quarantined = {}
     matched = set()
     modules = {}
+    unregistered = [item.nodeid for item in items if any(True for _ in item.iter_markers("xfail"))]
+    if unregistered:
+        # Every expected failure needs an owner and a blocker: add a QUARANTINE entry instead.
+        raise pytest.UsageError("pytest.mark.xfail outside the QUARANTINE registry in tests/conftest.py:\n  "
+                                + "\n  ".join(unregistered))
     for item in items:
         module_path = item.nodeid.split("::", 1)[0]
         if getattr(item, "module", None) is not None:
@@ -302,6 +317,12 @@ def pytest_runtest_makereport(item, call):
     if _forbidden_skip(report):
         report.longrepr = _skip_failure_message(report)
         report.outcome = "failed"
+    elif hasattr(report, "wasxfail") and item.nodeid not in item.config.stash.get(_QUARANTINED, {}):
+        # Imperative pytest.xfail() bypasses the registry the same way an unregistered marker would.
+        report.longrepr = (f"pytest.xfail() outside the QUARANTINE registry: {report.wasxfail}\n"
+                           "Add an owned QUARANTINE entry in tests/conftest.py instead.")
+        report.outcome = "failed"
+        del report.wasxfail
 
 
 @pytest.hookimpl(hookwrapper=True, tryfirst=True)

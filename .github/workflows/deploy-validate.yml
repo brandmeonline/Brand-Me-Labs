@@ -18,22 +18,18 @@ on:
       - 'brandme-infra/**'
       - 'scripts/validate-helm.sh'
       - '.github/workflows/deploy-validate.yml'
-      # The env contract stage feeds rendered env to these validators.
-      - 'brandme_core/read_api/config.py'
-      - 'brandme_core/privacy_exports/config.py'
-      - 'brandme_core/events/worker.py'
-      - 'brandme_core/events/pubsub.py'
-      - 'brandme_core/config.py'
+      # The env contract stage feeds rendered env to these validators and their import closure.
+      - 'brandme_core/**'
+      - 'packages/contracts/generated/**'
+      - 'scripts/python/requirements.lock'
   pull_request:
     paths:
       - 'brandme-infra/**'
       - 'scripts/validate-helm.sh'
       - '.github/workflows/deploy-validate.yml'
-      - 'brandme_core/read_api/config.py'
-      - 'brandme_core/privacy_exports/config.py'
-      - 'brandme_core/events/worker.py'
-      - 'brandme_core/events/pubsub.py'
-      - 'brandme_core/config.py'
+      - 'brandme_core/**'
+      - 'packages/contracts/generated/**'
+      - 'scripts/python/requirements.lock'
 
 permissions:
   contents: read

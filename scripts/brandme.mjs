@@ -306,7 +306,7 @@ async function check() {
     ['packages tests' + (firestore ? '' : ' (security-rules suite skipped)'), 'pnpm', ['--filter', './packages/*', 'test']],
     ['gateway type-check', 'pnpm', ['--filter', '@brandme/gateway', 'type-check']],
     ['gateway tests' + (emulator ? '' : ' (emulator suites skipped)'), 'pnpm', ['--filter', '@brandme/gateway', 'exec', 'vitest', 'run']],
-    ['python tests (tests/)', PY, ['-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider', '--timeout=300', '-ra'],
+    ['python tests (tests/)', PY, ['-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider', '--timeout=300', '-ra', '--continue-on-collection-errors'],
       { python: true, suffix: notRun.length ? ` (${notRun.join(', ')} suites skipped)` : '' }],
     ['docs/build links', process.execPath, [fileURLToPath(import.meta.url), 'links']],
   ];

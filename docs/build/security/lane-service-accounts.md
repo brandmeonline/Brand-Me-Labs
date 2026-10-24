@@ -54,7 +54,8 @@ All roles are granted on the resource, not the project, except two:
 
 | GSA (sandbox) | KSA | Purpose | Roles (resource-scoped) | Secret access |
 |---|---|---|---|---|
-| `bm-sbx-fnd-deployer` | none (GitHub WIF) | CI image push and helm deploy | `roles/artifactregistry.writer` on the image repository; `roles/container.clusterViewer` (project); in-cluster RBAC `admin` on namespace `brandme` only | none |
+| `bm-sbx-fnd-deployer` | none (GitHub WIF, pool `github-deploy`) | helm deploy from `v*` tags in Environment `sandbox` | `roles/container.clusterViewer` (project); in-cluster RBAC `admin` on namespace `brandme` only | none |
+| `bm-sbx-fnd-pusher` | none (GitHub WIF, pool `github-push`) | CI image push from main and `v*` tags (after `build-images` moves off `GCP_SA_KEY`) | `roles/artifactregistry.writer` on the image repository only | none |
 | `bm-sbx-fnd-migrator` | `brandme-migrations` | `runner.py up` (helm pre-upgrade Job) | `roles/spanner.databaseUser` on the database (DDL plus ledger writes; no create, drop or IAM) | none |
 | `bm-sbx-fnd-outbox` | `brandme-events-worker` | outbox to Pub/Sub dispatcher | `brandmeSpannerDataReadWrite` on the database; `brandmeOutboxPublisher` on the three outbox topics only | none |
 | `bm-sbx-fnd-gateway` | `brandme-gateway` | API gateway (identity/session store) | `brandmeSpannerDataReadWrite` on the database | the four service tokens; the planned commerce assertion key (`--include-planned`) |
@@ -94,33 +95,29 @@ apply at that level. Run the script against a throwaway sandbox project first.
 
 ## GitHub Workload Identity Federation
 
-The script creates pool `github` and OIDC provider `brandme-labs`, with issuer
-`https://token.actions.githubusercontent.com`, this attribute mapping:
+Two pools, so an image-push token can never act as the deployer and the reverse.
+Both providers use issuer `https://token.actions.githubusercontent.com` and pin the
+**immutable numeric repository id** (`--github-repo-id`, required with `--apply`;
+`gh api repos/brandmeonline/Brand-Me-Labs --jq .id`). The name alone is mutable: a
+renamed or transferred repository frees it for someone else.
 
-```
-google.subject=assertion.sub,attribute.repository=assertion.repository,
-attribute.repository_id=assertion.repository_id,attribute.ref=assertion.ref
-```
+| Pool / provider | Service account | Attribute condition (defaults) |
+|---|---|---|
+| `github-deploy` / `brandme-deploy` | `bm-sbx-fnd-deployer`: `container.clusterViewer` + namespace `admin` RoleBinding | `assertion.repository_id == "<id>" && assertion.repository == "brandmeonline/Brand-Me-Labs" && (assertion.ref.startsWith("refs/tags/v")) && assertion.environment == "sandbox"` |
+| `github-push` / `brandme-push` | `bm-sbx-fnd-pusher`: `artifactregistry.writer` on the image repository only | `assertion.repository_id == "<id>" && assertion.repository == "brandmeonline/Brand-Me-Labs" && (assertion.ref == "refs/heads/main" \|\| assertion.ref.startsWith("refs/tags/v"))` |
 
-and this default attribute condition, which pins the repository **and** the ref:
-
-```
-assertion.repository == "brandmeonline/Brand-Me-Labs" && (assertion.ref == "refs/heads/main")
-```
-
-- `--allow-ref 'refs/tags/v*'` adds `|| assertion.ref.startsWith("refs/tags/v")`.
-- `--github-repo-id N` also pins the numeric repository id, which survives a
-  repository rename. Recommended; the id was not looked up here.
-- `--require-environment sandbox` also requires the Environment claim, which suits
-  the deploy job once it runs under `environment: sandbox`. Image publishing on
-  push to main does not run under an Environment today.
-- Pull-request refs (`refs/pull/N/merge`) never match.
-
-The deployer service account then grants `roles/iam.workloadIdentityUser` to
-`principalSet://iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/github/attribute.repository/brandmeonline/Brand-Me-Labs`.
+- The deploy defaults match the deploy job: `v*` tags, `environment: sandbox`
+  (`.github/workflows/ci-cd.yml` deploy). `--allow-ref` and `--require-environment`
+  override them.
+- Each service account grants `roles/iam.workloadIdentityUser` to
+  `principalSet://iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/attribute.repository_id/<id>`.
+- Pull-request refs (`refs/pull/N/merge`) match neither condition.
+- `build-images` still pushes with `GCP_SA_KEY` until it is switched to the pusher
+  (packet G24).
 
 The script prints the repository variables to set afterwards:
-`BM_GCP_PROJECT_ID`, `BM_GCP_WIF_PROVIDER` and `BM_GCP_DEPLOYER_SA`.
+`BM_GCP_PROJECT_ID`, `BM_GCP_WIF_PROVIDER`, `BM_GCP_DEPLOYER_SA`, and for the later
+switch `BM_GCP_PUSH_WIF_PROVIDER` and `BM_GCP_PUSHER_SA`.
 
 ## Prerequisites (never created by the script; checked before any change)
 
@@ -130,13 +127,16 @@ The script prints the repository variables to set afterwards:
    `--i-understand-shared-project`. A dedicated sandbox project is the recommended
    default.
 2. **Create the data plane:**
-   - Spanner `brandme-instance`/`brandme-db`;
+   - Spanner instance and database `brandme-sandbox` (the script's default, matching
+     `values-sandbox.yaml` and packet C-8);
    - the topics `brandme-sandbox-public`, `brandme-sandbox-member-private` and
      `brandme-sandbox-restricted`, with at least 24 h retention;
    - the export bucket `brandme-sandbox-exports-<suffix>`, with the policy
      `brandme_core/privacy_exports/storage.py:100-113` enforces;
    - the Artifact Registry repository (default `gcr.io` in `us`, the path CI pushes
-     to today);
+     to today). It lives in `lux-realestate-app` today; pass `--ar-project` when the
+     sandbox project is a different one, and grant the node service account read
+     access there (the script prints the command);
    - a GKE cluster with Workload Identity and namespace `brandme`.
 
    The GKE deploy-verification packet covers these.

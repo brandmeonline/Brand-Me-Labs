@@ -27,6 +27,10 @@ ENTRY_MODULES = [
     ("brandme-core/orchestrator", "worker", "orchestrator"),  # what compose serves on :8002
     ("brandme-governance/governance_console", "main", "governance"),
     ("brandme-cube", "src.main", "cube"),
+    ("brandme-agents/compliance", "src.main", "compliance"),
+    ("brandme-agents/knowledge", "src.main", "knowledge"),
+    # brandme-agents/identity also guards at import, but its module cannot import in any mode
+    # (pre-existing: ProofType is missing from brandme_core.zk), so it has no local-mode case here.
 ]
 IDS = [f"{d}:{m}" for d, m, _ in ENTRY_MODULES]
 
@@ -123,6 +127,29 @@ def test_refusal_is_not_swallowed_by_except_exception():
             pytest.fail("BootRefused must not be an Exception")
     assert isinstance(exc.value.reason, Exception)
     assert "chain.cardano" in str(exc.value)
+
+
+@pytest.mark.production_refusal
+@pytest.mark.parametrize("module,service,network_var", [
+    ("brandme_core.read_api", "read_api", "READ_API_NETWORK"),
+    ("brandme_core.privacy_exports", "privacy_exports", "EXPORT_NETWORK"),
+])
+def test_valid_config_on_a_test_network_is_refused_in_production(module, service, network_var):
+    """The config validators accept Preprod; the shared inventory refuses it in production (exit 3)."""
+    prefix = "READ_API" if service == "read_api" else "EXPORT"
+    env = _env("production") | {
+        "ENVIRONMENT": "production",
+        "SPANNER_PROJECT_ID": "p", "SPANNER_INSTANCE_ID": "i", "SPANNER_DATABASE_ID": "d",
+        network_var: "preprod", f"{prefix}_CONTRACT_ADDRESS": "a" * 64,
+        "RIGHTS_SERVICE_TOKEN": "r" * 40, "PRIVACY_SERVICE_TOKEN": "p" * 40,
+        "PRIVACY_EXPORT_SERVICE_TOKEN": "e" * 40, "EXPORT_BUCKET": "brandme-production-exports-a1",
+    }
+    result = subprocess.run([sys.executable, "-W", "ignore", "-m", module, "--check"], cwd=REPO, env=env,
+                            capture_output=True, text=True, timeout=120)
+    assert result.returncode == EXIT_REFUSED, (result.stdout, result.stderr)
+    assert f"[brandme boot] {service}: REFUSED" in result.stderr
+    assert "is sandbox, not allowed in production" in result.stderr
+    assert "ready" not in result.stdout
 
 
 def test_guard_returns_the_mode_when_allowed():

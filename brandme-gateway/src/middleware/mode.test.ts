@@ -37,6 +37,16 @@ describe('gateway mode guard (BM-BASE-002)', () => {
     expect(v).toMatch(/must be https/);
   });
 
+  it('strict modes refuse a plaintext JWKS URI and http CORS origins (unset CORS_ORIGINS defaults to localhost)', () => {
+    const v = checkGatewayMode(loadConfig({ ...prodEnv, OIDC_JWKS_URI: 'http://idp.example.invalid/jwks.json', CORS_ORIGINS: 'https://app.example.invalid,http://evil.example.invalid' }), {}).join(' | ');
+    expect(v).toMatch(/OIDC_JWKS_URI must be https/);
+    expect(v).toMatch(/CORS_ORIGINS entry 'http:\/\/evil.example.invalid' must be https/);
+    const withoutCors: Record<string, string> = { ...prodEnv };
+    delete withoutCors.CORS_ORIGINS;
+    expect(checkGatewayMode(loadConfig(withoutCors), {}).join(' | ')).toMatch(/CORS_ORIGINS entry 'http:\/\/localhost:3000' must be https/);
+    expect(checkGatewayMode(loadConfig({ ...prodEnv, OIDC_JWKS_URI: 'https://idp.example.invalid/jwks.json' }), {})).toEqual([]);
+  });
+
   it('sandbox applies the same rules', () => {
     expect(checkGatewayMode(loadConfig({ BRANDME_MODE: 'sandbox' }), {}).length).toBeGreaterThan(0);
   });
