@@ -883,3 +883,207 @@ and `sandbox` capabilities summarised to members as `available`.
   PR #53 adds Firestore jobs only. Status only — not re-implemented here (Ultra Plan item 5).
 - Header swap (Ultra Plan item 4): re-verification against the shell branch's newest commit `9c2bb10` (Next 15,
   design-system workspace) is running; result recorded in S17.
+
+## Stage S17 — Payments and fulfillment behind the merchant; Stripe test mode end to end; stateless dev model planner (2026-10-23)
+
+Ultra Plan items 2 and 3, built from the S16 design panel's final designs by two implementers in separate
+worktrees, then merged here (`f02d78e` payments, `beea699` planner; the only conflict was the `tools.py` import
+block). Everything below is lane-owned; no migration was added (V015 already carries the schema).
+
+### Item 2 — real-adapter path (payments, fulfillment), Stripe test mode as the proof
+
+**Interfaces (swap without lane surgery).** The commerce service still sees only the merchant protocols
+(`CheckoutProvider`, `OrderProvider`, `ReturnsProvider`, `OrderCancellationProvider`). A merchant is composed from
+injected collaborators:
+
+- `providers/payments/__init__.py` — `PaymentProcessor` (authorize / capture / void / refund / lookup / find),
+  `PaymentState` (test-mode only; a live state is unrepresentable), normalized `PaymentEvent`.
+- `providers/fulfillment/__init__.py` — `FulfillmentProvider` with line invariants (counters never decrease;
+  cancelled + shipped ≤ ordered; delivered ≤ shipped; returned ≤ shipped), exchange as a new or grown line.
+- `providers/merchant.py` — `ComposedMerchantAdapter`: one code path over any processor + fulfillment pair,
+  with pending money operations (`PendingMoneyOp`) so a lost capture/refund/void response is re-sent under the
+  same key inside the processor's idempotency horizon (23 h), never early, never past it.
+- Demo Atelier (`local_atelier.py`) is now the simulated catalog plus a composed merchant; the rail is chosen at
+  startup (`BRANDME_COMMERCE_PAYMENTS` = `simulated` default | `stripe_test`, demo/development only).
+- TS mirror in `packages/provider-contracts` (marked merchant-internal), with parity tests.
+
+Swap proofs: `test_merchant_runs_on_a_different_fulfillment_provider`,
+`test_merchant_runs_on_a_different_payment_processor`, and `test_parity_simulated_vs_stripe_double` (the same
+scripted purchase gives the same operation/order/payment/fulfillment states and the same final budget on both
+rails).
+
+**Stripe test-mode adapter** (`payments/stripe_test.py` over `payments/stripe_wire.py`, the only module that
+imports `stripe`):
+
+- Keys: `sk_test_…` or least-privilege restricted `rk_test_…` only; live, publishable and `whsec_` values and
+  malformed keys refuse boot with fixed codes. Any live-mode object latches the processor shut.
+- Egress pinned: httpx with `trust_env=False`, `follow_redirects=False`, single attempt, API base
+  `https://api.stripe.com` or loopback (stripe-mock) only; a proxy only from `BRANDME_STRIPE_EGRESS_PROXY`, a
+  CA bundle only from `BRANDME_STRIPE_CA_BUNDLE`. SDK telemetry off; `STRIPE_LOG=debug|info` refuses boot and the
+  SDK's console logging is neutralized; processor log lines use a fixed vocabulary.
+- Money-safety fixes from the panel: `IdempotencyError` and any failure after transmission are
+  `OUTCOME_UNKNOWN` (never a definitive refusal that releases budget and stock); a failed re-read after a refund
+  is outcome-unknown, not transient; refunds count only when `succeeded`; orphan holds found late (or for orders
+  the merchant no longer has) are voided; a void that fails while rejecting an order is kept as a pending op;
+  webhook timestamps outside ±300 s (including the future) are refused, with secret rotation
+  (`STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS`); a decline without a PaymentIntent maps to
+  `payment_authorization_declined`.
+- Simulated processor: an operation key is recorded only after the request validates (a refused capture no
+  longer poisons its key); a reused authorize key with a different binding is an idempotency error, as on Stripe.
+
+**Service and surfaces.** The approved payee is bound into the payment request; webhooks for payments the
+merchant does not hold are acknowledged as not relevant (`ignored` receipt); evidence refs are de-duplicated;
+`order_wire` lines carry `cancelled`; a `sandbox` capability is summarised as `simulated`, and the checkout
+aggregate says `provider_checkout_verified` only for a verified `checkout.submit`. `commerce.order.observed`
+stays v1 and backward compatible (`lines[].cancelled` optional; a round-1-shaped payload still validates).
+Composition reads an allowlisted environment view and runs foundation's `check_registrations` at boot. The
+console provider pages show the payment rail, the Stripe test-mode notice and process-local rail health
+(pending money ops, needs-operator, orphans voided, webhooks ignored, money ops refused).
+
+**Evidence — the simulator → Stripe test-mode purchase flow, layer by layer** (allowed statuses only):
+
+| Layer | Label | Test | Status |
+|---|---|---|---|
+| Simulated rail: the 8 failure behaviours, expiry, orphan voids, lost refund/capture, swap proofs | deterministic app behaviour | `test_providers_payments.py`, `test_providers_fulfillment.py`, `test_commerce_payments_flow.py` | passed |
+| Founder flow through the real `StripeTestPaymentProcessor` on `StripeSemanticsDouble` | fixture double, not Stripe | `test_commerce_payments_flow.py::test_simulator_purchase_through_stripe_adapter_on_semantics_double[memory\|spanner]` | passed |
+| Every request of that flow replayed against stripe-mock v0.206.0, plus headers and a lost response | wire shape only | `test_providers_stripe_wire.py::test_wire_shape_every_request_of_the_offline_flow` (+5) | passed |
+| Live Stripe test mode: founder flow, lost response, decline, void-before-capture | sandbox evidence | `test_commerce_stripe_live.py::test_live_simulator_purchase_through_stripe_test_mode` (+4) | **not_run** — `STRIPE_TEST_SECRET_KEY` absent |
+
+Trace of that flow on the semantics double (fixture double, not Stripe; same steps as the layer-2 test):
+
+| # | Actor | Step | Operation | Order / payment / fulfillment | PaymentIntent | Grant left |
+|---|---|---|---|---|---|---|
+| 1 | member | grant `buy_within_rules`, limit 50000 | — | — | — | 50000 |
+| 2 | agent | search, cart, quote 23544, `purchase.request` | awaiting_approval | — | — | 50000 |
+| 3 | member | approve the exact quote on the trusted surface | approved | — | — | 50000 |
+| 4 | agent | `purchase.execute` → submit → authorize, manual capture | accepted | accepted / unknown / unfulfilled | requires_capture 23544 | 26456 |
+| 5 | Stripe | signed `amount_capturable_updated` → re-read | accepted | accepted / authorized / unfulfilled | requires_capture | 26456 |
+| 6 | merchant | ship all → one capture | fulfilled | accepted / captured / fulfilled | succeeded, received 23544 | 26456 |
+| 7 | merchant | return + refund the bag 13932, counted once `succeeded` | partially_refunded | accepted / partially_refunded / fulfilled | one refund, succeeded | 40388 |
+| 8 | Stripe | the same signed event twice → one receipt | partially_refunded | unchanged | unchanged | 40388 |
+
+One PaymentIntent, `livemode:false`; final grant 40388 = expected; no processor ids in member-visible payloads.
+
+Live runbook (once a test sandbox key exists): `STRIPE_TEST_SECRET_KEY=<rk_test_…> BRANDME_STRIPE_EGRESS_PROXY=<proxy>
+BRANDME_STRIPE_CA_BUNDLE=<ca path> pytest tests/test_commerce_stripe_live.py -v -rA`. Real webhook delivery also
+needs the gateway webhook router mounted (integration work) and `stripe listen --forward-to
+<gateway>/api/v1/commerce/webhooks/demo_atelier`.
+
+### Item 3 — agent integrations in dev form (stateless model planner)
+
+- **Shape.** Each step is one fresh user message built from the task data and the projected tool record; no
+  assistant turn, thinking block or tool result is replayed or stored; system prompt and tools are byte-stable
+  across steps (prompt caching on the system block). Text and thinking are dropped inside the adapter; only
+  proposals survive. Model `claude-opus-5-5`, effort explicit, `tool_choice` auto with
+  `disable_parallel_tool_use`, strict tools; no sampling parameters. Modules: `model_adapter.py` (provider
+  neutral), `anthropic_adapter.py` (SDK imported only in its constructor), `transcript.py` (pure projections and
+  escaping), `budget.py` (cost ledger), `runlog.py` (closed-schema run log), `background.py`, `composition.py`.
+- **Fails closed** on every stop other than a `tool_use` turn with exactly one usable call; refusal category is
+  logged, never its explanation. Provider errors map to fixed codes; exactly one request per step (no SDK retry).
+- **Budgets.** Reserved before I/O (request bytes + 2048 + max output); task token/cost caps and member and
+  environment daily quotas refuse before sending; per-call timeout bounded by the task's remaining time.
+- **Runtime guards (all planners):** stop after an approval request, too many proposals, duplicate calls,
+  arguments that did not come from results (fabricated ids), price ceiling from `budget_hint`; every refused
+  proposal writes an audit record (`status: refused`). No model call can run inside a store transaction
+  (contextvar set by both stores; tested on both).
+- **Egress.** The app never reads `ANTHROPIC_*`, `HTTPS_PROXY`, `ALL_PROXY` or `.netrc`; trust_env off, no
+  redirects, header allowlist (the adapter re-asserts its own key header), SDK/httpx/httpcore loggers held at
+  WARNING; explicit `BRANDME_ASSISTANT_EGRESS_PROXY` / `BRANDME_ASSISTANT_CA_BUNDLE` only.
+- **Run logs** (foundation logging rules; ch.03 §314): `assistant.planner_selected`, `assistant.model_call`,
+  `assistant.task_end` (request-log retention class) and `mcp.tool_call` (security-audit class); keyed refs
+  (`BRANDME_LOG_REF_KEY`, or a per-process key) so run-log lines join audit records; a planted key, card number,
+  goal words, completion/thinking text, upstream error text and raw ids are absent from every log line.
+- **HTTP.** Every `assistant.task.create` returns 202 (the contract), a retry 200; `budget_hint` validated and
+  bound into the idempotency digest; a full background runner answers a retryable 503 `assistant_busy` and
+  creates no task.
+- **Legacy agents.** `brandme-agents/agentic/graph_rag.py` and `brandme-agents/branding/src/graph_engine.py`
+  (unwired) refuse to run without an explicit `BRANDME_DEV_ANTHROPIC_API_KEY`, pass key and base URL
+  explicitly, send no temperature and use `claude-opus-5-5`. Verified only with stubbed LangChain.
+
+**Evidence.** Scripted Messages API through the real `anthropic==0.125.0` client (`test_commerce_model_planner.py`,
+`test_commerce_assistant_planning.py`, `test_commerce_assistant_composition.py`): passed. Live model tests
+(`test_commerce_model_live.py`, 3): **not_run** — `BRANDME_DEV_ANTHROPIC_API_KEY` absent. Nothing in this lane
+has been exercised against the real Anthropic API.
+
+### Item 4 — shell contract
+
+Re-verified on the shell branch's newest commit `9c2bb10` (Next 15.5.28, design-system workspace): with the
+one-line swap in `providers/_data/shell.ts` and the local header deleted, the lane's pages pass `tsc` and
+`next build`.
+
+### Deviations recorded (beyond S15's V015)
+
+- Payments: `rk_test_` restricted keys accepted (least privilege; overrides the design); fulfillment invariant
+  `returned ≤ shipped` (not `≤ delivered`) and returns accepted before delivery, to keep HEAD's tested
+  behaviour; exchange runs catalog checks before the fulfillment request; fictional secret-shaped strings in three
+  existing test files are now built at runtime so the credential-literal scan passes; no `stripe_mock` pytest
+  marker (would need `pytest.ini`, outside the lane).
+- Planner: a dev key alone still selects the model planner in development/demo, and is ignored in
+  sandbox/production (HEAD's tested behaviour; the design wanted an explicit choice and a boot refusal — check-in
+  question); stop codes keep de820ad's names; `PROMPT_VERSION` is a content hash; the HTTP attribute stays
+  `task_runner`.
+
+### Configuration and credential manifest additions (names only — never values)
+
+| Name | Kind | Scope / rule | Status |
+|---|---|---|---|
+| `BRANDME_COMMERCE_PAYMENTS` | config | `simulated` (default) \| `stripe_test`; demo/development only | in code |
+| `STRIPE_TEST_WEBHOOK_SECRET`, `STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS` | secret | Stripe test-mode `whsec_…` (previous = rotation). Without it the Stripe rail refuses every Stripe webhook (`not_configured`); order state then advances only on re-reads | **Not present** |
+| `BRANDME_STRIPE_EGRESS_PROXY`, `BRANDME_STRIPE_CA_BUNDLE` | config — the proxy URL may carry credentials, so keep it in the secret store | explicit Stripe egress proxy / CA path (ambient proxy and CA variables are ignored) | not set |
+| `STRIPE_LOG` | read-only guard | read only to refuse boot on `debug`/`info` | — |
+| `BRANDME_ASSISTANT_PLANNER` | config | `deterministic` (default) \| `anthropic` (dev only, strict) | in code |
+| `BRANDME_ASSISTANT_MODEL`, `BRANDME_ASSISTANT_EFFORT` | config | default `claude-opus-5-5`, `medium` | in code |
+| `BRANDME_ASSISTANT_EGRESS_PROXY`, `BRANDME_ASSISTANT_CA_BUNDLE` | config — proxy URL may carry credentials (secret store) | explicit model egress proxy / CA path | not set |
+| `BRANDME_LOG_REF_KEY` | secret | base64url ≥ 32 bytes; Secret Manager. Unset → a per-process random key, so audit and run-log refs from different processes or restarts never join | **Not present** |
+
+Foundation hand-offs: `stripe==16.0.0` and `anthropic==0.125.0` (with transitive dependencies and hashes) in
+`scripts/python/requirements.lock`; Loki keeps 168 h, the spec proposes 30-day request logs and 180-day audit.
+
+## Stage S18 — Independent review of the round-2 lane diff since S14, and fixes (2026-10-24)
+
+**Method (Workflow).** Seven finder dimensions (money, security, authorization, assistant, data/privacy,
+honesty, tests) over every lane file changed since `3823ea5`; each finding then went to an adversarial
+verifier told to refute it (reproduce → intent → impact), with a second independent verifier for
+critical/high findings. 54 findings: **22 confirmed**, 1 contested, 31 refuted with evidence (e.g. the
+"30 s capture race", "setup tables re-derivable hashes", "assistant 503 consumes the key" — each disproved by a
+probe or by a documented design decision). The confirmed ones were fixed by three fixers in disjoint file
+groups; each finding first got a regression test that failed on `beea699`; an independent checker per group
+re-ran the new tests against `beea699` (all failed there) and against the fix (all pass), and looked for new
+defects.
+
+| Finding | Fix | Commit |
+|---|---|---|
+| A retried cancellation (same Idempotency-Key) refunded the same units twice (probe: 23544 refunded for a 13932 bag) | the release is recorded against the fulfillment cancel key before I/O and settled, never re-taken | `5c1a321` |
+| A refund lost, then *refused* when re-sent, was treated as done (found by the checker on `5c1a321`) | refused money-op keys are remembered; a same-key retry takes the refund again, once | `8c7ab7e` |
+| A lost capture re-sent after a partial cancel still captured the cancelled units | no unit is cancelled while a capture is unsettled (retryable 503); then the post-capture path refunds them | `875ccb7` |
+| … and a full cancel that waited for the capture left the order `accepted` / the operation stuck at `cancel_requested` | an order whose every unit was cancelled before shipping reads `cancelled`; advisory operation states pass through one allowed state (`cancel_requested → cancelled → refunded`), never inferring a dispute | `8c7ab7e`, `8c229ae` |
+| The reduced-capture credit ran only when `captured` itself was observed | credited when any captured/refunded state is first observed, at most once | `0beb7f0` |
+| After a merchant restart a payment webhook voided/refunded a live order and was marked `ignored` | the event is relevant and re-read through `lookup()`, which records the release on the Brand.Me order; the orphan void stays only where no order holds the payment. Note: on the captured case that re-read refunds in full (founder default 9) — the webhook *verification* moves no money, the re-read does | `ab6b648` |
+| Late budget credits opened headroom in a later rolling window (agent could exceed its cumulative cap) | spend is counted per operation in its reservation's window; credits offset only that operation, capped at its reservation | `15cbcf7` |
+| Assistant tasks never carried a processing basis (a completed carts/quotes deletion did not stop a running task) | every task runs under `processing_basis(task.created_at)`, foreground and background | `5e28652` |
+| A pending `commerce.agent_grants` deletion did not stop agent spending | `execute_purchase` guards `AGENT_GRANTS` when a delegation executes | `d078873` |
+| My Data export omitted `OrderLines.quantity_cancelled` | added to the allowlisted export | `d3fe561` |
+| Deletion-freeze guard untested on money paths | tests for request, challenge, approve, AP2 approve, surface key, execute, return, cancel (+ replay), both stores; mutation-checked | `1782afe` |
+| A tool call whose handler raised left no audit record | `call()` audits `internal_error` and re-raises | `4d93214` |
+| Card-number / CVV screen bypassable (`4111/1111/…`, `cvv123`, "my security code is 1234"); goal sent unmasked | separator-agnostic PAN detection, label-window CSC detection, masking in `minimize_goal`; this stage also catches `CV2`, `security-code:`, `CVVs`, labels up to 40 characters away and 3-digit PAN groups. Residual limits: a bare unlabelled code, PAN groups of 1–2 digits | `95b1e24`, `fa4d764` |
+| `ANTHROPIC_CUSTOM_HEADERS` still reached the API under allowlisted names | the egress hook rebuilds headers from the adapter's own values only | `103c31a` |
+| A dev model key outside development/demo was silently ignored | refuses boot (`model_planner_dev_only`) | `b602537` |
+| Legacy GraphRAG built its client from ambient `ANTHROPIC_*` on the pinned `langchain-anthropic` 0.1.1 | refuses outright ("disabled"); reads no key | `83d5f54` |
+| Console operations page promised automatic reconciliation | copy now says when the check actually runs | `ba9fb6d` |
+| Test gaps: binding-echo check, webhook-as-hint, no-SDK-retries on failures, mid-run task cancel | tests that fail under the corresponding mutants | `c60e1ea`, `d6fe5b7`, `2b069ba`, `99a72b5` |
+| Flaky leak check (`4242` inside random hex ids, ≈0.09 %/id) | anchored, plus a real card-number scan | `8c7ab7e` |
+
+**Behaviour changes to note.** A member cancellation (or merchant cancel / armed refund) while a capture or a
+refund is unsettled answers a retryable 503 (`provider_transient` / `provider_outcome_unknown`) for up to the
+2-minute settle window; nothing is cancelled and the same Idempotency-Key works afterwards. A full cancel whose
+capture landed late ends captured-and-refunded rather than voided; under `refund_credit_back=False` the grant
+stays debited for it (errs toward less spending).
+
+**Evidence at the S18 head.** Lane + foundation Python: **1052 passed, 18 skipped** (private Spanner emulator,
+stripe-mock v0.206.0). Skips, all reported, none counted as passed: live Stripe test mode ×5 and live model ×3
+(**not_run**: `STRIPE_TEST_SECRET_KEY` / `BRANDME_DEV_ANTHROPIC_API_KEY` absent), AP2 SDK oracle ×6
+(`AP2_SDK_PYTHON` unset), Pub/Sub emulator ×4 (binary fetched in CI). Gateway vitest 24/24, `tsc`, ESLint;
+provider-contracts 17/17, `tsc`; console `tsc` + `next build`; ruff `E9,F` clean on lane files.
+
+**Credentials created this round: none.** Every secret in the manifest above is "Not present"; I cannot create
+Stripe or Anthropic accounts or keys from this container. PR #51 is undrafted once CI is green on this head.
