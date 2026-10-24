@@ -3,12 +3,12 @@
  *
  * /api/v1/catalog — UNMOUNTED router (lane: opus-commerce-agents).
  * Results carry provider, freshness, simulation and affiliate disclosure; a catalog price is
- * an observation, never a purchasable quote.
+ * an observation, never a purchasable quote. Provider text arrives wrapped as untrusted data.
  */
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { CommerceDomainClient, PrincipalRequest, forward, problem, rejectIdentityFields, requireScope } from './commerce';
+import { type CommerceDomainClient, forward, rejectIdentityFields, requireAgentScope, validate } from './commerce';
 
 const Search = z
   .object({
@@ -22,16 +22,10 @@ const Search = z
 export function createCatalogRouter(client: CommerceDomainClient): Router {
   const router = Router();
   router.use(rejectIdentityFields);
-  router.get('/search', requireScope('commerce:research'), (req: PrincipalRequest, res, next) => {
-    const parsed = Search.safeParse(req.query);
-    if (!parsed.success) {
-      problem(res, 400, 'invalid_request', parsed.error.issues[0]?.message ?? 'invalid query', req.requestId);
-      return;
-    }
-    (req as PrincipalRequest & { search?: unknown }).search = parsed.data;
-    next();
-  }, forward(client, 'catalog.search', (r) => (r as PrincipalRequest & { search?: unknown }).search));
-  router.get('/products/:id', requireScope('commerce:research'),
-    forward(client, 'catalog.product', (r) => ({ product_id: r.params.id })));
+  router.get('/search', requireAgentScope('commerce:research'), validate(Search, 'query'),
+    forward(client, 'catalog.search', (_req, res) => res.locals.input));
+  // productId is `{provider_id}:{source_product_id}`.
+  router.get('/products/:id', requireAgentScope('commerce:research'),
+    forward(client, 'catalog.product', (req) => ({ product_id: req.params.id })));
   return router;
 }

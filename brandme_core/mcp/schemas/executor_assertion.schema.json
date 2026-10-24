@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brand.me/schemas/mcp/executor_assertion.v1.json",
+  "title": "Executor assertion JWT claims (ES256, kid required)",
+  "description": "MCP callers are agents: the principal never carries a session. delegation_id is optional; the executor resolves the one active delegation for (member_id, client_id).",
+  "type": "object",
+  "required": ["iss", "aud", "iat", "exp", "jti", "principal"],
+  "properties": {
+    "iss": {"type": "string", "description": "Gateway issuer identifier"},
+    "aud": {"const": "brandme:mcp-executor"},
+    "iat": {"type": "integer"},
+    "exp": {"type": "integer", "description": "exp - iat <= 60"},
+    "jti": {"type": "string", "minLength": 16, "description": "single use; replay rejected"},
+    "principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["member_id", "subject", "issuer", "client_id", "scopes", "assurance_level", "environment"],
+      "properties": {
+        "member_id": {"type": "string", "format": "uuid"},
+        "subject": {"type": "string"},
+        "issuer": {"type": "string"},
+        "client_id": {"type": "string"},
+        "delegation_id": {"type": ["string", "null"], "format": "uuid"},
+        "scopes": {"type": "array", "items": {"type": "string"}},
+        "assurance_level": {"type": "string", "enum": ["aal1", "aal2", "aal3"]},
+        "environment": {"type": "string", "enum": ["demo", "development", "sandbox", "production"]}
+      }
+    }
+  }
+}

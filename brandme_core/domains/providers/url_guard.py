@@ -18,7 +18,7 @@ from __future__ import annotations
 import ipaddress
 import socket
 from dataclasses import dataclass
-from typing import Callable, Iterable, List, Optional, Sequence, Tuple
+from typing import Callable, Iterable, List, Sequence, Tuple
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 Resolver = Callable[[str], Sequence[str]]

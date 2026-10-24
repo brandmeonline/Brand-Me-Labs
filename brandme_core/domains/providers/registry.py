@@ -10,12 +10,9 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from .contracts import CAPABILITIES, CAPABILITY_STATES, EXECUTABLE_STATES
-
-# Evidence kinds that can justify each state.
-VERIFYING_EVIDENCE = frozenset({"sandbox_operation", "production_operation", "conformance_suite"})
+from .contracts import CAPABILITIES, CAPABILITY_STATES, EXECUTABLE_STATES, VERIFYING_EVIDENCE
 
 
 class RegistryError(ValueError):
@@ -73,6 +70,8 @@ class ProviderConnection:
     adapter: Any = None  # server-only adapter instance
     protocols: Mapping[str, str] = field(default_factory=dict)  # e.g. {"ap2": "0.2"} only when verified/simulated
     merchant_public_keys: Mapping[str, Any] = field(default_factory=dict)  # merchant_id -> checkout JWT key
+    # Server and operator only (a PaymentRailDescriptor): the merchant's payment rail. Never in to_public().
+    payment_rail: Any = None
     version: int = 1
 
     def capability(self, name: str) -> CapabilityStatus:
@@ -130,8 +129,27 @@ class ProviderRegistry:
             conn.capabilities[status.name] = status
             conn.version += 1
 
+    def configure(self, provider_id: str, *, access_level: str, operator_account_ref: Optional[str],
+                  credential_ref: Optional[str], data_use: Mapping[str, bool]) -> None:
+        """Saved operator setup. Never touches capability states: configured is not verified."""
+        with self._lock:
+            conn = self.get(provider_id)
+            conn.access_level = access_level
+            conn.operator_account_ref = operator_account_ref
+            conn.credential_ref = credential_ref
+            conn.data_use = dict(data_use)
+            conn.version += 1
+
     def record_verification(self, provider_id: str, capability: str, *, evidence_ref: str,
                             evidence_kind: str, checked_at: datetime) -> CapabilityStatus:
+        status = self.verification_status(provider_id, capability, evidence_ref=evidence_ref,
+                                          evidence_kind=evidence_kind, checked_at=checked_at)
+        self.set_capability(provider_id, status)
+        return status
+
+    def verification_status(self, provider_id: str, capability: str, *, evidence_ref: str,
+                            evidence_kind: str, checked_at: datetime) -> CapabilityStatus:
+        """The status ``record_verification`` would set, without setting it (safe in a retried transaction)."""
         conn = self.get(provider_id)
         if conn.simulation:
             # A fixture proves app behavior, not a provider relationship.
@@ -143,9 +161,7 @@ class ProviderRegistry:
         else:
             # Sandbox runs and conformance suites prove the sandbox path, not live access.
             state, reason = "sandbox", "sandbox_evidence"
-        status = CapabilityStatus(capability, state, reason, checked_at, evidence_ref, evidence_kind)
-        self.set_capability(provider_id, status)
-        return status
+        return CapabilityStatus(capability, state, reason, checked_at, evidence_ref, evidence_kind)
 
     def suspend(self, provider_id: str, capability: str, reason_code: str, at: datetime) -> None:
         current = self.get(provider_id).capability(capability)

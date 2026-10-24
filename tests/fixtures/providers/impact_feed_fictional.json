@@ -1,0 +1,12 @@
+{
+  "_note": "Fictional normalized feed records for ingestion tests. Not Nordstrom or Impact data; no real IDs, prices or URLs.",
+  "pages": [
+    {"cursor": null, "next": "p2", "items": [
+      {"product": "fx-100", "variant": "fx-100-s", "title": "Fictional Wool Coat", "price": 25000},
+      {"product": "fx-100", "variant": "fx-100-m", "title": "Fictional Wool Coat", "price": 25000}
+    ]},
+    {"cursor": "p2", "next": null, "items": [
+      {"product": "fx-200", "variant": "fx-200-one", "title": "Fictional Scarf", "price": 4000}
+    ], "tombstones": [["fx-100", "fx-100-s"]]}
+  ]
+}

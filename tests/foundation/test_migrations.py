@@ -19,7 +19,8 @@ def _tables(db):
 
 RESERVED = {1: "identity", 2: "persona", 3: "wardrobe", 4: "social", 5: "rewards", 6: "providers",
             7: "commerce", 8: "rights", 9: "privacy", 10: "rights_projection_version", 11: "chain_operation_store",
-            12: "chain_reconciliation", 13: "outbox_delivery", 14: "privacy_exports"}
+            12: "chain_reconciliation", 13: "outbox_delivery", 14: "privacy_exports",
+            15: "commerce_quote_terms"}
 
 
 @pytest.fixture

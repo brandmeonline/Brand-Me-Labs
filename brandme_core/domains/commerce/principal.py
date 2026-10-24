@@ -1,42 +1,47 @@
-"""Authenticated principal (ch.03 §3).
+"""Principal handling for commerce (ch.03 §3), on top of the foundation principal.
 
-A ``Principal`` is produced by the identity boundary (gateway session or MCP
-assertion verification). Domain code never builds one from request fields.
+The authenticated principal is ``brandme_core.domains.base.Principal``, produced
+by the identity boundary (gateway session/bearer resolution or the MCP executor
+assertion). Domain code never builds one from request fields.
+
+Foundation's principal has no first-party flag, so commerce uses one rule:
+**first-party = an interactive session (``session_id``) with no delegation.**
+Everything else (bearer API clients, MCP agents) is an agent and must act
+through an active delegation the member granted on the trusted surface.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import FrozenSet, Optional
+from brandme_core.domains.base import Principal
 
 ENVIRONMENTS = ("demo", "development", "sandbox", "production")
+LOCAL_ENVIRONMENTS = frozenset({"demo", "development"})
+_AAL = {"aal1": 1, "aal2": 2, "aal3": 3}
 
 
-@dataclass(frozen=True)
-class Principal:
-    member_id: str
-    subject: str
-    issuer: str
-    client_id: str
-    scopes: FrozenSet[str]
-    assurance_level: str  # e.g. "aal1", "aal2"
-    environment: str
-    session_id: Optional[str] = None
-    delegation_id: Optional[str] = None
-    # True only for a first-party consumer session rendered by Brand.Me's own
-    # deterministic UI. Agents/MCP clients are never trusted surfaces.
-    first_party_session: bool = False
+def is_first_party(principal: Principal) -> bool:
+    return principal.session_id is not None and principal.delegation_id is None
 
-    def __post_init__(self) -> None:
-        if self.environment not in ENVIRONMENTS:
-            raise ValueError(f"unknown environment {self.environment!r}")
-        if not self.member_id or not self.subject or not self.issuer or not self.client_id:
-            raise ValueError("principal identity fields are required")
-        object.__setattr__(self, "scopes", frozenset(self.scopes))
 
-    @property
-    def is_agent(self) -> bool:
-        return self.delegation_id is not None or not self.first_party_session
+def is_agent(principal: Principal) -> bool:
+    return not is_first_party(principal)
 
-    def has_scope(self, scope: str) -> bool:
-        return scope in self.scopes
+
+def validate_principal(principal: Principal) -> None:
+    if not isinstance(principal, Principal):
+        raise TypeError("commerce requires brandme_core.domains.base.Principal")
+    if principal.environment not in ENVIRONMENTS:
+        raise ValueError(f"unknown environment {principal.environment!r}")
+    if not principal.member_id or not principal.subject:
+        raise ValueError("principal identity fields are required")
+
+
+def meets_assurance(principal: Principal, required: str, *, simulation_ok: bool) -> bool:
+    """``simulated`` (foundation dev identity) counts only for local simulation flows."""
+    if principal.assurance_level == "simulated":
+        return simulation_ok and principal.environment in LOCAL_ENVIRONMENTS
+    return _AAL.get(principal.assurance_level, 0) >= _AAL[required]
+
+
+__all__ = ["Principal", "is_first_party", "is_agent", "validate_principal", "meets_assurance",
+           "ENVIRONMENTS", "LOCAL_ENVIRONMENTS"]
