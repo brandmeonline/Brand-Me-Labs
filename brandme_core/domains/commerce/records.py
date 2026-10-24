@@ -48,6 +48,20 @@ def check_transition(current: str, new: str) -> None:
         raise InvalidTransition(f"purchase cannot move from {current} to {new}")
 
 
+def transition_path(current: str, target: str, *, prefer: Tuple[str, ...] = ()) -> Optional[Tuple[str, ...]]:
+    """The states to pass through to reach ``target``: itself, or one allowed intermediate state, tried
+    in ``prefer`` order first (e.g. cancel_requested -> cancelled -> refunded for a cancelled order).
+    A dispute is never inferred. ``None`` when no such path exists."""
+    if target == current:
+        return ()
+    allowed = _T.get(current, frozenset())
+    if target in allowed:
+        return (target,)
+    mid = next((m for m in (*prefer, *PURCHASE_STATES) if m in allowed and m != "disputed"
+                and target in _T.get(m, frozenset())), None)
+    return (mid, target) if mid is not None else None
+
+
 @dataclass(frozen=True)
 class Cart:
     id: str

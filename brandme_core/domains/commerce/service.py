@@ -59,7 +59,7 @@ from .privacy_handler import AGENT_GRANTS, CARTS_QUOTES, ORDERS
 from .quote import MATERIALITY_RULE, CheckoutQuote, QuoteLine
 from .records import (
     IN_FLIGHT, ApprovalChallenge, BudgetEntry, Cart, IdempotencyRecord, Order, OrderLine,
-    PurchaseApproval, PurchaseOperation, ReturnRequest, WebhookReceipt, check_transition,
+    PurchaseApproval, PurchaseOperation, ReturnRequest, WebhookReceipt, check_transition, transition_path,
 )
 from .store import new_id
 
@@ -925,13 +925,11 @@ class CommerceService:
             tx.put("orders", order.id, order)
             self._mark_returns_received(tx, order.id, prev_order.lines, lines)
             op = tx.get("operations", order.operation_id)
-            target = self._summary_state(order)
-            if target != op.state:
-                try:
-                    check_transition(op.state, target)
-                    self._transition(tx, op, target)
-                except CommerceError:
-                    pass  # summary state is advisory; order facts above are authoritative
+            # The summary state is advisory (order facts above are authoritative), but it never sticks on a
+            # state the order has left: e.g. cancel_requested reaches refunded through cancelled.
+            prefer = ("cancelled",) if order.order_status == "cancelled" else ("accepted",)
+            for state in transition_path(op.state, self._summary_state(order), prefer=prefer) or ():
+                op = self._transition(tx, op, state)
             previous = {l.source_variant_ref: l.quantity_ordered for l in prev_order.lines}
             exchanged = any((l.exchanged_from_ref and l.source_variant_ref not in previous)
                             or l.quantity_ordered > previous.get(l.source_variant_ref, l.quantity_ordered)

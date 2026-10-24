@@ -501,3 +501,14 @@ def test_uneven_or_undelivered_exchange_is_refused_by_the_provider(w):
     w.svc.handle_webhook("demo_atelier", *w.provider.ship(order.provider_order_ref)[0])
     with pytest.raises(ProviderError):  # different price: a return plus a new purchase
         w.provider.exchange(order.provider_order_ref, "demo-overshirt-m", "demo-trousers-m")
+
+
+def test_summary_paths_pass_through_one_allowed_state_and_never_infer_a_dispute():
+    from brandme_core.domains.commerce.records import transition_path
+    assert transition_path("cancel_requested", "refunded", prefer=("cancelled",)) == ("cancelled", "refunded")
+    assert transition_path("cancel_requested", "partially_refunded", prefer=("accepted",)) == (
+        "accepted", "partially_refunded")  # a partial cancellation: the order goes on
+    assert transition_path("accepted", "fulfilled") == ("fulfilled",)
+    assert transition_path("refunded", "partially_refunded") is None  # not through "disputed"
+    assert transition_path("fulfilled", "cancelled") is None
+    assert transition_path("accepted", "accepted") == ()
