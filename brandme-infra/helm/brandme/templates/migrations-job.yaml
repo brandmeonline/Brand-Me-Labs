@@ -1,0 +1,94 @@
+{{- /*
+Copyright (c) Brand.Me, Inc. All rights reserved.
+Schema migrations run BEFORE any workload changes: a pre-install/pre-upgrade
+hook Job (helm waits for it; a failure stops the release). Command:
+  python brandme-data/spanner/migrations/runner.py up
+The runner never creates instances or databases outside the emulator
+(runner.py:131-133), refuses --allow-out-of-order in sandbox/production
+(runner.py:294-295) and stops on checksum drift or a half-applied batch.
+The ServiceAccount and the egress NetworkPolicy are hooks too (lower weight)
+so they exist before the Job on the very first install. Hook resources are not
+removed by `helm uninstall`.
+*/ -}}
+{{- if .Values.migrations.enabled }}
+{{- $c := .Values.migrations }}
+{{- $name := include "brandme.componentName" (list . "migrations") }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "brandme.labels" (list . "migrations") | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+    helm.sh/hook-delete-policy: before-hook-creation
+    iam.gke.io/gcp-service-account: {{ include "brandme.gsaEmail" (list . $c.gcpServiceAccount "migrations.gcpServiceAccount") | quote }}
+automountServiceAccountToken: {{ .Values.podDefaults.automountServiceAccountToken }}
+{{- if .Values.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $name }}-egress
+  labels:
+    {{- include "brandme.labels" (list . "migrations") | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-15"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "brandme.selectorLabels" (list . "migrations") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+    {{- include "brandme.egressBase" . | nindent 4 }}
+{{- end }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "brandme.labels" (list . "migrations") | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "0"
+    # The last Job (succeeded or failed) stays for inspection until the next
+    # release or the TTL below.
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  # Never retry DDL blindly: a failed batch leaves an `applying` ledger row
+  # that needs an operator (runner.py `repair`).
+  backoffLimit: 0
+  activeDeadlineSeconds: {{ $c.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ $c.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "brandme.labels" (list . "migrations") | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ $name }}
+      {{- include "brandme.podDefaults" . | nindent 6 }}
+      securityContext:
+        {{- include "brandme.podSecurityContext" (list . 10001) | nindent 8 }}
+      containers:
+        - name: migrations
+          image: {{ include "brandme.image" (list . "core") | quote }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          command: ["python", "brandme-data/spanner/migrations/runner.py", "up"]
+          env:
+            {{- include "brandme.modeEnv" . | nindent 12 }}
+            {{- include "brandme.spannerEnv" . | nindent 12 }}
+          resources:
+            {{- toYaml $c.resources | nindent 12 }}
+          securityContext:
+            {{- include "brandme.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            {{- include "brandme.tmpMount" . | nindent 12 }}
+      volumes:
+        {{- include "brandme.tmpVolume" . | nindent 8 }}
+{{- end }}

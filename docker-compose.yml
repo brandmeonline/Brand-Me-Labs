@@ -63,7 +63,7 @@ x-node-service: &node-service
 
 services:
   spanner-emulator:
-    image: gcr.io/cloud-spanner-emulator/emulator:1.5.28
+    image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
     ports:
       - "9010:9010"
       - "9020:9020"

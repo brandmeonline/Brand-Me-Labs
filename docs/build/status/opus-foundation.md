@@ -55,7 +55,7 @@ Never edit another lane's owned files. Never edit `docs/design/brandme/**` or `c
 | Actual baseline test report | **Done** | `docs/build/evidence/w00/baseline-test-report.md` (3 of 18 root tests pass at baseline; findings F1–F16 classified) |
 | Mode-guard negative test (production fails closed); simulation labels; trust-path fixtures enumerated and confined | **Done** for enumeration, labels and refusal. **Not done:** physically moving fixtures into demo adapters. Each fabricating service is registered as a simulated adapter and refused in sandbox/production. Rewriting the fakes belongs to the owning lanes | `brandme_core/config.py`, `tests/foundation/test_mode_guard.py` (47), `brandme-gateway/src/middleware/mode.test.ts` (7), `docs/build/evidence/w00/trust-path-fixtures.md` |
 | Migration empty → V001 | **Done**, plus baseline (legacy schema) → V001, rerun no-op, checksum drift / out-of-order / partial-failure refusal | `brandme-data/spanner/migrations/`, `tests/foundation/test_migrations.py` |
-| Typed API clients generated from `domain.schema.json` | **Done**: OpenAPI 3.1 (73 operations, ch.03 inventory), TS types, openapi-fetch client, pydantic models, drift check in `pnpm check` and CI | `packages/contracts`, `tests/foundation/test_contract_models.py` |
+| Typed API clients generated from `domain.schema.json` | **Done**: OpenAPI 3.1 (73 operations, ch.03 inventory), TS types, openapi-fetch client, pydantic models, drift check in `pnpm check`. *Correction 2026-10-24:* the drift check was not in `main`'s CI until round 3 (`foundation.yml` was dropped at `2eac4d7`); it now runs in the `Foundation check` job | `packages/contracts`, `tests/foundation/test_contract_models.py` |
 | `compatibility-lock.md` pinned; lockfiles committed; never "latest" | **Done** | `docs/build/compatibility-lock.md`, `pnpm-lock.yaml` (pnpm 10.34.6), `scripts/python/requirements.lock` (hashed), `.nvmrc` |
 
 ## Acceptance catalog (W00 IDs; results in `docs/build/evidence/results.json`)
@@ -63,10 +63,10 @@ Never edit another lane's owned files. Never edit `docs/design/brandme/**` or `c
 | ID | Result | Why |
 |---|---|---|
 | BM-BASE-001 | **blocked** | Gateway/domain/persistence boot verified from a fresh clone; the consumer app has no gateway client yet (consumer-ui lane) |
-| BM-BASE-002 | **passed** | Strict modes refuse every simulated trust-path service, stub flags, the dev identity provider, shared-secret JWT and symmetric algorithms |
+| BM-BASE-002 | **passed** (re-verified 2026-10-24) | Strict modes refuse every simulated trust-path service, stub flags, the dev identity provider, shared-secret JWT and symmetric algorithms. *Correction:* until round 3 only the compose preflight enforced this; a production-mode orchestrator started without compose served a fabricated `cardano_tx_` hash. Now enforced in-process (`brandme_core/boot.py`, `tests/foundation/test_boot_guard.py`) |
 | BM-BASE-003 | **passed** | Baseline report + this status file |
 | BM-BASE-004 | **passed** | All four apps + packages build from the frozen lockfile on Node 24.21.0 / pnpm 10.34.6. Frontend is still Next 14.0.4 (target 16.3.8 is the frontend lane's) |
-| BM-BASE-005 | **failed** | `POST /scan` returns 500 without NATS; `/scan/:id` is a placeholder; `/shop`/`/stash` are not redirected (targets do not exist) |
+| BM-BASE-005 | **failed** | Gateway half fixed 2026-10-24 (`POST /scan` 503 problem+json without NATS, `GET /scan/:id` 501). Still open: `/shop`/`/stash` are not redirected (frontend lane); `/scan` publishes outside the outbox |
 
 All other 145 IDs are `not_run` (`pnpm evidence:report`).
 
@@ -88,13 +88,13 @@ Done:
 - Emulator tests: a retried transaction commits exactly one outbox event; failed commands write nothing; at-least-once dispatch is applied once via the inbox; idempotent replay; key reuse returns 409; 5 concurrent duplicates apply once.
 - Gateway identity boundary: server-side sessions (hashed secret + CSRF in Spanner), JWKS-verified OIDC bearer (iss/aud/asymmetric algs) mapped to members, `/api/v1` with problem+json and request-id/environment headers, `GET/PATCH /me` (If-Match, contract-validated), `/system/health`, labelled dev session (404 in strict modes). Cross-mode sessions are rejected. 10 emulator tests: restart + second-session persistence, CSRF/origin, 409/428, member isolation, token rejection cases.
 - Commands: `pnpm setup:demo | dev:demo | dev | smoke | check | migrate | evidence:report`. `test:journeys`, `test:providers`, `test:midnight:*` and `assets:validate` exit 2 ("not implemented yet").
-- CI: new `.github/workflows/foundation.yml` (emulator service; check + smoke + builds + production refusal). Existing workflows were moved to `.nvmrc`/`packageManager`.
+- CI: new `.github/workflows/foundation.yml` (emulator service; check + smoke + builds + production refusal). Existing workflows were moved to `.nvmrc`/`packageManager`. *Correction 2026-10-24:* `foundation.yml` never reached `main` (dropped at the W11 merge `2eac4d7`, "token lacks workflow scope"); round 3 restores the gate as the `Foundation check` job in `ci-cd.yml`.
 
 Open (proposed for parent / later lanes):
-- Firestore projection framework + security rules + revocation test (ch.06 W02 "projection revocation works"): **not started**.
+- Firestore projection framework + security rules + revocation test (ch.06 W02 "projection revocation works"): done in round 2 (#53). Custom-token minting and a projection worker are still open.
 - Media upload quarantine and provider connection records: **not started** (media/providers lanes per reservations).
 - Export/deletion jobs: only the data-category registry exists. V009 privacy owns the job tables.
-- Redacted-log middleware is partial: the gateway no longer logs raw user IDs in the new paths. Legacy `routes/scan.ts:67-72` still does.
+- Redacted-log middleware: done for the gateway (round 2) and Python (round 3, `brandme_core/logging.py`).
 - Backfill of the two legacy persona columns: persona lane (V002).
 - Browser OIDC code flow (D-005): gated on the OIDC tenant.
 
@@ -127,7 +127,7 @@ Open (proposed for parent / later lanes):
 
 ## Merge record (2026-10-05)
 
-PR #33 merged into `bench/opus-foundation-20261005` at `25dff5c8` per founder approval (API merge of the draft required marking it ready-for-review first via GraphQL). The 8 working-branch commits (W00 honest baseline, W01 contracts/workspace/design tokens, W02 persistence/auth/privacy) are now on the bench branch. CI failures at merge time are systemic (fail on `main`, owned by PR #30), not lane-caused. Downstream lanes were notified via comments on PRs #32, #34, #35; the two Astra lanes (no open PRs) will see the merge via the bench watch digest. W00–W02 deliverables are complete; remaining foundation-adjacent work is the repo-wide CI repair (PR #30) and the Trivy dependency findings, both outside this lane's ownership.
+PR #33 merged into `bench/opus-foundation-20261005` at `25dff5c8` per founder approval (API merge of the draft required marking it ready-for-review first via GraphQL). The 8 working-branch commits (W00 honest baseline, W01 contracts/workspace/design tokens, W02 persistence/auth/privacy) are now on the bench branch. CI failures at merge time are systemic (fail on `main`, owned by PR #30), not lane-caused. Downstream lanes were notified via comments on PRs #32, #34, #35; the two Astra lanes (no open PRs) will see the merge via the bench watch digest. W00–W02 deliverables are complete *(correction 2026-10-24: overstated; see the open items above and the round-3 gap list)*; remaining foundation-adjacent work is the repo-wide CI repair (PR #30) and the Trivy dependency findings, both outside this lane's ownership.
 
 ## Round 2 (2026-10-23): remaining foundation items
 
@@ -168,3 +168,79 @@ Codex review on PR #53 (2026-10-23). Six findings:
 - **Guard fixed:** the rules suite now fails rather than skipping when an emulator is required, and CI also rejects a zero pass count.
 
 Evidence: projections 18 passed; rules 6 passed; CI Python set 292 passed, 0 skipped.
+
+## Round 3 (2026-10-23/24): ultra plan — honest CI, workspace governance, GKE packet, secrets, W00–W02 gaps
+
+**Branch:** `claude/opus-foundation-w00-2hgiw5`, rebuilt on `main` `48686d2` after #53 merged (`1f0d738`). **PR #58** (draft until this packet). Built as six isolated packages, each re-verified by an independent skeptic, then a six-lens adversarial review of the integrated diff with a skeptic per lens; every finding was reproduced before it was fixed.
+
+### What was built
+
+| Plan item | Outcome | Evidence |
+|---|---|---|
+| 1. Land #53 | **Merged** `1f0d738` (2026-10-23 18:06Z) | `main` |
+| 1. Honest CI (commerce S9) | The `\|\| echo` masks S9 cited were already gone on `main` (#42). CI was still dishonest: hand-picked test list (15 of 21 root test files never ran), the foundation gate never reached `main`, Security Scan could not fail, a `tee` without pipefail hid the #53 rules step. Now: `test-core` runs **all of `tests/`**; known-broken tests are a strict-xfail **quarantine with owner + blocker** (`tests/conftest.py`), an unregistered xfail fails; under `BRANDME_REQUIRE_EMULATORS=1` any skip outside an owned allowlist fails; workflow-wide pipefail; **Foundation check** job (`pnpm check` + `pnpm smoke`) gates image publishing; blocking digest-pinned Trivy CRITICAL + repo-wide secret scans; the 4 S9 pins in the hashed lock (hashes byte-identical to S9) | Local, all emulators required: 606 passed, 3 allowlisted skips, 45 quarantined (before: 33 failed, 15 errors). CI on `0e66e46`: 19/19 success + deploy skipped |
+| 2. Toolchain governance | `scripts/check-workspace.mjs`: fails on an unregistered `package.json` (which `pnpm --frozen-lockfile` does not catch), missing/orphan/stale lockfile importers, pnpm/Node pin drift, nested lockfiles, root `pnpm` field. Runs in the `Workspace guard` workflow (no branch filter), module-regression and `pnpm check`/`setup`. Process + the 2026-10-23 astra/PR #55 root-cause chain + merge-conflict resolutions in `docs/build/workspace-governance.md` | 34 self-tests; flags the historical failures (a37ec2b, 5acc8ee, PR #55 head) |
+| 3. GKE deploy packet | `docs/build/deploy/gke-verification-packet.md`: what exists (A), what is missing (G1–G27), ordered founder actions with exact gcloud commands (C), deploy-job patch (E, **applied** but gated by `vars.BM_DEPLOY_ENABLED`). New chart `brandme-infra/helm/brandme`; core image `runtime` stage from the hashed lock. **Nothing is deployed; cluster existence in lux-realestate-app/us-east1 is unconfirmed** (gcloud 401 here) | `scripts/validate-helm.sh` (helm lint, kubeconform on K8s 1.35/1.36, 18 negative cases, env contract against the processes' own validators); `Deploy manifests` workflow; core + gateway images built and smoke-tested as CI builds them |
+| 4. Secrets scaffolding | Naming conventions (`docs/build/security/secrets-conventions.md`), credential manifest (43 rows, names only) + checker in `pnpm check`, per-lane sandbox identities (`docs/build/security/lane-service-accounts.md`, `scripts/provision/gcp-dev-identities.sh`: dry run by default, refuses production and shared projects, deploy and image-push identities in separate WIF pools pinned to the repository id), rotation runbook stub (`docs/build/runbooks/credential-rotation.md`). Tracked legacy `.env.development/.staging/.production` deleted (read by nothing) | checker + 46 self-tests |
+| 5. W00–W02 gaps | In-process boot guard for every legacy service, agents service, worker and the read/export APIs (BM-BASE-002 was recorded passed while a production orchestrator served a fake `cardano_tx_` hash); trust inventory refreshed (Midnight SANDBOX, Cardano UNCONFIGURED; foundation-era processes registered); Python log redaction; gateway rate limiter (config-driven, problem+json 429 + Retry-After, per-member + per-address, `TRUST_PROXY`, essential-access exemptions, bounded store), request-ID validation, `/scan` 503/501, 409 → `ETag`, strict mode refuses emulator hosts, missing/duplicate service tokens and plaintext JWKS/CORS | `tests/foundation/test_boot_guard.py`, `test_mode_guard.py`, `test_logging_redaction.py`; gateway 114/114 |
+| Found on the way | New advisories turned `main` red (zod high, body-parser high, fast-uri): zod 4.6.7 (no 3.x fix) + two scoped overrides. `google.api_core` began warning on 2026-10-24 that Python 3.11 reaches EOL in a year; the core image smoke now compares stdout only | `pnpm audit --prod` clean |
+
+Commits: `7810282` CI, `4408e15` workspace guard, `fc0e406` secrets, `9bc9a40` GKE, `295c241` boot guard, `6875ed9` gateway, `8a1cf46` wiring, `123a069` advisories, `0e66e46` smoke fix, `dda1f77` review fixes, plus this status commit.
+
+### Credential manifest (founder authority, plan §FOUNDER AUTHORITY)
+
+**Credentials created by this lane this round: none.** No GCP credential works from this environment (`gcloud` returns 401) and the GitHub secrets/variables/environments APIs return 403 through the proxy, so no service account, key, secret, variable or environment was created. Everything needed is scripted or listed for the founder:
+
+| What | Where it will live | Created? | How |
+|---|---|---|---|
+| Per-lane sandbox service accounts (11, incl. `bm-sbx-fnd-deployer`, `bm-sbx-fnd-pusher`) | GCP sandbox project, no keys | no | `scripts/provision/gcp-dev-identities.sh --project P --github-repo-id 1083300600 --apply` |
+| WIF pools `github-deploy`, `github-push` | GCP | no | same script |
+| Secret Manager containers (empty) for the 4 service tokens + Blockfrost | GCP | no | same script; values via `gcloud secrets versions add` (runbook) |
+| Repo variables `BM_GCP_*`, `BM_DEPLOY_ENABLED` | GitHub (not secrets) | no | packet C-17 |
+| Every secret name code reads, incl. planned lane names (Stripe test, model keys, Vertex token) | `docs/build/security/credential-manifest.yaml` | names only | `node scripts/check-credential-manifest.mjs` |
+
+### Still open after round 3
+- Branch protection is unreadable here (403); `Foundation check` and `Workspace guard` are not yet required checks.
+- `build-images` still publishes with `GCP_SA_KEY` until the pusher identity exists (packet G24).
+- Five fixable CRITICALs are baselined in `.trivyignore.yaml` until 2026-11-30 (python-jose ×2 and sentence-transformers are unused pins; anyio and certifi need a fastapi upgrade).
+- W02: `/me/consents`, `GET /capabilities`, Firebase custom tokens + projection worker, PD-07 principal transport, PD-12 scopes, media quarantine, outbox slow lane/re-drive, migration ordering.
+- Merge impact on open lanes is documented: PR #51 must delete its quarantine entries and pin `anthropic`/`stripe` (strict xfail and skip→fail enforce it); PR #52 and both astra lanes resolve the conflicts listed in `docs/build/workspace-governance.md`.
+
+## Check-in packet (2026-10-24) — stop point before any prod-scoped or irreversible step
+
+**(a) Evidence:** the table and commits above. What runs end-to-end today: HTTP client → gateway → brain → Spanner → outbox → Pub/Sub emulator (`pnpm smoke`, passed 2026-10-24), plus every suite in `pnpm check` against the emulators. Nothing runs in a cloud project.
+
+**(b) 21 questions, each with my recommended default.** Answer "defaults" to take all of them.
+
+*Direction*
+1. **Deploy target.** ADR-06 makes Cloud Run the initial target; you asked for GKE. Which first? — *Default: GKE sandbox as you asked, the chart and packet are ready; Cloud Run stays the fallback reusing the same image, identities and secrets.*
+2. **GCP project.** Keep `lux-realestate-app` (shared, named for real estate) or create a dedicated `brandme-sandbox` project? — *Default: dedicated project; one project per mode.*
+3. **First strict environment.** Deploy `BRANDME_MODE=sandbox` on Midnight Preprod only; production stays refused until a Mainnet adapter is authorized. — *Default: yes.*
+4. **Framework tuple.** Apps are on Next 15.5.28 / React 18; the spec says Next 16.3 / React 19; the spatial lane tested React 19.1.1 / R3F 9.4.0. — *Default: record Next 15 as an interim deviation, then one foundation PR moves the workspace to React 19 using the spatial lane's tested tuple after #56 and #36 land.*
+5. **Python 3.11 end of life (2027-10-24; Google libraries warn from today).** — *Default: one foundation PR to Python 3.12 in Q1 2027; nothing now.*
+6. **Legacy services and tests** (brain/policy/orchestrator/cube/governance; the quarantined consent-graph/provenance/wardrobe suites). — *Default: keep them refused in strict modes; delete the unowned legacy tests on 2026-11-30 unless a lane claims them.*
+7. **Legacy deploy paths** (`deploy-brandme.sh`, `agents/*.sh`, `scripts/deploy.sh`, Makefile deploy targets, `infrastructure/helm/brandme`, `brandme-infra/terraform`, the umbrella chart). All verified non-functional. — *Default: retire them in one PR that also updates CLAUDE.md's kill-list.*
+
+*Integration & security*
+8. **Required checks.** Make `Foundation check`, `Workspace guard`, `Test Core` and both Security Scans required on `main` (needs repo admin; I cannot read or set protection). — *Default: yes, after one green run on `main`.*
+9. **Trivy baseline (expires 2026-11-30).** — *Default: foundation removes the three unused vulnerable pins and upgrades fastapi/anyio/certifi in November; HIGH severity becomes blocking after that.*
+10. **Keyless image push.** After you run the provisioning script, switch `build-images` to `bm-sbx-fnd-pusher` and delete `GCP_SA_KEY`. — *Default: yes.*
+11. **Secrets into pods.** GKE Secret Manager sync add-on, External Secrets, or CI-created Secrets? — *Default: the GKE secret sync add-on.*
+12. **PD-07 principal transport.** Replace the static service tokens + `X-Subject-Ref` (any token holder can act as any member) with the audience-bound ES256 assertion the commerce lane built. — *Default: yes; foundation implements it right after #51 lands.*
+13. **PD-12 scopes.** A session scope policy covering wardrobe/outfits/social/rewards (with `rewards:write`)/commerce, operator scopes behind role + aal2, `rights:*` gated by assurance. — *Default: yes.*
+14. **OIDC for sandbox.** Google Identity Platform as issuer, the same tenant minting Firebase custom tokens for Firestore projections. — *Default: yes.*
+
+*Scope & sequencing*
+15. **Merge order.** — *Default: #58 first, then #52 (one `ci-cd.yml` conflict, keep both jobs), #51 (must drop its quarantine entries and lock `anthropic`/`stripe`), then #56 and #36.*
+16. **Migration numbering.** Lane migrations V003–V005 sort below the applied V014, and the runner refuses out-of-order migrations in sandbox. — *Default: renumber unmerged lane migrations above the current maximum before the first cloud `runner.py up`; retire the fixed reservation table.*
+17. **Commerce dependencies.** `anthropic` and `stripe` are not in the hashed lock. — *Default: foundation adds them to `requirements.in` in #51's merge, pinned and hashed.*
+18. **Router mounting (W11).** — *Default: one foundation integration PR mounts the lane routers after #51 and #52 land.*
+19. **Next foundation build (round 4).** — *Default order: PD-07 → PD-12 → `/me/consents` → `GET /capabilities` → Firebase custom tokens + projection worker.*
+20. **Rate limits across replicas.** Buckets are per process. — *Default: one gateway replica in sandbox; a shared store (Memorystore) before production.*
+21. **Unowned files.** `.gitignore`, `CLAUDE.md`, service Dockerfiles, `brandme-infra/`, `routes/scan.ts` have no owning lane. — *Default: foundation owns them, enforced with a CODEOWNERS file.*
+
+**(c) Top three questions — what I build next under each answer**
+
+- **Q1 (target).** *GKE:* run packet C-1…C-19 with you, set `BM_DEPLOY_ENABLED`, tag `v0.1.0`, verify rollout + in-cluster `--check`s, then add the gateway ingress. *Cloud Run:* write `deploy-cloudrun.yml` reusing the runtime image, WIF and Secret Manager names; services per process, migrations as a Cloud Run Job; the chart stays validated as the alternative. *Both:* GKE for the workers, Cloud Run for the gateway/console; a larger change I would sequence after the first GKE deploy.
+- **Q16 (migrations).** *Renumber:* coordinate the consumer-domains lane to move V003–V005 above V015, drop the reservation table from the runner README, and add a guard that fails a new migration below the current maximum. *Reserved gaps:* teach the runner a signed reservation list that may apply late in sandbox with an audit row, plus tests for out-of-order safety. *Defer:* keep cloud databases ephemeral until all lanes merge (no persistent sandbox before then).
+- **Q12 (PD-07).** *Yes:* port the ES256 domain-assertion signer into gateway middleware, a Python verifier in `brandme_core.domains`, migrate rights/privacy reads off `X-Subject-Ref`, forward `X-Request-Id` on every hop, add a `jti` replay store. *No (keep tokens):* make each token per-service and per-environment, add `<NAME>_NEXT` dual-accept for rotation, and document that a token holder can act as any member. *Defer:* nothing changes; the risk stays listed in the packet.

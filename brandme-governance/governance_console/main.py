@@ -6,6 +6,15 @@
 
 import os
 from typing import List
+
+# Boot guard before anything else: BRANDME_MODE is required, and sandbox /
+# production refuse here because resolve_escalation records a caller-supplied
+# reviewer_user_id as the human approver without authenticating it. The import
+# fails, so no app object exists (brandme_core/boot.py).
+from brandme_core.boot import guard
+
+BRANDME_MODE = guard("governance")
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware

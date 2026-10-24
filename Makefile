@@ -3,7 +3,11 @@
 # Brand.Me Labs - Monorepo Makefile
 # ==================================
 
-.PHONY: help install dev-up dev-down db-migrate db-seed test lint format build-all push-all clean
+.PHONY: help install dev-up dev-down db-migrate db-seed test test-core test-gateway test-chain lint format build-all push-all clean
+
+# Interpreter for the Python suite: BRANDME_PYTHON if set, else the project venv built from
+# scripts/python/requirements.lock (same rule as scripts/brandme.mjs).
+PYTHON ?= $(or $(BRANDME_PYTHON),.venv/bin/python)
 
 # Default target
 help:
@@ -22,9 +26,10 @@ help:
 	@echo "  make db-reset     - Reset database (drop + migrate + seed)"
 	@echo ""
 	@echo "Testing & Quality:"
-	@echo "  make test         - Run all tests"
-	@echo "  make test-unit    - Run unit tests only"
-	@echo "  make test-int     - Run integration tests"
+	@echo "  make test         - Foundation gate (pnpm check: drift, types, package/gateway/Python tests, links)"
+	@echo "  make test-core    - Full Python suite (tests/), as CI test-core runs it"
+	@echo "  make test-gateway - Gateway vitest suites"
+	@echo "  make test-chain   - Chain vitest suites"
 	@echo "  make lint         - Run linters"
 	@echo "  make format       - Format all code"
 	@echo "  make type-check   - Run type checkers"
@@ -121,38 +126,24 @@ db-reset:
 # Testing
 # ========================================
 
-test: test-gateway test-core test-agents test-chain test-console
-	@echo "✓ All tests passed"
+# `make test` is the same gate CI runs (scripts/brandme.mjs check). It reports emulator suites it could not
+# run as not_run; BRANDME_REQUIRE_EMULATORS=1 turns those into failures. Removed targets: test-unit/test-int/
+# test-agents pointed at brandme-core/tests and brandme-agents/tests, which do not exist, and used --cov
+# (pytest-cov is not in scripts/python/requirements.lock); brandme-console has no test script.
+test:
+	pnpm check
 
-test-unit:
-	@echo "Running unit tests..."
-	cd brandme-core && pytest tests/unit -v
-	cd brandme-agents && pytest tests/unit -v
-
-test-int:
-	@echo "Running integration tests..."
-	cd brandme-core && pytest tests/integration -v
-	cd brandme-agents && pytest tests/integration -v
+test-core:
+	@echo "Running the full Python suite (tests/)..."
+	$(PYTHON) -m pytest tests -q --timeout=300 -ra --continue-on-collection-errors
 
 test-gateway:
 	@echo "Testing brandme-gateway..."
-	cd brandme-gateway && pnpm test
-
-test-core:
-	@echo "Testing brandme-core..."
-	cd brandme-core && pytest tests/ -v --cov=src --cov-report=html
-
-test-agents:
-	@echo "Testing brandme-agents..."
-	cd brandme-agents && pytest tests/ -v --cov=src --cov-report=html
+	pnpm --filter @brandme/gateway exec vitest run
 
 test-chain:
 	@echo "Testing brandme-chain..."
 	cd brandme-chain && pnpm test
-
-test-console:
-	@echo "Testing brandme-console..."
-	cd brandme-console && pnpm test
 
 # ========================================
 # Code Quality

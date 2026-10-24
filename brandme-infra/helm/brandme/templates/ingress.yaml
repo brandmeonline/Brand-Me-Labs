@@ -1,0 +1,117 @@
+{{- /*
+Copyright (c) Brand.Me, Inc. All rights reserved.
+Optional public edge (ingress.enabled, default false): GKE Ingress (external
+Application Load Balancer, class "gce") on a reserved GLOBAL static IP, a
+Google-managed certificate, container-native load balancing (NEG annotations
+on the Services) and explicit health checks. The domain and the IP are
+founder actions (docs/build/deploy/gke-verification-packet.md section C).
+*/ -}}
+{{- if .Values.ingress.enabled }}
+{{- $i := .Values.ingress }}
+{{- $fullname := include "brandme.fullname" . }}
+{{- $gatewayHost := include "brandme.req" (list $i.gatewayHost "ingress.gatewayHost") }}
+{{- $hosts := list $gatewayHost }}
+{{- if .Values.console.enabled }}
+{{- $hosts = append $hosts (include "brandme.req" (list $i.consoleHost "ingress.consoleHost")) }}
+{{- end }}
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ include "brandme.componentName" (list . "gateway") }}
+  labels:
+    {{- include "brandme.labels" (list . "gateway") | nindent 4 }}
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /healthz
+    port: {{ .Values.gateway.port }}
+    checkIntervalSec: 15
+    timeoutSec: 5
+  connectionDraining:
+    drainingTimeoutSec: 20
+{{- if .Values.console.enabled }}
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ include "brandme.componentName" (list . "console") }}
+  labels:
+    {{- include "brandme.labels" (list . "console") | nindent 4 }}
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /
+    port: {{ .Values.console.port }}
+    checkIntervalSec: 15
+    timeoutSec: 5
+  connectionDraining:
+    drainingTimeoutSec: 20
+{{- end }}
+{{- if $i.managedCertificate }}
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: {{ $fullname }}-edge
+  labels:
+    {{- include "brandme.labels" (list . "edge") | nindent 4 }}
+spec:
+  domains:
+    {{- range $hosts }}
+    - {{ . | quote }}
+    {{- end }}
+{{- end }}
+{{- if $i.httpsRedirect }}
+---
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: {{ $fullname }}-edge
+  labels:
+    {{- include "brandme.labels" (list . "edge") | nindent 4 }}
+spec:
+  redirectToHttps:
+    enabled: true
+{{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-edge
+  labels:
+    {{- include "brandme.labels" (list . "edge") | nindent 4 }}
+  annotations:
+    # GKE still selects its controller by this annotation (not ingressClassName).
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: {{ include "brandme.req" (list $i.staticIpName "ingress.staticIpName") | quote }}
+    {{- if $i.managedCertificate }}
+    networking.gke.io/managed-certificates: {{ printf "%s-edge" $fullname | quote }}
+    {{- end }}
+    {{- if $i.httpsRedirect }}
+    networking.gke.io/v1beta1.FrontendConfig: {{ printf "%s-edge" $fullname | quote }}
+    {{- end }}
+spec:
+  rules:
+    - host: {{ $gatewayHost | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "brandme.componentName" (list . "gateway") }}
+                port:
+                  name: http
+    {{- if .Values.console.enabled }}
+    - host: {{ $i.consoleHost | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "brandme.componentName" (list . "console") }}
+                port:
+                  name: http
+    {{- end }}
+{{- end }}

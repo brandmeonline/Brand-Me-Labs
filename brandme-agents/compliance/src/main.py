@@ -4,6 +4,11 @@
 #
 # v8: Migrated from PostgreSQL to Spanner
 
+# In-process boot guard (BM-BASE-002): refuse strict modes before any app or adapter exists.
+from brandme_core.boot import guard
+
+BRANDME_MODE = guard("compliance")
+
 import hashlib
 import json
 import uuid

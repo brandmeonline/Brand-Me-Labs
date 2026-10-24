@@ -11,6 +11,7 @@ import type { GatewayConfig } from '../../config';
 import { DEV_IDENTITY_ISSUER, DEV_IDENTITY_LABEL, isStrict } from '../../middleware/mode';
 import { handle, problemHandler, problems, requestContext } from '../../middleware/problem';
 import { principalMiddleware, requirePrincipal, sessionCookie } from '../../middleware/session';
+import { principalRateLimiter } from '../../middleware/rateLimiter';
 import { IdentityStore } from '../../middleware/identity/store';
 import { validator } from '../../middleware/validation';
 import type { Principal } from '../../types';
@@ -50,6 +51,7 @@ export function apiV1(deps: ApiV1Deps): Router {
   router.use(requestContext(cfg.mode));
   router.use(express.json({ limit: '256kb' }));
   router.use(principalMiddleware({ cfg, store, jwks: deps.jwks }));
+  router.use(principalRateLimiter(cfg));
 
   // W00 smoke: gateway → brain → Spanner, and gateway → Spanner directly.
   router.get(

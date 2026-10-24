@@ -2,15 +2,18 @@
  * /api/v1 identity boundary against the Spanner emulator (W02 exit evidence):
  * persistence across restart and a second session, CSRF, If-Match conflicts,
  * unauthenticated access, OIDC token validation, strict-mode refusal of the
- * dev identity simulation.
+ * dev identity simulation. Error bodies are checked against the spec Problem
+ * schema (docs/design/brandme/contracts/domain.schema.json).
  */
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createConnection } from 'node:net';
 import { resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
+import Ajv2020 from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
 import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
 import { loadConfig } from '../../config';
 import { createApp } from '../../index';
@@ -29,11 +32,25 @@ async function reachable(hostPort: string): Promise<boolean> {
 }
 
 const up = await reachable(emulator);
+if (process.env.BRANDME_REQUIRE_EMULATORS === '1' && !up) {
+  throw new Error(`BRANDME_REQUIRE_EMULATORS=1 but the Spanner emulator is not reachable at ${emulator}`);
+}
 const databaseId = `gw-${randomUUID().slice(0, 8)}`;
 const python = process.env.BRANDME_PYTHON ?? (existsSync(resolve(REPO, '.venv/bin/python')) ? resolve(REPO, '.venv/bin/python') : 'python3');
 const ORIGIN = 'http://localhost:3000';
 
 const baseEnv = { BRANDME_MODE: 'development', SPANNER_DATABASE_ID: databaseId, BRAIN_SERVICE_URL: 'http://127.0.0.1:9' };
+
+const spec = JSON.parse(readFileSync(resolve(REPO, 'docs/design/brandme/contracts/domain.schema.json'), 'utf8'));
+const ajv = new Ajv2020({ strict: false, allErrors: true });
+addFormats(ajv);
+const isSpecProblem = ajv.compile(spec.$defs.Problem);
+const expectSpecProblem = (r: request.Response, status: number, code: string) => {
+  expect(r.status).toBe(status);
+  expect(r.headers['content-type']).toMatch(/^application\/problem\+json/);
+  expect(isSpecProblem(r.body), `${status}: ${JSON.stringify(isSpecProblem.errors)}`).toBe(true);
+  expect(r.body).toMatchObject({ status, code, request_id: r.headers['x-request-id'] });
+};
 
 describe.skipIf(!up)('api/v1 identity + me (emulator)', () => {
   const stores: IdentityStore[] = [];
@@ -103,17 +120,42 @@ describe.skipIf(!up)('api/v1 identity + me (emulator)', () => {
     expect((await request(app2).get('/api/v1/me').set('Cookie', s1.cookie)).status).toBe(200);
   });
 
-  it('stale If-Match gets 409 with the current revision; missing If-Match gets 428', async () => {
+  it('stale If-Match gets 409 with the current revision in ETag; missing If-Match gets 428', async () => {
     const app = mkApp();
     const s = await signIn(app, `bo-${randomUUID().slice(0, 6)}`);
     const h = { Cookie: s.cookie, 'X-CSRF-Token': s.csrf };
-    expect((await request(app).patch('/api/v1/me').set(h).send({ display_name: 'x' })).status).toBe(428);
+    expectSpecProblem(await request(app).patch('/api/v1/me').set(h).send({ display_name: 'x' }), 428, 'if_match_required');
     expect((await request(app).patch('/api/v1/me').set({ ...h, 'If-Match': '"1"' }).send({ display_name: 'first' })).status).toBe(200);
     const stale = await request(app).patch('/api/v1/me').set({ ...h, 'If-Match': '"1"' }).send({ display_name: 'second' });
-    expect(stale.status).toBe(409);
-    expect(stale.body).toMatchObject({ code: 'revision_conflict', current_version: '2' });
+    expectSpecProblem(stale, 409, 'revision_conflict');
+    expect(stale.headers.etag).toBe('"2"');
+    expect(stale.body).not.toHaveProperty('current_version');
     const me = await request(app).get('/api/v1/me').set('Cookie', s.cookie);
     expect(me.body.member.display_name).toBe('first');
+    // The 409 ETag is directly usable as the next If-Match.
+    const retried = await request(app).patch('/api/v1/me').set({ ...h, 'If-Match': stale.headers.etag }).send({ display_name: 'second' });
+    expect(retried.status).toBe(200);
+    expect(retried.headers.etag).toBe('"3"');
+  });
+
+  it('401, 404 and 422 bodies are spec Problems too', async () => {
+    const app = mkApp();
+    expectSpecProblem(await request(app).get('/api/v1/me'), 401, 'unauthenticated');
+    const s = await signIn(app, `bea-${randomUUID().slice(0, 6)}`);
+    expectSpecProblem(await request(app).get('/api/v1/me/no-such-route').set('Cookie', s.cookie), 404, 'not_found');
+    const invalid = await request(app).patch('/api/v1/me').set({ Cookie: s.cookie, 'X-CSRF-Token': s.csrf, 'If-Match': '"1"' })
+      .send({ settings: { room_theme: 'castle', motion_mode: 'x'.repeat(2000) }, handle: 'NO SPACES', locale: 7 });
+    expectSpecProblem(invalid, 422, 'invalid_request');
+  });
+
+  it('legacy /scan without NATS: POST is a 503 problem (not a 500), GET status is 501', async () => {
+    const app = mkApp();
+    const s = await signIn(app, `ian-${randomUUID().slice(0, 6)}`);
+    const h = { Cookie: s.cookie, 'X-CSRF-Token': s.csrf, Origin: ORIGIN };
+    const posted = await request(app).post('/scan').set(h).send({ garment_tag: 'TAG-1' });
+    expectSpecProblem(posted, 503, 'dependency_unavailable');
+    expect(posted.body.retryable).toBe(false);
+    expectSpecProblem(await request(app).get(`/scan/${randomUUID()}`).set('Cookie', s.cookie), 501, 'not_implemented');
   });
 
   it('rejects non-allowlisted fields and invalid values', async () => {
@@ -123,6 +165,7 @@ describe.skipIf(!up)('api/v1 identity + me (emulator)', () => {
     for (const body of [{ account_state: 'deleted' }, { member_id: randomUUID() }, { handle: 'NO SPACES' }, { settings: { room_theme: 'castle' } }, {}]) {
       const r = await request(app).patch('/api/v1/me').set(h).send(body);
       expect(r.status, JSON.stringify(body)).toBe(422);
+      expect(isSpecProblem(r.body), JSON.stringify(body)).toBe(true);
     }
   });
 
