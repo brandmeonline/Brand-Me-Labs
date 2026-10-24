@@ -86,6 +86,30 @@ def test_cancel_before_run_takes_no_action():
     assert task.state == "cancelled" and w.store.rows("carts") == []
 
 
+def test_cancel_while_planning_stops_the_proposed_action():
+    """A member's cancel that lands while a step is being planned: the proposal that step returns never runs."""
+    from brandme_core.orchestrator.runlog import MemoryRunLog
+    log = MemoryRunLog(strict=True)
+    w, d, ag, rt, audit = make_audited(AssistanceMode.PREPARE, log=log)
+    t = rt.create(ag, "overshirt", AssistanceMode.PREPARE)
+    inner, planned = DeterministicPlanner(), []
+
+    class CancelledWhilePlanning:
+        def next_calls(self, task, observations):
+            planned.append(len(observations))
+            proposals = inner.next_calls(task, observations)
+            if observations:  # after the search: the member cancels from their own session
+                rt.cancel(w.member, t.id)
+            return proposals  # a cart.create for the top result
+
+    task = rt.run(ag, t.id, CancelledWhilePlanning())
+    assert task.state == "cancelled" and planned == [0, 1]
+    assert w.store.rows("carts") == [] and [r["tool"] for r in audit] == ["brandme.catalog.search"]
+    assert [e.type for e in task.events] == ["goal", "proposed_action", "finding", "cancelled"]
+    end = log.events("assistant.task_end")
+    assert len(end) == 1 and end[0]["state"] == end[0]["code"] == "cancelled" and end[0]["tool_calls"] == 1
+
+
 def test_other_member_cannot_read_task():
     from tests.fixtures.commerce.harness import OTHER_MEMBER, member_session
     w, d, ag, rt = make(AssistanceMode.RESEARCH)

@@ -799,6 +799,34 @@ def test_goal_is_minimized_in_the_prompt_only():
     assert task.events[0].data["goal"] == goal  # the member's own event keeps their words
 
 
+def test_cancel_during_a_background_tool_call_stops_the_next_model_request():
+    """The 202 path: a cancel that arrives while a tool runs means no further model request and no next action."""
+    from brandme_core.orchestrator import BackgroundRunner
+    w = world()
+    d, ag = w.delegate(AssistanceMode.PREPARE)
+    audit, log = [], MemoryRunLog(strict=True)
+    rt = _runtime(w, audit, log)
+    api = FakeMessagesApi([call(1, SEARCH, {"query": "overshirt"}), _cart_from_search(2), done()])
+    planner = make_planner(api, run_log=log)
+    task = rt.create(ag, "an overshirt", AssistanceMode.PREPARE, planner_label=planner.label)
+    run_tool = rt.executor.call
+
+    def run_then_cancel(*args, **kwargs):
+        out = run_tool(*args, **kwargs)
+        rt.cancel(w.member, task.id)  # the member cancels while the search is in flight
+        return out
+
+    rt.executor.call = run_then_cancel
+    runner = BackgroundRunner(rt)
+    runner.submit(ag, task.id, planner)
+    assert runner.drain(10)
+    runner.shutdown()
+    assert task.state == "cancelled" and len(api.requests) == 1  # no model request after the cancel
+    assert [r["tool"] for r in audit] == [SEARCH] and w.store.rows("carts") == []
+    end = log.events("assistant.task_end")
+    assert len(end) == 1 and end[0]["state"] == end[0]["code"] == "cancelled" and end[0]["model_steps"] == 1
+
+
 def test_model_tasks_run_off_the_request_and_answer_202():
     from brandme_core.domains.commerce.delegation import AssistanceMode as Mode
     from brandme_core.domains.commerce.http_api import ASSISTANT_CLIENT_ID
