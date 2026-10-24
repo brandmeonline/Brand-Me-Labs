@@ -166,11 +166,14 @@ jobs:
       - name: Test full Python suite (tests/)
         env:
           PUBSUB_EMULATOR_BIN: .cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
+          GCS_EMULATOR_BIN: .cache/gcs-emulator/fake-gcs-server
           FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
           BRANDME_REQUIRE_EMULATORS: '1'
         run: |
           python scripts/python/fetch_pubsub_emulator.py
           test -x "$PUBSUB_EMULATOR_BIN"
+          python scripts/python/fetch_gcs_emulator.py
+          test -x "$GCS_EMULATOR_BIN"
           java -version
           python -m pytest tests -q --timeout=300 -ra --continue-on-collection-errors
 
@@ -218,14 +221,18 @@ jobs:
       - name: Require Spanner emulator
         run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
 
-      # Persona, wardrobe, social, rewards and media, including My Data end to end
-      # and real Pub/Sub delivery through the foundation outbox worker.
+      # Persona, wardrobe, social, rewards and media, including My Data end to end,
+      # real Pub/Sub delivery through the foundation outbox worker and the GCS media
+      # store on the pinned local GCS emulator (fake-gcs-server).
       - name: Test persona, wardrobe, social, rewards and try-on
         env:
           PUBSUB_EMULATOR_BIN: .cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
+          GCS_EMULATOR_BIN: .cache/gcs-emulator/fake-gcs-server
         run: |
           python scripts/python/fetch_pubsub_emulator.py
           test -x "$PUBSUB_EMULATOR_BIN"
+          python scripts/python/fetch_gcs_emulator.py
+          test -x "$GCS_EMULATOR_BIN"
           python -m pytest tests/test_persona_*.py tests/test_wardrobe_*.py tests/test_social_*.py tests/test_rewards_*.py tests/test_media_*.py -q --timeout=300 -ra
 
   # The foundation gate (scripts/brandme.mjs check + smoke): spec validator, contract/token drift, package and

@@ -386,6 +386,16 @@ class MediaService:
         require_scope(principal, "wardrobe:write")
         job_id = require_uuid(job_id, name="job_id")
         m = principal.member_id
+        # Storage-side expiry stops before the save commits: a failure here leaves an
+        # unsaved (still expiring) preview, never a saved one the bucket would delete.
+        pre = run_read(self.db, lambda s: self._job(s, m, job_id))
+        if pre is not None and not pre["saved"] and pre["state"] == "succeeded" and pre["output_media_ref"]:
+            out = run_read(self.db, lambda s: self._media(s, m, pre["output_media_ref"]))
+            if out is not None and out["deleted_at"] is None:
+                try:
+                    self.store.retain(out["storage_ref"])
+                except KeyError:
+                    raise DetailedInvalidTransition("only a finished, unexpired preview can be saved", code="not_saveable")
 
         def tx(txn, ctx: CommandContext):
             j = self._job(txn, m, job_id)
