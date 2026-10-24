@@ -934,6 +934,44 @@ def test_binding_mismatch_voids_and_rejects(w):
     assert pay.status == "voided" and w.provider._stock == stock and w.store.rows("orders") == []
 
 
+# What the processor echoes back for each binding (simulated _Payment attribute, Stripe metadata key), and a
+# wrong value: another payee, another environment, another order, another operation's authorize key.
+_ECHOES = {"payee": ("payee_ref", "brandme_payee_ref", "someone-else"),
+           "environment": ("environment", "brandme_env", "demo"),
+           "purpose": ("purpose_ref", "brandme_purpose_ref", "demo-order-" + "0" * 24),
+           "authorize_key": ("key", "brandme_idem", "bm-" + "9" * 32 + ":authorize")}
+
+
+@pytest.mark.parametrize("echo", sorted(_ECHOES))
+def test_an_authorization_echoing_another_binding_is_voided_and_rejected(w, echo, monkeypatch):
+    """The amount is right; one echoed binding is not. A foreign or canned object is never this order's payment."""
+    attr, metadata_key, wrong = _ECHOES[echo]
+    stock = dict(w.provider._stock)
+    if w.rail == "simulated":
+        proc = w.provider.payments
+        real = proc.authorize
+
+        def authorize(request):  # the processor records (and echoes) a different binding
+            state = real(request)
+            setattr(proc._by_ref[state.payment_ref], attr, wrong)
+            return proc._state(proc._by_ref[state.payment_ref])
+        monkeypatch.setattr(proc, "authorize", authorize)
+    else:
+        double = w.provider.payments.double
+        real = double.create_payment_intent
+
+        def create(params, *, idempotency_key):
+            double.corrupt_next_create(metadata={**params["metadata"], metadata_key: wrong})
+            return real(params, idempotency_key=idempotency_key)
+        monkeypatch.setattr(double, "create_payment_intent", create)
+    _, res = _buy(w, w.member)
+    assert (res.state, res.reason_code) == ("rejected", "payment_binding_mismatch")
+    rec = next(iter(w.provider._orders.values()))
+    assert (rec.order_status, rec.release_reason) == ("rejected", "binding_mismatch")
+    assert w.provider.payments.lookup(rec.payment_ref).status == "voided"  # released before the stock
+    assert w.provider._stock == stock and w.store.rows("orders") == []
+
+
 def test_authorization_expiry_cancels_unshipped_order(w):
     d, ag = w.delegate(lim=limits(refund_credit_back=False))
     _, res = _buy(w, ag)
