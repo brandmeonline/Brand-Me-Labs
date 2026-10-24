@@ -14,7 +14,10 @@ The planner (deterministic, or the stateless model planner in ``model_planner``)
 * tool results go back to the planner as data (a private copy); text inside them can never add
   tools, scopes or approvals;
 * per-task call, refusal and wall-clock budgets; cancellation stops new side effects. A planner
-  or executor failure marks the task failed with a fixed code, never exception text.
+  or executor failure marks the task failed with a fixed code, never exception text;
+* every call runs under the task's processing basis (its creation time): a My Data deletion of a
+  category that completes after the task was created refuses the task's next write there, and the
+  task stops with ``processing_restricted`` rather than rebuild the data from what it read before.
 
 Task events expose goals, findings, proposed actions, refusals, approval requests and
 outcomes — not model reasoning. Every ``tool`` in an event is a known tool name or
@@ -32,12 +35,14 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Protocol, Set, Tuple
 
 from brandme_core.domains.commerce.delegation import AssistanceMode
 from brandme_core.domains.commerce.errors import CommerceError
 from brandme_core.domains.commerce.money import Money, MoneyError
 from brandme_core.domains.commerce.principal import Principal, is_first_party
+from brandme_core.domains.commerce.service import processing_basis
 from brandme_core.mcp.authz import MCP_PROTOCOL_VERSION
 from brandme_core.mcp.refs import canonical_json, log_ref
 from brandme_core.mcp.tools import (
@@ -115,6 +120,9 @@ class AssistantTask:
     request_id: Optional[str] = None  # the gateway request id the task was created under (a UUID)
     planner_label: str = "deterministic"
     submitted: bool = False  # handed to a background runner (set once)
+    # When the task was created, on the commerce service's clock (set by ``create``). Everything
+    # the task reads is read after this, so it is the processing basis of every write it makes.
+    created_at: Optional[datetime] = None
 
 
 @dataclass(frozen=True)
@@ -237,7 +245,8 @@ class AssistantRuntime:
                     raise IdempotencyReuse("idempotency key reused for a different task")
                 return self._tasks[task_id]
             task = AssistantTask(str(uuid.uuid4()), principal.member_id, principal.delegation_id, mode, goal[:1000],
-                                 constraints=constraints, request_id=_uuid_or_none(request_id), planner_label=label)
+                                 constraints=constraints, request_id=_uuid_or_none(request_id), planner_label=label,
+                                 created_at=self.executor.commerce.clock())
             self._emit(task, "goal", {"goal": task.goal, "mode": mode.value, "planner": label,
                                       "price_ceiling": ceiling.to_wire() if ceiling else None})
             self._tasks[task.id] = task
@@ -306,7 +315,9 @@ class AssistantRuntime:
         started = self._monotonic()
         run = _Run()
         try:
-            self._loop(principal, task, planner, run, started)
+            # Set here, in the thread that runs the task, so inline and background runs both carry it.
+            with processing_basis(task.created_at):
+                self._loop(principal, task, planner, run, started)
         except BaseException:
             # Never leave a task "running" that nothing is running: it could not be retried or cancelled.
             self.fail(task.id, "runtime_failed")
@@ -356,6 +367,8 @@ class AssistantRuntime:
                     self.fail(task.id, "task_budget_exhausted")
                     return
                 self._one(principal, task, view, i, p, observations, run)
+                if task.state == "failed":
+                    return
             if len(observations) > 4 * MAX_CALLS:
                 self.fail(task.id, "task_budget_exhausted")
                 return
@@ -388,7 +401,12 @@ class AssistantRuntime:
         observations.append({"seq": len(observations) + 1, "step": view.step, "arguments": copy.deepcopy(args),
                              **outcome.to_wire(), "tool": tool})
         if outcome.status != "ok":
-            self._emit(task, "action_refused", {"tool": tool, "code": (outcome.problem or {}).get("code")})
+            code = (outcome.problem or {}).get("code")
+            self._emit(task, "action_refused", {"tool": tool, "code": code})
+            if code == "processing_restricted":
+                # The member deleted or restricted this data after the task read its inputs (or a
+                # deletion is pending): nothing more is built from them.
+                self.fail(task.id, "processing_restricted")
             return
         content = outcome.structured_content or {}
         if tool == "brandme.catalog.search":

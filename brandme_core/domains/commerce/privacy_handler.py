@@ -69,7 +69,7 @@ _EXPORT_SQL: Dict[str, Dict[str, str]] = {
             payment_status, fulfillment_status, currency, total_minor, refunded_minor, last_observed_at, created_at
             FROM Orders WHERE member_id = @s ORDER BY created_at""",
         "order_line": """SELECT l.order_id, l.source_variant_ref, l.quantity_ordered, l.quantity_shipped,
-            l.quantity_delivered, l.quantity_returned, l.exchanged_from_ref FROM OrderLines l
+            l.quantity_delivered, l.quantity_returned, l.quantity_cancelled, l.exchanged_from_ref FROM OrderLines l
             JOIN Orders o ON l.order_id = o.order_id WHERE o.member_id = @s""",
         "return_request": """SELECT return_id, order_id, source_variant_ref, quantity, provider_reference, status,
             requested_at FROM ReturnRequests WHERE member_id = @s ORDER BY requested_at""",

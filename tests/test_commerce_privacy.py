@@ -159,6 +159,24 @@ def test_export_is_allowlisted_and_scoped_to_the_member(my_data):
     assert sections[ORDERS]["notes"]  # truthful about the merchant's own copy
 
 
+def test_export_shows_cancelled_units_on_order_lines(my_data):
+    svc, w = my_data
+    _, quote, op = w.prepared(w.member, line("overshirt"), line("bag"))
+    res = w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=w.approve(op).id,
+                                 idempotency_key="privacy-cancel-buy-0001")
+    order = w.store.get("orders", res.order_id)
+    w.provider.arm(Behavior.PARTIAL_FULFILLMENT, source_variant_ref="demo-bag-m", quantity=0)
+    for headers, body in w.provider.ship(order.provider_order_ref):  # the overshirt ships, the bag does not
+        w.svc.handle_webhook("demo_atelier", headers, body)
+    out = w.svc.request_cancellation(w.member, order.id, idempotency_key="privacy-cancel-key-0001")
+    assert (out["status"], out["units_cancelled"]) == ("partially_cancelled", 1)
+    records = svc.export(MEMBER, _real_now())["package"]["categories"][ORDERS]["records"]
+    lines = {r["source_variant_ref"]: r for r in records if r["type"] == "order_line"}
+    # Same facts as the order page: the bag was cancelled, not still owed.
+    assert {ref: (r["quantity_ordered"], r["quantity_shipped"], r["quantity_cancelled"])
+            for ref, r in lines.items()} == {"demo-overshirt-m": (1, 1, 0), "demo-bag-m": (1, 0, 1)}
+
+
 def test_category_deletion_receipt_is_truthful_and_self_contained(my_data):
     svc, w = my_data
     d, ag = w.delegate()
@@ -217,7 +235,26 @@ def test_member_and_agent_writes_are_refused_while_deletion_is_pending(my_data):
                             allowed_providers={"demo_atelier"}, limits=None, expires_at=w.clock.now + timedelta(days=1))
 
 
+def test_a_pending_grant_deletion_stops_agent_spending_and_the_grant_is_erased(my_data):
+    svc, w = my_data
+    d, ag = w.delegate()
+    _, _, op = w.prepared(ag)
+    approval = w.approve(op)  # the member approved; then asked My Data to delete their grants
+    job = svc.request_deletion(MEMBER, _real_now(), [AGENT_GRANTS])
+    with pytest.raises(ProcessingRestricted):
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id,
+                               idempotency_key="privacy-grant-exec-0001")
+    assert w.provider.submit_calls == [] and w.store.budget_entries(d.id) == []
+    receipt = svc.run_deletion(job)
+    # No order was made under the grant, so nothing keeps it as evidence: it is erased.
+    assert receipt["categories"][AGENT_GRANTS]["status"] == "deleted"
+    assert w.store.get("delegations", d.id) is None
+    assert w.store.get("operations", op.id).state == "cancelled"
+
+
 def test_account_deletion_freezes_every_commerce_write(my_data):
+    """Grant and cart writes here; every money path (request, approve, AP2, execute, return, cancel),
+    on both stores, in tests/test_commerce_privacy_freeze.py."""
     svc, w = my_data
     svc.request_deletion(MEMBER, _real_now())  # whole account
     with pytest.raises(ProcessingRestricted):
@@ -232,11 +269,16 @@ def test_account_deletion_freezes_every_commerce_write(my_data):
 def test_queued_assistant_work_cannot_recreate_deleted_data(my_data):
     from brandme_core.domains.commerce.service import processing_basis
     svc, w = my_data
+    w.clock.now = _real_now()  # a deployment's service clock: tombstones carry Spanner commit times
     d, ag = w.delegate(AssistanceMode.PREPARE)
-    started = _real_now()  # an assistant task read its inputs here...
+    started = w.clock.now  # an assistant task read its inputs here...
     svc.run_deletion(svc.request_deletion(MEMBER, _real_now(), [CARTS_QUOTES]))  # ...then the member deleted
+    w.clock.now = _real_now()
     with processing_basis(started), pytest.raises(ProcessingRestricted):
         w.svc.create_cart(ag, provider_id="demo_atelier", merchant_id="fictional-demo-merchant", lines=[line()])
+    # The basis is what refuses it: the deletion has completed, so work based on fresh inputs may write.
+    w.svc.create_cart(ag, provider_id="demo_atelier", merchant_id="fictional-demo-merchant", lines=[line()])
+    # The runtime applies the basis to every task: tests/test_commerce_assistant_privacy.py.
 
 
 def test_privacy_job_requires_an_explicit_mode(my_data, monkeypatch):
