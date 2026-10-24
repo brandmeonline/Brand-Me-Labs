@@ -59,7 +59,7 @@ def _load(monkeypatch):
 
 def test_legacy_graph_rag_refuses_even_with_a_dev_key(monkeypatch):
     monkeypatch.setenv("BRANDME_DEV_ANTHROPIC_API_KEY", DEV_KEY)
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api03-ambient-session-key-0000000000")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-" + "ant-api03-ambient-session-key-0000000000")
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://ambient.invalid")
     rag, built = _load(monkeypatch)
     with pytest.raises(rag.GraphRAGDisabled) as e:

@@ -139,7 +139,7 @@ def test_beyond_link_only_needs_approval_evidence(env):
 
 @pytest.mark.parametrize("bad", [
     "sk_" + "live_51Hfictionalfictional", "rk_test_fictional", "pk_live_fictional", "whsec_" + "fictionalfictional",
-    "sk-ant-api03-fictional", "-----BEGIN PRIVATE KEY-----\nMIIEfictional\n-----END PRIVATE KEY-----",
+    "sk-" + "ant-api03-fictional", "-----BEGIN " + "PRIVATE KEY-----\nMIIEfictional\n-----END " + "PRIVATE KEY-----",
     "projects/brandme-dev/secrets/sk_live_fictional/versions/1",
 ])
 def test_secret_values_are_refused_in_every_field_and_never_echoed(env, bad):

@@ -99,7 +99,7 @@ def _codes(task, kind="action_refused"):
 # ------------------------------------------------------------------- request shape
 def test_research_task_runs_on_the_model_through_the_audited_executor(monkeypatch):
     # The session's own Anthropic settings must never be used by app code.
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api03-session-key-must-not-be-used-0000000000")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-" + "ant-api03-session-key-must-not-be-used-0000000000")
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://session-proxy.invalid")
     w = world()
     api = FakeMessagesApi([call(1, SEARCH, {"query": "linen overshirt", "limit": 6}),

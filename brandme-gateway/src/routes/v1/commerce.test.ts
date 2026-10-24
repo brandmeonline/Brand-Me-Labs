@@ -214,8 +214,8 @@ describe('delegations, providers, catalog, assistant', () => {
     const mount = (a: express.Express, c: CommerceDomainClient) => a.use('/providers', createProvidersRouter(c));
     const op = await app({ ...AGENT, clientId: 'ops-console', scopes: ['provider:admin'] }, mount);
     // Built at runtime so no credential-shaped literal is committed.
-    const secrets = ['sk_' + 'live_51Hfictionalfictional', 'whsec_' + 'fictionalfictional', 'sk-ant-api03-fictional',
-      '-----BEGIN PRIVATE KEY-----', 'h7YY5HL19qb3tVflAQzkyNyHkmcmACZr', 'a4161b0ea2c520f9d8d618877cdd6ba908e47dee'];
+    const secrets = ['sk_' + 'live_51Hfictionalfictional', 'whsec_' + 'fictionalfictional', 'sk-' + 'ant-api03-fictional',
+      '-----BEGIN ' + 'PRIVATE KEY-----', 'h7YY5HL19qb3tVflAQzkyNyHkmcmACZr', 'a4161b0ea2c520f9d8d618877cdd6ba908e47dee'];
     for (const field of ['account_ref', 'approval_evidence_ref', 'catalog_ref', 'endpoint_descriptor_ref']) {
       for (const value of secrets) {
         const r = await op.call('PATCH', '/providers/nordstrom_impact/setup', { [field]: value });
@@ -265,7 +265,7 @@ describe('delegations, providers, catalog, assistant', () => {
       'fictional-nordstrom-catalog', '9b1f3a52-3f1e-4d2a-9e64-0b1d2c3e4f50']) {
       expect(looksLikeSecret(ok), ok).toBe(false);
     }
-    expect(looksLikeSecret('ghp_ClNcuV9ZKlqQgx2eEbgc5j7vZyTEAFmGSWmW')).toBe(true);
+    expect(looksLikeSecret('ghp' + '_ClNcuV9ZKlqQgx2eEbgc5j7vZyTEAFmGSWmW')).toBe(true); // fictional, built at runtime
   });
 
   it('operations queue needs the commerce:operator role, even for a member session', async () => {
