@@ -1087,3 +1087,39 @@ provider-contracts 17/17, `tsc`; console `tsc` + `next build`; ruff `E9,F` clean
 
 **Credentials created this round: none.** Every secret in the manifest above is "Not present"; I cannot create
 Stripe or Anthropic accounts or keys from this container. PR #51 is undrafted once CI is green on this head.
+
+## Stage S19 — Merged `main` (`3d4cc0b`); adapted to main's honest CI; one foundation hand-off left (2026-10-24)
+
+`main` moved 59 commits while round 2 was finishing. Among them: foundation round 3 ("Make CI honest": `test-core`
+now runs every test under `tests/` in a venv built only from the hashed lock, with a quarantine registry and
+`BRANDME_REQUIRE_EMULATORS=1`), the strict spec Problem in the gateway, the consumer-domains lane, and
+orchestration notes that already carry this lane's founder questions (V015 + S9 as Q24, commerce secrets as Q13,
+the outbox catalog as Q20; #51 sequenced after #52). Merged with no textual conflicts (`785a19b`); adapted in
+`052f920`:
+
+- **Problem contract.** The spec Problem has no extension members, so a version conflict's current revision now
+  travels as `ETag` (the domain sends it on `VersionConflict`), a domain `Retry-After` as a header; other body
+  members are dropped, and a malformed domain code or status maps to a safe value instead of throwing.
+- **Quarantine registry.** The three `commerce-agents` entries ("arrives with PR #51": AP2 schemas, Impact feed
+  fixture, MCP schemas) are deleted, as the registry requires of the PR that lands the blocker; those tests now
+  pass on this branch (they were XPASS(strict) in CI).
+- **Skip allowlist.** The live-model skip uses the allowlisted `not_run: the model` wording.
+- **Secret scan.** Trivy flagged a fictional token-shaped test fixture (alert 518); fixtures are now built at
+  runtime (`df5de29`), and a local Trivy v0.75.0 secret scan of the tree is clean.
+
+**Foundation hand-off — the one thing between this PR and green.** `test-core` installs only
+`scripts/python/requirements.lock` (foundation-owned), which lacks `stripe==16.0.0` and `anthropic==0.125.0`.
+The lane cannot add them (the lock says lane pins change only through a foundation recompile; the founder asked
+that S9 work stay with foundation). Proposed patch, verified: add both to the commerce-agents block of
+`requirements.in` and recompile constrained to the current lock — it adds exactly `anthropic 0.125.0`,
+`stripe 16.0.0`, `distro 1.9.0`, `docstring-parser 0.18.0`, `jiter 0.18.0`, nothing else moves. In a venv built
+from that lock (`--require-hashes`) with `BRANDME_REQUIRE_EMULATORS=1`, the lane suites give **931 passed,
+14 skipped (all allowlisted), 0 failed**. Posted on PR #51 with the command.
+
+**S9 CI-gating status (Ultra Plan item 5):** foundation's round 3 adopted the substance — no `|| echo`
+masking, the full suite in `test-core`, a quarantine registry with owners and blockers, blocking scans. What
+remains is only the lock pins above. Not re-implemented here.
+
+Local evidence at `052f920` (fresh `pnpm install --frozen-lockfile` from the merged lockfile, so zod 4.6.7 as in
+CI): gateway vitest 161/161 across all 18 files, `tsc`, ESLint; provider-contracts 17/17; console `tsc` +
+`next build`; lane Python in the proposed-lock venv as above.
