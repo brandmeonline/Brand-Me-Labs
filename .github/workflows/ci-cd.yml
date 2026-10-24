@@ -193,6 +193,41 @@ jobs:
           grep -Eq "fail 0$" .cache/rules.log
           grep -Eq "pass [1-9][0-9]*$" .cache/rules.log
 
+  test-consumer-domains:
+    name: Test Consumer Domains (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
+        ports:
+          - 9010:9010
+    env:
+      SPANNER_EMULATOR_HOST: localhost:9010
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --require-hashes -r scripts/python/requirements.lock
+
+      - name: Require Spanner emulator
+        run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
+
+      # Persona, wardrobe, social, rewards and media, including My Data end to end
+      # and real Pub/Sub delivery through the foundation outbox worker.
+      - name: Test persona, wardrobe, social, rewards and try-on
+        env:
+          PUBSUB_EMULATOR_BIN: .cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
+        run: |
+          python scripts/python/fetch_pubsub_emulator.py
+          test -x "$PUBSUB_EMULATOR_BIN"
+          python -m pytest tests/test_persona_*.py tests/test_wardrobe_*.py tests/test_social_*.py tests/test_rewards_*.py tests/test_media_*.py -q --timeout=300 -ra
+
   # The foundation gate (scripts/brandme.mjs check + smoke): spec validator, contract/token drift, package and
   # gateway type checks and tests, docs links, and the gateway -> brain -> Spanner smoke. The pytest step of
   # `pnpm check` is skipped here only, because test-core runs the same full suite; locally `pnpm check` runs it.
@@ -288,7 +323,7 @@ jobs:
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [test-gateway, test-core, foundation-check, test-chain, test-frontend, security-scan]
+    needs: [test-gateway, test-core, test-consumer-domains, foundation-check, test-chain, test-frontend, security-scan]
     timeout-minutes: 40
     # Matrix legs write distinct output names, so the job outputs combine.
     outputs:

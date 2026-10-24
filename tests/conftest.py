@@ -58,37 +58,6 @@ os.environ.setdefault('FIRESTORE_PROJECT_ID', 'brandme-dev')
 QUARANTINE = [
     {
         "kind": "xfail",
-        "owner": "consumer-domains",
-        "raises": "FileNotFoundError",
-        "blocker": "tests/fixtures/persona/catalog_candidates.json was never committed (it was hidden by the old "
-                   "blanket *.json .gitignore rule, now allowlisted); the lane must commit the fixture",
-        "targets": [
-            "tests/test_persona_recommender.py::test_deterministic_and_input_order_invariant",
-            "tests/test_persona_recommender.py::test_hard_budget_and_exclusions_are_never_violated",
-            "tests/test_persona_recommender.py::test_reasons_reference_actual_scoring_evidence",
-            "tests/test_persona_recommender.py::test_no_wardrobe_means_no_wardrobe_reason",
-            "tests/test_persona_recommender.py::test_neutral_start_is_honest",
-            "tests/test_persona_recommender.py::test_sponsorship_is_labelled_and_never_boosts_score",
-            "tests/test_persona_recommender.py::test_diversity_caps",
-            "tests/test_persona_recommender.py::test_declared_preference_changes_ranking",
-            "tests/test_persona_service.py::test_suppression_changes_recommendations_and_blocks_reuse",
-            "tests/test_persona_service.py::test_budget_and_exclusions_flow_through_to_recommendations",
-            "tests/test_persona_service.py::test_not_me_feedback_hides_product_and_is_idempotent",
-            "tests/test_persona_service.py::test_preview_is_read_only",
-        ],
-    },
-    {
-        "kind": "xfail",
-        "owner": "consumer-domains",
-        "raises": "AttributeError",
-        "blocker": "AbortOnceDB injects Aborted(errors=['injected']); the locked google-cloud-spanner 3.40.1 retry path "
-                   "(session._get_retry_delay) calls .trailing_metadata() on that str, so the retry never happens",
-        "targets": [
-            "tests/test_persona_service.py::test_transaction_retry_does_not_duplicate_outbox",
-        ],
-    },
-    {
-        "kind": "xfail",
         "owner": "commerce-agents",
         "raises": "FileNotFoundError",
         "blocker": "vendored AP2 schemas brandme_core/domains/commerce/ap2_schemas/**/*.json are not on main "
