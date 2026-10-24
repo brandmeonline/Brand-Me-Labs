@@ -1123,3 +1123,112 @@ remains is only the lock pins above. Not re-implemented here.
 Local evidence at `052f920` (fresh `pnpm install --frozen-lockfile` from the merged lockfile, so zod 4.6.7 as in
 CI): gateway vitest 161/161 across all 18 files, `tsc`, ESLint; provider-contracts 17/17; console `tsc` +
 `next build`; lane Python in the proposed-lock venv as above.
+## Stage S20 — Check-in packet (2026-10-24)
+
+### (a) Evidence summary
+
+**PR #51** (`claude/opus-commerce-agents-setup-szpmf7` → `main`, head `052f920` plus this status commit), still in draft:
+- Merged with `main` at `3d4cc0b`; no conflicts.
+- CI on `052f920`: 14 checks green: Test Gateway, Foundation check, regression, Unit Tests, Test Consumer Domains, Test Chain, Test Frontend, Build Test, Durable Operation Store, both Security Scans, Trivy, Helm lint/render/kubeconform, and Workspace guard. Deploy and image builds are skipped, because they are gated on Test Core.
+- Test Core is the one remaining red check. It is blocked on a foundation-owned lock pin (Q11). The patch is verified and posted on the PR; with it, the lane suites pass under CI's rules (931 passed, 0 failed).
+
+**Local evidence:**
+- Lane plus foundation Python: 1052 passed, 18 skipped. Every skip is reported and none is counted as passed:
+  - live Stripe (5) and live model (3): `not_run`, because their keys are absent;
+  - AP2 SDK oracle (6);
+  - Pub/Sub emulator (4).
+- Gateway 161/161 (all 18 files). provider-contracts 17/17. Console `tsc` and `next build` pass.
+
+**Ultra Plan items:**
+1. **Round 2 review-ready.**
+   - Foundation adoption is complete.
+   - The S12 console pages work: provider setup save/test/activate, health, the operations queue.
+   - S13 exchange runs at full fidelity, plus member cancellation of unshipped units.
+   - Independent review: 54 findings, 22 confirmed. All were fixed with regression tests that fail on the pre-fix code. The fix checkers then found 3 residuals, also fixed.
+2. **Real-adapter path.**
+   - Payment and fulfillment collaborators sit behind the merchant, selected at startup with no fallback. Swap proofs and a cross-rail parity test pass.
+   - Stripe test mode is wired as the first real adapter.
+3. **Agents in dev form.**
+   - A stateless model planner on `anthropic==0.125.0` / `claude-opus-5-5`.
+   - Every tool call goes through the audited executor. Runtime guards and budgets apply.
+   - Closed-schema run logs whose keyed refs join the audit records.
+4. **Shell contract.** The header sits behind one export line. The swap is verified (tsc and build) on the shell branch's `9c2bb10`.
+5. **S9 CI gating.** Foundation's round 3 adopted it: no masking, the full suite, a quarantine registry. Only the lock pins remain (Q11). Not re-implemented here.
+
+**One full simulator → Stripe test-mode purchase flow.** An agent prepares, the member approves, the agent buys inside its grant, and the merchant authorizes, captures and refunds through the real `StripeTestPaymentProcessor`.
+
+| # | Actor | Step | Operation | Order / payment / fulfillment | PaymentIntent | Grant left |
+|---|---|---|---|---|---|---|
+| 1 | member | grants `buy_within_rules`, limit $500.00 | — | — | — | 50000 |
+| 2 | agent | search, cart, quote $235.44, `purchase.request` | awaiting_approval | — | — | 50000 |
+| 3 | member | approves the exact quote on the trusted surface | approved | — | — | 50000 |
+| 4 | agent | `purchase.execute` → authorize, manual capture | accepted | accepted / unknown / unfulfilled | requires_capture 23544 | 26456 |
+| 5 | Stripe | signed `amount_capturable_updated` → re-read | accepted | accepted / authorized / unfulfilled | requires_capture | 26456 |
+| 6 | merchant | ships all → one capture | fulfilled | accepted / captured / fulfilled | succeeded, received 23544 | 26456 |
+| 7 | merchant | return and refund the bag, $139.32 (counted once `succeeded`) | partially_refunded | accepted / partially_refunded / fulfilled | one refund, succeeded | 40388 |
+| 8 | Stripe | the same signed event twice → one receipt | partially_refunded | unchanged | unchanged | 40388 |
+
+- Exactly one PaymentIntent, with `livemode:false`. The final grant (40388) equals the expected figure, and no processor ids appear in member-visible payloads.
+- **Evidence labels for this flow:**
+  - on the Stripe semantics double (fixture double, not Stripe): **passed**;
+  - every request of the same flow replayed against stripe-mock v0.206.0 (wire shape only): **passed**;
+  - the live Stripe test-mode run: **not_run**, because there is no `STRIPE_TEST_SECRET_KEY` (I cannot create Stripe accounts or keys from this container).
+
+**Credentials created this round: none.** The manifest (S16, S17) lists every name the code reads, never values, and every secret is "Not present".
+
+### (b) Questions — each with my recommended default
+
+Orchestration's founder file (`docs/build/orchestration/questions-for-founder-20261023.md`) already asks four lane items: Q13 secrets, Q20 outbox catalog, Q24 V015 + S9, Q27 merge order. My questions below build on those rather than repeat them.
+
+**Direction**
+1. **Planner selection.** Today a dev key alone selects the model planner in development/demo. Should that require an explicit `BRANDME_ASSISTANT_PLANNER=anthropic`? *Default: yes.* That follows ch.05 §1, "dependency injection selects a mode at startup". A key in sandbox or production already refuses boot.
+2. **Refusal fallback.** A model refusal fails the task closed with `model_refused`. Add a server-side fallback model? *Default: no fallback.*
+3. **Narrative output.** Members see structured task events only, never model text. Allow a short model-written summary? *Default: not until a rendering and prompt-injection review.*
+4. **Merchant of record.** Payments stay behind the merchant, and Brand.Me never takes the money. *Default: keep. A live rail comes only with a contracted merchant on its own processor account.*
+5. **Capture point.** One capture, at the first shipment, for what is still owed. *Default: keep.*
+6. **Grant credit after a late capture.** If a member cancels everything before shipping while a lost capture was landing, the card is captured and then refunded in full. Under `refund_credit_back=false` the agent's grant stays debited. *Default: credit the grant whenever every unit was cancelled before shipping, as for uncaptured money (a small change next push).*
+7. **Console header: enforce or retire the shell contract?** *Default: enforce. Swap to `ConsolePageHeader` with the one line the day the shell branch reaches `main`, then delete the local header.*
+
+**Integration & security**
+8. **Stripe test sandbox and key** (Q13 detail). Create a dedicated test-mode sandbox. Store a **restricted** `rk_test_…` key as the environment secret `STRIPE_TEST_SECRET_KEY`, with PaymentIntents write, Refunds write and Events read only. Add `STRIPE_TEST_WEBHOOK_SECRET` once webhooks are mounted. *Default: restricted key. Until it exists, live evidence stays `not_run`.*
+9. **Anthropic dev key and data** (Q13 detail). A dev-workspace key with a monthly cap, stored as `BRANDME_DEV_ANTHROPIC_API_KEY`. *Default: a $50/month cap, and fictional or demo data only until a DPA and retention review.*
+10. **Assistant budgets.** Per task: $1.00, 6 model calls, 300k tokens, 240 s. Daily caps: $5 per member and $50 per environment. *Default: keep.*
+11. **Lock pins (blocks green).** Foundation adds `stripe==16.0.0` and `anthropic==0.125.0` to `scripts/python/requirements.in` and recompiles, constrained so nothing else moves. *Default: yes. The patch is verified and posted on #51.*
+12. **Durable state.** Assistant tasks, the cost ledger and the `jti` replay cache live in-process. *Default: move them to Spanner before the domain runs more than one instance; that needs migration numbers from foundation.*
+13. **Deletion freezes vs. settlement.** Provider settlement writes (acks, reconcile, webhooks, observations) are exempt from My Data freezes, as retained financial evidence. *Default: keep the exemption, documented.*
+14. **Log retention and the ref key.** The spec says 30-day request logs and 180-day audit; Loki keeps 168 h. Refs join across processes only with `BRANDME_LOG_REF_KEY`. *Default: infra aligns Loki; the key goes into Secret Manager at deployment.*
+
+**Scope & sequencing**
+15. **Merge order** (Q27). #51 merges after #52, and the header swap follows as a one-line PR. *Default: proceed. I merge `main` again and re-run CI as soon as the lock lands.*
+16. **V015** (Q24). *Default: accept.* Fallback: fold it into V007 and accept checksum drift.
+17. **Outbox catalog** (Q20). *Default: foundation adds the one-line commerce catalog import. Commerce events stay in the outbox until then.*
+18. **Mounting.** The routers and the domain app ship unmounted. *Default: the integration lane mounts them after #51: the raw-body webhook relay, the domain app with access logs off, and the env names. I hand over the list.*
+19. **Contract additions.** These lane routes are missing from `@brandme/contracts` (which this lane may not edit): `/commerce/operations…`, `/orders/:id/cancellation`, `/providers/:id/verification-runs`, and `budget_hint` on the assistant task. *Default: the contracts owner adds them from the lane's route list.*
+20. **Next round's first item.** *Default: durable assistant tasks and events with a durable 202 job queue and resume-after-approval. That comes before a second real adapter or the Nordstrom publisher work.*
+21. **Nordstrom.** Link-only until Impact publisher approval and a credential reference exist. No scraping and no guessed API. *Default: keep. The founder applies to the Impact publisher programme when ready.*
+
+### (c) Next steps for the top three
+
+**Q11: lock pins (the only thing between #51 and green)**
+- *Yes (default):* foundation lands the two lines plus the recompile. I merge `main` into #51, CI re-runs, and once it is green I undraft. No lane code change is needed.
+- *Yes, but this lane makes the change:* that needs explicit permission to edit foundation's `scripts/python/requirements.in` and lock. I would apply exactly the posted patch in #51.
+- *No:* the Stripe adapter and model planner would have to leave the lane's default test path. Their tests would move to an opt-in job, and CI would no longer prove item 2's or item 3's code. I don't recommend this.
+
+**Q8: Stripe test key**
+- *Restricted `rk_test_` key provided (default):*
+  - Run `tests/test_commerce_stripe_live.py` (5 tests) through `BRANDME_STRIPE_EGRESS_PROXY` and `BRANDME_STRIPE_CA_BUNDLE`.
+  - Record the founder flow as sandbox evidence.
+  - Re-verify `HANDLED_EVENT_TYPES` and List read-after-write on `2026-09-30.endive`.
+  - Add a manifest row (name, scope, store, date).
+- *`sk_test_` key provided:* the same steps, plus a rotation note. The adapter accepts both.
+- *Not now:* live evidence stays `not_run`. The fixture-double and stripe-mock layers remain the proof, and nothing else is blocked.
+
+**Q18: mounting**
+- *Integration lane mounts it (default):* I hand over:
+  - the mount list: commerce, catalog, providers, assistant, delegations and the ops routers;
+  - the raw-body webhook relay;
+  - the domain app with access logs off;
+  - the required env names.
+  Then I fix whatever their end-to-end test finds.
+- *This lane mounts it:* that needs permission to edit gateway `index.ts` and the compose files. Then I add an end-to-end test through the gateway, plus `stripe listen` webhook delivery once Q8 is done.
+- *Defer:* everything stays unmounted, and the console keeps reading through the existing gateway client.
