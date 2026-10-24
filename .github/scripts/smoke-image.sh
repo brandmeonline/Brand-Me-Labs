@@ -28,11 +28,16 @@ case "$service" in
     docker run --rm --entrypoint python "$image" -m brandme_core.privacy_exports --help
     docker run --rm --entrypoint python "$image" brandme-data/spanner/migrations/runner.py --help
     docker run --rm --read-only --network none --entrypoint python "$image" -c "import sys; sys.path.insert(0, 'brandme-data/spanner/migrations'); import runner; v = [m.version for m in runner.load_migrations()]; assert v and 13 in v and 14 in v, v; print('packaged migrations', v)"
-    # Strict modes refuse incomplete configuration before any network call.
+    # Strict modes refuse incomplete configuration before any network call. stdout must be exactly the refusal
+    # record; stderr may carry dependency warnings (google.api_core warns about Python 3.11's end of life from
+    # 2026-10-24) but never a traceback.
+    err=$(mktemp)
     for module in brandme_core.read_api brandme_core.privacy_exports brandme_core.events.worker; do
-      set +e; out=$(docker run --rm --read-only --network none -e BRANDME_MODE=sandbox -e ENVIRONMENT=sandbox --entrypoint python "$image" -m "$module" --check 2>&1); rc=$?; set -e
-      test "$rc" -eq 2 && test "$out" = '{"status":"startup_refused"}'
+      set +e; out=$(docker run --rm --read-only --network none -e BRANDME_MODE=sandbox -e ENVIRONMENT=sandbox --entrypoint python "$image" -m "$module" --check 2>"$err"); rc=$?; set -e
+      test "$rc" -eq 2 && test "$out" = '{"status":"startup_refused"}' && ! grep -q 'Traceback' "$err" \
+        || { echo "$module --check: rc=$rc stdout=$out" >&2; cat "$err" >&2; exit 1; }
     done
+    rm -f "$err"
     echo 'sandbox --check refuses missing configuration (exit 2)'
     docker run --rm --entrypoint python "$image" -c "from brandme_core.privacy_exports.app import create_app; from brandme_core.privacy_exports.storage import PrivateStore; print('selected rights export API and worker imports OK')"
     docker run --rm --entrypoint python "$image" -c "from brandme_core.read_api.app import create_app; from brandme_core.read_api.config import ReadConfig; print('authenticated read API runtime imports OK')"
