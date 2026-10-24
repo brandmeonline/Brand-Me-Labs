@@ -10,7 +10,10 @@ Without the binary every test here is skipped with a "not run" reason, never
 reported as passed. Evidence label: "wire shape only".
 """
 
+import json
+import threading
 from datetime import timedelta
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
@@ -90,7 +93,7 @@ def test_wire_headers_idempotency_version_single_attempt(stripe_mock_url):
     wire.capture_payment_intent(pi["id"], {"amount_to_capture": 9612}, idempotency_key=BASE + ":capture")
     wire.list_refunds(pi["id"])
     methods = [m for m, _, _ in client.attempts]
-    assert methods == ["POST", "GET", "POST", "GET"]  # exactly one attempt per call: no SDK retries
+    assert methods == ["POST", "GET", "POST", "GET"]  # one attempt per successful call; retries: see below
     for method, url, headers in client.attempts:
         assert url.startswith(stripe_mock_url)
         assert headers["stripe-version"] == "2026-09-30.endive"
@@ -214,6 +217,59 @@ def test_unreachable_processor_is_outcome_unknown_for_writes_and_transient_for_r
     with pytest.raises(ProviderError) as e:
         p.lookup("pi_123")
     assert e.value.kind is ProviderErrorKind.TRANSIENT and not e.value.transmitted
+
+
+def _failing_stripe():
+    """A loopback stand-in for Stripe that answers every request with a 500 the SDK is told it may retry."""
+    hits = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def _answer(self):
+            self.rfile.read(int(self.headers.get("content-length") or 0))
+            hits.append(self.command)
+            body = json.dumps({"error": {"type": "api_error", "message": "failure (test)"}}).encode()
+            self.send_response(500)
+            self.send_header("content-type", "application/json")
+            self.send_header("stripe-should-retry", "true")  # the SDK re-sends on this whenever retries are on
+            self.send_header("content-length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        do_GET = do_POST = _answer
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, hits
+
+
+def test_failed_and_lost_requests_are_sent_exactly_once():
+    """No SDK retries, checked where a retry would happen: a retryable 500 and a refused connection."""
+    from brandme_core.domains.providers.payments.stripe_wire import WireError
+    params = {"amount": 100, "currency": "usd", "capture_method": "manual"}
+    server, hits = _failing_stripe()
+    try:
+        client = stripe_events.recording_client(timeout=5)
+        wire = _wire(f"http://127.0.0.1:{server.server_port}", http_client=client)
+        for call in (lambda: wire.create_payment_intent(params, idempotency_key=BASE + ":authorize"),
+                     lambda: wire.retrieve_payment_intent("pi_123")):
+            with pytest.raises(WireError) as e:
+                call()
+            assert e.value.kind == "api"
+    finally:
+        server.shutdown()
+        server.server_close()
+    assert hits == ["POST", "GET"] and [m for m, _, _ in client.attempts] == ["POST", "GET"]
+    client = stripe_events.recording_client(timeout=2)
+    wire = _wire("http://127.0.0.1:9", http_client=client)
+    for call in (lambda: wire.create_payment_intent(params, idempotency_key=BASE + ":authorize"),
+                 lambda: wire.retrieve_payment_intent("pi_123")):
+        with pytest.raises(WireError) as e:
+            call()
+        assert e.value.kind == "connection"
+    assert [m for m, _, _ in client.attempts] == ["POST", "GET"]
 
 
 def test_evidence_label_is_stated():

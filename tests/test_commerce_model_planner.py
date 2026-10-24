@@ -346,8 +346,7 @@ def test_call_budget_wall_clock_and_per_call_timeout():
                         clock=lambda: now["t"] + 200.0)
     # deadline = 1000 + 240; the planner's clock reads 1200: 40 s left, so this call may wait 39 s.
     assert task.state == "completed"
-    assert api.requests[0]["timeout"]["read"] == 39.0
-    assert float(api.requests[0]["headers"]["x-stainless-read-timeout"]) == 39.0
+    assert api.requests[0]["timeout"]["read"] == 39.0  # no x-stainless-* header is sent to carry it
     api = FakeMessagesApi([done()])
     task, _, log = _run(world(), AssistanceMode.RESEARCH, "linen", api, rt_kw={"monotonic": lambda: now["t"]},
                         clock=lambda: now["t"] + 237.0)
@@ -557,6 +556,23 @@ def test_ambient_sdk_headers_and_debug_logging_are_not_used(monkeypatch):
     assert logging.getLogger("anthropic").level >= logging.WARNING
 
 
+def test_ambient_custom_headers_never_reach_the_api_under_any_name(monkeypatch):
+    # Names the SDK itself sends: an ambient value under them must not ride along with Brand.Me's key.
+    monkeypatch.setenv("ANTHROPIC_CUSTOM_HEADERS", "x-stainless-foo: ambient-1\nuser-agent: ambient-ua\n"
+                       "accept: text/x-ambient\ncontent-type: text/x-ambient\nX-Stainless-OS: ambient-os\n"
+                       "Content-Length: 1\nanthropic-beta: ambient-beta")
+    api = FakeMessagesApi([done()])
+    task, _, _ = _run(world(), AssistanceMode.RESEARCH, "linen", api)
+    assert task.state == "completed"
+    sent = api.requests[0]["headers"]
+    assert "ambient" not in json.dumps(sent)
+    assert set(sent) == {"host", "accept", "accept-encoding", "content-type", "content-length", "user-agent",
+                         "x-api-key", "anthropic-version"}
+    assert sent["content-type"] == sent["accept"] == "application/json" and sent["x-api-key"] == KEY
+    assert sent["user-agent"] == f"Anthropic/Python {anthropic.__version__}"
+    assert int(sent["content-length"]) == len(api.requests[0]["raw"].encode())
+
+
 def test_sdk_logging_cannot_leak_prompts_or_urls(caplog):
     for name, level in (("anthropic", logging.DEBUG), ("httpx", logging.INFO), ("httpcore", logging.INFO)):
         logging.getLogger(name).setLevel(level)
@@ -636,8 +652,7 @@ def test_results_stay_valid_json_and_hide_references_the_model_never_needs():
 # ------------------------------------------------------------------- configuration
 def test_without_a_dev_key_the_deterministic_planner_runs_and_the_sdk_is_not_imported():
     assert isinstance(planner_from_env({}), DeterministicPlanner)
-    assert isinstance(planner_from_env({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "production"}),
-                      DeterministicPlanner)  # dev form only: a dev key outside dev/demo is not used
+    assert isinstance(planner_from_env({"BRANDME_MODE": "production"}), DeterministicPlanner)
     assert isinstance(planner_from_env({"ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "development"}),
                       DeterministicPlanner)  # the session's variable is not ours
     assert isinstance(planner_from_env({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "development"}),
@@ -650,6 +665,12 @@ def test_without_a_dev_key_the_deterministic_planner_runs_and_the_sdk_is_not_imp
 
 @pytest.mark.parametrize("env,code", [
     ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY}, "mode_required"),
+    ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_ASSISTANT_PLANNER": "deterministic"}, "mode_required"),
+    # A dev key outside development/demo refuses boot whatever the planner choice: it is surfaced, not ignored.
+    ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "production"}, "model_planner_dev_only"),
+    ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "sandbox"}, "model_planner_dev_only"),
+    ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "production", "BRANDME_ASSISTANT_PLANNER": "deterministic"},
+     "model_planner_dev_only"),
     ({"BRANDME_ASSISTANT_PLANNER": "anthropic"}, "mode_required"),
     ({"BRANDME_ASSISTANT_PLANNER": "anthropic", "BRANDME_MODE": "production", "BRANDME_DEV_ANTHROPIC_API_KEY": KEY},
      "model_planner_dev_only"),
@@ -735,6 +756,28 @@ def test_card_masking_keeps_identifiers():
         f"{uid} [card number removed] sku-1234567890123")
 
 
+@pytest.mark.parametrize("goal", [
+    "buy the linen shirt, card 4111/1111/1111/1111 cvv123", "linen shirt. my security code is 1234",
+    "linen shirt. CVV is 123", "linen shirt, cvv code: 123", "linen shirt with 4111.1111.1111.1111",
+    "linen shirt, 4111, 1111, 1111, 1111"])
+def test_card_data_in_other_formats_is_refused_before_a_task_exists(goal):
+    w = world()
+    d, ag = w.delegate(AssistanceMode.RESEARCH)
+    rt = _runtime(w, [])
+    with pytest.raises(PermissionError):
+        rt.create(ag, goal, AssistanceMode.RESEARCH)
+    assert rt._tasks == {}  # no goal event holds it
+
+
+def test_goal_minimization_masks_card_data_even_past_the_screen():
+    from brandme_core.orchestrator.transcript import minimize_goal
+    shown = minimize_goal(f"order {FAKE_UUID}: linen shirt, card 4111/1111/1111/1111 cvv123, "
+                          "and my security code is 1234")
+    assert FAKE_UUID in shown and shown.count("[card number removed]") == 1
+    assert shown.count("[card security code removed]") == 2
+    assert "4111" not in shown and "cvv" not in shown.lower() and "1234" not in shown
+
+
 def test_goal_with_a_card_number_never_reaches_a_model():
     w = world()
     d, ag = w.delegate(AssistanceMode.RESEARCH)
@@ -754,6 +797,34 @@ def test_goal_is_minimized_in_the_prompt_only():
     assert shown["type"] == "member_text" and "[email removed]" in shown["text"] and "[phone removed]" in shown["text"]
     assert uid in shown["text"] and "jo@example.com" not in api.requests[0]["raw"]
     assert task.events[0].data["goal"] == goal  # the member's own event keeps their words
+
+
+def test_cancel_during_a_background_tool_call_stops_the_next_model_request():
+    """The 202 path: a cancel that arrives while a tool runs means no further model request and no next action."""
+    from brandme_core.orchestrator import BackgroundRunner
+    w = world()
+    d, ag = w.delegate(AssistanceMode.PREPARE)
+    audit, log = [], MemoryRunLog(strict=True)
+    rt = _runtime(w, audit, log)
+    api = FakeMessagesApi([call(1, SEARCH, {"query": "overshirt"}), _cart_from_search(2), done()])
+    planner = make_planner(api, run_log=log)
+    task = rt.create(ag, "an overshirt", AssistanceMode.PREPARE, planner_label=planner.label)
+    run_tool = rt.executor.call
+
+    def run_then_cancel(*args, **kwargs):
+        out = run_tool(*args, **kwargs)
+        rt.cancel(w.member, task.id)  # the member cancels while the search is in flight
+        return out
+
+    rt.executor.call = run_then_cancel
+    runner = BackgroundRunner(rt)
+    runner.submit(ag, task.id, planner)
+    assert runner.drain(10)
+    runner.shutdown()
+    assert task.state == "cancelled" and len(api.requests) == 1  # no model request after the cancel
+    assert [r["tool"] for r in audit] == [SEARCH] and w.store.rows("carts") == []
+    end = log.events("assistant.task_end")
+    assert len(end) == 1 and end[0]["state"] == end[0]["code"] == "cancelled" and end[0]["model_steps"] == 1
 
 
 def test_model_tasks_run_off_the_request_and_answer_202():

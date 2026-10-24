@@ -282,6 +282,43 @@ def test_uuids_are_not_mistaken_for_card_numbers():
     assert _contains_payment_credential({"note": "id 8e694893-5172-4174-836b-6d317187f777 card 4111111111111111"})
 
 
+def test_handler_crash_after_commit_still_writes_one_audit_record(keys):
+    """An unexpected handler exception (a store deadline after commit) still leaves the call's one audit
+    record, with a fixed code and no exception text, even when the store is also down for the audit bind."""
+    from brandme_core.orchestrator.runlog import MemoryRunLog
+    log = MemoryRunLog(strict=True)
+    h = Harness(keys)
+    sinks = [h.audit.append, log.tool_call]
+    h.ex.audit = lambda r: [s(r) for s in sinks]
+    create, bind = h.w.svc.create_cart, h.w.svc.bind
+    down = {"store": False}
+
+    def create_then_time_out(*a, **kw):
+        create(*a, **kw)  # the cart commits ...
+        down["store"] = True
+        raise TimeoutError("deadline exceeded after commit: secret-detail")  # ... then the call times out
+
+    def bind_while_down(p):
+        if down["store"]:
+            raise RuntimeError("store unavailable: secret-detail")
+        return bind(p)
+
+    h.w.svc.create_cart, h.w.svc.bind = create_then_time_out, bind_while_down
+    status, body = h.call("brandme.catalog.search", {"query": "overshirt"})
+    item = next(i for i in body["structured_content"]["items"] if i["source_variant_ref"] == "demo-overshirt-m")
+    with pytest.raises(TimeoutError):
+        h.call("brandme.cart.create", {
+            "provider_id": "demo_atelier", "merchant_id": item["merchant_id"],
+            "lines": [{"variant_id": item["variant_id"], "source_variant_ref": "demo-overshirt-m", "quantity": 1}]},
+            key="cart-key-crash-0001")
+    assert len(h.w.store.rows("carts")) == 1
+    assert [(r["tool"], r["status"], r["code"]) for r in h.audit] == [
+        ("brandme.catalog.search", "ok", None), ("brandme.cart.create", "error", "internal_error")]
+    assert h.audit[1]["delegation_id"] == h.delegation.id and h.audit[1]["origin"] == "mcp"
+    assert [l["status"] for l in log.events("mcp.tool_call")] == ["ok", "error"]
+    assert "secret-detail" not in json.dumps(h.audit) + json.dumps(log.lines)
+
+
 # ---------------------------------------------------- S8: foundation principal
 def test_session_bound_principal_rejected_on_mcp_hop(h):
     status, body = h.call("brandme.catalog.search", {"query": "linen"}, extra={"session_id": "sess-1"})
@@ -377,9 +414,36 @@ def test_card_security_code_in_arguments_is_rejected(h):
     for text in ("linen cvv 123", "shirt CVC2: 4567", "security code 999"):
         status, body = h.call("brandme.catalog.search", {"query": text})
         assert status == 400 and body["problem"]["code"] == "payment_credential_rejected", text
-    assert "123" not in json.dumps(h.audit) and "4567" not in json.dumps(h.audit)
+    # Arguments never reach the audit record (its keyed refs and request ids are random hex, so look past them).
+    plain = json.dumps([{k: v for k, v in r.items() if k not in ("arguments_digest", "member_ref", "request_id",
+                                                                  "delegation_id")} for r in h.audit])
+    assert "123" not in plain and "4567" not in plain and "cvv" not in json.dumps(h.audit).lower()
     assert not contains_card_security_code({"query": "size 123 linen", "id": str(uuid.uuid4())})
     assert contains_payment_credential({"n": "4111 1111 1111 1111"})
+
+
+def test_card_screen_is_separator_agnostic_and_keeps_identifiers():
+    """Card numbers and security codes are found whatever the separator or phrasing; identifiers are not cards."""
+    from brandme_core.mcp.tools import contains_card_security_code as csc
+    from brandme_core.mcp.tools import contains_payment_credential as pan
+    from brandme_core.mcp.tools import mask_card_security_codes, mask_payment_credentials
+    for text in ("4111/1111/1111/1111", "4111.1111.1111.1111", "4111, 1111, 1111, 1111", "4111  1111  1111  1111",
+                 "4111 - 1111 - 1111 - 1111", "size 10, 4111/1111/1111/1111", "qty 2, 4111 1111 1111 1111",
+                 "4111 1111 1111 1111", "4111-1111-1111-1111", "card4111111111111111", "3782 822463 10005"):
+        assert pan({"query": text}), text
+        masked = mask_payment_credentials(f"linen {text} shirt")
+        assert "[card number removed]" in masked and "1111" not in masked and "822463" not in masked, text
+    for text in ("cvv123", "CVV is 123", "cvv code: 123", "my security code is 1234", "my cvv for this card is 123",
+                 "shirt CVC2: 4567", "c.v.v. 123", "card verification value 321"):
+        assert csc({"query": text}), text
+        masked = mask_card_security_codes(f"linen shirt, {text}, thanks")
+        assert "[card security code removed]" in masked and not any(c.isdigit() for c in masked), text
+    uid = str(uuid.uuid4())
+    for text in (uid, f"order {uid}", "demo-order-fedcba9876543210fedcba98", "sku-1234567890123",
+                 "order placed 2026-10-23 18:37:41", "sizes 32/34, 30/32, 28/30, 36/34", "budget 100-150, size 8/10/12",
+                 "size 123 linen", "acid wash 501", "apple cider 1234", "cvv 12345 is not a code"):
+        assert not pan(text) and not csc(text), text
+        assert mask_card_security_codes(mask_payment_credentials(text)) == text
 
 
 def test_tool_call_log_line_sanitizes_external_values(keys):

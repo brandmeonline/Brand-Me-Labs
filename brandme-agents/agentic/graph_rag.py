@@ -6,28 +6,33 @@ Graph RAG (Retrieval-Augmented Generation)
 Natural language querying of Brand.Me knowledge graph
 """
 
-import os
 from typing import List, Dict, Any, Optional
-from langchain_anthropic import ChatAnthropic
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import HumanMessage, SystemMessage
-import openai
 import numpy as np
 import logging
 
-from .graph_db import BrandMeKnowledgeGraph, get_knowledge_graph
+from .graph_db import BrandMeKnowledgeGraph
 
 logger = logging.getLogger(__name__)
 
-# Not wired into any service. It runs only with an explicit Brand.Me dev key: the key and the
-# base URL are passed to ChatAnthropic, so ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL are never read.
-DEV_KEY_ENV = "BRANDME_DEV_ANTHROPIC_API_KEY"
-ANTHROPIC_API = "https://api.anthropic.com"
+# Not wired into any service, and disabled outright: constructing GraphRAG always raises.
+# The agentic image pins langchain-anthropic==0.1.1 with anthropic==0.18.1 (requirements.txt).
+# That ChatAnthropic has no api_key/base_url fields (they are moved into model_kwargs, in plain
+# text, and break every call), and its validator builds anthropic.Client(api_key=...) with no
+# base URL or HTTP client, so the SDK reads ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN (and,
+# without a key, ANTHROPIC_API_KEY) and httpx uses the ambient proxy settings. No argument to
+# that version keeps app code off ambient ANTHROPIC_* settings, so nothing here builds a model
+# or embedding client or reads a key. Re-enabling needs a client built the way
+# brandme_core/orchestrator/anthropic_adapter.py builds one (explicit key and base URL,
+# trust_env=False, pinned egress), not a newer LangChain default.
 DEFAULT_MODEL = "claude-opus-5-5"
+DISABLED_REASON = ("GraphRAG is disabled: its pinned langchain-anthropic 0.1.1 cannot build an Anthropic "
+                   "client without reading ambient ANTHROPIC_* and proxy settings")
 
 
 class GraphRAGDisabled(RuntimeError):
-    """GraphRAG refuses to run without an explicit BRANDME_DEV_ANTHROPIC_API_KEY."""
+    """GraphRAG never runs in this build (see the note above)."""
 
 
 class GraphRAG:
@@ -47,15 +52,9 @@ class GraphRAG:
         self,
         graph_db: Optional[BrandMeKnowledgeGraph] = None,
         llm_model: str = DEFAULT_MODEL,
-        *,
-        api_key: Optional[str] = None,
     ):
-        if not api_key:
-            raise GraphRAGDisabled(f"GraphRAG is disabled: pass api_key from {DEV_KEY_ENV}")
-        self.graph = graph_db or get_knowledge_graph()
-        # No sampling parameters: current models reject temperature.
-        self.llm = ChatAnthropic(model=llm_model, api_key=api_key, base_url=ANTHROPIC_API)
-        self.openai_client = openai.Client()
+        # Refuses before touching anything: no graph, model or embedding client, no key read.
+        raise GraphRAGDisabled(DISABLED_REASON)
 
     def generate_embedding(self, text: str) -> List[float]:
         """Generate embedding vector for text"""
@@ -362,5 +361,5 @@ class GraphRAG:
 # ============================================================
 
 def get_graph_rag() -> GraphRAG:
-    """Get GraphRAG instance (raises GraphRAGDisabled unless BRANDME_DEV_ANTHROPIC_API_KEY is set)"""
-    return GraphRAG(api_key=os.environ.get(DEV_KEY_ENV))
+    """Always raises GraphRAGDisabled (see the note at the top of this module); reads no key."""
+    return GraphRAG()

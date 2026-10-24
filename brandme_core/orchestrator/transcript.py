@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence
 from brandme_core.domains.commerce.delegation import AssistanceMode
 from brandme_core.domains.commerce.money import Money, MoneyError
 from brandme_core.domains.providers.catalog import untrusted_text
-from brandme_core.mcp.tools import contains_payment_credential, mask_payment_credentials
+from brandme_core.mcp.tools import contains_payment_credential, mask_card_security_codes, mask_payment_credentials
 
 from .model_adapter import UNKNOWN_TOOL, WIRE_NAME_RE, PlanRequest, ToolDef, wire_name
 from .runtime import TaskConstraints
@@ -112,7 +112,9 @@ def _clean(text: str) -> str:
 
 
 def minimize_goal(goal: str) -> str:
-    """What a model sees of the goal: emails and phone numbers masked, card numbers masked.
+    """What a model sees of the goal: emails, phone numbers, card numbers and labelled card
+    security codes masked. ``create()`` already refuses a goal with card data; masking here is
+    defence in depth for anything that screen misses.
 
     The stored goal and the member's own ``goal`` event keep the original text."""
     text = _clean(goal or "")
@@ -127,7 +129,7 @@ def minimize_goal(goal: str) -> str:
     text = _PHONE_RE.sub(lambda m: "[phone removed]" if sum(c.isdigit() for c in m.group()) >= 10 else m.group(),
                          text)
     text = re.sub("\x00(\\d+)\x00", lambda m: held[int(m.group(1))], text)
-    return mask_payment_credentials(text)[:GOAL_LIMIT]
+    return mask_card_security_codes(mask_payment_credentials(text))[:GOAL_LIMIT]
 
 
 # --------------------------------------------------------------------- record
