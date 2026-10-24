@@ -35,3 +35,7 @@ overrides:
   # affected by GHSA high/low advisories fixed in >=1.13.6. Dedupe onto the
   # workspace's existing 1.14.6; validated by the emulator rules suite.
   "@grpc/grpc-js@1.9": "1.14.6"
+  # GHSA-27r3-jxmh-p828 (high, body-parser DoS) fixed in 1.20.9; express 4.22.x pins ~1.20.
+  "body-parser@1": "1.20.9"
+  # GHSA-w74x-v6f9-j3xg, -wjr9-j795-jxcr (moderate) and two lows fixed in 3.1.9 (ajv dependency).
+  "fast-uri@3": "3.1.9"

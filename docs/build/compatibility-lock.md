@@ -34,6 +34,8 @@ Lockfiles: `pnpm-lock.yaml` (lockfile v9, pnpm 10.34.6, the whole workspace incl
 | @tanstack/react-query | 5.104.1 | target (spec ch.03 frontend state default) |
 | UUID (gateway) / Babel core | **11.1.1 / 7.29.6** | UUID retains CommonJS exports and bundled types; Babel override stays within v7 |
 | Express (gateway/chain) | 4.22.3 | installed+tested |
+| zod (gateway, chain, console) | **4.6.7** | Moved from 3.25.76 on 2026-10-24: GHSA-mrhx-c7xc-m3w5 (high, memory exhaustion on oversized input) has no 3.x fix. One semantic change touched code: `.default()` now takes the output type (`brandme-chain/src/config/index.ts:16`). Gateway 107/107, chain 90/90 + Spanner 26/26 |
+| body-parser@1 / fast-uri@3 overrides | **1.20.9 / 3.1.9** | 2026-10-24 advisories (GHSA-27r3-jxmh-p828 high; four fast-uri moderate/low) in express 4.22.x and ajv 8.20 dependencies; `pnpm audit --prod` clean afterwards |
 
 ## Midnight tuple
 
