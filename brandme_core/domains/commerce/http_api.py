@@ -572,7 +572,9 @@ def create_commerce_app(api: CommerceHttpApi) -> FastAPI:
         except AuthError as e:
             return _problem(e.status, e.error, e.description, {"WWW-Authenticate": e.www_authenticate()})
         except DomainError as e:
-            return _problem(e.status, e.code, e.detail)
+            # The spec Problem has no extension members: a conflict's current revision travels as ETag.
+            version = getattr(e, "current_version", None)
+            return _problem(e.status, e.code, e.detail, {"ETag": f'"{version}"'} if version is not None else None)
         except ProviderError as e:
             return _problem(503, f"provider_{e.kind.value}", "provider unavailable for this operation")
         if status >= 400:

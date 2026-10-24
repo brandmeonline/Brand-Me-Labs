@@ -127,20 +127,33 @@ export function requireIfMatch(req: Request, _res: Response, next: NextFunction)
   next();
 }
 
-const PROBLEM_CORE = new Set(['type', 'title', 'status', 'code', 'detail', 'instance', 'request_id', 'retryable']);
+type DomainProblem = { code?: unknown; title?: unknown; detail?: unknown; retryable?: unknown; current_version?: unknown };
 
-type DomainProblem = { code?: string; title?: string; detail?: string; retryable?: boolean } & Record<string, unknown>;
+const PROBLEM_CODE = /^[a-z][a-z0-9_]{0,79}$/;
+const REVISION = /^(0|[1-9][0-9]{0,17})$/;
+const text = (v: unknown, fallback: string) => (typeof v === 'string' && v.trim() ? v : fallback);
 
-/** Map a domain problem onto foundation's problem shape; a refused gateway assertion is our fault, not the caller's. */
+/**
+ * Map a domain problem onto foundation's problem contract. The spec Problem has no extension members, so
+ * client metadata travels in headers: a version conflict's current revision as ETag (from the domain's ETag,
+ * or a legacy `current_version` body member), and the domain's Retry-After. Other body members are dropped.
+ * A refused gateway assertion is our fault, not the caller's.
+ */
 export function domainProblem(result: DomainResult): ApiProblem {
   const body = (result.body ?? {}) as DomainProblem;
   if (result.status === 401) return problems.unavailable('The commerce service is unavailable.');
-  const { code, title, detail, retryable } = body;
-  // Keep domain extras (e.g. current_version); the gateway sets its own type/status/instance/request_id.
-  const extra = Object.fromEntries(Object.entries(body).filter(([k]) => !PROBLEM_CORE.has(k)));
-  return new ApiProblem(result.status, code ?? 'commerce_error', title ?? 'Commerce request refused',
-    detail ?? 'The commerce service refused this request.', retryable ?? (result.status === 429 || result.status === 503),
-    extra);
+  const status = Number.isInteger(result.status) && result.status >= 400 && result.status <= 599 ? result.status : 502;
+  const code = typeof body.code === 'string' && PROBLEM_CODE.test(body.code) ? body.code : 'commerce_error';
+  const headers: Record<string, string> = {};
+  const legacy = typeof body.current_version === 'string' || typeof body.current_version === 'number'
+    ? String(body.current_version) : undefined;
+  const etag = result.headers?.etag ?? (legacy && REVISION.test(legacy) ? `"${legacy}"` : undefined);
+  if (status === 409 && etag) headers.ETag = etag;
+  const retryAfter = result.headers?.['retry-after'];
+  if ((status === 429 || status === 503) && retryAfter && /^[0-9]{1,6}$/.test(retryAfter)) headers['Retry-After'] = retryAfter;
+  return new ApiProblem(status, code, text(body.title, 'Commerce request refused'),
+    text(body.detail, 'The commerce service refused this request.'),
+    typeof body.retryable === 'boolean' ? body.retryable : status === 429 || status === 503, {}, headers);
 }
 
 export function forward(client: CommerceDomainClient, operation: string, pick: (req: Request, res: Response) => unknown) {
@@ -328,6 +341,8 @@ export function createHttpCommerceDomainClient(opts: HttpCommerceClientOptions):
     const headers: Record<string, string> = {};
     const etag = r.headers.get('etag');
     if (etag) headers.etag = etag;
+    const retryAfter = r.headers.get('retry-after');
+    if (retryAfter) headers['retry-after'] = retryAfter;
     return { status: r.status, body: parsed, headers };
   }
 

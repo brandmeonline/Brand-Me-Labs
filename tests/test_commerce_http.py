@@ -141,6 +141,7 @@ def test_cart_update_requires_if_match(h):
     assert r.status_code == 428 and r.json()["code"] == "if_match_required"
     stale = h.call("cart.update", {"cart_id": cart["id"], "lines": [_line()]}, headers={"If-Match": '"7"'})
     assert stale.status_code == 409 and stale.json()["code"] == "revision_conflict"
+    assert stale.headers["etag"] == '"1"' and "current_version" not in stale.json()  # the revision travels as ETag
     ok = h.call("cart.update", {"cart_id": cart["id"], "lines": [_line()]}, headers={"If-Match": '"1"'})
     assert ok.status_code == 200 and ok.headers["etag"] == '"2"'
 

@@ -16,7 +16,7 @@ import uuid
 import pytest
 
 pytestmark = pytest.mark.skipif(not os.environ.get("BRANDME_DEV_ANTHROPIC_API_KEY"),
-                                reason="BRANDME_DEV_ANTHROPIC_API_KEY not set: live model run not_run")
+                                reason="not_run: the model run needs BRANDME_DEV_ANTHROPIC_API_KEY, which is absent")
 
 RESEARCH_TOOLS = {"brandme.catalog.search", "brandme.order.status"}
 

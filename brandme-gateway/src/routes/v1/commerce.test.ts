@@ -143,17 +143,25 @@ describe('commerce router', () => {
     expect(m.calls[0].op).toBe('approval.create');
   });
 
-  it('maps domain problems onto foundation problem+json, keeping code and extras', async () => {
+  it('maps domain problems onto the spec Problem; the current revision travels as ETag, never as a body member', async () => {
     const m = await app(MEMBER, commerce, {
       status: 409, body: { type: 'x', status: 409, code: 'revision_conflict', title: 'revision conflict', detail: 'cart changed', current_version: '3' },
     });
     const r = await m.call('PATCH', `/commerce/carts/${q}`, { lines: [{ variant_id: q, source_variant_ref: 'demo-overshirt-m', quantity: 1 }] },
       { 'If-Match': '"2"' });
     expect(r.status).toBe(409);
+    expect(r.headers.get('etag')).toBe('"3"');
     const p = await r.json();
-    expect(p).toMatchObject({ code: 'revision_conflict', detail: 'cart changed', current_version: '3', status: 409 });
+    expect(p).toMatchObject({ code: 'revision_conflict', detail: 'cart changed', status: 409 });
+    expect(Object.keys(p).sort()).toEqual(['code', 'detail', 'instance', 'request_id', 'retryable', 'status', 'title', 'type']);
     expect(p.request_id).toBeTruthy();
     expect(m.calls[0].ifMatch).toBe('"2"');
+    server?.close();
+    const bad = await app(MEMBER, commerce, { status: 503, body: { code: 'Not A Code!', detail: 'x' }, headers: { 'retry-after': '7' } });
+    const b = await bad.call('GET', `/commerce/orders/${q}`);
+    expect(b.status).toBe(503);
+    expect(b.headers.get('retry-after')).toBe('7');
+    expect((await b.json()).code).toBe('commerce_error'); // a malformed domain code never becomes a 500
   });
 
   it('a refused gateway assertion surfaces as 503, never as the caller being unauthenticated', async () => {
