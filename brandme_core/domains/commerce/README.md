@@ -31,8 +31,9 @@ is **not** a production integration, and its live test is `not_run` unless a dev
 - **Selection** (`planner_from_env`, once at startup; `orchestrator/composition.py` wires it):
   `BRANDME_ASSISTANT_PLANNER=deterministic|anthropic`. Unset, a `BRANDME_DEV_ANTHROPIC_API_KEY` in development or
   demo selects the model planner. A dev key in sandbox or production, or with `BRANDME_MODE` unset, refuses to
-  boot whatever the planner choice, and so does `anthropic` outside development and demo. `BRANDME_ASSISTANT_MODEL` (default `claude-opus-5-5`), `BRANDME_ASSISTANT_EFFORT` (`low|medium|high`,
-  default `medium`), `BRANDME_ASSISTANT_EGRESS_PROXY` and `BRANDME_ASSISTANT_CA_BUNDLE` (explicit only; no ambient
+  boot whatever the planner choice, and so does `anthropic` outside development and demo.
+  `BRANDME_ASSISTANT_MODEL` (default `claude-opus-5-5`), `BRANDME_ASSISTANT_EFFORT` (`low|medium|high`, default
+  `medium`), `BRANDME_ASSISTANT_EGRESS_PROXY` and `BRANDME_ASSISTANT_CA_BUNDLE` (explicit only; no ambient
   proxy), `BRANDME_LOG_REF_KEY` (base64url, at least 32 bytes, from the secret store). Brand.Me code reads no
   `ANTHROPIC_*` or proxy variable. The SDK still reads some itself (`ANTHROPIC_CUSTOM_HEADERS`, `ANTHROPIC_LOG`);
   none of it reaches the wire: the key and base URL are explicit, outgoing headers are rebuilt from the adapter's
