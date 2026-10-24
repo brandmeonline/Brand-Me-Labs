@@ -813,3 +813,30 @@ The founder delegated all 21 questions to the lane ("use your best judgement on 
 **CI on `caa980e`.** Test Core, Gateway, Chain, regression, Durable Operation Store, Build Test, Trivy and one Security Scan job are green. **`Test Frontend` and the other `Security Scan` job fail on `pnpm audit --prod`:** 6 advisories published after `main`'s last green run (zod and body-parser in `brandme-chain`, fast-uri via `brandme-gateway>ajv`). The lockfile and manifests are byte-identical to `main`, so this does not come from this PR. A proposed override patch is in the PR comment. zod has no 3.x fix, so the chain lane must choose between a zod 4 migration and a documented exception. Per Q15, the dependency work stays with the owning lanes.
 
 **Review threads.** All 12 Codex threads have a reply naming the fixing commit and are resolved.
+
+## Stage 12 — `main` 47cdba7 (#58, foundation round 3) merged in — 2026-10-24
+**Merge.** `a4f7ef0` merges `main` 47cdba7 with no rebase. The only conflict was `.github/workflows/ci-cd.yml`, and both sides were kept, as `docs/build/workspace-governance.md` directs. That gives two jobs: the lane's `test-consumer-domains` and foundation's new `foundation-check`. `build-images` needs both. Nothing else conflicted.
+
+**Quarantine entries deleted (`tests/conftest.py`).** `main`'s new registry quarantined two lane blockers that this branch already fixes:
+- **The `catalog_candidates.json` fixture** (12 recommender and service tests). It is committed with `git add -f`.
+- **The `AbortOnceDB` retry test.** The harness raises `Aborted` with an `AbortCause` that has `trailing_metadata()`.
+
+Under strict xfail both entries would XPASS and fail the run. Per the registry rule, this PR deletes them.
+
+**The dependency blocker is cleared by #58.** Commit `123a069` pins zod 4.6.7 in `brandme-chain` and adds the `body-parser@1` 1.20.9 and `fast-uri@3` 3.1.9 overrides to `pnpm-workspace.yaml`. The lane changed no manifests.
+
+**Note for foundation.** `main`'s `test-core` now runs every test under `tests/`, lane suites included. `test-consumer-domains` therefore repeats them in parallel, which costs no wall-clock time. It stays until foundation decides to drop it.
+
+**Evidence (clean `git worktree` of `a4f7ef0`; CI commands verbatim; venv from the hashed lock; Spanner emulator 1.5.45 with REST, Pub/Sub 0.8.37, Firestore emulator)**
+| Check | Result |
+|---|---|
+| `test-consumer-domains` command | **218 passed, 1 skipped** (allowlisted: spatial room manifests) |
+| `test-core`: `pytest tests` with `BRANDME_REQUIRE_EMULATORS=1` | **787 passed, 4 allowlisted skips, 32 quarantined xfails (commerce-agents 15, unowned-legacy 17; consumer-domains 0)** |
+| Firestore security rules | 6 pass, 0 fail, 0 skipped |
+| `pnpm check` (`BRANDME_CHECK_SKIP_PYTHON=1`, as in CI) | 0; all 10 steps pass (workspace governance, credential manifest, contract drift, packages, gateway, docs links) |
+| `pnpm smoke` | PASSED (gateway → brain → Spanner, restart persistence, outbox dispatch) |
+| `pnpm audit --prod`; `--audit-level=critical` | no known vulnerabilities; 0 critical |
+| frontend build | 0 |
+| console build; gateway lint, type-check, vitest | covered by CI on this head (Build Docker Images (console), Test Gateway): both green |
+
+**CI on `a4f7ef0`.** All 20 check runs succeed; Deploy to GKE (sandbox) is skipped, as on every PR. That includes Test Frontend, both Security Scan jobs, Foundation check, Test Core, Test Consumer Domains and the five image builds. `mergeable_state` is `clean`.
