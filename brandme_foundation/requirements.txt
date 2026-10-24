@@ -1,0 +1,7 @@
+# Runtime dependencies of the ported foundation. Pinned here so that any
+# service adopting brandme_foundation installs the whole contract — a missing
+# pin degrades the broker to in-process and loses events silently.
+fastapi>=0.115
+pydantic>=2.9
+pyyaml>=6.0
+google-cloud-pubsub>=2.25
