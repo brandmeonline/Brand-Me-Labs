@@ -1,6 +1,6 @@
 {
   "$comment": "Acceptance results recorded by the opus-foundation lane. Keyed by stable requirement ID; requirements are never rewritten. Read by `pnpm evidence:report`.",
-  "recorded_at": "2026-10-05",
+  "recorded_at": "2026-10-24",
   "results": {
     "BM-BASE-001": {
       "status": "blocked",
@@ -9,7 +9,8 @@
     },
     "BM-BASE-002": {
       "status": "passed",
-      "evidence": "tests/foundation/test_mode_guard.py (47); brandme-gateway/src/middleware/mode.test.ts (7); me.test.ts strict-mode cases; CI step 'Mode guard refuses production'"
+      "evidence": "tests/foundation/test_boot_guard.py (in-process refusal of every legacy entrypoint, uvicorn exits before binding, read_api/privacy_exports refuse production on test networks); tests/foundation/test_mode_guard.py; brandme-gateway/src/middleware/mode.test.ts; CI test-core runs them on every PR (ci-cd.yml)",
+      "note": "Corrected 2026-10-24: the earlier 'passed' cited a CI step that never reached main, and a BRANDME_MODE=production orchestrator launched without compose served a fabricated cardano_tx_ hash (preflight ran only in compose). Re-verified after the in-process guard (brandme_core/boot.py)."
     },
     "BM-BASE-003": {
       "status": "passed",
@@ -18,12 +19,12 @@
     "BM-BASE-004": {
       "status": "passed",
       "evidence": "docs/build/evidence/w01/build-*.log (Node 24.21.0, pnpm 10.34.6, frozen lockfile); packages type-check/tests in pnpm check",
-      "note": "Frontend resolves Next 14.0.4 (deprecated upstream); upgrade to the compatibility-lock target is the frontend lane's W01 change."
+      "note": "Frontend and console now resolve Next 15.5.28 (compatibility-lock); the 2026-10-05 build logs predate that. The spec's Next 16.3/React 19 target is open (founder question)."
     },
     "BM-BASE-005": {
       "status": "failed",
-      "evidence": "docs/build/evidence/w00/fresh-checkout.md (legacy route probe)",
-      "reason": "POST /scan returns 500 without NATS and GET /scan/:id is a constant 'processing' placeholder (brandme-gateway/src/routes/scan.ts, not foundation-owned). /shop and /stash render placeholder pages instead of redirecting to /discover and /closet, which do not exist yet (frontend lane)."
+      "evidence": "brandme-gateway/src/routes/scan.test.ts; brandme-gateway/src/routes/v1/me.test.ts ('legacy /scan without NATS')",
+      "reason": "Gateway half fixed 2026-10-24: POST /scan returns 503 problem+json without NATS (no 500) and GET /scan/:id returns 501 problem+json instead of a constant placeholder. Still open: /shop and /stash do not redirect to /discover and /closet (frontend lane), and /scan publishes to NATS outside the outbox."
     }
   }
 }

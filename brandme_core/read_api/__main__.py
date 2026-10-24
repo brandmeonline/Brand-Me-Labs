@@ -24,6 +24,11 @@ def main(argv=None):
         from .reads import verify_schema
 
         config = ReadConfig.from_env(os.environ)
+        # Shared trust-path inventory, in-process: a valid config on a Midnight
+        # test network is still refused in production (exit 3, not caught here).
+        from brandme_core.boot import guard
+
+        guard("read_api")
         pool = BurstyPool()
         client = spanner.Client(project=config.project)
         db = client.instance(config.instance).database(config.database, pool=pool)

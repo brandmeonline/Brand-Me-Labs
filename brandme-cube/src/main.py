@@ -11,6 +11,15 @@ v8: Uses Spanner for persistence, Firestore for real-time state
 from contextlib import asynccontextmanager
 import os
 from typing import Optional
+
+# Boot guard before anything else: BRANDME_MODE is required, and sandbox /
+# production refuse here because the cube defaults reprint eligibility and
+# serves ESG fixture values. The import fails, so no app object exists
+# (brandme_core/boot.py).
+from brandme_core.boot import guard
+
+BRANDME_MODE = guard("cube")
+
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,9 +27,7 @@ import httpx
 
 # Import shared Brand.Me utilities (from brandme_core/)
 from brandme_core.logging import get_logger, ensure_request_id, redact_user_id, truncate_id
-from brandme_core.health import create_health_router, HealthChecker
 from brandme_core.metrics import get_metrics_collector
-from brandme_core.telemetry import setup_telemetry
 from brandme_core.spanner.pool import create_pool_manager
 from brandme_core.cors_config import get_cors_config
 
@@ -167,11 +174,18 @@ async def request_id_middleware(request: Request, call_next):
     response.headers["X-Request-Id"] = request_id
     return response
 
-# Health checks (v8: uses spanner_pool)
-health_checker = HealthChecker("cube")
-health_checker.add_check("spanner", lambda: spanner_pool is not None)
-health_checker.add_check("http_client", lambda: http_client is not None)
-app.include_router(create_health_router(health_checker))
+# Health check. brandme_core.health never defined create_health_router /
+# HealthChecker (and imports redis/nats, which the hashed lock omits), so the
+# previous import made this module unimportable.
+@app.get("/health")
+async def health():
+    """Liveness of the initialized resources; 503 until the lifespan has run."""
+    checks = {"spanner": spanner_pool is not None, "http_client": http_client is not None}
+    healthy = all(checks.values())
+    return JSONResponse(
+        content={"status": "ok" if healthy else "degraded", "service": "cube", "checks": checks},
+        status_code=200 if healthy else 503,
+    )
 
 # API routes
 app.include_router(cubes.router, prefix="/cubes", tags=["cubes"])
@@ -184,8 +198,9 @@ async def metrics_endpoint():
     from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-# Setup OpenTelemetry tracing
-setup_telemetry("cube", app)
+# Tracing is not wired: the former `from brandme_core.telemetry import
+# setup_telemetry` named a function that module does not define (it has
+# TelemetrySetup), so the import always failed and the cube never started.
 
 # Root endpoint
 @app.get("/")

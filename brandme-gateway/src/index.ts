@@ -5,6 +5,8 @@
  * - /api/v1: versioned API (routes/v1), sessions/OIDC principal, problem+json
  * - /scan: legacy route, kept through the same principal resolution
  * - mode guard: sandbox/production refuse to boot with simulated identity
+ * - rate limits: pre-auth per-address limiter here (probes exempt), per-member
+ *   budget after principal resolution (middleware/rateLimiter.ts)
  */
 
 import express from 'express';
@@ -14,19 +16,23 @@ import { config as defaultConfig, type GatewayConfig } from './config';
 import { logger } from './config/logger';
 import { connectNATS } from './services/nats';
 import { errorHandler } from './middleware/errorHandler';
+import { requestContext } from './middleware/problem';
 import { requestLogger } from './middleware/requestLogger';
 import { authMiddleware } from './middleware/auth';
 import { assertGatewayMode } from './middleware/mode';
 import { principalMiddleware } from './middleware/session';
 import { IdentityStore } from './middleware/identity/store';
-import { rateLimiterMiddleware, strictRateLimiterMiddleware } from './middleware/rateLimiter';
+import { ipRateLimiter, principalRateLimiter } from './middleware/rateLimiter';
 import { apiV1, type ApiV1Deps } from './routes/v1';
-import scanRouter from './routes/scan';
+import { createScanRouter } from './routes/scan';
 import healthRouter from './routes/health';
 
 export function createApp(cfg: GatewayConfig, store: IdentityStore, extra: Partial<ApiV1Deps> = {}): express.Express {
   const app = express();
   app.disable('x-powered-by');
+  // req.ip (the pre-auth rate-limit key) honours X-Forwarded-For only for the
+  // configured proxy hops; off by default. See TRUST_PROXY in config/index.ts.
+  app.set('trust proxy', cfg.trustProxy);
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -46,24 +52,26 @@ export function createApp(cfg: GatewayConfig, store: IdentityStore, extra: Parti
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Region', 'X-CSRF-Token', 'If-Match', 'Idempotency-Key'],
       exposedHeaders: ['X-Request-Id', 'X-Brandme-Environment', 'X-Brandme-Simulation', 'ETag', 'X-RateLimit-Limit', 'X-RateLimit-Remaining',
-        'X-Export-SHA256', 'Content-Disposition'],
+        'X-RateLimit-Reset', 'Retry-After', 'X-Export-SHA256', 'Content-Disposition'],
       maxAge: 86400,
     }),
   );
   app.use(requestLogger);
-  app.use(rateLimiterMiddleware);
+  app.use(requestContext(cfg.mode));
 
+  // Kubelet probes: mounted ahead of the limiter (which also exempts them).
   app.use('/healthz', healthRouter);
   app.use('/health', healthRouter);
+  app.use(ipRateLimiter(cfg));
   app.use('/api/v1', apiV1({ cfg, store, ...extra }));
 
   app.use(
     '/scan',
     express.json({ limit: '1mb' }),
-    strictRateLimiterMiddleware,
     principalMiddleware({ cfg, store, jwks: extra.jwks }),
     authMiddleware,
-    scanRouter,
+    principalRateLimiter(cfg, 'scan'),
+    createScanRouter({ natsConfigured: Boolean(cfg.natsUrl), defaultRegion: cfg.defaultRegion }),
   );
 
   app.use(errorHandler);

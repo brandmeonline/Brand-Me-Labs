@@ -30,6 +30,11 @@ def main(argv=None):
         from .service import ExportService, verify_schema
         from .storage import PrivateStore
         config = ExportConfig.from_env(os.environ)
+        # Shared trust-path inventory, in-process: a valid config on a Midnight
+        # test network is still refused in production (exit 3, not caught here).
+        from brandme_core.boot import guard
+
+        guard("privacy_exports")
         pool = BurstyPool()
         db = spanner.Client(project=config.project).instance(config.instance).database(config.database, pool=pool)
         verify_schema(db)

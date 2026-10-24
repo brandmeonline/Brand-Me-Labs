@@ -6,6 +6,14 @@
 
 import os
 from datetime import datetime
+
+# Boot guard before anything else: BRANDME_MODE is required, and sandbox /
+# production refuse here because the transfer endpoint returns a fabricated
+# cardano_tx_ hash. The import fails, so no app object exists.
+from brandme_core.boot import guard
+
+BRANDME_MODE = guard("orchestrator")
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response

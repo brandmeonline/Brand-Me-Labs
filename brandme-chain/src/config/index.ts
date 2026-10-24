@@ -13,7 +13,7 @@ dotenv.config();
 const configSchema = z.object({
   port: z.coerce.number().default(3001),
   environment: z.enum(['demo', 'development', 'sandbox', 'production']).default('development'),
-  corsOrigins: z.string().transform((val) => val.split(',')).default('http://localhost:3000'),
+  corsOrigins: z.string().transform((val) => val.split(',')).default(['http://localhost:3000']),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
   chainReconciliationEnabled: z.enum(['true', 'false']).transform((v) => v === 'true').optional(),

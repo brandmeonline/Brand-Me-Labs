@@ -5,11 +5,15 @@
 //   node scripts/brandme.mjs setup --mode demo     validate runtimes, venv, deps, emulator, migrations (idempotent)
 //   node scripts/brandme.mjs dev --mode demo|development
 //   node scripts/brandme.mjs smoke                 gateway → brain → Spanner + outbox round trip
-//   node scripts/brandme.mjs check                 drift, types, unit + emulator tests, spec validator
+//   node scripts/brandme.mjs check                 drift, types, unit + emulator tests (all of tests/), spec validator
+//                                                  BRANDME_REQUIRE_EMULATORS=1: an unreachable emulator fails the run
+//                                                  BRANDME_CHECK_SKIP_PYTHON=1 or --no-python: skip the pytest step
+//                                                  (CI foundation-check only; CI test-core runs the full suite)
+//   node scripts/brandme.mjs workspace [--with-pnpm] [--json]  pnpm workspace + toolchain governance guard
 //   node scripts/brandme.mjs migrate               apply Spanner migrations
 //   node scripts/brandme.mjs evidence              acceptance status summary from recorded results
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
+import { accessSync, constants, existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
 import { createConnection } from 'node:net';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,7 +27,7 @@ const opt = (name, def) => {
 };
 
 const PORTS = { consumer: 3000, gateway: 3001, console: 3002, brain: 8000, policy: 8001, spanner: 9010 };
-const EMULATOR_IMAGE = 'gcr.io/cloud-spanner-emulator/emulator:1.5.28';
+const EMULATOR_IMAGE = 'gcr.io/cloud-spanner-emulator/emulator:1.5.45'; // same tag as the CI service containers
 const VENV_PY = join(ROOT, '.venv/bin/python');
 let PY = process.env.BRANDME_PYTHON ?? (existsSync(VENV_PY) ? VENV_PY : 'python3');
 
@@ -108,7 +112,12 @@ async function ensureEmulator() {
     : capture('docker', ['run', '-d', '--name', 'brandme-spanner', '-p', '9010:9010', '-p', '9020:9020', EMULATOR_IMAGE]);
   if (r.status !== 0) throw new Error(`docker could not start the emulator: ${r.stderr}`);
   await waitFor('Spanner emulator', () => portOpen(PORTS.spanner), 60);
-  return 'started (docker brandme-spanner)';
+  // A container created before the pin changed keeps its old image; say so instead of silently reusing it.
+  const image = existing ? capture('docker', ['inspect', '-f', '{{.Config.Image}}', 'brandme-spanner']).stdout.trim() : EMULATOR_IMAGE;
+  if (image !== EMULATOR_IMAGE) {
+    console.log(c.warn(`! brandme-spanner runs ${image}, not the pinned ${EMULATOR_IMAGE}; recreate it with: docker rm -f brandme-spanner`));
+  }
+  return `started (docker brandme-spanner, ${image})`;
 }
 
 function migrate(env) {
@@ -133,6 +142,8 @@ async function setup(mode) {
   const remaining = checkRuntimes();
   if (remaining.length) fail(`missing prerequisites:\n  - ${remaining.join('\n  - ')}`);
   console.log(c.ok('✓ runtimes'));
+  if (run(process.execPath, ['scripts/check-workspace.mjs']).status !== 0) fail('workspace governance check failed (fixes above; docs/build/workspace-governance.md)');
+  console.log(c.ok('✓ workspace governance'));
   if (run('pnpm', ['install', '--frozen-lockfile']).status !== 0) fail('pnpm install --frozen-lockfile failed');
   console.log(c.ok('✓ node dependencies (frozen lockfile)'));
   const envLocal = join(ROOT, '.env.local');
@@ -237,7 +248,7 @@ seen = []
 def deliver(ev):
     ev.validate()
     if ev.aggregate_id == '${sb.member_id}': seen.append(ev.event_type)
-OutboxDispatcher(db, deliver).run_once()
+OutboxDispatcher(db, deliver, environment=os.environ['BRANDME_MODE']).run_once()
 print(','.join(sorted(seen)))
 `], { env: baseEnv(mode) });
     step('outbox events validated + dispatched (Python)', disp.status === 0 && disp.stdout.includes('member.created') && disp.stdout.includes('member.updated'), disp.stdout.trim() || disp.stderr.trim().split('\n').pop());
@@ -255,33 +266,74 @@ print(','.join(sorted(seen)))
   process.exit(report.result === 'passed' ? 0 : 1);
 }
 
+function executable(file) {
+  try {
+    accessSync(resolve(ROOT, file), constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function check() {
   const results = [];
-  const emulator = await portOpen(PORTS.spanner);
-  const env = { ...baseEnv('development') };
+  // Child processes (gateway emulator suites, tests/fixtures/*) spawn BRANDME_PYTHON; without it they fall back to
+  // a system python3 that lacks the locked dependencies.
+  const env = { ...baseEnv('development'), BRANDME_PYTHON: PY };
+  const requireEmulators = env.BRANDME_REQUIRE_EMULATORS === '1';
+  const skipPython = env.BRANDME_CHECK_SKIP_PYTHON === '1' || args.includes('--no-python');
+  const [spHost, spPort] = env.SPANNER_EMULATOR_HOST.split(':');
+  const emulator = await portOpen(Number(spPort || PORTS.spanner), spHost || '127.0.0.1');
   const [fsHost, fsPort] = (env.FIRESTORE_EMULATOR_HOST ?? '').split(':');
   const firestore = Boolean(fsHost && fsPort) && (await portOpen(Number(fsPort), fsHost));
+  // The Pub/Sub tests start the pinned emulator themselves from PUBSUB_EMULATOR_BIN; only the pytest step needs it.
+  const pubsub = Boolean(env.PUBSUB_EMULATOR_BIN) && executable(env.PUBSUB_EMULATOR_BIN);
+  if (requireEmulators) {
+    const missing = [];
+    if (!emulator) missing.push(`Spanner emulator (SPANNER_EMULATOR_HOST=${env.SPANNER_EMULATOR_HOST})`);
+    if (!firestore) missing.push(`Firestore emulator (FIRESTORE_EMULATOR_HOST=${env.FIRESTORE_EMULATOR_HOST ?? 'unset'})`);
+    if (!skipPython && !pubsub) missing.push(`Pub/Sub emulator binary (PUBSUB_EMULATOR_BIN=${env.PUBSUB_EMULATOR_BIN ?? 'unset'})`);
+    if (missing.length) fail(`BRANDME_REQUIRE_EMULATORS=1 but these are not available, so their suites would be skipped:\n  - ${missing.join('\n  - ')}`);
+  }
+  const notRun = [!emulator && 'Spanner', !firestore && 'Firestore', !pubsub && 'Pub/Sub'].filter(Boolean);
   const steps = [
+    ['workspace + toolchain governance', process.execPath, ['scripts/check-workspace.mjs', '--with-pnpm']],
     ['spec package validator', PY, ['docs/design/brandme/contracts/validate_spec.py']],
     ['contract + token drift', 'pnpm', ['contracts:check']],
+    ['credential manifest', process.execPath, ['scripts/check-credential-manifest.mjs']],
+    ['guard self-tests', process.execPath, ['--test', 'scripts/check-workspace.test.mjs', 'scripts/check-credential-manifest.test.mjs']],
     ['packages type-check', 'pnpm', ['--filter', './packages/*', 'type-check']],
-    ['packages tests', 'pnpm', ['--filter', './packages/*', 'test']],
+    ['packages tests' + (firestore ? '' : ' (security-rules suite skipped)'), 'pnpm', ['--filter', './packages/*', 'test']],
     ['gateway type-check', 'pnpm', ['--filter', '@brandme/gateway', 'type-check']],
     ['gateway tests' + (emulator ? '' : ' (emulator suites skipped)'), 'pnpm', ['--filter', '@brandme/gateway', 'exec', 'vitest', 'run']],
-    ['python foundation tests' + (emulator ? '' : ' (emulator suites skipped)'), PY, ['-m', 'pytest', 'tests/foundation', '-q', '-p', 'no:cacheprovider', '--timeout=120']],
+    ['python tests (tests/)', PY, ['-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider', '--timeout=300', '-ra', '--continue-on-collection-errors'],
+      { python: true, suffix: notRun.length ? ` (${notRun.join(', ')} suites skipped)` : '' }],
     ['docs/build links', process.execPath, [fileURLToPath(import.meta.url), 'links']],
   ];
-  for (const [name, bin, argv] of steps) {
+  for (const [label, bin, argv, flags = {}] of steps) {
+    if (flags.python && skipPython) {
+      results.push({ name: label, result: 'not_run' });
+      console.log(c.warn(`- ${label} not_run: BRANDME_CHECK_SKIP_PYTHON=1 / --no-python (CI test-core runs the full suite)`));
+      continue;
+    }
+    const name = label + (flags.suffix ?? '');
     const t0 = Date.now();
     const r = capture(bin, argv, { env });
     const ok = r.status === 0;
     results.push({ name, result: ok ? 'passed' : 'failed', seconds: (Date.now() - t0) / 1000 });
     console.log(`${ok ? c.ok('✓') : c.bad('✖')} ${name} ${c.dim(`${((Date.now() - t0) / 1000).toFixed(1)}s`)}`);
+    if (flags.python) {
+      // Quarantined and allowlisted tests are not passes; always show the counts.
+      for (const line of (r.stdout ?? '').split('\n')) {
+        if (/^(QUARANTINED|ALLOWLISTED SKIPS)|^\d+ (passed|failed)/.test(line)) console.log(c.dim(`    ${line}`));
+      }
+    }
     if (!ok) console.log((r.stdout + r.stderr).split('\n').slice(-25).join('\n'));
   }
-  if (!emulator) console.log(c.warn(`! Spanner emulator not reachable on :${PORTS.spanner}; emulator suites were skipped (not_run), not passed.`));
+  if (!emulator) console.log(c.warn(`! Spanner emulator not reachable at ${env.SPANNER_EMULATOR_HOST}; emulator suites were skipped (not_run), not passed.`));
   if (!firestore) console.log(c.warn('! Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST); projection and security-rules suites were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_firestore_emulator.py'));
-  process.exit(results.every((r) => r.result === 'passed') ? 0 : 1);
+  if (!pubsub && !skipPython) console.log(c.warn('! PUBSUB_EMULATOR_BIN not set or not executable; the real Pub/Sub delivery tests were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_pubsub_emulator.py'));
+  process.exit(results.every((r) => r.result !== 'failed') ? 0 : 1);
 }
 
 function links() {
@@ -327,6 +379,7 @@ const commands = {
   smoke,
   check,
   links,
+  workspace: () => process.exit(run(process.execPath, ['scripts/check-workspace.mjs', ...args.slice(1)]).status ?? 1),
   migrate: () => migrate(baseEnv(opt('mode', 'development'))),
   evidence,
   'not-yet': () => notYet(args[1], args[2]),
