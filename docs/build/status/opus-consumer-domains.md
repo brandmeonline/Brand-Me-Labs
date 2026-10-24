@@ -890,12 +890,23 @@ PR #52 merged into `main` (`3d4cc0b`). This stage starts fresh from `main` on th
 - soft delete off (retention 0) and object versioning off;
 - no retention policy and no default event-based hold;
 - lifecycle `{"rule":[{"action":{"type":"Delete"},"condition":{"daysSinceCustomTime":2}}]}` and no other delete rule;
-- a CORS entry allowing `PUT` from the app origins, with the response header `Content-Type`.
+- a CORS entry allowing `PUT` from the app origins whose `responseHeader` lists every signed upload header: `Content-Type`, `x-goog-content-length-range`, `x-goog-if-generation-match`, `x-goog-custom-time`. Without them the browser preflight fails.
 
 The service account needs:
 - object create, get, update and delete on that bucket only;
 - `storage.buckets.get` for the policy check;
-- under workload identity, `iam.serviceAccounts.signBlob` on itself.
+- under workload identity, `iam.serviceAccounts.signBlob` on itself. The store requests the `devstorage.read_write` and `iam` scopes.
+
+**Codex review on `64cc4b1`: 5 findings, all verified as real and fixed with regression tests.** Each regression test fails when its fix is reverted.
+| # | Finding | Fix |
+|---|---|---|
+| P1 | A client's unsigned `Content-Encoding: gzip` let a tiny upload expand in memory, because `requests` decodes it | Downloads ask for the stored bytes (`Accept-Encoding: gzip`, no decoding) and stream them with a hard 10 MB cap. `write` refuses objects over the cap. A local server playing real GCS (which keeps gzip uploads compressed) shows the store returns the stored bytes, which then fail the magic-byte check. On the emulator (which decompresses on write), the upload is rejected and a read stops at 10 MB. |
+| P2 | Bucket CORS check accepted a `PUT` entry without the signed `x-goog-*` headers, so the browser preflight would fail | `bucket_findings` adds `cors_upload_headers_missing`. It checks the same header list `upload_target` signs. |
+| P2 | ADC requested a storage-only scope, so `signBlob` fails on runtimes that honour requested scopes | Requests `devstorage.read_write` + `iam`; nothing broader. |
+| P2 | An unexpired upload URL can recreate a purged input, because create-only succeeds again once the object is gone | Each store declares `replay_window`: GCS uses the URL lifetime plus 1 minute; the memory store uses 0, because its tokens are single use. `purge_pending` purges such inputs once more after the window, and the new `purged_at` makes the row final. Account deletion keeps those tombstoned inputs and reports the purge as pending until the window closes, then deletes the blob again and the rows. No schema change. Rows purged more than a day ago are left to the lifecycle backstop. |
+| P2 | Retain ran before the save transaction could refuse, so a refused save left the preview without its backstop | The save's own checks (finished, unexpired, not frozen) run in a read before `retain`. Only a failed commit can still leave a retained but unsaved preview. That case is not reconciled durably: GCS cannot move `customTime` back, and a ledger would need a schema change. The app sweeper still deletes that preview at its expiry. |
+
+After the fixes: `test_media_gcs_signing.py` **27 passed**, `test_media_gcs_store.py` **10 passed**.
 
 **Credential manifest.** No credential was created in this stage.
 

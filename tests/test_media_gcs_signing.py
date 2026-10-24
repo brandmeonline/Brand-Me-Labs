@@ -72,6 +72,7 @@ def test_upload_target_signs_every_constraint_and_caps_the_window():
     t0 = datetime(2026, 10, 24, 3, 0, tzinfo=timezone.utc)
     store = GcsMediaStore("brandme-dev-media", session=None, signer=signer, clock=lambda: t0)
     target = store.upload_target("members/m/media/x", content_type="image/png", max_bytes=1234, expires_at=t0 + timedelta(hours=1))
+    assert tuple(target["headers"]) == gcs_store.UPLOAD_HEADERS  # the bucket CORS check uses the same list
     assert target["method"] == "PUT" and target["simulated"] is False and target["max_bytes"] == 1234
     assert target["headers"] == {"Content-Type": "image/png", "x-goog-content-length-range": "0,1234",
                                  "x-goog-if-generation-match": "0", "x-goog-custom-time": "2026-10-24T03:00:00.000Z"}
@@ -100,7 +101,8 @@ GOOD_BUCKET = {
     "versioning": {"enabled": False},
     "softDeletePolicy": {"retentionDurationSeconds": "0"},
     "lifecycle": {"rule": [LIFECYCLE_RULE]},
-    "cors": [{"origin": ["https://app.brandme.example"], "method": ["PUT"], "responseHeader": ["Content-Type"], "maxAgeSeconds": 300}],
+    "cors": [{"origin": ["https://app.brandme.example"], "method": ["PUT"], "responseHeader": list(gcs_store.UPLOAD_HEADERS),
+              "maxAgeSeconds": 300}],
 }
 
 
@@ -116,6 +118,9 @@ def test_bucket_policy_check():
         "event_based_hold_blocks_deletion": {"defaultEventBasedHold": True},
         "custom_time_backstop_missing": {"lifecycle": {"rule": []}},
         "cors_put_missing": {"cors": [{"origin": ["*"], "method": ["GET"]}]},
+        # The browser preflight for the signed PUT names every signed header; GCS must allow each one.
+        "cors_upload_headers_missing": {"cors": [{"origin": ["https://app.brandme.example"], "method": ["PUT"],
+                                                  "responseHeader": ["Content-Type"]}]},
     }
     for finding, change in cases.items():
         assert finding in bucket_findings({**GOOD_BUCKET, **change}), finding
@@ -190,3 +195,71 @@ def test_credential_shapes_choose_the_right_signer(monkeypatch):
 
     with pytest.raises(ValueError):
         GoogleAuthSigner(User())
+
+
+def test_adc_requests_scopes_for_objects_and_iam_signing(monkeypatch):
+    """Runtimes that honour requested scopes (Cloud Run, GKE workload identity)
+    need the IAM scope for signBlob, as well as the storage scope."""
+    import google.auth
+
+    seen = {}
+
+    class Creds:
+        service_account_email = "dom-media@brandme-dev.iam.gserviceaccount.com"
+
+        def sign_bytes(self, message):
+            return message
+
+    def fake_default(scopes=None):
+        seen["scopes"] = scopes
+        return Creds(), "brandme-dev"
+
+    monkeypatch.setattr(google.auth, "default", fake_default)
+    store = gcs_store.from_environment({"ENVIRONMENT": "development", "BRANDME_MEDIA_BUCKET": "brandme-dev-media"})
+    assert store.emulator is False and set(seen["scopes"]) == {"https://www.googleapis.com/auth/devstorage.read_write",
+                                                               "https://www.googleapis.com/auth/iam"}
+
+
+def test_gzip_encoded_object_is_read_as_stored_bytes():
+    """A client can add an unsigned Content-Encoding: gzip to its upload. Real
+    GCS then stores the compressed bytes and serves them with that header. The
+    store must return the stored bytes undecoded, so a tiny upload cannot expand
+    in memory and fails the PNG magic-byte check. A local server plays that GCS
+    behaviour here; the emulator decompresses on write instead."""
+    import base64
+    import gzip
+    import hashlib
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    import requests
+
+    from brandme_core.domains.media.store import MAX_BYTES, sniff
+
+    stored = gzip.compress(b"\x89PNG\r\n\x1a\n" + b"\x00" * (3 * MAX_BYTES))
+    meta = {"size": str(len(stored)), "generation": "1", "contentEncoding": "gzip",
+            "md5Hash": base64.b64encode(hashlib.md5(stored).digest()).decode()}  # noqa: S324 - GCS integrity field
+
+    class Gcs(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            body = stored if "alt=media" in self.path else json.dumps(meta).encode()
+            self.send_response(200)
+            if "alt=media" in self.path:
+                self.send_header("Content-Encoding", "gzip")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *_):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Gcs)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        store = GcsMediaStore("b", session=requests.Session(), signer=KeySigner.ephemeral(),
+                              api_endpoint=f"http://127.0.0.1:{server.server_port}")
+        assert store.stat("members/m/media/x") == (len(stored), hashlib.sha256(stored).hexdigest())
+        data = store.read("members/m/media/x")
+        assert data == stored and not sniff(data[:16], "image/png")
+    finally:
+        server.shutdown()

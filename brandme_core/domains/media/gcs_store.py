@@ -12,7 +12,8 @@ Private Google Cloud Storage adapter for ``MediaStore`` (check-in ruling Q19).
 * **Reads and writes** use the JSON API through an authorized session. ``stat``
   hashes the bytes itself, since GCS reports MD5/CRC32C, not SHA-256. The
   download is pinned to the generation it just read and checked against the
-  object's MD5.
+  object's MD5. Downloads stream the stored bytes undecoded and stop at
+  ``MAX_BYTES``, so a gzip-encoded upload cannot expand in memory.
 * **Lifecycle backstop.** Every object starts with ``customTime`` = creation time.
   The bucket rule ``Delete if daysSinceCustomTime >= BACKSTOP_DAYS`` removes
   anything the app's 24 h sweeper missed. Saving a preview first moves its
@@ -22,8 +23,10 @@ Private Google Cloud Storage adapter for ``MediaStore`` (check-in ruling Q19).
 * **Purge** is a JSON API delete. It is only a purge on a bucket with soft
   delete off, no object versioning, and no retention policy or holds.
   ``bucket_findings`` checks those, plus uniform access, public access
-  prevention, the backstop rule and a CORS ``PUT`` entry. Strict modes refuse
-  to start against a bucket with findings.
+  prevention, the backstop rule and a CORS ``PUT`` entry that allows every
+  signed upload header. Strict modes refuse to start against a bucket with
+  findings. An unexpired upload URL can recreate a deleted input, so
+  ``replay_window`` tells the media service to repeat a purge made inside it.
 
 ``STORAGE_EMULATOR_HOST`` selects a local emulator (fake-gcs-server). There a
 throwaway RSA key signs the URLs, and the emulator enforces none of the signed
@@ -49,6 +52,11 @@ ALGORITHM = "GOOG4-RSA-SHA256"
 GCS_HOST = "storage.googleapis.com"
 MAX_SIGNED_SECONDS = 604800  # GCS limit for V4 signatures
 UPLOAD_URL_MAX = timedelta(minutes=15)
+# A deleted object can be recreated through its unexpired upload URL (create-only succeeds again once the
+# object is gone), so a purge inside this window is repeated after it. One minute covers clock skew.
+REPLAY_WINDOW = UPLOAD_URL_MAX + timedelta(minutes=1)
+UPLOAD_HEADERS = ("Content-Type", "x-goog-content-length-range", "x-goog-if-generation-match", "x-goog-custom-time")
+SCOPES = ("https://www.googleapis.com/auth/devstorage.read_write", "https://www.googleapis.com/auth/iam")  # objects + signBlob
 BACKSTOP_DAYS = 2  # past the 24 h app retention, plus lifecycle's asynchronous lag
 RETAINED_CUSTOM_TIME = "9999-12-31T00:00:00Z"
 LIFECYCLE_RULE = {"action": {"type": "Delete"}, "condition": {"daysSinceCustomTime": BACKSTOP_DAYS}}
@@ -176,8 +184,11 @@ def bucket_findings(meta: Mapping[str, Any]) -> List[str]:
         found.append("custom_time_backstop_missing")
     if any(set(r.get("condition") or {}) != {"daysSinceCustomTime"} for r in deletes):
         found.append("lifecycle_rule_may_delete_saved_media")
-    if not any("PUT" in (c.get("method") or []) for c in meta.get("cors") or []):
+    puts = [c for c in meta.get("cors") or [] if "PUT" in (c.get("method") or [])]
+    if not puts:
         found.append("cors_put_missing")
+    elif not any({h.lower() for h in UPLOAD_HEADERS} <= {h.lower() for h in c.get("responseHeader") or []} for c in puts):
+        found.append("cors_upload_headers_missing")  # the browser preflight for the signed PUT would fail
     return found
 
 
@@ -193,6 +204,7 @@ class GcsMediaStore:
 
     name = "gcs"
     simulated = False
+    replay_window = REPLAY_WINDOW
 
     def __init__(self, bucket: str, *, session: Any, signer: Signer, api_endpoint: Optional[str] = None,
                  emulator: bool = False, clock: Optional[Callable[[], datetime]] = None):
@@ -218,8 +230,10 @@ class GcsMediaStore:
         except Exception as exc:  # noqa: BLE001 - connection or auth failure
             raise StorageUnavailable("media storage is unavailable") from exc
         if resp.status_code == 404 and missing_ok:
+            resp.close()
             return None
         if resp.status_code not in ok:
+            resp.close()
             raise StorageUnavailable(f"media storage refused {method} ({resp.status_code})")
         return resp
 
@@ -228,9 +242,24 @@ class GcsMediaStore:
         return None if resp is None else resp.json()
 
     def _download(self, ref: str, generation: Optional[str] = None) -> Optional[bytes]:
+        """The stored bytes, at most MAX_BYTES. A client can add an unsigned
+        ``Content-Encoding`` to its upload. Asking for gzip stops GCS from
+        transcoding, and nothing here decodes, so a compressed upload is read
+        as its own small bytes and then fails the magic-byte check."""
         params = {"alt": "media", **({"ifGenerationMatch": generation} if generation else {})}
-        resp = self._call("GET", self._object_url(ref), params=params, missing_ok=True)
-        return None if resp is None else resp.content
+        resp = self._call("GET", self._object_url(ref), params=params, missing_ok=True, stream=True, headers={"Accept-Encoding": "gzip"})
+        if resp is None:
+            return None
+        chunks, total = [], 0
+        try:
+            while chunk := resp.raw.read(1 << 16, decode_content=False):
+                total += len(chunk)
+                if total > MAX_BYTES:
+                    raise StorageUnavailable("media object exceeds the store's size limit")
+                chunks.append(chunk)
+        finally:
+            resp.close()
+        return b"".join(chunks)
 
     # -- MediaStore
 
@@ -240,8 +269,7 @@ class GcsMediaStore:
         seconds = int((until - now).total_seconds())
         if seconds < 1:
             raise ValueError("upload window already closed")
-        headers = {"Content-Type": content_type, "x-goog-content-length-range": f"0,{max_bytes}",
-                   "x-goog-if-generation-match": "0", "x-goog-custom-time": _rfc3339(now)}
+        headers = dict(zip(UPLOAD_HEADERS, (content_type, f"0,{max_bytes}", "0", _rfc3339(now))))
         signed = sign_v4(method="PUT", bucket=self.bucket, obj=ref, timestamp=now, expires=seconds, email=self.signer.email,
                          sign=self.signer.sign, host=self._host, scheme=self._scheme, headers=headers)
         return {"method": "PUT", "url": signed.url, "headers": headers, "max_bytes": max_bytes,
@@ -268,6 +296,8 @@ class GcsMediaStore:
         return data
 
     def write(self, ref: str, data: bytes, content_type: str) -> None:
+        if len(data) > MAX_BYTES:
+            raise ValueError("media object exceeds the store's size limit")
         boundary = uuid.uuid4().hex
         meta = json.dumps({"name": ref, "contentType": content_type, "customTime": _rfc3339(self._clock())}).encode()
         body = b"".join((f"--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n".encode(), meta,
@@ -312,7 +342,7 @@ def from_environment(env: Mapping[str, str]) -> Optional[GcsMediaStore]:
     import google.auth
     from google.auth.transport.requests import AuthorizedSession
 
-    credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/devstorage.read_write"])
+    credentials, _ = google.auth.default(scopes=list(SCOPES))
     store = GcsMediaStore(bucket, session=AuthorizedSession(credentials), signer=GoogleAuthSigner(credentials))
     if strict and store.check_bucket():
         raise ValueError("the media bucket is not fit for private, deletable media")

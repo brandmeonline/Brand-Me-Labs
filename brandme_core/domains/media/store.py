@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Optional, Protocol, Tuple
 
 ALLOWED_TYPES = {"image/jpeg": (b"\xff\xd8\xff",), "image/png": (b"\x89PNG\r\n\x1a\n",), "image/webp": (b"RIFF",)}
@@ -35,6 +35,7 @@ def sniff(data: bytes, content_type: str) -> bool:
 class MediaStore(Protocol):
     name: str
     simulated: bool
+    replay_window: timedelta  # how long a minted upload target can recreate its object after a delete
 
     def upload_target(self, ref: str, *, content_type: str, max_bytes: int, expires_at: datetime) -> Dict[str, object]: ...
     def stat(self, ref: str) -> Optional[Tuple[int, str]]: ...
@@ -49,6 +50,7 @@ class MemoryMediaStore:
 
     name = "memory"
     simulated = True
+    replay_window = timedelta(0)  # upload tokens are single use
 
     def __init__(self) -> None:
         self.objects: Dict[str, Tuple[bytes, str]] = {}

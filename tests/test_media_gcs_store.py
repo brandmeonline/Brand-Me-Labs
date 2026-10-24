@@ -14,6 +14,7 @@ NOT RUN. The tests use their own migrated Spanner database, because the media
 workers scan the whole database.
 """
 
+import gzip
 import json
 import os
 import socket
@@ -32,7 +33,7 @@ from brandme_core.domains.media.gcs_store import RETAINED_CUSTOM_TIME, GcsMediaS
 from brandme_core.domains.media.providers import ProviderRegistry, SimulatedTryOnProvider
 from brandme_core.domains.media.service import MediaService
 from brandme_core.domains.media.store import MAX_BYTES
-from brandme_core.domains.persona.kernel import member_principal, run_read, run_txn, server_now
+from brandme_core.domains.persona.kernel import DetailedInvalidTransition, member_principal, run_read, run_txn, server_now
 from brandme_core.domains.wardrobe.service import WardrobeService
 from test_persona_harness import INSTANCE, MEMBER_SCOPES, PROJECT, insert_member, new_migrated_database
 
@@ -123,8 +124,12 @@ def test_store_contract(gcs_api):
     for missing in (store.read, store.retain):
         with pytest.raises(KeyError):
             missing("members/m/media/out")
-    # An oversized object is reported by size, never downloaded.
-    store.write("members/m/media/big", b"\x00" * (MAX_BYTES + 1), "image/png")
+    # The store writes nothing over the cap; an oversized object (here uploaded
+    # straight to the emulator) is reported by size and never downloaded.
+    with pytest.raises(ValueError):
+        store.write("members/m/media/big", b"\x00" * (MAX_BYTES + 1), "image/png")
+    requests.post(f"{gcs_api}/upload/storage/v1/b/{store.bucket}/o", params={"uploadType": "media", "name": "members/m/media/big"},
+                  data=b"\x00" * (MAX_BYTES + 1), headers={"Content-Type": "image/png"}, timeout=30).raise_for_status()
     assert store.stat("members/m/media/big") == (MAX_BYTES + 1, "")
 
 
@@ -214,3 +219,97 @@ def test_bucket_check_flags_an_unprepared_bucket(gcs_api):
     """A default bucket is not fit for private media: the check says so instead of passing silently."""
     findings = new_store(gcs_api).check_bucket()
     assert {"soft_delete_not_disabled", "custom_time_backstop_missing", "public_access_prevention_not_enforced"} <= set(findings)
+
+
+def set_times(db, me, media_id, **cols):
+    """Move commit-timestamp columns of one media row into the past (simulates time passing)."""
+    def tx(t):
+        now = server_now(t)
+        sets = ", ".join(f"{c}=@{c}" for c in cols)
+        t.execute_update(f"UPDATE MediaObjects SET {sets} WHERE member_id=@m AND media_id=@i",
+                         params={**{c: now - ago for c, ago in cols.items()}, "m": me.member_id, "i": media_id},
+                         param_types={**{c: param_types.TIMESTAMP for c in cols}, "m": param_types.STRING, "i": param_types.STRING})
+
+    run_txn(db, tx)
+
+
+def test_replayed_upload_after_purge_is_purged_again(media_db, env):
+    """Create-only succeeds again once an input is gone, so its still-valid upload URL
+    can recreate it after the purge. A purge made inside the URL's window is repeated after it."""
+    svc, store, provider, me, item = env
+    u = svc.create_upload(me, {"kind": "tryon_input", "content_type": "image/png", "bytes": len(PNG)}, key())
+    put(u["upload"], PNG)
+    svc.complete_upload(me, u["media_id"])
+    consent = {"accepted": True, "provider_id": provider.terms.provider_id, "terms_version": provider.terms.terms_version}
+    svc.create_job(me, {"mode": "photo_preview", "input_media_id": u["media_id"], "item_id": item, "consent": consent}, key())
+    svc.dispatch_queued()
+    svc.collect_processing()
+    assert store.stat(ref(me, u["media_id"])) is None  # input purged when processing ended
+    put(u["upload"], PNG)  # the client replays its still-valid URL
+    svc.purge_pending()
+    assert store.stat(ref(me, u["media_id"])) is not None  # window still open: nothing final yet
+
+    set_times(media_db, me, u["media_id"], created_at=timedelta(minutes=17), purged_at=timedelta(minutes=16, seconds=30))
+    assert svc.purge_pending() >= 1
+    assert store.stat(ref(me, u["media_id"])) is None
+    set_times(media_db, me, u["media_id"], created_at=timedelta(minutes=17))  # purged_at is now after the window
+    put(u["upload"], PNG)
+    svc.purge_pending()
+    assert store.stat(ref(me, u["media_id"])) is not None  # each row is revisited once; later replays meet an expired URL on GCS
+
+
+def test_account_deletion_waits_for_the_upload_window(media_db, env):
+    from brandme_core.domains.media import deletion
+
+    svc, store, _provider, me, _item = env
+    u = svc.create_upload(me, {"kind": "tryon_input", "content_type": "image/png", "bytes": len(PNG)}, key())
+    put(u["upload"], PNG)
+    run_txn(media_db, lambda t: deletion.delete_category(t, me.member_id, "media.tryon_media"))
+    first = deletion.purge_member(media_db, me.member_id)
+    assert first["done"] is False and "upload link" in first["detail"] and store.stat(ref(me, u["media_id"])) is None
+    put(u["upload"], PNG)  # recreated through the still-valid URL
+
+    set_times(media_db, me, u["media_id"], created_at=timedelta(minutes=17))
+    assert deletion.purge_member(media_db, me.member_id)["done"] is True
+    assert store.stat(ref(me, u["media_id"])) is None
+    left = run_read(media_db, lambda s: list(s.execute_sql("SELECT COUNT(*) FROM MediaObjects WHERE member_id=@m",
+                                                           params={"m": me.member_id}, param_types={"m": param_types.STRING})))[0][0]
+    assert left == 0
+
+
+def test_refused_save_keeps_the_lifecycle_backstop(media_db, env):
+    """An expired, not yet swept preview cannot be saved, and its customTime stays put."""
+    svc, store, provider, me, item = env
+    photo = upload(svc, me)
+    consent = {"accepted": True, "provider_id": provider.terms.provider_id, "terms_version": provider.terms.terms_version}
+    j = svc.create_job(me, {"mode": "photo_preview", "input_media_id": photo["media_id"], "item_id": item, "consent": consent}, key())
+    svc.dispatch_queued()
+    svc.collect_processing()
+    out_ref = run_read(media_db, lambda s: svc._job(s, me.member_id, j["job_id"]))["output_media_ref"]
+
+    def expire(t):
+        t.execute_update("UPDATE TryOnJobs SET expires_at=@e WHERE member_id=@m AND job_id=@j",
+                         params={"e": server_now(t) - timedelta(seconds=1), "m": me.member_id, "j": j["job_id"]},
+                         param_types={"e": param_types.TIMESTAMP, "m": param_types.STRING, "j": param_types.STRING})
+
+    run_txn(media_db, expire)
+    with pytest.raises(DetailedInvalidTransition) as err:
+        svc.save_job(me, j["job_id"])
+    assert err.value.code == "not_saveable"
+    assert store._meta(ref(me, out_ref))["customTime"] != RETAINED_CUSTOM_TIME
+
+
+def test_downloads_stop_at_the_size_cap(env):
+    """The emulator decompresses a gzip-encoded upload on write (GCS keeps it compressed;
+    see test_media_gcs_signing). Either way the upload is rejected, and no read buffers
+    more than MAX_BYTES."""
+    svc, store, _provider, me, _item = env
+    bomb = gzip.compress(PNG + b"\x00" * (3 * MAX_BYTES))
+    u = svc.create_upload(me, {"kind": "tryon_input", "content_type": "image/png", "bytes": len(bomb)}, key())
+    r = requests.put(u["upload"]["url"], data=bomb, headers={**u["upload"]["headers"], "Content-Encoding": "gzip"}, timeout=30)
+    assert r.status_code == 200
+    with pytest.raises(StorageUnavailable):
+        store.read(ref(me, u["media_id"]))
+    done = svc.complete_upload(me, u["media_id"])
+    assert done["state"] == "rejected" and done["rejection_code"] in ("too_large", "unsupported_content")
+    assert store.stat(ref(me, u["media_id"])) is None
