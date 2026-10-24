@@ -1,7 +1,8 @@
 // /commerce/operations — purchases that need attention (lane: opus-commerce-agents).
-// Read-only: reconciliation runs in the commerce worker through each provider's
-// idempotency key. This page never retries or re-submits a purchase, and it
-// shows no member identifiers.
+// Read-only. No commerce worker or scheduler exists in this build: reconcile runs only
+// when a verified provider event arrives for an order Brand.Me does not know yet (for
+// that provider's unknown outcomes), or when it is called directly. This page never
+// retries or re-submits a purchase, and it shows no member identifiers.
 import { PageHeader } from '../../providers/_data/shell'
 import { age, loadFromGateway, type OperationsQueue, type QueueOperation } from '../../providers/_data/gateway'
 import { LoadState } from '../../providers/_data/states'
@@ -59,7 +60,7 @@ export default async function CommerceOperationsPage() {
       <PageHeader
         eyebrow="Commerce"
         title="Purchases that need attention"
-        description="Unknown outcomes are resolved by asking the retailer about the same idempotency key. Nothing here re-sends a purchase."
+        description="An unknown outcome is resolved by asking the retailer about the same idempotency key. That check runs when a verified event from the retailer arrives. No worker or schedule runs it otherwise in this build, and nothing here re-sends a purchase."
       />
       {result.state !== 'ok' ? (
         <LoadState result={result} />
@@ -78,7 +79,7 @@ export default async function CommerceOperationsPage() {
           <OperationTable
             id="stale-heading"
             title="Submission interrupted"
-            empty="No submissions have stalled. These are moved to unknown and reconciled automatically."
+            empty="No submissions have stalled. A stalled submission stays here until reconciliation is run for it; nothing runs that on a schedule."
             rows={result.data.stale_submitting}
           />
           <section className="console-section" aria-labelledby="webhooks-heading">
