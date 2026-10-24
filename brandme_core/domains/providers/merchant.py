@@ -18,6 +18,7 @@ Money rules:
 * Capture once, at the first shipment, for the total minus the value of units
   cancelled before capture. Void when every unit is cancelled before capture,
   or when the hold expires. Refund only after capture, for units no longer owed.
+  Nothing is cancelled while a capture is unsettled (its re-send keeps its amount).
 * An authorization is never re-sent: an unknown one is found by reads. A
   capture, void or refund whose answer was lost stays a pending money op
   (recorded before the call) and is settled by reading its effect; it is
@@ -99,6 +100,8 @@ class MerchantOrder:
     pending: Dict[str, PendingMoneyOp] = field(default_factory=dict)  # written before processor I/O
     cancel_seq: int = 0
     exchange_seq: int = 0
+    # Fulfillment cancel key -> the refund key its release sent (None: no money call). Written before I/O.
+    releases: Dict[str, Optional[str]] = field(default_factory=dict)
 
 
 class ComposedMerchantAdapter:
@@ -269,6 +272,12 @@ class ComposedMerchantAdapter:
         now = self._clock()
         return PendingMoneyOp(kind, key, amount, reason, now, now)
 
+    def _no_capture_in_flight(self, rec: MerchantOrder) -> None:
+        """An unsettled capture is re-sent with the amount it was first sent for, so nothing is cancelled first."""
+        with self._lock:
+            if any(op.kind == "capture" for op in rec.pending.values()):
+                raise ProviderError(ProviderErrorKind.TRANSIENT, "payment capture pending; nothing cancelled")
+
     def _void(self, rec: MerchantOrder, reason: str, *, retry: bool = False) -> PaymentState:
         return self._send(rec, self._op("void", payment_key(rec.idempotency_key, "void"), 0, reason), retry=retry)
 
@@ -420,23 +429,24 @@ class ComposedMerchantAdapter:
         self._reject(rec, rec.reason or "payment_not_authorized")
         return None
 
-    def _void_orphan(self, purpose_ref: str) -> None:
+    def _void_orphan(self, purpose_ref: str, *, refund: bool = True) -> None:
         try:
             pay = self.payments.find(purpose_ref, settled=True)
         except ProviderError:
             return
         if pay is not None:
-            self._release_orphan(pay, base_of(pay.authorize_key) or purpose_ref, swallow=True)
+            self._release_orphan(pay, base_of(pay.authorize_key) or purpose_ref, swallow=True, refund=refund)
 
-    def _release_orphan(self, pay: PaymentState, base: str, *, swallow: bool = False) -> None:
-        """Release a payment no order holds: void a hold, refund what was collected (seq 999)."""
+    def _release_orphan(self, pay: PaymentState, base: str, *, swallow: bool = False, refund: bool = True) -> None:
+        """Release a payment no order holds: void a hold, refund what was collected (seq 999, unless ``refund``
+        is False: the webhook path only ever voids a hold)."""
         try:
             if pay.status in ("authorized", "requires_action"):
                 self.payments.void(pay.payment_ref, idempotency_key=payment_key(base, "void"),
                                    reason="orphan_authorization")
                 with self._lock:
                     self._counters["orphans_voided"] += 1
-            elif pay.status in ("captured", "partially_refunded") and pay.captured > pay.refunded:
+            elif refund and pay.status in ("captured", "partially_refunded") and pay.captured > pay.refunded:
                 self.payments.refund(pay.payment_ref, pay.captured - pay.refunded,
                                      idempotency_key=payment_key(base, "refund", 999))
         except ProviderError:
@@ -564,12 +574,13 @@ class ComposedMerchantAdapter:
 
     def _cancel(self, rec: MerchantOrder, ref: Optional[str], qty: Optional[int], key: str) -> None:
         self._settle_pending(rec)
+        self._no_capture_in_flight(rec)
         pay = self.payments.lookup(rec.payment_ref)
         res = self._cancel_units(rec, ref, qty, key)
         value = sum(self.line_value_minor(r, u) for r, u in res.cancelled)
         if value == 0:
             raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "no unshipped units to cancel")
-        self._release(rec, pay, value, "cancelled_units")
+        self._release(rec, pay, value, "cancelled_units", once_per=key)
 
     def cancel(self, order_ref: str, source_variant_ref: Optional[str] = None,
                quantity: Optional[int] = None) -> List[Tuple[Dict[str, str], bytes]]:
@@ -581,27 +592,49 @@ class ComposedMerchantAdapter:
         self._cancel(rec, source_variant_ref, quantity, key)
         return self._webhook(order_ref, "fulfillment.cancelled")
 
-    def _release(self, rec: MerchantOrder, pay: PaymentState, value: int, reason: str) -> None:
-        """Money for units no longer owed: void or reduce the uncaptured hold, or refund after capture."""
+    def _release(self, rec: MerchantOrder, pay: PaymentState, value: int, reason: str, *,
+                 once_per: Optional[str] = None) -> None:
+        """Money for units no longer owed: void or reduce the uncaptured hold, or refund after capture.
+
+        ``once_per`` is the fulfillment cancel key. A retry under it (a lost answer, then the same
+        cancellation again) settles the release that key already took; it never takes a second one.
+        """
         if value <= 0:
             return
+        with self._lock:
+            if once_per is not None and once_per in rec.releases:
+                sent = rec.releases[once_per]
+                if sent is not None and sent in rec.pending:  # settled by _settle_pending, never re-taken
+                    raise _unknown("payment outcome pending")
+                return
         owed = self.fulfillment.record(rec.ref).owed_units()
         if pay.status == "authorized":
             if owed == 0:
-                self._void(rec, "merchant_void")
+                self._void(rec, "merchant_void")  # one void key per order: a retry cannot void twice
                 with self._lock:
                     rec.order_status = "cancelled"
             else:
                 with self._lock:
                     rec.cancelled_value += value  # released at capture
+                    if once_per is not None:
+                        rec.releases[once_per] = None
         elif pay.status in ("captured", "partially_refunded"):
             remaining = pay.captured.amount_minor - pay.refunded.amount_minor
             amount = remaining if owed == 0 else min(value, remaining)  # the last units return exactly the rest
             if amount > 0:
                 with self._lock:  # the sequence is taken before I/O, so a lost answer never reuses it
                     rec.refund_seq += 1
-                    seq = rec.refund_seq
-                self._send(rec, self._op("refund", payment_key(rec.idempotency_key, "refund", seq), amount, reason))
+                    op = self._op("refund", payment_key(rec.idempotency_key, "refund", rec.refund_seq), amount,
+                                  reason)
+                    if once_per is not None:
+                        rec.releases[once_per] = op.key
+                try:
+                    self._send(rec, op)
+                except ProviderError:
+                    with self._lock:
+                        if once_per is not None and op.key not in rec.pending:  # refused: nothing was taken
+                            rec.releases.pop(once_per, None)
+                    raise
 
     def refund(self, order_ref: str) -> List[Tuple[Dict[str, str], bytes]]:
         """Refund units (armed ``REFUND``): unshipped ones are cancelled, shipped ones returned."""
@@ -610,6 +643,7 @@ class ComposedMerchantAdapter:
             raise RuntimeError("arm Behavior.REFUND first")
         rec = self._live(order_ref)
         self._settle_pending(rec)
+        self._no_capture_in_flight(rec)
         fr = self._record(rec)
         pay = self.payments.lookup(rec.payment_ref)
         ref = params.get("source_variant_ref")
@@ -705,11 +739,31 @@ class ComposedMerchantAdapter:
         if rec is not None and rec.order_status != "rejected":
             return WebhookEvent(self.provider_id, event_id, event_type, rec.ref, pev.occurred_at, source)
         if pev.environment == self.environment and pev.purpose_ref and ORDER_REF_RE.match(pev.purpose_ref):
-            # This merchant's kind of payment, but no live order holds it (rejected as not found, or the
-            # ledger was lost): release a hold it still has, then acknowledge the event as not ours to apply.
-            self._void_orphan(pev.purpose_ref)
+            if rec is None:
+                # This merchant lost its ledger (a restart) and Brand.Me may still hold the order: a hint like
+                # any other. The service re-reads through lookup(), which releases what is held and reports it;
+                # with no Brand.Me order, the service asks release_unclaimed() to void the hold.
+                return WebhookEvent(self.provider_id, event_id, event_type, pev.purpose_ref, pev.occurred_at,
+                                    source)
+            # Rejected here, so no order holds it: void a hold it still has (a webhook never refunds), then
+            # acknowledge the event as not ours to apply.
+            self._void_orphan(pev.purpose_ref, refund=False)
             return WebhookEvent(self.provider_id, event_id, event_type, pev.purpose_ref, pev.occurred_at, source,
                                 relevant=False)
         with self._lock:  # another app or environment on the same processor account
             self._counters["webhooks_ignored"] += 1
         return WebhookEvent(self.provider_id, event_id, event_type, "", pev.occurred_at, source, relevant=False)
+
+    def release_unclaimed(self, provider_order_ref: str) -> bool:
+        """Brand.Me holds no order for a verified payment event: void a hold that no order here holds either.
+
+        Only a hold is voided (orphan_authorization); collected money is never refunded on the webhook path.
+        False, and nothing moves, while this merchant still tracks a live order for the reference (the event
+        may be ahead of the service's own write).
+        """
+        with self._lock:
+            rec = self._orders.get(provider_order_ref)
+        if (rec is not None and rec.order_status != "rejected") or not ORDER_REF_RE.match(provider_order_ref or ""):
+            return False
+        self._void_orphan(provider_order_ref, refund=False)
+        return True

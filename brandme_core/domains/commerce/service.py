@@ -831,6 +831,15 @@ class CommerceService:
                 self.reconcile(op.id)
             order = self.store.order_by_provider_ref(provider_id, event.provider_order_ref)
             if order is None:
+                # No order holds it here: a merchant may void a hold it no longer tracks (never a refund).
+                release = getattr(conn.adapter, "release_unclaimed", None)
+                try:
+                    unclaimed = bool(release(event.provider_order_ref)) if release is not None else False
+                except ProviderError:
+                    unclaimed = False
+                if unclaimed:  # acknowledged, not applied
+                    receipt = replace(receipt, state="ignored")
+                    self.store.run(lambda tx: tx.put("webhook_receipts", key, receipt))
                 return receipt
         # Event order is not trusted: re-read the source of truth and apply monotonically.
         try:
@@ -887,7 +896,10 @@ class CommerceService:
                 # Money that was authorized but never taken goes back to the grant whatever its refund policy.
                 if payment == "voided":
                     self._credit_unspent(tx, order, order.total - refunded)
-                elif payment == "captured" and obs.captured_total is not None and obs.captured_total < order.total:
+                elif (payment in ("captured", "partially_refunded", "refunded")
+                      and _PAYMENT_RANK.get(order.payment_status, 0) < _PAYMENT_RANK["captured"]
+                      and obs.captured_total is not None and obs.captured_total < order.total):
+                    # The capture is first seen now, perhaps already refunded (a webhook lost or late).
                     self._credit_unspent(tx, order, order.total - obs.captured_total)
             delivered = sum(l.quantity_delivered for l in lines)
             shipped = sum(l.quantity_shipped for l in lines)

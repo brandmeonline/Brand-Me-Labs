@@ -155,6 +155,27 @@ def test_partial_cancellation_before_capture_reduces_the_capture(w):
     assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000 - pay.captured.amount_minor, "USD")
 
 
+@pytest.mark.parametrize("credit_back", [False, True])
+@pytest.mark.parametrize("delivery", ["only_the_last", "late"])
+def test_a_reduced_capture_is_credited_even_when_captured_is_never_observed_alone(w, delivery, credit_back):
+    """Webhooks are hints, lost or late: the first re-read after authorization may already show a refund."""
+    d, ag = w.delegate(lim=limits(refund_credit_back=credit_back))
+    quote, res = _buy(w, ag, line("overshirt"), line("bag"), line("dress"))
+    order = _order(w, res)
+    ref = order.provider_order_ref
+    earlier = [w.provider.cancel(ref, "demo-bag-m"), w.provider.ship(ref)]  # the capture is total - bag
+    w.provider.arm(Behavior.REFUND, source_variant_ref="demo-dress-m", quantity=1)
+    last = w.provider.refund(ref)
+    for deliveries in (earlier + [last] if delivery == "late" else [last]):
+        _hook(w, deliveries)  # "late": every re-read happens after the refund
+    o = w.store.get("orders", order.id)
+    pay = _held(w, ref)
+    assert o.payment_status == "partially_refunded" and pay.captured == Money(quote.total.amount_minor - BAG, "USD")
+    # The bag was never taken, whatever the refund policy; the dress refund returns only under credit-back.
+    spent = pay.captured.amount_minor - (pay.refunded.amount_minor if credit_back else 0)
+    assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000 - spent, "USD")
+
+
 def test_refund_before_delivery_cancels_units_instead_of_returning_them(w):
     _, res = _buy(w, w.member, line("overshirt"), line("bag"))
     order = _order(w, res)
@@ -252,9 +273,40 @@ def test_stripe_payment_events_reach_the_order_once_and_only_as_a_hint():
     again = w.svc.handle_webhook("demo_atelier", headers, body)  # duplicate delivery
     assert first.state == "applied" and again.event_id == first.event_id == "stripe_test:evt_1TestDuplicate"
     assert len(w.store.rows("webhook_receipts")) == 1 and len(w.store.outbox()) == before + 1
-    assert w.store.get("orders", order.id).payment_status == "captured"  # re-read, not taken from the event
+    # The body agrees with the processor here; an event that contradicts it is the next test.
+    assert w.store.get("orders", order.id).payment_status == "captured"
     with pytest.raises(ProviderError):
         w.svc.handle_webhook("demo_atelier", headers, body + b" ")  # tampered
+
+
+def test_a_validly_signed_event_that_contradicts_the_processor_never_moves_the_order(commerce_store):
+    """FIXTURE DOUBLE, NOT STRIPE. Stripe does not order its events, and an event body is not the processor's
+    state: each event, signed and verified, only triggers a re-read, and the order follows the re-read."""
+    w = rail_world("stripe_double", commerce_store)
+    _, res = _buy(w, w.member)
+    order = w.store.get("orders", res.order_id)
+    ref = order.provider_order_ref
+    double = w.provider.payments.double
+    (pi,) = double.intents_for(ref)
+    at = int(w.clock.now.timestamp())
+
+    def deliver(claimed_status, event_type, event_id):
+        claim = {**pi, "status": claimed_status}  # what the event body says, not what the processor holds
+        return w.svc.handle_webhook("demo_atelier", *stripe_events.payment_intent_event(
+            claim, event_type, w.secret, at, event_id=event_id))
+    # Ahead of the processor: the PaymentIntent is still requires_capture there.
+    for n, (status, event_type) in enumerate((("succeeded", "payment_intent.succeeded"),
+                                              ("canceled", "payment_intent.canceled"))):
+        assert deliver(status, event_type, f"evt_1Ahead{n:07d}").state == "applied"
+        assert w.store.get("orders", order.id).payment_status == "authorized"
+    assert double.intents[pi["id"]]["status"] == "requires_capture"
+    _hook(w, w.provider.ship(ref))  # now captured at the processor
+    # Older events delivered late, out of order: the order stays as the processor has it.
+    for n, (status, event_type) in enumerate((("requires_capture", "payment_intent.amount_capturable_updated"),
+                                              ("canceled", "payment_intent.canceled"))):
+        assert deliver(status, event_type, f"evt_1Stale{n:07d}").state == "applied"
+        o = w.store.get("orders", order.id)
+        assert (o.order_status, o.payment_status, o.refunded_total) == ("accepted", "captured", Money(0, "USD"))
 
 
 # ----------------------------------------------------------------------- composition
@@ -519,6 +571,30 @@ def test_a_lost_cancellation_response_is_re_sent_under_the_same_merchant_key(w, 
     assert out["status"] == "cancelled" and keys[0] == keys[1] and len(_voids(w)) == 1
 
 
+@pytest.mark.parametrize("lost", ["response", "request"])
+def test_a_retried_cancellation_never_refunds_the_same_units_twice(w, lost):
+    """A refund lost inside a member cancellation is settled under its own key on retry, never sent anew."""
+    _, res = _buy(w, w.member, line("overshirt"), line("bag"))
+    order = _order(w, res)
+    w.provider.arm(Behavior.PARTIAL_FULFILLMENT, source_variant_ref="demo-bag-m", quantity=0)
+    _hook(w, w.provider.ship(order.provider_order_ref))  # captured in full; the bag has not shipped
+    (_lose_response if lost == "response" else _lose_request)(w, "refund")
+    with pytest.raises(ProviderError):
+        w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    if lost == "request":  # absent inside the settle window: the retry waits for it, never sends another
+        with pytest.raises(ProviderError) as e:
+            w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+        assert e.value.kind is ProviderErrorKind.OUTCOME_UNKNOWN
+        w.clock.advance(minutes=3)
+    out = w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)  # the same key, as documented
+    assert set(_calls(w, "refund")) == {("refund", payment_key(_base(w, res), "refund", 1))}
+    assert _held(w, order.provider_order_ref).refunded == Money(BAG, "USD")  # one bag, refunded once
+    o = w.store.get("orders", order.id)
+    assert (out["status"], out["units_cancelled"]) == ("partially_cancelled", 1)
+    assert o.refunded_total == Money(BAG, "USD") and w.provider.rail_health()["pending_money_ops"] == 0
+    assert w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY) == out  # replay
+
+
 # ======================================================= payments and fulfillment behind the merchant (§13.4)
 BAG = 12900 + 12900 * 800 // 10_000
 
@@ -676,6 +752,66 @@ def test_merchant_restart_voids_orphan_and_reports_cancelled(w):
     assert w.store.get("operations", res.id).state == "cancelled"
 
 
+def _restart_merchant(w):
+    """A new merchant process over the same Stripe test account (fixture double): its ledger is gone."""
+    rail = stripe_double_rail(w.clock, secret=w.secret, double=w.provider.payments.double)
+    w.provider = LocalAtelierProvider(w.clock, payments=rail)
+    w.registry._connections.clear()
+    w.registry.register(local_atelier_connection(w.provider, "development", w.clock.now))
+    return rail.double
+
+
+@pytest.mark.parametrize("captured", [False, True])
+def test_a_payment_event_after_a_merchant_restart_is_re_read_into_the_live_order(commerce_store, captured):
+    """FIXTURE DOUBLE, NOT STRIPE. Brand.Me still holds the order the restarted merchant forgot.
+
+    Verifying the event moves no money. It is a hint like any other: the service re-reads through lookup(),
+    which releases what the lost ledger held (founder default: a restart cancels open demo orders), and the
+    order records exactly that instead of an ignored receipt."""
+    w = rail_world("stripe_double", commerce_store)
+    d, ag = w.delegate(lim=limits())
+    _, res = _buy(w, ag)
+    order = _order(w, res)
+    if captured:
+        _hook(w, w.provider.ship(order.provider_order_ref))
+    double = _restart_merchant(w)
+    w.clock.advance(minutes=3)
+    event = _signed_pi_event(w, order.provider_order_ref,
+                             "payment_intent.succeeded" if captured else "payment_intent.amount_capturable_updated")
+    moved = len(double.mutating_calls())
+    assert w.provider.verify_webhook(*event).relevant and len(double.mutating_calls()) == moved
+    receipt = w.svc.handle_webhook("demo_atelier", *event)
+    assert receipt.state == "applied"
+    pay = w.provider.payments.find(order.provider_order_ref, settled=True)
+    o = w.store.get("orders", order.id)
+    assert o.order_status == "cancelled" and o.payment_status == pay.status == ("refunded" if captured else "voided")
+    assert o.refunded_total == pay.refunded == Money(9612 if captured else 0, "USD")
+    assert w.store.get("operations", res.id).state == ("refunded" if captured else "cancelled")
+    spent = 9612 if captured else 0  # a void is never spend; a refund returns only under refund_credit_back
+    assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000 - spent, "USD")
+
+
+def test_after_a_restart_an_orphan_hold_is_voided_only_when_brand_me_holds_no_order(commerce_store):
+    """FIXTURE DOUBLE, NOT STRIPE. A payment that surfaces after Brand.Me rejected the purchase, at a merchant
+    that has since restarted: the hold is voided (never refunded) and the event is acknowledged, not applied."""
+    from brandme_core.domains.providers.merchant import order_ref_for
+    w = rail_world("stripe_double", commerce_store)
+    _lose_request(w, "authorize")
+    _, res = _buy(w, w.member)
+    w.clock.advance(minutes=3)
+    assert w.svc.reconcile(res.id).state == "rejected"
+    ref = order_ref_for(_base(w, res))
+    double = _restart_merchant(w)
+    _, params, key = double.calls[0]
+    double.create_payment_intent(params, idempotency_key=key)  # the lost request was only delayed
+    receipt = w.svc.handle_webhook("demo_atelier", *_signed_pi_event(w, ref))
+    late = w.provider.payments.find(ref, settled=True)
+    assert receipt.state == "ignored" and w.store.rows("orders") == []
+    assert (late.status, late.release_reason, late.refunded) == ("voided", "orphan_authorization", Money(0, "USD"))
+    assert w.provider.rail_health()["orphans_voided"] == 1
+    assert [m for m, _, _ in double.mutating_calls()].count("create_refund") == 0
+
+
 @pytest.mark.parametrize("lost", ["response", "request"])
 def test_lost_refund_response_is_reconciled_then_resent_with_same_key(w, lost):
     _, res = _buy(w, w.member, line("overshirt"), line("bag"))
@@ -732,6 +868,38 @@ def test_a_pending_capture_is_not_re_sent_inside_its_settle_window(w):
     assert w.store.get("orders", order.id).payment_status == "captured"
     rec = w.provider._orders[order.provider_order_ref]
     assert rec.pending == {} and w.provider.rail_health()["needs_operator"] == 0
+
+
+@pytest.mark.parametrize("path", ["merchant_cancel", "armed_refund", "member"])
+def test_units_are_never_cancelled_while_a_capture_is_unsettled(w, path):
+    """A pending capture is re-sent with its stored amount, so a cancel waits for it, then refunds the units."""
+    quote, res = _buy(w, w.member, line("overshirt"), line("bag"))
+    order = _order(w, res)
+    ref = order.provider_order_ref
+    _lose_request(w, "capture")
+    with pytest.raises(ProviderError):
+        w.provider.ship(ref)  # the capture for the whole order never arrives
+
+    def cancel_bag():
+        if path == "merchant_cancel":
+            return _hook(w, w.provider.cancel(ref, "demo-bag-m"))
+        if path == "armed_refund":  # the bag has not shipped: it is cancelled, not returned
+            w.provider.arm(Behavior.REFUND, source_variant_ref="demo-bag-m", quantity=1)
+            return _hook(w, w.provider.refund(ref))
+        return w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)  # every unshipped unit
+    with pytest.raises(ProviderError) as e:  # inside the settle window the lost capture may still land
+        cancel_bag()
+    assert e.value.kind is ProviderErrorKind.TRANSIENT and not e.value.transmitted
+    assert w.provider.fulfillment.record(ref).open_units() == 2  # nothing was cancelled
+    assert w.store.get("operations", res.id).state == "accepted"
+    w.clock.advance(minutes=3)
+    cancel_bag()  # the capture is settled first (re-sent under its key), then the cancelled units are refunded
+    if path != "member":
+        _hook(w, w.provider.ship(ref))
+    pay = _held(w, ref)
+    owed = 0 if path == "member" else quote.total.amount_minor - BAG
+    assert pay.captured.amount_minor - pay.refunded.amount_minor == owed  # never charged for a cancelled unit
+    assert _calls(w, "capture") == [("capture", payment_key(_base(w, res), "capture"))] * 2
 
 
 def test_an_absent_money_op_past_the_key_horizon_waits_for_an_operator(w):
@@ -795,6 +963,44 @@ def test_binding_mismatch_voids_and_rejects(w):
     rec = next(iter(w.provider._orders.values()))
     pay = w.provider.payments.lookup(rec.payment_ref)
     assert pay.status == "voided" and w.provider._stock == stock and w.store.rows("orders") == []
+
+
+# What the processor echoes back for each binding (simulated _Payment attribute, Stripe metadata key), and a
+# wrong value: another payee, another environment, another order, another operation's authorize key.
+_ECHOES = {"payee": ("payee_ref", "brandme_payee_ref", "someone-else"),
+           "environment": ("environment", "brandme_env", "demo"),
+           "purpose": ("purpose_ref", "brandme_purpose_ref", "demo-order-" + "0" * 24),
+           "authorize_key": ("key", "brandme_idem", "bm-" + "9" * 32 + ":authorize")}
+
+
+@pytest.mark.parametrize("echo", sorted(_ECHOES))
+def test_an_authorization_echoing_another_binding_is_voided_and_rejected(w, echo, monkeypatch):
+    """The amount is right; one echoed binding is not. A foreign or canned object is never this order's payment."""
+    attr, metadata_key, wrong = _ECHOES[echo]
+    stock = dict(w.provider._stock)
+    if w.rail == "simulated":
+        proc = w.provider.payments
+        real = proc.authorize
+
+        def authorize(request):  # the processor records (and echoes) a different binding
+            state = real(request)
+            setattr(proc._by_ref[state.payment_ref], attr, wrong)
+            return proc._state(proc._by_ref[state.payment_ref])
+        monkeypatch.setattr(proc, "authorize", authorize)
+    else:
+        double = w.provider.payments.double
+        real = double.create_payment_intent
+
+        def create(params, *, idempotency_key):
+            double.corrupt_next_create(metadata={**params["metadata"], metadata_key: wrong})
+            return real(params, idempotency_key=idempotency_key)
+        monkeypatch.setattr(double, "create_payment_intent", create)
+    _, res = _buy(w, w.member)
+    assert (res.state, res.reason_code) == ("rejected", "payment_binding_mismatch")
+    rec = next(iter(w.provider._orders.values()))
+    assert (rec.order_status, rec.release_reason) == ("rejected", "binding_mismatch")
+    assert w.provider.payments.lookup(rec.payment_ref).status == "voided"  # released before the stock
+    assert w.provider._stock == stock and w.store.rows("orders") == []
 
 
 def test_authorization_expiry_cancels_unshipped_order(w):
