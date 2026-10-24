@@ -346,8 +346,7 @@ def test_call_budget_wall_clock_and_per_call_timeout():
                         clock=lambda: now["t"] + 200.0)
     # deadline = 1000 + 240; the planner's clock reads 1200: 40 s left, so this call may wait 39 s.
     assert task.state == "completed"
-    assert api.requests[0]["timeout"]["read"] == 39.0
-    assert float(api.requests[0]["headers"]["x-stainless-read-timeout"]) == 39.0
+    assert api.requests[0]["timeout"]["read"] == 39.0  # no x-stainless-* header is sent to carry it
     api = FakeMessagesApi([done()])
     task, _, log = _run(world(), AssistanceMode.RESEARCH, "linen", api, rt_kw={"monotonic": lambda: now["t"]},
                         clock=lambda: now["t"] + 237.0)
@@ -555,6 +554,23 @@ def test_ambient_sdk_headers_and_debug_logging_are_not_used(monkeypatch):
     assert task.state == "completed"
     assert "x-session-secret" not in api.requests[0]["headers"]
     assert logging.getLogger("anthropic").level >= logging.WARNING
+
+
+def test_ambient_custom_headers_never_reach_the_api_under_any_name(monkeypatch):
+    # Names the SDK itself sends: an ambient value under them must not ride along with Brand.Me's key.
+    monkeypatch.setenv("ANTHROPIC_CUSTOM_HEADERS", "x-stainless-foo: ambient-1\nuser-agent: ambient-ua\n"
+                       "accept: text/x-ambient\ncontent-type: text/x-ambient\nX-Stainless-OS: ambient-os\n"
+                       "Content-Length: 1\nanthropic-beta: ambient-beta")
+    api = FakeMessagesApi([done()])
+    task, _, _ = _run(world(), AssistanceMode.RESEARCH, "linen", api)
+    assert task.state == "completed"
+    sent = api.requests[0]["headers"]
+    assert "ambient" not in json.dumps(sent)
+    assert set(sent) == {"host", "accept", "accept-encoding", "content-type", "content-length", "user-agent",
+                         "x-api-key", "anthropic-version"}
+    assert sent["content-type"] == sent["accept"] == "application/json" and sent["x-api-key"] == KEY
+    assert sent["user-agent"] == f"Anthropic/Python {anthropic.__version__}"
+    assert int(sent["content-length"]) == len(api.requests[0]["raw"].encode())
 
 
 def test_sdk_logging_cannot_leak_prompts_or_urls(caplog):

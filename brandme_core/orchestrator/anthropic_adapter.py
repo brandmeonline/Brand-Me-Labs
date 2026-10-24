@@ -9,8 +9,11 @@ Egress is pinned (the base URL is also the allowlist):
 * SDK retries are 0, so one planning step is exactly one request;
 * no ambient proxy, ``.netrc`` or CA settings: the transport is built with ``trust_env=False``
   and only the explicit ``egress_proxy`` / ``ca_bundle`` arguments (``BRANDME_ASSISTANT_*``) apply;
-* headers are allowlisted, which drops anything ``ANTHROPIC_CUSTOM_HEADERS`` merges in, and the
-  key and API version are set to this adapter's own values;
+* outgoing headers are rebuilt in the request hook from this adapter's own values (host, accept,
+  accept-encoding, content-type, content-length, user-agent, x-api-key, anthropic-version). Every
+  header the SDK built is dropped first: the SDK merges ``ANTHROPIC_CUSTOM_HEADERS`` into its
+  defaults under any name (``user-agent``, ``accept``, ``x-stainless-*``, ...), so none of it is
+  sent, and neither is the SDK's ``x-stainless-*`` telemetry;
 * the ``anthropic``, ``httpx`` and ``httpcore`` loggers are held at WARNING, so ``ANTHROPIC_LOG``
   cannot log request options or URLs.
 
@@ -49,8 +52,6 @@ MODEL_PROFILES = {
                                     ModelPrice(input=4_000, output=20_000, cache_write=5_000, cache_read=200),
                                     input_overhead_tokens=2_048, max_output_tokens_cap=128_000),
 }
-_ALLOWED_HEADERS = frozenset({"host", "accept", "accept-encoding", "connection", "content-type", "content-length",
-                              "user-agent", "x-api-key", "anthropic-version"})  # plus any x-stainless-*
 _REFUSAL_CATEGORIES = frozenset({"cyber", "bio", "frontier_llm", "reasoning_extraction", "general_harms"})
 _STOP_REASONS = frozenset({"end_turn", "max_tokens", "stop_sequence", "tool_use", "pause_turn", "refusal",
                            "model_context_window_exceeded"})
@@ -125,7 +126,9 @@ class AnthropicAdapter:
         self.model, self.effort, self.profile = model, effort, MODEL_PROFILES[model]
         self._known = frozenset(known_tools)
         self._anthropic = anthropic
+        self._httpx = httpx
         self._key = key
+        self._user_agent = f"Anthropic/Python {anthropic.__version__}"
         if transport is None:  # tests pass a mock transport; never an http client
             transport = httpx.HTTPTransport(
                 verify=ca_bundle or True, trust_env=False, retries=0,
@@ -145,14 +148,19 @@ class AnthropicAdapter:
         url = request.url
         if url.scheme != "https" or url.host != ANTHROPIC_HOST or url.port not in (None, 443):
             raise EgressRefused()
+        try:
+            body = request.content
+        except self._httpx.RequestNotRead:  # a streamed body: this adapter never sends one
+            raise EgressRefused() from None
+        # Ambient custom headers can carry any name the SDK uses, so nothing it built is kept.
+        own = {"host": ANTHROPIC_HOST, "accept": "application/json", "accept-encoding": "gzip, deflate",
+               "content-type": "application/json", "user-agent": self._user_agent, "x-api-key": self._key,
+               "anthropic-version": API_VERSION}
+        if body or request.method != "GET":
+            own["content-length"] = str(len(body))
         for name in list(request.headers.keys()):
-            low = name.lower()
-            if low not in _ALLOWED_HEADERS and not low.startswith("x-stainless-"):
-                del request.headers[name]
-        # Ambient custom headers may also carry these names; only this adapter's values go out.
-        request.headers["x-api-key"] = self._key
-        request.headers["anthropic-version"] = API_VERSION
-        request.headers["host"] = ANTHROPIC_HOST
+            del request.headers[name]
+        request.headers.update(own)
 
     # -- requests ---------------------------------------------------------------
     def encode(self, request: PlanRequest) -> EncodedRequest:

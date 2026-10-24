@@ -21,7 +21,8 @@ idempotency) are unchanged, so a model gains no authority a deterministic planne
   or raw ids.
 * **Credentials and egress** (``planner_from_env``): ``BRANDME_DEV_ANTHROPIC_API_KEY`` only, the
   explicit base URL, and the explicit ``BRANDME_ASSISTANT_EGRESS_PROXY`` /
-  ``BRANDME_ASSISTANT_CA_BUNDLE``. ``ANTHROPIC_*`` and ambient proxy settings are never read.
+  ``BRANDME_ASSISTANT_CA_BUNDLE``. Brand.Me code never reads ``ANTHROPIC_*`` or ambient proxy
+  settings, and what the SDK reads on its own never reaches the wire (``anthropic_adapter``).
 """
 
 from __future__ import annotations

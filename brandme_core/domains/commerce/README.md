@@ -33,8 +33,10 @@ is **not** a production integration, and its live test is `not_run` unless a dev
   demo selects the model planner. A dev key in sandbox or production, or with `BRANDME_MODE` unset, refuses to
   boot whatever the planner choice, and so does `anthropic` outside development and demo. `BRANDME_ASSISTANT_MODEL` (default `claude-opus-5-5`), `BRANDME_ASSISTANT_EFFORT` (`low|medium|high`,
   default `medium`), `BRANDME_ASSISTANT_EGRESS_PROXY` and `BRANDME_ASSISTANT_CA_BUNDLE` (explicit only; no ambient
-  proxy), `BRANDME_LOG_REF_KEY` (base64url, at least 32 bytes, from the secret store). `ANTHROPIC_*` and
-  `HTTPS_PROXY` are never read.
+  proxy), `BRANDME_LOG_REF_KEY` (base64url, at least 32 bytes, from the secret store). Brand.Me code reads no
+  `ANTHROPIC_*` or proxy variable. The SDK still reads some itself (`ANTHROPIC_CUSTOM_HEADERS`, `ANTHROPIC_LOG`);
+  none of it reaches the wire: the key and base URL are explicit, outgoing headers are rebuilt from the adapter's
+  own values, the transport ignores ambient proxy settings and the SDK loggers stay at WARNING.
 - **Authority:** the model only proposes one tool call per step. Runtime guards (approval stop, mode allowlist,
   duplicates, identifier provenance, the member's `budget_hint` price ceiling) and the audited MCP executor
   decide what runs; `purchase.execute` is never offered to the model, so buy-within-rules plans up to approval.
