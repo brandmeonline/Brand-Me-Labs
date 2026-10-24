@@ -273,9 +273,40 @@ def test_stripe_payment_events_reach_the_order_once_and_only_as_a_hint():
     again = w.svc.handle_webhook("demo_atelier", headers, body)  # duplicate delivery
     assert first.state == "applied" and again.event_id == first.event_id == "stripe_test:evt_1TestDuplicate"
     assert len(w.store.rows("webhook_receipts")) == 1 and len(w.store.outbox()) == before + 1
-    assert w.store.get("orders", order.id).payment_status == "captured"  # re-read, not taken from the event
+    # The body agrees with the processor here; an event that contradicts it is the next test.
+    assert w.store.get("orders", order.id).payment_status == "captured"
     with pytest.raises(ProviderError):
         w.svc.handle_webhook("demo_atelier", headers, body + b" ")  # tampered
+
+
+def test_a_validly_signed_event_that_contradicts_the_processor_never_moves_the_order(commerce_store):
+    """FIXTURE DOUBLE, NOT STRIPE. Stripe does not order its events, and an event body is not the processor's
+    state: each event, signed and verified, only triggers a re-read, and the order follows the re-read."""
+    w = rail_world("stripe_double", commerce_store)
+    _, res = _buy(w, w.member)
+    order = w.store.get("orders", res.order_id)
+    ref = order.provider_order_ref
+    double = w.provider.payments.double
+    (pi,) = double.intents_for(ref)
+    at = int(w.clock.now.timestamp())
+
+    def deliver(claimed_status, event_type, event_id):
+        claim = {**pi, "status": claimed_status}  # what the event body says, not what the processor holds
+        return w.svc.handle_webhook("demo_atelier", *stripe_events.payment_intent_event(
+            claim, event_type, w.secret, at, event_id=event_id))
+    # Ahead of the processor: the PaymentIntent is still requires_capture there.
+    for n, (status, event_type) in enumerate((("succeeded", "payment_intent.succeeded"),
+                                              ("canceled", "payment_intent.canceled"))):
+        assert deliver(status, event_type, f"evt_1Ahead{n:07d}").state == "applied"
+        assert w.store.get("orders", order.id).payment_status == "authorized"
+    assert double.intents[pi["id"]]["status"] == "requires_capture"
+    _hook(w, w.provider.ship(ref))  # now captured at the processor
+    # Older events delivered late, out of order: the order stays as the processor has it.
+    for n, (status, event_type) in enumerate((("requires_capture", "payment_intent.amount_capturable_updated"),
+                                              ("canceled", "payment_intent.canceled"))):
+        assert deliver(status, event_type, f"evt_1Stale{n:07d}").state == "applied"
+        o = w.store.get("orders", order.id)
+        assert (o.order_status, o.payment_status, o.refunded_total) == ("accepted", "captured", Money(0, "USD"))
 
 
 # ----------------------------------------------------------------------- composition
