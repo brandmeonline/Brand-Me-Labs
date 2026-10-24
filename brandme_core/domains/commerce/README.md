@@ -39,8 +39,9 @@ is **not** a production integration, and its live test is `not_run` unless a dev
   duplicates, identifier provenance, the member's `budget_hint` price ceiling) and the audited MCP executor
   decide what runs; `purchase.execute` is never offered to the model, so buy-within-rules plans up to approval.
 - **Data:** each step is one fresh request built from the task's own results (no conversation is kept). The goal
-  is sent with emails, phone numbers and card numbers masked; provider text is labelled untrusted; payee,
-  delivery and hash fields are dropped. Model text and thinking are discarded unread.
+  is sent with emails, phone numbers, card numbers and labelled card security codes masked (a goal with card
+  data is refused before a task exists); provider text is labelled untrusted; payee, delivery and hash fields
+  are dropped. Model text and thinking are discarded unread.
 - **Spend and logs:** tokens and cost are reserved before every call and settled after (per task, per member
   day, per environment day; in memory in this form). One closed-schema JSON line per model call, task end and
   tool call goes to stdout with keyed refs only.

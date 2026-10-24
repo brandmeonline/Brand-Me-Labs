@@ -192,11 +192,16 @@ AuditSink = Callable[[Dict[str, Any]], None]
 KNOWN_TOOL_NAMES = frozenset(_SPECS) | frozenset(RETIRED_TOOLS) | frozenset(UNAVAILABLE_TOOLS)
 UNKNOWN_TOOL = "unknown_tool"
 contains_payment_credential = _contains_payment_credential
-_CSC_RE = re.compile(r"(?i)\b(cvv2?|cvc2?|cvn|csc|cid|security\s*code)\b\W{0,4}\d{3,4}\b")
+# A label ("cvv", "CVC2", "c.v.v.", "security code", "card verification value", ...) followed within 20
+# non-digit characters by exactly 3-4 digits: "cvv123", "CVV is 123", "my security code is 1234".
+_CSC_RE = re.compile(
+    r"(?i)\b(?:c\.?v\.?[vc]\.?2?|cvn2?|cav2|csc|cid|security\s*(?:code|number)s?"
+    r"|card\s*verification(?:\s*(?:value|code|number))?)(?![a-z])\D{0,20}?(?<!\d)\d{3,4}(?!\d)")
 
 
 def contains_card_security_code(value: Any) -> bool:
-    """A card security code next to its label ("cvv 123"); the number alone is not detectable."""
+    """A card security code near its label ("cvv 123", "cvv123", "my security code is 1234"); the
+    number alone is not detectable."""
     if isinstance(value, str):
         return bool(_CSC_RE.search(value))
     if isinstance(value, Mapping):
@@ -204,6 +209,11 @@ def contains_card_security_code(value: Any) -> bool:
     if isinstance(value, (list, tuple)):
         return any(contains_card_security_code(v) for v in value)
     return False
+
+
+def mask_card_security_codes(text: str) -> str:
+    """``text`` with each labelled security code (label and digits) replaced."""
+    return _CSC_RE.sub("[card security code removed]", text)
 
 
 class McpToolExecutor:

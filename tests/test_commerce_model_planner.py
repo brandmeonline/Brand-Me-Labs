@@ -735,6 +735,28 @@ def test_card_masking_keeps_identifiers():
         f"{uid} [card number removed] sku-1234567890123")
 
 
+@pytest.mark.parametrize("goal", [
+    "buy the linen shirt, card 4111/1111/1111/1111 cvv123", "linen shirt. my security code is 1234",
+    "linen shirt. CVV is 123", "linen shirt, cvv code: 123", "linen shirt with 4111.1111.1111.1111",
+    "linen shirt, 4111, 1111, 1111, 1111"])
+def test_card_data_in_other_formats_is_refused_before_a_task_exists(goal):
+    w = world()
+    d, ag = w.delegate(AssistanceMode.RESEARCH)
+    rt = _runtime(w, [])
+    with pytest.raises(PermissionError):
+        rt.create(ag, goal, AssistanceMode.RESEARCH)
+    assert rt._tasks == {}  # no goal event holds it
+
+
+def test_goal_minimization_masks_card_data_even_past_the_screen():
+    from brandme_core.orchestrator.transcript import minimize_goal
+    shown = minimize_goal(f"order {FAKE_UUID}: linen shirt, card 4111/1111/1111/1111 cvv123, "
+                          "and my security code is 1234")
+    assert FAKE_UUID in shown and shown.count("[card number removed]") == 1
+    assert shown.count("[card security code removed]") == 2
+    assert "4111" not in shown and "cvv" not in shown.lower() and "1234" not in shown
+
+
 def test_goal_with_a_card_number_never_reaches_a_model():
     w = world()
     d, ag = w.delegate(AssistanceMode.RESEARCH)

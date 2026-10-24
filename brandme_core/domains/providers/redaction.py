@@ -1,8 +1,10 @@
 """Card-number detection and payment-processor log redaction (leaf module: no Brand.Me imports).
 
-* ``contains_card_number`` / ``mask_card_numbers``: Luhn-valid 13-19 digit runs.
-  UUIDs are held aside first, so identifier digits cannot chain into a "card".
-  ``brandme_core.mcp.tools`` re-exports them for the tool gate and the planner.
+* ``contains_card_number`` / ``mask_card_numbers``: Luhn-valid 13-19 digit numbers, written
+  as one run, as groups of any size joined by single spaces or hyphens, or as groups of 4+
+  digits (the last may have 3) joined by any 1-3 non-alphanumeric characters ("4111/1111/...",
+  "4111.1111...", "4111, 1111, ..."). UUIDs are blanked first, so identifier digits cannot
+  chain into a "card". ``brandme_core.mcp.tools`` re-exports them for the tool gate and the planner.
 * ``redact_processor_text`` masks processor secrets, object ids and card numbers
   in free text. ``install_processor_log_redaction()`` applies it to the
   ``stripe``, ``httpx`` and ``httpcore`` loggers and silences the Stripe SDK's
@@ -18,10 +20,12 @@ import logging
 import re
 import sys
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Mapping, Optional
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 _PAN_RE = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
 _UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+_DIGITS_RE = re.compile(r"\d+")
+_GAP_RE = re.compile(r"[^\w]{1,3}")  # any short non-alphanumeric separator; "_" and letters break a number
 
 
 def _luhn(digits: str) -> bool:
@@ -35,37 +39,51 @@ def _luhn(digits: str) -> bool:
     return total % 10 == 0
 
 
+def _card_spans(text: str) -> List[Tuple[int, int]]:
+    """Character spans of card numbers in ``text``, merged and in order."""
+    scan = _UUID_RE.sub(lambda m: "u" * len(m.group()), text)  # same length: spans still index ``text``
+    spans: List[Tuple[int, int]] = []
+    for m in _PAN_RE.finditer(scan):  # groups of any size, single space or hyphen between them
+        d = re.sub(r"\D", "", m.group())
+        if 13 <= len(d) <= 19 and _luhn(d):
+            spans.append((m.start(), m.start() + len(m.group().rstrip(" -"))))
+    groups = [(m.start(), m.end()) for m in _DIGITS_RE.finditer(scan)]
+    for i, (start, _end) in enumerate(groups):  # groups of 4+ digits (the last may have 3), any short separator
+        digits = ""
+        for j in range(i, len(groups)):
+            s, e = groups[j]
+            if e - s < 3 or (j > i and not _GAP_RE.fullmatch(scan[groups[j - 1][1]:s])):
+                break
+            digits += scan[s:e]
+            if len(digits) > 19:
+                break
+            if len(digits) >= 13 and _luhn(digits):
+                spans.append((start, e))
+            if e - s < 4:
+                break
+    merged: List[Tuple[int, int]] = []
+    for s, e in sorted(spans):
+        if merged and s <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], e))
+        else:
+            merged.append((s, e))
+    return merged
+
+
 def mask_card_numbers(text: str) -> str:
-    """``text`` with Luhn-valid 13-19 digit card numbers replaced (UUIDs are left intact)."""
-    uuids: List[str] = []
-
-    def _hold(m: "re.Match[str]") -> str:
-        uuids.append(m.group())
-        return f"\x00{len(uuids) - 1}\x00"
-
-    held = _UUID_RE.sub(_hold, text)
-
-    def _mask(m: "re.Match[str]") -> str:
-        run = m.group()
-        d = re.sub(r"\D", "", run)
-        if not (13 <= len(d) <= 19 and _luhn(d)):
-            return run
-        return "[card number removed]" + run[len(run.rstrip(" -")):]  # keep the separator after it
-
-    masked = _PAN_RE.sub(_mask, held)
-    return re.sub("\x00(\\d+)\x00", lambda m: uuids[int(m.group(1))], masked)
+    """``text`` with card numbers replaced (UUIDs and the separators around a number are left intact)."""
+    out, last = [], 0
+    for s, e in _card_spans(text):
+        out.append(text[last:s])
+        out.append("[card number removed]")
+        last = e
+    out.append(text[last:])
+    return "".join(out)
 
 
 def contains_card_number(value: Any) -> bool:
     if isinstance(value, str):
-        # Identifiers are not card data: remove UUIDs so their digit runs cannot
-        # chain across hyphens into a Luhn-valid 13-19 digit sequence.
-        value = _UUID_RE.sub(" ", value)
-        for m in _PAN_RE.finditer(value):
-            d = re.sub(r"\D", "", m.group())
-            if 13 <= len(d) <= 19 and _luhn(d):
-                return True
-        return False
+        return bool(_card_spans(value))
     if isinstance(value, Mapping):
         return any(contains_card_number(k) or contains_card_number(v) for k, v in value.items())
     if isinstance(value, (list, tuple)):
