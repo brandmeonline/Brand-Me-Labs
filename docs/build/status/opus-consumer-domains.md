@@ -776,3 +776,40 @@ The founder delegated all 21 questions to the lane ("use your best judgement on 
 - **CI gate for the lane (Q17).** After the merge, `main`'s workflows replaced the bench-era `foundation.yml`; `main` dropped it at its W11 integration merge `2eac4d7`. `main`'s `test-core` runs only the foundation, privacy, rights and read-API suites, so nothing in CI ran this lane's Python tests. A new `test-consumer-domains` job in `ci-cd.yml` runs all five lane suites against the Spanner emulator 1.5.45 and the pinned Pub/Sub emulator, and `build-images` now waits on it. Reproduced locally with the job's exact command on 1.5.45: **207 passed, 1 skipped** (the spatial room manifests belong to another lane).
 - **Trivy** is **green** on `17c7d9a` (0 new alerts). The 70 earlier alerts came from the bench-era manifests that `main`'s dependency patch (#46) replaced.
 - **A real lane bug, caught by the new job.** Its first run failed 13 persona tests: `tests/fixtures/persona/catalog_candidates.json`, a fictional demo catalog, was matched by the repo-wide `.gitignore` `*.json` rule and had never been committed. Those tests passed only in working trees that already had the file, including the "207 passed" reproduction above, which ran in the working tree rather than a clean checkout. The fixture is now force-added. **Clean-checkout run (`git worktree add` of the fixed head, emulator 1.5.45, the job's exact command): 207 passed, 1 skipped.** Every earlier "this branch" result for those 13 persona tests carried the same blind spot.
+
+## Stage 11 — re-merge after #53/#54, Codex review fixes — 2026-10-23/24
+**Merge.** `main` at 48686d2 (#53 foundation round 2, #54, orchestration docs) is merged in by `588245b` and `7f7316e`, with no rebase.
+- The only conflict was `.github/workflows/ci-cd.yml`, and both sides were kept. Foundation's Firestore-emulator and security-rules steps stay in `test-core`. `test-consumer-domains` follows it, and `build-images` still waits on it.
+- Nothing else conflicted. Foundation's new `brandme_core/events/projections.py` registers no reducers for lane events, so there is no semantic overlap. It does unblock Q20, the Firestore reward projection.
+
+**Codex review on `4b98472`: 12 findings, all verified as real and fixed with regression tests.**
+| # | Finding | Fix |
+|---|---|---|
+| P1 | V002 edited in place (checksum drift) | V002 restored byte-identical to `main`. The persona member link (cascading FK, since Spanner cannot convert a table to interleaved) and its constraints open the reserved V003. A first attempt renumbered the lane files to V016–V019; the clean-checkout run caught that it breaks foundation's reservation registry, and `caa980e` reverts to V003–V005. `test_persona_migrations_upgrade.py` upgrades a database migrated to exactly `main`'s set, holding real persona data. |
+| P1 | Media deletion dropped provider job refs, so providers kept copies | A reference-only job row stays until the provider confirms deletion after commit (retried on failure). Providers that cannot delete are reported in the receipt. |
+| P1 | Deleting redemptions left points reserved | Pending reservations are released through ledger entries first. When the ledger is already deleted (account scope), nothing is recreated. |
+| P1 | Debit correction bypassed the freeze | Every resolution checks `rewards.disputes`, and every correction checks `rewards.ledger`. |
+| P1 | Deleting wardrobe items left outfit share previews | Deleting wardrobe items or outfits revokes those shares and drops their previews. **Persona snapshots had the same gap (not flagged by Codex) and are fixed the same way.** |
+| P2 | Overlapping fulfillment workers could both deliver | A server-time lease is taken before the external call. Only the holder settles, and the expiry sweeper skips leased reservations. Fulfillers must still be idempotent on `reservation_id`, because a crash after delivery is retried after the lease. |
+| P2 | Opened draft kept unreachable recipients in its audience | They are marked `removed`, and the privacy-freeze check now applies too. |
+| P2 | Draft repeats computed at creation | Recomputed at send time, from previously sent requests only. |
+| P2 | Proposal `base_version` "0" accepted | The version must be ≥ 1 and must exist. |
+| P2 | Substitute items not ownership-checked | They get the same active, owner-only check as `item_refs`. |
+| P2 | Failed dispatch kept the input photo | Every dispatch failure tombstones and purges the job's input immediately. |
+| P2 | `persona.declared` deletion kept the learning switches | Both are turned off: a deletion never re-enables processing. |
+
+**Open for foundation (migration ordering).** The registry reserves V003–V005 below `main`'s applied V006–V014. A database that applied `main` first can take them only with `--allow-out-of-order`, which the runner refuses in sandbox and production. The upgrade test pins this. No such database is known to exist; if one does, foundation must choose between allowing reserved gaps and renumbering the reservations. Commerce PR #51 adds a V015 that is not in the registry either.
+
+**Evidence (clean `git worktree` of the pushed head, CI commands verbatim, Spanner emulator 1.5.45, Pub/Sub 0.8.37, Firestore emulator)**
+| Check (head `caa980e`) | Result |
+|---|---|
+| `test-consumer-domains` command (lane suites) | **218 passed, 1 skipped** (spatial room manifests belong to another lane) |
+| `test-core` command (`tests/foundation`, rights, privacy, read API, exports; `BRANDME_REQUIRE_EMULATORS=1`, Firestore and Pub/Sub up) | **292 passed** |
+| `pnpm install --frozen-lockfile`; `pnpm check` | 0; 0. All 8 steps pass, with `BRANDME_PYTHON` pointed at a venv holding `datamodel-code-generator`: the contracts drift step needs it, and a fresh worktree has none. |
+| `pnpm --filter @brandme/console build`; gateway `vitest run` | 0; **93 passed** |
+
+**The clean checkout caught one more mistake before it shipped.** The first clean run (on `4964fe8`) failed `test_only_reserved_numbers_are_used`. That is what moved the files back to the reserved V003–V005 in `caa980e`. Everything else in that run passed.
+
+**CI on `caa980e`.** Test Core, Gateway, Chain, regression, Durable Operation Store, Build Test, Trivy and one Security Scan job are green. **`Test Frontend` and the other `Security Scan` job fail on `pnpm audit --prod`:** 6 advisories published after `main`'s last green run (zod and body-parser in `brandme-chain`, fast-uri via `brandme-gateway>ajv`). The lockfile and manifests are byte-identical to `main`, so this does not come from this PR. A proposed override patch is in the PR comment. zod has no 3.x fix, so the chain lane must choose between a zod 4 migration and a documented exception. Per Q15, the dependency work stays with the owning lanes.
+
+**Review threads.** All 12 Codex threads have a reply naming the fixing commit and are resolved.
