@@ -1,0 +1,55 @@
+{{- /*
+Copyright (c) Brand.Me, Inc. All rights reserved.
+Renders nothing. Fails the whole render on values that must never deploy.
+*/ -}}
+{{- if contains "REPLACE_ME" (toYaml .Values) -}}
+{{- fail "values still contain REPLACE_ME placeholders: fill every one (values-sandbox.yaml lists them) before rendering" -}}
+{{- end -}}
+{{- $mode := include "brandme.mode" . -}}
+{{- if and (eq $mode "production") (or .Values.chain.enabled .Values.readApi.enabled .Values.exportsApi.enabled .Values.exportsWorker.enabled) -}}
+{{- fail (printf "mode=production with chain/read-api/exports enabled is refused: only Midnight test networks exist (midnight.network=%s), which the shared trust inventory allows in sandbox only (brandme_core/config.py; python -m brandme_core.config preflight --service read_api)" (toString .Values.midnight.network)) -}}
+{{- end -}}
+{{- if and .Values.ingress.enabled (not .Values.gateway.enabled) -}}
+{{- fail "ingress.enabled requires gateway.enabled" -}}
+{{- end -}}
+{{- if and .Values.ingress.enabled (not .Values.gateway.trustProxy) -}}
+{{- fail "ingress.enabled requires gateway.trustProxy (otherwise every client shares the load balancer's address in the rate limiter)" -}}
+{{- end -}}
+{{- if .Values.gateway.enabled -}}
+{{- range .Values.gateway.publicOrigins -}}
+{{- if not (hasPrefix "https://" .) -}}
+{{- fail (printf "gateway.publicOrigins entry %q must be https in strict modes (brandme-gateway/src/middleware/mode.ts:47)" .) -}}
+{{- end -}}
+{{- end -}}
+{{- range .Values.gateway.corsOrigins -}}
+{{- if not (hasPrefix "https://" .) -}}
+{{- fail (printf "gateway.corsOrigins entry %q must be https in strict modes (brandme-gateway/src/middleware/mode.ts)" .) -}}
+{{- end -}}
+{{- end -}}
+{{- with .Values.gateway.oidc.jwksUri -}}
+{{- if not (hasPrefix "https://" .) -}}
+{{- fail "gateway.oidc.jwksUri must be https (plaintext signing keys could be swapped on the path)" -}}
+{{- end -}}
+{{- end -}}
+{{- if not .Values.gateway.publicOrigins -}}
+{{- fail "gateway.publicOrigins is required (the gateway default is http://localhost, refused in strict modes)" -}}
+{{- end -}}
+{{- end -}}
+{{- if or .Values.exportsApi.enabled .Values.exportsWorker.enabled -}}
+{{- $bucket := include "brandme.req" (list .Values.privacyExports.bucket "privacyExports.bucket") -}}
+{{- if not (hasPrefix (printf "brandme-%s-exports-" $mode) $bucket) -}}
+{{- fail (printf "privacyExports.bucket %q must start with brandme-%s-exports- (brandme_core/privacy_exports/config.py:39)" $bucket $mode) -}}
+{{- end -}}
+{{- end -}}
+{{- if .Values.eventsWorker.enabled -}}
+{{- $topics := list .Values.eventsWorker.topics.public .Values.eventsWorker.topics.memberPrivate .Values.eventsWorker.topics.restricted -}}
+{{- range $i, $t := $topics -}}
+{{- $id := include "brandme.req" (list $t "eventsWorker.topics.*") -}}
+{{- if not (hasPrefix (printf "brandme-%s-" $mode) $id) -}}
+{{- fail (printf "eventsWorker topic %q must start with brandme-%s- (brandme_core/events/pubsub.py:51-53)" $id $mode) -}}
+{{- end -}}
+{{- end -}}
+{{- if ne (len (uniq $topics)) 3 -}}
+{{- fail "eventsWorker.topics must be three distinct topics" -}}
+{{- end -}}
+{{- end -}}

@@ -1,0 +1,112 @@
+{{- /*
+Copyright (c) Brand.Me, Inc. All rights reserved.
+Chain: brandme-chain/Dockerfile runtime (node, uid 1000), GET /health
+(brandme-chain/src/index.ts:35). The chain reads ENVIRONMENT, not BRANDME_MODE
+(src/config/index.ts:15,47); both are set to the same value. With Spanner IDs
+set it requires CHAIN_SERVICE_TOKEN (config/index.ts:57-60) and the V012
+operation-store migration (src/index.ts:67-68).
+*/ -}}
+{{- if .Values.chain.enabled }}
+{{- $c := .Values.chain }}
+{{- $name := include "brandme.componentName" (list . "chain") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "brandme.labels" (list . "chain") | nindent 4 }}
+spec:
+  replicas: {{ $c.replicas }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "brandme.selectorLabels" (list . "chain") | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels:
+        {{- include "brandme.labels" (list . "chain") | nindent 8 }}
+      {{- with .Values.podDefaults.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ $name }}
+      {{- include "brandme.podDefaults" . | nindent 6 }}
+      # Shutdown waits for HTTP close and the reconciliation worker, capped at 10s (src/index.ts:84-92).
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        {{- include "brandme.podSecurityContext" (list . 1000) | nindent 8 }}
+      containers:
+        - name: chain
+          image: {{ include "brandme.image" (list . "chain") | quote }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          command: ["node", "dist/src/index.js"]
+          ports:
+            - name: http
+              containerPort: {{ $c.port }}
+              protocol: TCP
+          env:
+            {{- include "brandme.modeEnv" . | nindent 12 }}
+            - name: PORT
+              value: {{ $c.port | quote }}
+            - name: LOG_LEVEL
+              value: {{ $c.logLevel | quote }}
+            - name: CHAIN_RECONCILIATION_ENABLED
+              value: {{ ternary "true" "false" $c.reconciliationEnabled | quote }}
+            - name: MIDNIGHT_NETWORK
+              value: {{ include "brandme.midnightNetwork" . | quote }}
+            {{- if .Values.midnight.contractAddress }}
+            - name: MIDNIGHT_CONTRACT_ADDRESS
+              value: {{ include "brandme.contractAddress" . | quote }}
+            {{- end }}
+            {{- include "brandme.spannerEnv" . | nindent 12 }}
+            {{- include "brandme.secretEnv" (list . "CHAIN_SERVICE_TOKEN" "chainServiceToken") | nindent 12 }}
+            {{- if eq .Values.midnight.network "preprod" }}
+            {{- include "brandme.secretEnv" (list . "MIDNIGHT_BLOCKFROST_PROJECT_ID" "midnightBlockfrostProjectId") | nindent 12 }}
+            {{- end }}
+            {{- with $c.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          startupProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          {{- include "brandme.preStop" . | nindent 10 }}
+          resources:
+            {{- toYaml $c.resources | nindent 12 }}
+          securityContext:
+            {{- include "brandme.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            {{- include "brandme.tmpMount" . | nindent 12 }}
+      volumes:
+        {{- include "brandme.tmpVolume" . | nindent 8 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "brandme.labels" (list . "chain") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "brandme.selectorLabels" (list . "chain") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ $c.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

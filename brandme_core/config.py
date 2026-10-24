@@ -30,7 +30,7 @@ import os
 import sys
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Iterable, Mapping, Optional, Sequence
+from typing import Callable, Iterable, Mapping, Optional, Sequence
 
 
 class ServiceConfig:
@@ -82,13 +82,13 @@ class ServiceConfig:
 
     @classmethod
     def is_development(cls) -> bool:
-        """Returns True if running in development mode."""
-        return get_mode(default=Mode.DEVELOPMENT) is Mode.DEVELOPMENT
+        """True in development mode. Raises ModeConfigurationError if BRANDME_MODE is unset."""
+        return get_mode() is Mode.DEVELOPMENT
 
     @classmethod
     def is_production(cls) -> bool:
-        """Returns True if running in production mode."""
-        return get_mode(default=Mode.DEVELOPMENT) is Mode.PRODUCTION
+        """True in production mode. Raises ModeConfigurationError if BRANDME_MODE is unset."""
+        return get_mode() is Mode.PRODUCTION
 
 
 # ---------------------------------------------------------------------------
@@ -140,6 +140,24 @@ def get_mode(env: Optional[Mapping[str, str]] = None, default: Optional[Mode] = 
         raise ModeConfigurationError(
             f"BRANDME_MODE={raw!r} is invalid; choose one of demo, development, sandbox, production"
         ) from exc
+
+
+def resolve_environment(env: Optional[Mapping[str, str]] = None) -> str:
+    """The process environment name, derived from BRANDME_MODE.
+
+    BRANDME_MODE is the single mode source. ``ENVIRONMENT`` is accepted only as
+    an echo for code that still reads it: when it is set it must equal
+    BRANDME_MODE exactly, otherwise this raises. It never supplies a default.
+    """
+    env = os.environ if env is None else env
+    mode = get_mode(env)
+    echoed = env.get("ENVIRONMENT")
+    if echoed is not None and echoed.strip() and echoed.strip() != mode.value:
+        raise ModeConfigurationError(
+            f"ENVIRONMENT={echoed.strip()!r} conflicts with BRANDME_MODE={mode.value!r}; "
+            "BRANDME_MODE is the single mode source: unset ENVIRONMENT or set it to the same value"
+        )
+    return mode.value
 
 
 class TrustComponent(str, Enum):
@@ -224,12 +242,16 @@ def check_legacy_flags(mode: Mode, env: Optional[Mapping[str, str]] = None) -> l
 
 
 # ---------------------------------------------------------------------------
-# Inventory of trust-path fixtures that still exist in service code.
+# Inventory of trust-path fixtures that still exist in legacy service code.
 #
 # Each entry is a simulated adapter a service would serve today. A lane that
 # replaces a fake with a verified adapter removes its entry here (or changes it
 # to REAL/SANDBOX with evidence). Until then the service cannot boot in a
-# strict mode. Full file:line inventory: docs/build/evidence/w00/trust-path-fixtures.md
+# strict mode. Full file:line inventory (dated 2026-10-05; its brandme-chain
+# rows predate the Midnight adapter): docs/build/evidence/w00/trust-path-fixtures.md
+#
+# Foundation-era processes with no fabricated trust evidence are audited
+# separately in AUDITED_PROCESSES below.
 # ---------------------------------------------------------------------------
 
 _SIM = AdapterKind.SIMULATED
@@ -295,16 +317,6 @@ LEGACY_SIMULATED_ADAPTERS: Mapping[str, tuple[AdapterRegistration, ...]] = {
             "Simulated — caller identity is not authenticated",
         ),
     ),
-    "chain": (
-        AdapterRegistration(
-            TrustComponent.CHAIN_MIDNIGHT, _SIM, "brandme-chain/src/services/midnight-client.ts mock client",
-            "Simulated — no Midnight transaction was made",
-        ),
-        AdapterRegistration(
-            TrustComponent.CHAIN_CARDANO, _SIM, "brandme-chain/src/services/cardano-tx-builder.ts fallback",
-            "Simulated — no Cardano transaction was made",
-        ),
-    ),
     # Services with no known trust-path fakes still go through the flag check.
     "policy": (
         AdapterRegistration(
@@ -318,9 +330,219 @@ LEGACY_SIMULATED_ADAPTERS: Mapping[str, tuple[AdapterRegistration, ...]] = {
             "Simulated — sustainability and origin facts are fixtures",
         ),
     ),
-    # No trust-path fabrication found in the governance console (escalation listing only).
-    "governance": (),
+    # The decision endpoint (POST /governance/escalations/{scan_id}/decision) has
+    # no authentication and writes the body's reviewer_user_id as AuditLog
+    # human_approver_id: an unauthenticated human approval.
+    "governance": (
+        AdapterRegistration(
+            TrustComponent.AUTH_IDENTITY, _SIM,
+            "brandme-governance/governance_console/main.py resolve_escalation trusts body reviewer_user_id",
+            "Simulated — the reviewer's identity is not authenticated",
+        ),
+    ),
 }
+
+
+# ---------------------------------------------------------------------------
+# Audited foundation-era processes (read 2026-10-23 at the cited files).
+#
+# These processes fabricate no trust evidence. Their registrations describe
+# what they actually serve, classified from the configuration they will run
+# with, so a correctly configured strict-mode process is allowed and a
+# misconfigured one is refused here as well as by its own config loader.
+# Internal service boundaries (a per-service bearer credential plus a
+# gateway-asserted X-Subject-Ref) are not registered as adapters; replacing
+# that transport is the open PD-07 decision.
+# ---------------------------------------------------------------------------
+
+MIDNIGHT_TEST_NETWORKS: tuple[str, ...] = ("undeployed", "preview", "preprod")
+
+
+@dataclass(frozen=True)
+class AuditedProcess:
+    """A process whose trust paths were read and classified, not assumed.
+
+    ``environment_source`` names where the process reads ``ENVIRONMENT`` as its
+    own mode; ``environment_default`` is what it falls back to when the
+    variable is unset (``None``: it refuses to start).
+    """
+
+    summary: str
+    registrations: Callable[[Mode, Mapping[str, str]], tuple[AdapterRegistration, ...]]
+    environment_source: str = ""
+    environment_default: Optional[str] = None
+
+
+def _midnight_scope(env: Mapping[str, str], variable: str, implementation: str, evidence: str,
+                    default: str = "") -> AdapterRegistration:
+    raw = env.get(variable)
+    # An empty value is invalid, not unset (brandme-chain's zod enum rejects it).
+    network = (default if raw is None else raw).strip()
+    if network in MIDNIGHT_TEST_NETWORKS:
+        return AdapterRegistration(
+            TrustComponent.CHAIN_MIDNIGHT, AdapterKind.SANDBOX,
+            f"{implementation} [{variable}={network}]", evidence=evidence,
+        )
+    # Mainnet is not authorized in this build, and anything else is invalid.
+    return AdapterRegistration(
+        TrustComponent.CHAIN_MIDNIGHT, AdapterKind.UNCONFIGURED,
+        f"{implementation} [{variable}={network or 'unset'} is not an authorized network]",
+        required=True, evidence=evidence,
+    )
+
+
+_NO_PREPROD_EVIDENCE = (
+    "No Preprod transaction, deployed contract address or finality evidence yet "
+    "(docs/build/evidence/midnight-integration-2026-10-22.md:53)."
+)
+
+
+def _chain(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, ...]:
+    return (
+        _midnight_scope(
+            env, "MIDNIGHT_NETWORK",
+            "brandme-chain/src/midnight/adapter.ts RightsAdapter (Midnight.js providers, construction fails "
+            "without them; no fallback), served read-only: capability.ts:58 writesAuthorized=false, "
+            "network.ts assertWritable refuses Mainnet, reconciliation worker disabled on Mainnet (src/index.ts:46-47)",
+            _NO_PREPROD_EVIDENCE, default="preprod",  # brandme-chain/src/config/index.ts:26
+        ),
+        AdapterRegistration(
+            TrustComponent.CHAIN_CARDANO, AdapterKind.UNCONFIGURED,
+            "brandme-chain/src/cardano/anchor.ts UnavailableCardanoAnchor (not mounted; the retired "
+            "/tx/anchor-scan and /tx/verify-root return 410 at src/index.ts:57-63)",
+            evidence="No verified Cardano submitter; anchoring reports unavailable.",
+        ),
+    )
+
+
+def _read_api(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, ...]:
+    return (
+        _midnight_scope(
+            env, "READ_API_NETWORK",
+            "brandme_core/read_api/reads.py ReadService: read-only Spanner reads of persisted rights "
+            "projections scoped to READ_API_NETWORK + READ_API_CONTRACT_ADDRESS (read_api/config.py:37-38); "
+            "no chain calls, no Mainnet mode",
+            _NO_PREPROD_EVIDENCE,
+        ),
+    )
+
+
+def _privacy_exports(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, ...]:
+    return (
+        _midnight_scope(
+            env, "EXPORT_NETWORK",
+            "brandme_core/privacy_exports/service.py ExportService: selected-category exports of persisted "
+            "rights records scoped to EXPORT_NETWORK + EXPORT_CONTRACT_ADDRESS (privacy_exports/config.py:35-36) "
+            "into the private export bucket; no chain calls, no Mainnet mode",
+            _NO_PREPROD_EVIDENCE,
+        ),
+    )
+
+
+def _gateway(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, ...]:
+    provider = (env.get("IDENTITY_PROVIDER") or "dev").strip()  # gateway config/index.ts:26 default 'dev'
+    if provider != "oidc":
+        return (
+            AdapterRegistration(
+                TrustComponent.AUTH_IDENTITY, AdapterKind.SIMULATED,
+                f"brandme-gateway/src/routes/v1/index.ts POST /session/dev (IDENTITY_PROVIDER={provider})",
+                # Same label the gateway sends (middleware/mode.ts DEV_IDENTITY_LABEL).
+                "Simulated sign-in: fictional test identity, not a verified account",
+            ),
+        )
+    issuer = (env.get("OIDC_ISSUER") or "").strip()
+    audience = (env.get("OIDC_AUDIENCE") or "").strip()
+    jwks = (env.get("OIDC_JWKS_URI") or "").strip()
+    if not issuer.startswith("https://") or not audience or (jwks and not jwks.startswith("https://")):
+        return (
+            AdapterRegistration(
+                TrustComponent.AUTH_IDENTITY, AdapterKind.UNCONFIGURED,
+                "brandme-gateway/src/middleware/session.ts OIDC verifier without an https OIDC_ISSUER, an OIDC_AUDIENCE "
+                "and (when set) an https OIDC_JWKS_URI",
+                required=True,
+            ),
+        )
+    return (
+        AdapterRegistration(
+            TrustComponent.AUTH_IDENTITY,
+            AdapterKind.REAL if mode is Mode.PRODUCTION else AdapterKind.SANDBOX,
+            "brandme-gateway/src/middleware/session.ts:66-79 jose jwtVerify against the issuer JWKS "
+            "(issuer, audience, asymmetric algorithm allowlist)",
+            evidence=(
+                "The issuer's tenant (sandbox or production) is attested by deployment configuration; this "
+                "guard checks its shape only. The gateway's own guard (middleware/mode.ts:30-49) also refuses "
+                "JWT_SECRET, symmetric algorithms, a non-https OIDC_JWKS_URI and non-https PUBLIC_ORIGINS/CORS_ORIGINS."
+            ),
+        ),
+    )
+
+
+def _no_trust_path(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, ...]:
+    return ()
+
+
+AUDITED_PROCESSES: Mapping[str, AuditedProcess] = {
+    "chain": AuditedProcess(
+        "Node Midnight rights service: capability report, operation status and read-only reconciliation.",
+        _chain,
+        environment_source="brandme-chain/src/config/index.ts:15,47 (ENVIRONMENT, zod default 'development')",
+        environment_default="development",
+    ),
+    "read_api": AuditedProcess(
+        "Authenticated rights and My Data read API (python -m brandme_core.read_api).",
+        _read_api,
+        environment_source="brandme_core/read_api/config.py:26 (must equal BRANDME_MODE)",
+    ),
+    "privacy_exports": AuditedProcess(
+        "Selected-category export API and leased worker (python -m brandme_core.privacy_exports [--worker]).",
+        _privacy_exports,
+        environment_source="brandme_core/privacy_exports/config.py:24 (must equal BRANDME_MODE)",
+    ),
+    "events_worker": AuditedProcess(
+        "Outbox publisher to pre-provisioned Pub/Sub topics (python -m brandme_core.events.worker); "
+        "no wallet, chain submission, topic creation or application side effects (events/worker.py:1-5).",
+        _no_trust_path,
+        environment_source="brandme_core/events/worker.py:38 (must equal BRANDME_MODE)",
+    ),
+    "gateway": AuditedProcess(
+        "Node API gateway. Its trust-path component is member identity; it also runs its own guard "
+        "(brandme-gateway/src/middleware/mode.ts). The legacy /scan route is a placeholder, not trust evidence.",
+        _gateway,
+    ),
+}
+
+
+def canonical_service(service: str) -> str:
+    """``read-api`` and ``read_api`` name the same process."""
+    return service.strip().lower().replace("-", "_")
+
+
+def service_registrations(
+    service: str, mode: Mode, env: Optional[Mapping[str, str]] = None
+) -> Optional[tuple[AdapterRegistration, ...]]:
+    """The audited registrations for ``service`` in ``mode``; ``None`` if unaudited."""
+    env = os.environ if env is None else env
+    name = canonical_service(service)
+    if name in LEGACY_SIMULATED_ADAPTERS:
+        return tuple(LEGACY_SIMULATED_ADAPTERS[name])
+    if name in AUDITED_PROCESSES:
+        return AUDITED_PROCESSES[name].registrations(mode, env)
+    return None
+
+
+def _environment_echo_violations(service: str, mode: Mode, env: Mapping[str, str]) -> list[str]:
+    process = AUDITED_PROCESSES.get(canonical_service(service))
+    if process is None or not process.environment_source:
+        return []
+    raw = (env.get("ENVIRONMENT") or "").strip()
+    if (raw or process.environment_default) == mode.value:
+        return []
+    # A set-but-different value was already rejected by resolve_environment().
+    if process.environment_default:
+        state = f"ENVIRONMENT is unset, so {service} would run as {process.environment_default!r}"
+    else:
+        state = f"ENVIRONMENT is unset and {service} refuses to start without it"
+    return [f"{state} ({process.environment_source}); set ENVIRONMENT={mode.value}"]
 
 
 def enforce_boot_guard(
@@ -328,34 +550,49 @@ def enforce_boot_guard(
     registrations: Optional[Iterable[AdapterRegistration]] = None,
     env: Optional[Mapping[str, str]] = None,
 ) -> Mode:
-    """Raise TrustPathViolation if ``service`` may not boot in the current mode.
+    """Raise if ``service`` may not boot in the current mode.
 
-    ``registrations`` defaults to the service's legacy inventory entry. Unknown
-    services in a strict mode are rejected: an unaudited process is not
-    evidence of a real adapter.
+    Raises ModeConfigurationError when BRANDME_MODE is missing or invalid, or
+    when ENVIRONMENT contradicts it, and TrustPathViolation when the process
+    would serve a disallowed adapter. ``registrations`` defaults to the
+    service's inventory entry (legacy or audited). Unknown services in a strict
+    mode are rejected: an unaudited process is not evidence of a real adapter.
     """
+    env = os.environ if env is None else env
     mode = get_mode(env)
+    resolve_environment(env)
     violations = check_legacy_flags(mode, env)
+    violations.extend(_environment_echo_violations(service, mode, env))
     if registrations is None:
-        if service not in LEGACY_SIMULATED_ADAPTERS:
+        registrations = service_registrations(service, mode, env)
+        if registrations is None:
             if mode.is_strict:
                 violations.append(f"service {service!r} has no audited trust-path inventory")
             registrations = ()
-        else:
-            registrations = LEGACY_SIMULATED_ADAPTERS[service]
     violations.extend(check_registrations(mode, registrations))
     if violations:
         raise TrustPathViolation(mode, violations)
     return mode
 
 
-def simulation_labels(service: str) -> list[dict]:
+def simulation_labels(service: str, env: Optional[Mapping[str, str]] = None) -> list[dict]:
     """Labels a demo/development surface must display for ``service``."""
+    env = os.environ if env is None else env
+    name = canonical_service(service)
+    regs: Iterable[AdapterRegistration] = ()
+    if name in LEGACY_SIMULATED_ADAPTERS:
+        regs = LEGACY_SIMULATED_ADAPTERS[name]
+    elif name in AUDITED_PROCESSES:
+        regs = AUDITED_PROCESSES[name].registrations(get_mode(env), env)
     return [
         {"component": r.component.value, "label": r.simulation_label, "implementation": r.implementation}
-        for r in LEGACY_SIMULATED_ADAPTERS.get(service, ())
+        for r in regs
         if r.kind is AdapterKind.SIMULATED
     ]
+
+
+def _registration_json(reg: AdapterRegistration) -> dict:
+    return {**asdict(reg), "component": reg.component.value, "kind": reg.kind.value}
 
 
 def _main(argv: Optional[Sequence[str]] = None) -> int:
@@ -363,14 +600,23 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
     pre = sub.add_parser("preflight", help="fail closed before a service boots")
     pre.add_argument("--service", required=True)
-    sub.add_parser("inventory", help="print the trust-path inventory as JSON")
+    sub.add_parser("inventory", help="print the trust-path inventory as JSON "
+                                     "(audited processes are evaluated for the current environment)")
     args = parser.parse_args(argv)
 
     if args.cmd == "inventory":
-        out = {
-            svc: [{**asdict(r), "component": r.component.value, "kind": r.kind.value} for r in regs]
-            for svc, regs in LEGACY_SIMULATED_ADAPTERS.items()
-        }
+        out: dict = {svc: [_registration_json(r) for r in regs] for svc, regs in LEGACY_SIMULATED_ADAPTERS.items()}
+        try:
+            mode: Optional[Mode] = get_mode()
+        except ModeConfigurationError:
+            mode = None
+        for svc, process in AUDITED_PROCESSES.items():
+            out[svc] = {
+                "summary": process.summary,
+                "environment_source": process.environment_source,
+                "registrations": ([_registration_json(r) for r in process.registrations(mode, os.environ)]
+                                  if mode else "set BRANDME_MODE to evaluate"),
+            }
         print(json.dumps(out, indent=2))
         return 0
 

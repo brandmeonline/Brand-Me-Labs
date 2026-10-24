@@ -2,7 +2,8 @@
 #
 # Dockerfile for Brand.Me Core Services
 # ======================================
-# Includes: Brain, Policy, Orchestrator
+# Default (last) stage: runtime — read API, privacy exports, outbox worker,
+# migration runner. Legacy stages: brain, policy, orchestrator, orchestrator-beat.
 
 FROM python:3.11-slim AS base
 
@@ -74,3 +75,33 @@ WORKDIR /app/orchestrator
 ENV SERVICE_NAME=orchestrator-beat
 ENV C_FORCE_ROOT=true
 CMD ["celery", "-A", "celery_app", "beat", "--loglevel=info"]
+
+
+# Runtime stage for the strict-mode foundation processes. This is the LAST
+# stage, so a build without --target (CI build-images, ci-cd.yml:253-264)
+# produces it; the legacy stages above stay buildable with --target but are
+# skipped by default. Build from the repository root:
+#   docker build -f brandme-core/Dockerfile .
+# Dependencies come only from the hash-verified lock CI tests against
+# (scripts/python/requirements.lock, ci-cd.yml:142). No --reload, no celery.
+# There is no default process: every manifest passes an explicit command
+# (brandme-infra/helm/brandme). Running the image bare prints usage, exit 64.
+FROM python:3.11.15-slim AS runtime
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+WORKDIR /app
+COPY scripts/python/requirements.lock /tmp/requirements.lock
+RUN pip install --no-cache-dir --require-hashes -r /tmp/requirements.lock && rm /tmp/requirements.lock
+# Root-owned and not writable by the runtime user. Pre-compiled so a
+# read-only root filesystem needs no __pycache__ writes.
+COPY brandme_core /app/brandme_core
+COPY packages/contracts/generated/domain.schema.json /app/packages/contracts/generated/domain.schema.json
+COPY brandme-data/spanner/migrations /app/brandme-data/spanner/migrations
+RUN python -m compileall -q /app/brandme_core /app/brandme-data/spanner/migrations \
+    && groupadd --system --gid 10001 brandme \
+    && useradd --system --uid 10001 --gid 10001 --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin brandme
+USER 10001:10001
+CMD ["python", "-c", "import sys; sys.stderr.write('brandme-core runtime image has no default process. Run one of:\\n  python -m brandme_core.read_api [--check]\\n  python -m brandme_core.privacy_exports [--check | --worker [--once]]\\n  python -m brandme_core.events.worker [--check | --once]\\n  python brandme-data/spanner/migrations/runner.py {up,status,verify}\\n'); sys.exit(64)"]

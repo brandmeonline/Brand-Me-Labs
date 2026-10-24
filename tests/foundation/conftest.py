@@ -17,6 +17,14 @@ REPO = Path(__file__).resolve().parents[2]
 os.environ.setdefault("BRANDME_MODE", "development")
 
 
+def pytest_configure(config):
+    # CI gate: python -m pytest tests/foundation/test_boot_guard.py -m production_refusal
+    config.addinivalue_line(
+        "markers",
+        "production_refusal: starts real legacy entrypoints in strict/unset modes and asserts they refuse to boot",
+    )
+
+
 def _emulator_up() -> bool:
     host = os.environ.get("SPANNER_EMULATOR_HOST", "")
     if not host:
@@ -28,6 +36,9 @@ def _emulator_up() -> bool:
     except OSError:
         return False
 
+
+if os.environ.get("BRANDME_REQUIRE_EMULATORS") == "1" and not _emulator_up():
+    raise RuntimeError("BRANDME_REQUIRE_EMULATORS=1 but the Spanner emulator is not reachable")
 
 requires_spanner = pytest.mark.skipif(not _emulator_up(), reason="Spanner emulator not reachable (SPANNER_EMULATOR_HOST)")
 

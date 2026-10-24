@@ -1,116 +1,86 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * Scan Routes
+ * Scan Routes (legacy; BM-BASE-005)
+ *
+ * POST /scan publishes scan.requested to NATS JetStream. Without NATS it
+ * answers 503 application/problem+json instead of failing with a 500.
+ * GET /scan/:scan_id answers 501: this gateway does not persist scans, so it
+ * has no status to report. Errors are spec Problems (no stack, no message).
+ * Rate limiting and authentication are mounted in index.ts.
  */
 
 import { Router, Response } from 'express';
 import type { Router as IRouter } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import rateLimit from 'express-rate-limit';
 import { AuthenticatedRequest } from '../types';
 import { publishEvent } from '../services/nats';
 import { logger } from '../config/logger';
-import { config } from '../config';
+import { ApiProblem, handle, problems, resolveRequestId } from '../middleware/problem';
+import { regionOf } from '../middleware/requestLogger';
 
-const router: IRouter = Router();
-
-// Rate limiting for scan endpoint
-const scanRateLimiter = rateLimit({
-  windowMs: config.rateLimitWindow,
-  max: config.rateLimitMaxRequests,
-  message: 'Too many scan requests, please try again later',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+export interface ScanRouterDeps {
+  /** NATS_URL is configured (start() connects before listening). */
+  natsConfigured: boolean;
+  defaultRegion: string;
+  publish?: typeof publishEvent;
+}
 
 // Request schema
 const scanRequestSchema = z.object({
   garment_tag: z.string().min(1, 'Garment tag is required'),
 });
 
-/**
- * POST /scan
- * Initiate garment scan
- */
-router.post('/', scanRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    // Validate request body
-    const { garment_tag } = scanRequestSchema.parse(req.body);
+export function createScanRouter(deps: ScanRouterDeps): IRouter {
+  const router: IRouter = Router();
+  const publish = deps.publish ?? publishEvent;
 
-    // Extract user ID from authenticated request
-    const scanner_user_id = req.user!.userId;
+  /**
+   * POST /scan
+   * Initiate garment scan
+   */
+  router.post('/', handle(async (req: AuthenticatedRequest, res: Response) => {
+    const parsed = scanRequestSchema.safeParse(req.body);
+    if (!parsed.success) throw problems.invalid('garment_tag is required.');
+    if (!deps.natsConfigured) {
+      throw new ApiProblem(503, 'dependency_unavailable', 'Scanning unavailable', 'Scan publishing is not configured in this environment.', false);
+    }
 
-    // Generate scan ID
     const scan_id = uuidv4();
-
-    // Get region from header or use default
-    const region_code = req.headers['x-region'] as string || config.defaultRegion;
-
-    // Get request ID
-    const request_id = req.headers['x-request-id'] as string;
-
-    // Prepare event payload
+    const region_code = regionOf(req.headers['x-region'], deps.defaultRegion);
     const eventPayload = {
       scan_id,
-      scanner_user_id,
-      garment_tag,
+      scanner_user_id: req.user!.userId,
+      garment_tag: parsed.data.garment_tag,
       timestamp: new Date().toISOString(),
       region_code,
-      request_id,
+      request_id: resolveRequestId(req, res),
     };
 
-    // Publish to NATS
-    await publishEvent('scan.requested', eventPayload);
+    try {
+      await publish('scan.requested', eventPayload);
+    } catch {
+      throw problems.unavailable('Scan publishing is temporarily unavailable.');
+    }
 
-    logger.info({
-      scan_id,
-      scanner_user_id,
-      garment_tag,
-      region_code,
-    }, 'Scan requested');
+    // Member ID and garment tag stay out of logs (REDACT_PATHS also covers them).
+    logger.info({ scan_id, region_code }, 'Scan requested');
 
-    // Return 202 Accepted
     res.status(202).json({
       scan_id,
       status: 'processing',
       message: 'Scan request received and is being processed',
     });
+  }));
 
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({
-        error: 'Validation Error',
-        message: 'Invalid request data',
-        details: error.errors,
-      });
-      return;
-    }
-
-    logger.error({ error }, 'Error processing scan request');
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'Failed to process scan request',
-    });
-  }
-});
-
-/**
- * GET /scan/:scan_id
- * Get scan status and results
- */
-router.get('/:scan_id', async (req: AuthenticatedRequest, res: Response) => {
-  const { scan_id } = req.params;
-
-  // TODO: Implement scan status/results retrieval
-  // This would query the database or cache for scan results
-
-  res.status(200).json({
-    scan_id,
-    status: 'processing',
-    message: 'Scan results endpoint - implementation pending',
+  /**
+   * GET /scan/:scan_id
+   * Scans are not persisted here, so there is no status to return.
+   */
+  router.get('/:scan_id', (_req, _res, next) => {
+    next(problems.notImplemented('Scan status is not available: this gateway does not store scan results.'));
   });
-});
 
-export default router;
+  return router;
+}

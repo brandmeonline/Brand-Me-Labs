@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Brand.Me Firestore projections (opus-foundation lane).
+// Spanner is authoritative; these documents are disposable read models written
+// only by trusted server workers (brandme_core/events/projections.py), which
+// bypass rules through service IAM. Clients may read, never write.
+//
+// Firebase Auth uid == internal member_id. The gateway mints custom tokens;
+// that adapter is not implemented yet (see docs/build/status/opus-foundation.md).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Member-private views: only the member, read-only.
+    match /members/{memberId}/{document=**} {
+      allow read: if request.auth != null && request.auth.uid == memberId;
+      allow write: if false;
+    }
+
+    // Shared views: one copy per recipient, readable only by that recipient,
+    // single-document get before expiry. Copies carry no audience list or other
+    // members' IDs. No listing (a share id is not discoverable). Revocation
+    // deletes every copy, so access ends immediately.
+    match /shared/{shareId}/recipients/{memberId} {
+      allow get: if request.auth != null
+        && request.auth.uid == memberId
+        && resource != null
+        && resource.data.expires_at > request.time;
+      allow list, write: if false;
+    }
+
+    // Tombstones and anything not listed above: closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

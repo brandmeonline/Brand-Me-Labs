@@ -18,7 +18,7 @@ Precedence (ch.01 §4.2), highest first:
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
@@ -175,7 +175,15 @@ class Evidence:
 
 
 EVIDENCE_SOURCE_TYPES = frozenset(
-    {"onboarding_choice", "saved_look", "saved_product", "wardrobe_item", "recommendation_feedback", "outfit_worn"}
+    {
+        "onboarding_choice",
+        "saved_look",
+        "saved_product",
+        "wardrobe_item",
+        "recommendation_feedback",
+        "outfit_worn",
+        "legacy_profile",
+    }
 )
 
 

@@ -16,6 +16,9 @@ on:
       - develop
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   regression:
     runs-on: ubuntu-latest
@@ -34,6 +37,14 @@ jobs:
       # single source of truth. action-setup@v4 errors out if both are set.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+
+      # Before the install: an unregistered package fails here with
+      # E_UNREGISTERED instead of a later "tsc: not found" from a package that
+      # `pnpm install --frozen-lockfile` silently skipped (PR #55). Offline
+      # checks only; the next step is pnpm's own frozen-lockfile check.
+      # Error codes and fixes: docs/build/workspace-governance.md
+      - name: Workspace guard
+        run: node scripts/check-workspace.mjs
 
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile

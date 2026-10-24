@@ -9,6 +9,13 @@
 **/.env
 **/.env.*
 **/gha-creds-*.json
+**/*.pem
+**/*.key
+**/*.p12
+**/*-sa-key.json
+**/*service-account*.json
+.deployment
+.cache
 **/coverage
 **/*.log
 .codex

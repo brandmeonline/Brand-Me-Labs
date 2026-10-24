@@ -1,0 +1,33 @@
+{{- /*
+Copyright (c) Brand.Me, Inc. All rights reserved.
+One PodDisruptionBudget per Deployment. maxUnavailable keeps voluntary
+disruptions (node drains, GKE upgrades) to one pod at a time and never blocks
+them for a single-replica workload.
+*/ -}}
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- $root := . }}
+{{- $workloads := list
+      (list "gateway" .Values.gateway.enabled)
+      (list "chain" .Values.chain.enabled)
+      (list "console" .Values.console.enabled)
+      (list "read-api" .Values.readApi.enabled)
+      (list "exports-api" .Values.exportsApi.enabled)
+      (list "exports-worker" .Values.exportsWorker.enabled)
+      (list "events-worker" .Values.eventsWorker.enabled) }}
+{{- range $w := $workloads }}
+{{- if index $w 1 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "brandme.componentName" (list $root (index $w 0)) }}
+  labels:
+    {{- include "brandme.labels" (list $root (index $w 0)) | nindent 4 }}
+spec:
+  maxUnavailable: {{ $root.Values.podDisruptionBudget.maxUnavailable }}
+  selector:
+    matchLabels:
+      {{- include "brandme.selectorLabels" (list $root (index $w 0)) | nindent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Local Midnight network for `pnpm test:midnight:network`.
-#   scripts/local-network.sh up     # node + indexer (compose) + proof server 8.1.0 on 127.0.0.1:6300
+#   scripts/local-network.sh up     # node + indexer (compose) + proof server 8.1.3 on 127.0.0.1:6300
 #   scripts/local-network.sh env    # prints MN_NODE_PORT / MN_INDEXER_PORT for `export $(...)`
 #   scripts/local-network.sh down
 # The proof server downloads public SRS parameters from srs.midnight.network
@@ -9,7 +9,7 @@
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 compose=(docker compose -p brandme-midnight -f "$here/tests/network/compose.yml")
-img="midnightntwrk/proof-server:8.1.0@sha256:801bbc0340e9e96f16735f77b523f23c7459e3359842f7c79c2c53f4e994d531"
+img="midnightntwrk/proof-server:8.1.3@sha256:0f4ab0716985eaebbe55a970348f52ff05ffd8a96631ed7232bd0c4ba02c115c"
 case "${1:-}" in
   up)
     "${compose[@]}" up -d node indexer

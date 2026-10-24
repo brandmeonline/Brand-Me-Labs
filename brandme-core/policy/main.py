@@ -3,6 +3,14 @@
 # brandme-core/policy/main.py
 
 import os
+
+# Boot guard before anything else: BRANDME_MODE is required, and sandbox /
+# production refuse here because canViewFace/canTransferOwnership trust
+# caller-supplied identities. The import fails, so no app object exists.
+from brandme_core.boot import guard
+
+BRANDME_MODE = guard("policy")
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response

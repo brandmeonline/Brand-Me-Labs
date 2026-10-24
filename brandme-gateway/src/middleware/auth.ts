@@ -11,13 +11,11 @@
 
 import type { NextFunction, Request, Response } from 'express';
 import type { AuthenticatedRequest, Principal } from '../types';
+import { problems } from './problem';
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   const principal = res.locals.principal as Principal | undefined;
-  if (!principal) {
-    res.status(401).json({ error: 'Unauthorized', message: 'Sign-in required' });
-    return;
-  }
+  if (!principal) return next(problems.unauthenticated());
   (req as AuthenticatedRequest).user = { userId: principal.memberId };
   next();
 }

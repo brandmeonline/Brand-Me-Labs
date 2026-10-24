@@ -118,6 +118,10 @@ def main(argv=None) -> int:
     flags.add_argument("--once", action="store_true", help="process one bounded batch and exit")
     flags.add_argument("--check", action="store_true", help="verify schema, configuration and provisioned topics")
     args = parser.parse_args(argv)
+    # Shared trust-path inventory, enforced in-process as well as by the preflight CLI.
+    from brandme_core.boot import guard
+
+    guard("events_worker")
     try:
         return run(WorkerConfig.from_env(os.environ), once=args.once, check=args.check)
     except Exception:

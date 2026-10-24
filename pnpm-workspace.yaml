@@ -1,4 +1,7 @@
 # Owned by the opus-foundation lane. Toolchain pins: docs/build/compatibility-lock.md
+# Registration, lockfile and conflict rules: docs/build/workspace-governance.md
+# (enforced by scripts/check-workspace.mjs; every tracked package.json must match a
+# glob below or be a STANDALONE entry in that script).
 packages:
   - 'brandme-gateway'
   - 'brandme-chain'
@@ -28,3 +31,11 @@ overrides:
   "minimatch@9": "9.0.7"
   "postcss@8": "8.5.23"
   "@babel/core@7": "7.29.6"
+  # firebase 13.1.0 (dev-only, @brandme/firestore-rules) pins grpc-js ~1.9, which is
+  # affected by GHSA high/low advisories fixed in >=1.13.6. Dedupe onto the
+  # workspace's existing 1.14.6; validated by the emulator rules suite.
+  "@grpc/grpc-js@1.9": "1.14.6"
+  # GHSA-27r3-jxmh-p828 (high, body-parser DoS) fixed in 1.20.9; express 4.22.x pins ~1.20.
+  "body-parser@1": "1.20.9"
+  # GHSA-w74x-v6f9-j3xg, -wjr9-j795-jxcr (moderate) and two lows fixed in 3.1.9 (ajv dependency).
+  "fast-uri@3": "3.1.9"

@@ -7,6 +7,14 @@
 import datetime as dt
 import uuid
 import os
+
+# Boot guard before anything else: BRANDME_MODE is required, and sandbox /
+# production refuse here because call_orchestrator_commit fabricates stub_
+# chain hashes. The import fails, so no app object exists (brandme_core/boot.py).
+from brandme_core.boot import guard
+
+BRANDME_MODE = guard("brain")
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
