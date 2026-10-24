@@ -873,10 +873,11 @@ PR #52 merged into `main` (`3d4cc0b`). This stage starts fresh from `main` on th
 | Check | Result |
 |---|---|
 | V4 signing vs Google's conformance vectors (`tests/fixtures/media/gcs_v4_signing_vectors.json`: 18 path-style `signingV4Tests`, Apache-2.0) | **18/18**: canonical request, string-to-sign and full URL match byte for byte. Google's expected signature verifies over our string-to-sign under the published dummy key's public half. The private key is not vendored. |
-| Signing, bucket policy and environment selection (`test_media_gcs_signing.py`) | **24 passed** |
+| Signing, bucket policy, environment selection and credential shapes (`test_media_gcs_signing.py`) | **25 passed** |
 | Emulator suite (`test_media_gcs_store.py`, own migrated database) | **6 passed**: store contract; full try-on flow with every byte in the bucket (verify, dispatch, input deleted at processing end, result, save → retained, delete → object gone and `purged_at` set); oversize and type-spoofed uploads that the emulator accepts are still rejected and purged; save fails closed on a storage outage (503, unsaved); the jobs process sweeps unsaved media on the bucket; a default bucket is flagged unfit |
 | Mutation checks | Removing the retain call fails 2 tests; inverting the MD5 check fails the flow test |
 | Media, My Data and jobs suites with the `save_job` change | 49 passed |
+| Trivy secret scan (pinned `aquasec/trivy:0.75.0`, `trivy-secret.yaml`, repo-wide) | 0 findings. On `6a81c26` it found 1 CRITICAL: a test built a service-account info dict, with a `"type": "service_account"` literal, around a key generated at runtime. The test now omits the unneeded `type` field; no allow rule was added. |
 
 **Honest limits**
 - **The emulator enforces none of the signed constraints.** It checks no signatures and ignores `x-goog-if-generation-match`, `x-goog-content-length-range` and `x-goog-custom-time` on the signed PUT. It also has no lifecycle execution and no soft delete. The emulator runs prove the object flow and the service's own checks, not GCS enforcement.

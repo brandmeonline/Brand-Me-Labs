@@ -141,9 +141,10 @@ def test_key_file_credentials_sign_locally():
 
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()).decode()
+    # A key generated just above, never a credential; from_service_account_info needs no "type" field.
     creds = service_account.Credentials.from_service_account_info(
-        {"type": "service_account", "client_email": "media@brandme-dev.iam.gserviceaccount.com", "private_key": pem,
-         "private_key_id": "test", "token_uri": "https://oauth2.googleapis.com/token"})
+        {"client_email": "media@brandme-dev.iam.gserviceaccount.com", "private_key": pem, "private_key_id": "test",
+         "token_uri": "https://oauth2.googleapis.com/token"})
     signer = GoogleAuthSigner(creds)
     assert signer.email == "media@brandme-dev.iam.gserviceaccount.com"
     key.public_key().verify(signer.sign(b"payload"), b"payload", padding.PKCS1v15(), hashes.SHA256())
