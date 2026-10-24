@@ -721,6 +721,66 @@ def test_merchant_restart_voids_orphan_and_reports_cancelled(w):
     assert w.store.get("operations", res.id).state == "cancelled"
 
 
+def _restart_merchant(w):
+    """A new merchant process over the same Stripe test account (fixture double): its ledger is gone."""
+    rail = stripe_double_rail(w.clock, secret=w.secret, double=w.provider.payments.double)
+    w.provider = LocalAtelierProvider(w.clock, payments=rail)
+    w.registry._connections.clear()
+    w.registry.register(local_atelier_connection(w.provider, "development", w.clock.now))
+    return rail.double
+
+
+@pytest.mark.parametrize("captured", [False, True])
+def test_a_payment_event_after_a_merchant_restart_is_re_read_into_the_live_order(commerce_store, captured):
+    """FIXTURE DOUBLE, NOT STRIPE. Brand.Me still holds the order the restarted merchant forgot.
+
+    Verifying the event moves no money. It is a hint like any other: the service re-reads through lookup(),
+    which releases what the lost ledger held (founder default: a restart cancels open demo orders), and the
+    order records exactly that instead of an ignored receipt."""
+    w = rail_world("stripe_double", commerce_store)
+    d, ag = w.delegate(lim=limits())
+    _, res = _buy(w, ag)
+    order = _order(w, res)
+    if captured:
+        _hook(w, w.provider.ship(order.provider_order_ref))
+    double = _restart_merchant(w)
+    w.clock.advance(minutes=3)
+    event = _signed_pi_event(w, order.provider_order_ref,
+                             "payment_intent.succeeded" if captured else "payment_intent.amount_capturable_updated")
+    moved = len(double.mutating_calls())
+    assert w.provider.verify_webhook(*event).relevant and len(double.mutating_calls()) == moved
+    receipt = w.svc.handle_webhook("demo_atelier", *event)
+    assert receipt.state == "applied"
+    pay = w.provider.payments.find(order.provider_order_ref, settled=True)
+    o = w.store.get("orders", order.id)
+    assert o.order_status == "cancelled" and o.payment_status == pay.status == ("refunded" if captured else "voided")
+    assert o.refunded_total == pay.refunded == Money(9612 if captured else 0, "USD")
+    assert w.store.get("operations", res.id).state == ("refunded" if captured else "cancelled")
+    spent = 9612 if captured else 0  # a void is never spend; a refund returns only under refund_credit_back
+    assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000 - spent, "USD")
+
+
+def test_after_a_restart_an_orphan_hold_is_voided_only_when_brand_me_holds_no_order(commerce_store):
+    """FIXTURE DOUBLE, NOT STRIPE. A payment that surfaces after Brand.Me rejected the purchase, at a merchant
+    that has since restarted: the hold is voided (never refunded) and the event is acknowledged, not applied."""
+    from brandme_core.domains.providers.merchant import order_ref_for
+    w = rail_world("stripe_double", commerce_store)
+    _lose_request(w, "authorize")
+    _, res = _buy(w, w.member)
+    w.clock.advance(minutes=3)
+    assert w.svc.reconcile(res.id).state == "rejected"
+    ref = order_ref_for(_base(w, res))
+    double = _restart_merchant(w)
+    _, params, key = double.calls[0]
+    double.create_payment_intent(params, idempotency_key=key)  # the lost request was only delayed
+    receipt = w.svc.handle_webhook("demo_atelier", *_signed_pi_event(w, ref))
+    late = w.provider.payments.find(ref, settled=True)
+    assert receipt.state == "ignored" and w.store.rows("orders") == []
+    assert (late.status, late.release_reason, late.refunded) == ("voided", "orphan_authorization", Money(0, "USD"))
+    assert w.provider.rail_health()["orphans_voided"] == 1
+    assert [m for m, _, _ in double.mutating_calls()].count("create_refund") == 0
+
+
 @pytest.mark.parametrize("lost", ["response", "request"])
 def test_lost_refund_response_is_reconciled_then_resent_with_same_key(w, lost):
     _, res = _buy(w, w.member, line("overshirt"), line("bag"))

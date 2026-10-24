@@ -831,6 +831,15 @@ class CommerceService:
                 self.reconcile(op.id)
             order = self.store.order_by_provider_ref(provider_id, event.provider_order_ref)
             if order is None:
+                # No order holds it here: a merchant may void a hold it no longer tracks (never a refund).
+                release = getattr(conn.adapter, "release_unclaimed", None)
+                try:
+                    unclaimed = bool(release(event.provider_order_ref)) if release is not None else False
+                except ProviderError:
+                    unclaimed = False
+                if unclaimed:  # acknowledged, not applied
+                    receipt = replace(receipt, state="ignored")
+                    self.store.run(lambda tx: tx.put("webhook_receipts", key, receipt))
                 return receipt
         # Event order is not trusted: re-read the source of truth and apply monotonically.
         try:

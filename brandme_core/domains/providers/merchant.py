@@ -429,23 +429,24 @@ class ComposedMerchantAdapter:
         self._reject(rec, rec.reason or "payment_not_authorized")
         return None
 
-    def _void_orphan(self, purpose_ref: str) -> None:
+    def _void_orphan(self, purpose_ref: str, *, refund: bool = True) -> None:
         try:
             pay = self.payments.find(purpose_ref, settled=True)
         except ProviderError:
             return
         if pay is not None:
-            self._release_orphan(pay, base_of(pay.authorize_key) or purpose_ref, swallow=True)
+            self._release_orphan(pay, base_of(pay.authorize_key) or purpose_ref, swallow=True, refund=refund)
 
-    def _release_orphan(self, pay: PaymentState, base: str, *, swallow: bool = False) -> None:
-        """Release a payment no order holds: void a hold, refund what was collected (seq 999)."""
+    def _release_orphan(self, pay: PaymentState, base: str, *, swallow: bool = False, refund: bool = True) -> None:
+        """Release a payment no order holds: void a hold, refund what was collected (seq 999, unless ``refund``
+        is False: the webhook path only ever voids a hold)."""
         try:
             if pay.status in ("authorized", "requires_action"):
                 self.payments.void(pay.payment_ref, idempotency_key=payment_key(base, "void"),
                                    reason="orphan_authorization")
                 with self._lock:
                     self._counters["orphans_voided"] += 1
-            elif pay.status in ("captured", "partially_refunded") and pay.captured > pay.refunded:
+            elif refund and pay.status in ("captured", "partially_refunded") and pay.captured > pay.refunded:
                 self.payments.refund(pay.payment_ref, pay.captured - pay.refunded,
                                      idempotency_key=payment_key(base, "refund", 999))
         except ProviderError:
@@ -738,11 +739,31 @@ class ComposedMerchantAdapter:
         if rec is not None and rec.order_status != "rejected":
             return WebhookEvent(self.provider_id, event_id, event_type, rec.ref, pev.occurred_at, source)
         if pev.environment == self.environment and pev.purpose_ref and ORDER_REF_RE.match(pev.purpose_ref):
-            # This merchant's kind of payment, but no live order holds it (rejected as not found, or the
-            # ledger was lost): release a hold it still has, then acknowledge the event as not ours to apply.
-            self._void_orphan(pev.purpose_ref)
+            if rec is None:
+                # This merchant lost its ledger (a restart) and Brand.Me may still hold the order: a hint like
+                # any other. The service re-reads through lookup(), which releases what is held and reports it;
+                # with no Brand.Me order, the service asks release_unclaimed() to void the hold.
+                return WebhookEvent(self.provider_id, event_id, event_type, pev.purpose_ref, pev.occurred_at,
+                                    source)
+            # Rejected here, so no order holds it: void a hold it still has (a webhook never refunds), then
+            # acknowledge the event as not ours to apply.
+            self._void_orphan(pev.purpose_ref, refund=False)
             return WebhookEvent(self.provider_id, event_id, event_type, pev.purpose_ref, pev.occurred_at, source,
                                 relevant=False)
         with self._lock:  # another app or environment on the same processor account
             self._counters["webhooks_ignored"] += 1
         return WebhookEvent(self.provider_id, event_id, event_type, "", pev.occurred_at, source, relevant=False)
+
+    def release_unclaimed(self, provider_order_ref: str) -> bool:
+        """Brand.Me holds no order for a verified payment event: void a hold that no order here holds either.
+
+        Only a hold is voided (orphan_authorization); collected money is never refunded on the webhook path.
+        False, and nothing moves, while this merchant still tracks a live order for the reference (the event
+        may be ahead of the service's own write).
+        """
+        with self._lock:
+            rec = self._orders.get(provider_order_ref)
+        if (rec is not None and rec.order_status != "rejected") or not ORDER_REF_RE.match(provider_order_ref or ""):
+            return False
+        self._void_orphan(provider_order_ref, refund=False)
+        return True
