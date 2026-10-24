@@ -255,11 +255,19 @@ class McpToolExecutor:
         Validates the invocation envelope, dispatches under the verified principal, and writes one
         audit record: codes, timings and keyed references only, never arguments or raw identifiers.
         Commerce events emitted by the call carry ``correlation_id``. ``step`` is the assistant
-        planning step that proposed the call.
+        planning step that proposed the call. A handler that raises anything else (a store deadline
+        after commit, a bug) still gets its record, ``status: error`` with the fixed code
+        ``internal_error`` and never the exception text, and the exception propagates.
         """
         started = time.monotonic()
         request_id = str(invocation.get("request_id", "")) if isinstance(invocation, dict) else ""
         tool = str(invocation.get("tool", "")) if isinstance(invocation, dict) else ""
+
+        def audit(status: str, code: Optional[str]) -> None:
+            self._audit(principal, request_id=request_id, origin=origin, tool=tool, task_id=task_id, step=step,
+                        status=status, code=code, duration_ms=int((time.monotonic() - started) * 1000),
+                        arguments=invocation.get("arguments") if isinstance(invocation, dict) else None)
+
         try:
             jsonschema.Draft202012Validator(self._invocation_schema,
                                             format_checker=jsonschema.FormatChecker()).validate(invocation)
@@ -267,12 +275,13 @@ class McpToolExecutor:
             status, outcome = 400, ToolOutcome(request_id, tool, "error",
                                                problem=_problem(400, "malformed_invocation", e.message[:300]))
         else:
-            with correlation(correlation_id):
-                status, outcome = self._dispatch(principal, invocation)
-        self._audit(principal, request_id=request_id, origin=origin, tool=tool, task_id=task_id, step=step,
-                    status=outcome.status, code=(outcome.problem or {}).get("code"),
-                    duration_ms=int((time.monotonic() - started) * 1000),
-                    arguments=invocation.get("arguments") if isinstance(invocation, dict) else None)
+            try:
+                with correlation(correlation_id):
+                    status, outcome = self._dispatch(principal, invocation)
+            except BaseException:
+                audit("error", "internal_error")  # the call may have had side effects: it is still on record
+                raise
+        audit(outcome.status, (outcome.problem or {}).get("code"))
         return status, outcome
 
     def audit_refusal(self, principal: Principal, *, tool: str, arguments: Any, code: str, task_id: str,
@@ -287,7 +296,7 @@ class McpToolExecutor:
                arguments: Any) -> None:
         try:
             principal = self.commerce.bind(principal)  # audit the resolved delegation
-        except CommerceError:
+        except Exception:  # unbound or store unavailable: the record is still written, as presented
             pass
         self.audit({
             "request_id": request_id, "origin": origin, "tool": tool, "client_id": principal.client_id,

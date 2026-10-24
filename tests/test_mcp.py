@@ -282,6 +282,43 @@ def test_uuids_are_not_mistaken_for_card_numbers():
     assert _contains_payment_credential({"note": "id 8e694893-5172-4174-836b-6d317187f777 card 4111111111111111"})
 
 
+def test_handler_crash_after_commit_still_writes_one_audit_record(keys):
+    """An unexpected handler exception (a store deadline after commit) still leaves the call's one audit
+    record, with a fixed code and no exception text, even when the store is also down for the audit bind."""
+    from brandme_core.orchestrator.runlog import MemoryRunLog
+    log = MemoryRunLog(strict=True)
+    h = Harness(keys)
+    sinks = [h.audit.append, log.tool_call]
+    h.ex.audit = lambda r: [s(r) for s in sinks]
+    create, bind = h.w.svc.create_cart, h.w.svc.bind
+    down = {"store": False}
+
+    def create_then_time_out(*a, **kw):
+        create(*a, **kw)  # the cart commits ...
+        down["store"] = True
+        raise TimeoutError("deadline exceeded after commit: secret-detail")  # ... then the call times out
+
+    def bind_while_down(p):
+        if down["store"]:
+            raise RuntimeError("store unavailable: secret-detail")
+        return bind(p)
+
+    h.w.svc.create_cart, h.w.svc.bind = create_then_time_out, bind_while_down
+    status, body = h.call("brandme.catalog.search", {"query": "overshirt"})
+    item = next(i for i in body["structured_content"]["items"] if i["source_variant_ref"] == "demo-overshirt-m")
+    with pytest.raises(TimeoutError):
+        h.call("brandme.cart.create", {
+            "provider_id": "demo_atelier", "merchant_id": item["merchant_id"],
+            "lines": [{"variant_id": item["variant_id"], "source_variant_ref": "demo-overshirt-m", "quantity": 1}]},
+            key="cart-key-crash-0001")
+    assert len(h.w.store.rows("carts")) == 1
+    assert [(r["tool"], r["status"], r["code"]) for r in h.audit] == [
+        ("brandme.catalog.search", "ok", None), ("brandme.cart.create", "error", "internal_error")]
+    assert h.audit[1]["delegation_id"] == h.delegation.id and h.audit[1]["origin"] == "mcp"
+    assert [l["status"] for l in log.events("mcp.tool_call")] == ["ok", "error"]
+    assert "secret-detail" not in json.dumps(h.audit) + json.dumps(log.lines)
+
+
 # ---------------------------------------------------- S8: foundation principal
 def test_session_bound_principal_rejected_on_mcp_hop(h):
     status, body = h.call("brandme.catalog.search", {"query": "linen"}, extra={"session_id": "sess-1"})

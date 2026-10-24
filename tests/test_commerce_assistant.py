@@ -334,6 +334,27 @@ def test_planner_exceptions_never_leave_a_task_running():
     assert "detail" not in str([e.data for e in task.events])
 
 
+def test_executed_proposal_whose_handler_crashes_is_still_audited():
+    """I7: every proposal leaves exactly one audit record, including one whose handler raised after a side effect."""
+    w, d, ag, rt, audit = make_audited(AssistanceMode.PREPARE)
+    create = w.svc.create_cart
+
+    def create_then_time_out(*a, **kw):
+        create(*a, **kw)
+        raise TimeoutError("deadline exceeded after commit: secret-detail")
+
+    w.svc.create_cart = create_then_time_out
+    t = rt.create(ag, "linen overshirt", AssistanceMode.PREPARE)
+    with pytest.raises(TimeoutError):
+        rt.run(ag, t.id, DeterministicPlanner())
+    assert t.state == "failed" and t.events[-1].data == {"code": "runtime_failed"}
+    proposed = [e.data["tool"] for e in t.events if e.type == "proposed_action"]
+    assert [r["tool"] for r in audit] == proposed == ["brandme.catalog.search", "brandme.cart.create"]
+    assert [(r["status"], r["code"]) for r in audit] == [("ok", None), ("error", "internal_error")]
+    assert audit[1]["task_ref"] == audit[0]["task_ref"] and audit[1]["origin"] == "assistant"
+    assert len(w.store.rows("carts")) == 1 and "secret-detail" not in json.dumps(audit)
+
+
 def test_runaway_planner_fails_with_budget_exhausted():
     w, d, ag, rt, audit = make_audited(AssistanceMode.RESEARCH)
 
