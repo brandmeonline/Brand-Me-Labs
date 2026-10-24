@@ -48,7 +48,7 @@ def _card_spans(text: str) -> List[Tuple[int, int]]:
         if 13 <= len(d) <= 19 and _luhn(d):
             spans.append((m.start(), m.start() + len(m.group().rstrip(" -"))))
     groups = [(m.start(), m.end()) for m in _DIGITS_RE.finditer(scan)]
-    for i, (start, _end) in enumerate(groups):  # groups of 4+ digits (the last may have 3), any short separator
+    for i, (start, _end) in enumerate(groups):  # groups of 3+ digits, any short separator between them
         digits = ""
         for j in range(i, len(groups)):
             s, e = groups[j]
@@ -59,8 +59,6 @@ def _card_spans(text: str) -> List[Tuple[int, int]]:
                 break
             if len(digits) >= 13 and _luhn(digits):
                 spans.append((start, e))
-            if e - s < 4:
-                break
     merged: List[Tuple[int, int]] = []
     for s, e in sorted(spans):
         if merged and s <= merged[-1][1]:

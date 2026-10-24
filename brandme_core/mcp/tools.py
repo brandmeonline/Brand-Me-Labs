@@ -195,8 +195,8 @@ contains_payment_credential = _contains_payment_credential
 # A label ("cvv", "CVC2", "c.v.v.", "security code", "card verification value", ...) followed within 20
 # non-digit characters by exactly 3-4 digits: "cvv123", "CVV is 123", "my security code is 1234".
 _CSC_RE = re.compile(
-    r"(?i)\b(?:c\.?v\.?[vc]\.?2?|cvn2?|cav2|csc|cid|security\s*(?:code|number)s?"
-    r"|card\s*verification(?:\s*(?:value|code|number))?)(?![a-z])\D{0,20}?(?<!\d)\d{3,4}(?!\d)")
+    r"(?i)\b(?:c\.?v\.?[vc]\.?2?s?|cv2s?|cvn2?|cav2|cscs?|cids?|security[\s_-]*(?:code|number)s?"
+    r"|card[\s_-]*verification(?:[\s_-]*(?:value|code|number))?)(?![a-z])\D{0,40}?(?<!\d)\d{3,4}(?!\d)")
 
 
 def contains_card_security_code(value: Any) -> bool:

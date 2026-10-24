@@ -423,25 +423,32 @@ def test_card_security_code_in_arguments_is_rejected(h):
 
 
 def test_card_screen_is_separator_agnostic_and_keeps_identifiers():
-    """Card numbers and security codes are found whatever the separator or phrasing; identifiers are not cards."""
+    """Card numbers and security codes in these separators and phrasings are found; identifiers are not cards.
+
+    Known limits (BM-COM-018): a bare unlabelled security code is undetectable, and a card number split into
+    groups of one or two digits is not found."""
     from brandme_core.mcp.tools import contains_card_security_code as csc
     from brandme_core.mcp.tools import contains_payment_credential as pan
     from brandme_core.mcp.tools import mask_card_security_codes, mask_payment_credentials
     for text in ("4111/1111/1111/1111", "4111.1111.1111.1111", "4111, 1111, 1111, 1111", "4111  1111  1111  1111",
                  "4111 - 1111 - 1111 - 1111", "size 10, 4111/1111/1111/1111", "qty 2, 4111 1111 1111 1111",
-                 "4111 1111 1111 1111", "4111-1111-1111-1111", "card4111111111111111", "3782 822463 10005"):
+                 "4111 1111 1111 1111", "4111-1111-1111-1111", "card4111111111111111", "3782 822463 10005",
+                 "411/111/111/111/1111", "411.111.111.111.1111"):
         assert pan({"query": text}), text
         masked = mask_payment_credentials(f"linen {text} shirt")
         assert "[card number removed]" in masked and "1111" not in masked and "822463" not in masked, text
     for text in ("cvv123", "CVV is 123", "cvv code: 123", "my security code is 1234", "my cvv for this card is 123",
-                 "shirt CVC2: 4567", "c.v.v. 123", "card verification value 321"):
+                 "shirt CVC2: 4567", "c.v.v. 123", "card verification value 321", "CV2 123", "cv2: 123",
+                 "security-code: 1234", "CVVs 123", "the CVV number on the back of the card is 123"):
         assert csc({"query": text}), text
         masked = mask_card_security_codes(f"linen shirt, {text}, thanks")
         assert "[card security code removed]" in masked and not any(c.isdigit() for c in masked), text
     uid = str(uuid.uuid4())
     for text in (uid, f"order {uid}", "demo-order-fedcba9876543210fedcba98", "sku-1234567890123",
                  "order placed 2026-10-23 18:37:41", "sizes 32/34, 30/32, 28/30, 36/34", "budget 100-150, size 8/10/12",
-                 "size 123 linen", "acid wash 501", "apple cider 1234", "cvv 12345 is not a code"):
+                 "size 123 linen", "acid wash 501", "apple cider 1234", "cvv 12345 is not a code",
+                 "order cv-2026-10 for 3 shirts 120 USD", "my cv has 2 pages and 300 words",
+                 "call 415-555-0123 at 10:30"):
         assert not pan(text) and not csc(text), text
         assert mask_card_security_codes(mask_payment_credentials(text)) == text
 
