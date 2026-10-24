@@ -47,6 +47,7 @@ from brandme_core.domains.persona.kernel import (
     member_active,
     new_id,
     parse_iso,
+    processing_allowed,
     query,
     reject_unknown_keys,
     require_scope,
@@ -386,6 +387,27 @@ class MediaService:
         require_scope(principal, "wardrobe:write")
         job_id = require_uuid(job_id, name="job_id")
         m = principal.member_id
+        # Storage-side expiry stops before the save commits: a failure here leaves an
+        # unsaved (still expiring) preview, never a saved one the bucket would delete.
+        # The save's own checks run first, so a preview the transaction would refuse
+        # (expired, frozen) keeps its backstop. Only a failed commit can leave a retained
+        # but unsaved preview, and the app sweeper still deletes that one at expiry.
+        def saveable_ref(s) -> Optional[str]:
+            j = self._job(s, m, job_id)
+            if j is None or j["saved"] or j["state"] != "succeeded" or not j["output_media_ref"]:
+                return None
+            now = server_now(s)
+            out = self._media(s, m, j["output_media_ref"])
+            if out is None or out["deleted_at"] is not None or j["expires_at"] <= now:
+                return None
+            return out["storage_ref"] if processing_allowed(s, m, "media.tryon_media", basis_time=now) else None
+
+        ref = run_read(self.db, saveable_ref)
+        if ref is not None:
+            try:
+                self.store.retain(ref)
+            except KeyError:
+                raise DetailedInvalidTransition("only a finished, unexpired preview can be saved", code="not_saveable")
 
         def tx(txn, ctx: CommandContext):
             j = self._job(txn, m, job_id)
@@ -631,11 +653,32 @@ class MediaService:
         return {"media_expired": len(refs), "blobs_purged": self._purge(refs)}
 
     def purge_pending(self, *, limit: int = 200) -> int:
-        """Retry blob deletion for tombstoned objects whose purge did not complete."""
+        """Retry blob deletion for tombstoned objects whose purge did not complete,
+        and repeat purges made while an input's upload target could still recreate it."""
         rows = run_read(self.db, lambda s: query(
             s, "SELECT member_id, media_id, storage_ref FROM MediaObjects@{FORCE_INDEX=MediaObjectsByPurge} "
                "WHERE purged_at IS NULL AND deleted_at IS NOT NULL LIMIT @l", {"l": limit}, {"l": INT}))
-        return self._purge([tuple(r) for r in rows])
+        return self._purge([tuple(r) for r in rows]) + self._purge_after_replay_window(limit)
+
+    def _purge_after_replay_window(self, limit: int) -> int:
+        """An input purged before its upload target expired is purged once more after
+        that. The new purged_at falls after the window, so each row is revisited once.
+        Rows purged more than a day ago are left to the bucket's lifecycle backstop."""
+        window = int(self.store.replay_window.total_seconds())
+        if window <= 0:
+            return 0
+        rows = run_read(self.db, lambda s: query(
+            s, "SELECT member_id, media_id, storage_ref FROM MediaObjects@{FORCE_INDEX=MediaObjectsByPurge} "
+               "WHERE purged_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) AND kind = 'tryon_input' "
+               "AND purged_at < TIMESTAMP_ADD(created_at, INTERVAL @w SECOND) "
+               "AND TIMESTAMP_ADD(created_at, INTERVAL @w SECOND) <= CURRENT_TIMESTAMP() LIMIT @l",
+            {"w": window, "l": limit}, {"w": INT, "l": INT}))
+        for member_id, media_id, ref in rows:
+            self.store.delete(ref)
+            run_txn(self.db, lambda t, m=member_id, i=media_id: t.execute_update(
+                "UPDATE MediaObjects SET purged_at=CURRENT_TIMESTAMP() WHERE member_id=@m AND media_id=@i",
+                params={"m": m, "i": i}, param_types={"m": STR, "i": STR}))
+        return len(rows)
 
     def jobs_for(self, member_id: str) -> Sequence[Dict[str, Any]]:
         return run_read(self.db, lambda s: [dict(zip(JOB_COLS, r)) for r in query(

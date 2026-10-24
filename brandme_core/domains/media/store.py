@@ -2,17 +2,18 @@
 App-owned media storage interface (ch.03: object storage holds media; signed,
 short-lived, constrained upload URLs; never a public photo URL).
 
-Production wires a private object-store adapter (e.g. GCS V4 signed URLs).
-None is configured in this repository, so ``MemoryMediaStore`` is the only
-implementation here. It is labelled ``simulated`` and exists for tests and
-local demos; it is not evidence of production storage or deletion.
+``gcs_store.GcsMediaStore`` is the private-bucket adapter (V4 signed upload
+URLs, lifecycle backstop, purge). It is proven against a local emulator only;
+no bucket is configured in this repository. ``MemoryMediaStore`` is labelled
+``simulated`` and exists for tests and local demos. It is not evidence of
+production storage or deletion.
 """
 
 from __future__ import annotations
 
 import hashlib
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Optional, Protocol, Tuple
 
 ALLOWED_TYPES = {"image/jpeg": (b"\xff\xd8\xff",), "image/png": (b"\x89PNG\r\n\x1a\n",), "image/webp": (b"RIFF",)}
@@ -34,11 +35,13 @@ def sniff(data: bytes, content_type: str) -> bool:
 class MediaStore(Protocol):
     name: str
     simulated: bool
+    replay_window: timedelta  # how long a minted upload target can recreate its object after a delete
 
     def upload_target(self, ref: str, *, content_type: str, max_bytes: int, expires_at: datetime) -> Dict[str, object]: ...
     def stat(self, ref: str) -> Optional[Tuple[int, str]]: ...
     def read(self, ref: str) -> bytes: ...
     def write(self, ref: str, data: bytes, content_type: str) -> None: ...
+    def retain(self, ref: str) -> None: ...  # a saved object leaves storage-side expiry; KeyError if missing
     def delete(self, ref: str) -> bool: ...
 
 
@@ -47,11 +50,13 @@ class MemoryMediaStore:
 
     name = "memory"
     simulated = True
+    replay_window = timedelta(0)  # upload tokens are single use
 
     def __init__(self) -> None:
         self.objects: Dict[str, Tuple[bytes, str]] = {}
         self._tokens: Dict[str, Tuple[str, str, int, datetime]] = {}
         self.deleted: list = []
+        self.retained: set = set()
 
     def upload_target(self, ref: str, *, content_type: str, max_bytes: int, expires_at: datetime) -> Dict[str, object]:
         token = secrets.token_urlsafe(24)
@@ -76,6 +81,11 @@ class MemoryMediaStore:
 
     def write(self, ref: str, data: bytes, content_type: str) -> None:
         self.objects[ref] = (data, content_type)
+
+    def retain(self, ref: str) -> None:
+        if ref not in self.objects:
+            raise KeyError(ref)
+        self.retained.add(ref)
 
     def delete(self, ref: str) -> bool:
         self.deleted.append(ref)
