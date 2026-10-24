@@ -102,6 +102,7 @@ class MerchantOrder:
     exchange_seq: int = 0
     # Fulfillment cancel key -> the refund key its release sent (None: no money call). Written before I/O.
     releases: Dict[str, Optional[str]] = field(default_factory=dict)
+    refused: Set[str] = field(default_factory=set)  # money op keys the processor refused without executing
 
 
 class ComposedMerchantAdapter:
@@ -237,6 +238,7 @@ class ComposedMerchantAdapter:
                 raise _unknown("payment outcome unknown") from None  # stays pending; settled by reading it
             with self._lock:
                 rec.pending.pop(op.key, None)
+                rec.refused.add(op.key)
                 self._counters["money_ops_refused"] += 1
             raise
         except Exception:
@@ -606,8 +608,11 @@ class ComposedMerchantAdapter:
                 sent = rec.releases[once_per]
                 if sent is not None and sent in rec.pending:  # settled by _settle_pending, never re-taken
                     raise _unknown("payment outcome pending")
-                return
-        owed = self.fulfillment.record(rec.ref).owed_units()
+                if sent is None or sent not in rec.refused:
+                    return  # the release this key took was applied
+                rec.releases.pop(once_per)  # refused when it was re-sent: nothing was taken, so take it again
+        record = self.fulfillment.record(rec.ref)
+        owed = record.owed_units()
         if pay.status == "authorized":
             if owed == 0:
                 self._void(rec, "merchant_void")  # one void key per order: a retry cannot void twice
@@ -619,6 +624,9 @@ class ComposedMerchantAdapter:
                     if once_per is not None:
                         rec.releases[once_per] = None
         elif pay.status in ("captured", "partially_refunded"):
+            if owed == 0 and not record.shipped_any:
+                with self._lock:  # every unit was cancelled before it shipped: the order is cancelled
+                    rec.order_status = "cancelled"
             remaining = pay.captured.amount_minor - pay.refunded.amount_minor
             amount = remaining if owed == 0 else min(value, remaining)  # the last units return exactly the rest
             if amount > 0:

@@ -665,9 +665,12 @@ def _assert_no_processor_ids(w):
         blobs.append(json.dumps(mcp._op_status(w.member, op), default=str))
     blobs += [json.dumps(order_wire(o)) for o in w.store.rows("orders")]
     blobs += [repr(o.evidence_refs) for o in w.store.rows("orders")]
-    leak = re.compile(r"(?<![A-Za-z0-9])(pi|pm|ch|re|evt)_[A-Za-z0-9]{6,}|simpay_|_secret_|4242")
+    from brandme_core.domains.providers.redaction import contains_card_number
+    # A bare "4242" also occurs inside random hex ids, so the last-four check is anchored.
+    leak = re.compile(r"(?<![A-Za-z0-9])(pi|pm|ch|re|evt)_[A-Za-z0-9]{6,}|simpay_|_secret_"
+                      r"|(?<![0-9A-Za-z])4242(?![0-9A-Za-z])")
     for b in blobs:
-        assert not leak.search(b), b[:300]
+        assert not leak.search(b) and not contains_card_number(b), b[:300]
 
 
 def test_processor_response_lost_reconciles_to_one_payment(w):
@@ -900,6 +903,52 @@ def test_units_are_never_cancelled_while_a_capture_is_unsettled(w, path):
     owed = 0 if path == "member" else quote.total.amount_minor - BAG
     assert pay.captured.amount_minor - pay.refunded.amount_minor == owed  # never charged for a cancelled unit
     assert _calls(w, "capture") == [("capture", payment_key(_base(w, res), "capture"))] * 2
+
+
+def test_a_refund_refused_when_re_sent_is_taken_again_by_the_same_cancellation_key(w, monkeypatch):
+    """A lost refund whose settle-time re-send the processor refuses (nothing taken) is not 'done': the
+    member's retry under the same Idempotency-Key refunds the cancelled units exactly once."""
+    _, res = _buy(w, w.member, line("overshirt"), line("bag"))
+    order = _order(w, res)
+    ref = order.provider_order_ref
+    w.provider.arm(Behavior.PARTIAL_FULFILLMENT, source_variant_ref="demo-bag-m", quantity=0)
+    _hook(w, w.provider.ship(ref))  # captured in full; the bag has not shipped
+    _lose_request(w, "refund")  # refund:1 never reaches the processor
+    with pytest.raises(ProviderError):
+        w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    w.clock.advance(minutes=3)
+    real, refused = w.provider.payments.refund, []
+
+    def throttled(*a, **k):  # the settle-time re-send of refund:1 is refused, not executed
+        monkeypatch.setattr(w.provider.payments, "refund", real)
+        refused.append(k.get("idempotency_key"))
+        raise ProviderError(ProviderErrorKind.THROTTLED, "rate limited")
+    monkeypatch.setattr(w.provider.payments, "refund", throttled)
+    w.provider.lookup(ref)  # any re-read after the window re-sends the pending refund; this one is refused
+    assert refused == [payment_key(_base(w, res), "refund", 1)]
+    out = w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    assert _held(w, ref).refunded == Money(BAG, "USD")  # refunded once, under a new key
+    assert out["units_cancelled"] == 1 and w.store.get("orders", order.id).refunded_total == Money(BAG, "USD")
+    assert w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY) == out  # replay: no more
+
+
+def test_a_full_cancel_that_waited_for_a_capture_still_cancels_the_order(w):
+    """Inside the settle window a cancel waits for the lost capture; after it lands, the cancelled order reads
+    cancelled (refunded in full), never 'accepted'."""
+    _, res = _buy(w, w.member)
+    order = _order(w, res)
+    _lose_request(w, "capture")
+    with pytest.raises(ProviderError):
+        w.provider.ship(order.provider_order_ref)
+    with pytest.raises(ProviderError):
+        w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    w.clock.advance(minutes=3)
+    out = w.svc.request_cancellation(w.member, order.id, idempotency_key=CANCEL_KEY)
+    pay = _held(w, order.provider_order_ref)
+    assert pay.captured.amount_minor == pay.refunded.amount_minor > 0  # the card is made whole
+    o = w.store.get("orders", order.id)
+    assert (out["status"], o.order_status, o.payment_status) == ("cancelled", "cancelled", "refunded")
+    assert w.store.get("operations", res.id).state == "refunded"  # through cancelled, never stuck at cancel_requested
 
 
 def test_an_absent_money_op_past_the_key_horizon_waits_for_an_operator(w):
