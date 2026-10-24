@@ -78,6 +78,8 @@ def test_dev_key_outside_dev_refuses_boot():
     for env, code in (({"BRANDME_MODE": "production", "BRANDME_ASSISTANT_PLANNER": "anthropic",
                         "BRANDME_DEV_ANTHROPIC_API_KEY": KEY}, "model_planner_dev_only"),
                       ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY}, "mode_required"),
+                      ({"BRANDME_MODE": "production", "BRANDME_DEV_ANTHROPIC_API_KEY": KEY}, "model_planner_dev_only"),
+                      ({"BRANDME_MODE": "sandbox", "BRANDME_DEV_ANTHROPIC_API_KEY": KEY}, "model_planner_dev_only"),
                       ({"BRANDME_MODE": "development", "BRANDME_LOG_REF_KEY": "short"}, "log_ref_key_invalid")):
         with pytest.raises(PlannerConfigError) as e:
             _compose(env)

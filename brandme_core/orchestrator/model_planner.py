@@ -260,10 +260,12 @@ def planner_from_env(env: Optional[Mapping[str, str]] = None, *, run_log: Option
                      clock: Callable[[], float] = time.monotonic) -> Planner:
     """The planner for this process, decided once at startup (reuse it: it holds the SDK client).
 
+    * A dev key belongs in development or demo only. Set with ``BRANDME_MODE`` unset it refuses
+      to boot (``mode_required``); set in sandbox or production it refuses to boot
+      (``model_planner_dev_only``), whatever the planner choice, so a misplaced key is surfaced.
     * ``BRANDME_ASSISTANT_PLANNER`` unset: the deterministic planner, unless a dev key is set in
-      development or demo, which selects the model planner. A dev key with ``BRANDME_MODE`` unset
-      refuses to boot; a dev key in sandbox or production is not used.
-    * ``deterministic``: always the deterministic planner.
+      development or demo, which selects the model planner.
+    * ``deterministic``: the deterministic planner.
     * ``anthropic``: the model planner, development/demo only; anything missing refuses to boot.
 
     Reads only Brand.Me variables: the key, ``BRANDME_MODE``, ``BRANDME_ASSISTANT_PLANNER``,
@@ -274,15 +276,21 @@ def planner_from_env(env: Optional[Mapping[str, str]] = None, *, run_log: Option
     key = env.get(KEY_ENV) or ""
     if choice not in ("", "deterministic", "anthropic"):
         raise PlannerConfigError("planner_unknown")
+    mode_set = bool((env.get("BRANDME_MODE") or "").strip())
+    if key:
+        if not mode_set:
+            raise PlannerConfigError("mode_required")
+        if _mode(env) not in DEV_MODES:
+            raise PlannerConfigError("model_planner_dev_only")
     if choice == "deterministic":
         return DeterministicPlanner()
-    if not (env.get("BRANDME_MODE") or "").strip():
-        if choice == "anthropic" or key:
+    if not mode_set:
+        if choice == "anthropic":
             raise PlannerConfigError("mode_required")
         return DeterministicPlanner()
     mode = _mode(env)
     if choice == "":
-        if not key or mode not in DEV_MODES:
+        if not key:
             return DeterministicPlanner()
     elif mode not in DEV_MODES:
         raise PlannerConfigError("model_planner_dev_only")

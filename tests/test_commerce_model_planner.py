@@ -636,8 +636,7 @@ def test_results_stay_valid_json_and_hide_references_the_model_never_needs():
 # ------------------------------------------------------------------- configuration
 def test_without_a_dev_key_the_deterministic_planner_runs_and_the_sdk_is_not_imported():
     assert isinstance(planner_from_env({}), DeterministicPlanner)
-    assert isinstance(planner_from_env({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "production"}),
-                      DeterministicPlanner)  # dev form only: a dev key outside dev/demo is not used
+    assert isinstance(planner_from_env({"BRANDME_MODE": "production"}), DeterministicPlanner)
     assert isinstance(planner_from_env({"ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "development"}),
                       DeterministicPlanner)  # the session's variable is not ours
     assert isinstance(planner_from_env({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "development"}),
@@ -650,6 +649,12 @@ def test_without_a_dev_key_the_deterministic_planner_runs_and_the_sdk_is_not_imp
 
 @pytest.mark.parametrize("env,code", [
     ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY}, "mode_required"),
+    ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_ASSISTANT_PLANNER": "deterministic"}, "mode_required"),
+    # A dev key outside development/demo refuses boot whatever the planner choice: it is surfaced, not ignored.
+    ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "production"}, "model_planner_dev_only"),
+    ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "sandbox"}, "model_planner_dev_only"),
+    ({"BRANDME_DEV_ANTHROPIC_API_KEY": KEY, "BRANDME_MODE": "production", "BRANDME_ASSISTANT_PLANNER": "deterministic"},
+     "model_planner_dev_only"),
     ({"BRANDME_ASSISTANT_PLANNER": "anthropic"}, "mode_required"),
     ({"BRANDME_ASSISTANT_PLANNER": "anthropic", "BRANDME_MODE": "production", "BRANDME_DEV_ANTHROPIC_API_KEY": KEY},
      "model_planner_dev_only"),
