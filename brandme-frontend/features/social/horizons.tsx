@@ -17,7 +17,7 @@ export function SocialHorizon({ active, children }: { active: Horizon; children?
       {horizons.map(horizon => <Link key={horizon.id} href={`/social/${horizon.id}`}
         aria-current={active === horizon.id ? 'page' : undefined}>{horizon.label}</Link>)}
     </nav>
-    <div className="bm-social-streams">
+    <div className="bm-social-stream-container"><div className="bm-social-streams">
       <section aria-labelledby={`horizon-${active}`} className="bm-flow-stack">
         <h2 id={`horizon-${active}`} className="bm-editorial-title">{horizons.find(horizon => horizon.id === active)!.label}</h2>
         {children ?? <div className="bm-horizon-unavailable">
@@ -35,6 +35,6 @@ export function SocialHorizon({ active, children }: { active: Horizon; children?
         <p>This separate stream is not available in the preview yet.</p>
         <Link className="bm-text-link" href="/discover">Explore Shops</Link>
       </aside>
-    </div>
+    </div></div>
   </>
 }

@@ -461,6 +461,14 @@ Flow, editorial publication, licensed runway-media delivery, house subscriptions
 
 New navigation and persona visuals change existing screenshots. Replacement baselines require human review before this preview can pass the visual gate or merge into main. Device and screen-reader sessions remain **not_run**, with dates pending founder input. No push, merge or deployment is performed by this preview stage.
 
+### Preview layout follow-up
+
+- Social now uses parallel main/brand columns when the available content area reaches 46 rem. The brand column is 15 rem; the main control area remains at least 440 px in the 1440 px browser check. Narrower content and enlarged text retain the stacked layout.
+- Added keyboard checks for Tab / Shift+Tab traversal and Enter activation between Editorial, Flow and Now. The active horizon updates after navigation.
+- Added viewport captures of the brand/badge midsection and the final control at 100% and 200% text, supplementing the full-page overview. The test waits for the measured navigation height and verifies the final control and page end clear the actual fixed bar, with no horizontal overflow.
+- Rebuilt frontend: **passed**. UI behavior tests: **18 passed**. Expanded browser suite: **passed** at all four widths and both themes; 32 axe scans, 48 mobile final-control/page-end checks, keyboard navigation and desktop parallel-column checks all passed. No runtime errors. Protected spatial files, actual-data limitations and reviewed baselines are unchanged.
+- Updated review evidence: `C:\Users\Adamus\Documents\Codex\2026-10-24\new-chat-2\evidence\rooms-preview-refinement\experience-preview\` contains `results.json` and 128 captures. Examples: `now-1440-light.png`, `private-persona-390-light-midsection-200.png`, `flow-320-light-end-200.png`. This is automated browser evidence with HTTP test doubles; `visual_approval` remains **not_run**. No human baseline approval, device session or screen-reader session is implied.
+
 Credential manifest update: no credentials created or copied. Existing authenticated Git access is reused; dependency downloads and local disposable tooling require no new application credential.
 
 ## Stage 15 — Main integration prepared after the prerequisite repair
