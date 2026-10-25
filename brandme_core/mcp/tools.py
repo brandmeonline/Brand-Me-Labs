@@ -252,6 +252,7 @@ class McpToolExecutor:
         try:
             principal = self.verifier.verify(assertion)
         except AuthError as e:
+            self._audit_unauthenticated(invocation, code=e.error)
             return e.status, {"problem": _problem(e.status, e.error, e.description),
                               "www_authenticate": e.www_authenticate()}
         request_id = invocation.get("request_id") if isinstance(invocation, dict) else None
@@ -300,6 +301,16 @@ class McpToolExecutor:
         as ``call``'s, ``status: refused``): every proposal leaves exactly one record."""
         self._audit(principal, request_id=None, origin=origin, tool=tool, task_id=task_id, step=step,
                     status="refused", code=code, duration_ms=0, arguments=arguments)
+
+    def _audit_unauthenticated(self, invocation: Any, *, code: str) -> None:
+        """The record for an invocation refused before any principal was verified (a forged, replayed,
+        expired or wrong-audience assertion): ``status: refused`` with no member, client or delegation."""
+        inv = invocation if isinstance(invocation, dict) else {}
+        self.audit({
+            "request_id": str(inv.get("request_id", "")), "origin": "mcp", "tool": str(inv.get("tool", "")),
+            "client_id": None, "member_ref": None, "delegation_id": None, "task_ref": None, "step": None,
+            "status": "refused", "code": code, "duration_ms": 0, "arguments_digest": log_ref("args", inv.get("arguments")),
+        })
 
     def _audit(self, principal: Principal, *, request_id: Optional[str], origin: str, tool: str,
                task_id: Optional[str], step: Optional[int], status: str, code: Optional[str], duration_ms: int,

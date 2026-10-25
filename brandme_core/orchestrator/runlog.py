@@ -40,6 +40,7 @@ _SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 _API_VERSION = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _PROMPT_VERSION = re.compile(r"^[0-9a-f]{12}$")
 _CLIENT_ID = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+_OPERATION = re.compile(r"^[a-z]+(?:\.[a-z_]+){1,2}$")
 
 STOP_REASONS = frozenset({"end_turn", "max_tokens", "stop_sequence", "tool_use", "pause_turn", "refusal",
                           "model_context_window_exceeded", "other"})
@@ -80,6 +81,10 @@ def _audited_tool(v: Any) -> bool:
     return _proposal_tool(v) or v == UNRECOGNIZED
 
 
+def _operation(v: Any) -> bool:
+    return v == UNRECOGNIZED or _rx(_OPERATION)(v)
+
+
 _MODES = ("research", "prepare", "buy_within_rules")
 # field -> (validator, nullable)
 Spec = Dict[str, Tuple[Callable[[Any], bool], bool]]
@@ -117,11 +122,27 @@ EVENTS: Dict[str, Tuple[str, Spec]] = {
     }),
     "mcp.tool_call": ("security_audit_180d", {
         "request_id": (_uuid, True), "tool": (_audited_tool, False), "client_id": (_rx(_CLIENT_ID), True),
-        "member_ref": (_rx(_REF16), False), "task_ref": (_rx(_REF16), True), "delegation_ref": (_rx(_REF16), True),
+        "member_ref": (_rx(_REF16), True), "task_ref": (_rx(_REF16), True), "delegation_ref": (_rx(_REF16), True),
         "step": (_count, True), "status": (_one_of({"ok", "error", "refused"}), False),
         "code": (_rx(_CODE), True), "origin": (_one_of({"mcp", "assistant"}), False),
         "duration_ms": (_count, False), "arguments_digest": (_rx(_REF16), False),
     }),
+    # An agent's request to the commerce domain's HTTP API (``CommerceHttpApi``): operation and outcome only.
+    "commerce.agent_request": ("security_audit_180d", {
+        "request_id": (_uuid, True), "operation": (_operation, False), "client_id": (_rx(_CLIENT_ID), True),
+        "member_ref": (_rx(_REF16), True), "delegation_ref": (_rx(_REF16), True),
+        "status": (_one_of({"ok", "error", "refused"}), False), "code": (_rx(_CODE), True),
+        "duration_ms": (_count, False),
+    }),
+}
+# Cross-field rules. A tool call with no member is only an external invocation refused before any
+# principal was verified; every other record names its member.
+RULES: Dict[str, Callable[[Mapping[str, Any]], bool]] = {
+    "mcp.tool_call": lambda f: f["member_ref"] is not None or (
+        f["origin"] == "mcp" and f["status"] == "refused" and f["client_id"] is None
+        and f["delegation_ref"] is None and f["task_ref"] is None),
+    "commerce.agent_request": lambda f: f["member_ref"] is not None or (
+        f["status"] == "refused" and f["client_id"] is None and f["delegation_ref"] is None),
 }
 REJECTED = "assistant.runlog_rejected"
 _ENVIRONMENTS = frozenset({"demo", "development", "sandbox", "production"})
@@ -140,13 +161,15 @@ class RunLog(Protocol):
 
     def tool_call(self, audit_record: Mapping[str, Any]) -> None: ...
 
+    def agent_request(self, audit_record: Mapping[str, Any]) -> None: ...
+
 
 def _level(event: str, f: Mapping[str, Any]) -> str:
     if event == "assistant.model_call":
         return "info" if f.get("code") == "ok" else "warning"
     if event == "assistant.task_end":
         return "warning" if f.get("state") == "failed" else "info"
-    if event == "mcp.tool_call":
+    if event in ("mcp.tool_call", "commerce.agent_request"):
         return "info" if f.get("status") == "ok" else "warning"
     return "warning" if event == REJECTED else "info"
 
@@ -170,6 +193,22 @@ def tool_call_fields(record: Mapping[str, Any]) -> Dict[str, Any]:
         "code": None if code is None else (code if _rx(_CODE)(code) else UNRECOGNIZED),
         "origin": record.get("origin"), "duration_ms": record.get("duration_ms"),
         "arguments_digest": record.get("arguments_digest"),
+    }
+
+
+def agent_request_fields(record: Mapping[str, Any]) -> Dict[str, Any]:
+    """A ``CommerceHttpApi`` audit record as a run-log line, sanitized like ``tool_call_fields``."""
+    operation, code, client = record.get("operation"), record.get("code"), record.get("client_id")
+    delegation = record.get("delegation_id")
+    return {
+        "request_id": record.get("request_id") if _uuid(record.get("request_id")) else None,
+        "operation": operation if _rx(_OPERATION)(operation) else UNRECOGNIZED,
+        "client_id": None if client is None else (client if _rx(_CLIENT_ID)(client) else UNRECOGNIZED),
+        "member_ref": record.get("member_ref"),
+        "delegation_ref": log_ref("delegation", delegation) if isinstance(delegation, str) and delegation else None,
+        "status": record.get("status"),
+        "code": None if code is None else (code if _rx(_CODE)(code) else UNRECOGNIZED),
+        "duration_ms": record.get("duration_ms"),
     }
 
 
@@ -202,10 +241,18 @@ class JsonLineRunLog:
             fields = {}
         self._emit("mcp.tool_call", fields)
 
+    def agent_request(self, audit_record: Mapping[str, Any]) -> None:
+        """A ``CommerceHttpApi`` audit sink."""
+        try:
+            fields = agent_request_fields(audit_record)
+        except Exception:
+            fields = {}
+        self._emit("commerce.agent_request", fields)
+
     # -- emission ----------------------------------------------------------------
     def _emit(self, event: str, fields: Mapping[str, Any]) -> None:
         retention, spec = EVENTS[event]
-        if not self._valid(spec, fields):
+        if not self._valid(spec, fields) or not RULES.get(event, lambda f: True)(fields):
             self._violation(event)
             return
         self._write(self._line(event, retention, dict(fields)))
@@ -275,4 +322,7 @@ class NullRunLog:
         pass
 
     def tool_call(self, audit_record: Mapping[str, Any]) -> None:
+        pass
+
+    def agent_request(self, audit_record: Mapping[str, Any]) -> None:
         pass

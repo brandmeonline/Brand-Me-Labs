@@ -1093,7 +1093,7 @@ def test_stripe_event_through_domain_http_route(commerce_store):
     key = ec.generate_private_key(ec.SECP256R1())
     api = CommerceHttpApi(service=w.svc, verifier=ExecutorAssertionVerifier(
         gateway_issuer=gw, keys={"gw-1": key.public_key()}, environment="development", audience=DOMAIN_AUDIENCE,
-        allow_session=True))
+        allow_session=True), audit=lambda record: None)
     client = TestClient(create_commerce_app(api))
 
     def post(headers, body):  # what the gateway relay sends: the raw body and the allowlisted signature header

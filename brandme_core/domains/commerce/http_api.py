@@ -16,12 +16,19 @@ integration work.
   operation needs them.
 * **Errors:** ``application/problem+json`` from ``DomainError`` (status, code,
   detail). Stack traces and provider bodies are never returned.
+* **Audit:** every request made by an agent principal, and every request refused
+  before a principal is verified, writes one record to the required ``audit`` sink
+  (``RunLog.agent_request``): the operation, outcome code and keyed references,
+  never arguments. A member's own requests are recorded by the domain records they
+  create (approvals, operations, events).
 """
 
 from __future__ import annotations
 
 import base64
 import json
+import time
+import uuid
 from dataclasses import replace
 from typing import Any, Callable, Dict, Mapping, Optional, Tuple
 
@@ -35,12 +42,13 @@ from brandme_core.domains.providers.contracts import CartLineRequest, ProviderEr
 from brandme_core.domains.providers.registry import RegistryError
 from brandme_core.domains.providers.setup import SETUP_UPDATE_FIELDS, ProviderSetupService
 from brandme_core.mcp.authz import DOMAIN_AUDIENCE, AuthError, ExecutorAssertionVerifier
+from brandme_core.mcp.refs import log_ref
 from brandme_core.orchestrator.runtime import IdempotencyReuse, TaskConstraints
 
 from .delegation import AssistanceMode, DelegationLimits
 from .errors import AssistantBusy, Forbidden, IdempotencyConflict, InvalidRequest, NotFound
 from .money import Money, MoneyError
-from .principal import Principal, is_first_party
+from .principal import Principal, is_agent, is_first_party
 from .records import ApprovalChallenge, Cart, Order, PurchaseApproval, PurchaseOperation
 from .service import CommerceService, _uuid_or_none, correlation
 
@@ -136,16 +144,20 @@ def _summary_state(conn, capability: str) -> str:
 
 # ------------------------------------------------------------------- operations
 Handler = Callable[[Principal, Dict[str, Any], Mapping[str, str]], Tuple[int, Any]]
+AuditSink = Callable[[Dict[str, Any]], None]
 
 
 class CommerceHttpApi:
-    def __init__(self, *, service: CommerceService, verifier: ExecutorAssertionVerifier,
+    def __init__(self, *, service: CommerceService, verifier: ExecutorAssertionVerifier, audit: AuditSink,
                  runtime: Any = None, planner_factory: Optional[Callable[[], Any]] = None,
                  setup_store: Any = None, task_runner: Any = None):
         if verifier.audience != DOMAIN_AUDIENCE or not verifier.allow_session:
             raise ValueError("the commerce domain hop needs a verifier for brandme:commerce-domain with sessions")
+        if not callable(audit):
+            raise ValueError("the commerce domain hop needs an audit sink for agent requests")
         self.svc = service
         self.verifier = verifier
+        self.audit = audit
         self.runtime = runtime
         self.planner_factory = planner_factory
         # Runs planners marked ``runs_in_background`` (model runs) off the request (``BackgroundRunner``).
@@ -189,9 +201,55 @@ class CommerceHttpApi:
     # -- dispatch ------------------------------------------------------------
     def dispatch(self, operation: str, authorization: Optional[str], body: bytes,
                  headers: Mapping[str, str]) -> Tuple[int, Any, Dict[str, str]]:
-        if not authorization or not authorization.startswith("Bearer "):
-            raise AuthError(401, "invalid_token", "gateway assertion required")
-        principal = self.verifier.verify(authorization[7:])
+        """Verifies the gateway assertion and runs the operation. An agent's request leaves exactly one
+        audit record whatever its outcome, including a handler that raised; so does a request refused
+        before any principal was verified."""
+        try:
+            if not authorization or not authorization.startswith("Bearer "):
+                raise AuthError(401, "invalid_token", "gateway assertion required")
+            principal = self.verifier.verify(authorization[7:])
+        except AuthError as e:
+            self._audit(None, operation, headers, "refused", e.error, 0)
+            raise
+        if not is_agent(principal):
+            return self._run(principal, operation, body, headers)
+        started, outcome = time.monotonic(), ("error", "internal_error")
+        try:
+            status, payload, extra = self._run(principal, operation, body, headers)
+            code = payload.get("code") if isinstance(payload, dict) else None
+            outcome = ("ok", None) if status < 400 else ("error", code if isinstance(code, str) else None)
+            return status, payload, extra
+        except DomainError as e:
+            outcome = ("error", e.code)
+            raise
+        except ProviderError as e:
+            outcome = ("error", f"provider_{e.kind.value}")
+            raise
+        finally:
+            self._audit(principal, operation, headers, *outcome, int((time.monotonic() - started) * 1000))
+
+    def _audit(self, principal: Optional[Principal], operation: str, headers: Mapping[str, str], status: str,
+               code: Optional[str], duration_ms: int) -> None:
+        if principal is not None:
+            try:
+                principal = self.svc.bind(principal)  # record the resolved delegation
+            except Exception:  # unbound or store unavailable: record the principal as presented
+                pass
+        rid = headers.get("x-request-id")
+        try:
+            rid = rid if isinstance(rid, str) and str(uuid.UUID(rid)) == rid else None
+        except ValueError:
+            rid = None
+        self.audit({
+            "request_id": rid, "origin": "api", "operation": operation,
+            "client_id": principal.client_id if principal is not None else None,
+            "member_ref": log_ref("member", principal.member_id) if principal is not None else None,
+            "delegation_id": principal.delegation_id if principal is not None else None,
+            "status": status, "code": code, "duration_ms": duration_ms,
+        })
+
+    def _run(self, principal: Principal, operation: str, body: bytes,
+             headers: Mapping[str, str]) -> Tuple[int, Any, Dict[str, str]]:
         if operation not in self.ops:
             return 404, problem_body(404, "unknown_operation", "unknown commerce operation"), {}
         allowed, handler = self.ops[operation]

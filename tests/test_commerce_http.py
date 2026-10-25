@@ -32,8 +32,9 @@ class Http:
         mcp = McpToolExecutor(commerce=self.w.svc, registry=self.w.registry, verifier=ExecutorAssertionVerifier(
             gateway_issuer=GW, keys={"gw-1": self.key.public_key()}, environment="development"))
         self.runtime = AssistantRuntime(mcp, environment="development")
+        self.audit = []
         self.api = CommerceHttpApi(service=self.w.svc, verifier=verifier, runtime=self.runtime,
-                                   planner_factory=DeterministicPlanner)
+                                   planner_factory=DeterministicPlanner, audit=self.audit.append)
         self.client = TestClient(create_commerce_app(self.api))
 
     def assertion(self, principal, audience=DOMAIN_AUDIENCE):
