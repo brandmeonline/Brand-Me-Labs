@@ -17,7 +17,7 @@ from brandme_core.domains import DataCategory as FoundationDataCategory, registe
 from brandme_core.domains.persona.kernel import STR, iso, query, run_read, run_txn, stable_id
 from brandme_core.domains.persona.privacy_guard import record_scope_refusal
 
-from . import ledger
+from . import credits, ledger, surveys
 
 DOMAIN = "rewards"
 _M = {"m": STR}
@@ -58,6 +58,20 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "on_edit": "Tiers are recomputed, never edited; only the tier is kept, not counts or spend",
         "tables": ("HouseStandings",),
     },
+    "rewards.surveys": {
+        "title": "Your answers to surveys and quizzes, and your quiz scores",
+        "supplied_by": "member",
+        "retention": "Until you delete your account",
+        "on_edit": "Answers cannot be changed after you submit; they are never shared with houses",
+        "tables": ("SurveyResponses",),
+    },
+    "rewards.credits": {
+        "title": "In-app purchase credit you converted from points",
+        "supplied_by": "member",
+        "retention": "Until it is used or expires, or you delete your account",
+        "on_edit": "Unused credit expires after a year and its points come back; credit is never cash",
+        "tables": ("PurchaseCredits",),
+    },
 }
 
 
@@ -88,6 +102,10 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
                  "created_at": iso(r[6]), "resolved_at": iso(r[7])}
                 for r in query(snap, "SELECT dispute_id, entry_id, category, message, state, resolution_note, created_at, resolved_at "
                                      "FROM RewardDisputes WHERE member_id=@m ORDER BY created_at", m, _M)]
+    if category == "rewards.surveys":
+        return surveys.export_responses(snap, member_id)
+    if category == "rewards.credits":
+        return credits.export_credits(snap, member_id)
     if category == "rewards.standings":
         return [{"house_ref": r[0], "tier": r[1], "computed_at": iso(r[2])}
                 for r in query(snap, "SELECT house_ref, tier, computed_at FROM HouseStandings WHERE member_id=@m ORDER BY house_ref", m, _M)]
@@ -128,6 +146,11 @@ def delete_category(txn, member_id: str, category: str) -> int:
         return txn.execute_update("DELETE FROM RewardDisputes WHERE member_id=@m", params=m, param_types=_M)
     if category == "rewards.standings":
         return txn.execute_update("DELETE FROM HouseStandings WHERE member_id=@m", params=m, param_types=_M)
+    if category == "rewards.surveys":
+        return txn.execute_update("DELETE FROM SurveyResponses WHERE member_id=@m", params=m, param_types=_M)
+    if category == "rewards.credits":
+        credits.release_outstanding(txn, member_id)  # held points go back first, as for a pending reservation
+        return txn.execute_update("DELETE FROM PurchaseCredits WHERE member_id=@m", params=m, param_types=_M)
     raise KeyError(category)
 
 

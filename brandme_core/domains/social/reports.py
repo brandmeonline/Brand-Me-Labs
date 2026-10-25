@@ -53,7 +53,7 @@ from . import events as _events  # noqa: F401
 from .notifications import blocked_between, notify
 from .shares import revoke_grant
 
-TARGETS = ("decision_response", "decision_comment", "share", "outfit_proposal", "member")
+TARGETS = ("decision_response", "decision_comment", "room_post", "share", "outfit_proposal", "member")
 REASONS = ("harassment", "spam", "hate", "sexual_content", "self_harm", "privacy", "other")
 DAILY_LIMIT = 20
 COLS = ("report_id", "reporter_id", "target_type", "target_ref", "target_owner_id", "reason", "note", "state", "action", "resolved_by",
@@ -105,6 +105,15 @@ class ReportService:
             if not sees or not author:
                 raise NotFound("content not found")
             return f"decision:{did}/comment:{cid}", author[0][0]
+        if target_type == "room_post":
+            rid = require_uuid(target.get("room_id"), name="room_id")
+            pid = require_uuid(target.get("post_id"), name="post_id")
+            member = query(txn, "SELECT 1 FROM RoomMembers WHERE room_id=@r AND member_id=@m", {"r": rid, "m": reporter}, {"r": STR, "m": STR})
+            author = query(txn, "SELECT author_id FROM RoomPosts WHERE room_id=@r AND post_id=@p AND removed_at IS NULL",
+                           {"r": rid, "p": pid}, {"r": STR, "p": STR})
+            if not member or not author:
+                raise NotFound("content not found")
+            return f"room:{rid}/post:{pid}", author[0][0]
         if target_type == "share":
             sid = require_uuid(target.get("share_id"), name="share_id")
             g = query(txn, "SELECT member_id, recipient_ids FROM ShareGrants@{FORCE_INDEX=ShareGrantsById} WHERE share_id=@s", {"s": sid}, {"s": STR})
@@ -234,6 +243,12 @@ class ReportService:
                 txn.execute_update("UPDATE DecisionComments SET body = '', removed_at = CURRENT_TIMESTAMP(), removed_reason = 'moderation' "
                                    "WHERE member_id=@c AND decision_id=@d AND comment_id=@k AND removed_at IS NULL",
                                    params={"c": creator[0][0], "d": did, "k": cid}, param_types={"c": STR, "d": STR, "k": STR})
+            return "content_removed"
+        if r["target_type"] == "room_post":
+            rid, pid = ref.split("/")[0].split(":")[1], ref.split("/")[1].split(":")[1]
+            txn.execute_update("UPDATE RoomPosts SET body = NULL, subject_type = NULL, subject_id = NULL, kind = 'note', "
+                               "removed_at = CURRENT_TIMESTAMP(), removed_reason = 'moderation' WHERE room_id=@r AND post_id=@p AND removed_at IS NULL",
+                               params={"r": rid, "p": pid}, param_types={"r": STR, "p": STR})
             return "content_removed"
         if r["target_type"] == "share":
             from .shares import GRANT_COLS

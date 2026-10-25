@@ -29,6 +29,7 @@ import { outfitsRouter } from './outfits';
 import { socialRouter } from './social';
 import { decisionsRouter } from './decisions';
 import { flowRouter } from './flow';
+import { roomsRouter } from './rooms';
 import { rewardsRouter } from './rewards';
 import { mediaRouter } from './media';
 import { tryOnRouter } from './tryon';
@@ -138,11 +139,13 @@ export function apiV1(deps: ApiV1Deps): Router {
   router.use('/me', meRouter(cfg, store));
 
   // Consumer domains (persona, wardrobe, outfits, social, decisions, Flow and
-  // houses, rewards, media, try-on): behind principalMiddleware, forwarded with a signed
-  // principal assertion (services/domains.ts). Unconfigured → 503 per route.
+  // houses, rooms, rewards, media, try-on): behind principalMiddleware,
+  // forwarded with a signed principal assertion (services/domains.ts).
+  // Unconfigured → 503 per route.
   const domains = deps.domains ?? consumerDomainClient(cfg, doFetch);
-  for (const mount of [personaRouter, wardrobeRouter, outfitsRouter, socialRouter, decisionsRouter, flowRouter, rewardsRouter, mediaRouter,
-    tryOnRouter]) {
+  const consumer = [personaRouter, wardrobeRouter, outfitsRouter, socialRouter, decisionsRouter, flowRouter, roomsRouter, rewardsRouter,
+    mediaRouter, tryOnRouter];
+  for (const mount of consumer) {
     router.use(mount(domains));
   }
 

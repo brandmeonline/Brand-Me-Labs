@@ -208,6 +208,56 @@ describe.skipIf(!up)('mounted consumer domains on the dev gateway', () => {
     expect((await asker.agent.delete(`/api/v1/houses/${ref}/follow`).set(asker.csrf)).body).toEqual({ house_ref: ref, followed: false });
   }, 180_000);
 
+  it('runs closet visibility, the persona card, surveys and in-app credit end to end', async () => {
+    const seed = (...args: string[]) => JSON.parse(execFileSync(python, [resolve(root, 'tests/fixtures/persona/consumer_dev.py'), ...args],
+      { cwd: root, env, timeout: 120_000 }).toString().trim().split('\n').pop()!);
+    const signIn = async (identity: string) => {
+      const agent = request.agent(app);
+      const s = await agent.post('/api/v1/session/dev').send({ test_identity: identity });
+      const csrf = { 'x-csrf-token': s.body.csrf_token as string };
+      return { agent, id: s.body.member_id as string, csrf, key: () => ({ ...csrf, 'idempotency-key': `e2e-${randomUUID()}` }) };
+    };
+    const me = await signIn('e2e-card-owner');
+    const friend = await signIn('e2e-card-friend');
+    const stranger = await signIn('e2e-card-stranger');
+    const rel = await me.agent.post('/api/v1/relationships').set(me.csrf).send({ target_member_id: friend.id });
+    await friend.agent.post(`/api/v1/relationships/${rel.body.relationship_id}/accept`).set(friend.csrf);
+
+    // Closet visibility: private by default; friends see the story, strangers nothing.
+    const piece = (await me.agent.post('/api/v1/wardrobe/items').set(me.key()).send({ source: 'manual', title: 'Signature coat', category: 'outerwear' }))
+      .body.items[0].id as string;
+    expect((await friend.agent.get(`/api/v1/members/${me.id}/closet`)).body.items).toEqual([]);
+    const shown = await me.agent.put(`/api/v1/wardrobe/items/${piece}/visibility`).set(me.csrf)
+      .send({ visibility: 'friends', detail: 'story', showcase_note: 'Every winter since 2019' });
+    expect(shown.status).toBe(200);
+    expect((await friend.agent.get(`/api/v1/members/${me.id}/closet`)).body.items)
+      .toEqual([expect.objectContaining({ item_id: piece, showcase_note: 'Every winter since 2019', detail: 'story' })]);
+    expect((await stranger.agent.get(`/api/v1/members/${me.id}/closet`)).body.items).toEqual([]);
+
+    // The persona card: composed from the profile, highlights respect each piece's visibility.
+    expect((await me.agent.patch('/api/v1/me/persona').set({ ...me.csrf, 'if-match': '"0"' })
+      .send({ changes: [{ axis: 'expression', value: 85, locked: false }], client_revision: 'e2e' })).status).toBe(200);
+    const card = await me.agent.put('/api/v1/me/persona/card').set(me.csrf).send({ highlight_item_ids: [piece] });
+    expect(card.status).toBe(200);
+    expect(card.body.card.taste).toEqual([expect.objectContaining({ label: 'Expressive' })]);
+    expect((await friend.agent.get(`/api/v1/members/${me.id}/card`)).body.card.highlights).toEqual([expect.objectContaining({ item_id: piece })]);
+    expect((await stranger.agent.get(`/api/v1/members/${me.id}/card`)).status).toBe(404); // friends-only by default
+
+    // Surveys feed points; points become in-app credit only.
+    const { survey_id: surveyId } = seed('survey');
+    const open = await me.agent.get('/api/v1/surveys');
+    expect(open.body.items.map((s: { survey_id: string }) => s.survey_id)).toContain(surveyId);
+    const answered = await me.agent.post(`/api/v1/surveys/${surveyId}/responses`).set(me.key()).send({ answers: { fit: 'Relaxed', comfort: 4 } });
+    expect(answered.status).toBe(201);
+    expect(answered.body.reward).toEqual({ status: 'posted', points: 10 });
+    expect(seed('points', me.id, '3').available).toBe(610);
+    const credit = await me.agent.post('/api/v1/rewards/credits').set(me.key()).send({ points: 500 });
+    expect(credit.status).toBe(201);
+    expect(credit.body).toMatchObject({ amount: { minor: 500, currency: 'USD' }, state: 'available', account: { available: 110, reserved: 500 } });
+    expect((await me.agent.post('/api/v1/rewards/credits').set(me.key()).send({ points: 500, payout_account: 'acct_1' })).status).toBe(422);
+    expect((await me.agent.get('/api/v1/rewards/credits')).body.items).toHaveLength(1);
+  }, 180_000);
+
   it('the service refuses calls that do not carry a valid gateway assertion', async () => {
     const base = loadConfig({ BRANDME_MODE: 'development', CONSUMER_DOMAIN_SERVICE_URL: `http://127.0.0.1:${env.PORT}` }).consumerDomainUrl;
     expect((await fetch(`${base}/try-on/capabilities`)).status).toBe(401);

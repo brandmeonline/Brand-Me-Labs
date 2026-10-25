@@ -21,7 +21,7 @@ from brandme_core.domains.persona.service import PersonaService
 from test_persona_harness import MEMBER_SCOPES, insert_member, spanner_db  # noqa: F401
 
 NOW = datetime(2026, 10, 5, 12, 0, tzinfo=timezone.utc)
-PERSONA_CATEGORIES = {"persona.declared", "persona.inferred", "persona.evidence", "persona.snapshots", "persona.feedback"}
+PERSONA_CATEGORIES = {"persona.declared", "persona.inferred", "persona.evidence", "persona.snapshots", "persona.feedback", "persona.card"}
 
 
 @pytest.fixture

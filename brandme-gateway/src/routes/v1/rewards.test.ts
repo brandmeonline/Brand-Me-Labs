@@ -86,6 +86,38 @@ describe('rewards routers (unmounted)', () => {
     expect((await request(a).post('/rewards/disputes').send({ category: 'missing_reward', message: 'Repair missing', entry_id: ID })).status).toBe(200);
   });
 
+  it('surveys: member-only answers with an Idempotency-Key and an answers object only', async () => {
+    const a = app(client, principal(MEMBER));
+    expect((await request(a).get('/surveys')).status).toBe(200);
+    const answer = (b: object, k = true) => (k ? request(a).post(`/surveys/${ID}/responses`).set('Idempotency-Key', KEY) : request(a).post(`/surveys/${ID}/responses`)).send(b);
+    expect((await answer({ answers: { fit: 'Relaxed' } }, false)).status).toBe(400);
+    for (const b of [{}, { answers: [] }, { answers: 'x' }, { answers: { a: 1 }, score: 3 }, { answers: Object.fromEntries(Array.from({ length: 11 }, (_, i) => [`q${i}`, 1])) }]) {
+      expect((await answer(b)).status).toBe(422);
+    }
+    expect((await answer({ answers: { fit: 'Relaxed', comfort: 4 } })).status).toBe(200);
+    expect(client.calls.at(-1)).toMatchObject({ method: 'POST', path: `/surveys/${ID}/responses`, body: { answers: { fit: 'Relaxed', comfort: 4 } }, idempotencyKey: KEY });
+    const agent = app(client, principal(MEMBER, { delegationId: 'd-1' }));
+    expect((await request(agent).post(`/surveys/${ID}/responses`).set('Idempotency-Key', KEY).send({ answers: { fit: 'x' } })).status).toBe(403);
+  });
+
+  it('credits: whole hundreds of the member’s own points, never money or a destination', async () => {
+    const a = app(client, principal(MEMBER));
+    const convert = (b: object) => request(a).post('/rewards/credits').set('Idempotency-Key', KEY).send(b);
+    for (const b of [{ points: 450 }, { points: 550 }, { points: 500.5 }, { points: '500' }, { points: 200_000 }, { points: 500, currency: 'usd' },
+      { points: 500, payout_account: 'acct_1' }, { amount_minor: 500 }, { points: 500, member_id: ID }]) {
+      expect((await convert(b)).status).toBe(422);
+    }
+    expect((await request(a).post('/rewards/credits').send({ points: 500 })).status).toBe(400);
+    expect((await convert({ points: 500, currency: 'USD' })).status).toBe(200);
+    expect(client.calls.at(-1)).toMatchObject({ method: 'POST', path: '/rewards/credits', body: { points: 500, currency: 'USD' }, idempotencyKey: KEY });
+    expect((await request(a).get('/rewards/credits')).status).toBe(200);
+    const agent = app(client, principal(MEMBER, { delegationId: 'd-1' }));
+    expect((await request(agent).post('/rewards/credits').set('Idempotency-Key', KEY).send({ points: 500 })).status).toBe(403);
+    for (const path of ['/rewards/payouts', '/rewards/credits/transfer', '/rewards/cash']) {
+      expect((await request(a).post(path).send({ points: 500 })).status).toBe(404);
+    }
+  });
+
   it('ops routes need moderation:admin, no delegation, and aal2 outside development', async () => {
     expect((await request(app(client, principal(MEMBER))).get('/ops/rewards/disputes')).status).toBe(403);
     expect((await request(app(client, principal(['moderation:admin'], { delegationId: 'd' }))).get('/ops/rewards/disputes')).status).toBe(403);

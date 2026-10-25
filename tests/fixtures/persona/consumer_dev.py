@@ -8,6 +8,11 @@
         Observe a delivered order the way commerce reports it, then hand the
         wardrobe events it produced to the rewards consumer, as the outbox
         subscriber would. Prints counts.
+    python tests/fixtures/persona/consumer_dev.py survey
+        Publish a fictional style survey as a dev operator. Prints its id.
+    python tests/fixtures/persona/consumer_dev.py points <member_id> <months>
+        Credit verified repairs in past months (200 points a month, the rule's
+        cap), as the approved repair workflow would. Prints the balance.
 """
 
 import json
@@ -25,8 +30,12 @@ if os.environ.get("BRANDME_MODE") != "development" or not os.environ.get("SPANNE
 from google.cloud import spanner  # noqa: E402
 from google.cloud.spanner_v1 import param_types  # noqa: E402
 
+from brandme_core.domains.persona.kernel import command, member_principal, service_principal  # noqa: E402
 from brandme_core.domains.persona.lane import load_domains  # noqa: E402
+from brandme_core.domains.rewards import ledger  # noqa: E402
 from brandme_core.domains.rewards.consumer import RewardsConsumer  # noqa: E402
+from brandme_core.domains.rewards.rules import RULES  # noqa: E402
+from brandme_core.domains.rewards.surveys import SurveyService  # noqa: E402
 from brandme_core.domains.social.houses import catalog_variant_lookup, house_ref_of  # noqa: E402
 from brandme_core.domains.wardrobe.service import WardrobeService  # noqa: E402
 from brandme_core.events import EventEnvelope  # noqa: E402
@@ -75,6 +84,30 @@ def delivered(db, member_id: str, variant_id: str, units: int):
     return {"items_created": reduced.get("created", 0), "events_delivered": len(rows)}
 
 
+def survey(db):
+    op = str(uuid.uuid4())
+    with db.batch() as b:
+        b.insert("Members", columns=("member_id", "locale", "timezone", "age_eligibility_status", "account_state", "environment",
+                                     "onboarding_state", "version", "created_at", "updated_at"),
+                 values=[(op, "en-US", "UTC", "self_declared_adult", "active", "development", "not_started", 1,
+                          spanner.COMMIT_TIMESTAMP, spanner.COMMIT_TIMESTAMP)])
+    s = SurveyService(db).create_survey(member_principal(op, {"moderation:admin"}), {
+        "kind": "survey", "purpose": "style", "title": "Your weekend wardrobe",
+        "questions": [{"id": "fit", "prompt": "Which fit do you reach for?", "type": "single", "options": ["Relaxed", "Tailored"]},
+                      {"id": "comfort", "prompt": "How much does comfort matter?", "type": "scale"}]})
+    return {"survey_id": s["survey_id"]}
+
+
+def points(db, member_id: str, months: int):
+    for month in range(1, months + 1):
+        for _ in range(4):
+            command(db, service_principal("repair-workflow"), lambda t, ctx, month=month: ledger.credit(
+                t, ctx, member_id, RULES["verified_repair"], str(uuid.uuid4()), datetime(2025, month, 15, tzinfo=timezone.utc), ["repair:dev"]))
+    with db.snapshot() as s:
+        return {"available": list(s.execute_sql("SELECT available FROM RewardAccounts WHERE member_id=@m", params={"m": member_id},
+                                                param_types={"m": param_types.STRING}))[0][0]}
+
+
 if __name__ == "__main__":
     load_domains()
     db = database()
@@ -83,5 +116,9 @@ if __name__ == "__main__":
         print(json.dumps(pieces(db, args[0], int(args[1]))))
     elif cmd == "delivered":
         print(json.dumps(delivered(db, args[0], args[1], int(args[2]))))
+    elif cmd == "survey":
+        print(json.dumps(survey(db)))
+    elif cmd == "points":
+        print(json.dumps(points(db, args[0], int(args[1]))))
     else:
         raise SystemExit(f"unknown command {cmd}")

@@ -56,9 +56,12 @@ RULES: Dict[str, Rule] = {r.id: r for r in (
     # Ultra plan 02 item 2 (Now loop): influence credit when a friend's verdict moves a verified purchase.
     Rule("decision_influence", 1, 25, "verified_delivered_order_of_subject_or_chosen_alternative_within_14_days_after_in_window_verdict",
          cap_points=100, cap_window="calendar_day", member_text="A friend bought what you helped them choose"),
+    # Ultra plan 02 item 5: daily-capped surveys and quizzes (three a day earn points).
+    Rule("survey_completed", 1, 10, "member_completes_an_operator_published_survey_or_quiz_once",
+         cap_points=30, cap_window="calendar_day", member_text="Complete a short survey or quiz; three a day earn points"),
 )}
 
-EXTENSIONS: Dict[str, str] = {"decision_influence": "PD-20"}
+EXTENSIONS: Dict[str, str] = {"decision_influence": "PD-20", "survey_completed": "PD-21"}
 
 # Influence: the decision closed at most this long before the purchase was delivered.
 INFLUENCE_WINDOW = timedelta(days=14)

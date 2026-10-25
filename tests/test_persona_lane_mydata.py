@@ -28,6 +28,7 @@ from brandme_core.domains.media.store import MemoryMediaStore  # noqa: E402
 from brandme_core.domains.persona.kernel import (  # noqa: E402
     NIL_MEMBER,
     DetailedInvalidTransition,
+    command,
     member_principal,
     run_txn,
     service_principal,
@@ -39,17 +40,24 @@ from brandme_core.domains.persona.lane import (  # noqa: E402
     register_consumer_domains,
 )
 from brandme_core.domains.persona.privacy_guard import WHOLE_CATEGORY_ONLY  # noqa: E402
+from brandme_core.domains.persona.card import PersonaCardService  # noqa: E402
 from brandme_core.domains.persona.service import PersonaService  # noqa: E402
 from brandme_core.domains.privacy.privacy import MyDataService  # noqa: E402
+from brandme_core.domains.rewards import ledger  # noqa: E402
 from brandme_core.domains.rewards.benefits import BenefitService  # noqa: E402
+from brandme_core.domains.rewards.credits import CreditService  # noqa: E402
+from brandme_core.domains.rewards.rules import RULES  # noqa: E402
 from brandme_core.domains.rewards.service import RewardsService  # noqa: E402
+from brandme_core.domains.rewards.surveys import SurveyService  # noqa: E402
 from brandme_core.domains.social.decisions import DecisionService  # noqa: E402
 from brandme_core.domains.social.houses import HouseService  # noqa: E402
 from brandme_core.domains.social.relationships import RelationshipService  # noqa: E402
 from brandme_core.domains.social.reports import ReportService  # noqa: E402
+from brandme_core.domains.social.rooms import RoomService  # noqa: E402
 from brandme_core.domains.social.shares import ShareService  # noqa: E402
 from brandme_core.domains.wardrobe.outfits import OutfitService  # noqa: E402
 from brandme_core.domains.wardrobe.service import WardrobeService  # noqa: E402
+from brandme_core.domains.wardrobe.visibility import ClosetVisibilityService  # noqa: E402
 from test_persona_harness import MEMBER_SCOPES, count, insert_member, new_migrated_database  # noqa: E402
 
 WRITER = MEMBER_SCOPES | {"rewards:write"}
@@ -122,6 +130,8 @@ def seed(db, store, provider):
     item = w.create_items(gone, {"source": "manual", "title": "Linen shirt", "category": "top"}, key())["items"][0]["id"]
     f_item = w.create_items(friend, {"source": "manual", "title": "Scarf", "category": "accessory"}, key())["items"][0]["id"]
     OutfitService(db).create_outfit(gone, {"title": "Look", "item_refs": [item]}, key())
+    ClosetVisibilityService(db).set_visibility(gone, item, {"visibility": "friends", "detail": "story", "showcase_note": "My favourite"})
+    PersonaCardService(db, persona=persona).settings(gone, {"highlight_item_ids": [item], "show_standings": True})
 
     rel = RelationshipService(db)
     rel.accept(friend, rel.request(gone, friend.member_id)["relationship_id"])
@@ -134,6 +144,11 @@ def seed(db, store, provider):
     decisions.add_comment(gone, theirs["decision_id"], {"body": "With the navy coat"}, key())
     decisions.create(gone, {"subject_type": "wardrobe_item", "subject_id": item, "prompt": "Shirt?", "recipient_ids": [friend.member_id],
                             "duration_seconds": 300, "discussion_mode": "open"}, key())
+    rooms = RoomService(db)
+    own_room = rooms.create(gone, {"title": "Gowns", "member_ids": [friend.member_id]}, key())["room_id"]
+    rooms.post(gone, own_room, {"kind": "note", "body": "Sage or blue?"}, key())
+    their_room = rooms.create(friend, {"title": "Trip", "member_ids": [gone.member_id]}, key())["room_id"]
+    rooms.react(gone, their_room, rooms.post(friend, their_room, {"kind": "note", "body": "Pack light"}, key())["post_id"], {"reaction": "yes"})
     ShareService(db).create(gone, {"subject_type": "wardrobe_item", "subject_id": item, "audience": "unlisted", "allowed_fields": ["title"],
                                    "recipient_ids": [], "expires_at": "2027-01-01T00:00:00+00:00"}, key())
     ReportService(db).report(gone, {"target_type": "member", "target": {"member_id": friend.member_id}, "reason": "spam"})
@@ -150,6 +165,14 @@ def seed(db, store, provider):
                                        "inventory_total": 5})
     benefits.reserve(gone, benefit["benefit_id"], key())
     rewards.open_dispute(gone, {"category": "other", "message": "question"})
+    survey = SurveyService(db).create_survey(member_principal(insert_member(db), OPS), {"kind": "survey", "purpose": "style", "title": "Fit", "questions": [
+        {"id": "fit", "prompt": "Which fit?", "type": "single", "options": ["Relaxed", "Tailored"]}]})
+    SurveyService(db).respond(gone, survey["survey_id"], {"answers": {"fit": "Relaxed"}}, key())
+    for month in (1, 2, 3):  # 600 more points from past months' verified repairs (200 a month is the cap)
+        for _ in range(4):
+            command(db, service_principal("repair-workflow"), lambda t, ctx, month=month: ledger.credit(
+                t, ctx, gone.member_id, RULES["verified_repair"], str(uuid.uuid4()), datetime(2025, month, 15, tzinfo=timezone.utc), [f"repair:{ISSUER}"]))
+    CreditService(db).convert(gone, {"points": 500}, key())
     HouseService(db, catalog=OneHouse()).follow(gone, "atelier-north", {"share_standing": True})
     run_txn(db, lambda t: t.insert("HouseStandings", columns=("member_id", "house_ref", "tier", "computed_at", "run_id"),
                                    values=[(gone.member_id, "atelier-north", "top_10", now(), str(uuid.uuid4()))]))
@@ -174,7 +197,8 @@ MEMBER_COLUMNS = {
     "MemberReports": "reporter_id", "MemberMutes": "muted_member_id", "RewardAccounts": "member_id", "RewardEntries": "member_id",
     "BenefitReservations": "member_id", "RewardDisputes": "member_id", "TryOnConsents": "member_id",
     "TryOnJobs": "member_id", "MediaObjects": "member_id", "DecisionComments": "author_id", "MemberHouses": "member_id",
-    "HouseStandings": "member_id",
+    "HouseStandings": "member_id", "SurveyResponses": "member_id", "PurchaseCredits": "member_id", "PersonaCards": "member_id",
+    "Rooms": "owner_id", "RoomMembers": "member_id", "RoomPosts": "author_id", "RoomReactions": "member_id",
 }
 
 
@@ -236,13 +260,19 @@ def test_consumer_domains_through_my_data(db):
     assert len(out["sha256"]) == 64 and set(cats) == set(inventory)
     for k in ("persona.declared", "persona.snapshots", "wardrobe.items", "wardrobe.outfits", "social.relationships", "social.decisions",
               "social.shares", "social.reports", "social.houses", "rewards.ledger", "rewards.redemptions", "rewards.disputes",
-              "rewards.standings", "media.tryon_consents", "media.tryon_media"):
+              "rewards.standings", "rewards.surveys", "rewards.credits", "persona.card", "social.rooms", "media.tryon_consents",
+              "media.tryon_media"):
         assert cats[k]["records"], k
     assert cats["social.decisions"]["records"][0]["answered"][0]["note"] == "Nice"
     assert cats["social.decisions"]["records"][0]["commented"][0]["body"] == "With the navy coat"
     assert cats["social.houses"]["records"] == [{"house_ref": "atelier-north", "share_standing": True, "followed_at": ANY}]
     assert cats["rewards.standings"]["records"][0]["tier"] == "top_10"
-    assert cats["rewards.ledger"]["records"][0]["account"]["available"] == 50  # 100 earned, 50 reserved
+    assert cats["rewards.ledger"]["records"][0]["account"]["available"] == 160  # 100 + 600 repairs + 10 survey; 50 + 500 held (benefit, credit)
+    assert cats["rewards.surveys"]["records"][0]["answers"] == {"fit": "Relaxed"}
+    assert cats["rewards.credits"]["records"][0]["amount"] == {"minor": 500, "currency": "USD"}
+    assert cats["social.rooms"]["records"][0]["posts"][0]["body"] == "Sage or blue?"
+    assert cats["persona.card"]["records"][0]["highlight_item_ids"] == [cats["wardrobe.items"]["records"][0]["item_id"]]
+    assert cats["wardrobe.items"]["records"][0]["showcase_note"] == "My favourite"
     assert cats["media.tryon_media"]["records"][0]["jobs"][0]["saved"] is True
 
     # A backup taken before the deletion (restored below).

@@ -1,14 +1,17 @@
 """
-Internal rewards routers (UNMOUNTED).
+Internal rewards routers. The member router is mounted by the consumer-domain
+service (``persona/app.py``); the ops router is not.
 
 Member router: ch.03 §6 ``GET /rewards`` and ``POST /benefits/{id}/reservations``.
 Lane additions (PD-09): ``GET /rewards/entries``, ``GET /benefits``,
-``GET /rewards/reservations``, ``GET``/``POST /rewards/disputes``. There is
-no member route that awards, edits or transfers points (BM-LOY-005).
+``GET /rewards/reservations``, ``GET``/``POST /rewards/disputes``; Ultra plan 02:
+``GET /rewards/standings``, ``GET /surveys``, ``POST /surveys/{id}/responses``,
+``GET``/``POST /rewards/credits``. There is no member route that awards, edits
+or transfers points (BM-LOY-005), and none that pays out money.
 
 Ops router (console-only, ``moderation:admin``; mount behind operator auth):
 dispute queue and resolution, member ledger audit, linked reversal, reviewer
-acceptance of contributions, benefit creation.
+acceptance of contributions, benefit creation, survey publishing.
 """
 
 from __future__ import annotations
@@ -21,8 +24,10 @@ from brandme_core.domains.persona.http import PrincipalResolver, execute
 from brandme_core.domains.persona.kernel import ValidationFailed, reject_unknown_keys, require_strict_int
 
 from .benefits import BenefitService
+from .credits import CreditService
 from .service import RewardsService
 from .standing import StandingService
+from .surveys import SurveyService
 
 
 def _limit(raw: Optional[str], default: int = 24) -> int:
@@ -34,7 +39,8 @@ def _limit(raw: Optional[str], default: int = 24) -> int:
 
 
 def create_rewards_router(rewards: RewardsService, benefits: BenefitService, resolve_principal: PrincipalResolver,
-                          standings: Optional[StandingService] = None) -> APIRouter:
+                          standings: Optional[StandingService] = None, surveys: Optional[SurveyService] = None,
+                          credits: Optional[CreditService] = None) -> APIRouter:
     r = APIRouter()
 
     @r.get("/rewards")
@@ -45,6 +51,26 @@ def create_rewards_router(rewards: RewardsService, benefits: BenefitService, res
         @r.get("/rewards/standings")
         async def my_standings(request: Request):
             return await execute(request, resolve_principal, standings.mine)
+
+    if surveys is not None:
+        @r.get("/surveys")
+        async def open_surveys(request: Request):
+            return await execute(request, resolve_principal, surveys.available)
+
+        @r.post("/surveys/{survey_id}/responses")
+        async def answer_survey(request: Request, survey_id: str):
+            k = request.headers.get("idempotency-key")
+            return await execute(request, resolve_principal, lambda p, b: surveys.respond(p, survey_id, b, k), status=201, with_body=True)
+
+    if credits is not None:
+        @r.get("/rewards/credits")
+        async def my_credits(request: Request):
+            return await execute(request, resolve_principal, credits.mine)
+
+        @r.post("/rewards/credits")
+        async def convert(request: Request):
+            k = request.headers.get("idempotency-key")
+            return await execute(request, resolve_principal, lambda p, b: credits.convert(p, b, k), status=201, with_body=True)
 
     @r.get("/rewards/entries")
     async def entries(request: Request):
@@ -75,7 +101,8 @@ def create_rewards_router(rewards: RewardsService, benefits: BenefitService, res
     return r
 
 
-def create_rewards_ops_router(rewards: RewardsService, benefits: BenefitService, resolve_principal: PrincipalResolver) -> APIRouter:
+def create_rewards_ops_router(rewards: RewardsService, benefits: BenefitService, resolve_principal: PrincipalResolver,
+                              surveys: Optional[SurveyService] = None) -> APIRouter:
     r = APIRouter(prefix="/ops")
 
     @r.get("/rewards/disputes")
@@ -115,5 +142,14 @@ def create_rewards_ops_router(rewards: RewardsService, benefits: BenefitService,
     @r.post("/benefits")
     async def create_benefit(request: Request):
         return await execute(request, resolve_principal, benefits.create_benefit, status=201, with_body=True)
+
+    if surveys is not None:
+        @r.post("/surveys")
+        async def publish_survey(request: Request):
+            return await execute(request, resolve_principal, surveys.create_survey, status=201, with_body=True)
+
+        @r.post("/surveys/{survey_id}/deactivate")
+        async def deactivate_survey(request: Request, survey_id: str):
+            return await execute(request, resolve_principal, lambda p: surveys.deactivate(p, survey_id))
 
     return r

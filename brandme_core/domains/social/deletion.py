@@ -1,5 +1,5 @@
 """W10 privacy registration for relationships, blocks, decisions, shares,
-reports, notifications and followed houses.
+reports, notifications, rooms and followed houses.
 
 Same pattern as persona/wardrobe: foundation ``register_data_category``
 always, the privacy lane's ``DomainPrivacyHandler`` when present.
@@ -64,6 +64,13 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "on_edit": "Blocking withdraws unread notifications between you",
         "tables": ("Notifications",),
     },
+    "social.rooms": {
+        "title": "Rooms you own or joined, your posts there and your reactions",
+        "supplied_by": "member",
+        "retention": "Until you leave or delete them, or delete your account; rooms you own close with your account",
+        "on_edit": "Withdrawing a post erases its text; leaving a room keeps your posts until you withdraw them",
+        "tables": ("Rooms", "RoomMembers", "RoomPosts", "RoomReactions"),
+    },
     "social.houses": {
         "title": "Houses you follow and whether each may see your standing",
         "supplied_by": "member",
@@ -121,6 +128,10 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
         return [{"notification_id": r[0], "type": r[1], "subject_ref": r[2], "payload": json_value(r[3]), "created_at": iso(r[4]), "read_at": iso(r[5])}
                 for r in query(snap, "SELECT notification_id, type, subject_ref, sanitized_payload, created_at, read_at FROM Notifications "
                                      "WHERE member_id=@m ORDER BY created_at", m, _M)]
+    if category == "social.rooms":
+        from .rooms import export_rooms
+
+        return export_rooms(snap, member_id)
     if category == "social.houses":
         return [{"house_ref": r[0], "share_standing": r[1], "followed_at": iso(r[2])}
                 for r in query(snap, "SELECT house_ref, share_standing, followed_at FROM MemberHouses WHERE member_id=@m ORDER BY house_ref", m, _M)]
@@ -162,6 +173,10 @@ def delete_category(txn, member_id: str, category: str) -> int:
     if category == "social.notifications":
         n = txn.execute_update("DELETE FROM Notifications WHERE member_id=@m", params=m, param_types=_M)
         return n + txn.execute_update("UPDATE Notifications SET actor_member_id=NULL WHERE actor_member_id=@m", params=m, param_types=_M)
+    if category == "social.rooms":
+        from .rooms import delete_rooms
+
+        return delete_rooms(txn, member_id)
     if category == "social.houses":
         return txn.execute_update("DELETE FROM MemberHouses WHERE member_id=@m", params=m, param_types=_M)
     raise KeyError(category)

@@ -1145,6 +1145,19 @@ class PersonaService:
             limit=limit,
         )
 
+    def taste_summary(self, snap, member_id: str, *, limit: int = 3) -> List[Dict[str, Any]]:
+        """The member's strongest leanings for their persona card: effective
+        values outside the middle band, never a hidden or unanswered axis."""
+        p = self._load_visible(snap, member_id)
+        eff = resolve_effective(p.axes, p.overrides, p.learning_enabled, self.clock.now())
+        ranked = []
+        for k in AXIS_KEYS:
+            v = eff[k].value
+            if p.axes[k].hidden or v is None or 40 < v < 60:
+                continue
+            ranked.append((-abs(v - 50), k, v))
+        return [{"axis": k, "label": axis_labels(k, v), "strength": abs(v - 50) * 2} for _neg, k, v in sorted(ranked)[:limit]]
+
     def lens_request(self, snap, member_id: str) -> RecommendationRequest:
         """The member's persona lens inside a caller's read (Flow): effective axes and
         hard constraints, with no candidate source involved."""
@@ -1162,6 +1175,11 @@ class PersonaService:
         p, req = run_read(self.db, read)
         result = recommend(self.candidate_source(principal), req).to_dict()
         result["profile_version"] = str(p.version)
+        from .experiments import arm
+
+        if arm("curator_verbosity", principal.member_id) == "concise":  # experiment flag; "detailed" until approved
+            for item in result["items"]:
+                item["reasons"] = item["reasons"][:1]
         return result
 
     def preview(self, principal: Principal, body: Mapping[str, Any], *, occasion: Optional[str] = None) -> Dict[str, Any]:

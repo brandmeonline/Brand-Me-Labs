@@ -592,6 +592,10 @@ class DecisionService:
             role = self._visible(s, d, me)
             if not self._comments_visible(s, d, me, role):
                 return {"decision_id": decision_id, "items": [], "hidden_until_you_answer": True}
+            from brandme_core.domains.persona.experiments import arm
+
+            if d["state"] == "closed" and arm("decision_thread_persistence", me) == "fade_after_close":  # "persist" until approved
+                return {"decision_id": decision_id, "items": [], "hidden_until_you_answer": False, "faded": True}
             rows = [dict(zip(COMMENT_COLS, r)) for r in query(
                 s, f"SELECT {', '.join(COMMENT_COLS)} FROM DecisionComments WHERE member_id=@m AND decision_id=@d ORDER BY created_at, comment_id",
                 {"m": d["member_id"], "d": decision_id}, {"m": STR, "d": STR})]

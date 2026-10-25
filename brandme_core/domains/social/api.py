@@ -28,6 +28,7 @@ from .houses import HouseService
 from .notifications import NotificationService
 from .relationships import RelationshipService
 from .reports import ReportService
+from .rooms import RoomService
 from .shares import ShareService
 
 
@@ -215,6 +216,51 @@ def create_flow_router(flow: FlowService, houses: HouseService, resolve_principa
     @r.delete("/houses/{house_ref}/follow")
     async def unfollow(request: Request, house_ref: str):
         return await execute(request, resolve_principal, lambda p: houses.unfollow(p, house_ref))
+
+    return r
+
+
+def create_rooms_router(rooms: RoomService, resolve_principal: PrincipalResolver) -> APIRouter:
+    """Small-group rooms (Ultra plan 02, item 7)."""
+    r = APIRouter()
+
+    @r.get("/rooms")
+    async def my_rooms(request: Request):
+        return await execute(request, resolve_principal, rooms.mine)
+
+    @r.post("/rooms")
+    async def open_room(request: Request):
+        k = request.headers.get("idempotency-key")
+        return await execute(request, resolve_principal, lambda p, b: rooms.create(p, b, k), status=201, with_body=True)
+
+    @r.get("/rooms/{room_id}")
+    async def room(request: Request, room_id: str):
+        return await execute(request, resolve_principal, lambda p: rooms.get(p, room_id))
+
+    @r.post("/rooms/{room_id}/archive")
+    async def archive_room(request: Request, room_id: str):
+        return await execute(request, resolve_principal, lambda p: rooms.archive(p, room_id))
+
+    @r.post("/rooms/{room_id}/members")
+    async def add_member(request: Request, room_id: str):
+        return await execute(request, resolve_principal, lambda p, b: rooms.add_member(p, room_id, _single(b, "member_id")), with_body=True)
+
+    @r.delete("/rooms/{room_id}/members/{member_id}")
+    async def remove_member(request: Request, room_id: str, member_id: str):
+        return await execute(request, resolve_principal, lambda p: rooms.remove_member(p, room_id, member_id))
+
+    @r.post("/rooms/{room_id}/posts")
+    async def post(request: Request, room_id: str):
+        k = request.headers.get("idempotency-key")
+        return await execute(request, resolve_principal, lambda p, b: rooms.post(p, room_id, b, k), status=201, with_body=True)
+
+    @r.put("/rooms/{room_id}/posts/{post_id}/reaction")
+    async def react(request: Request, room_id: str, post_id: str):
+        return await execute(request, resolve_principal, lambda p, b: rooms.react(p, room_id, post_id, b), with_body=True)
+
+    @r.delete("/rooms/{room_id}/posts/{post_id}")
+    async def withdraw(request: Request, room_id: str, post_id: str):
+        return await execute(request, resolve_principal, lambda p: rooms.withdraw(p, room_id, post_id))
 
     return r
 

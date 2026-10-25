@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
 
 interface Report {
   report_id: string
-  target_type: 'decision_response' | 'decision_comment' | 'share' | 'outfit_proposal' | 'member'
+  target_type: 'decision_response' | 'decision_comment' | 'room_post' | 'share' | 'outfit_proposal' | 'member'
   target_ref: string
   reason: string
   note: string | null
@@ -33,6 +33,7 @@ const STATES = ['open', 'actioned', 'dismissed'] as const
 const TARGET_LABEL: Record<Report['target_type'], string> = {
   decision_response: 'Decision response',
   decision_comment: 'Decision comment',
+  room_post: 'Room post',
   share: 'Share',
   outfit_proposal: 'Outfit proposal',
   member: 'Member conduct',

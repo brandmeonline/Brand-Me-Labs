@@ -19,6 +19,10 @@ scheduler or long-running worker can own.
   confirmed.
 * ``standings.recompute_if_due``: rebuild per-house loyalty tiers from
   verified purchases at most once a day (``rewards/standing.py``).
+* ``credits.expire_due``: return the points of in-app credit unused after a
+  year (``rewards/credits.py``).
+* ``cards.recompose_due``: recompose persona cards marked stale by trigger
+  events, and backfill every card daily (``persona/card.py``).
 * Benefit fulfillment needs a partner fulfiller per benefit; none exists, so it
   is ``not_configured`` too.
 
@@ -45,18 +49,27 @@ def run_jobs(database: Any, *, environment: str, media: Any = None, fulfillers: 
     """One bounded pass of every lane job. ``media`` is a MediaService wired to
     the real object store; ``fulfillers`` maps benefit_id → fulfiller."""
     from brandme_core.domains.rewards.benefits import BenefitService
+    from brandme_core.domains.rewards.credits import CreditService
     from brandme_core.domains.rewards.standing import StandingService
     from brandme_core.domains.social.decisions import DecisionService
     from brandme_core.domains.social.houses import CatalogHouses
 
+    from .card import PersonaCardService
     from .lane import load_domains
+    from .service import PersonaService
 
     load_domains()
     benefits = BenefitService(database)
+    cards = PersonaCardService(database, persona=PersonaService(database), catalog=CatalogHouses())
+    standings = StandingService(database, catalog=CatalogHouses()).recompute_if_due()
+    if standings != "not_due":
+        cards.mark_all_with_standings()
     out: Dict[str, Any] = {
         "decisions": DecisionService(database).close_due(environment=environment),
         "reservations": benefits.expire_due(environment=environment),
-        "standings": StandingService(database, catalog=CatalogHouses()).recompute_if_due(),
+        "standings": standings,
+        "credits_expired": CreditService(database).expire_due(),
+        "cards": cards.recompose_due(),
     }
     if media is None:
         out["media"] = "not_configured"
