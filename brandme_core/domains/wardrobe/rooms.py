@@ -2,7 +2,7 @@
 Server-side room templates and garment display bounds used to validate
 closet placements (ch.02 §4.2/§4.5).
 
-Values mirror the spatial lane's manifests at revision ``original-v1``
+Values mirror the spatial lane's manifests at revision ``original-shelves-v2``
 (``brandme-frontend/public/demo/rooms/*/manifest.json`` and
 ``.../garments/*/manifest.json`` on ``bench/astra-spatial-ar-20261005``).
 ``tests/test_wardrobe_placement.py`` compares them against those manifests when
@@ -87,7 +87,7 @@ ROOMS: Dict[str, RoomTemplate] = {
     "walnut_atelier": RoomTemplate(
         "walnut_atelier",
         "Walnut Atelier",
-        "original-v1",
+        "original-shelves-v2",
         (4.8, 3.6, 2.8),
         (-2.4425, -0.09, -1.8425),
         (2.445, 2.8, 1.8),
@@ -103,7 +103,7 @@ ROOMS: Dict[str, RoomTemplate] = {
     "limestone_gallery": RoomTemplate(
         "limestone_gallery",
         "Limestone Gallery",
-        "original-v1",
+        "original-shelves-v2",
         (5.2, 4.0, 3.0),
         (-2.6425, -0.09, -2.0425),
         (2.645, 3.0, 2.0),
@@ -119,7 +119,7 @@ ROOMS: Dict[str, RoomTemplate] = {
     "garden_studio": RoomTemplate(
         "garden_studio",
         "Garden Studio",
-        "original-v1",
+        "original-shelves-v2",
         (4.6, 3.8, 2.8),
         (-2.3425, -0.09, -1.9425),
         (2.345, 2.8, 1.9),
