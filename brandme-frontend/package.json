@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:ui": "node --test lib/testing/verify-ui.mjs",
+    "test:ui": "node --test lib/testing/verify-ui.mjs ../brandme-console/lib/testing/verify-shell-adapters.mjs",
     "test:gateway": "node --test lib/testing/verify-gateway.mjs",
     "test:browser": "node lib/testing/verify-shell.mjs && node lib/testing/verify-controls.mjs && node lib/testing/verify-experience.mjs && node lib/testing/verify-decision-haptics.mjs"
   },
