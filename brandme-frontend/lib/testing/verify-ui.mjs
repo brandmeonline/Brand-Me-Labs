@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { afterEach, test } from 'node:test'
+import { registerHapticsTests } from './verify-haptics.mjs'
 
 const require = createRequire(
   process.env.BRANDME_TEST_PACKAGE_JSON ||
@@ -94,6 +95,7 @@ afterEach(() => {
   cleanup()
   document.documentElement.removeAttribute('style')
 })
+registerHapticsTests({ source, React, render, cleanup, act })
 
 test('three rooms retain secondary destinations and legacy decision/product context', () => {
   assert.deepEqual(primaryNavigation.map(item => item.label), ['Shops', 'Social', 'Closet'])
