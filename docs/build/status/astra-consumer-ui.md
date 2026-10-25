@@ -585,18 +585,29 @@ The founder explicitly approved the prepared four-line domain correction in this
 
 The local placement suite passes all 25 cases, including manifest consistency. Thirteen API/service cases require the Spanner emulator and are skipped locally; the mandatory CI domain suite must execute them before merge. The earlier source-adapter head `aafc231` passed [Consumer UI run 40154375907](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40154375907), including 18 UI/adapter and 13 gateway/security tests, both Linux production builds, all browser/accessibility journeys, all 74 unchanged reviewed visual comparisons and the real live-domain journey. The approved domain correction requires fresh full CI and complete container/runtime verification before #56 merges.
 
-## Stage 16 — console contract 1.1.1 prepared for post-#56 adoption
+## Stage 16 — console contract 1.1.1 publication
 
-Prepared in an isolated worktree from integrated consumer head
-`cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8`, after the approved room-revision correction,
-console runtime and source-adapter fixes, and
-prerequisite integration. Publication remains pending until PR #56 merges to main.
+This publication is based on main merge commit
+`b9f483be139f1e0a3c324cdf5f30bbb3c5bdc22b`. PR #56 merged after the approved
+room-revision correction, console runtime and source-adapter fixes, prerequisite
+integration and complete CI verification.
 This patch publishes that compatible correction through the versioned public
 contract; it adds no exports, components, routes or required props. The stable
 header entry point, existing direct header import, single main/skip target and
 legacy root boundaries are covered by the existing `test:ui` runner using the
 console's own React runtime. These are component/markup checks, not browser,
 visual-baseline or device evidence.
+
+Exact PR #56 head `cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8` passed
+[full CI run 40155025399](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399):
+1,742 Python tests passed, with 20 allowlisted skips and 17 existing quarantined
+xfails; all 256 consumer-domain tests and six Firestore rules tests passed.
+All five Docker build/runtime checks passed, and deployment was skipped.
+[Consumer UI run 40155025378](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025378)
+passed 18 UI/adapter and 13 gateway/security tests, both Linux production builds,
+browser/accessibility journeys, all 74 unchanged reviewed pixel comparisons and
+the real browser-to-gateway-to-domain-to-Spanner journey. These receipts validate
+the merged #56 tree; the four additional contract cases are covered below.
 
 Validation after rebasing onto `aafc231` with Node 24.21.0 / pnpm 10.34.6:
 `pnpm --dir brandme-frontend test:ui` passed **22/22** cases with no skips
@@ -616,14 +627,19 @@ The subsequent rebase onto `cccfe7b` changes only domain/test fixtures and statu
 evidence in the parent; console/frontend sources and dependency metadata are
 identical to `aafc231`. The 22 UI cases and console type check were not rerun for
 that rebase; the publication diff and whitespace check were reviewed again.
+The rebase onto actual main merge `b9f483be` changes only Git ancestry: its tree
+matches `cccfe7b`. The contract and compatibility-test code remain unchanged, so
+no additional test run is claimed for that rebase.
 
-Adopt this local publication only after PR #56 is integrated on main. No baseline
-is changed and no credential is created.
+The local publication commit is ready for its own PR on merged main. No baseline
+is changed and no credential is created; production release remains outside this scope.
 
 ### Design-preview synchronization with the approved parent and contract
 
-The local PR #63 branch incorporates approved parent `cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8` and contract publication `4ba1fae8a846a2a34104564ce35010fb4be4ad2c`. The Stage 15 approval, Stage 16 contract receipt and all preview evidence are preserved. Publication and retargeting remain deferred until #56 and then the contract have actually merged.
+The local PR #63 branch initially incorporated approved parent `cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8` and contract publication `4ba1fae8a846a2a34104564ce35010fb4be4ad2c`. The Stage 15 approval, Stage 16 contract receipt and all preview evidence are preserved. PR #56 has since merged; preview publication and retargeting remain deferred until the contract PR #65 has actually merged.
 
 On combined snapshot `7f7d4e7`, `test:ui` passed **33/33 tests with zero failures or skips**: 27 preview cases, four console compatibility cases and two adapter parity cases. Validation used Node 24.21.0 / pnpm 10.34.6 in a new detached worktree with new junctions to the root's fresh frozen dependency installation; no existing junction was removed or replaced. The shared test compiler now resolves each application's `@/` aliases within that application, preserving the separate React runtimes. The existing React 18/Radix static-render layout-effect diagnostics remain distinct from browser hydration evidence.
 
 Consumer application sources and reviewed baselines are unchanged from preview head `9d1e29f`; domain and revision-fixture changes match the approved parent exactly. The founder's approval covers that domain correction only. Human visual-baseline approval, device and screen-reader sessions remain outstanding; this preparation adds no production feature or approval.
+
+Actual publication parent `06d8fc13f3133fea5108164266a6fee59b88db1f` (PR #65) is now incorporated locally, preserving its main-merge ancestry and final Stage 16 CI receipts. Compared with preview head `50b0b72`, this integration changes only status documentation; application and test sources are identical, so the 33-test suite is not repeated. No baseline or device approval is implied, and the preview remains unpublished pending the actual #65 merge.
