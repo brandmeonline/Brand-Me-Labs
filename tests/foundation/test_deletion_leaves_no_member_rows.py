@@ -1,14 +1,18 @@
 """Account deletion leaves no outbox or replay row naming the member (founder ruling Q19).
 
-The consumer-domains seed (tests/test_persona_lane_mydata.py ``seed``) writes real
-rows through the five domain services. Part of its outbox is delivered, one event
-is dead-lettered, one stays leased and the rest are pending. ``MyDataService``
-then deletes the account with the consumer handlers and foundation's platform
-handler, and a trace over every table and column proves that no OutboxEvents or
-IdempotencyRecords row still names the member, whichever path the row was on.
-Late writes are swept, old delivered rows are purged and a restore from an older
-backup is cleaned again. Without the platform handler the same trace finds the
-original leak (at least 21 outbox rows).
+Joint proof with the privacy orchestrator (``MyDataService.request_deletion`` and
+``run_deletion``, brandme_core/domains/privacy). The consumer-domains seed
+(tests/test_persona_lane_mydata.py ``seed``) writes real rows through the five
+domain services, and the friend closes a decision the member and another friend
+answered. Part of the outbox is delivered, one event is dead-lettered, one stays
+leased and the rest are pending. ``MyDataService`` then deletes the account with
+the consumer handlers and foundation's platform handler, and a trace over every
+table and column proves that no OutboxEvents or IdempotencyRecords row still names
+the member, whichever path the row was on. The member's own events are withdrawn
+or deleted; other members' rows survive with the member unlinked, so the friend's
+decision still credits the other respondent. Late writes are swept, old delivered
+rows are purged and a restore from an older backup is cleaned again. Without the
+platform handler the same trace finds the original leak (at least 21 outbox rows).
 """
 from __future__ import annotations
 
@@ -21,16 +25,20 @@ import pytest
 
 from brandme_core.domains.media.providers import SimulatedTryOnProvider
 from brandme_core.domains.media.store import MemoryMediaStore
+from brandme_core.domains.persona.kernel import member_principal
 from brandme_core.domains.persona.lane import register_consumer_domains
 from brandme_core.domains.privacy import deletion as pd
 from brandme_core.domains.privacy.privacy import MyDataService
+from brandme_core.domains.rewards.consumer import RewardsConsumer
+from brandme_core.domains.social.decisions import DecisionService
+from brandme_core.domains.social.relationships import RelationshipService
 from brandme_core.events import EventEnvelope, write_events
 from brandme_core.events.erasure import register_platform_privacy
 from brandme_core.events.outbox import OutboxDispatcher, PermanentDeliveryError, shard_for
 from brandme_core.events.retention import NIL_SUBJECT, SweepResult, purge_delivered, sweep_erased_subjects
 # Helpers only, never test_* names (that would collect the lane's tests twice).
-from test_persona_harness import count, new_migrated_database
-from test_persona_lane_mydata import MemoryObjectStore, seed
+from test_persona_harness import count, insert_member, new_migrated_database
+from test_persona_lane_mydata import WRITER, MemoryObjectStore, key, seed
 
 from .conftest import requires_spanner
 
@@ -38,13 +46,16 @@ from .conftest import requires_spanner
 # can be re-applied after a restore and racing jobs are refused (V009, V003).
 RETAINED_LEDGER = frozenset({"DeletionJobs", "DeletionSteps", "DeletionTombstones", "ProcessingFreezes",
                              "PersonaTombstones", "RestoreRuns"})
-# Out of Q9 scope: no handler erases the identity rows yet. Erase them or keep a
-# minimal deleted Members shell is an open founder question raised with the Q19
-# work; until it is ruled they are expected survivors, never silently ignored.
+# Out of Q9 scope: no handler erases the identity rows yet. Open founder question:
+# docs/build/status/opus-foundation.md, round 4, founder flag F-identity (identity-table
+# erasure). Until it is ruled they are expected survivors, listed here and never silently ignored.
 IDENTITY_SURVIVORS = frozenset({"Members", "MemberSettings", "MemberIdentities", "ConsentGrants", "Sessions"})
-# Independent of retention.SUBJECT_MATCH: any column containing the id at all.
+# Independent of retention.py's SQL: any column containing the id at all.
 NAMES = "(STRPOS(aggregate_id, @m) > 0 OR STRPOS(actor_ref, @m) > 0 OR STRPOS(TO_JSON_STRING(payload), @m) > 0)"
-DELIVERED = ("wardrobe.item.created", "persona.updated", "reward.posted", "decision.opened")
+# The member's own events: their aggregate, or their actor and its delegations.
+OWN = "(aggregate_id = @m OR actor_ref = CONCAT('member:', @m) OR STARTS_WITH(actor_ref, CONCAT('member:', @m, '/')))"
+# relationship.accepted is the friend's event naming the member: delivered, then unlinked in place.
+DELIVERED = ("wardrobe.item.created", "persona.updated", "reward.posted", "decision.opened", "relationship.accepted")
 
 
 def now():
@@ -115,14 +126,35 @@ def dispatcher(db, deliver, types=None, **kw):
                             max_backoff_seconds=0, **kw)
 
 
+def friend_decision(db, gone, friend, f_item):
+    """The friend asks the member and a second friend; both answer and the friend closes it.
+
+    Leaves the friend's pending decision.closed naming both respondents; the
+    rewards consumer credits each eligible respondent (rewards/consumer.py:159-170).
+    """
+    other = member_principal(insert_member(db), WRITER)
+    rel = RelationshipService(db)
+    rel.accept(friend, rel.request(other, friend.member_id)["relationship_id"])
+    decisions = DecisionService(db)
+    d = decisions.create(friend, {"subject_type": "wardrobe_item", "subject_id": f_item, "prompt": "Scarf with the coat?",
+                                  "recipient_ids": [gone.member_id, other.member_id], "duration_seconds": 300,
+                                  "discussion_mode": "open"}, key())
+    for respondent in (gone, other):
+        decisions.respond(respondent, d["decision_id"], {"choice": "yes", "note": "Yes"})
+    decisions.close(friend, d["decision_id"])
+    return other
+
+
 @requires_spanner
 def test_account_deletion_leaves_no_outbox_or_replay_row_naming_the_member(database):
     db = database
     store, provider = MemoryMediaStore(), SimulatedTryOnProvider()
     gone, friend, f_item, *_ = seed(db, store, provider)
+    other = friend_decision(db, gone, friend, f_item)
     m, f = gone.member_id, friend.member_id
     friend_only = set(outbox(db, f"{NAMES.replace('@m', '@f')} AND NOT {NAMES}", m=m, f=f))
     assert friend_only, "the friend needs outbox rows that do not name the member"
+    (closed_id,) = outbox(db, "event_type = 'decision.closed' AND actor_ref = @a", a=f"member:{f}")
 
     # Delivered subset, one dead letter, one lease in flight, the rest pending.
     published = []
@@ -132,13 +164,20 @@ def test_account_deletion_leaves_no_outbox_or_replay_row_naming_the_member(datab
     (leased_id,) = outbox(db, "event_type = 'outfit.version.created'")
     leased = in_flight._claim(shard_for(leased_id))
     named = outbox(db, NAMES, m=m)
-    by_status = {s: sum(1 for _, st, _ in named.values() if st == s) for s in ("delivered", "dead", "leased", "pending")}
-    assert len(named) >= 21 and all(by_status.values()), by_status
+    own = set(outbox(db, OWN, m=m))
+    others = {e: v for e, v in named.items() if e not in own}  # other members' rows that name the member
+    by_status = {s: sum(1 for e, (_, st, _) in named.items() if st == s and e in own)
+                 for s in ("delivered", "dead", "leased", "pending")}
+    others_by_status = {s: sum(1 for _, st, _ in others.values() if st == s) for s in ("delivered", "pending")}
+    assert len(named) >= 21 and own <= set(named) and all(by_status.values()), by_status
+    assert all(others_by_status.values()) and closed_id in others, others_by_status
     assert count(db, "SELECT COUNT(*) FROM IdempotencyRecords WHERE STARTS_WITH(principal_ref, @p)", p=f"member:{m}") == 7
     assert count(db, "SELECT COUNT(*) FROM IdempotencyRecords WHERE STRPOS(TO_JSON_STRING(response_body), @m) > 0 "
-                     "AND principal_ref = @p", m=m, p=f"member:{f}") == 1  # the friend's decision names the member
+                     "AND principal_ref = @p", m=m, p=f"member:{f}") == 2  # the friend's two decisions name the member
     backup_at = now()
     backup = {name: table(db, name) for name in ("OutboxEvents", "IdempotencyRecords")}
+    with db.snapshot() as s:
+        actor_before = {e: a for e, a in s.execute_sql("SELECT event_id, actor_ref FROM OutboxEvents")}
 
     reg = pd.PrivacyRegistry()
     register_consumer_domains(reg, database=db, media_store=store)
@@ -148,14 +187,15 @@ def test_account_deletion_leaves_no_outbox_or_replay_row_naming_the_member(datab
     receipt = svc.run_deletion(job)
     statuses = {k: r["status"] for k, r in receipt["categories"].items()}
     assert statuses == {c.key: "deleted" for c in reg.categories()}
-    for key in ("platform.event_outbox", "platform.request_replay"):
-        assert receipt["categories"][key]["rows_affected"] > 0, key
+    for category in ("platform.event_outbox", "platform.request_replay"):
+        assert receipt["categories"][category]["rows_affected"] > 0, category
     assert receipt["categories"]["platform.event_outbox"]["rows_affected"] == len(named)
     with db.snapshot() as s:
         detail = list(s.execute_sql(
             "SELECT detail FROM DeletionSteps WHERE job_id = @j AND category = 'platform.event_outbox' AND step = 'delete_records'",
             params={"j": job}, param_types={"j": param_types.STRING}))[0][0]
-    assert detail == f"{len(named) - by_status['delivered']} undelivered withdrawn, {by_status['delivered']} delivered deleted"
+    assert detail == (f"{len(own) - by_status['delivered']} undelivered withdrawn, {by_status['delivered']} delivered "
+                      f"deleted, {len(others)} other events unlinked")
 
     # Zero rows name the member on either path; only the identity rows remain.
     found = traces(db, m)
@@ -163,8 +203,16 @@ def test_account_deletion_leaves_no_outbox_or_replay_row_naming_the_member(datab
     assert not any(k.startswith(("OutboxEvents.", "IdempotencyRecords.")) for k in found)
     assert "Members.member_id" in found  # the trace does reach foundation tables
     withdrawn = outbox(db, "last_error = 'subject_erased'")
-    assert set(withdrawn) == {e for e, (_, st, _) in named.items() if st != "delivered"}
+    assert set(withdrawn) == {e for e in own if named[e][1] != "delivered"}
     assert all(st == "dead" for _, st, _ in withdrawn.values())
+    # Other members' rows survive in place, delivered or not, with the member unlinked.
+    with db.snapshot() as s:
+        kept = {r[0]: r[1:] for r in s.execute_sql(
+            "SELECT event_id, status, actor_ref, TO_JSON_STRING(payload) FROM OutboxEvents WHERE event_id IN UNNEST(@ids)",
+            params={"ids": list(others)}, param_types={"ids": param_types.Array(param_types.STRING)})}
+    assert set(kept) == set(others)
+    for event_id, (status, actor, payload) in kept.items():
+        assert (status, actor) == (others[event_id][1], actor_before[event_id]) and NIL_SUBJECT in payload, event_id
 
     # The in-flight delivery cannot finish; the privacy events are untouched and deliverable.
     assert in_flight._finish(leased, None) == "stale"
@@ -172,21 +220,31 @@ def test_account_deletion_leaves_no_outbox_or_replay_row_naming_the_member(datab
     assert sorted(t for t, _, _ in privacy.values()) == ["privacy.deletion.completed", "privacy.deletion.requested"]
     assert all(st == "pending" for _, st, _ in privacy.values())
     pending_friend = {e for e in friend_only if outbox(db)[e][1] == "pending"}
+    pending_others = {e for e, (_, st, _) in others.items() if st == "pending"}
     later = []
     result = dispatcher(db, later.append).run_once()
     assert result.failed == result.dead == result.stale == 0
-    # Everything still pending is delivered; no withdrawn row is ever claimed or published.
-    assert {e.event_id for e in later} == set(privacy) | pending_friend
+    # Everything still pending is delivered, unlinked rows included; no withdrawn row is ever claimed or published.
+    assert {e.event_id for e in later} == set(privacy) | pending_friend | pending_others
     assert all(m not in json.dumps(e.to_wire()) for e in later)
 
-    # The friend's own records survive; their replay body is unlinked, not deleted.
+    # The friend's decision still credits the other respondent; the nil member is skipped.
+    (closed,) = [e for e in later if e.event_id == closed_id]
+    assert sorted(closed.payload["eligible_respondent_ids"]) == sorted([NIL_SUBJECT, other.member_id])
+    assert RewardsConsumer(db).handle(closed)["status"] == "processed"
+    assert count(db, "SELECT COUNT(*) FROM RewardEntries WHERE member_id = @o AND rule_id = 'friend_decision_response' "
+                     "AND state = 'posted' AND points = 10", o=other.member_id) == 1
+    assert count(db, "SELECT COUNT(*) FROM RewardEntries WHERE member_id = @m OR member_id = @nil",
+                 m=m, nil=NIL_SUBJECT) == 0
+
+    # The friend's own records survive; their replay bodies are unlinked, not deleted.
     assert friend_only <= set(outbox(db))
     assert count(db, "SELECT COUNT(*) FROM WardrobeItems WHERE member_id = @f", f=f) == 1
     with db.snapshot() as s:
         bodies = [json.dumps(json.loads(b)) for (b,) in s.execute_sql(
             "SELECT TO_JSON_STRING(response_body) FROM IdempotencyRecords WHERE principal_ref = @p",
             params={"p": f"member:{f}"}, param_types={"p": param_types.STRING})]
-    assert len(bodies) == 2 and any(NIL_SUBJECT in b for b in bodies) and not any(m in b for b in bodies)
+    assert len(bodies) == 3 and sum(NIL_SUBJECT in b for b in bodies) == 2 and not any(m in b for b in bodies)
 
     # A late write by an unguarded writer (gateway session store) is swept.
     late = EventEnvelope(event_type="session.revoked", schema_version="1", aggregate_type="session",
@@ -200,7 +258,7 @@ def test_account_deletion_leaves_no_outbox_or_replay_row_naming_the_member(datab
         [(f"member:{m}", "development", "late.op", "k-" + uuid.uuid4().hex, "0" * 64, "completed", 200,
           JsonObject({"member_id": m}), COMMIT_TIMESTAMP, now() + timedelta(days=30))]))
     assert leaked_tables(traces(db, m)) == {"OutboxEvents", "IdempotencyRecords"}
-    assert sweep_erased_subjects(db, now()) == SweepResult(1, 1, 0, 1, 0)
+    assert sweep_erased_subjects(db, now()) == SweepResult(subjects=1, withdrawn=1, requests_deleted=1)
     assert leaked_tables(traces(db, m)) == set()
 
     # Seven days after delivery, delivered rows go; recent ones and live rows stay.

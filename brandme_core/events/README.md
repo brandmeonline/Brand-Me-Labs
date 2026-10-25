@@ -146,47 +146,81 @@ uses the V013 index `OutboxByEnvironmentStatus`.
 - **Delivered rows.** `python -m brandme_core.events.retention --once` runs
   hourly (CronJob `events-retention` in `brandme-infra/helm/brandme`, its own
   audited process `events_retention`). It deletes delivered rows 7 days after
-  delivery, for its own environment, shard by shard. Pending, leased and
-  ordinary dead letters are never purged by age; their retention is still open.
-  `--check` verifies schema and configuration. Refusals print constant records
-  and logs carry counts only, never event, member or subject IDs.
-- **Account deletion.** Foundation owns the table, so it registers two
+  delivery, for its own environment, shard by shard. Pending and leased rows
+  are never purged by age. Ordinary dead letters (`invalid_event`,
+  `message_rejected`, `delivery_attempts_exhausted`) keep their full payload
+  until operators resolve them or the member deletes their account; an age
+  limit for them is still open. `--check` verifies schema and configuration.
+  Refusals print constant records and logs carry counts only, never event,
+  member or subject IDs.
+- **Account deletion only.** Foundation owns the tables, so it registers two
   categories: `platform.event_outbox` and `platform.request_replay`. They go
   into the privacy lane's default registry and `data_categories()` when
   `brandme_core.domains` is imported. A composition that builds its own
-  `PrivacyRegistry` calls `register_platform_privacy(reg)`. A row names the
-  subject when its `aggregate_id`, its actor (`member:<id>` or a delegation of
-  it) or an exact JSON string token in its payload is the subject. That
-  includes other members' events about them; short refs never match by
-  substring. Undelivered rows are withdrawn in place: status `dead`,
+  `PrivacyRegistry` calls `register_platform_privacy(reg)`. Both categories
+  hold what an active account needs (undelivered changes, replay protection),
+  so they are erased only by a deletion job with scope `account`. The handler
+  refuses three requests truthfully and changes nothing: a category-only
+  request, a record-level request, and a subject ref the platform cannot match
+  safely (outside `[A-Za-z0-9._:@/+-]{1,128}`). It returns the lanes' refusal
+  shape (`done=True` with an exception reason) and never raises, so the job's
+  other categories still run. The category text tells members this. A restore
+  re-applies a refused tombstone as a no-op. The `data_categories()` callbacks
+  used by `bridge_foundation_categories` receive only a member id and cannot
+  report a refusal, so they erase only for a subject with an account deletion
+  job.
+- **The member's own events.** An event is the subject's own when its
+  `aggregate_id` or its actor (`member:<id>` or a delegation of it) is the
+  subject. Undelivered ones are withdrawn in place: status `dead`,
   `last_error = 'subject_erased'`, payload `{}`, neutral actor, aggregate and
-  correlation. Delivered rows are deleted. A withdrawn row fails closed-schema
-  validation and is never claimed again; a lease in flight finishes `stale`.
-  Withdrawn rows are purged 7 days after withdrawal.
+  correlation. Delivered ones are deleted. A withdrawn row fails closed-schema
+  validation and is never claimed again, and a lease in flight finishes
+  `stale`. Withdrawn rows are purged 7 days after withdrawal.
+- **Everyone else's events.** Other members' and services' events that name
+  the subject keep their row and status, whether delivered or not. Each JSON
+  string value equal to the subject (`<id>` or `member:<id>`) becomes the nil
+  member (`00000000-0000-0000-0000-000000000000`, same form), so their side
+  effects survive. For example, decision.closed still credits the other
+  respondents, because the rewards consumer skips the nil member
+  (`domains/rewards/consumer.py:73-75`). Only whole values change: object keys
+  are never rewritten (two erased keys would collapse into one), short refs
+  never match by substring, and a list keeps one nil member, so unique-id lists
+  stay valid. No registered contract keys a payload by member id. Every
+  contract with a member-id field still validates after unlinking (the nil
+  member passes `format: uuid`). Unlinked delivered rows age out with the
+  7-day purge.
 - **Replay records.** The subject's `IdempotencyRecords` (principal
-  `member:<id>` and its delegations) are deleted. In other members' saved
-  responses, the subject's ID is replaced by the nil member, so their retries
-  still replay instead of running twice. `expires_at` is not enforced yet:
-  expired records are not purged.
+  `member:<id>` and its delegations) are deleted. Other members' saved
+  responses are unlinked the same way, so their retries still replay instead
+  of running twice. `expires_at` is not enforced yet: expired records are not
+  purged.
 - **Backstop.** Each pass re-erases subjects whose platform categories were
-  tombstoned in the last 30 days. That catches late writes by writers that are
+  tombstoned by an account deletion (a join on `DeletionJobs.scope =
+  'account'`) in the last 30 days. That catches late writes by writers that are
   not freeze-guarded (the gateway's session store) and events written after the
-  platform step of a deletion. Restore re-applies the same erasure
-  (`reapply_tombstones_after_restore`).
-- **Not recalled.** Copies already accepted by Pub/Sub stay until topic and
-  subscription retention expire (24 hours or more). Consumers must recheck
-  deletion freezes before effects (see "Recovery and privacy").
-- **Scale.** Erasure scans whole tables with partitioned DML, a few statements
-  per 100 subject keys. When the 7-day outbox outgrows an hourly scan, add a
-  subject index (for example a child table written with each event) in a
-  migration after V015.
+  platform step of a deletion. A category-only request is never swept. Restore
+  re-applies the same erasure (`reapply_tombstones_after_restore`).
+- **Not recalled.** A delivery already in flight when the deletion runs can
+  still reach the broker. The dispatcher read the payload when it claimed the
+  row, and publishes it before its `stale` finish. Copies accepted by Pub/Sub
+  stay until topic and subscription retention expire (24 hours or more), even
+  after the receipt says the category was deleted. Consumers must recheck
+  deletion freezes before acting (see "Recovery and privacy").
+- **Scale.** Erasure scans whole tables: partitioned DML for the subject's own
+  rows, and a snapshot prefilter plus compare-and-set updates (100 rows per
+  transaction) for unlinking. That is a few statements per 100 subject keys.
+  When the 7-day outbox outgrows an hourly scan, add a subject index in a
+  migration after V015 (for example, a child table written with each event).
 - **Out of scope.** No handler erases the identity tables yet (`Members`,
   `MemberSettings`, `MemberIdentities`, `ConsentGrants`, `Sessions`). Whether to
   erase them is an open founder question.
 
 Tests (Spanner emulator): `tests/foundation/test_outbox_retention.py` and
-`tests/foundation/test_deletion_leaves_no_member_rows.py`. The second runs a
-real account deletion over the consumer-domains seed. It traces every column of
-every table and finds no outbox or replay row naming the member, on the
-delivered and undelivered paths. Without the platform handler, the same trace
-finds at least 21 outbox rows.
+`tests/foundation/test_deletion_leaves_no_member_rows.py`. The second is the
+joint proof with the privacy orchestrator (`MyDataService.request_deletion` and
+`run_deletion`). It runs a real account deletion over the consumer-domains
+seed, then traces every column of every table. No outbox or replay row names
+the member on either the delivered or the undelivered path. Other members' rows
+survive with the member unlinked, and the friend's decision still credits the
+other respondent. Without the platform handler, the same trace finds at least
+21 outbox rows.
