@@ -38,6 +38,16 @@ def test_only_reserved_numbers_are_used(runner):
         assert RESERVED[m.version] in m.name, f"V{m.version:03d} must be the {RESERVED[m.version]} migration"
 
 
+def test_packaged_versions_are_contiguous_and_reserved_once(runner):
+    """A gap lets a lower number merge after a higher one is applied; the runner refuses that in sandbox."""
+    versions = [m.version for m in runner.load_migrations()]
+    assert versions == list(range(1, len(versions) + 1)), f"packaged versions are not contiguous from V001: {versions}"
+    files = sorted(p.name for p in (REPO / "brandme-data/spanner/migrations").glob("V*.sql"))
+    for number, name in RESERVED.items():
+        matching = [f for f in files if f.startswith(f"V{number:03d}_")]
+        assert matching == [f"V{number:03d}_{name}.sql"], f"V{number:03d} ({name}) must have exactly one file, found {matching}"
+
+
 def test_empty_to_v001_and_rerun_is_noop(runner, empty_database, v001_only):
     ms, _ = v001_only
     assert runner.migrate_up(empty_database, ms, log=lambda *_: None) == [1]
