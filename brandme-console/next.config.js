@@ -9,6 +9,7 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
 const nextConfig = {
+  devIndicators: false,
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '..'),
   reactStrictMode: true,

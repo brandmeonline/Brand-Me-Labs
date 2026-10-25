@@ -8,6 +8,7 @@ packages:
   - 'brandme-console'
   - 'brandme-frontend'
   - 'packages/*'
+  - 'scripts/assets'
 
 # pnpm 10 blocks dependency lifecycle scripts unless allowlisted.
 onlyBuiltDependencies:
@@ -39,3 +40,42 @@ overrides:
   "body-parser@1": "1.20.9"
   # GHSA-w74x-v6f9-j3xg, -wjr9-j795-jxcr (moderate) and two lows fixed in 3.1.9 (ajv dependency).
   "fast-uri@3": "3.1.9"
+
+# Inherited consumer/spatial React peer metadata; workspace settings have one authority.
+packageExtensions:
+  # Lucide's declarations import React types but omit that peer. Bind each installed
+  # icon package to its app's types instead of pnpm's shared hoisted @types/react.
+  'lucide-react@0.309.0':
+    peerDependencies:
+      '@types/react': '^18.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  'lucide-react@0.469.0':
+    peerDependencies:
+      '@types/react': '^18.0.0 || ^19.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  # motion/react re-exports these declarations, which also import React types.
+  'framer-motion@12.43.0':
+    peerDependencies:
+      '@types/react': '^18.0.0 || ^19.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  '@react-three/fiber@9.4.0':
+    peerDependencies:
+      '@types/react': '^19.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  'next@15.5.28':
+    peerDependencies:
+      '@types/react': '^18.0.0 || ^19.0.0'
+      '@types/react-dom': '^18.0.0 || ^19.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      '@types/react-dom':
+        optional: true

@@ -50,7 +50,7 @@ function app(client: DomainClient, scopes: string[] | null) {
 const ALL = ['wardrobe:read', 'wardrobe:write', 'outfits:read', 'outfits:write'];
 const placement = {
   room_template_id: 'walnut_atelier', semantic_group: 'rail.left', slot_id: '0',
-  position_meters: [-2.11, 1.75, -0.65], rotation_quaternion: [0, 0, 0, 1], uniform_scale: 1, asset_revision: 'original-v1',
+  position_meters: [-2.11, 1.75, -0.65], rotation_quaternion: [0, 0, 0, 1], uniform_scale: 1, asset_revision: 'original-shelves-v2',
 };
 
 describe('wardrobe/outfits routers (unmounted)', () => {

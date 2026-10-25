@@ -1,0 +1,50 @@
+[
+  {
+    "id": "a4036cb0-7ab2-54b5-9238-ee5ffb378771",
+    "triangles": 5968,
+    "drawCalls": 3,
+    "textures": 12,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "6b4ee94a-4998-55d8-8298-c8f81a40b7aa",
+    "triangles": 4512,
+    "drawCalls": 2,
+    "textures": 9,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "9572fdc7-31e0-5b80-be82-147ef4a5e69c",
+    "triangles": 5688,
+    "drawCalls": 2,
+    "textures": 9,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "5a0ccc0d-d627-52fa-ab80-de662ef92b1b",
+    "triangles": 5968,
+    "drawCalls": 3,
+    "textures": 12,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "demo-tee",
+    "triangles": 3744,
+    "drawCalls": 2,
+    "textures": 9,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  },
+  {
+    "id": "demo-knit",
+    "triangles": 7224,
+    "drawCalls": 2,
+    "textures": 9,
+    "viewport": "600x760",
+    "renderer": "Chromium software WebGL2; not real-device performance"
+  }
+]

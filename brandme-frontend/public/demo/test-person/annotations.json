@@ -1,0 +1,40 @@
+{
+  "method": "Coarse visual estimates on the original synthetic fixture; not surveyed/physical ground truth",
+  "width": 1024,
+  "height": 1536,
+  "annotationUncertaintyPixels": 20,
+  "points": {
+    "11": [
+      0.655,
+      0.21
+    ],
+    "12": [
+      0.35,
+      0.21
+    ],
+    "23": [
+      0.58,
+      0.49
+    ],
+    "24": [
+      0.42,
+      0.49
+    ],
+    "25": [
+      0.584,
+      0.674
+    ],
+    "26": [
+      0.41,
+      0.674
+    ],
+    "27": [
+      0.601,
+      0.86
+    ],
+    "28": [
+      0.386,
+      0.86
+    ]
+  }
+}

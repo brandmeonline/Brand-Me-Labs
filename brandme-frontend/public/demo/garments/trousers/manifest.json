@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "id": "6b4ee94a-4998-55d8-8298-c8f81a40b7aa",
+  "slug": "trousers",
+  "title": "Soft Pleat Trousers",
+  "category": "bottom",
+  "revision": "original-v1",
+  "fidelity": "P1",
+  "fidelityLabel": "Approximate 3D",
+  "sourceProductRevision": "fictional-2026-10-05",
+  "glb": "/demo/garments/trousers/lod0.glb",
+  "lowGlb": "/demo/garments/trousers/lod1.glb",
+  "usdz": "/demo/garments/trousers/preview.usdz",
+  "poster": "/demo/garments/trousers/poster.webp",
+  "rights": "/demo/rights.json",
+  "dimensionsMeters": [
+    0.5294991731643677,
+    1.2740900814533234,
+    0.20738276094198227
+  ],
+  "pivot": "hanger_hook",
+  "collisionBounds": {
+    "min": [
+      -0.26186779141426086,
+      -1.1639289855957031,
+      -0.10038276016712189
+    ],
+    "max": [
+      0.2676313817501068,
+      0.11016109585762024,
+      0.10700000077486038
+    ]
+  },
+  "displayScaleBounds": [
+    0.65,
+    1.25
+  ],
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "triangleCount": 2640,
+  "drawCalls": 5,
+  "compression": {
+    "geometry": "uncompressed portable fallback",
+    "transport": "gzip sidecar",
+    "textures": "embedded original PNG PBR maps; no external references",
+    "native": "USDZ geometry and base colors; microtextures omitted"
+  },
+  "physicalScale": "approximate; not a calibrated product dimension",
+  "rig": null,
+  "qa": {
+    "structural": "passed; see scripts/assets/evidence/asset-validation.json",
+    "visual": "rendered; human approval not claimed",
+    "nativeDevice": "not_run",
+    "loader": "Chromium / Three GLTFLoader 0.182.0"
+  },
+  "files": {
+    "lod0.glb": {
+      "sha256": "525c1cb98335de4971fe2f8562f5e166cb5a110f278538c11006465c492657fd",
+      "bytes": 278332
+    },
+    "lod0.glb.gz": {
+      "sha256": "474a3b6d044f7b18351234d264aaa26adc2a538e8d3c389c22fb98dbb53d195b",
+      "bytes": 66586
+    },
+    "lod1.glb": {
+      "sha256": "37af0b5ffd2270d3aeb3280fb25aa26624c724a008511f5dde67edbb37e8ada5",
+      "bytes": 203064
+    },
+    "lod1.glb.gz": {
+      "sha256": "6d49be25aac3a12c2eba06db4a5f48b30a225fed08d1b0b8636311b959af1171",
+      "bytes": 49653
+    },
+    "preview.usdz": {
+      "sha256": "db189df23411a6eda0dca580bc3d85d9a83fd51ccbeb1dab93db4db6f5d37ae9",
+      "bytes": 840388
+    },
+    "poster.webp": {
+      "sha256": "29c2512dec79c856690c644d57cae40dfb0826b6b36a803d662856f04201d907",
+      "bytes": 15966
+    },
+    "folded.glb": {
+      "bytes": 451316,
+      "sha256": "7e90616ba20e6cdd939ecc6cdbe093f5465d13c7d2d69c3674ac8dea6987c7a0"
+    },
+    "folded.glb.gz": {
+      "bytes": 83589,
+      "sha256": "f7a0c2664d7c980f5190f2d6e94b18e0131e048c51c572a697862900f25688ad"
+    },
+    "folded.webp": {
+      "sha256": "5e18faa83f9182af2612d92de50b9d495cd1f2c3de4f6b106184a21aa6a0c6db",
+      "bytes": 14354
+    }
+  },
+  "folded": {
+    "revision": "folded-original-v1",
+    "glb": "/demo/garments/trousers/folded.glb",
+    "poster": "/demo/garments/trousers/folded.webp",
+    "fidelity": "P1",
+    "fidelityLabel": "Approximate 3D",
+    "pivot": "grounded_bottom_center",
+    "dimensionsMeters": [
+      0.25735610723495483,
+      0.04158623144030571,
+      0.3427795320749283
+    ],
+    "collisionBounds": {
+      "min": [
+        -0.12867805361747742,
+        0,
+        -0.17000000178813934
+      ],
+      "max": [
+        0.12867805361747742,
+        0.04158623144030571,
+        0.17277953028678894
+      ]
+    },
+    "triangleCount": 4512,
+    "drawCalls": 2,
+    "source": "Original curved layered textile surfaces in scripts/assets/folded.mjs",
+    "rights": "/demo/rights.json",
+    "use": "Folded shelf display; not a drape or physical fit simulation",
+    "qa": {
+      "loader": "Chromium / Three GLTFLoader 0.182.0",
+      "visual": "rendered; human approval not claimed",
+      "roomPlacement": "semantic_shelf_v2; verification required"
+    }
+  }
+}
