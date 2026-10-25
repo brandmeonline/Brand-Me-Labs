@@ -8,6 +8,7 @@ import { command, explainError } from '@/lib/client/gateway'
 import { Button } from '@/components/ui/button'
 import { Input, Select } from '@/components/ui/field'
 import { ResourceState } from '@/components/ui/resource-state'
+import { useDecisionHeartbeat } from './use-decision-heartbeat'
 
 type Relationship={member_id:string;relationship_id:string;state:string}
 type Decision={decision_id:string;creator_id:string;prompt:string;state:string;subject_id:string;subject_type:string;server_time:string;closes_at:string|null;remaining_seconds:number;response_count:number;responses_hidden_until_you_answer:boolean;my_response:{choice:string}|null;responses:{respondent_id:string;choice:string;note:string|null}[];audience?:string[];result?:{yes:number;pass:number;alternative:number;label:string;zero_replies:boolean}}
@@ -47,6 +48,7 @@ export function DecisionComposer(){
 }
 export function DecisionView({id}:{id:string}){
   const r=useResource<Decision>(`/decisions/${encodeURIComponent(id)}`)
+  useDecisionHeartbeat(id, r.data)
   const [seconds,setSeconds]=useState<number|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[note,setNote]=useState(''),[alternative,setAlternative]=useState('')
   useEffect(()=>{if(!r.data)return;const d=r.data;const received=performance.now();const remaining=d.state==='open'&&d.closes_at?Math.max(0,Date.parse(d.closes_at)-Date.parse(d.server_time)):0
     const tick=()=>setSeconds(Math.max(0,Math.ceil((remaining-(performance.now()-received))/1000)));tick();const timer=setInterval(tick,1000)
