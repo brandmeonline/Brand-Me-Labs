@@ -551,13 +551,17 @@ class ProviderSetupService:
                 if status.name in GATED_CAPABILITIES and status.state in EXECUTABLE_STATES:
                     d = check_capability(tier, status.name)
                     if not d.allowed:  # e.g. the pricing table changed since activation: never revive it
+                        # One line per persisted activation and tier: a fresh activation is logged even when
+                        # this process never saw the reset between them.
+                        key = (status.name, status.evidence_ref, status.last_checked_at, d.code, tier.tier_id,
+                               tier.source, tier.table_version)
                         status = CapabilityStatus(status.name, "unconfigured", "tier_excludes_capability",
                                                   self.clock())
-                        key = (status.name, d.code, tier.tier_id, tier.source, tier.table_version)
                         refused.add(key)
                         if key not in self._hydrate_refused.get(conn.provider_id, frozenset()):
                             overridden.append((status.name, d))
-                self.registry.set_capability(conn.provider_id, status, tier_checked=True)
+                # The suspension check repeats under the registry's lock, so a suspend racing this is kept.
+                self.registry.set_capability(conn.provider_id, status, tier_checked=True, keep_suspension=True)
             self._hydrate_refused[conn.provider_id] = frozenset(refused)
             self._applied[conn.provider_id] = version
         for name, d in overridden:
@@ -764,7 +768,7 @@ class ProviderSetupService:
             self.store.transact(self.environment, conn.provider_id, fn)
         except SetupRefused as e:
             if gated and e.code == "activation_tier_excludes_capability" and seen:
-                record(seen[0])
+                _lines_during(e, lambda: record(seen[0]))  # never replaces the refusal
             raise
         # The committed row, in commit order (never the value computed before commit).
         self._after_commit(conn, lambda: record(seen[0]) if gated and seen else None)
@@ -841,7 +845,11 @@ class ProviderSetupService:
             ingestor.ingest_page(page, provider_id=conn.provider_id, now=now, audit=audit,
                                  max_active_listings=tier.limits.shelf_variants, counts=counts)
         except BaseException as exc:
-            _lines_during(exc, line)  # a failed page is recorded too, with what it admitted
+            # A page applies whole (ingest_page), so a failed one usually changed nothing and gets no line:
+            # an allow/no_new_listings line would read as an empty page that succeeded. One that did admit or
+            # refuse listings before failing (another ingestor) is recorded with what it admitted.
+            if counts.added or counts.refused:
+                _lines_during(exc, line)
             raise
         return line()
 

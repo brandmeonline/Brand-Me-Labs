@@ -130,7 +130,10 @@ class CatalogIngestor:
                 staged[key] = StoredVariant(
                     v, (prev.revision + 1) if prev else 1, prev.first_seen_at if prev else now, now, False)
                 delta.accepted += 1
-            keys = [k for k in {**self.variants, **staged} if k[0] == provider_id and (k[2], k[3]) in removed]
+            keys = set()
+            if removed:  # most pages tombstone nothing: no scan at all
+                keys = {k for k in self.variants if k[0] == provider_id and (k[2], k[3]) in removed}
+                keys |= {k for k in staged if (k[2], k[3]) in removed}  # staged keys are all this provider's
             for key in keys:
                 sv = current(key)
                 if not sv.tombstoned:
@@ -158,7 +161,7 @@ def _tombstone_pairs(raw: Any) -> Tuple[Tuple[str, str], ...]:
     adapter may hand over any iterable, and pairs decoded from JSON arrive as lists)."""
     pairs = []
     for entry in raw or ():
-        if isinstance(entry, (str, bytes)) or not hasattr(entry, "__len__") or len(entry) != 2 \
+        if not isinstance(entry, (tuple, list)) or len(entry) != 2 \
                 or not all(isinstance(part, str) and part for part in entry):
             raise ValueError("each tombstone must be a (source_product_id, source_variant_id) pair of strings")
         pairs.append((entry[0], entry[1]))

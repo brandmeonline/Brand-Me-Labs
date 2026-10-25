@@ -130,15 +130,21 @@ class ProviderRegistry:
         with self._lock:
             return list(self._connections.values())
 
-    def set_capability(self, provider_id: str, status: CapabilityStatus, *, tier_checked: bool = False) -> None:
+    def set_capability(self, provider_id: str, status: CapabilityStatus, *, tier_checked: bool = False,
+                       keep_suspension: bool = False) -> bool:
         """``tier_checked`` is the setup service's word that a partner-tier presentation capability (3D, AR
-        try-on) passed the tier check; without it such a capability can never become executable here."""
+        try-on) passed the tier check; without it such a capability can never become executable here.
+        ``keep_suspension`` leaves a suspended capability as it is, checked under the same lock as the write
+        (a refresh never lifts a suspension). Returns whether the status was written."""
         if status.name in CAPABILITY_CUSTOMIZATION and status.state in EXECUTABLE_STATES and not tier_checked:
             raise RegistryError(f"tier_gated_capability_must_be_activated: {status.name}")
         with self._lock:
             conn = self.get(provider_id)
+            if keep_suspension and conn.capability(status.name).state == "suspended":
+                return False
             conn.capabilities[status.name] = status
             conn.version += 1
+            return True
 
     def configure(self, provider_id: str, *, access_level: str, operator_account_ref: Optional[str],
                   credential_ref: Optional[str], data_use: Mapping[str, bool]) -> None:

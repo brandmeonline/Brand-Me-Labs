@@ -362,6 +362,41 @@ def test_two_approved_requests_for_one_quote_never_block_each_other(w, drafter):
     assert e.value.code == "purchase_in_progress" and len(w.provider.submit_calls) == 1  # never bought twice
 
 
+@pytest.mark.parametrize("later", ["cancel_requested", "partially_fulfilled", "fulfilled", "partially_refunded",
+                                   "refunded", "disputed", "cancelled"])
+def test_a_placed_order_never_frees_its_quote_for_an_approved_sibling(w, later):
+    """Review finding: once the first order left 'accepted' (a lost cancel reply, a shipment, a refund), the
+    second approved request passed and the quote was bought twice. A placed order holds its quote for good."""
+    d, ag = w.delegate()
+    _, quote, op1 = w.prepared(ag)
+    op2 = w.svc.request_purchase(ag, quote.id)
+    a1, a2 = w.approve(op1), w.approve(op2)
+    w.svc.execute_purchase(ag, operation_id=op1.id, approval_id=a1.id, idempotency_key="held-00000000001")
+    placed = w.store.get("operations", op1.id)
+    w.store.run(lambda tx: tx.put("operations", op1.id, replace(placed, state=later, version=placed.version + 1)))
+    with pytest.raises(IdempotencyConflict) as e:
+        w.svc.execute_purchase(ag, operation_id=op2.id, approval_id=a2.id, idempotency_key="held-00000000002")
+    assert e.value.code == "purchase_in_progress" and len(w.provider.submit_calls) == 1
+
+
+def test_a_sibling_being_sent_blocks_the_other_approved_request(w, monkeypatch):
+    d, ag = w.delegate()
+    _, quote, op1 = w.prepared(ag)
+    op2 = w.svc.request_purchase(ag, quote.id)
+    a1, a2 = w.approve(op1), w.approve(op2)
+    real, raced = w.provider.submit, []
+
+    def submit_while_the_sibling_executes(request):
+        with pytest.raises(IdempotencyConflict) as e:  # op1 is 'submitting' right now
+            w.svc.execute_purchase(w.member, operation_id=op2.id, approval_id=a2.id, idempotency_key="sent-00000000002")
+        raced.append(e.value.code)
+        return real(request)
+
+    monkeypatch.setattr(w.provider, "submit", submit_while_the_sibling_executes)
+    done = w.svc.execute_purchase(ag, operation_id=op1.id, approval_id=a1.id, idempotency_key="sent-00000000001")
+    assert done.state == "accepted" and raced == ["purchase_in_progress"] and len(w.provider.submit_calls) == 1
+
+
 # ------------------------------------------------------------------ webhooks
 def _accepted_order(w, *lines_):
     d, ag = w.delegate()

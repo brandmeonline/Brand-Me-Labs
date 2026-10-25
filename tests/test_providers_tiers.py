@@ -470,6 +470,35 @@ def test_a_suspension_in_this_process_survives_refreshes_and_connection_tests(en
     assert env.store.snapshot("development", SHOP).capabilities["catalog.search"].evidence_ref == "fx:run:search"
 
 
+def test_a_suspension_landing_inside_a_refresh_is_kept(env, monkeypatch):
+    env.scripted.next = ProbeResult("passed", "sandbox_operation", "fx:run:search", "Searched one listing.")
+    env.svc.run_verification(OPERATOR, SHOP, "catalog.search", "read_only_test")
+    _process(env.store).svc.update_setup(OPERATOR, SHOP, {"account_ref": "fictional-fixture-account-2"})
+    real, fired = env.w.registry.set_capability, []
+
+    def suspended_after_the_check(provider_id, status, **kwargs):
+        if status.name == "catalog.search" and not fired:  # between _refresh's check and its write
+            fired.append(True)
+            env.w.registry.suspend(SHOP, "catalog.search", "operator_hold", env.w.clock.now)
+        return real(provider_id, status, **kwargs)
+
+    monkeypatch.setattr(env.w.registry, "set_capability", suspended_after_the_check)
+    env.svc.list_runs(OPERATOR, SHOP)
+    assert fired and _state(env, "catalog.search") == ("suspended", "operator_hold")
+
+
+def test_a_strict_log_refusing_an_activation_refusal_line_never_replaces_the_refusal(env):
+    def broken(record):
+        raise RunLogViolation("provider.tier_decision: bad line")
+
+    _ready_for_activation(env)
+    env.svc.tier_audit = broken
+    with pytest.raises(SetupRefused) as e:  # no tier assigned
+        env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    assert e.value.code == "activation_tier_excludes_capability"
+    assert any("tier decision log refused a line" in n for n in getattr(e.value, "__notes__", []))
+
+
 def test_a_failed_read_after_a_committed_write_still_writes_its_decision_lines(provider_setup_store):
     shared = _Interleave(provider_setup_store)
     a = _process(shared)
@@ -489,6 +518,30 @@ def test_a_failed_read_after_a_committed_write_still_writes_its_decision_lines(p
     assert _state(a) == ("unconfigured", "tier_excludes_capability")
 
 
+def test_a_failed_read_after_a_connection_test_still_writes_its_refusal_and_a_strict_refusal_is_a_note(env):
+    _ready_for_activation(env)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    shared = _Interleave(env.store)
+    swapped = _process(shared, StaticPricingTable("placeholder-2", PLACEHOLDER_PRICING_TABLE.tiers()))
+    swapped.svc.get_setup(OPERATOR, SHOP)
+    shared.fail_read_after_commit = _StoreDown("snapshot unavailable")
+    with pytest.raises(_StoreDown):
+        _stale_test(swapped, "failed", "none")
+    assert _tier_lines(swapped.log)[-1] == ("verification", "customization", "refuse", "tier_unknown")
+
+    def broken(record):
+        raise RunLogViolation("provider.tier_decision: bad line")
+
+    a = _process(shared)
+    a.svc.get_setup(OPERATOR, SHOP)
+    a.svc.tier_audit = broken
+    shared.fail_read_after_commit = _StoreDown("snapshot unavailable")
+    with pytest.raises(_StoreDown) as e:  # the read error propagates; the log's refusal rides on it
+        a.svc.assign_tier(OPERATOR, SHOP, FLOOR)
+    assert any("tier decision log refused a line" in n for n in getattr(e.value, "__notes__", []))
+
+
 def test_a_hydrate_refusal_is_logged_once_however_often_the_version_moves(env):
     _ready_for_activation(env)
     env.svc.assign_tier(OPERATOR, SHOP, CEILING)
@@ -500,6 +553,24 @@ def test_a_hydrate_refusal_is_logged_once_however_often_the_version_moves(env):
     swapped.svc.get_setup(OPERATOR, SHOP)
     assert _tier_lines(swapped.log) == [("hydrate", "customization", "refuse", "tier_unknown")]
     assert _state(swapped) == ("unconfigured", "tier_excludes_capability")
+
+
+@pytest.mark.parametrize("sees_the_reset", [True, False])
+def test_a_fresh_activation_is_logged_again_whether_or_not_the_reset_was_seen(env, sees_the_reset):
+    _ready_for_activation(env)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    swapped = _process(env.store, StaticPricingTable("placeholder-2", PLACEHOLDER_PRICING_TABLE.tiers()))
+    swapped.svc.get_setup(OPERATOR, SHOP)
+    env.svc.assign_tier(OPERATOR, SHOP, FLOOR)  # resets the activation
+    if sees_the_reset:
+        swapped.svc.get_setup(OPERATOR, SHOP)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.w.clock.advance(minutes=1)
+    _ready_for_activation(env)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})  # a new operator act with new evidence
+    swapped.svc.get_setup(OPERATOR, SHOP)
+    assert _tier_lines(swapped.log) == [("hydrate", "customization", "refuse", "tier_unknown")] * 2
 
 
 def test_a_connection_test_under_a_tier_that_excludes_a_persisted_activation_records_only_the_run(env):
@@ -772,7 +843,7 @@ def test_overlapping_pages_sharing_one_audit_each_log_their_own_counts(shelf):
 
         def __init__(self):
             super().__init__()
-            self.started, self.ingested = threading.Barrier(2, timeout=10), threading.Barrier(2, timeout=10)
+            self.started, self.ingested = threading.Barrier(3, timeout=10), threading.Barrier(3, timeout=10)
 
         def ingest_page(self, page, **kwargs):
             self.started.wait()
@@ -780,7 +851,7 @@ def test_overlapping_pages_sharing_one_audit_each_log_their_own_counts(shelf):
             self.ingested.wait()
 
     ing = Lockstep()
-    shelf.svc.assign_tier(OPERATOR, SHOP, "placeholder_shelf5")
+    shelf.svc.assign_tier(OPERATOR, SHOP, "placeholder_shelf2")  # three pages, two slots: one is refused
     audit, errors = IngestionAudit("shared", SHOP), []
 
     def page(i):
@@ -789,28 +860,34 @@ def test_overlapping_pages_sharing_one_audit_each_log_their_own_counts(shelf):
         except Exception as e:  # pragma: no cover - surfaced below
             errors.append(e)
 
-    threads = [threading.Thread(target=page, args=(i,)) for i in range(2)]
+    threads = [threading.Thread(target=page, args=(i,)) for i in range(3)]
     for t in threads:
         t.start()
     for t in threads:
         t.join()
     assert errors == []
     pages = [ln for ln in shelf.log.events("provider.tier_decision") if ln["origin"] == "ingestion"]
-    assert [ln["units_requested"] for ln in pages] == [1, 1]  # never the other page's addition
+    assert [ln["units_requested"] for ln in pages] == [1, 1, 1]  # never another page's addition or refusal
+    assert sum(ln["units_refused"] for ln in pages) == 1 == audit.quota_refused
     assert audit.new_listings == 2 == ing.shelf_usage(SHOP)
 
 
 def test_a_page_that_fails_part_way_changes_nothing_and_never_keeps_a_swap_over_the_limit(shelf):
     ing = CatalogIngestor()
     shelf.svc.assign_tier(OPERATOR, SHOP, "placeholder_shelf3")
-    _load(shelf, ing, [_variant(f"v{i}") for i in range(3)])
+    audit = IngestionAudit("multi-page", SHOP)  # one audit across pages, as a feed load keeps it
+    shelf.svc.load_shelf_page(ing, _page([_variant(f"v{i}") for i in range(3)], cursor="c1"), provider_id=SHOP,
+                              now=T0, audit=audit)
+    before = replace(audit, rejections=list(audit.rejections), admitted_refs=list(audit.admitted_refs))
+    lines = len(shelf.log.events("provider.tier_decision"))
     later = T0 + timedelta(hours=1)
     broken = replace(_variant("vx", updated=later), product_url=None)  # a malformed provider record
     with pytest.raises(AttributeError):
-        _load(shelf, ing, [_variant("v9", updated=later), broken], run="r2", tombstones=[("p1", "v0")])
+        shelf.svc.load_shelf_page(ing, _page([_variant("v9", updated=later), broken], [("p1", "v0")], cursor="c2"),
+                                  provider_id=SHOP, now=later, audit=audit)
     assert {v.source_variant_id for v in ing.offers(SHOP)} == {"v0", "v1", "v2"}  # v9 kept nothing
-    pages = [ln for ln in shelf.log.events("provider.tier_decision") if ln["origin"] == "ingestion"]
-    assert (pages[-1]["units_requested"], pages[-1]["units_refused"]) == (0, 0)  # the failed page admitted nothing
+    assert ing.cursors[SHOP] == "c1" and audit == before  # retried from the same place; nothing half-counted
+    assert len(shelf.log.events("provider.tier_decision")) == lines  # no line: it would read as an empty page
 
 
 def test_tombstones_are_read_once_from_any_iterable_and_a_malformed_one_refuses_the_page():
@@ -824,7 +901,8 @@ def test_tombstones_are_read_once_from_any_iterable_and_a_malformed_one_refuses_
     decoded = CatalogPage((), "c3", [["p1", "v1"]])  # pairs decoded from the JSON wire arrive as lists
     ing.ingest_page(decoded, provider_id=SHOP, now=later, audit=IngestionAudit("r3", SHOP), max_active_listings=3)
     assert ing.shelf_usage(SHOP) == 2
-    for bad in ([("p1",)], [("p1", 7)], ["p1v2"]):
+    for bad in ([("p1",)], [("p1", 7)], ["p1v2"], [{"source_product_id": "p1", "source_variant_id": "v2"}],
+                [frozenset({"p1", "v2"})], [("p1", "")]):
         with pytest.raises(ValueError):
             ing.ingest_page(CatalogPage((_variant("v8", updated=later),), "c4", bad), provider_id=SHOP, now=later,
                             audit=IngestionAudit("r4", SHOP), max_active_listings=3)

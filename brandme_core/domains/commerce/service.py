@@ -818,9 +818,14 @@ class CommerceService:
             raise ApprovalInvalid("mandate not signed by a registered member key",
                                   code="ap2_" + getattr(last, "code", "no_surface_key"))
 
+        # Single use is keyed on the encoded mandate and on the checkout the member's signature covers: an agent
+        # can re-encode a signature (ECDSA high-s) and change the encoded bytes, but not the signed checkout. So
+        # one member signature approves one request, never a sibling request for the same quote.
+        used_keys = (result.checkout_mandate_digest, "checkout:" + result.checkout_hash)
+
         def _tx(tx):
             self._guard(tx, principal.member_id, ORDERS)
-            if tx.get("ap2_used", result.checkout_mandate_digest) is not None:
+            if any(tx.get("ap2_used", key) is not None for key in used_keys):
                 raise ApprovalInvalid("mandate already used", code="ap2_replay")
             current = tx.get("operations", operation_id)
             if current.state != "awaiting_approval" or quote.compute_hash() != current.quote_hash:
@@ -831,7 +836,8 @@ class CommerceService:
                 allowed_total=quote.total, nonce=result.checkout_hash, issued_at=now, expires_at=quote.expires_at,
                 assurance_level="ap2_user_signed", method="ap2_mandate", materiality_rule=MATERIALITY_RULE,
                 protocol_payload_hash=result.protocol_payload_hash)
-            tx.put("ap2_used", result.checkout_mandate_digest, approval.id)
+            for key in used_keys:
+                tx.put("ap2_used", key, approval.id)
             tx.put("approvals", approval.id, approval)
             current = self._transition(tx, current, "approved", approval_id=approval.id)
             self._event(tx, "commerce.purchase.authorized", "PurchaseOperation", current.id, current.version,
@@ -905,11 +911,12 @@ class CommerceService:
                 raise ApprovalInvalid("the cart changed after approval; review a new quote", code="quote_changed")
             if approval.allowed_total != quote.total or approval.merchant_id != quote.merchant_id:
                 raise ApprovalInvalid("approved amount or merchant does not match")
-            # Another purchase of the same quote that is being sent, unresolved or placed blocks this one. An
-            # approved but unsent sibling does not: both cannot pass this check, because the first to execute
-            # turns ``submitting`` in this same transaction, so two approved requests never block each other.
+            # One quote is bought at most once. Another purchase of it blocks this one once it is being sent, is
+            # unresolved, or holds an order in any later state (cancel requested, shipped, refunded, cancelled):
+            # a placed order never frees its quote. An approved but unsent sibling does not block: the first to
+            # execute turns ``submitting`` in this same transaction, so two approved requests never deadlock.
             for other in tx.operations_for_quote_hash(op.quote_hash):
-                if other.id != op.id and other.state in (IN_FLIGHT - {"approved"}) | {"accepted"}:
+                if other.id != op.id and (other.order_id is not None or other.state in ("submitting", "outcome_unknown")):
                     raise IdempotencyConflict("this quote is already being purchased", code="purchase_in_progress")
             self._require_capability(op.provider_id, "checkout.submit")
             if grant is not None:
