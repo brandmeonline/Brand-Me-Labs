@@ -1252,3 +1252,22 @@ the lock patch before the Q11 ruling.
     `tests/foundation/test_outbox_delivery.py` 30/30.
   - Of the 18 skips, the 8 key-gated ones remain.
 - **Lock patch (Q11):** not applied, as directed.
+
+## Stage S22 — Authorized prerequisite lock repair (2026-10-25)
+
+The founder authorized the steps and PR merges needed for the consumer-UI integration plan. As its
+prerequisite, apply the previously proposed Q11 patch to PR #51; no provider credentials or live calls
+are involved. This supersedes S21's pending-authorization state for the lock patch only.
+
+- Added `anthropic==0.125.0` and `stripe==16.0.0` to the shared input and recompiled with uv for
+  Linux/Python 3.11, constrained to the existing pins. Exactly five packages are added: those two plus
+  `distro==1.9.0`, `docstring-parser==0.18.0`, and `jiter==0.18.0`. All 83 existing versions and hash sets
+  remain unchanged.
+- Hash-enforced installation of all 88 locked packages passed. Linux/Python 3.11 dependency resolution
+  passed. The disposable Windows/Python 3.11.9 validation environment also needed pytest's Windows-only
+  `colorama==0.4.6`; it was installed locally without changing the Linux lock. Dependency check passed.
+- Offline regression: `tests/test_providers_stripe.py`, `tests/test_commerce_model_planner.py`, and
+  `tests/test_commerce_assistant_planning.py` **153 passed, 0 skipped**. These use fixture doubles and
+  scripted transport through the real SDKs; they are not live Stripe or model evidence.
+- `git diff --check` passed. Full Linux/emulator CI on the new head remains required before undrafting
+  or merging. Credentials remain absent; mounting and the other S20 integration limits are unchanged.
