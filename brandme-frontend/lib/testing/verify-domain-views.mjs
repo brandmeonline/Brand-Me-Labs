@@ -48,7 +48,10 @@ try{
       })
       const page=await context.newPage(),errors=[]
       page.on('pageerror',error=>errors.push(error.message))
-      async function audit(name){
+      async function audit(name,expectedTitle='Brand.Me — Be More U'){
+        // A rendered client view can precede Next's streamed metadata during navigation.
+        // Require the inherited title before auditing; a missing/wrong title must still fail.
+        await page.waitForFunction(title=>document.title===title,expectedTitle,{timeout:10000})
         for(const theme of ['light','dark']){
           await page.emulateMedia({colorScheme:theme})
           await page.waitForFunction(theme=>document.documentElement.dataset.bmTheme===theme,theme)
@@ -123,7 +126,7 @@ try{
       console.log(`PASS UI test doubles at ${width}px: catalog text, inbox references, reservation retry/focus, scoped exports, verified download, account switch, retained deletion outcomes and axe`)
     }catch(error){
       for(const [index,page]of context.pages().entries())await page.screenshot({path:path.join(output,`failure-fixture-${width}-${index}.png`),fullPage:true}).catch(()=>{})
-      await writeFile(path.join(output,`failure-fixture-${width}.json`),JSON.stringify({error:error.message,urls:context.pages().map(page=>page.url())},null,2))
+      await writeFile(path.join(output,`failure-fixture-${width}.json`),JSON.stringify({error:error.message,urls:context.pages().map(page=>page.url()),titles:await Promise.all(context.pages().map(page=>page.title().catch(()=>null)))},null,2))
       throw error
     }finally{await context.close()}
   }
