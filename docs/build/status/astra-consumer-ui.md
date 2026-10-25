@@ -430,6 +430,8 @@ The existing spatial route/feature ownership remains respected: consume its impl
 
 ### Evidence and gates
 
-Re-sync build/test/browser/pixel evidence: **pending execution**. The 74 existing reviewed baselines are unchanged; any replacement requires human review. Real-device and screen-reader sessions remain **not_run**, with dates still to be supplied. The 21-question check-in is due once rooms plus Now/Flow are live against the dev gateway on main; it has not been reached.
+Re-sync commit `1b9d320eb8a7a2946591d3fd27e324dd2c80affa` is pushed. Local Node 24.21.0 / pnpm 10.34.6 frozen installation passed, as did all 29 component/security tests. The first Consumer UI CI run `40151614227` passed the frontend production build but failed the console build: importing the consumer's React 19 preference provider from the React 18 console creates incompatible JSX types. Isolate the same preference implementation inside console-owned `lib/client/`, preserving its storage key and behavior; nonincremental TypeScript checks for both apps then pass. The production console build and successor browser/live/pixel gates remain **pending**.
+
+The 74 existing reviewed baselines are unchanged; any replacement requires human review. Real-device and screen-reader sessions remain **not_run**, with dates still to be supplied. The 21-question check-in is due once rooms plus Now/Flow are live against the dev gateway on main; it has not been reached. Spatial runtime acceptance is separate: its asset package has a dedicated pinned install, and the consumer CI workflow does not run the spatial E2E suites.
 
 Credential manifest update: no credentials created or copied. Existing authenticated Git access is reused; dependency downloads and local disposable tooling require no new application credential.

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Menu, X, SunMoon } from 'lucide-react'
-import { useExperiencePreferences } from '../../brandme-frontend/lib/client/experience-preferences'
+import { useExperiencePreferences } from '@/lib/client/experience-preferences'
 
 import { consoleNavigation } from '@/lib/navigation'
 import { CONSOLE_SHELL_CONTRACT, isLegacyConsolePath } from '@/lib/console-contract'

@@ -9,7 +9,7 @@ import {
   displayFont,
   preferenceBootstrap,
 } from '@/lib/shell'
-import { ExperiencePreferencesProvider } from '../../brandme-frontend/lib/client/experience-preferences'
+import { ExperiencePreferencesProvider } from '@/lib/client/experience-preferences'
 
 export const metadata: Metadata = {
   title: {
