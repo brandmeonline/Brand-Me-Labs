@@ -619,3 +619,11 @@ that rebase; the publication diff and whitespace check were reviewed again.
 
 Adopt this local publication only after PR #56 is integrated on main. No baseline
 is changed and no credential is created.
+
+### Design-preview synchronization with the approved parent and contract
+
+The local PR #63 branch incorporates approved parent `cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8` and contract publication `4ba1fae8a846a2a34104564ce35010fb4be4ad2c`. The Stage 15 approval, Stage 16 contract receipt and all preview evidence are preserved. Publication and retargeting remain deferred until #56 and then the contract have actually merged.
+
+On combined snapshot `7f7d4e7`, `test:ui` passed **33/33 tests with zero failures or skips**: 27 preview cases, four console compatibility cases and two adapter parity cases. Validation used Node 24.21.0 / pnpm 10.34.6 in a new detached worktree with new junctions to the root's fresh frozen dependency installation; no existing junction was removed or replaced. The shared test compiler now resolves each application's `@/` aliases within that application, preserving the separate React runtimes. The existing React 18/Radix static-render layout-effect diagnostics remain distinct from browser hydration evidence.
+
+Consumer application sources and reviewed baselines are unchanged from preview head `9d1e29f`; domain and revision-fixture changes match the approved parent exactly. The founder's approval covers that domain correction only. Human visual-baseline approval, device and screen-reader sessions remain outstanding; this preparation adds no production feature or approval.
