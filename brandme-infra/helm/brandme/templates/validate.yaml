@@ -53,3 +53,10 @@ Renders nothing. Fails the whole render on values that must never deploy.
 {{- fail "eventsWorker.topics must be three distinct topics" -}}
 {{- end -}}
 {{- end -}}
+{{- if .Values.eventsRetention.enabled -}}
+{{- $schedule := include "brandme.req" (list .Values.eventsRetention.schedule "eventsRetention.schedule") -}}
+{{- /* Hourly at a fixed minute: the delivered-row purge and the 30-day erasure sweep assume a pass every hour. */ -}}
+{{- if not (regexMatch "^([0-9]|[1-5][0-9]) \\* \\* \\* \\*$" $schedule) -}}
+{{- fail (printf "eventsRetention.schedule %q must be hourly at a fixed minute, e.g. \"17 * * * *\" (brandme_core/events/retention.py)" $schedule) -}}
+{{- end -}}
+{{- end -}}

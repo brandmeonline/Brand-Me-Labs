@@ -26,6 +26,7 @@ case "$service" in
     echo 'runtime default command prints usage and exits 64'
     docker run --rm --entrypoint python "$image" -m pip check
     docker run --rm --entrypoint python "$image" -m brandme_core.events.worker --help
+    docker run --rm --entrypoint python "$image" -m brandme_core.events.retention --help
     docker run --rm --entrypoint python "$image" -m brandme_core.read_api --help
     docker run --rm --entrypoint python "$image" -m brandme_core.privacy_exports --help
     docker run --rm --entrypoint python "$image" brandme-data/spanner/migrations/runner.py --help
@@ -34,7 +35,7 @@ case "$service" in
     # record; stderr may carry dependency warnings (google.api_core warns about Python 3.11's end of life from
     # 2026-10-24) but never a traceback.
     err=$(mktemp)
-    for module in brandme_core.read_api brandme_core.privacy_exports brandme_core.events.worker; do
+    for module in brandme_core.read_api brandme_core.privacy_exports brandme_core.events.worker brandme_core.events.retention; do
       set +e; out=$(docker run --rm --read-only --network none -e BRANDME_MODE=sandbox -e ENVIRONMENT=sandbox --entrypoint python "$image" -m "$module" --check 2>"$err"); rc=$?; set -e
       test "$rc" -eq 2 && test "$out" = '{"status":"startup_refused"}' && ! grep -q 'Traceback' "$err" \
         || { echo "$module --check: rc=$rc stdout=$out" >&2; cat "$err" >&2; exit 1; }
