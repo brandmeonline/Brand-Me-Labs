@@ -67,6 +67,9 @@ eventsWorker:
     memberPrivate: brandme-sandbox-member-private
     restricted: brandme-sandbox-restricted
 
+eventsRetention:
+  gcpServiceAccount: bm-sbx-fnd-outbox
+
 migrations:
   gcpServiceAccount: bm-sbx-fnd-migrator
 

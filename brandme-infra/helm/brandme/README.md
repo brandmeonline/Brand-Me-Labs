@@ -21,6 +21,7 @@ the credentials it needs are founder actions, listed in order in
 | exports-api | `brandme-core` | `python -m brandme_core.privacy_exports` | 8000 `GET /health`, TCP | `bm-sbx-rts-export-api` |
 | exports-worker | `brandme-core` | `python -m brandme_core.privacy_exports --worker` | none (exits non-zero on failed startup checks) | `bm-sbx-rts-export-wkr` |
 | events-worker | `brandme-core` | `python -m brandme_core.events.worker` | none (same) | `bm-sbx-fnd-outbox` |
+| events-retention (CronJob, hourly at :17 UTC) | `brandme-core` | `python -m brandme_core.events.retention --once` | none (exits non-zero on a failed pass) | `bm-sbx-fnd-outbox` (own KSA; needs its own Workload Identity binding) |
 | migrations (hook Job) | `brandme-core` | `python brandme-data/spanner/migrations/runner.py up` | — | `bm-sbx-fnd-migrator` |
 
 The legacy brain, policy, orchestrator, knowledge, compliance, identity and cube
@@ -51,7 +52,9 @@ refuses to render that combination (`templates/validate.yaml`).
   `RuntimeDefault` seccomp, no privilege escalation, all capabilities dropped,
   read-only root filesystem with an `emptyDir` `/tmp`, requests and limits.
   Every Deployment also gets a PodDisruptionBudget (`maxUnavailable: 1`); the
-  migrations Job does not.
+  migrations Job and the events-retention CronJob do not.
+- `eventsRetention.schedule` must be hourly at a fixed minute (the outbox
+  retention and erasure sweep assume a pass every hour; `concurrencyPolicy: Forbid`).
 - Default-deny NetworkPolicy for the namespace plus explicit allows
   (load balancer → gateway/console only when ingress is on; gateway → chain,
   read-api, exports-api; DNS; GKE metadata server; HTTPS egress outside private ranges).

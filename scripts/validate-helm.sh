@@ -140,7 +140,7 @@ assert_hardened() { # assert_hardened <rendered file> <expected Deployments...>
     grep -qx "  name: $name" "$f" || die "$f: expected resource $name was not rendered"
   done
   local pods images
-  pods=$(count '^kind: (Deployment|Job)$' "$f")
+  pods=$(count '^kind: (Deployment|Job|CronJob)$' "$f")
   images=$(count '^ +image: ' "$f")
   [ "$pods" -gt 0 ] || die "$f: no workloads rendered"
   [ "$images" -eq "$pods" ] || die "$f: expected one container per pod ($images images, $pods pods)"
@@ -172,7 +172,7 @@ expect_failure() {
 install_tools
 
 CI_VALUES="$CHART/ci/test-values.yaml"
-ALL_DEPLOYMENTS=(brandme-gateway brandme-chain brandme-console brandme-read-api brandme-exports-api brandme-exports-worker brandme-events-worker brandme-migrations)
+ALL_DEPLOYMENTS=(brandme-gateway brandme-chain brandme-console brandme-read-api brandme-exports-api brandme-exports-worker brandme-events-worker brandme-events-retention brandme-migrations)
 
 log "helm lint --strict (ci/test-values.yaml)"
 "$HELM" lint --strict "$CHART" --namespace brandme --kube-version "${KUBE_VERSIONS[0]}" -f "$CI_VALUES"
@@ -203,7 +203,7 @@ for kv in "${KUBE_VERSIONS[@]}"; do
   render "$kv" "$WORK/sandbox-$kv.yaml" -f "$CHART/values-sandbox.yaml" -f "$WORK/sandbox-filled.yaml" "${DIGESTS[@]}"
   conform "$kv" "$WORK/sandbox-$kv.yaml"
   assert_hardened "$WORK/sandbox-$kv.yaml" brandme-gateway brandme-chain brandme-read-api brandme-exports-api \
-    brandme-exports-worker brandme-events-worker brandme-migrations
+    brandme-exports-worker brandme-events-worker brandme-events-retention brandme-migrations
   modes=$(count '^ +- name: (BRANDME_MODE|ENVIRONMENT)$' "$WORK/sandbox-$kv.yaml")
   sandbox=$(grep -A1 -E '^ +- name: (BRANDME_MODE|ENVIRONMENT)$' "$WORK/sandbox-$kv.yaml" | grep -cE '^ +value: "sandbox"$' || true)
   [ "$modes" -gt 0 ] && [ "$modes" -eq "$sandbox" ] || die "values-sandbox.yaml must render BRANDME_MODE=ENVIRONMENT=sandbox everywhere"
@@ -238,6 +238,11 @@ expect_failure "missing Secret name" "secretRefs.chainServiceToken.name is requi
   -f "$CI_VALUES" --set secretRefs.chainServiceToken.name=
 expect_failure "missing Workload Identity GSA" "readApi.gcpServiceAccount is required" -f "$CI_VALUES" --set readApi.gcpServiceAccount=
 expect_failure "topic outside brandme-<mode>-" "must start with brandme-sandbox-" -f "$CI_VALUES" --set eventsWorker.topics.public=outbox-public
+expect_failure "events-retention without a Workload Identity GSA" "eventsRetention.gcpServiceAccount is required" \
+  -f "$CI_VALUES" --set eventsRetention.gcpServiceAccount=
+expect_failure "events-retention daily" "must be hourly at a fixed minute" -f "$CI_VALUES" --set-string 'eventsRetention.schedule=17 3 * * *'
+expect_failure "events-retention without a schedule" "eventsRetention.schedule is required" -f "$CI_VALUES" --set-string 'eventsRetention.schedule='
+expect_failure "events-retention every minute" "must be hourly at a fixed minute" -f "$CI_VALUES" --set-string 'eventsRetention.schedule=* * * * *'
 expect_failure "production with Midnight test-network workloads" "mode=production with chain/read-api/exports enabled is refused" -f "$CI_VALUES" --set mode=production
 expect_failure "production values with sandbox resources" "must start with brandme-production-" -f "$CI_VALUES" --set mode=production --set chain.enabled=false --set readApi.enabled=false --set exportsApi.enabled=false --set exportsWorker.enabled=false
 
@@ -249,7 +254,9 @@ import sys
 import google.auth
 import yaml
 
+from brandme_core.config import enforce_boot_guard
 from brandme_core.events import pubsub
+from brandme_core.events.retention import RetentionConfig
 from brandme_core.events.worker import WorkerConfig
 from brandme_core.privacy_exports.config import ExportConfig
 from brandme_core.read_api.config import ReadConfig
@@ -267,6 +274,7 @@ google.auth.default = no_adc
 
 docs = [d for d in yaml.safe_load_all(open(sys.argv[1])) if d]
 pods = {d["metadata"]["name"]: d["spec"]["template"]["spec"] for d in docs if d["kind"] in ("Deployment", "Job")}
+pods.update({d["metadata"]["name"]: d["spec"]["jobTemplate"]["spec"]["template"]["spec"] for d in docs if d["kind"] == "CronJob"})
 secret_values = {}
 
 
@@ -299,6 +307,14 @@ except AdcReached:
     checked.append("brandme-events-worker")
 else:
     raise SystemExit("PubSubPublisher did not reach credential lookup")
+
+retention_pod = pods["brandme-events-retention"]
+assert retention_pod["containers"][0]["command"] == ["python", "-m", "brandme_core.events.retention", "--once"]
+assert retention_pod["restartPolicy"] == "Never" and retention_pod["serviceAccountName"] == "brandme-events-retention"
+retention_env = env_of("brandme-events-retention")
+assert RetentionConfig.from_env(retention_env).environment == "sandbox"
+assert enforce_boot_guard("events_retention", env=retention_env).value == "sandbox"
+checked.append("brandme-events-retention")
 
 mig = env_of("brandme-migrations")
 assert mig["BRANDME_MODE"] == mig["ENVIRONMENT"] == "sandbox" and all(

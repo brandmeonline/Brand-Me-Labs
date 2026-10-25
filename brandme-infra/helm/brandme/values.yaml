@@ -190,6 +190,24 @@ eventsWorker:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {cpu: 500m, memory: 512Mi}
 
+# Hourly CronJob: python -m brandme_core.events.retention --once. Purges
+# delivered outbox rows 7 days after delivery and re-erases deleted subjects'
+# event and replay records (founder ruling Q19; events/README.md "Retention and
+# erasure"). Spanner only: no Pub/Sub topics, wallet or chain access.
+eventsRetention:
+  enabled: true
+  # Hourly at a fixed minute (UTC), off the top of the hour.
+  schedule: "17 * * * *"
+  # Own ServiceAccount, same Workload Identity pattern as eventsWorker. The GSA
+  # needs brandmeSpannerDataReadWrite (it includes
+  # spanner.databases.beginPartitionedDmlTransaction).
+  gcpServiceAccount: ""
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 86400
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
 # pre-install/pre-upgrade hook Job: brandme-data/spanner/migrations/runner.py up
 migrations:
   enabled: true
