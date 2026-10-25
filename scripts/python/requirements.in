@@ -12,3 +12,5 @@ jwcrypto==1.6.1
 PyJWT[crypto]==2.15.1
 rfc8785==0.1.4
 sd-jwt==0.10.4
+anthropic==0.125.0
+stripe==16.0.0

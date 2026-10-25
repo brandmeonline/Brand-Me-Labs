@@ -9,7 +9,6 @@ is absent.
 import json
 import os
 import subprocess
-import time
 from pathlib import Path
 
 import jwt
@@ -23,13 +22,14 @@ from tests.fixtures.commerce.ap2_issuer import (
     closed_checkout_mandate, closed_payment_mandate, issue, merchant_checkout_jwt, present_with_kb,
 )
 from tests.fixtures.commerce.harness import world
+from tests.fixtures.commerce.stores import commerce_store, _spanner_db  # noqa: F401  (fixtures)
 
 ORACLE = Path(__file__).resolve().parent / "fixtures/commerce/ap2_sdk_oracle.py"
 
 
 @pytest.fixture
-def setup():
-    w = world()
+def setup(commerce_store):
+    w = world(store=commerce_store)
     d, ag = w.delegate()
     _, quote, op = w.prepared(ag)
     user = JWK.generate(kty="EC", crv="P-256")
@@ -66,7 +66,7 @@ def test_valid_mandates_produce_bound_approval_and_purchase(setup):
     approval = w.svc.approve_with_ap2(ag, operation_id=op.id, checkout_mandate=cm, payment_mandate=pm)
     assert approval.method == "ap2_mandate" and approval.quote_hash == quote.quote_hash
     assert approval.protocol_payload_hash.startswith("sha256:")
-    done = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="ap2-exec")
+    done = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="ap2-exec-0000000")
     assert done.state == "accepted"
 
 

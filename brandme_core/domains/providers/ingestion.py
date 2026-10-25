@@ -13,7 +13,7 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
-from typing import Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import Dict, List, Mapping, Optional, Tuple
 
 from .contracts import CatalogPage, SourceVariant
 

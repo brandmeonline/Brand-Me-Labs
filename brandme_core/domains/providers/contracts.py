@@ -8,9 +8,9 @@ Python source for the future ``packages/provider-contracts`` TypeScript package.
 from __future__ import annotations
 
 import enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple, runtime_checkable
+from typing import Any, Mapping, Optional, Protocol, Sequence, Tuple, runtime_checkable
 
 from brandme_core.domains.commerce.money import Money
 from brandme_core.domains.commerce.quote import CheckoutTerms
@@ -27,6 +27,20 @@ CAPABILITY_STATES: Tuple[str, ...] = (
 )
 # States in which an operation may actually be executed.
 EXECUTABLE_STATES = frozenset({"sandbox", "verified", "degraded"})
+# Evidence kinds that can justify ``verified``/``sandbox`` (the registry decides which).
+VERIFYING_EVIDENCE = frozenset({"sandbox_operation", "production_operation", "conformance_suite"})
+# Evidence a connection test may record that can never verify a capability: reaching a
+# host, or checking a link against allowed hosts, proves nothing about the operation.
+NON_VERIFYING_EVIDENCE = frozenset({"host_reachability", "link_validation", "none"})
+EVIDENCE_KINDS = VERIFYING_EVIDENCE | NON_VERIFYING_EVIDENCE
+PROBE_RESULTS: Tuple[str, ...] = ("passed", "failed", "blocked")
+PROBE_MODES: Tuple[str, ...] = ("read_only_test", "staging_ingestion")
+SETUP_SECTIONS: Tuple[str, ...] = ("enables", "prerequisites", "credentials", "data_use", "tests", "activation")
+# ``OrderObservation.payment_status`` values. ``voided``: an authorization released before capture
+# (cancelled order or expired hold); no money moved.
+ORDER_PAYMENT_STATUSES: Tuple[str, ...] = (
+    "unknown", "authorized", "captured", "partially_refunded", "refunded", "voided", "failed",
+)
 
 
 class ProviderErrorKind(str, enum.Enum):
@@ -36,7 +50,7 @@ class ProviderErrorKind(str, enum.Enum):
     CONTRACT_RESTRICTED = "contract_restricted"
     THROTTLED = "throttled"
     TRANSIENT = "transient"
-    MALFORMED_RESPONSE = "malformed_response"
+    MALFORMED_RESPONSE = "malformed_provider_response"
     OUTCOME_UNKNOWN = "outcome_unknown"
 
 
@@ -187,6 +201,12 @@ class SubmitRequest:
     quote_hash: str
     expected_total: Money
     payment_token_ref: Optional[str]  # scoped provider token reference; never PAN/CVV
+    # The exact quoted lines. An adapter must refuse a checkout whose provider-side
+    # cart no longer matches them (the cart can change outside Brand.Me's control).
+    lines: Tuple["CartLineRequest", ...] = ()
+    # The payee the member approved (the quote's ``payee_ref``). A merchant refuses a checkout
+    # whose payee changed since the quote (``payee_changed``) before any payment I/O.
+    payee_ref: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -232,17 +252,19 @@ class ObservedLine:
     quantity_delivered: int = 0
     quantity_returned: int = 0
     exchanged_from_ref: Optional[str] = None
+    quantity_cancelled: int = 0  # never shipped and no longer owed (cancelled or refunded before shipment)
 
 
 @dataclass(frozen=True)
 class OrderObservation:
     provider_order_ref: str
     order_status: str  # accepted | rejected | cancelled
-    payment_status: str  # authorized | captured | partially_refunded | refunded | failed | unknown
+    payment_status: str  # one of ORDER_PAYMENT_STATUSES
     lines: Tuple[ObservedLine, ...]
     refunded_total: Money
     observed_at: datetime
     evidence_ref: Optional[str] = None
+    captured_total: Optional[Money] = None  # set once captured; the uncaptured remainder was released
 
 
 @dataclass(frozen=True)
@@ -253,6 +275,9 @@ class WebhookEvent:
     provider_order_ref: str
     occurred_at: datetime
     payload: Mapping[str, Any]
+    # False: verified, but not about this adapter's orders (e.g. another app on the same
+    # processor account). The service acknowledges it with an ``ignored`` receipt.
+    relevant: bool = True
 
 
 @runtime_checkable
@@ -271,6 +296,15 @@ class ReturnsProvider(Protocol):
     provider_id: str
 
     def request_return(self, provider_order_ref: str, source_variant_ref: str, quantity: int) -> ProviderResult: ...
+
+
+@runtime_checkable
+class OrderCancellationProvider(Protocol):
+    """Asks the merchant to cancel units that have not shipped. Shipped units go through returns.
+    No capability name exists for this in the closed vocabulary; support is the protocol itself."""
+    provider_id: str
+
+    def request_cancellation(self, provider_order_ref: str, *, idempotency_key: str) -> ProviderResult: ...
 
 
 # --- declared for completeness; implemented by other lanes / later stages -----
@@ -303,3 +337,79 @@ class ContextProvider(Protocol):
     provider_id: str
 
     def context(self, request: Mapping[str, Any]) -> ProviderResult: ...
+
+
+# --- operator setup and connection tests (ch.05 §8) ---------------------------
+
+@dataclass(frozen=True)
+class ProbeResult:
+    """What one connection test observed for one exact capability.
+
+    ``evidence_ref`` points at what the test produced (never a provider body);
+    ``sanitized_summary`` is operator display text without secrets or personal data.
+    Only a ``passed`` result with a verifying evidence kind can move a capability.
+    """
+
+    result: str  # passed | failed | blocked
+    evidence_kind: str
+    evidence_ref: str
+    sanitized_summary: str
+    reason_code: Optional[str] = None  # why it failed or was blocked
+
+    def __post_init__(self) -> None:
+        if self.result not in PROBE_RESULTS:
+            raise ValueError(f"unknown probe result {self.result!r}")
+        if self.evidence_kind not in EVIDENCE_KINDS:
+            raise ValueError(f"unknown evidence kind {self.evidence_kind!r}")
+        if self.result == "blocked" and self.evidence_kind != "none":
+            raise ValueError("a blocked test ran nothing, so it has no evidence")
+
+    @property
+    def verifies(self) -> bool:
+        return self.result == "passed" and self.evidence_kind in VERIFYING_EVIDENCE
+
+
+@runtime_checkable
+class VerifiableProvider(Protocol):
+    """An adapter that can exercise one capability without side effects outside itself.
+
+    ``probe`` must never place an order, move money, submit a checkout or send a
+    message; a capability without such a test returns ``blocked``. Adapters without
+    ``probe`` have no connection test, and the setup service records ``blocked``.
+    """
+
+    provider_id: str
+
+    def probe(self, capability: str, mode: str, now: datetime) -> ProbeResult: ...
+
+
+@dataclass(frozen=True)
+class SetupField:
+    """One operator-entered setup step, completed by the ``SetupUpdate`` field ``field``."""
+
+    key: str  # ProviderSetupItems.item_key
+    section: str  # prerequisites | credentials
+    label: str
+    field: str
+    action: str  # the concrete step shown while it is missing
+    required_for: Optional[frozenset] = None  # capabilities that cannot activate without it; None = all
+    after: Tuple[str, ...] = ()  # setup keys that must be done first
+
+
+@dataclass(frozen=True)
+class SetupProfile:
+    """What an adapter needs before its capabilities can be activated.
+
+    An adapter declares it as ``setup_profile``; it may also implement
+    ``apply_setup(values)`` to receive saved, server-only setup values.
+    """
+
+    summary: str  # "what this enables", including what is not offered
+    access_levels: Tuple[str, ...] = ()  # () = fixed by the adapter
+    approval_levels: frozenset = frozenset()  # access levels that need approval evidence first
+    gated_capabilities: frozenset = frozenset()  # need an access level in approval_levels
+    fields: Tuple[SetupField, ...] = ()
+    data_use_rights: Tuple[str, ...] = ()  # each marked by an operator; () = fixed by the adapter
+    data_use_required_for: frozenset = frozenset()
+    # Rows that need no operator action: (section, key, label, state, detail).
+    fixed_rows: Tuple[Tuple[str, str, str, str, str], ...] = ()

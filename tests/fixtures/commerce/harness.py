@@ -5,6 +5,7 @@ All people, merchants and products are fictional (contracts/demo-scenario.json).
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -36,18 +37,19 @@ class Clock:
         self.now += timedelta(**kw)
 
 
-def member_session(member: str = MEMBER, aal: str = "aal2", scopes=None) -> Principal:
-    return Principal(member_id=member, subject=f"sub-{member[:8]}", issuer="https://idp.example.invalid",
-                     client_id="brandme-web", scopes=frozenset(scopes or {
-                         "commerce:research", "commerce:cart", "commerce:purchase"}),
-                     assurance_level=aal, environment="development", session_id="sess-1",
-                     first_party_session=True)
+def member_session(member: str = MEMBER, aal: str = "aal2", scopes=None,
+                   environment: str = "development") -> Principal:
+    """First-party trusted-UI session (foundation session principal: profile scopes only)."""
+    return Principal(member_id=member, subject=f"sub-{member[:8]}", session_id="sess-1", client_id="brandme-web",
+                     scopes=frozenset(scopes or {"profile:read", "profile:write", "privacy:manage"}),
+                     assurance_level=aal, environment=environment)
 
 
-def agent(delegation_id: str, scopes, member: str = MEMBER, client: str = AGENT_CLIENT) -> Principal:
-    return Principal(member_id=member, subject=f"sub-{member[:8]}", issuer="https://idp.example.invalid",
-                     client_id=client, scopes=frozenset(scopes), assurance_level="aal1",
-                     environment="development", delegation_id=delegation_id)
+def agent(delegation_id: Optional[str], scopes, member: str = MEMBER, client: str = AGENT_CLIENT) -> Principal:
+    """Agent/bearer principal; ``delegation_id=None`` exercises (member, client) resolution."""
+    return Principal(member_id=member, subject=f"sub-{member[:8]}", session_id=None, client_id=client,
+                     scopes=frozenset(scopes), assurance_level="aal1", environment="development",
+                     delegation_id=delegation_id)
 
 
 def line(slug: str = "overshirt", size: str = "m", qty: int = 1) -> CartLineRequest:
@@ -66,7 +68,7 @@ class World:
     clock: Clock
     provider: LocalAtelierProvider
     registry: ProviderRegistry
-    store: InMemoryCommerceStore
+    store: object  # InMemoryCommerceStore | SpannerCommerceStore
     svc: CommerceService
     member: Principal = field(default_factory=member_session)
 
@@ -90,11 +92,14 @@ class World:
                                 displayed_quote_hash=ch.quote_hash)
 
 
-def world(environment: str = "development") -> World:
+def world(environment: str = "development", store=None, payments=None, fulfillment=None) -> World:
+    """``payments`` / ``fulfillment``: an instance, or a factory taking the world's clock. Default: simulated."""
     clock = Clock()
-    provider = LocalAtelierProvider(clock)
+    made = lambda x: x(clock) if isinstance(x, type) or inspect.isroutine(x) else x  # noqa: E731
+    payments, fulfillment = made(payments), made(fulfillment)
+    provider = LocalAtelierProvider(clock, payments=payments, fulfillment=fulfillment, environment=environment)
     registry = ProviderRegistry(environment)
     registry.register(local_atelier_connection(provider, environment, clock.now))
-    store = InMemoryCommerceStore()
+    store = store if store is not None else InMemoryCommerceStore()
     return World(clock, provider, registry, store, CommerceService(
         store=store, registry=registry, environment=environment, clock=clock))

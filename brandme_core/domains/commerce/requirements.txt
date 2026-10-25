@@ -8,3 +8,9 @@ PyJWT[crypto]==2.15.1   # MCP token / executor assertion verification (ES256/RS2
 cryptography==50.0.2    # fixes CVE-2026-69247
 jwcrypto==1.6.1         # AP2 SD-JWT; newer than the AP2 SDK's 1.5.6 pin to fix CVE-2026-39373 (oracle re-verified)
 sd-jwt==0.10.4          # AP2 SD-JWT (same pin as official AP2 SDK @ e1ea56d)
+# Optional integrations, imported lazily (verified 2026-10-23 against the locked anyio 3.7.1 / httpx 0.25.1 /
+# fastapi 0.104.1 / pydantic 2.5.0; `pip check` clean). Neither is needed when no dev key is configured.
+anthropic==0.125.0      # dev model planner (2026-08-19; last release on httpx<1 — 1.6+ needs anyio>=4)
+stripe==16.0.0          # TEST mode only; API 2026-09-30.endive; sync HTTP via stripe.HTTPXClient on locked httpx==0.25.1
+                        # (trust_env=False, no redirects); the package declares requests>=2.20 (the lock has
+                        # requests==2.34.2) but the adapter never relies on it

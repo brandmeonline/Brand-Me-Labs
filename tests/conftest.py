@@ -58,48 +58,6 @@ os.environ.setdefault('FIRESTORE_PROJECT_ID', 'brandme-dev')
 QUARANTINE = [
     {
         "kind": "xfail",
-        "owner": "commerce-agents",
-        "raises": "FileNotFoundError",
-        "blocker": "vendored AP2 schemas brandme_core/domains/commerce/ap2_schemas/**/*.json are not on main "
-                   "(gitignored when written); they arrive with PR #51",
-        "targets": [
-            "tests/test_commerce_ap2.py::test_vendored_schemas_are_the_pinned_official_ones",
-            "tests/test_commerce_ap2.py::test_valid_mandates_produce_bound_approval_and_purchase",
-            "tests/test_commerce_ap2.py::test_replayed_mandate_rejected",
-            "tests/test_commerce_ap2.py::test_merchant_checkout_not_matching_quote_rejected",
-            "tests/test_commerce_ap2.py::test_merchant_jwt_must_be_es256_and_merchant_signed",
-            "tests/test_commerce_ap2.py::test_payment_mandate_terms",
-            "tests/test_commerce_ap2.py::test_payment_bound_to_other_checkout_rejected",
-            "tests/test_commerce_ap2.py::test_expired_or_overlong_mandate",
-            "tests/test_commerce_ap2.py::test_wrong_vct_and_schema_violation",
-            "tests/test_commerce_ap2.py::test_key_binding_requires_matching_aud_and_nonce",
-        ],
-    },
-    {
-        "kind": "xfail",
-        "owner": "commerce-agents",
-        "raises": "FileNotFoundError",
-        "blocker": "tests/fixtures/providers/impact_feed_fictional.json is not on main (gitignored when written); "
-                   "it arrives with PR #51",
-        "targets": [
-            "tests/test_providers.py::test_feed_replay_and_tombstone",
-            "tests/test_providers.py::test_stale_feed_price_is_labeled_not_a_quote",
-        ],
-    },
-    {
-        "kind": "collect_ignore",
-        "owner": "commerce-agents",
-        "while_missing": "brandme_core/mcp/schemas/tool_invocation.schema.json",
-        "blocker": "brandme_core/mcp/tools.py reads brandme_core/mcp/schemas/tool_invocation.schema.json at import; "
-                   "the MCP schemas arrive with PR #51",
-        "targets": [
-            "tests/test_mcp.py",
-            "tests/test_commerce_assistant.py",
-            "tests/test_commerce_protocols.py",
-        ],
-    },
-    {
-        "kind": "xfail",
         "owner": "unowned-legacy",
         "raises": "google.api_core.exceptions.NotFound",
         "blocker": "no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema "

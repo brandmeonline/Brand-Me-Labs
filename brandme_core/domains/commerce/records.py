@@ -48,6 +48,20 @@ def check_transition(current: str, new: str) -> None:
         raise InvalidTransition(f"purchase cannot move from {current} to {new}")
 
 
+def transition_path(current: str, target: str, *, prefer: Tuple[str, ...] = ()) -> Optional[Tuple[str, ...]]:
+    """The states to pass through to reach ``target``: itself, or one allowed intermediate state, tried
+    in ``prefer`` order first (e.g. cancel_requested -> cancelled -> refunded for a cancelled order).
+    A dispute is never inferred. ``None`` when no such path exists."""
+    if target == current:
+        return ()
+    allowed = _T.get(current, frozenset())
+    if target in allowed:
+        return (target,)
+    mid = next((m for m in (*prefer, *PURCHASE_STATES) if m in allowed and m != "disputed"
+                and target in _T.get(m, frozenset())), None)
+    return (mid, target) if mid is not None else None
+
+
 @dataclass(frozen=True)
 class Cart:
     id: str
@@ -65,13 +79,15 @@ class Cart:
 class ApprovalChallenge:
     id: str
     member_id: str
+    operation_id: str
     quote_id: str
     quote_hash: str
-    nonce: str
+    nonce_hash: str  # only the hash is stored; the nonce goes once to the trusted surface
     delegation_ref: Optional[str]
     issued_at: datetime
     expires_at: datetime
     used: bool = False
+    nonce: str = ""  # set only on the object returned by open_approval_challenge
 
 
 @dataclass(frozen=True)
@@ -133,6 +149,7 @@ class OrderLine:
     quantity_delivered: int = 0
     quantity_returned: int = 0
     exchanged_from_ref: Optional[str] = None
+    quantity_cancelled: int = 0
 
 
 @dataclass(frozen=True)
@@ -154,6 +171,18 @@ class Order:
     last_observed_at: datetime
     evidence_refs: Tuple[str, ...] = ()
     version: int = 1
+
+
+@dataclass(frozen=True)
+class ReturnRequest:
+    id: str
+    order_id: str
+    member_id: str
+    source_variant_ref: str
+    quantity: int
+    status: str  # handoff | return_requested | received | rejected
+    requested_at: datetime
+    provider_reference: Optional[str] = None
 
 
 @dataclass(frozen=True)

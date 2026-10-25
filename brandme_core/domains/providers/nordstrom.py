@@ -9,18 +9,24 @@ request path or field name. Those come from the approved account's current
 Impact documentation and are entered by an operator during setup [S15].
 Until then every publisher capability is ``unconfigured`` with reason
 ``partner_approval_required`` — the explicit integration gate.
+
+Connection tests (``probe``) make no network call. ``checkout.handoff`` checks
+the link-only URL rules locally (``link_validation``, which can never verify a
+capability); every publisher capability is ``blocked`` until approval evidence
+and a credential reference are recorded, and then still ``blocked`` because the
+Impact API client is not built.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 from urllib.parse import urlsplit, urlunsplit
 
-from .contracts import HandoffLink, ProviderError, ProviderErrorKind
+from .contracts import HandoffLink, ProbeResult, ProviderError, ProviderErrorKind, SetupField, SetupProfile
 from .registry import CapabilityStatus, ProviderConnection
-from .url_guard import UnsafeUrl
+from .url_guard import UnsafeUrl, validate_redirect
 
 PROVIDER_ID = "nordstrom_impact"
 DISPLAY_NAME = "Nordstrom via approved Impact publisher access"
@@ -52,6 +58,44 @@ GATED_CAPABILITIES = ("catalog.feed", "catalog.search", "catalog.detail", "catal
 UNSUPPORTED_CAPABILITIES = ("cart.create", "cart.update", "checkout.submit", "orders.read",
                             "orders.webhook", "returns.request", "refunds.read", "inventory.read",
                             "price.quote")
+_GATED = frozenset(GATED_CAPABILITIES)
+_CATALOG = frozenset(c for c in GATED_CAPABILITIES if c.startswith("catalog."))
+
+# The operator setup console's checklist for this provider (brandme_core.domains.providers.setup).
+SETUP_PROFILE = SetupProfile(
+    summary=("Link-only now: a member saves a nordstrom.com product link and continues at Nordstrom; Brand.Me "
+             "does not confirm the purchase. After Nordstrom approves the publisher account through Impact: "
+             "authorized catalog data, approved imagery and affiliate links, within the agreement's data-use "
+             "rights. No in-app cart, checkout, order, inventory or return operation is offered."),
+    access_levels=ACCESS_LEVELS,
+    approval_levels=frozenset({"approved_publisher", "contracted_commerce"}),
+    gated_capabilities=_GATED,
+    fields=(
+        SetupField("access_level", "prerequisites", "Authorized access level chosen", "access_level",
+                   "Choose link-only until Nordstrom approves the publisher account"),
+        SetupField("apply", "prerequisites", "Applied to the Nordstrom program through Impact",
+                   "program_application_opened",
+                   f"Open {OFFICIAL_PROGRAM_URL} in a new tab and apply manually; Brand.Me never applies for the company",
+                   _GATED),
+        SetupField("approval", "prerequisites", "Nordstrom approval recorded with evidence", "approval_evidence_ref",
+                   "Record the approval reference after Nordstrom accepts the publisher account", _GATED, ("apply",)),
+        SetupField("catalog", "prerequisites", "Catalog enabled for this publisher account", "catalog_ref",
+                   "Enter the enabled catalog reference from Impact (NORDSTROM_IMPACT_CATALOG_REF)", _CATALOG,
+                   ("approval",)),
+        SetupField("endpoint", "prerequisites", "Endpoints and field schema confirmed for the approved account",
+                   "endpoint_descriptor_ref",
+                   f"Confirm them in {IMPACT_PARTNER_DOCS} for the approved account, then enter the descriptor reference",
+                   _GATED, ("approval",)),
+        SetupField("account", "credentials", "Impact account reference stored", "account_ref",
+                   "Enter NORDSTROM_IMPACT_ACCOUNT_REF for the approved publisher account", _GATED, ("approval",)),
+        SetupField("secret", "credentials", "Credential stored in Secret Manager (write-only)",
+                   "credential_secret_ref",
+                   "Store the Impact credential in Secret Manager, then enter its resource name "
+                   "(NORDSTROM_IMPACT_CREDENTIAL_SECRET)", _GATED, ("approval",)),
+    ),
+    data_use_rights=DATA_USE_RIGHTS,
+    data_use_required_for=_GATED,
+)
 
 
 @dataclass(frozen=True)
@@ -165,9 +209,64 @@ class ImpactPublisherCatalogAdapter:
     """
 
     provider_id = PROVIDER_ID
+    setup_profile = SETUP_PROFILE
 
     def __init__(self, setup: NordstromSetup):
         self.setup = setup
+
+    def apply_setup(self, values: Mapping[str, Any]) -> None:
+        """Saved operator setup (server-only values) from the setup service."""
+        s = self.setup
+        for name in ("access_level", "program_application_opened", "approval_evidence_ref", "account_ref",
+                     "credential_secret_ref", "credential_rotated_at", "catalog_ref", "endpoint_descriptor_ref"):
+            if name in values:
+                setattr(s, name, values[name])
+        if "approval_recorded_by" in values:
+            s.impact_approval_recorded_by = values["approval_recorded_by"]
+        for right, allowed in dict(values.get("data_use") or {}).items():
+            if right in s.data_use:
+                s.data_use[right] = bool(allowed)
+
+    def probe(self, capability: str, mode: str, now: datetime) -> ProbeResult:
+        """Connection test. No network call is made by any branch."""
+        if capability == "checkout.handoff" and mode == "read_only_test":
+            return self._probe_handoff(now)
+        if capability in GATED_CAPABILITIES:
+            if not (self.setup.approval_evidence_ref and self.setup.credential_secret_ref):
+                return ProbeResult("blocked", "none", "blocked:publisher_approval_required",
+                                   "Record Nordstrom/Impact approval evidence and store the Impact credential "
+                                   "reference first. No request was sent.", "publisher_approval_required")
+            return ProbeResult("blocked", "none", "blocked:impact_api_client_not_built",
+                               "The Impact publisher API client is not built yet; it is built from the approved "
+                               "account's current Impact documentation. No request was sent.",
+                               "impact_api_client_not_built")
+        return ProbeResult("blocked", "none", "blocked:no_read_only_probe",
+                           f"There is no {mode.replace('_', ' ')} for {capability}. No request was sent.",
+                           "no_read_only_probe")
+
+    @staticmethod
+    def _probe_handoff(now: datetime) -> ProbeResult:
+        ref = f"linkcheck:{PROVIDER_ID}:checkout.handoff:{now.astimezone(timezone.utc):%Y%m%dT%H%M%SZ}"
+        sample = "https://www.nordstrom.com/s/link-check"
+        refused = 0
+        for bad in ("http://www.nordstrom.com/s/link-check", "https://nordstrom.com.example.invalid/s/link-check",
+                    "https://www.nordstrom.com:8443/s/link-check", "https://user:pw@www.nordstrom.com/s/link-check"):
+            try:
+                save_link_only(bad)
+            except UnsafeUrl:
+                refused += 1
+        try:
+            ok = validate_redirect(save_link_only(sample).url, ALLOWED_PRODUCT_HOSTS) == sample and refused == 4
+        except UnsafeUrl:
+            ok = False
+        note = ("Nothing was sent to Nordstrom. Link validation proves URL safety only; it cannot verify checkout, "
+                "orders or feed access.")
+        if not ok:
+            return ProbeResult("failed", "link_validation", ref, f"The link-only URL rules did not hold. {note}",
+                               "link_rules_failed")
+        return ProbeResult("passed", "link_validation", ref,
+                           "Link-only handoff rules checked locally: an https://www.nordstrom.com product link is "
+                           f"accepted; plain http, other hosts, credentials and non-standard ports are refused. {note}")
 
     def feed_page(self, cursor: Optional[str]):
         raise ProviderError(ProviderErrorKind.NOT_CONFIGURED,
