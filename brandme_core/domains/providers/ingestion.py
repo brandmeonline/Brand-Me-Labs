@@ -8,7 +8,8 @@
 * Media transformations are allowed only when the source rights grant them.
 * A shelf limit (``max_active_listings``, a partner tier's quota applied by
   ``ProviderSetupService.load_shelf_page``) refuses each addition beyond it under the same lock as the
-  write. Updates to loaded variants and tombstones are never refused, and a lower limit deletes nothing.
+  write. Updates to loaded variants and tombstones are never refused, a page's own tombstones free their
+  slots for its additions, and a lower limit deletes nothing.
 """
 
 from __future__ import annotations
@@ -54,6 +55,13 @@ class IngestionAudit:
     admitted_refs: List[str] = field(default_factory=list)  # source variant ids added to the shelf
 
 
+@dataclass
+class ShelfCounts:
+    """One ``ingest_page`` call's own additions and quota refusals (an audit may span pages and threads)."""
+    added: int = 0
+    refused: int = 0
+
+
 class CatalogIngestor:
     def __init__(self) -> None:
         self._lock = threading.RLock()
@@ -66,12 +74,18 @@ class CatalogIngestor:
             return sum(1 for k, sv in self.variants.items() if k[0] == provider_id and not sv.tombstoned)
 
     def ingest_page(self, page: CatalogPage, *, provider_id: str, now: datetime,
-                    audit: IngestionAudit, max_active_listings: Optional[int] = None) -> None:
+                    audit: IngestionAudit, max_active_listings: Optional[int] = None,
+                    counts: Optional[ShelfCounts] = None) -> None:
         limit = max_active_listings
         if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
             raise ValueError("max_active_listings must be a non-negative int or None")
+        counts = counts if counts is not None else ShelfCounts()
         with self._lock:
-            active = self.shelf_usage(provider_id)
+            # The page's own tombstones free their slots for the page's additions: a page that swaps one
+            # listing for another stays within the limit it was already at.
+            removed = set(page.tombstones)
+            active = sum(1 for k, sv in self.variants.items()
+                         if k[0] == provider_id and not sv.tombstoned and (k[2], k[3]) not in removed)
             for v in page.items:
                 problem = _validate(v, provider_id)
                 if problem:
@@ -93,10 +107,12 @@ class CatalogIngestor:
                     if limit is not None and active >= limit:
                         audit.rejected += 1
                         audit.quota_refused += 1
+                        counts.refused += 1
                         audit.rejections.append(f"{v.source_variant_id}:shelf_quota_exceeded")
                         continue
                     active += 1
                     audit.new_listings += 1
+                    counts.added += 1
                     audit.admitted_refs.append(v.source_variant_id)
                 self.variants[key] = StoredVariant(
                     v, (prev.revision + 1) if prev else 1, prev.first_seen_at if prev else now, now, False)

@@ -121,6 +121,17 @@ def test_each_line_takes_the_most_restrictive_rule_that_names_it():
     assert evaluate(lower_level, BUY, facts(Action.APPROVAL_BINDING)).primary_code == "autonomy_level_prepare_only"
 
 
+def test_the_quote_cap_is_the_lowest_cap_that_applied_to_any_line():
+    both = ("demo-dress-m", "demo-overshirt-m")  # 26784 all-in
+    via_default = boundary(wishlist_rule("demo-dress-m", cap=30_000), default="buy_after_approval",
+                           default_cap=20_000)  # the overshirt falls to the default and brings its cap
+    assert evaluate(via_default, BUY, facts(refs=both, total=26_784)).primary_code == "over_autonomy_cap"
+    assert evaluate(boundary(wishlist_rule("demo-dress-m", cap=30_000), default="buy_after_approval",
+                             default_cap=30_000), BUY, facts(refs=both, total=26_784)).allowed
+    item_lower = boundary(merchant_rule(cap=30_000), wishlist_rule("demo-dress-m", cap=20_000))  # the dress's own cap
+    assert evaluate(item_lower, BUY, facts(refs=both, total=26_784)).primary_code == "over_autonomy_cap"
+
+
 @pytest.mark.parametrize("item_rule,code", [
     (wishlist_rule("demo-dress-m", level="prepare"), "autonomy_level_prepare_only"),
     (wishlist_rule("demo-dress-m", cap=15_000), "over_autonomy_cap"),
@@ -338,8 +349,8 @@ def test_with_no_rules_the_concierge_prepares_and_the_member_completes(w):
     assert e.value.code == "autonomy_held_for_member" and w.provider.submit_calls == []
     assert w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=approval.id,
                                   idempotency_key="none-exec-0000002").state == "accepted"
-    assert w.decided() == [("approval_binding", "hold", "autonomy_level_prepare_only"),
-                           ("execute", "refuse", "autonomy_held_for_member")]  # the member's own completion: no line
+    # Only the agent's own act is a timed line; the binding is on the approval, the member's completion is theirs.
+    assert w.decided() == [("execute", "refuse", "autonomy_held_for_member")]
 
 
 def test_a_prepare_grant_decides_nothing_and_logs_nothing(w):
@@ -377,10 +388,8 @@ def test_over_cap_request_is_held_and_the_agent_cannot_complete_it(w):
                                  idempotency_key="auto-exec-shirt-0001")
     assert res.state == "accepted"
     assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000 - 9612, "USD")
-    assert w.decided() == [
-        ("approval_binding", "hold", "over_autonomy_cap"), ("execute", "refuse", "autonomy_held_for_member"),
-        ("approval_binding", "allow", "within_boundary"), ("execute", "allow", "within_boundary")]
-    held_line = w.decisions.events("commerce.autonomy_decision")[1]
+    assert w.decided() == [("execute", "refuse", "autonomy_held_for_member"), ("execute", "allow", "within_boundary")]
+    held_line = w.decisions.events("commerce.autonomy_decision")[0]
     assert held_line["codes"] == ["autonomy_held_for_member", "over_autonomy_cap"]
 
 
@@ -480,7 +489,7 @@ def test_an_approval_after_the_grant_expired_binds_to_the_member(w):
     ch, approval = approve(w, op)
     assert (ch.completed_by, ch.autonomy_codes, approval.delegation_ref) == ("member", ("autonomy_grant_inactive",),
                                                                              None)
-    assert w.decided() == [("approval_binding", "hold", "autonomy_grant_inactive")]
+    assert w.decided() == []  # the binding is on the approval, never a timed line at the member's act
     assert w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=approval.id,
                                   idempotency_key="expired-exec-00001").state == "accepted"
 
@@ -636,10 +645,9 @@ def test_each_agent_decision_writes_one_closed_schema_line_without_amounts_or_re
         w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="log-exec-00000001")
     lines = w.decisions.events("commerce.autonomy_decision")
     assert [(ln["action"], ln["outcome"], ln["cap_bucket"], ln["committed"]) for ln in lines] == [
-        ("approval_binding", "hold", "over", True), ("execute", "refuse", "over", False)]  # the refused execute
+        ("execute", "refuse", "over", False)]  # the refused execute; the member's approval writes no timed line
     assert {ln["retention"] for ln in lines} == {"security_audit_180d"} and lines[-1]["level"] == "warning"
-    # One purchase joins across binding and execute without its id.
-    assert all(ln["quote_ref"] for ln in lines) and len({ln["quote_ref"] for ln in lines}) == 1
+    assert all(ln["quote_ref"] for ln in lines)
     assert {(ln["client_kind"], ln["simulation"]) for ln in lines} == {("external", True)}
     assert not {"wait_band", "member_completion"} & set(json.dumps(lines).split('"'))  # no member-behaviour fields
     assert all(ln["member_ref"] == log_ref("member", w.member.member_id) and ln["rule_count"] == 1
@@ -660,6 +668,12 @@ def test_each_agent_decision_writes_one_closed_schema_line_without_amounts_or_re
     {"mode": "prepare"},  # only buy grants decide
     {"committed": None}, {"wait_band": "lt_1m"},
     {"simulation": "yes"}, {"client_kind": "partner"},
+    {"autonomy_level": "prepare"},  # an allow needs buy-after-approval on both sides
+    {"outcome": "refuse", "codes": ["over_autonomy_cap", "within_boundary"]},
+    {"outcome": "refuse", "codes": ["autonomy_assistant_member_completes"]},  # binding-only: never logged
+    {"scope": "no_boundary"}, {"scope": "unreadable", "rule_count": 0},  # no rules means no cap and no count
+    {"action": "approval_binding"}, {"outcome": "hold"},  # only execute decisions are logged
+    {"codes": [["within_boundary"]]}, {"codes": "within_boundary"},
 ])
 def test_the_run_log_refuses_a_malformed_decision_line(change):
     from brandme_core.orchestrator.runlog import autonomy_decision_fields
@@ -700,7 +714,7 @@ def test_a_retried_transaction_logs_only_its_committed_attempt():
     _, _, op = w.prepared(ag, line("overshirt"))
     _, approval = approve(w, op)
     w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="retry-exec-000001")
-    assert [a for a, _, _ in w.decided()] == ["approval_binding", "execute"]
+    assert [a for a, _, _ in w.decided()] == ["execute"]
 
 
 class _PipelineDown(Exception):
@@ -723,7 +737,7 @@ def test_a_failing_decision_sink_never_strands_a_purchase_or_hides_the_refusal(w
     with pytest.raises(Forbidden) as e:  # the member's rule, not the sink's error
         w.svc.execute_purchase(ag, operation_id=held.id, approval_id=approval2.id, idempotency_key="down-exec-000002")
     assert e.value.code == "autonomy_held_for_member"
-    assert [a for a, _, _ in w.decided()] == ["approval_binding", "execute", "approval_binding", "execute"]
+    assert [a for a, _, _ in w.decided()] == ["execute", "execute"]
 
 
 def test_a_strict_log_refusing_a_line_surfaces_only_after_the_order_is_placed(w):
@@ -733,10 +747,7 @@ def test_a_strict_log_refusing_a_line_surfaces_only_after_the_order_is_placed(w)
     w.svc.add_autonomy_sink(strict)
     d, ag = w.delegate(boundary=boundary(merchant_rule(cap=15_000)))
     _, _, op = w.prepared(ag, line("overshirt"))
-    with pytest.raises(RunLogViolation):
-        approve(w, op)
-    approval = w.store.get("approvals", w.store.get("operations", op.id).approval_id)
-    assert approval is not None  # committed before the bad line surfaced
+    _, approval = approve(w, op)  # the member's approval writes no decision line
     with pytest.raises(RunLogViolation):
         w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="strict-exec-00001")
     assert w.store.get("operations", op.id).state == "accepted" and len(w.provider.submit_calls) == 1
@@ -764,10 +775,8 @@ def test_decision_lines_join_the_tool_call_audit_on_request_task_and_step():
         "tool": "brandme.purchase.execute", "arguments": {"operation_id": op_id, "approval_id": approval.id},
         "idempotency_key": "join-exec-00000001"}, origin="mcp")
     assert status == 200 and outcome.status == "ok"
-    binding, last = w.decisions.events("commerce.autonomy_decision")
-    assert (binding["action"], binding["origin"]) == ("approval_binding", "service")  # the member's trusted surface
+    (last,) = w.decisions.events("commerce.autonomy_decision")  # nothing timed at the member's own approval
     assert (last["action"], last["origin"], last["request_id"]) == ("execute", "mcp", audit[-1]["request_id"])
-    assert binding["quote_ref"] == last["quote_ref"]
 
 
 def test_purchase_request_over_mcp_needs_only_the_cart_scope_and_says_who_completes():
@@ -801,10 +810,12 @@ def test_compose_routes_autonomy_decisions_to_the_run_log():
                       run_log=log)
     d, ag = w.delegate(boundary=None)
     _, _, op = w.prepared(ag, line())
-    approve(w, op)
+    _, approval = approve(w, op)
+    with pytest.raises(Forbidden):
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="compose-exec-0001")
     (ln,) = log.events("commerce.autonomy_decision")
     assert (ln["action"], ln["outcome"], ln["codes"], ln["scope"]) == (
-        "approval_binding", "hold", ["autonomy_level_prepare_only"], "no_boundary")
+        "execute", "refuse", ["autonomy_held_for_member", "autonomy_level_prepare_only"], "no_boundary")
 
 
 # =========================================================================== My Data
@@ -967,9 +978,182 @@ def test_the_assistant_and_external_clients_are_told_apart_in_the_log(w):
                                 expires_at=w.clock.now + timedelta(days=1), boundary=boundary(merchant_rule()))
     concierge = agent(d.id, d.scopes, client=ASSISTANT_CLIENT_ID)
     _, _, op = w.prepared(concierge, line("overshirt"))
-    approve(w, op)
+    _, approval = approve(w, op)
+    with pytest.raises(Forbidden):
+        w.svc.execute_purchase(concierge, operation_id=op.id, approval_id=approval.id,
+                               idempotency_key="concierge-exec-001")
     (ln,) = w.decisions.events("commerce.autonomy_decision")
     assert (ln["client_kind"], ln["mode"], ln["boundary_version"]) == ("assistant", "buy_within_rules", 1)
+
+
+def test_brand_mes_assistant_prepares_and_the_member_completes_even_inside_the_rules(w):
+    """Review finding: an approval bound to the assistant's grant could not be placed (the assistant has no
+    post-approval path yet), so its purchases stalled. The member completes them, and the surfaces say so."""
+    from brandme_core.domains.commerce.autonomy import ASSISTANT_CLIENT_ID
+    from tests.fixtures.commerce.harness import agent
+    d = w.svc.create_delegation(w.member, client_id=ASSISTANT_CLIENT_ID, mode=AssistanceMode.BUY_WITHIN_RULES,
+                                allowed_providers={PROVIDER_ID}, limits=limits(),
+                                expires_at=w.clock.now + timedelta(days=1), boundary=boundary(merchant_rule()))
+    concierge = agent(d.id, d.scopes, client=ASSISTANT_CLIENT_ID)
+    _, _, op = w.prepared(concierge, line("overshirt"))  # inside the member's rules
+    assert w.svc.completion_preview(concierge, op.id) == ("member", ("autonomy_assistant_member_completes",))
+    ch, approval = approve(w, op)
+    assert (ch.completed_by, ch.autonomy_codes, approval.delegation_ref) == (
+        "member", ("autonomy_assistant_member_completes",), None)
+    assert w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=approval.id,
+                                  idempotency_key="concierge-member-01").state == "accepted"
+    assert w.decided() == []  # the binding is on the approval; the member's completion is theirs
+
+
+def test_the_member_can_complete_an_approval_bound_to_their_agent_and_it_becomes_theirs(w):
+    """Review finding: an approval bound to the agent could be stranded if the agent never followed through."""
+    d, ag = w.delegate(boundary=boundary(merchant_rule(cap=15_000)))
+    from tests.fixtures.commerce.harness import agent
+    other = w.svc.create_delegation(w.member, client_id="client-fictional-second-agent",
+                                    mode=AssistanceMode.BUY_WITHIN_RULES, allowed_providers={PROVIDER_ID},
+                                    limits=limits(), expires_at=w.clock.now + timedelta(days=1),
+                                    boundary=boundary(merchant_rule(cap=15_000)))
+    other_ag = agent(other.id, other.scopes, client="client-fictional-second-agent")
+    _, _, op = w.prepared(ag, line("overshirt"))
+    _, approval = approve(w, op)
+    assert approval.delegation_ref == d.id
+    with pytest.raises(ApprovalInvalid):  # another agent of the same member never may
+        w.svc.execute_purchase(other_ag, operation_id=op.id, approval_id=approval.id,
+                               idempotency_key="bound-other-exec-01")
+    done = w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=approval.id,
+                                  idempotency_key="bound-member-exec-1")
+    assert done.state == "accepted" and len(w.provider.submit_calls) == 1
+    assert w.store.get("approvals", approval.id).delegation_ref is None  # consumed by the member
+    assert w.svc.available_budget(w.store.get("delegations", d.id)) == Money(50_000, "USD")  # not the agent's spend
+    with pytest.raises(Forbidden) as e:  # the member placed it, so the agent cannot cancel it
+        w.svc.request_cancellation(ag, done.order_id)
+    assert e.value.code == "order_not_yours"
+
+
+def test_a_grant_that_expires_after_binding_never_strands_the_purchase(w):
+    d, ag = w.delegate(boundary=boundary(merchant_rule()))
+    _, _, op = w.prepared(ag, line("overshirt"))
+    _, approval = approve(w, op)
+    assert approval.delegation_ref == d.id
+    _expire(w, d)
+    with pytest.raises((DelegationInvalid, Forbidden)):
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="exp-bound-exec-01")
+    assert w.svc.execute_purchase(w.member, operation_id=op.id, approval_id=approval.id,
+                                  idempotency_key="exp-bound-exec-02").state == "accepted"
+
+
+def _committed(w):
+    return [(ln["outcome"], ln["committed"]) for ln in w.decisions.events("commerce.autonomy_decision")]
+
+
+def _narrow_before_submit(w, d, cap=5_000):
+    real_submit = w.svc._submit
+
+    def narrow_first(op_, quote, principal, *rest):
+        current = w.store.get("delegations", d.id)
+        w.store.run(lambda tx: tx.put("delegations", d.id, replace(current, boundary=boundary(merchant_rule(cap=cap)),
+                                                                    version=current.version + 1)))
+        return real_submit(op_, quote, principal, *rest)
+
+    w.svc._submit = narrow_first
+
+
+def test_a_last_gate_cancel_that_fails_logs_its_refusal_as_not_committed(w, monkeypatch):
+    d, ag = w.delegate(boundary=boundary(merchant_rule(cap=15_000)))
+    _, _, op = w.prepared(ag, line("overshirt"))
+    _, approval = approve(w, op)
+    _narrow_before_submit(w, d)
+    real_run = w.store.run
+
+    def cancel_fails(fn):
+        if getattr(fn, "__name__", "") == "_cancel":
+            raise _PipelineDown("store unavailable")
+        return real_run(fn)
+
+    monkeypatch.setattr(w.store, "run", cancel_fails)
+    with pytest.raises(_PipelineDown):
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="gate-fail-exec-01")
+    assert w.provider.submit_calls == []
+    assert _committed(w) == [("allow", True), ("refuse", False)]  # the execute committed; the cancel did not
+
+
+def test_a_failure_after_the_execute_commit_still_logs_that_decision_as_committed(w, monkeypatch):
+    d, ag = w.delegate(boundary=boundary(merchant_rule(cap=15_000)))
+    _, _, op = w.prepared(ag, line("overshirt"))
+    _, approval = approve(w, op)
+
+    def crash(*args):
+        raise RuntimeError("store unavailable after the provider accepted")
+
+    monkeypatch.setattr(w.svc, "_apply_ack", crash)  # the execute transaction already committed
+    with pytest.raises(RuntimeError):
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="post-commit-exec-1")
+    assert _committed(w) == [("allow", True)]
+
+
+def _strict(record):
+    raise RunLogViolation("commerce.autonomy_decision: bad line")
+
+
+def test_a_strict_log_failure_rides_on_a_refusal_as_a_note_and_never_replaces_it(w):
+    w.svc.add_autonomy_sink(_strict)
+    d, ag = w.delegate(boundary=boundary(merchant_rule(cap=15_000)))
+    _, _, op = w.prepared(ag, line("dress"))
+    _, approval = approve(w, op)
+    with pytest.raises(Forbidden) as e:
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="strict-held-exec1")
+    assert e.value.code == "autonomy_held_for_member"
+    assert any("decision log refused a line" in n for n in getattr(e.value, "__notes__", []))
+
+
+def test_a_strict_log_failure_rides_on_a_post_commit_error_as_a_note(w, monkeypatch):
+    w.svc.add_autonomy_sink(_strict)
+    d, ag = w.delegate(boundary=boundary(merchant_rule(cap=15_000)))
+    _, _, op = w.prepared(ag, line("overshirt"))
+    _, approval = approve(w, op)
+
+    def crash(*args):
+        raise RuntimeError("store unavailable after the provider accepted")
+
+    monkeypatch.setattr(w.svc, "_apply_ack", crash)  # the execute transaction already committed
+    with pytest.raises(RuntimeError) as e:
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="strict-crash-exec")
+    assert any("decision log refused a line" in n for n in getattr(e.value, "__notes__", []))
+
+
+def test_every_sink_gets_every_line_whatever_another_sink_does(w):
+    later = []
+    w.svc.add_autonomy_sink(lambda r: (_ for _ in ()).throw(_PipelineDown("pipeline down")))
+    w.svc.add_autonomy_sink(_strict)
+    w.svc.add_autonomy_sink(later.append)
+    d, ag = w.delegate(boundary=boundary(merchant_rule(cap=15_000)))
+    _, _, op = w.prepared(ag, line("dress"))
+    _, approval = approve(w, op)
+    with pytest.raises(Forbidden):
+        w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="fanout-exec-00001")
+    assert len(later) == len(w.decisions.events("commerce.autonomy_decision")) == 1
+
+
+def test_purchase_request_over_mcp_is_made_even_when_the_completion_preview_fails(monkeypatch):
+    from brandme_core.mcp import MCP_PROTOCOL_VERSION
+    from brandme_core.mcp.authz import ExecutorAssertionVerifier
+    from brandme_core.mcp.tools import McpToolExecutor
+    w = world()
+    d, ag = w.delegate(boundary=boundary(merchant_rule(cap=15_000)))
+    _, quote, _ = w.prepared(ag, line("overshirt"))
+
+    def unavailable(principal, operation_id):
+        raise Forbidden("preview unavailable")
+
+    monkeypatch.setattr(w.svc, "completion_preview", unavailable)
+    ex = McpToolExecutor(commerce=w.svc, registry=w.registry,
+                         verifier=ExecutorAssertionVerifier(gateway_issuer="gw", keys={}, environment="development"))
+    status, outcome = ex.call(ag, {"request_id": str(uuid.uuid4()), "protocol_version": MCP_PROTOCOL_VERSION,
+                                   "environment": "development", "tool": "brandme.purchase.request",
+                                   "arguments": {"quote_id": quote.id}}, origin="mcp")
+    assert (status, outcome.status) == (200, "ok"), outcome.problem
+    assert (outcome.structured_content["completed_by"], outcome.structured_content["autonomy_codes"]) == (None, [])
+    assert len(w.store.operations_for_quote_hash(quote.quote_hash)) == 2  # the request itself was made
 
 
 # =========================================================================== surfaces
@@ -987,7 +1171,7 @@ def test_an_ap2_approval_over_the_cap_binds_to_the_member():
     with pytest.raises(Forbidden) as e:
         w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="ap2-held-exec-001")
     assert e.value.code == "autonomy_held_for_member" and w.provider.submit_calls == []
-    assert ("approval_binding", "hold", "over_autonomy_cap") in w.decided()
+    assert w.decided() == [("execute", "refuse", "autonomy_held_for_member")]
 
 
 def _ap2_approve(w, quote, op, actor):
@@ -1014,12 +1198,13 @@ def test_a_narrowing_hands_an_ap2_bound_approval_back_too():
                                   idempotency_key="ap2-handed-exec-2").state == "accepted"
 
 
-def test_an_ap2_binding_retried_by_the_store_is_logged_once():
+def test_an_ap2_binding_retried_by_the_store_binds_once_and_logs_nothing():
     w = world(store=RetryingStore())
     d, ag = w.delegate(boundary=boundary(merchant_rule(cap=15_000)))
     _, quote, op = w.prepared(ag, line("dress"))
-    _ap2_approve(w, quote, op, ag)
-    assert w.decided() == [("approval_binding", "hold", "over_autonomy_cap")]
+    approval = _ap2_approve(w, quote, op, ag)
+    assert approval.delegation_ref is None and len(w.store.rows("approvals")) == 1
+    assert w.decided() == []
 
 
 def test_the_domain_http_api_refuses_to_mount_without_an_autonomy_sink():
@@ -1133,8 +1318,7 @@ def test_mission_agent_assisted_purchase_inside_a_member_cap_is_fully_audited(co
                                       idempotency_key="mission-exec-000003").state == "accepted"
         lines = w.decisions.events("commerce.autonomy_decision")
         assert [(ln["action"], ln["outcome"], ln["cap_bucket"], ln["committed"]) for ln in lines] == [
-            ("approval_binding", "allow", "le_100", True), ("execute", "allow", "le_100", True),
-            ("approval_binding", "hold", "over", True), ("execute", "refuse", "over", False)]
+            ("execute", "allow", "le_100", True), ("execute", "refuse", "over", False)]
         tool_requests = {r["request_id"] for r in audit}
         assert all(ln["request_id"] in tool_requests for ln in lines if ln["origin"] == "mcp")
         assert [r["status"] for r in audit] == ["ok"] * 7 + ["error"]

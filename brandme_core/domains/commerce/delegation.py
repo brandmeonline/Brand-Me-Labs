@@ -81,7 +81,7 @@ class AgentDelegation:
     expires_at: datetime
     revoked_at: Optional[datetime] = None
     version: int = 1
-    # The member's autonomy boundary (``autonomy.py``); None: the grant's own mode and limits decide.
+    # The member's autonomy boundary (``autonomy.py``); None: no rules, so the agent places nothing (prepare).
     boundary: Optional[AutonomyBoundary] = None
 
     def is_active(self, now: datetime) -> bool:

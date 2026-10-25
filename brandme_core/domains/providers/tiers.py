@@ -197,7 +197,15 @@ def pricing_table_for(environment: str, table: Optional[PricingTable] = None) ->
     until the founder's table is supplied, no tier is configured and every entitlement is refused."""
     if table is None:
         return PLACEHOLDER_PRICING_TABLE if environment in LOCAL_ENVIRONMENTS else UNCONFIGURED_PRICING_TABLE
+    # Any implementation (not only StaticPricingTable) must be one every decision line can record.
+    version = getattr(table, "table_version", None)
+    if not isinstance(version, str) or not TABLE_VERSION_RE.match(version):
+        raise TierConfigError("table_version_invalid")
     tiers = table.tiers()
+    if not all(isinstance(t, TierDefinition) for t in tiers):
+        raise TierConfigError("tier_definition_invalid")
+    if len({t.tier_id for t in tiers}) != len(tiers):
+        raise TierConfigError("duplicate_tier")
     if environment not in LOCAL_ENVIRONMENTS and (not tiers or any(t.placeholder for t in tiers)):
         raise TierConfigError("placeholder_pricing_table_refused")
     return table
@@ -316,6 +324,9 @@ def decision_record(*, origin: str, dimension: str, outcome: str, code: str, pro
     """A ``provider.tier_decision`` run-log record: keyed refs, codes and counts; never prices or raw ids."""
     from brandme_core.mcp.refs import log_ref  # lazy: brandme_core.mcp imports the commerce service
     assert capability is None or capability in CAPABILITIES
+    if request_id is None:  # the calling request (the domain HTTP API sets it), so lines join its audit
+        from brandme_core.domains.commerce.autonomy import current_decision_context  # leaf module, lazy
+        request_id = current_decision_context().request_id
     return {"request_id": request_id, "origin": origin, "dimension": dimension, "outcome": outcome, "code": code,
             "provider_ref": log_ref("provider", provider_id),
             "actor_ref": log_ref("operator", actor_ref) if actor_ref else None,

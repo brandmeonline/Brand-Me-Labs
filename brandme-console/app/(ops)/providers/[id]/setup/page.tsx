@@ -166,8 +166,8 @@ function TierBlock({ s, t, assign }: { s: ProviderSetup; t: PartnerTier; assign:
           <input type="hidden" name="version" value={s.version} />
           <label htmlFor="f-tier_id">Assign a tier</label>
           <br />
-          <select id="f-tier_id" name="tier_id" defaultValue={t.source === 'assigned' && t.tier_id ? t.tier_id : 'none'}>
-            <option value="none">No tier (clear the assignment)</option>
+          <select id="f-tier_id" name="tier_id" defaultValue={t.source === 'assigned' && t.tier_id ? t.tier_id : ''}>
+            <option value="">No tier (clear the assignment)</option>
             {options.map((o) => (
               <option key={o.tier_id} value={o.tier_id}>
                 {o.display_name}

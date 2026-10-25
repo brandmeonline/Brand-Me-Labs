@@ -416,8 +416,8 @@ class CommerceHttpApi:
         return 201, delegation_wire(d)
 
     def _delegation_boundary_update(self, p, a, h):
-        """The member's explicit boundary change (If-Match: the grant version). ``null`` returns the grant
-        to its own mode and limits."""
+        """The member's explicit boundary change (If-Match: the grant version). ``null`` clears the rules:
+        the concierge prepares and the member completes."""
         self._need(a, "delegation_id", "autonomy_boundary")
         raw = a["autonomy_boundary"]
         boundary = AutonomyBoundary.from_wire(raw) if raw is not None else None

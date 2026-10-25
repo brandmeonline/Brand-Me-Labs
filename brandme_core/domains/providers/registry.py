@@ -130,7 +130,11 @@ class ProviderRegistry:
         with self._lock:
             return list(self._connections.values())
 
-    def set_capability(self, provider_id: str, status: CapabilityStatus) -> None:
+    def set_capability(self, provider_id: str, status: CapabilityStatus, *, tier_checked: bool = False) -> None:
+        """``tier_checked`` is the setup service's word that a partner-tier presentation capability (3D, AR
+        try-on) passed the tier check; without it such a capability can never become executable here."""
+        if status.name in CAPABILITY_CUSTOMIZATION and status.state in EXECUTABLE_STATES and not tier_checked:
+            raise RegistryError(f"tier_gated_capability_must_be_activated: {status.name}")
         with self._lock:
             conn = self.get(provider_id)
             conn.capabilities[status.name] = status

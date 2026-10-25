@@ -166,6 +166,36 @@ def test_placeholder_table_only_in_demo_and_development():
     assert T.pricing_table_for("production", decided) is decided  # a founder table drops in unchanged
 
 
+class _ProtocolTable:
+    """A PricingTable that is not a StaticPricingTable, so none of its constructor checks ran."""
+
+    def __init__(self, version, tiers):
+        self.table_version, self._tiers = version, tuple(tiers)
+
+    def get(self, tier_id):
+        return next((t for t in self._tiers if getattr(t, "tier_id", None) == tier_id), None)
+
+    def tiers(self):
+        return self._tiers
+
+
+def test_any_supplied_table_is_checked_before_it_can_drive_enforcement():
+    floor = PLACEHOLDER_PRICING_TABLE.get(FLOOR)
+    gold = TierDefinition("gold", "Gold", T.NO_TIER, False, decision_ref="founder-decision-1")
+    cases = [("development", _ProtocolTable("Bad Version!", (floor,)), "table_version_invalid"),
+             ("development", _ProtocolTable(None, (floor,)), "table_version_invalid"),
+             ("development", _ProtocolTable("t-1", (floor, {"tier_id": "x"})), "tier_definition_invalid"),
+             ("production", _ProtocolTable("t-1", (gold, gold)), "duplicate_tier"),
+             ("production", _ProtocolTable("t-1", (gold, floor)), "placeholder_pricing_table_refused"),
+             ("production", _ProtocolTable("t-1", ()), "placeholder_pricing_table_refused")]
+    for environment, table, code in cases:
+        with pytest.raises(TierConfigError) as e:
+            T.pricing_table_for(environment, table)
+        assert e.value.code == code, (environment, code)
+    ok = _ProtocolTable("t-1", (gold,))
+    assert T.pricing_table_for("production", ok) is ok
+
+
 def test_gated_capabilities_are_in_the_capability_vocabulary():
     assert T.GATED_CAPABILITIES <= set(CAPABILITIES)
 
@@ -292,23 +322,165 @@ def test_a_downgrade_from_a_stale_process_resets_a_capability_activated_elsewher
     assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"
 
 
-@pytest.mark.parametrize("result,kind", [("passed", "sandbox_operation"), ("failed", "none")])
-def test_a_connection_test_in_a_stale_process_never_brings_back_a_capability_the_tier_removed(env, result, kind):
+class _Interleave:
+    """A process's handle on the shared store, with one write by another process slipped in just before this
+    process's next transaction (after it has already read and caught up)."""
+
+    def __init__(self, store):
+        self._store, self.before_next = store, None
+
+    def __getattr__(self, name):
+        return getattr(self._store, name)
+
+    def transact(self, *args, **kwargs):
+        before, self.before_next = self.before_next, None
+        if before is not None:
+            before()
+        return self._store.transact(*args, **kwargs)
+
+
+def _active_3d_with_a_stale_reader(env, store=None):
+    """A activates 3D under the ceiling; B reads it while active (B's registry then shows 3D enabled)."""
     _ready_for_activation(env)
     env.svc.assign_tier(OPERATOR, SHOP, CEILING)
     env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
-    b = _process(env.store)
-    b.svc.get_setup(OPERATOR, SHOP)  # B hydrates while 3D is active
+    b = _process(store or env.store)
+    b.svc.get_setup(OPERATOR, SHOP)
     assert _state(b)[0] == "sandbox"
-    env.svc.assign_tier(OPERATOR, SHOP, FLOOR)  # A downgrades; B's registry is now stale
+    return b
+
+
+def _stale_test(b, result, kind):
     b.scripted.next = ProbeResult(result, kind, f"fx:stale:{result}", "Stale-process connection test.")
     run = b.svc.run_verification(OPERATOR, SHOP, "catalog.3d", "read_only_test")
     assert run["result"] == result  # the test itself is recorded
+    assert any(r.evidence_ref == f"fx:stale:{result}" for r in b.store.recent_runs("development", SHOP, limit=20))
+    return run
+
+
+@pytest.mark.parametrize("result,kind", [("passed", "sandbox_operation"), ("failed", "none")])
+def test_a_connection_test_in_a_stale_process_never_brings_back_a_capability_the_tier_removed(env, result, kind):
+    b = _active_3d_with_a_stale_reader(env)
+    env.svc.assign_tier(OPERATOR, SHOP, FLOOR)  # A downgrades; B's registry is now stale
+    run = _stale_test(b, result, kind)
+    assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"  # neither
+    assert run["capability_state"]["state"] == "unconfigured"  # refreshed nor "degraded"
+    assert _state(b) == ("unconfigured", "tier_excludes_capability")  # B caught up before testing
+    assert _tier_lines(b.log) == []  # the store already said unconfigured: nothing for the tier to refuse
+
+
+@pytest.mark.parametrize("result,kind", [("passed", "sandbox_operation"), ("failed", "none")])
+def test_a_downgrade_landing_between_a_stale_processs_read_and_its_test_write_still_wins(env, result, kind):
+    shared = _Interleave(env.store)
+    b = _active_3d_with_a_stale_reader(env, shared)
+    shared.before_next = lambda: env.svc.assign_tier(OPERATOR, SHOP, FLOOR)  # after B caught up, before B writes
+    _stale_test(b, result, kind)
+    assert shared.before_next is None  # the downgrade did land inside the window
+    assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"
+    assert _state(b) == ("unconfigured", "tier_excludes_capability")  # B applies the committed rows afterwards
+
+
+def test_an_upgrade_after_a_downgrade_never_re_enables_through_a_stale_processs_passing_test(env):
+    b = _active_3d_with_a_stale_reader(env)
+    env.svc.assign_tier(OPERATOR, SHOP, FLOOR)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)  # back up: the tier allows 3D again, but nothing re-activated it
+    _stale_test(b, "passed", "sandbox_operation")
+    assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"
+    assert _state(b)[0] == "unconfigured" and _state(env)[0] == "unconfigured"
+
+
+def test_a_connection_test_under_a_tier_that_excludes_a_persisted_activation_records_only_the_run(env):
+    _ready_for_activation(env)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    swapped = _process(env.store, StaticPricingTable("placeholder-2", PLACEHOLDER_PRICING_TABLE.tiers()))
+    _stale_test(swapped, "failed", "none")
+    assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "sandbox"  # not degraded
+    assert _state(swapped) == ("unconfigured", "tier_excludes_capability")
+    assert _tier_lines(swapped.log) == [("hydrate", "customization", "refuse", "tier_unknown"),
+                                        ("verification", "customization", "refuse", "tier_unknown")]
+
+
+def test_a_stale_process_catches_up_on_its_next_setup_call(env):
+    b = _active_3d_with_a_stale_reader(env)
+    env.svc.assign_tier(OPERATOR, SHOP, FLOOR)
+    assert _state(b)[0] == "sandbox"  # stale until it next touches setup
+    b.svc.list_runs(OPERATOR, SHOP)
+    assert _state(b) == ("unconfigured", "tier_excludes_capability")
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.w.clock.advance(minutes=1)
+    _ready_for_activation(env)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    b.svc.get_setup(OPERATOR, SHOP)
+    assert _state(b)[0] == "sandbox"  # a re-activation elsewhere reaches B the same way
+
+
+def test_activation_reads_the_tier_inside_its_own_transaction(env):
+    shared = _Interleave(env.store)
+    b = _process(shared)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    _ready_for_activation(b)
+    shared.before_next = lambda: env.svc.assign_tier(OPERATOR, SHOP, FLOOR)  # B already read the ceiling
+    with pytest.raises(SetupRefused) as e:
+        b.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    assert e.value.code == "activation_tier_excludes_capability" and shared.before_next is None
+    assert "catalog.3d" not in env.store.snapshot("development", SHOP).capabilities
+    assert _tier_lines(b.log)[-1] == ("activation", "customization", "refuse", "tier_excludes_capability")
+
+
+def test_an_assignment_never_resets_a_capability_the_new_tier_still_includes(env):
+    _ready_for_activation(env)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)  # re-assigned unchanged
+    assert _state(env)[0] == "sandbox"
+    assert env.store.snapshot("development", SHOP).items["activate:catalog.3d"].done is True
+    assert ("assignment", "customization", "refuse", "tier_reset_capability") not in _tier_lines(env.log)
+
+
+def test_reassigning_under_a_new_table_resets_an_activation_the_old_table_granted(env):
+    _ready_for_activation(env)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    table2 = StaticPricingTable("placeholder-2", PLACEHOLDER_PRICING_TABLE.tiers())
+    swapped = _process(env.store, table2)
+    swapped.svc.assign_tier(OPERATOR, SHOP, CEILING)  # ceiling@placeholder-2: allowed now, but never activated
     snap = env.store.snapshot("development", SHOP)
-    assert snap.capabilities["catalog.3d"].state == "unconfigured"  # neither refreshed nor "degraded"
-    assert any(r.evidence_ref == f"fx:stale:{result}" for r in env.store.recent_runs("development", SHOP, limit=20))
-    assert _state(b) == ("unconfigured", "tier_excludes_capability")  # B's view healed
-    assert _tier_lines(b.log) == [("verification", "customization", "refuse", "tier_excludes_capability")]
+    assert snap.capabilities["catalog.3d"].state == "unconfigured" and snap.items["activate:catalog.3d"].done is False
+    fresh = _process(env.store, table2)
+    fresh.svc.get_setup(OPERATOR, SHOP)
+    assert _state(fresh)[0] == "unconfigured"  # the old activation never comes back under the new table
+
+
+def test_a_3d_tier_activates_3d_but_never_ar_try_on(provider_setup_store):
+    studio = StaticPricingTable("placeholder-3d", (_placeholder("placeholder_3d", None, Customization.THREE_D),))
+    env = _process(provider_setup_store, studio)
+    env.svc.assign_tier(OPERATOR, SHOP, "placeholder_3d")
+    _ready_for_activation(env, "tryon.photo")
+    with pytest.raises(SetupRefused) as e:
+        env.svc.update_setup(OPERATOR, SHOP, {"activate": "tryon.photo"})
+    assert e.value.code == "activation_tier_excludes_capability" and _state(env, "tryon.photo")[0] == "unconfigured"
+    env.w.clock.advance(minutes=1)
+    _ready_for_activation(env)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    assert _state(env)[0] == "sandbox"
+
+
+def test_a_strict_tier_sink_raises_only_after_the_registry_and_store_are_updated(env):
+    def broken(record):
+        raise RunLogViolation("provider.tier_decision: bad line")
+
+    _ready_for_activation(env)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.svc.tier_audit = broken
+    with pytest.raises(RunLogViolation):
+        env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    assert _state(env)[0] == "sandbox"
+    assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "sandbox"
+    with pytest.raises(RunLogViolation):
+        env.svc.assign_tier(OPERATOR, SHOP, FLOOR)
+    assert _state(env) == ("unconfigured", "tier_excludes_capability")
+    assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"
 
 
 def test_a_process_started_under_a_new_table_never_revives_a_capability_it_excludes(env):
@@ -325,13 +497,29 @@ def test_a_process_started_under_a_new_table_never_revives_a_capability_it_exclu
     assert _state(same)[0] == "sandbox" and _tier_lines(same.log) == []
 
 
-def test_tier_gated_capabilities_cannot_be_registered_executable():
+@pytest.mark.parametrize("capability", sorted(T.GATED_CAPABILITIES))
+def test_tier_gated_capabilities_never_become_executable_outside_the_tier_checked_setup_path(capability):
     w = world()
     conn = _shop(ScriptedProvider(), w.clock.now)
-    conn.capabilities["catalog.3d"] = CapabilityStatus("catalog.3d", "sandbox", "declared", w.clock.now, "fx:3d",
-                                                       "sandbox_operation")
+
+    def enabled():
+        return CapabilityStatus(capability, "sandbox", "declared", w.clock.now, "fx:x", "sandbox_operation")
+
+    conn.capabilities[capability] = enabled()
     with pytest.raises(RegistryError, match="tier_gated_capability_must_be_activated"):
-        w.registry.register(conn)
+        w.registry.register(conn)  # an adapter cannot declare it enabled
+    conn.capabilities[capability] = CapabilityStatus(capability, "unconfigured", "activation_pending_verification")
+    w.registry.register(conn)
+    for bypass in (lambda: w.registry.set_capability(SHOP, enabled()),
+                   lambda: w.registry.record_verification(SHOP, capability, evidence_ref="fx:x",
+                                                          evidence_kind="sandbox_operation", checked_at=w.clock.now)):
+        with pytest.raises(RegistryError, match="tier_gated_capability_must_be_activated"):
+            bypass()
+        assert w.registry.get(SHOP).capability(capability).state == "unconfigured"
+    w.registry.set_capability(SHOP, enabled(), tier_checked=True)  # only the setup service passes the tier check
+    assert w.registry.get(SHOP).capability(capability).state == "sandbox"
+    w.registry.suspend(SHOP, capability, "operator_suspended", w.clock.now)  # never blocks a step down
+    assert w.registry.get(SHOP).capability(capability).state == "suspended"
 
 
 # =========================================================================== shelf quota mechanics (in process)
@@ -365,15 +553,21 @@ def test_the_shelf_limit_refuses_each_addition_beyond_it():
             _ingest(ing, [], bad)
 
 
-def test_updates_and_tombstones_are_never_refused_and_free_capacity_for_the_next_page():
+def test_updates_and_tombstones_are_never_refused_and_a_pages_tombstones_free_its_slots():
     ing = CatalogIngestor()
     _ingest(ing, [_variant(f"v{i}") for i in range(3)], 3)
     later = T0 + timedelta(hours=1)
     audit = _ingest(ing, [_variant(f"v{i}", price=4000, updated=later) for i in range(3)] + [_variant("v9", updated=later)],
                     3, run="r2", now=later, tombstones=[("p1", "v0")])
-    assert (audit.accepted, audit.quota_refused, audit.tombstoned) == (3, 1, 1)  # price updates pass; v9 waits
-    audit = _ingest(ing, [_variant("v9", updated=later)], 3, run="r3", now=later + timedelta(minutes=5))
-    assert audit.accepted == 1 and ing.shelf_usage(SHOP) == 3  # the tombstone freed v9's slot
+    # At the cap: price updates pass, and swapping v0 for v9 in one page stays within the limit.
+    assert (audit.accepted, audit.new_listings, audit.quota_refused, audit.tombstoned) == (4, 1, 0, 1)
+    assert ing.shelf_usage(SHOP) == 3
+    swap = _ingest(ing, [_variant("v7", updated=later), _variant("v8", updated=later)], 3, run="r3", now=later,
+                   tombstones=[("p1", "v1")])
+    assert (swap.new_listings, swap.quota_refused, swap.admitted_refs) == (1, 1, ["v7"])  # one slot freed, one taken
+    audit = _ingest(ing, [], 3, run="r4", now=later, tombstones=[("p1", "v2")])
+    audit = _ingest(ing, [_variant("v8", updated=later)], 3, run="r5", now=later + timedelta(minutes=5))
+    assert audit.accepted == 1 and ing.shelf_usage(SHOP) == 3  # an earlier page's tombstone freed v8's slot
 
 
 def test_a_lower_limit_never_deletes_and_reviving_a_tombstone_counts_as_an_addition():
@@ -442,6 +636,44 @@ def test_the_shelf_load_reads_the_assigned_tier_on_each_page_and_logs_each_page(
     assert {ln["actor_ref"] for ln in pages} == {None}
 
 
+def test_a_page_that_fails_part_way_still_logs_what_it_admitted(shelf):
+    class FailsAfterOne(CatalogIngestor):
+        def ingest_page(self, page, **kwargs):
+            super().ingest_page(CatalogPage(page.items[:1], page.next_cursor, ()), **kwargs)
+            raise RuntimeError("shelf write failed")
+
+    ing = FailsAfterOne()
+    shelf.svc.assign_tier(OPERATOR, SHOP, "placeholder_shelf5")
+    with pytest.raises(RuntimeError):
+        _load(shelf, ing, [_variant("v0"), _variant("v1")])
+    pages = [ln for ln in shelf.log.events("provider.tier_decision") if ln["origin"] == "ingestion"]
+    assert [(ln["outcome"], ln["units_requested"], ln["units_refused"]) for ln in pages] == [("allow", 1, 0)]
+
+
+def test_concurrent_pages_sharing_one_audit_each_log_their_own_counts(shelf):
+    ing = CatalogIngestor()
+    shelf.svc.assign_tier(OPERATOR, SHOP, "placeholder_shelf5")
+    audit, barrier, errors = IngestionAudit("shared", SHOP), threading.Barrier(8), []
+
+    def page(i):
+        barrier.wait()
+        try:
+            shelf.svc.load_shelf_page(ing, _page([_variant(f"x{i}")]), provider_id=SHOP, now=T0, audit=audit)
+        except Exception as e:  # pragma: no cover - surfaced below
+            errors.append(e)
+
+    threads = [threading.Thread(target=page, args=(i,)) for i in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []
+    pages = [ln for ln in shelf.log.events("provider.tier_decision") if ln["origin"] == "ingestion"]
+    assert len(pages) == 8 and {ln["units_requested"] for ln in pages} == {1}  # never another page's additions
+    assert sum(ln["units_refused"] for ln in pages) == 3 == audit.quota_refused
+    assert audit.new_listings == 5 == ing.shelf_usage(SHOP)
+
+
 def test_the_shipped_placeholders_load_nothing_new_at_the_floor_and_everything_at_the_ceiling(env):
     ing = CatalogIngestor()
     env.svc.assign_tier(OPERATOR, SHOP, FLOOR)
@@ -491,6 +723,8 @@ def test_member_connection_needs_the_tier_first_and_only_then_reads_the_members_
     assert T.check_member_connection(_resolved(CEILING), opt_in(False)).code == "member_consent_required"
     assert T.check_member_connection(_resolved(CEILING), opt_in(True)).allowed
     assert reads == [False, True]
+    for truthy in (1, "yes", "true", [True], object()):  # only an explicit True is an opt-in
+        assert T.check_member_connection(_resolved(CEILING), lambda v=truthy: v).code == "member_consent_required"
 
 
 # =========================================================================== never on member paths
@@ -555,6 +789,8 @@ GOOD_LINE = {"request_id": None, "origin": "activation", "dimension": "customiza
     {"origin": "assignment", "actor_ref": None}, {"origin": "verification", "actor_ref": None},
     {"origin": "hydrate"}, {"units_requested": 1, "units_refused": 2}, {"tier_id": None},
     {"tier_source": "unassigned"}, {"code": "no_new_listings"},
+    {"origin": "hydrate", "actor_ref": None}, {"origin": "verification"}, {"capability": None},
+    {"tier_source": "assigned_unknown", "tier_id": None},
 ])
 def test_the_run_log_refuses_a_malformed_tier_line(change):
     log = MemoryRunLog(strict=True)
@@ -603,3 +839,20 @@ def test_tier_assignment_over_http_is_operator_only_needs_if_match_and_round_tri
     extra = h.call("provider.tier.assign", {"provider_id": "demo_atelier", "tier_id": None, "price": "1"}, operator, v)
     assert extra.status_code == 400 and extra.json()["code"] == "unexpected_field"
     assert [ln["code"] for ln in h.tier_log.events("provider.tier_decision")] == ["tier_assigned"]
+
+
+def test_a_tier_line_from_an_http_request_carries_that_requests_id():
+    from tests.test_commerce_http import Http
+    h = Http()
+    operator = h.bearer(["provider:admin"], client_id="ops-console")
+    rid = "5d2e8a41-7c3b-4f90-9e16-0a4b8c2d6f17"
+    version = h.call("provider.setup.get", {"provider_id": "demo_atelier"}, operator).json()["version"]
+    ok = h.call("provider.tier.assign", {"provider_id": "demo_atelier", "tier_id": CEILING}, operator,
+                {"If-Match": f'"{version}"', "X-Request-Id": rid})
+    assert ok.status_code == 200, ok.text
+    assert [ln["request_id"] for ln in h.tier_log.events("provider.tier_decision")] == [rid]
+    h.tier_log.tier_decision({**GOOD_LINE, "request_id": "not-a-uuid; raw header"})
+    assert h.tier_log.events("provider.tier_decision")[-1]["request_id"] is None  # never a raw header value
+    assert T.decision_record(origin="assignment", dimension="assignment", outcome="allow", code="tier_cleared",
+                             provider_id="demo_atelier", tier=T.resolve_from_items({}, PLACEHOLDER_PRICING_TABLE),
+                             actor_ref="op")["request_id"] is None  # outside a request: none, never a stale one

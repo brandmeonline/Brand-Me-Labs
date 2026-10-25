@@ -1,6 +1,7 @@
 """MCP authorization and tool executor (BM-COM-002/003/016/017/018; W07 MCP exit evidence)."""
 
 import json
+import re
 import time
 import uuid
 
@@ -246,7 +247,7 @@ def test_payment_card_data_rejected_and_never_logged(h):  # BM-COM-018
     pan = "4111 1111 1111 1111"
     status, body = h.call("brandme.catalog.search", {"query": f"card {pan} cvv 123"})
     assert status == 400 and body["problem"]["code"] == "payment_credential_rejected"
-    assert pan not in json.dumps(h.audit) and "4111" not in json.dumps(h.audit)
+    assert pan not in json.dumps(h.audit) and not re.search(r"4111\D?1111", json.dumps(h.audit))  # ids are hex
     for tool in McpToolExecutor.list_tools()["tools"]:
         schema = json.dumps(tool["inputSchema"]).lower()
         assert not any(w in schema for w in ("card_number", "pan", "cvv", "cvc"))

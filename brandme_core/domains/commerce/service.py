@@ -324,24 +324,30 @@ class CommerceService:
                  decided: List[Tuple[AgentDelegation, AutonomyDecision, Dict[str, Any]]],
                  then: Optional[Callable[[Any], Any]] = None) -> Any:
         """Runs a deciding transaction (its callback truncates ``decided`` first, so a retried attempt is
-        logged once), then ``then`` on its result (provider I/O), and only then logs the decisions with
-        whether the transaction committed. A failing sink never stops ``then`` and never replaces the
-        call's own error (``_log_decisions``)."""
+        logged once), then ``then`` on its result (provider I/O, which may decide again), and only then logs
+        every decision with whether its own transaction committed: the deciding transaction's lines say whether
+        it returned; lines ``then`` added say whether ``then`` did. A failing sink never stops ``then`` and never
+        replaces the call's own error (``_log_decisions``)."""
         try:
             result = run()
-        except BaseException:
-            self._log_decisions(decided, committed=False, swallow=True)
+        except BaseException as exc:
+            self._log_decisions(decided, committed=False, during=exc)
             raise
+        mark = len(decided)
         try:
             result = then(result) if then is not None else result
-        except BaseException:
-            self._log_decisions(decided, committed=True, swallow=True)
+        except BaseException as exc:
+            self._log_decisions(decided[:mark], committed=True, during=exc)
+            self._log_decisions(decided[mark:], committed=False, during=exc)
             raise
         self._log_decisions(decided, committed=True)
         return result
 
     def _log_decisions(self, decided: Sequence[Tuple[AgentDelegation, AutonomyDecision, Dict[str, Any]]], *,
-                       committed: bool, swallow: bool = False) -> None:
+                       committed: bool, during: Optional[BaseException] = None) -> None:
+        """Every sink gets every line. An operational sink failure is swallowed with a warning. A strict (test)
+        log refusing a malformed line is a bug: it raises here, unless the call is already failing (``during``),
+        whose own error then propagates carrying a note and an error-level log, never replaced."""
         if not self._autonomy_sinks or not decided:
             return
         from brandme_core.mcp.refs import log_ref  # lazy: brandme_core.mcp imports this module
@@ -353,7 +359,7 @@ class CommerceService:
                 "task_ref": log_ref("task", ctx.task_id) if ctx.task_id else None, "step": ctx.step,
                 "member_ref": log_ref("member", d.member_id), "delegation_id": d.id, "client_id": d.client_id,
                 "client_kind": "assistant" if d.client_id == _autonomy.ASSISTANT_CLIENT_ID else "external",
-                # joins one purchase's request, binding and execute lines without its id
+                # joins one purchase's execute and last-gate lines without its id
                 "quote_ref": log_ref("quote", extra["quote_id"]) if extra.get("quote_id") else None,
                 "simulation": self._is_simulation(extra.get("provider_id") or ""), "committed": committed,
                 "mode": d.mode.value, "action": dec.action.value, "outcome": dec.outcome.value,
@@ -370,8 +376,12 @@ class CommerceService:
                         failure = failure or exc  # a strict (test) log refusing a malformed line: a bug
                     else:  # an operational failure never changes or hides the commerce outcome
                         _LOG.warning("autonomy decision sink failed: %s", type(exc).__name__)
-        if failure is not None and not swallow:
+        if failure is None:
+            return
+        if during is None:
             raise failure
+        _LOG.error("decision log refused a line while the call failed: %s", failure)
+        during.add_note(f"decision log refused a line: {failure}")
 
     def update_autonomy_boundary(self, principal: Principal, delegation_id: str,
                                  boundary: Optional[AutonomyBoundary], *, if_match: int) -> AgentDelegation:
@@ -681,10 +691,8 @@ class CommerceService:
                                simulation_ok=self._is_simulation(op.provider_id)):
             raise ApprovalInvalid("reauthentication required", code="reauthentication_required")
         now = self.clock()
-        decided: List[Tuple[AgentDelegation, AutonomyDecision, Dict[str, Any]]] = []
 
         def _tx(tx):
-            del decided[:]  # a retried attempt decides again
             self._guard(tx, principal.member_id, ORDERS)
             op = self._own(tx, "operations", operation_id, principal)
             ch = self._own(tx, "challenges", challenge_id, principal)
@@ -704,7 +712,7 @@ class CommerceService:
             quote.ensure_fresh(now)
             check_transition(op.state, "approved")
             approval = PurchaseApproval(
-                id=new_id(), member_id=principal.member_id, delegation_ref=self._executor_ref(tx, op, quote, decided),
+                id=new_id(), member_id=principal.member_id, delegation_ref=self._executor_ref(tx, op, quote),
                 quote_id=quote.id, quote_hash=current_hash, merchant_id=quote.merchant_id,
                 allowed_total=quote.total, nonce=ch.nonce_hash, issued_at=now, expires_at=quote.expires_at,
                 assurance_level=principal.assurance_level, method="trusted_surface",
@@ -715,25 +723,29 @@ class CommerceService:
             self._event(tx, "commerce.purchase.authorized", "PurchaseOperation", op.id, op.version, principal,
                         {"operation_id": op.id, "approval_id": approval.id, "quote_hash": current_hash})
             return approval
-        return self._settled(lambda: self.store.run(_tx), decided)
+        return self.store.run(_tx)
 
-    def _executor_ref(self, tx: Any, op: PurchaseOperation, quote: CheckoutQuote,
-                      decided: List[Tuple[AgentDelegation, AutonomyDecision, Dict[str, Any]]]) -> Optional[str]:
-        """Who may place the approved order: the agent's buy grant when it is active and the member's
-        boundary allows it, otherwise the member's own session. Decided once, at approval, on the grant
-        read in the approval's transaction; never rebound later. Other grants' agents never place orders,
-        so nothing is decided (or logged) for them."""
-        d = tx.get("delegations", op.delegation_id) if op.delegation_id else None
-        if d is None or d.mode is not AssistanceMode.BUY_WITHIN_RULES:
-            return None
-        if not d.is_active(self.clock()):  # expired or revoked: the member completes it
-            base = _autonomy.evaluate(d.boundary, MODE_CEILING[d.mode], self._quote_facts(Action.APPROVAL_BINDING, quote))
-            codes = ("autonomy_grant_inactive",) + tuple(c for c in base.codes if c not in _autonomy.ALLOW_CODES)
-            decided.append((d, replace(base, outcome=Outcome.HOLD, codes=tuple(c for c in _autonomy.CODES if c in codes)),
-                            {"provider_id": quote.provider_id, "quote_id": quote.id}))
-            return None
-        decision = self._decide(decided, d, self._quote_facts(Action.APPROVAL_BINDING, quote), quote_id=quote.id)
-        return d.id if decision.allowed else None
+    def _binding(self, d: Optional[AgentDelegation], quote: CheckoutQuote) -> Tuple[Optional[str], Tuple[str, ...]]:
+        """``(grant id or None, codes)``: who may place an approved order. The agent's buy grant when it is
+        active, its client can place orders (Brand.Me's own assistant has no post-approval path yet), and the
+        member's boundary allows the quote; otherwise the member. Recorded on the approval, never as a timed
+        log line (the member's own act)."""
+        if d is None:
+            return None, ()
+        facts = self._quote_facts(Action.APPROVAL_BINDING, quote)
+        if d.mode is not AssistanceMode.BUY_WITHIN_RULES:  # the mode decides: only a buy grant's agent may place
+            return None, _autonomy.evaluate(d.boundary, MODE_CEILING[d.mode], facts).codes
+        if not d.is_active(self.clock()):
+            return None, ("autonomy_grant_inactive",)
+        if d.client_id == _autonomy.ASSISTANT_CLIENT_ID:
+            return None, ("autonomy_assistant_member_completes",)
+        decision = _autonomy.evaluate(d.boundary, MODE_CEILING[d.mode], facts)
+        return (d.id if decision.allowed else None), decision.codes
+
+    def _executor_ref(self, tx: Any, op: PurchaseOperation, quote: CheckoutQuote) -> Optional[str]:
+        """Decided once, at approval, on the grant read in the approval's transaction; never rebound to an
+        agent later (a narrowing may hand it back to the member)."""
+        return self._binding(tx.get("delegations", op.delegation_id) if op.delegation_id else None, quote)[0]
 
     def completion_preview(self, principal: Principal, operation_id: str) -> Tuple[str, Tuple[str, ...]]:
         """``("agent" | "member", codes)``: who would place this purchase if the member approved it now.
@@ -744,12 +756,8 @@ class CommerceService:
         d = self.store.get("delegations", op.delegation_id) if op.delegation_id else None
         if d is None:
             return "member", ()
-        if d.mode is AssistanceMode.BUY_WITHIN_RULES and not d.is_active(self.clock()):
-            return "member", ("autonomy_grant_inactive",)
-        quote = self._quote(self.store, principal, op.quote_id)
-        decision = _autonomy.evaluate(d.boundary, MODE_CEILING[d.mode], self._quote_facts(Action.APPROVAL_BINDING, quote))
-        agent = decision.allowed and d.mode is AssistanceMode.BUY_WITHIN_RULES
-        return ("agent" if agent else "member"), decision.codes
+        grant, codes = self._binding(d, self._quote(self.store, principal, op.quote_id))
+        return ("agent" if grant else "member"), codes
 
     # ------------------------------------------------------ AP2-backed approval
     def register_surface_key(self, principal: Principal, public_jwk: Mapping[str, Any]) -> str:
@@ -809,10 +817,7 @@ class CommerceService:
             raise ApprovalInvalid("mandate not signed by a registered member key",
                                   code="ap2_" + getattr(last, "code", "no_surface_key"))
 
-        decided: List[Tuple[AgentDelegation, AutonomyDecision, Dict[str, Any]]] = []
-
         def _tx(tx):
-            del decided[:]  # a retried attempt decides again
             self._guard(tx, principal.member_id, ORDERS)
             if tx.get("ap2_used", result.checkout_mandate_digest) is not None:
                 raise ApprovalInvalid("mandate already used", code="ap2_replay")
@@ -820,7 +825,7 @@ class CommerceService:
             if current.state != "awaiting_approval" or quote.compute_hash() != current.quote_hash:
                 raise ApprovalInvalid("quote terms changed", code="quote_changed")
             approval = PurchaseApproval(
-                id=new_id(), member_id=principal.member_id, delegation_ref=self._executor_ref(tx, current, quote, decided),
+                id=new_id(), member_id=principal.member_id, delegation_ref=self._executor_ref(tx, current, quote),
                 quote_id=quote.id, quote_hash=current.quote_hash, merchant_id=quote.merchant_id,
                 allowed_total=quote.total, nonce=result.checkout_hash, issued_at=now, expires_at=quote.expires_at,
                 assurance_level="ap2_user_signed", method="ap2_mandate", materiality_rule=MATERIALITY_RULE,
@@ -833,7 +838,7 @@ class CommerceService:
                                     "quote_hash": current.quote_hash, "protocol": "ap2/0.2",
                                     "protocol_payload_hash": result.protocol_payload_hash})
             return approval
-        return self._settled(lambda: self.store.run(_tx), decided)
+        return self.store.run(_tx)
 
     # ---------------------------------------------------------------- execute
     def execute_purchase(self, principal: Principal, *, operation_id: str, approval_id: str,
@@ -878,7 +883,10 @@ class CommerceService:
                 buy = grant.mode is AssistanceMode.BUY_WITHIN_RULES
                 if buy and approval.delegation_ref is None and op.delegation_id == grant.id:
                     self._held_for_member(decided, grant, quote)
-            if approval.delegation_ref != principal.delegation_id:
+            # The member may always place their own approved purchase, including one bound to their agent (so a
+            # grant that expires or an agent that never follows through cannot strand it); an agent only what
+            # was bound to its own grant.
+            if principal.delegation_id is not None and approval.delegation_ref != principal.delegation_id:
                 raise ApprovalInvalid("approval bound to a different delegation")
             if grant is not None and grant.mode is AssistanceMode.BUY_WITHIN_RULES:
                 self._refuse_unless_allowed(self._decide(decided, grant, self._quote_facts(Action.EXECUTE, quote),
@@ -905,7 +913,8 @@ class CommerceService:
                     raise Forbidden("delegation does not allow purchase execution")
                 self._check_grant(grant, quote)
                 self._reserve_budget(tx, grant, op.id, quote.total)
-            tx.put("approvals", approval.id, replace(approval, state="consumed"))
+            # Consumed by whoever placed it: an agent's later cancel or return checks this (_placed_by_grant).
+            tx.put("approvals", approval.id, replace(approval, state="consumed", delegation_ref=principal.delegation_id))
             op = self._transition(tx, op, "submitting", attempts=op.attempts + 1)
             if scope:
                 tx.put("idempotency", scope, IdempotencyRecord(scope, digest, op.id, now))

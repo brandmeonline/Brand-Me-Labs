@@ -82,12 +82,14 @@ class Outcome(str, enum.Enum):
 OUTCOME_RANK = {Outcome.REFUSE: 0, Outcome.HOLD: 1, Outcome.ALLOW: 2}
 
 # Closed vocabularies. ``CODES`` is in priority order: a decision's primary code is the first present.
-# ``autonomy_held_for_member`` and ``autonomy_grant_inactive`` are the service's, never the evaluator's:
-# an agent executing an approval the member's rules bound to the member, and a binding to a grant that
-# is no longer active (the member completes it).
+# The service's own codes, never the evaluator's: ``autonomy_held_for_member`` (an agent executing an
+# approval bound to the member), and two that only explain who completes (``BINDING_ONLY_CODES``, shown on
+# the trusted surface, never logged): a grant no longer active, and Brand.Me's own assistant, which has no
+# post-approval path to place an order yet, so the member completes what it prepared.
 CODES = ("autonomy_boundary_unreadable", "autonomy_held_for_member", "autonomy_grant_inactive",
-         "autonomy_level_prepare_only", "autonomy_cap_currency_differs", "over_autonomy_cap",
-         "autonomy_total_unknown", "autonomy_mode_ceiling", "within_boundary")
+         "autonomy_assistant_member_completes", "autonomy_level_prepare_only", "autonomy_cap_currency_differs",
+         "over_autonomy_cap", "autonomy_total_unknown", "autonomy_mode_ceiling", "within_boundary")
+BINDING_ONLY_CODES = ("autonomy_grant_inactive", "autonomy_assistant_member_completes")
 ALLOW_CODES = frozenset({"within_boundary"})
 SCOPES = ("no_boundary", "default", "merchant", "wishlist", "merchant_and_wishlist", "rules_and_default",
           "unreadable")
