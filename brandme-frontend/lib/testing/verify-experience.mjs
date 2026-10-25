@@ -94,6 +94,9 @@ try {
         await waitForNavigationMeasurement()
       }
       async function audit(name) {
+        const title = { flow: 'Flow · Brand.Me', editorial: 'Editorial · Brand.Me', now: 'Now · Brand.Me', 'private-persona': 'Me · Brand.Me' }[name]
+        // Keyboard navigation can render the client view before Next streams its metadata.
+        await page.waitForFunction(expected => document.title === expected, title, { timeout: 10000 })
         for (const theme of ['light', 'dark']) {
           await page.emulateMedia({ colorScheme: theme })
           await page.waitForFunction(theme => document.documentElement.dataset.bmTheme === theme, theme)
@@ -191,5 +194,5 @@ try {
   }
 } finally {
   await browser.close()
-  await writeFile(path.join(output, 'results.json'), JSON.stringify({ visual_approval: 'not_run', results }, null, 2))
+  await writeFile(path.join(output, 'results.json'), JSON.stringify({ status: results.length === 4 ? 'passed' : 'failed', visual_approval: 'not_run', results }, null, 2))
 }
