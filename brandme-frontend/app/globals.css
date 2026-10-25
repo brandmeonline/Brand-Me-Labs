@@ -1107,6 +1107,37 @@ figure {
   gap: 8px;
   margin-bottom: 24px;
 }
+.bm-horizon-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  border-bottom: 1px solid var(--bm-line);
+  margin-bottom: 32px;
+}
+.bm-horizon-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  border-bottom: 2px solid transparent;
+  padding: 8px 4px;
+}
+.bm-horizon-nav a[aria-current='page'] {
+  border-color: currentColor;
+  color: var(--bm-accent);
+}
+.bm-social-streams { display: grid; gap: 40px; }
+.bm-horizon-unavailable { max-width: 42rem; padding-block: 16px 32px; }
+.bm-horizon-unavailable p { margin-block: 12px 20px; }
+.bm-brand-stream { border-top: 1px solid var(--bm-line); padding-top: 24px; }
+.bm-brand-stream p { margin-block: 12px; }
+.bm-persona-card { margin-block: 32px 48px; }
+.bm-persona-card header { border-bottom: 1px solid var(--bm-line); padding-bottom: 24px; }
+.bm-persona-card header p { margin-block: 12px; }
+.bm-persona-axes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 24px; margin-block: 24px; }
+.bm-persona-axes dt { font-weight: 700; margin-bottom: 8px; }
+.bm-persona-axes dd { margin: 4px 0; }
+.bm-card-list { padding-left: 20px; margin-block: 16px; }
+.bm-card-list li { margin-block: 12px; overflow-wrap: anywhere; }
 .bm-sheet-snaps button {
   border: 1px solid var(--bm-line);
   border-radius: var(--bm-radius-control);

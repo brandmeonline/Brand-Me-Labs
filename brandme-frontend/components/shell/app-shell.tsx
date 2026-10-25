@@ -200,7 +200,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <ContextContent onNavigate={navigateFromSheet} />
             </Sheet>
             {publicPage && (
-              <Link className="bm-button bm-button-small" href="/today">
+              <Link className="bm-button bm-button-small" href="/social/flow">
                 Explore first <ArrowUpRight size={16} aria-hidden="true" />
               </Link>
             )}

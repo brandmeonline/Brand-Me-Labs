@@ -87,9 +87,37 @@ const {ExperiencePreferencesProvider,useExperiencePreferences}=source('../client
 const { useNavigationClearance } = source(
   '../client/use-navigation-clearance.ts',
 )
+const { primaryNavigation, secondaryNavigation, isActiveRoute } = source('../../components/shell/navigation.tsx')
+const { SocialHorizon } = source('../../features/social/horizons.tsx')
+const { Wordmark } = source('../../components/shell/wordmark.tsx')
 afterEach(() => {
   cleanup()
   document.documentElement.removeAttribute('style')
+})
+
+test('three rooms retain secondary destinations and legacy decision/product context', () => {
+  assert.deepEqual(primaryNavigation.map(item => item.label), ['Shops', 'Social', 'Closet'])
+  const reachable = new Set([...primaryNavigation, ...secondaryNavigation].map(item => item.href))
+  for (const href of ['/today', '/style', '/circle', '/me', '/discover', '/assistant', '/rewards', '/orders', '/inbox', '/me/data', '/me/connections', '/settings']) assert.ok(reachable.has(href), href)
+  assert.ok(isActiveRoute('/circle/decisions/example', '/social'))
+  assert.ok(isActiveRoute('/products/provider:item', '/discover'))
+  assert.equal(isActiveRoute('/socially', '/social'), false)
+  render(h(Wordmark))
+  assert.equal(screen.getByRole('link', { name: 'Brand.Me home' }).getAttribute('href'), '/social/flow')
+})
+
+test('unavailable horizons remain navigable and contain no synthetic feed cards or prices', () => {
+  for (const active of ['flow', 'editorial']) {
+    const view = render(h(SocialHorizon, { active }))
+    const navigation = screen.getByRole('navigation', { name: 'Social horizons' })
+    assert.equal(navigation.querySelectorAll('[aria-current="page"]').length, 1)
+    assert.equal(navigation.querySelector('[aria-current="page"]').getAttribute('href'), `/social/${active}`)
+    assert.match(view.container.textContent, /not available in this preview/i)
+    assert.ok(screen.getByRole('complementary', { name: 'Brands & designers' }))
+    assert.equal(view.container.querySelectorAll('article, img, .bm-price').length, 0)
+    assert.equal(screen.getByRole('link', { name: 'See decisions in Now' }).getAttribute('href'), '/social/now')
+    view.unmount()
+  }
 })
 
 test('budget entry preserves exact decimal amounts and rejects rounded inputs',()=>{

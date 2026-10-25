@@ -436,6 +436,31 @@ Re-sync commit `1b9d320eb8a7a2946591d3fd27e324dd2c80affa` merged the updated spe
 
 The 74 existing reviewed baselines are unchanged; any replacement requires human review. Real-device and screen-reader sessions remain **not_run**, with dates still to be supplied. The 21-question check-in is due once rooms plus Now/Flow are live against the dev gateway on main; it has not been reached. Spatial runtime acceptance is separate: the consumer CI workflow does not run the spatial E2E suites.
 
+## Consumer rooms preview — isolated follow-on (2026-10-24)
+
+**Scope:** prepared on `codex/consumer-rooms-preview` from `15c9d3f`, separately from the #51 → #56 merge sequence. This is a reviewable UI preview, not completion of the locked live experience or permission to approve replacement visual baselines.
+
+- Primary navigation is Shops / Social / Closet. Today, Style, Me, My circle and all prior secondary functions remain reachable. Existing product and decision URLs retain their room context; spatial routes and assets are unchanged.
+- Home wordmarks and the landing action lead to `/social/flow`. `/social` redirects there. Now / Flow / Editorial have ordinary accessible navigation links. Flow, Editorial and the separate Brands & designers stream explicitly report that they are unavailable. They contain no invented feed cards, media, prices or API requests.
+- Now reuses the existing decisions client and legacy detail/composer routes. The optional `Circle.showPeople` prop avoids loading friend-management data in the Now view. The server-timed `DecisionView`, response choices and write payloads are unchanged.
+- `/me` now reads identity before requesting persona, rewards or wardrobe. Only a 401 is presented as a guest account; connection failure stays a connection failure. The private card shows the authenticated member's existing name/handle, visible saved axes, earned badges and up to three own wardrobe titles. Hidden axes, unearned badges and mismatched wardrobe owners are excluded. Persona ownership is checked against `/me`; account changes clear and remount the private card. No public profile, search, follow, house standing or curated-highlight claim is made.
+
+### Verification of this preview
+
+- Pinned Node **24.21.0** / pnpm **10.34.6** frozen install: **passed**.
+- Frontend production build, including four Social routes and private `/me` card: **passed** (30 static pages generated).
+- Existing UI behavior runner: **18 passed, 0 failed**, including new three-room reachability/Home-link and unavailable-horizon checks.
+- `verify-experience.mjs`: **passed** at 320, 390, 768 and 1440 px in light and dark themes. All 32 axe scans had no WCAG A/AA violations; no horizontal overflow or browser runtime errors. Checks cover Now role switching, absence of synthetic feed calls/cards/prices, guest and unavailable identity gating, hidden/unearned/other-owner filtering, reload updates, account switching and sign-out clearing.
+- These browser checks use explicit HTTP test doubles, not live-domain acceptance evidence. Their runner is included in `test:browser`; captures are stored separately under `experience-preview/` so they cannot become approved baselines implicitly.
+- Local evidence: `C:\Users\Adamus\Documents\Codex\2026-10-24\new-chat-2\evidence\rooms-preview\experience-preview\results.json` plus 32 screenshots. The result explicitly records `visual_approval: not_run`. Representative mobile screenshots were inspected for layout; this does not count as human baseline approval.
+- `git diff --check`: **passed**. Protected spatial routes/features/assets and all 74 reviewed baseline files are unchanged. No credentials, backend files or production configuration were created or changed.
+
+### Gates that remain open
+
+Flow, editorial publication, licensed runway-media delivery, house subscriptions/ranking, public persona projections, membership/invites/waitlist/perks, mastery and earned closet entitlements still require their owning backend contracts. The main gateway mount (`src/routes/v1/index.ts`) does not yet mount consumer-domain/catalog routers; the existing CI dev harness mounts pinned consumer sources from `dafd3b1`. The inherited `/closet` still uses its guest-only device repository without an authenticated adapter; the new navigation does not change or certify that integration. The check-in trigger (rooms plus Now/Flow live on main) remains **not reached**.
+
+New navigation and persona visuals change existing screenshots. Replacement baselines require human review before this preview can pass the visual gate or merge into main. Device and screen-reader sessions remain **not_run**, with dates pending founder input. No push, merge or deployment is performed by this preview stage.
+
 Credential manifest update: no credentials created or copied. Existing authenticated Git access is reused; dependency downloads and local disposable tooling require no new application credential.
 
 ## Stage 15 — Main integration prepared after the prerequisite repair

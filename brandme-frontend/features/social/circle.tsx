@@ -11,23 +11,23 @@ import { ResourceState } from '@/components/ui/resource-state'
 
 type Relationship={member_id:string;relationship_id:string;state:string}
 type Decision={decision_id:string;creator_id:string;prompt:string;state:string;subject_id:string;subject_type:string;server_time:string;closes_at:string|null;remaining_seconds:number;response_count:number;responses_hidden_until_you_answer:boolean;my_response:{choice:string}|null;responses:{respondent_id:string;choice:string;note:string|null}[];audience?:string[];result?:{yes:number;pass:number;alternative:number;label:string;zero_replies:boolean}}
-export function Circle(){
+export function Circle({showPeople=true}:{showPeople?:boolean}){
   const [role,setRole]=useState('invited'),[target,setTarget]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('')
   const decisions=useResource<{items:Decision[]}>(`/decisions?role=${role}`)
-  const friends=useResource<{items:Relationship[]}>('/relationships')
+  const friends=useResource<{items:Relationship[]}>(showPeople?'/relationships':null)
   async function act(path:string,body:unknown={},method:'POST'|'DELETE'='POST'){setBusy(true);try{await command(path,body,{method});friends.reload();decisions.reload();setMessage('Your circle has been updated.')}catch(e){setMessage(explainError(e))}finally{setBusy(false)}}
   return <div className="bm-flow-stack"><Link href="/circle/decisions/new" className="bm-button">Ask my circle</Link>
     <Select label="Decisions to show" value={role} onChange={e=>setRole(e.target.value)}><option value="invited">Waiting for my opinion</option><option value="mine">My requests</option></Select>
     <ResourceState {...decisions} retry={decisions.reload}/>{decisions.data?.items.length===0&&<p>No decisions here yet. An honest opinion can be a Yes or a Pass.</p>}
     {decisions.data?.items.map(d=><article key={d.decision_id} className="bm-flow-card"><h2><Link href={`/circle/decisions/${d.decision_id}`}>{d.prompt}</Link></h2><p>{d.state} · {d.response_count} responses</p></article>)}
-    <section className="bm-flow-card"><h2 className="bm-section-title">People you choose</h2><ResourceState {...friends} retry={friends.reload}/>
+    {showPeople&&<section className="bm-flow-card"><h2 className="bm-section-title">People you choose</h2><ResourceState {...friends} retry={friends.reload}/>
       {friends.data?.items.map(f=><div className="bm-flow-row" key={f.relationship_id}><span>Member {f.member_id.slice(0,8)} · {f.state}</span>
         <div className="bm-actions">{f.state==='requested_in'&&<Button disabled={busy} onClick={()=>act(`/relationships/${f.relationship_id}/accept`)}>Accept request</Button>}
           <Button variant="secondary" disabled={busy} onClick={()=>act('/blocks',{target_member_id:f.member_id})}>Block member</Button>
           <Button variant="secondary" disabled={busy} onClick={()=>act(`/relationships/${f.member_id}`,{},'DELETE')}>Remove connection</Button></div></div>)}
       <form onSubmit={e=>{e.preventDefault();void act('/relationships',{target_member_id:target})}}><Input label="Member reference" description="Use a member reference they shared with you. Contacts are not imported." value={target} onChange={e=>setTarget(e.target.value)} required/>
         <Button type="submit" pending={busy}>Request connection</Button></form>
-    </section><p role="status">{message}</p></div>
+    </section>}<p role="status">{message}</p></div>
 }
 export function DecisionComposer(){
   const friends=useResource<{items:Relationship[]}>('/relationships'),wardrobe=useResource<{items:components['schemas']['WardrobeItem'][]}>('/wardrobe/items')
