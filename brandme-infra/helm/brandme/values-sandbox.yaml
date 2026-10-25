@@ -32,6 +32,7 @@ secretRefs:
   privacyExportServiceToken: {name: brandme-sandbox-rts-privacy-export-service-token}
   chainServiceToken: {name: brandme-sandbox-rts-chain-service-token}
   midnightBlockfrostProjectId: {name: brandme-sandbox-rts-midnight-blockfrost-project-id}
+  consumerDomainAssertionKey: {name: brandme-sandbox-dom-domain-assertion-key}
 
 gateway:
   gcpServiceAccount: bm-sbx-fnd-gateway
@@ -64,6 +65,23 @@ privacyExports:
   # Bucket names are global: pick a suffix when creating it (packet C-9).
   bucket: brandme-sandbox-exports-REPLACE_ME_SUFFIX
 
+# Consumer-domain service (KSA brandme-consumer-domains-api, GSA bm-sbx-dom-api).
+# Generate one P-256 key pair for the sandbox gateway: the PKCS#8 private key
+# goes only into Secret Manager brandme-sandbox-dom-domain-assertion-key
+# (gcloud secrets versions add from stdin, docs/build/runbooks/credential-rotation.md);
+# only its PUBLIC JWK (kty, crv, kid, x, y; never "d") belongs here.
+consumerDomains:
+  enabled: true
+  gcpServiceAccount: bm-sbx-dom-api
+  assertion:
+    signingKid: REPLACE_ME_CONSUMER_DOMAIN_KID
+    jwks:
+      keys:
+        - {kty: EC, crv: P-256, kid: REPLACE_ME_CONSUMER_DOMAIN_KID, x: REPLACE_ME_PUBLIC_JWK_X, "y": REPLACE_ME_PUBLIC_JWK_Y}
+  # Empty until the media bucket exists (Q14 dev-bucket run not done): media and
+  # try-on stay unmounted. Then grant it with gcp-dev-identities.sh --dom-media-bucket.
+  mediaBucket: ""
+
 eventsWorker:
   gcpServiceAccount: bm-sbx-fnd-outbox
   topics:
@@ -71,16 +89,16 @@ eventsWorker:
     memberPrivate: brandme-sandbox-member-private
     restricted: brandme-sandbox-restricted
 
-# Reuses the outbox identity (Spanner data read/write); its Pub/Sub grants are
-# unused here. Needs its own Workload Identity binding for
+# Own least-privilege identity: Spanner data read/write on the one database
+# (partitioned DML included), no Pub/Sub. Bound to
 # serviceAccount:<project>.svc.id.goog[brandme/brandme-events-retention].
 eventsRetention:
-  gcpServiceAccount: bm-sbx-fnd-outbox
+  gcpServiceAccount: bm-sbx-fnd-retention
 
-# Runs `runner.py up` before every rollout. Do not enable the deploy until the
-# migration-numbering decision (D3: V003-V005 on the consumer-domains branch)
-# is executed — once V006+ are applied, lower versions can never be applied in
-# sandbox (runner.py:195-202, :294-295).
+# Runs `runner.py up` before every rollout. Main carries contiguous V001-V015
+# (D3 executed), so a fresh sandbox database applies them in order. The runner
+# still refuses, in sandbox, any migration numbered below the highest applied
+# one (runner.py:195-202, :294-295): a new migration takes the next free number.
 migrations:
   gcpServiceAccount: bm-sbx-fnd-migrator
 

@@ -21,16 +21,27 @@ the credentials it needs are founder actions, listed in order in
 | exports-api | `brandme-core` | `python -m brandme_core.privacy_exports` | 8000 `GET /health`, TCP | `bm-sbx-rts-export-api` |
 | exports-worker | `brandme-core` | `python -m brandme_core.privacy_exports --worker` | none (exits non-zero on failed startup checks) | `bm-sbx-rts-export-wkr` |
 | events-worker | `brandme-core` | `python -m brandme_core.events.worker` | none (same) | `bm-sbx-fnd-outbox` |
-| events-retention (CronJob, hourly at :17 UTC) | `brandme-core` | `python -m brandme_core.events.retention --once` | none (exits non-zero on a failed pass) | `bm-sbx-fnd-outbox` (own KSA; needs its own Workload Identity binding) |
+| events-retention (CronJob, hourly at :17 UTC) | `brandme-core` | `python -m brandme_core.events.retention --once` | none (exits non-zero on a failed pass) | `bm-sbx-fnd-retention` (own KSA and GSA: Spanner data read/write only) |
+| consumer-domains (off by default; on in `values-sandbox.yaml`) | `brandme-core` | `python -m brandme_core.domains.persona.app` | 8010 `GET /health` (static), TCP | `bm-sbx-dom-api` (KSA `brandme-consumer-domains-api`) |
 | migrations (hook Job) | `brandme-core` | `python brandme-data/spanner/migrations/runner.py up` | — | `bm-sbx-fnd-migrator` |
+
+The consumer-domain service accepts only the gateway's short-lived ES256
+principal assertions. The gateway holds the private key
+(`secretRefs.consumerDomainAssertionKey`, Secret Manager
+`brandme-<mode>-dom-domain-assertion-key`); the service gets the public JWKS from
+`consumerDomains.assertion.jwks`. Its media and try-on routes mount only with
+`consumerDomains.mediaBucket`. While the component is off, the gateway answers 503
+on every consumer-domain route. The try-on jobs process
+(`python -m brandme_core.domains.persona.jobs`) is not in the chart yet.
 
 The legacy brain, policy, orchestrator, knowledge, compliance, identity and cube
 services are deliberately absent: they refuse strict modes
 (`python -m brandme_core.config preflight`, exit 3). The chart runs no
 `preflight` init container: the shared inventory allows these processes in
 sandbox (packet G13), but an init container would also need `ENVIRONMENT` and
-each service's network variable. The read API, export API/worker and outbox
-worker run the same guard in-process at start (`brandme_core/boot.py`), so a
+each service's network variable. The read API, export API/worker, outbox
+worker, retention job and consumer-domain service run the same guard in-process
+at start (`brandme_core/boot.py`), so a
 production pod on a Midnight test network exits 3 regardless; the chart also
 refuses to render that combination (`templates/validate.yaml`).
 
@@ -55,9 +66,13 @@ refuses to render that combination (`templates/validate.yaml`).
   migrations Job and the events-retention CronJob do not.
 - `eventsRetention.schedule` must be hourly at a fixed minute (the outbox
   retention and erasure sweep assume a pass every hour; `concurrencyPolicy: Forbid`).
+- `consumerDomains` needs the gateway, the issuer `brandme-gateway`, a JWKS of
+  public P-256 keys (a private or unknown JWK member fails the render), a GSA,
+  the gateway's signing kid (it must name a JWKS key) and the key's Secret.
 - Default-deny NetworkPolicy for the namespace plus explicit allows
   (load balancer → gateway/console only when ingress is on; gateway → chain,
-  read-api, exports-api; DNS; GKE metadata server; HTTPS egress outside private ranges).
+  read-api, exports-api, consumer-domains, each reachable from the gateway only;
+  DNS; GKE metadata server; HTTPS egress outside private ranges).
 - Migrations run as a `pre-install,pre-upgrade` hook Job before any workload
   changes; a failed migration stops the release.
 - The optional GKE Ingress (static IP, ManagedCertificate, BackendConfig health

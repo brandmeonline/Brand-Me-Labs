@@ -6,8 +6,11 @@ Processes from the core image. Entrypoints and configuration contracts:
   exports worker  python -m brandme_core.privacy_exports --worker
   outbox worker   python -m brandme_core.events.worker       (events/worker.py, events/README.md)
   outbox retention (CronJob) python -m brandme_core.events.retention --once (events/retention.py)
+  consumer domains python -m brandme_core.domains.persona.app (domains/persona/app.py)
 Each refuses to start (exit 2, {"status":"startup_refused"}) on a missing or
 inconsistent setting, an emulator in a strict mode, or an unapplied schema.
+The consumer-domain service checks its configuration (exit 2), then runs the
+shared boot guard as consumer_domains (exit 3 on a refusal, brandme_core/boot.py).
 */ -}}
 {{- $root := . -}}
 {{- if .Values.readApi.enabled }}
@@ -54,6 +57,23 @@ inconsistent setting, an emulator in a strict mode, or an unapplied schema.
 {{- end }}
 ---
 {{ include "brandme.coreDeployment" (dict "root" $root "component" "events-worker" "cfg" .Values.eventsWorker "command" (list "python" "-m" "brandme_core.events.worker") "env" $env "http" false "grace" 60) }}
+{{- end }}
+{{- if .Values.consumerDomains.enabled }}
+{{- /* Env contract: domains/persona/app.py:87-98 (_config), media/gcs_store.py:325-349.
+Public keys only; the gateway holds the private key (templates/gateway.yaml).
+No BRANDME_TRYON_PROVIDER: no provider is approved and `simulated` is refused in strict modes. */}}
+{{- $cd := .Values.consumerDomains }}
+{{- $env := printf `- name: PORT
+  value: %q
+- name: CONSUMER_DOMAIN_ASSERTION_ISSUER
+  value: %q
+- name: CONSUMER_DOMAIN_ASSERTION_JWKS
+  value: %q` (toString $cd.port) (include "brandme.req" (list $cd.assertion.issuer "consumerDomains.assertion.issuer")) (include "brandme.consumerDomainJwks" .) }}
+{{- with $cd.mediaBucket }}
+{{- $env = printf "%s\n- name: BRANDME_MEDIA_BUCKET\n  value: %q" $env . }}
+{{- end }}
+---
+{{ include "brandme.coreDeployment" (dict "root" $root "component" "consumer-domains" "ksa" "consumer-domains-api" "cfg" $cd "command" (list "python" "-m" "brandme_core.domains.persona.app") "env" $env "http" true "grace" 30) }}
 {{- end }}
 {{- if .Values.eventsRetention.enabled }}
 {{- /* Founder ruling Q19: delivered outbox rows go 7 days after delivery; deleted

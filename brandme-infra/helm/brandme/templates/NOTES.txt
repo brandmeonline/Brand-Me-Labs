@@ -17,6 +17,9 @@ Verify each process against its real dependencies:
 {{- if .Values.readApi.enabled }}
   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "read-api") }} -- python -m brandme_core.read_api --check
 {{- end }}
+{{- if .Values.consumerDomains.enabled }}
+  kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "consumer-domains") }} -- python -m brandme_core.domains.persona.app --check
+{{- end }}
 
 Nothing here proves funded Midnight transactions, Preprod finality, or that a
 public endpoint is safe. See docs/build/deploy/gke-verification-packet.md.

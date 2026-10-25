@@ -53,6 +53,35 @@ Renders nothing. Fails the whole render on values that must never deploy.
 {{- fail "eventsWorker.topics must be three distinct topics" -}}
 {{- end -}}
 {{- end -}}
+{{- if .Values.consumerDomains.enabled -}}
+{{- $cd := .Values.consumerDomains -}}
+{{- if not .Values.gateway.enabled -}}
+{{- fail "consumerDomains.enabled requires gateway.enabled: only the gateway can sign the principal assertions the service accepts" -}}
+{{- end -}}
+{{- $issuer := include "brandme.req" (list $cd.assertion.issuer "consumerDomains.assertion.issuer") -}}
+{{- if ne $issuer "brandme-gateway" -}}
+{{- fail (printf "consumerDomains.assertion.issuer %q refused: the gateway signs every assertion with the fixed issuer brandme-gateway (brandme-gateway/src/services/domains.ts:23)" $issuer) -}}
+{{- end -}}
+{{- $jwks := include "brandme.consumerDomainJwks" . | fromJson -}}
+{{- $_ := include "brandme.gsaEmail" (list . $cd.gcpServiceAccount "consumerDomains.gcpServiceAccount") -}}
+{{- $kid := include "brandme.req" (list $cd.assertion.signingKid "consumerDomains.assertion.signingKid") -}}
+{{- if not (regexMatch "^[A-Za-z0-9._-]{1,64}$" $kid) -}}
+{{- fail (printf "consumerDomains.assertion.signingKid %q must match ^[A-Za-z0-9._-]{1,64}$ (brandme-gateway/src/config/index.ts:128)" $kid) -}}
+{{- end -}}
+{{- $kids := list -}}
+{{- range $jwks.keys -}}
+{{- $kids = append $kids .kid -}}
+{{- end -}}
+{{- if not (has $kid $kids) -}}
+{{- fail (printf "consumerDomains.assertion.signingKid %q names no key in consumerDomains.assertion.jwks: the service would refuse every gateway assertion (brandme_core/domains/persona/assertion.py:64)" $kid) -}}
+{{- end -}}
+{{- $_ := include "brandme.req" (list .Values.secretRefs.consumerDomainAssertionKey.name "secretRefs.consumerDomainAssertionKey.name") -}}
+{{- with $cd.mediaBucket -}}
+{{- if not (regexMatch "^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$" .) -}}
+{{- fail (printf "consumerDomains.mediaBucket %q is not a GCS bucket name (3-63 lowercase characters, no gs:// prefix)" .) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- if .Values.eventsRetention.enabled -}}
 {{- $schedule := include "brandme.req" (list .Values.eventsRetention.schedule "eventsRetention.schedule") -}}
 {{- /* Hourly at a fixed minute: the delivered-row purge and the 30-day erasure sweep assume a pass every hour. */ -}}
