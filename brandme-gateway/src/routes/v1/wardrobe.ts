@@ -57,7 +57,7 @@ export function placementShape(b: Record<string, unknown>): void {
 
 export function wardrobeRouter(client: DomainClient): Router {
   const r = Router();
-  r.use(['/wardrobe', '/closet', '/members'], requirePrincipal);
+  r.use(['/wardrobe', '/closet'], requirePrincipal);
 
   r.get(
     '/wardrobe/items',
@@ -161,7 +161,8 @@ export function wardrobeRouter(client: DomainClient): Router {
       return { method: 'PUT', path: `/wardrobe/items/${uuidParam(req, 'itemId')}/visibility`, body: b };
     }),
   );
-  r.get('/members/:memberId/closet', requireScope('wardrobe:read'),
+  // Guarded per route, not by prefix: other /members paths are not this lane's.
+  r.get('/members/:memberId/closet', requirePrincipal, requireScope('wardrobe:read'),
     forwardTo(client, (req) => ({ method: 'GET', path: `/members/${uuidParam(req, 'memberId')}/closet` })));
   return r;
 }

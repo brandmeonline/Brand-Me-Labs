@@ -38,6 +38,7 @@ from brandme_core.domains.persona.kernel import (
     iso,
     member_active,
     new_id,
+    processing_allowed,
     query,
     reject_non_finite,
     reject_unknown_keys,
@@ -134,6 +135,8 @@ class CreditService:
                 c = _credit(txn, member_id, credit_id)
                 if c is None or c["state"] != "available" or c["expires_at"] > server_now(txn):
                     return 0
+                if not processing_allowed(txn, member_id, "rewards.credits"):
+                    return 0  # deletion pending: the credit goes with the account
                 _settle(txn, c, "expired", None, ctx.principal.actor_ref)
                 return 1
 
@@ -170,6 +173,7 @@ def apply_credit(txn, *, member_id: str, credit_id: Any, order_ref: Any, currenc
     at = now or server_now(txn)
     if c is None:
         raise NotFound("credit not found")
+    guard_write(txn, member_id, "rewards.credits")
     if c["state"] != "available" or c["expires_at"] <= at:
         raise DetailedInvalidTransition("this credit is no longer available", code="credit_unavailable", extra={"state": c["state"]})
     if c["currency"] != currency:

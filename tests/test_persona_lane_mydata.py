@@ -45,7 +45,7 @@ from brandme_core.domains.persona.service import PersonaService  # noqa: E402
 from brandme_core.domains.privacy.privacy import MyDataService  # noqa: E402
 from brandme_core.domains.rewards import ledger  # noqa: E402
 from brandme_core.domains.rewards.benefits import BenefitService  # noqa: E402
-from brandme_core.domains.rewards.credits import CreditService  # noqa: E402
+from brandme_core.domains.rewards.credits import CreditService, apply_credit  # noqa: E402
 from brandme_core.domains.rewards.rules import RULES  # noqa: E402
 from brandme_core.domains.rewards.service import RewardsService  # noqa: E402
 from brandme_core.domains.rewards.surveys import SurveyService  # noqa: E402
@@ -288,6 +288,8 @@ def test_consumer_domains_through_my_data(db):
     frozen(lambda: BenefitService(db).reserve(gone, benefit["benefit_id"], key()))
     frozen(lambda: RewardsService(db).open_dispute(gone, {"category": "other", "message": "again"}))
     frozen(lambda: media.create_upload(gone, {"kind": "tryon_input", "content_type": "image/png", "bytes": 10}, key()))
+    credit_id = rows(db, "SELECT credit_id FROM PurchaseCredits WHERE member_id=@m", m=m)[1][0][0]
+    frozen(lambda: run_txn(db, lambda t: apply_credit(t, member_id=m, credit_id=credit_id, order_ref="order-dev-1", currency="USD")))
     # Other members' actions still succeed but write nothing new for the frozen member.
     notes = count(db, "SELECT COUNT(*) FROM Notifications WHERE member_id=@m", m=m)
     ShareService(db).create(friend, {"subject_type": "wardrobe_item", "subject_id": f_item, "audience": "selected_members",

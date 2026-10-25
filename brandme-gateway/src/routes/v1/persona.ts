@@ -147,7 +147,7 @@ function personaPatchShape(b: Record<string, unknown>): void {
 
 export function personaRouter(client: DomainClient): Router {
   const r = Router();
-  r.use(['/me/persona', '/me/guest-migration', '/recommendations', '/members'], requirePrincipal);
+  r.use(['/me/persona', '/me/guest-migration', '/recommendations'], requirePrincipal);
 
   r.get('/me/persona', requireScope('profile:read'), forwardTo(client, () => ({ method: 'GET', path: '/me/persona' })));
 
@@ -300,7 +300,7 @@ export function personaRouter(client: DomainClient): Router {
       return { method: 'PUT', path: '/me/persona/card', body: b };
     }),
   );
-  r.get('/members/:memberId/card', requireScope('social:read'),
+  r.get('/members/:memberId/card', requirePrincipal, requireScope('social:read'),
     forwardTo(client, (req) => ({ method: 'GET', path: `/members/${uuidParam(req, 'memberId')}/card` })));
 
   return r;
