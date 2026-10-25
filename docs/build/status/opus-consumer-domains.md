@@ -940,3 +940,208 @@ Ultra plan 02 (design-alignment stage) was uploaded by the founder on 2026-10-25
 **Not yet**
 - **No real provider or real bucket.** The try-on run uses the simulated provider and the GCS emulator. The dev-bucket run (item 11) still needs the founder's GCP credential.
 - **No deployment wiring.** Helm and compose still lack the domain service and its key; that is foundation's.
+
+## Stage 15 — Ultra plan 02, items 2–4: Now loop, Home = Flow, per-house loyalty standing — 2026-10-25
+Built on PR #61 (the mount). Migration **V016** (`consumer_design`) is registered in `tests/foundation/test_migrations.py` `RESERVED`, after commerce's reserved V015.
+
+**Now loop (item 2)**
+- **Windows.** The asker picks 180, 300, 600 or 900 s, or gets the 300 s default. Values must be strict integers: `300.0` and `true` are refused. The asker may add a "why" of up to 280 characters, and the audience sees it. Constants live in `social/policy.py`; V016 replaces `ck_dec_duration` with `ck_dec_window`.
+- **Comment thread** (`DecisionComments`):
+  - creator and invited audience only;
+  - in blind mode a recipient answers before reading or writing;
+  - 20 comments per author per decision;
+  - withdrawing a comment erases its text and leaves a placeholder;
+  - the thread closes with the window;
+  - comments can be reported (`decision_comment` target, console label added).
+- **In-window rewards.** The existing `friend_decision_response` rule already pays only eligible, on-time answers; unchanged.
+- **Influence credit** (`decision_influence`, lane extension **PD-20**): 25 points to each friend who said yes in-window (or named it as their alternative) when the asker then receives a **provider-observed delivery** of that catalog piece within 14 days of the close.
+  - One credit per decision and friend, however many units arrive. Capped at 100/day.
+  - A self-reported "I bought it" never pays, and neither do self, blocked or ineligible members.
+- **Catalog check.** A catalog-product decision now needs a live catalog piece (`catalog_piece_exists`). It previously accepted any id.
+
+**Home = Flow (item 3)** — `GET /api/v1/flow`
+- **Position is freshness only.** First come friends' open requests addressed to the member, soonest-closing first, excluding muted and blocked friends. Then the newest pieces from followed houses and from houses of pieces in the closet, newest first, with cursor paging.
+- **Size and depth come from excitement:** 0.6 × engagement + 0.4 × persona affinity.
+  - Engagement counts Now decisions about the piece plus want-list saves in the last 7 days. Under 3 counts as none, and the scale saturates at 25.
+  - Sizes: hero/standard/compact, depth 3/2/1. Each item states its reason, and no count is ever returned.
+  - Catalog pieces carry no persona axes yet, so affinity is neutral today and size follows engagement.
+- **The persona lens applies only the member's own constraints**: budget, brands, materials, categories and dismissed pieces. Stock is shown on the piece, not filtered.
+- **Houses** (`MemberHouses`): `GET /houses` and `PUT`/`DELETE /houses/{house_ref}/follow`. `share_standing` is an opt-in, off by default. Only the member can follow or share, never an agent.
+- **Catalog shim.** `social/houses.py` `CatalogHouses` reads the providers lane's `CatalogSourceVariants`, read-only. A house is a brand slug, and a piece is a variant.
+- **Order reducer.** It now resolves pieces from that catalog, so order-acquired items carry `product_id` = `variant_id`. Before this, no catalog lookup was wired and order items had no product.
+
+**Loyalty standing (item 4)** — `rewards/standing.py`
+- **Computation.** The jobs process recomputes standings at most daily from verified, delivered, still-owned order units per house. Self-reported items are excluded by two independent filters.
+- **Tiers:** `top_1`/`top_5`/`top_10`/`top_25`/`member`. A member's percentile is the share of the house's buyers with strictly more units, so ties share a tier.
+- **Small cohorts:** under 20 buyers, everyone is `member`.
+- **Storage:** only the tier is kept (`HouseStandings`), never units, spend or orders.
+- **Members** read their own tiers (`GET /rewards/standings`).
+- **What a house sees** (`house_view`, `provider:admin`; no route yet): per-tier counts, with counts under 5 suppressed, plus the tier of members who opted in for that house. Turning sharing off hides the member at once.
+- **House rewards:** partner benefits with `house_ref` + `min_standing` are reservable only at or above that tier (`standing_required`). A V016 check constrains them to funded partner benefits.
+
+**Privacy.** New categories `social.houses` and `rewards.standings`; `DecisionComments` joins `social.decisions` (export "commented", deleted by author). The My Data end-to-end now seeds and checks all three tables, and the zero-trace scan covers V016.
+
+**Evidence (Spanner emulator 1.5.45)**
+| Check | Result |
+|---|---|
+| `tests/test_social_now_flow.py` | **9 passed**: windows and why; catalog check; comment thread (answer-first, idempotent replay, withdrawal, cap, close); influence credit (yes paid once over 2 units and redelivery, pass/self/self-report unpaid); excitement sizing; Home = Flow (requests first, freshness order, lens, closet/followed houses, paging, mute, unfollow); tier boundaries; standing (ties, cohort, opt-in house view, suppression, return drops standing, daily gate); standing-gated house reward |
+| `tests/test_persona_lane_mydata.py` | **2 passed** with comments, followed houses and standings seeded; export, deletion, zero-trace scan and restore re-apply |
+| `consumer-domains.test.ts` (dev gateway → domain service → Spanner + GCS emulator) | **3 passed**. New scenario: two dev members befriend each other; asker follows a seeded house; 180 s Now request with a why cuts into the friend's Flow; friend answers and comments; asker's Flow lists the house's pieces newest first; a bogus catalog id gets 422; delivery observed → friend's ledger shows one 25-point `decision_influence`; jobs recompute → asker sees tier `member` (one buyer, below the cohort) |
+| `flow.test.ts`, `social.test.ts` (gateway) | 3 + 10 passed: scopes, strict bodies, house-ref shape, agent refusal, window/why shapes, comment routes |
+| Clean checkout of `8ff49c2`, CI mirror | lane 270 passed / 1 allowlisted skip; test-core 839 passed, 4 skipped, 32 xfailed (quarantined); rules 6; `pnpm check` and `pnpm smoke` passed; frontend and console builds; audit clean; gateway 156/156 |
+| Mutation checks (13 Python, 2 gateway) | All killed except the two purchase filters on standings, each of which backs the other (removing both fails the test): opt-in filter on the house view, count suppression, small-cohort rule, pass earning credit, self-report paying, per-unit double credit, muted friend cutting in, engagement floor, `300.0` window, blind-mode comment, house reward without standing, discontinued catalog piece, agent following/sharing, gateway why check |
+
+**Not yet**
+- **No house operator principal**, so the house view has no route.
+- **The catalog shim scans by brand without an index.** It needs a providers-lane read API or an index.
+- **No experiment flags yet.** Foundation has no flag primitive (item 8).
+- **Items 5–11** are next, on defaults.
+
+**Credential manifest.** No credential was created in this stage. The e2e generates throwaway in-memory ES256 keys per run.
+
+## Check-in packet — Ultra plan 02 — 2026-10-25
+**Trigger reached:** Now, Flow and loyalty run against the dev gateway with the media API mounted (PR #61 plus this stage; `consumer-domains.test.ts`). The lane builds on every default the plan already states (its questions 1–21). The questions below are new: decisions the build surfaced. No step this round was irreversible or prod-scoped.
+
+**(a) Evidence summary**
+- **Item 1** (PR #61, green on all 17 checks): media and try-on, plus every lane router, sit behind foundation auth and the ES256 gateway assertion. Try-on runs end to end on the dev gateway.
+- **Items 2–4** (Stage 15): timed windows with a why, the in-window thread, influence credit on provider-observed purchases, Home = Flow with freshness position and excitement size, and per-house standing in which houses see tiers only. Standing gates house rewards.
+- **Not done:**
+  - Items 5–8 and 10 are next, on defaults.
+  - Item 9 waits on foundation's Q8 import.
+  - Item 11 waits on the GCP credential; the emulator is used until then.
+
+**(b) Questions (default in bold; I build on the default until told otherwise)**
+
+*Direction*
+1. **Locked design source.** The plan cites the "Oct 23 locked design", but no such document is in the repository. **The plan text is the spec until the document is supplied; anything it adds becomes a follow-up.**
+2. **Now windows.** 180 / 300 / 600 / 900 s, with 300 as the default and strict integers only. **Keep.**
+3. **Influence credit.** 25 points, 100/day, a 14-day window, yes or a named alternative only, and only on a provider-observed delivery. It implies to the friend that the asker bought the piece, although the ledger entry names only the decision the friend already saw. **Keep as built. Privacy review decides whether the buyer gets a "credit friends who helped" setting (default on).**
+4. **Excitement weights.** 0.6 engagement / 0.4 affinity, a floor of 3, saturation at 25, and hero/standard/compact cut-offs at 0.75/0.4. Catalog pieces have no persona axes, so size follows engagement today. **Keep until catalog axes exist.**
+5. **What standing ranks.** Verified delivered units, not spend. The percentile counts buyers with strictly more units, so ties share a tier. **Units.** Spend would need commerce's order amounts and expose more.
+6. **What a house sees.** Opted-in members' tiers (sharing is off by default) plus per-tier counts, with counts under 5 suppressed and no ranking under 20 buyers. **Keep these privacy floors.**
+7. **Flow and stock.** Out-of-stock pieces stay in Flow with their availability shown; the lens applies only the member's own constraints. **Keep.**
+
+*Integration & security*
+
+8. **Foundation-owned edits in PRs #61 and Stage 15.** The `middleware/session.ts` scope line, the mount block in `routes/v1/index.ts`, and the V016 entry in the migration registry. **Foundation ratifies as is.**
+9. **Migration order.** V016 must not reach a database before commerce's V015 (PR #51): the runner then refuses V015 as out of order. **This PR stays a draft until #51 merges; then `main` is merged in. If #51 slips past this PR, commerce renumbers to V017.**
+10. **House operator principal.** No house role exists, so `house_view` requires `provider:admin` and has no route. **No route until foundation defines a house-operator principal bound to one `house_ref`.**
+11. **Catalog dependency.** Flow, standing and the decision check read the providers lane's `CatalogSourceVariants` directly. It is read-only, scans by brand without an index, and treats a piece as a variant. **Interim. The commerce/providers lane publishes a catalog read API, or an index on the brand slug, and a product identity; this lane switches over.**
+12. **Boot inventory.** The `consumer_domains` service is not in foundation's audited inventory, so strict modes refuse it. **Foundation adds it after reviewing PR #61.**
+13. **Experiment flags (item 8).** Foundation has no flag primitive. **The lane defines the five experiments as data, with a resolver that always answers "off" until the primitive lands. Nothing runs without founder approval.**
+14. **Cross-member aggregates.** Flow's engagement counts other members' decisions and saves, and standing ranks members against each other. Both expose only sizes or tiers, with the floors above. **Keep; privacy review confirms before launch.**
+
+*Scope & sequencing*
+
+15. **Plan status.** The upload's header still reads "DRAFT … not yet triggered". **Treated as triggered by the upload; confirm.**
+16. **Branch.** The plan names `bench/opus-consumer-domains-20261005`. **The lane keeps its designated `claude/opus-consumer-domains-1csp2g`.**
+17. **PR split.** #61 (mount) first, then this stage, then one PR per item group. **Keep; each PR verified from a clean checkout before push.**
+18. **Item 9.** Worker deletion is blocked until foundation imports the lane catalog (Q8). **Wait; delete in that PR.**
+19. **Item 11.** No GCP credential exists. **Emulator only, stated plainly. The real run happens the day the credential lands.**
+20. **Next order.** Surveys and points → in-app credit (5), persona card and per-piece visibility (6), rooms (7), experiment definitions (8), then the share projector (10). **That order.**
+21. **Surveys.** The plan says daily-capped surveys feed points. The contract's `optional_research_contribution` has no compensation and stays reserved for consented research campaigns. **A lane extension rule `survey_completed` (PD-21): 10 points per completed survey or quiz, at most 30 a day. Points convert to in-app credit only, enforced at the ledger with no cash-out path. Questions are operator-authored, never about sensitive categories, and answers stay in the member's own data.**
+
+## Stage 16 — Ultra plan 02, items 5–8 and 10: surveys and in-app credit, persona card and closet visibility, rooms, experiments, share projector — 2026-10-25
+Built on the check-in defaults (packet above), without waiting for answers. Every table is in V016, which is still unmerged. Commerce's V015 merged first (#51), so the out-of-order hazard in Q9 has cleared.
+
+**Base.** The designated branch was restarted from `main` `2b5ae88`, after #61 (the mount), #51 (commerce, V015) and #56 (consumer UI) merged, and this stage's commits were re-applied on top. The only conflict was the migration registry, which now lists both V015 and V016. #56 touched this lane's `wardrobe/rooms.py` and its tests (`cccfe7b`, room revisions aligned with the spatial manifests); that change is kept as is.
+
+**Surveys and in-app credit (item 5)**
+- **Surveys and quizzes** (`rewards/surveys.py`, `Surveys`, `SurveyResponses`) are operator-authored (`moderation:admin`).
+  - A survey has 1–10 questions (single, multi or 1–5 scale) and a declared purpose: style, product feedback or house knowledge.
+  - A quiz has a key for each question, sent only after the member answers, together with the score.
+  - Each member answers once, every question, and only the member can answer, never an agent.
+  - `survey_completed` (lane extension **PD-21**) pays 10 points, capped at 30 per UTC day. The fourth completion of a day is recorded as `capped` with 0 points.
+  - Answers stay in the member's own data.
+- **Points → in-app credit only** (`rewards/credits.py`, `PurchaseCredits`).
+  - The member converts whole hundreds of points, at least 500, at `RATES`. The dev default is 1 point = 1 US cent.
+  - Conversion writes a `reserve` entry. Applying credit to an in-app order (`apply_credit`, for commerce to call inside its order transaction) writes `redeem`. Expiry after a year writes `release`, and the points come back.
+  - The ledger has no entry kind that pays out (V005 `ck_re_kind`), no member route takes money, a destination or another member, and a credit cannot move between members.
+
+**Persona card and closet visibility (item 6)**
+- **Per-piece closet visibility** (`wardrobe/visibility.py`) is private by default, with a sliding scale.
+  - Audience: `friends` or `members`.
+  - Detail: `piece`, `story` (adds the showcase note and wear count) or `full` (adds price and the year acquired, friends only).
+  - Strangers never see more than the story: the locked disclosure default.
+  - Receipts, order and source references, tag serials, sizes, care and private notes are never shown.
+  - Routes: `PUT /wardrobe/items/{id}/visibility` and `GET /members/{id}/closet`.
+- **The living persona card** (`persona/card.py`, `PersonaCards`).
+  - It shows up to three strongest leanings (never a hidden, unanswered or mid-band axis), badges held, standing tiers (only when the member turns that on) and up to six highlights. Each highlight shows only if that piece's own visibility allows the viewer.
+  - Audience: `private`, `friends` (the default) or `members`. A card the viewer may not see answers 404.
+  - Recomposition: trigger events (`persona.updated`, `badge.awarded`/`revoked`, `wardrobe.item.created`/`updated`, standings recompute) mark the card stale through a second consumer on the lane subscriber. The jobs pass recomposes stale cards and backfills every card daily, creating cards for profiles that have none.
+
+**Small-group rooms (item 7)** — `social/rooms.py`
+- **Membership.** Rooms are invite-only among the owner's friends, at most 12 people, and invisible to outsiders.
+- **Content.** Members post pieces (their own closet item or a live catalog piece) or notes, and react yes/maybe/no (one reaction each, changeable).
+  - Authors withdraw their own posts.
+  - Posts can be reported (`room_post`); moderation removes their content.
+- **Blocking wins inside a room**, and the owner cannot add a blocked pair.
+- **Lifecycle.** Members can leave and the owner can remove anyone. The owner archives a room, which leaves it read-only.
+- **Routes:** `/rooms…`, under `social:*`, member-only.
+
+**Experiments (item 8)** — `persona/experiments.py`
+- **Five definitions:** closet memory, curator verbosity, the reveal, visitor traces and decision-thread persistence. Each has a question, arms, a default (today's behaviour), the built arms, its wiring point, metrics and guardrails.
+- **The flag.** `arm()` answers the default unless the founder approved that exact definition version **and** foundation's flag primitive is installed. Neither has happened, so nothing runs.
+- **Wiring.** Two experiments read their flag in code: verbosity in recommendations, thread persistence in decision comments. The other three have only the default built, so they cannot run until their second arm exists.
+
+**Share projector (item 10)** — `social/projection.py`
+- **Reducers.** `share.created` writes one shared Firestore document per invited member, holding only the kind and the filtered preview, read from Spanner rather than from the event. `share.revoked` deletes every copy and tombstones the share permanently.
+- **Privacy.** Fields that the framework treats as private (persona axes and the rest) never reach the projection. Link shares are not projected.
+- **Registration.** Exposed as `persona/lane.register_consumer_projections(database, registry)` for foundation's projection worker.
+
+**Fixes found along the way**
+- **Gateway report targets.** The gateway's report map lacked `decision_comment` (Stage 15), so comment reports were refused at the edge. Both new targets are now in.
+- **Deletion ordering.** During deletion, a credit row had a buffered update and a DML delete in the same transaction. The release now leaves the row alone.
+- **Commit-timestamp option.** `PurchaseCredits.settled_at` gained the `allow_commit_timestamp` option.
+
+**Privacy.** New categories:
+- `rewards.surveys`, `rewards.credits` (held points are returned before deletion), `persona.card` and `social.rooms`. Rooms a member owns close with their account.
+- Item visibility and showcase notes join `wardrobe.items`.
+- The My Data end-to-end seeds all of them and passes the zero-trace scan.
+
+**Evidence (Spanner emulator 1.5.45, Firestore emulator, fake-gcs-server 1.56.1)**
+| Check | Result |
+|---|---|
+| `tests/test_rewards_surveys_credits.py` | **4 passed**: survey authoring rules; answer once, complete, member-only, idempotent; quiz key only after answering; fourth daily completion `capped` at 0; conversion rules (whole hundreds ≥ 500, USD only, no extra fields, member-only, idempotent); reserve → redeem once in its own currency → release on expiry with points back; no payout kind in the ledger, no payout/cash/transfer route |
+| `tests/test_persona_card_visibility.py` | **2 passed**: private by default; friends see `full`, strangers at most `story`, blocked members nothing; private fields never shown; card taste never shows hidden or mid-band axes; highlights obey piece visibility; audience and standings opt-in honoured; a trigger event marks the card stale, the jobs pass recomposes it; the backfill creates missing cards |
+| `tests/test_social_rooms.py` | **2 passed**: friends only, owner-only adds, outsiders get 404, reactions counted and changeable, blocking hides posts and reactions, reports and moderation removal, author withdrawal, the owner cannot leave, archive is read-only, 12-person cap |
+| `tests/test_persona_experiments.py` | **3 passed**: five definitions, nothing approved or running; only an approved current version with the primitive assigns, and only built arms; the wired thread-persistence flag changes behaviour only when approved and assigned |
+| `tests/test_social_share_projection.py` | **1 passed**: per-recipient copies; uninvited members get none; link shares are not projected; persona axes dropped from a snapshot share; revocation removes copies and blocks a late re-projection |
+| `tests/test_persona_lane_mydata.py` | **2 passed** with surveys, credit, the card, a shown piece and rooms seeded; export, deletion, zero-trace scan, restore re-apply |
+| `consumer-domains.test.ts` (dev gateway → domain service → emulators) | **4 passed**. New scenario: a piece shown to friends at story level (stranger sees nothing); the card shows the Expressive leaning and the highlight to a friend, and answers 404 to a stranger; survey answered for 10 points; points converted to $5.00 in-app credit, held as reserved; a payout field is refused |
+| Gateway unit | `members.test.ts` 3, `rooms.test.ts` 2, `rewards.test.ts` 7, `social.test.ts` 10; lint and type-check clean |
+| Mutation checks (29) | All killed. Survey: key leak, partial answers, float scale, agent answering, no daily cap, undeclared purpose. Credit: odd amounts, agent converting, wrong currency, double apply, expiry keeping points. Visibility: stranger price, blocked viewer, price at story level. Card: private highlight, hidden axis, audience ignored, standings without opt-in, trigger not marking stale. Projector: persona axes in the projection; a link share is stopped by two independent guards (both removed: killed). Rooms: non-friend added, outsider reading, blocked author visible, over 12, member adding people, posting to an archived room. Experiments: unapproved run, unbuilt arm served |
+| Combined clean checkout: `main` `7c4c1cd` (#51) + PR #61 + this stage | _pending_ |
+
+**Not yet**
+- **Item 9 (worker deletion)** is blocked. Foundation's `brandme_core/events/worker.py` on `main` still imports only `brandme_core.domains.events`, not the lane catalog (Q8). The lane worker stays.
+- **Item 11 (dev bucket)** has no GCP credential; the emulator is used, stated plainly.
+- **Experiments:**
+  - Foundation has no flag primitive.
+  - No definition is approved.
+  - Three experiments (diary, reveal pause, visitor signals) have only today's arm built.
+- **Credit is issuable but not yet spendable.** The commerce checkout has to call `apply_credit` first.
+- **The share projector is registered, not running.** No foundation projection worker in the repository applies a registry yet.
+- **No console pages for surveys or rooms.** Survey publishing and room moderation are in the ops router, which stays unmounted until the console has operator auth.
+- **The credit rate is a dev default** (1 point = 1 US cent, USD only). The founder sets the real rate.
+
+**Found for another owner (commerce)**
+- **What fails.** `tests/test_commerce_payments_flow.py::test_payment_identifiers_never_reach_models_events_or_wires` failed once on the combined run.
+- **Why.** The flagged payload holds only UUIDs and a `sha256:` hex digest. The providers lane's `contains_card_number` (`brandme_core/domains/providers/redaction.py:82`) treats a 13+ digit run inside a hex digest as a card number when it passes the Luhn check. Measured on 2,000 random payloads of the same shape: 0.75% flagged.
+- **Whose.** The detector and test came with #51, so `main` carries it and any CI run can hit it at random. This lane does not touch commerce code.
+- **Proposed patch (commerce lane).** Leave digit runs inside 64-character hex digests intact, as `_card_spans` already does for UUIDs.
+
+**Ultra plan 02 exit evidence**
+| Required | State | Where |
+|---|---|---|
+| MediaService API mounted behind auth; try-on end to end on the dev gateway | done | PR #61, Stage 14 |
+| Now loop on dev: timed windows, in-window rewards, influence credit, with tests | done | Stage 15 |
+| Flow ranking with the specified semantics; Home = Flow demonstrated | done | Stage 15 |
+| Loyalty standing per house; houses see standing only, asserted by a test | done | Stage 15 (`house_view` equality: tiers, suppressed counts and opted-in members, nothing else) |
+| Surveys/quizzes daily-capped, feeding points; points → credit in-app only | done | this stage |
+| Persona card recomposing; per-piece visibility controls live | done | this stage |
+| Five experiment definitions written and flag-wired; none running without approval | done | this stage |
+| Lane outbox worker deleted post-Q8; share projector registered | projector done; worker blocked on Q8 | this stage |
+| Dev-bucket run recorded, or emulator-only status stated | emulator only, stated | Stage 14 and here |
+
+**Credential manifest.** No credential was created in this stage.
