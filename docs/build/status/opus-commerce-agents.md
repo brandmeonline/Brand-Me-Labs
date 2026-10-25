@@ -1595,6 +1595,8 @@ The review confirmed 21 findings: 6 defects (3 medium, 3 low) and 15 test gaps, 
 | 9 | S13 fidelity, outbox registration | Fidelity done (S23). Outbox registration **blocked**: `main` has no Q8 commerce catalog import |
 | 10 | Undraft and land | Undraft once CI is green on this head. This lane never merges and never enables auto-merge; landing is the founder's |
 
+**Merged `main` (`2b5ae88`, consumer-domains routers) as `26b01c3`.** 13 files from main, none also changed on this branch, so there were no conflicts.
+
 **Item 4 blocker, stated plainly.** Plan 03 says to run the proof on lane-created demo keys. Creating a Stripe account needs a person, so the only key this container could use is the publishable sample test key in Stripe's public documentation. This session's safety check refused that call as a third-party credential. I did not retry it or work around it. The proof needs one of two things from the founder:
 - add `STRIPE_TEST_SECRET_KEY` (and `STRIPE_TEST_WEBHOOK_SECRET`) as GitHub secrets or session environment variables; or
 - explicitly allow use of the public documentation sample key.
