@@ -85,6 +85,12 @@ def boundary(*rules: BoundaryRule, default: str = "prepare", default_cap: Option
     return AutonomyBoundary(default_level=AutonomyLevel(default), default_max_total=usd(default_cap), rules=rules)
 
 
+# The test member's own rule on every buy grant ``World.delegate`` makes unless a test says otherwise: the
+# assistant may place, at the demo merchant, what the member approved (no cap of its own; the grant's limits
+# bound it). Without a rule the concierge only prepares. ``boundary=None`` asks for a grant with no rules.
+MEMBER_RULES = object()
+
+
 @dataclass
 class World:
     clock: Clock
@@ -97,7 +103,9 @@ class World:
     decisions: MemoryRunLog = field(default_factory=lambda: MemoryRunLog(strict=True))
 
     def delegate(self, mode=AssistanceMode.BUY_WITHIN_RULES, lim: Optional[DelegationLimits] = None,
-                 boundary: Optional[AutonomyBoundary] = None):
+                 boundary=MEMBER_RULES):
+        if boundary is MEMBER_RULES:
+            boundary = AutonomyBoundary(rules=(merchant_rule(),)) if mode is AssistanceMode.BUY_WITHIN_RULES else None
         d = self.svc.create_delegation(
             self.member, client_id=AGENT_CLIENT, mode=mode, allowed_providers={PROVIDER_ID},
             limits=lim if lim is not None else (limits() if mode is AssistanceMode.BUY_WITHIN_RULES else None),

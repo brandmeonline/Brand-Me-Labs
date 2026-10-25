@@ -7,10 +7,12 @@
  * final human approval required (autonomous purchase is refused by the domain until a
  * provider + AP2 open-mandate path is verified).
  *
- * The member's autonomy boundary narrows a grant: per-merchant or per-wishlist rules with a level
- * (suggest | prepare | buy_after_approval) and an optional all-in cap, defaulting to prepare. It is
- * changed only here, from the member's session, with If-Match on the grant version. The domain
- * validates it against the grant and refuses any level that would skip the member's approval.
+ * The member's autonomy boundary (buy-within-rules grants only) says where the agent may place, on its
+ * own, the exact quote the member approved: per-merchant or per-wishlist rules with a level
+ * (prepare | buy_after_approval) and an optional all-in cap, applied line by line; everything else
+ * defaults to prepare, so the member completes it. It is changed only here, from the member's
+ * session, with If-Match on the grant version. The domain validates it against the grant and refuses
+ * any level that would skip the member's approval.
  */
 
 import { Router } from 'express';
@@ -22,7 +24,7 @@ import {
 
 const money = z.object({ amount_minor: z.string().regex(/^(0|[1-9][0-9]{0,17})$/), currency: z.string().regex(/^[A-Z]{3}$/) }).strict();
 
-const level = z.enum(['suggest', 'prepare', 'buy_after_approval']);
+const level = z.enum(['prepare', 'buy_after_approval']);
 const providerId = z.string().regex(/^[a-z0-9_]{1,80}$/);
 const exactRef = z.string().regex(/^[A-Za-z0-9._:/-]{1,256}$/);
 

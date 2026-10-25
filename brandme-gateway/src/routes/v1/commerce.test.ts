@@ -217,6 +217,7 @@ describe('delegations, providers, catalog, assistant', () => {
     expect((await m.call('PUT', path, { autonomy_boundary: boundary })).status).toBe(428);
     for (const bad of [
       { ...boundary, default_level: 'buy_without_approval' },
+      { ...boundary, default_level: 'suggest' },
       { ...boundary, rules: [{ ...boundary.rules[0], level: 'autonomous' }] },
       { ...boundary, extra: true },
       { rules: [{ scope: 'merchant', provider_id: 'demo_atelier', merchant_id: 'fictional demo merchant', level: 'prepare' }] },

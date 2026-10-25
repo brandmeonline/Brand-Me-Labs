@@ -563,13 +563,20 @@ def test_the_run_log_refuses_a_malformed_tier_line(change):
         log.tier_decision({**GOOD_LINE, **change})
 
 
-def test_a_strict_sink_surfaces_a_bad_line_and_the_production_sink_never_raises(env):
+def test_a_strict_sink_surfaces_a_bad_line_and_an_operational_failure_never_fails_the_operation(env):
+    def down(record):
+        raise ConnectionError("log pipeline down")
+
+    env.svc.tier_audit = down
+    assert env.svc.assign_tier(OPERATOR, SHOP, CEILING)["tier"]["tier_id"] == CEILING
+
     def broken(record):
         raise RunLogViolation("provider.tier_decision: bad line")
 
     env.svc.tier_audit = broken
-    with pytest.raises(RunLogViolation):
-        env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    with pytest.raises(RunLogViolation):  # a malformed line is a bug: it surfaces after the write
+        env.svc.assign_tier(OPERATOR, SHOP, FLOOR)
+    assert env.svc.get_setup(OPERATOR, SHOP)["tier"]["tier_id"] == FLOOR
     stream = io.StringIO()
     JsonLineRunLog(environment="development", stream=stream).tier_decision({"origin": object()})
     assert json.loads(stream.getvalue())["event"] == REJECTED

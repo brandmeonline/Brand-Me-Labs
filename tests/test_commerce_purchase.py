@@ -296,11 +296,11 @@ def test_revocation_racing_submission_stops_unsent_work(w):
     approval = w.approve(op)
     original = w.svc._submit
 
-    def revoke_then_submit(op_, quote, principal):
+    def revoke_then_submit(op_, quote, principal, *rest):
         # Revocation lands after reservation commit but before provider I/O.
         w.store.run(lambda tx: tx.put("delegations", d.id, replace(tx.get("delegations", d.id),
                                                                     revoked_at=w.clock.now)))
-        return original(op_, quote, principal)
+        return original(op_, quote, principal, *rest)
 
     w.svc._submit = revoke_then_submit
     res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="race-00000000000")

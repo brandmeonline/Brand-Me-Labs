@@ -414,7 +414,10 @@ class McpToolExecutor:
 
     def _purchase_request(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
         op = self.commerce.request_purchase(p, a["quote_id"])
-        completed_by, codes = self.commerce.completion_preview(p, op.id)
+        try:  # informational: the request is already made, so a preview that fails never fails the call
+            completed_by, codes = self.commerce.completion_preview(p, op.id)
+        except CommerceError:
+            completed_by, codes = None, ()
         return {"operation_id": op.id, "state": op.state,
                 "next": "The member reviews and approves on Brand.Me's trusted approval screen.",
                 "approval_surface": f"/approvals/{op.id}",

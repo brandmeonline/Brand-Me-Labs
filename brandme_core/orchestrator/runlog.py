@@ -138,8 +138,9 @@ EVENTS: Dict[str, Tuple[str, Spec]] = {
         "code": (_rx(_CODE), True), "origin": (_one_of({"mcp", "assistant"}), False),
         "duration_ms": (_count, False), "arguments_digest": (_rx(_REF16), False),
     }),
-    # One agent autonomy decision (``CommerceService``, ``autonomy.evaluate``): codes and a cap-ratio band,
-    # never amounts, caps, merchant ids, variant refs or raw ids.
+    # One autonomy decision on a buy grant (``CommerceService``, ``autonomy.evaluate``): who may place an
+    # approved order, and the agent placing it. Codes and a cap-ratio band, whether its transaction committed;
+    # never amounts, caps, merchant ids, variant refs, raw ids or the member's own timing.
     "commerce.autonomy_decision": ("security_audit_180d", {
         "request_id": (_uuid, True), "origin": (_one_of({"mcp", "assistant", "api", "service"}), False),
         "task_ref": (_rx(_REF16), True), "step": (_count, True), "member_ref": (_rx(_REF16), False),
@@ -151,7 +152,7 @@ EVENTS: Dict[str, Tuple[str, Spec]] = {
         "cap_bucket": (_one_of(_autonomy.CAP_BUCKETS), False), "rule_count": (_count, False),
         "boundary_version": (_count, False), "evaluator": (_rx(_SEMVER), False),
         "client_kind": (_one_of({"assistant", "external"}), False), "quote_ref": (_rx(_REF16), True),
-        "simulation": (lambda v: isinstance(v, bool), False), "wait_band": (_one_of(_autonomy.WAIT_BANDS), True),
+        "simulation": (lambda v: isinstance(v, bool), False), "committed": (lambda v: isinstance(v, bool), False),
     }),
     # One partner-tier decision (``providers/tiers.py``): codes, keyed provider and operator refs, unit counts;
     # never prices, decision records or raw ids.
@@ -197,21 +198,24 @@ RULES: Dict[str, Callable[[Mapping[str, Any]], bool]] = {
     # allow carries exactly an allow code; only requests and bindings are held; "held for the member" is
     # only ever an execute refusal; an assistant decision names its task; no boundary means no rules.
     "commerce.autonomy_decision": lambda f: (
-        (f["outcome"] == "allow") == bool(_autonomy.ALLOW_CODES & set(f["codes"]))
-        and (f["outcome"] != "hold" or f["action"] in ("approval_request", "approval_binding"))
-        and ("autonomy_held_for_member" not in f["codes"] or (f["action"] == "execute" and f["outcome"] == "refuse"))
+        f["mode"] == "buy_within_rules"
+        and (f["outcome"] == "allow") == bool(_autonomy.ALLOW_CODES & set(f["codes"]))
+        and (f["outcome"] != "hold" or f["action"] == "approval_binding")
+        and (f["outcome"] != "refuse" or f["action"] == "execute")
+        and ("autonomy_held_for_member" not in f["codes"] or f["action"] == "execute")
+        and ("autonomy_grant_inactive" not in f["codes"] or f["action"] == "approval_binding")
         and (f["origin"] != "assistant" or f["task_ref"] is not None)
-        and (f["scope"] != "no_boundary" or f["rule_count"] == 0)
-        and (f["wait_band"] is None or f["action"] == "approval_binding")
-        and ((f["action"] == "member_completion") == ("completed_by_member" in f["codes"]))
-        and (f["action"] != "member_completion" or (f["outcome"] == "allow" and f["codes"] == ["completed_by_member"]))),
+        and (f["scope"] != "no_boundary" or f["rule_count"] == 0)),
 }
 REJECTED = "assistant.runlog_rejected"
 _ENVIRONMENTS = frozenset({"demo", "development", "sandbox", "production"})
 
 
 class RunLogViolation(ValueError):
-    """Raised by a strict ``MemoryRunLog`` (tests) instead of writing ``runlog_rejected``."""
+    """Raised by a strict ``MemoryRunLog`` (tests) instead of writing ``runlog_rejected``. Decision sinks
+    that swallow operational failures let this one through (``strict_violation``): a malformed line is a bug."""
+
+    strict_violation = True
 
 
 class RunLog(Protocol):
@@ -286,7 +290,7 @@ def autonomy_decision_fields(record: Mapping[str, Any]) -> Dict[str, Any]:
     out = {k: record.get(k) for k in ("origin", "task_ref", "step", "member_ref", "mode", "action", "outcome",
                                        "autonomy_level", "required_autonomy_level", "scope", "codes", "cap_bucket",
                                        "rule_count", "boundary_version", "evaluator", "client_kind", "quote_ref",
-                                       "simulation", "wait_band")}
+                                       "simulation", "committed")}
     out["request_id"] = rid if _uuid(rid) else None
     out["delegation_ref"] = log_ref("delegation", delegation) if isinstance(delegation, str) and delegation else None
     out["client_id"] = client if _rx(_CLIENT_ID)(client) else UNRECOGNIZED

@@ -1,20 +1,23 @@
-"""Member-set autonomy boundaries for agent grants (Ultra plan 02 item 6; ch.05 §3, §5).
+"""Member-set autonomy boundaries for agent grants (Ultra plan 02 item 6; ch.05 §4, §5).
 
-A boundary narrows what an agent may do *without asking first* inside a grant. It never replaces
-the member's approval: every purchase still needs a trusted-surface approval or a member-signed
-AP2 closed mandate (ch.05 §3, ADR-14), and a level that would skip it is refused with
-``autonomous_not_supported``. Inside a boundary the concierge prepares on its own and, at the
-``buy_after_approval`` level, places the exact quote the member approved. Outside it the agent is
-refused, or its request is *held*: the approval binds to the member, who completes the purchase.
+A boundary says where an agent with a buy-within-rules grant may *place*, on its own, the exact quote
+the member approved. It never replaces the approval: every purchase still needs a trusted-surface
+approval or a member-signed AP2 closed mandate (ch.05 §4, ADR-14), and a level that would skip it is
+refused with ``autonomous_not_supported``. Everywhere else the concierge prepares and the member
+completes: the approval is *held*, bound to the member.
 
 * **Rules** name a merchant (``provider_id`` + ``merchant_id``, the identities sealed into every
   quote; provider brand text is never an identity) or a wishlist (exact ``source_variant_ref``
   values at one provider, pinned by the member: commerce never reads the wardrobe). Each rule has a
-  level and an optional all-in cap. Everything no rule names gets the default level, ``prepare``:
-  the concierge prepares by default.
-* **The evaluator** is pure (no clock, store or context): ``evaluate`` returns allow, hold or
-  refuse with fixed codes. When several rules match, the most restrictive level and the lowest cap
-  apply. The grant's mode is the ceiling and its limits stay the outer bound.
+  level (``prepare`` | ``buy_after_approval``) and an optional all-in cap.
+* **Per line.** Each quote line is governed by every rule that names it: its merchant's rule and every
+  wishlist rule that contains it. A line no rule names falls to the default level and default cap. The
+  quote's level is the lowest over its lines, and its cap the lowest of every cap that applied to any
+  line, so a restriction the member set on an item holds whatever else is in the cart.
+* **Concierge prepares by default.** The default level is ``prepare``, and a grant with no boundary
+  has no rules: nothing is placed by the agent until the member writes a rule that allows it.
+* **The evaluator** is pure (no clock, store or context): ``evaluate`` returns allow, hold or refuse
+  with fixed codes. The grant's mode is the ceiling and its limits stay the outer bound.
 * **Growth** happens only through the member's explicit change (``classify_change`` tells a
   narrowing from a widening; nothing in this build widens a boundary on its own).
 
@@ -33,7 +36,7 @@ from typing import Any, Callable, Dict, FrozenSet, Iterator, Mapping, Optional, 
 from .errors import DelegationInvalid, InvalidRequest
 from .money import Money, MoneyError
 
-EVALUATOR_VERSION = "1.0.0"
+EVALUATOR_VERSION = "2.0.0"
 ASSISTANT_CLIENT_ID = "brandme-assistant"  # Brand.Me's own concierge; every other client is external
 BOUNDARY_SCHEMA = "brandme.autonomy_boundary.v1"
 STORAGE_KEY = "autonomy_boundary"  # the key inside the AgentDelegations.limits JSON document
@@ -47,12 +50,11 @@ REF_RE = re.compile(r"^[A-Za-z0-9._:/-]{1,256}$")
 
 
 class AutonomyLevel(str, enum.Enum):
-    SUGGEST = "suggest"  # search and report; build nothing
     PREPARE = "prepare"  # carts, quotes and approval requests; the member completes
     BUY_AFTER_APPROVAL = "buy_after_approval"  # also place the exact quote the member approved
 
 
-LEVEL_RANK = {AutonomyLevel.SUGGEST: 0, AutonomyLevel.PREPARE: 1, AutonomyLevel.BUY_AFTER_APPROVAL: 2}
+LEVEL_RANK = {AutonomyLevel.PREPARE: 0, AutonomyLevel.BUY_AFTER_APPROVAL: 1}
 
 
 class RuleScope(str, enum.Enum):
@@ -61,22 +63,14 @@ class RuleScope(str, enum.Enum):
 
 
 class Action(str, enum.Enum):
-    CART_PREPARE = "cart_prepare"
-    QUOTE = "quote"
-    APPROVAL_REQUEST = "approval_request"
-    APPROVAL_BINDING = "approval_binding"
-    EXECUTE = "execute"
-    # Not evaluated: the member placing a purchase their concierge prepared (a research signal).
-    MEMBER_COMPLETION = "member_completion"
+    """The two decisions a boundary makes. Preparing (carts, quotes, approval requests) is never
+    boundary-gated: every agent grant that may prepare may prepare anything its limits allow."""
+    APPROVAL_BINDING = "approval_binding"  # who may place the approved order: the agent, or the member
+    EXECUTE = "execute"  # the agent placing it, decided again inside the execute transaction
 
 
-REQUIRED_LEVEL = {
-    Action.MEMBER_COMPLETION: AutonomyLevel.SUGGEST,
-    Action.CART_PREPARE: AutonomyLevel.PREPARE, Action.QUOTE: AutonomyLevel.PREPARE,
-    Action.APPROVAL_REQUEST: AutonomyLevel.PREPARE, Action.APPROVAL_BINDING: AutonomyLevel.BUY_AFTER_APPROVAL,
-    Action.EXECUTE: AutonomyLevel.BUY_AFTER_APPROVAL,
-}
-_CAPPED_ACTIONS = frozenset({Action.APPROVAL_REQUEST, Action.APPROVAL_BINDING, Action.EXECUTE})
+REQUIRED_LEVEL = {Action.APPROVAL_BINDING: AutonomyLevel.BUY_AFTER_APPROVAL,
+                  Action.EXECUTE: AutonomyLevel.BUY_AFTER_APPROVAL}
 
 
 class Outcome(str, enum.Enum):
@@ -88,25 +82,17 @@ class Outcome(str, enum.Enum):
 OUTCOME_RANK = {Outcome.REFUSE: 0, Outcome.HOLD: 1, Outcome.ALLOW: 2}
 
 # Closed vocabularies. ``CODES`` is in priority order: a decision's primary code is the first present.
-# ``autonomy_held_for_member`` is the service's, never the evaluator's: an agent executing an approval
-# the member's rules bound to the member.
-CODES = ("autonomy_boundary_unreadable", "autonomy_held_for_member", "autonomy_level_suggest_only",
-         "autonomy_level_prepare_only",
-         "autonomy_cap_currency_differs", "over_autonomy_cap", "autonomy_total_unknown",
-         "autonomy_mode_ceiling", "within_boundary", "grant_limits_only", "completed_by_member")
-ALLOW_CODES = frozenset({"within_boundary", "grant_limits_only", "completed_by_member"})
-SCOPES = ("no_boundary", "default", "merchant", "wishlist", "merchant_and_wishlist", "unreadable")
+# ``autonomy_held_for_member`` and ``autonomy_grant_inactive`` are the service's, never the evaluator's:
+# an agent executing an approval the member's rules bound to the member, and a binding to a grant that
+# is no longer active (the member completes it).
+CODES = ("autonomy_boundary_unreadable", "autonomy_held_for_member", "autonomy_grant_inactive",
+         "autonomy_level_prepare_only", "autonomy_cap_currency_differs", "over_autonomy_cap",
+         "autonomy_total_unknown", "autonomy_mode_ceiling", "within_boundary")
+ALLOW_CODES = frozenset({"within_boundary"})
+SCOPES = ("no_boundary", "default", "merchant", "wishlist", "merchant_and_wishlist", "rules_and_default",
+          "unreadable")
 CAP_BUCKETS = ("no_total", "no_cap", "currency_differs", "le_50", "le_80", "le_100", "over")
 CHANGES = ("unchanged", "narrowing", "widening")
-WAIT_BANDS = ("lt_1m", "lt_10m", "lt_1h", "lt_24h", "ge_24h")
-
-
-def wait_band(seconds: float) -> str:
-    """How long the member took to approve, as a band (the log never carries times)."""
-    for limit, band in ((60, "lt_1m"), (600, "lt_10m"), (3600, "lt_1h"), (86400, "lt_24h")):
-        if seconds < limit:
-            return band
-    return "ge_24h"
 
 
 def _invalid(detail: str) -> InvalidRequest:
@@ -166,12 +152,13 @@ class BoundaryRule:
     def key(self) -> Tuple[str, str, str]:
         return (self.scope.value, self.provider_id, self.merchant_id or "")
 
-    def matches(self, f: ActionFacts) -> bool:
-        if self.provider_id != f.provider_id:
+    def governs(self, provider_id: str, merchant_id: str, variant_ref: Optional[str]) -> bool:
+        """Whether this rule governs one quote line (``variant_ref`` None: a quote with no lines)."""
+        if self.provider_id != provider_id:
             return False
         if self.scope is RuleScope.MERCHANT:
-            return self.merchant_id == f.merchant_id
-        return bool(f.variant_refs) and f.variant_refs <= self.variant_refs  # every line on the wishlist
+            return self.merchant_id == merchant_id
+        return variant_ref is not None and variant_ref in self.variant_refs
 
     def to_wire(self) -> Dict[str, Any]:
         out: Dict[str, Any] = {"scope": self.scope.value, "provider_id": self.provider_id, "level": self.level.value,
@@ -357,36 +344,54 @@ def _min_cap(caps) -> Optional[Money]:
     return min(present, key=lambda c: c.amount_minor)
 
 
+NO_BOUNDARY = AutonomyBoundary()  # what a grant without a boundary means: no rules, prepare by default
+
+
+def _governed(boundary: AutonomyBoundary, facts: ActionFacts) -> Tuple[AutonomyLevel, Optional[Money], str]:
+    """The quote's level, cap and scope, line by line (see the module docstring)."""
+    levels, caps, kinds, defaulted = [], [], set(), False
+    for ref in sorted(facts.variant_refs) or [None]:
+        rules = [r for r in boundary.rules if r.governs(facts.provider_id, facts.merchant_id, ref)]
+        if rules:
+            levels.append(_min_level(r.level for r in rules))
+            caps.extend(r.max_total for r in rules)
+            kinds.update(r.scope for r in rules)
+        else:
+            levels.append(boundary.default_level)
+            caps.append(boundary.default_max_total)
+            defaulted = True
+    if not kinds:
+        scope = "default"
+    elif defaulted:
+        scope = "rules_and_default"
+    else:
+        scope = "merchant_and_wishlist" if len(kinds) == 2 else next(iter(kinds)).value
+    return _min_level(levels), _min_cap(caps), scope
+
+
 def evaluate(boundary: Optional[AutonomyBoundary], ceiling: AutonomyLevel, facts: ActionFacts) -> AutonomyDecision:
     """Pure: the decision for one agent action under the member's boundary and the grant's mode ceiling."""
     required = REQUIRED_LEVEL[facts.action]
     codes = []
     cap: Optional[Money] = None
     rule_count = 0
-    if boundary is None:
-        level, scope = ceiling, "no_boundary"
-    elif boundary.unreadable:
-        level, scope = AutonomyLevel.SUGGEST, "unreadable"
+    if boundary is not None and boundary.unreadable:
+        level, scope = AutonomyLevel.PREPARE, "unreadable"
         codes.append("autonomy_boundary_unreadable")
     else:
-        rule_count = len(boundary.rules)
-        matched = [r for r in boundary.rules if r.matches(facts)]
-        if matched:
-            level = _min_level(r.level for r in matched)
-            cap = _min_cap(r.max_total for r in matched)
-            kinds = {r.scope for r in matched}
-            scope = "merchant_and_wishlist" if len(kinds) == 2 else next(iter(kinds)).value
-        else:
-            level, cap, scope = boundary.default_level, boundary.default_max_total, "default"
+        b = NO_BOUNDARY if boundary is None else boundary
+        rule_count = len(b.rules)
+        level, cap, scope = _governed(b, facts)
+        if boundary is None:
+            scope = "no_boundary"
     if LEVEL_RANK[level] > LEVEL_RANK[ceiling]:  # defence in depth: writes already refuse this
         level = ceiling
         codes.append("autonomy_mode_ceiling")
     outcome = Outcome.ALLOW
     if LEVEL_RANK[level] < LEVEL_RANK[required]:
-        codes.append("autonomy_level_suggest_only" if level is AutonomyLevel.SUGGEST
-                     else "autonomy_level_prepare_only")
+        codes.append("autonomy_level_prepare_only")
         outcome = Outcome.HOLD if facts.action is Action.APPROVAL_BINDING else Outcome.REFUSE
-    if facts.action in _CAPPED_ACTIONS and cap is not None:
+    if cap is not None:
         over = None
         if facts.total is None:
             over = "autonomy_total_unknown"
@@ -399,7 +404,7 @@ def evaluate(boundary: Optional[AutonomyBoundary], ceiling: AutonomyLevel, facts
             capped = Outcome.REFUSE if facts.action is Action.EXECUTE else Outcome.HOLD
             outcome = min(outcome, capped, key=OUTCOME_RANK.__getitem__)
     if outcome is Outcome.ALLOW:
-        codes.append("grant_limits_only" if boundary is None else "within_boundary")
+        codes.append("within_boundary")
     ordered = tuple(c for c in CODES if c in codes)
     return AutonomyDecision(facts.action, outcome, level, required, scope, ordered,
                             cap_bucket(facts.total, cap), rule_count)
@@ -419,28 +424,36 @@ def _le_level(new: AutonomyLevel, old: AutonomyLevel) -> bool:
     return LEVEL_RANK[new] <= LEVEL_RANK[old]
 
 
+def _grants_placing(b: AutonomyBoundary) -> bool:
+    return b.default_level is AutonomyLevel.BUY_AFTER_APPROVAL or any(
+        r.level is AutonomyLevel.BUY_AFTER_APPROVAL for r in b.rules)
+
+
 def classify_change(old: Optional[AutonomyBoundary], new: Optional[AutonomyBoundary]) -> str:
     """``unchanged``, ``narrowing`` (no action gets a more permissive outcome) or ``widening``.
 
-    Conservative: anything not provably narrowing is a widening. With no boundary the grant's mode
-    ceiling applies with no cap, so ``None -> B`` narrows and ``B -> None`` widens.
+    Conservative: anything not provably narrowing is a widening. No boundary means ``NO_BOUNDARY``
+    (no rules, prepare by default), so clearing a boundary is a narrowing.
     """
-    if old == new and not (old is not None and old.unreadable):
+    old = NO_BOUNDARY if old is None else old
+    new = NO_BOUNDARY if new is None else new
+    if old == new and not old.unreadable:
         return "unchanged"
-    if new is None:
-        return "widening"
     if new.unreadable:
         return "widening"
-    if old is None:
-        return "narrowing"
+    if not _grants_placing(new):
+        return "narrowing"  # S0: nothing lets the agent place an order
     if old.unreadable:
         return "widening"
     if not (_le_level(new.default_level, old.default_level) and _le_cap(new.default_max_total, old.default_max_total)):
         return "widening"  # S1
     old_rules = {r.key(): r for r in old.rules}
     new_rules = {r.key(): r for r in new.rules}
-    if set(old_rules) - set(new_rules):
-        return "widening"  # S3: a removed rule frees what it restricted
+    for k in set(old_rules) - set(new_rules):
+        removed = old_rules[k]
+        # S3: removing a rule is a narrowing only if it restricted nothing: the top level and no cap.
+        if removed.level is not AutonomyLevel.BUY_AFTER_APPROVAL or removed.max_total is not None:
+            return "widening"
     for k, n in new_rules.items():
         o = old_rules.get(k)
         if o is not None:  # S2: same match set, no higher level or cap

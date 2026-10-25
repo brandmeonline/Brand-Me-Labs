@@ -30,6 +30,7 @@ match). Brand.Me's own operator reads are never tier-gated.
 from __future__ import annotations
 
 import enum
+import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -37,6 +38,7 @@ from typing import Any, Callable, Dict, Mapping, Optional, Protocol, Tuple
 
 from .contracts import CAPABILITIES
 
+_LOG = logging.getLogger(__name__)
 LOCAL_ENVIRONMENTS = frozenset({"demo", "development"})
 ASSIGNMENT_ITEM_KEY = "tier"  # ProviderSetupItems.item_key; evidence_ref "<tier_id>@<table_version>"
 ASSIGNMENT_SECTION = "prerequisites"
@@ -323,7 +325,13 @@ def decision_record(*, origin: str, dimension: str, outcome: str, code: str, pro
 
 
 def emit(sink: Optional[TierAuditSink], record: Dict[str, Any]) -> None:
-    """Writes one decision line. A sink error propagates: a strict test log must surface a malformed line,
-    and the production sink (``JsonLineRunLog.tier_decision``) never raises."""
-    if sink is not None:
+    """Writes one decision line, after the operation it records. An operational sink failure never fails
+    the operation; a strict (test) log refusing a malformed line (``strict_violation``) is a bug and raises."""
+    if sink is None:
+        return
+    try:
         sink(record)
+    except Exception as exc:
+        if getattr(exc, "strict_violation", False):
+            raise
+        _LOG.warning("tier decision sink failed: %s", type(exc).__name__)

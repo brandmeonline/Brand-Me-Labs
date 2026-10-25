@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import FrozenSet, Optional
 
-from .autonomy import LEVEL_RANK, AutonomyBoundary, AutonomyLevel, RuleScope
+from .autonomy import LEVEL_RANK, NO_BOUNDARY, AutonomyBoundary, AutonomyLevel, RuleScope
 from .errors import DelegationInvalid, Forbidden
 from .money import Money
 from .principal import Principal, is_agent
@@ -25,8 +25,9 @@ MODE_SCOPES = {
     AssistanceMode.BUY_WITHIN_RULES: frozenset({"commerce:research", "commerce:cart", "commerce:purchase"}),
 }
 # The most an autonomy boundary may allow under each mode: a boundary only ever narrows its grant.
+# The most a grant's agent may do once the member approves: only a buy grant may ever place the order.
 MODE_CEILING = {
-    AssistanceMode.RESEARCH: AutonomyLevel.SUGGEST,
+    AssistanceMode.RESEARCH: AutonomyLevel.PREPARE,  # never reached: research grants cannot request purchases
     AssistanceMode.PREPARE: AutonomyLevel.PREPARE,
     AssistanceMode.BUY_WITHIN_RULES: AutonomyLevel.BUY_AFTER_APPROVAL,
 }
@@ -96,14 +97,23 @@ class AgentDelegation:
             raise DelegationInvalid("delegation expired", code="delegation_expired")
 
 
+def normalize_boundary(boundary: Optional[AutonomyBoundary]) -> Optional[AutonomyBoundary]:
+    """An empty boundary (no rules, prepare by default, no cap) is no boundary: stored as none, valid on any grant."""
+    return None if boundary is not None and not boundary.unreadable and boundary == NO_BOUNDARY else boundary
+
+
 def check_boundary_fits(boundary: Optional[AutonomyBoundary], *, mode: AssistanceMode,
                         allowed_providers: FrozenSet[str], limits: Optional[DelegationLimits]) -> None:
-    """A boundary may only narrow its grant: no level above the mode, no provider or merchant the grant
-    does not name, no cap above the grant's per-order limit or in another currency."""
+    """A boundary belongs to a buy grant and may only narrow it: no provider or merchant the grant does not
+    name, no cap above the grant's per-order limit or in another currency (and no level above the mode)."""
     if boundary is None:
         return
     if boundary.unreadable:
         raise DelegationInvalid("this boundary cannot be read; replace it", code="autonomy_boundary_unreadable")
+    if mode is not AssistanceMode.BUY_WITHIN_RULES:
+        # A boundary decides only who places an approved order, and only a buy grant's agent ever may.
+        raise DelegationInvalid("assistant rules apply to buy-within-rules grants only",
+                                code="autonomy_boundary_needs_buy_grant")
     ceiling = MODE_CEILING[mode]
     if any(LEVEL_RANK[lv] > LEVEL_RANK[ceiling]
            for lv in (boundary.default_level, *(r.level for r in boundary.rules))):
@@ -140,6 +150,7 @@ def build_delegation(*, granting: Principal, delegation_id: str, client_id: str,
             raise DelegationInvalid("buy-within-rules requires explicit limits")
         if not limits.allowed_merchants:
             raise DelegationInvalid("buy-within-rules requires named merchants")
+    boundary = normalize_boundary(boundary)
     check_boundary_fits(boundary, mode=mode, allowed_providers=frozenset(allowed_providers), limits=limits)
     return AgentDelegation(
         id=delegation_id, member_id=granting.member_id, client_id=client_id, mode=mode,
