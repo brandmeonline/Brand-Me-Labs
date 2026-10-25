@@ -1286,9 +1286,9 @@ are involved. This supersedes S21's pending-authorization state for the lock pat
 | 3 | Provider setup/verify from the console | Built in S16; proven through the real stack this stage (below) |
 | 4 | Stripe test-mode proof run | `not_run`. The lane cannot create Stripe keys from this container (S21). The fixture-double and stripe-mock layers stand (S17/S20). |
 | 5 | Model planner on the dev key | `not_run`: no `BRANDME_DEV_ANTHROPIC_API_KEY` |
-| 6 | Autonomy boundaries | In design (judge panel running), next stage |
-| 7 | Tier enforcement | In design, next stage |
-| 8 | Shell header swap | Blocked. `main` has no published shell component. The `ConsolePageHeader` at `brandme-console/app/(ops)/_shell/console-page-header.tsx` is consumer-domains' own local stand-in ("The shell's own component is not on this lane's base branch"). The one-line seam in `providers/_data/shell.ts` is unchanged. |
+| 6 | Autonomy boundaries | **Done (S24)**, after an independent review and fixes |
+| 7 | Tier enforcement | **Done (S25)** as mechanics with placeholder tiers |
+| 8 | Shell header swap | Blocked on `beed01f`: `main` had no published shell component. **Done (S26)** once console shell contract 1.1.1 merged (#65). |
 | 9 | S13 fidelity close-out | Done (checklist below) |
 | 10 | Outbox registration (Q8) | Blocked: `main` has no catalog-import mechanism. `brandme_core/events/README.md` still says "commerce implementations still need catalog alignment". |
 
@@ -1363,3 +1363,214 @@ BM-COM-011 (MUST, W07, integration): "Receive partial shipment, exchange and ref
 - **#17 (wardrobe side).** The replacement unit's wardrobe item does not record which unit it replaced. The relationship exists on the commerce order line and in the event. Recording it is the wardrobe lane's design call.
 - **#18 (blocked, foundation).** Commerce events do not yet reach the wardrobe through the outbox. Foundation's dispatcher allowlist does not include the commerce catalog (Q8 / Q20). The contract tests reduce the real payloads in-process instead.
 - **Live provider:** `not_run`. No real retailer is connected, and Nordstrom stays link-out only.
+
+## Stage S24 — Item 6: member-set autonomy boundaries (2026-10-25)
+
+Built from a judge panel of three independent designs (policy engine first, threat model first, member and research first; `Workflow`). The first build (`de845a2`) then went through an independent review: five lenses (authority, races, privacy and logging, tests, spec), each finding checked by a refuter. The review found real defects, and the model was revised to the judge's recommendation (below). The final state is commit `674d532`.
+
+**What a boundary is.** It applies to buy-within-rules grants only. It says where the assistant may *place*, on its own, the exact quote the member approved:
+- **Rules.** A rule names a merchant (`provider_id` + `merchant_id`, the identities sealed into every quote) or a wishlist (exact `source_variant_ref`s at one provider, pinned by the member). Each rule has a level (`prepare` | `buy_after_approval`) and an optional all-in cap.
+- **Line by line.** Each quote line is governed by every rule that names it: its merchant's rule, and every wishlist rule that contains it. A line no rule names falls to the default level and default cap. The quote's level is the lowest over its lines, and its cap is the lowest cap that applied to any line. A restriction the member set on an item holds whatever else is in the cart.
+- **Concierge prepares by default.** The default level is `prepare`. A buy grant with no boundary has no rules, so the agent prepares and the member completes everything. The agent places nothing until the member writes a rule that allows it.
+- **Outer bounds.** The grant's limits stay the outer bound: a rule can only name the grant's providers and merchants, and caps stay at or under the grant's per-order limit. Preparing (carts, quotes, approval requests) is never boundary-gated; the grant's mode and limits gate it, as before.
+
+**What it is not: unattended buying.** Every purchase still needs the member's approval on the trusted surface, or a member-signed AP2 closed mandate (ch.05 §4, ADR-14). A level that would skip it is refused with `autonomous_not_supported`. Plan item 6's "autonomous action only inside boundaries" is delivered as **"inside your rules, the concierge places the exact quote you approved"**. Outside them the approval is *held*: it binds to the member, and the member completes the purchase. This item builds and tests the bounded policy, which ch.05 §4 names as a precondition for open authorization. That gate stays shut.
+
+**Where it decides.** In `CommerceService`, so the assistant runtime, external MCP clients and REST agents all pass the same gates:
+- **At the approval's binding** (trusted surface and AP2): who the approval binds to. A grant that has expired or been revoked binds to the member (`autonomy_grant_inactive`).
+- **At execute,** inside its transaction, on the grant re-read there.
+- **Once more in `_submit`,** before provider I/O. A narrowing that lands in that window cancels the unsent order, as a revocation does.
+- **Held stays held.** A held approval is never rebound by a later widening. The agent's execute is refused with `autonomy_held_for_member`.
+- **Zero bypass.** A test classifies every public `CommerceService` method. A new method fails the test until it is classified, and every method that places an order is shown to consult the evaluator.
+- **Order follow-ups.** An agent may cancel or return only orders it placed itself. The approval it executed must have been bound to its grant. An order the member placed after a hold is the member's.
+
+**Growth only by explicit member change.**
+- `update_autonomy_boundary` / `PUT /delegations/:id/autonomy-boundary`: the member's session only, with If-Match on the grant version.
+- **Widening** needs step-up assurance (`aal2`) and is refused while a grant deletion is pending. Widening is classified conservatively; the classifier is property-tested against the evaluator on 3000 seeded pairs.
+- **Narrowing** is always possible. It hands approved-but-unsent agent work back to the member. Clearing the boundary is a narrowing.
+- **New buy grants** need the same step-up, so revoke-and-regrant cannot skip it. The dev identity counts only where every provider is a simulation.
+- Nothing in code widens a boundary. A test asserts that after three agent purchases and a reconcile, the boundary and version are unchanged.
+
+**Every decision logged.**
+- One `commerce.autonomy_decision` line per decision on a buy grant: closed schema, `security_audit_180d`.
+- **When.** The line is written once the call's outcome is settled, after provider I/O for an execute. It says whether its transaction `committed`, and a retried attempt is logged once.
+- **Contents:** action, outcome and codes; level, scope and the cap-ratio band; keyed member, delegation, quote and task refs; client kind; simulation flag.
+- **Never logged:** amounts, caps, merchant ids, variant refs or raw ids. The member's own behaviour is never logged either: no approval-wait time, and no line when the member completes a purchase.
+- **A failing sink never changes or hides the outcome.** An operational sink error is swallowed with a warning. A strict test log refusing a malformed line raises only after the outcome is settled.
+- Lines join `mcp.tool_call` on request id and the quote ref. Every test world runs a strict decision log, and the domain HTTP API refuses to mount without a decision sink.
+
+**Storage and My Data.**
+- Stored in the existing `AgentDelegations.limits` JSON under `autonomy_boundary`, on buy grants only, so the document always carries the grant's limits. No migration. An empty boundary is stored as none.
+- An unreadable or newer document fails closed and is kept verbatim.
+- **Export:** the member's export carries it with the grant, and the approval export shows who placed each purchase.
+- **Erasure:** deleted with its grant, and cleared on a grant kept as order evidence (`boundaries_cleared`).
+
+### Review of the first build (`de845a2`) and dispositions
+
+| Finding (lens) | Verdict | Disposition |
+|---|---|---|
+| A restrictive wishlist rule (prepare-only, or a lower cap) was shed by padding the cart with one item off the wishlist; the agent then placed the dress itself (authority; found again by tests) | **Confirmed, medium** | **Fixed**: rules apply line by line. `test_a_restriction_on_an_item_holds_whatever_else_is_in_the_cart`, `test_a_padded_cart_cannot_shed_the_members_restriction_on_an_item` |
+| An agent could cancel or return an order the member placed after a hold (spec) | **Confirmed, medium** | **Fixed**: authorized on who placed the order. `test_an_agent_cancels_or_returns_only_orders_it_placed_itself` |
+| `purchase.request` over MCP returned 403 after creating the request when the token lacked `commerce:research`, and a retry duplicated it (races, spec) | **Confirmed, medium** | **Fixed**: the preview needs only the request's scope and is best-effort. `test_purchase_request_over_mcp_needs_only_the_cart_scope_and_says_who_completes` |
+| Approval-wait band and "member completion" lines put the member's own behaviour into the security audit stream, even for grants with no boundary (privacy) | **Confirmed, low** | **Fixed**: both removed. Only buy grants log, and only agent-authority decisions are logged |
+| Binding an approval to an expired grant left a purchase nobody could place (races) | **Confirmed, low** | **Fixed**: it binds to the member. `test_an_approval_after_the_grant_expired_binds_to_the_member` |
+| The last gate's refusal line had no quote ref (privacy) | **Confirmed, low** | **Fixed**, and the test asserts the join |
+| A raising decision sink after the execute commit left the purchase stuck in `submitting` and hid the real refusal (races) | Refuted: the shipped sink never raises | **Hardened anyway**: lines are written after provider I/O, and operational sink errors are swallowed. `test_a_failing_decision_sink_never_strands_a_purchase_or_hides_the_refusal` |
+| Cart, quote and request decisions used a grant read outside the transaction and were logged before it ran (races, privacy) | Refuted: design | **Removed**: preparing is no longer boundary-gated. Every line now says whether its transaction committed |
+| aal1 revoke-and-regrant widened suggest → prepare without step-up (authority) | Refuted: design | **Moot**: there is no `suggest` level |
+| `{}` boundary refused on the default research connection (spec) | Refuted: design | **Changed anyway**: an empty boundary is no boundary, on any grant. `test_an_empty_boundary_is_no_boundary_on_any_grant` |
+| A narrowing racing an in-flight execute cancels instead of handing back; the narrowing response counts only approved work (races) | Refuted: intended fail-safe | **Kept**: an executing order is stopped by the last gate, as a revocation stops it, so it is never sent against the member's newer rules |
+| The previous release can't read boundary-only grant JSON (races) | Refuted: never deployed | **Moot**: boundaries live only on buy grants, whose document always has the limits. **Deploy note:** the first deployed commerce build must include this reader |
+| Test gaps: the stale-grant re-read inside execute, updates on revoked or expired grants, cross-provider matching, the dev identity with a real provider, AP2 hand-back and retries, `completed_by` on the challenge wire, client kind, run-log rule clauses (tests) | Gaps | **Added**: one test each |
+
+**Evidence.** In-memory store and Spanner emulator unless noted.
+- **Exit evidence, "cap enforced in a test where an over-cap action is held for approval":** `tests/test_commerce_autonomy.py::test_over_cap_request_is_held_and_the_agent_cannot_complete_it`.
+  - A $171.72 dress under a $150.00 rule is held. The member's approval binds to the member, and the agent's execute is refused with no reservation and no provider call. The member completes it.
+  - A $96.12 overshirt is placed by the agent. **passed.**
+- **Default:** `test_with_no_rules_the_concierge_prepares_and_the_member_completes` **passed**.
+- **Mission flow, "agent-assisted inside a user-set cap, fully audited":** `test_mission_agent_assisted_purchase_inside_a_member_cap_is_fully_audited`.
+  - The member sets a $250.00 cap. The concierge prepares through MCP, the member approves, and the agent places the order: authorization of 23544 on the rail, with the grant budget reserved.
+  - $332.64 is held for the member.
+  - Decision lines join the tool-call audit.
+  - Results by rail:
+    - simulated rail: **passed**;
+    - Stripe semantics double (**fixture double, not Stripe**): **passed**;
+    - live Stripe test mode: **not_run**, no key.
+- `tests/test_commerce_autonomy.py`: **106 passed** (both stores).
+- Lane suites on the merged head (both stores, `BRANDME_REQUIRE_EMULATORS=1`): **1276 passed**, 20 skipped. Every skip is on the allowlist: 8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary. 0 failed.
+- Gateway: route vitest 87 passed (16 skipped: suites outside these routes), `tsc` clean.
+
+**Deviations and decisions recorded:**
+- **D-6.1, "brand" means merchant.** A quote carries no verified brand id, and provider brand text is untrusted. A brand rule is a merchant rule until the brand-shelf work puts a verified brand id on quote lines.
+- **D-6.2, the wishlist is a member-pinned snapshot.** Commerce never reads the wardrobe; a live link would widen the boundary implicitly.
+- **D-6.3 (revised), a buy grant with no rules places nothing.** The first build let a buy grant without a boundary act on its limits alone. The judge and the review both read "concierge prepares by default" literally, and so does the final build. Existing test worlds give their buy grants an explicit member rule (`MEMBER_RULES` in the harness).
+- **D-6.4, no `suggest` level and no preparation gate.** Research grants already mean "suggest only". Gating preparation added stale-read and logging hazards for no item-6 benefit.
+- **The connection default stays `research`** (ch.05 §5). "Concierge prepares by default" is the boundary's default level, not a new grant default.
+
+## Stage S25 — Item 7: partner tiers behind a pricing-table interface (2026-10-25)
+
+**Not in the spec.** ch.05 has no partner tiers. Item 7 is founder-locked scope from Ultra plan 02, built as enforcement mechanics only. Built from three independent designs (pricing table first, enforcement points first, privacy and honesty first) and a judge (`Workflow`). The judge also found two gaps that none of the designs had. Commit `71f1155`, plus the sink hardening in `674d532`.
+
+**What a tier is.** An operator-assigned plan on a provider connection, `(environment, provider_id)`. It bounds what that partner's own operations may do. Enforcement reads only the `PricingTable` interface (`brandme_core/domains/providers/tiers.py`), so the founder's priced table drops in with no other code change.
+
+**No prices, no invented terms.**
+- `price_status` can only be `not_priced`, shown as "Not priced: founder decision pending". A tier that is not a placeholder must name a founder decision record (a reference, never an amount).
+- The shipped placeholder table has two tiers, at the two ends of every limit: `placeholder_floor` (nothing) and `placeholder_ceiling` (everything). Every gate can be exercised both ways **without inventing a quota number**. Quota numbers in tests are test values local to the test module.
+- Placeholder tiers are labelled "Placeholder … (not priced)" wherever they appear, and the table is refused outside demo and development.
+- Outside demo and development, no tier is configured until the founder's table exists, so every partner entitlement there is refused.
+
+**Fail closed.** No tier assigned, a tier the current table no longer knows, or no table at all all give nothing beyond the standard presentation every listing has. The refusal code says which: `tier_unassigned`, `tier_unknown` or `tier_not_configured`.
+
+**What is enforced:**
+
+| Dimension | Enforcement | Status |
+|---|---|---|
+| Customization up to 3D/AR | Activating `catalog.3d`, `tryon.photo` or `tryon.live` needs the tier. The tier is read in the activation transaction. Adapters cannot register these capabilities as executable | Reachable today (operator console) |
+| Downgrade | Resets the excluded capabilities to `unconfigured` in the same write, including ones a stale process activated | Reachable today |
+| Stale processes | A connection test in a stale process never refreshes or degrades an excluded capability; it heals that process's view. A process started under a new table never revives one (judge-found gaps) | Reachable today |
+| Shelf quota | `ProviderSetupService.load_shelf_page` applies the tier's limit to each addition under the ingestor's lock. Updates and tombstones are never refused, and a lower limit deletes nothing. It is the only production caller of `ingest_page` (AST-pinned) | **No caller yet:** the brand-shelf load is not built; counts are per process |
+| Analytics, member connection | Check functions. The member's opt-in is read only after the tier passes, so a refusal never depends on it | **No caller yet:** neither surface exists |
+
+**Never gated:** member search, ranking, carts, quotes, approvals, purchases, MCP tools, delegations and autonomy. An AST guard asserts that none of those modules imports tiers.
+
+**Assignment.**
+- `PUT /providers/:id/tier` (operator only). `If-Match` is required, because a downgrade resets capabilities. `tier_id: null` clears the tier.
+- Stored as one `ProviderSetupItems` row (`tier`, evidence `<tier_id>@<table_version>`). No migration.
+- Assigning never enables anything: 3D and AR still need a passing connection test and activation.
+- The console setup page shows a tier block (tier, price label, placeholder notice, what it includes, and an assign form). It appears only on connections that offer 3D/AR or already have a tier, so Demo Atelier and the Nordstrom link-out are unchanged.
+
+**Logged.** One closed-schema `provider.tier_decision` line per decision (`security_audit_180d`): dimension, outcome, code, unit counts, keyed provider and operator refs, tier id and table version. Never prices, decision records or raw ids. The HTTP API refuses to mount without the sink. As in S24, an operational sink failure never fails the operation.
+
+**Evidence** (both stores unless noted):
+- `tests/test_providers_tiers.py`: 75 passed. Highlights:
+  - activation is refused with no tier and at the floor, and allowed at the ceiling;
+  - a downgrade resets in the same write;
+  - a stale-process connection test cannot bring a capability back, whether it passes or fails;
+  - a process under a new table does not revive one;
+  - the shelf quota applies per addition, and concurrent pages cannot both take the last slot;
+  - an unassigned connection loads nothing new;
+  - the member's opt-in is never read below the tier;
+  - the strict-log schema holds;
+  - over HTTP the operation is operator-only, needs If-Match (428), and a stale If-Match gets 409.
+- Lane suites on the tier commit (both stores, `BRANDME_REQUIRE_EMULATORS=1`): **1243 passed**, 20 skipped. Every skip is on the allowlist: 8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary.
+- Gateway: route vitest including `PUT /:id/tier` (operator only, 428 without If-Match, closed body). Console `tsc` clean.
+- Console Chromium proof of the tier form: **not_run**. No demo connection offers 3D/AR, so the block does not render in the demo world.
+
+**Founder decisions this needs** (also in the check-in): the real tier ladder, prices and their decision record; whether quotas include refresh frequency; which partner analytics exist; and whether member connection is a tier feature at all.
+
+## Stage S26 — Merged `main` (`7728024`); item 8 shell header swap (2026-10-25)
+
+- **Merge.** `origin/main` moved by two merges: #56 (consumer UI) and #65 (console shell contract 1.1.1). It was merged into this branch with a merge commit. No file is touched by both sides, so there were no conflicts.
+- **Item 8.** `brandme-console/app/(ops)/providers/_data/shell.ts` now re-exports the shell's own `ConsolePageHeader` (from `@/components/console-contract`, 1.1.1) as `PageHeader`, and the lane's stand-in `page-header.tsx` is deleted.
+  - The stand-in already had the contract's markup, classes and props, so the pages render the same.
+  - Pages affected: `/providers`, `/providers/[id]`, `/providers/[id]/health`, `/providers/[id]/setup`, `/commerce/operations`.
+- **Evidence:**
+  - `pnpm install --frozen-lockfile`;
+  - console `tsc` clean, and `next build` passes with all five routes;
+  - `brandme-frontend test:ui` 22/22, including shell adapter parity;
+  - gateway route vitest 87 passed, `tsc` clean.
+
+## Stage S27 — Check-in packet, Ultra plan 02 (2026-10-25)
+
+**Trigger:** the plan's check-in comes when the proof run is recorded and the audit fix is green. Both hold, with one gap stated plainly:
+- **The audit fix is green.** It merged in #51 and is green on PR #64's head.
+- **The proof run is recorded at the fixture-double level.** The mission flow passes on the simulated rail and on the Stripe semantics double (**fixture double, not Stripe**).
+- **Live Stripe test mode is `not_run`.** There is no `STRIPE_TEST_SECRET_KEY` in this environment. The live suite is written and key-gated, and it runs the day a test key exists.
+
+### Evidence by plan item
+
+| # | Item | State | Evidence |
+|---|---|---|---|
+| 1 | Q11 rebase | Done by the founder (S22) | #51 merged as `7c4c1cd` |
+| 2 | Audit path, no `_dispatch` bypass | Done (S23) | `tests/test_commerce_audit_coverage.py`; two gaps closed |
+| 3 | Setup and verify from the console | Done (S16, S23) | Chromium 15/15 through the real routers and domain API, in a scratch harness |
+| 4 | Stripe test-mode proof run | Fixture double and stripe-mock layers **passed**; live **not_run** (no key) | `test_mission_…[stripe_double]`; `tests/test_commerce_stripe_live.py` (5, key-gated) |
+| 5 | Model planner on the dev key | **not_run** (no `BRANDME_DEV_ANTHROPIC_API_KEY`) | `tests/test_commerce_model_live.py` (3, key-gated); the planner runs on recorded fixtures |
+| 6 | Autonomy boundaries | Done, reviewed, fixed (S24) | Exit test `test_over_cap_request_is_held_and_the_agent_cannot_complete_it` **passed** |
+| 7 | Tier enforcement | Done as mechanics with placeholder tiers (S25) | `tests/test_providers_tiers.py`, 75 passed |
+| 8 | Shell header swap | Done (S26) | One-line swap to `@/components/console-contract` 1.1.1 |
+| 9 | S13 fidelity vs BM-COM-011 | Done (S23) | 16-row checklist; wardrobe gaps #16 and #17 handed to consumer-domains |
+| 10 | Outbox registration with Q8 | **Blocked** | `main` still has no commerce catalog import |
+
+**Credentials this round:** none created, none needed beyond the founder-supplied ones (none were supplied). The manifest is unchanged, and no secret is in the repo.
+
+### 21 questions, each with the default I proceed on
+
+**Direction (7)**
+1. **No rules, no agent placement.** A buy grant with no rules places nothing; the member completes everything (D-6.3, revised). **Default:** keep.
+2. **"Brand" means merchant.** A brand rule is a merchant rule until quote lines carry a verified brand id (D-6.1). **Default:** keep; the brand-shelf work adds verified ids.
+3. **The wishlist is a member-pinned snapshot**, not a live wardrobe link (D-6.2). **Default:** keep.
+4. **An in-flight execute** that a narrowing races is cancelled at the last gate, as a revocation is, rather than handed back. **Default:** keep.
+5. **The tier ladder.** The shipped placeholders are floor and ceiling only. What are the real tiers, their limits and prices, and which decision record names them? **Default:** no tier outside demo/dev until you supply the table.
+6. **Refresh frequency.** Should quotas include refresh frequency per day? I dropped it as an invented number with no caller. **Default:** shelf size is the only quota.
+7. **Member connection.** Is it a tier feature at all, or a separate consented channel product? **Default:** a check function only (tier first, then the member's opt-in); no surface built.
+
+**Integration and security (7)**
+
+8. **Stripe test keys.** Add `STRIPE_TEST_SECRET_KEY` and `STRIPE_TEST_WEBHOOK_SECRET` as GitHub secrets or session environment variables. I cannot create a Stripe account from this container. **Default:** you add them; I run the live suite and record it.
+9. **A dev model key.** Add `BRANDME_DEV_ANTHROPIC_API_KEY`, dev-scoped and with a spend cap, for item 5. **Default:** you add it; I run the 3 live planner tests.
+10. **stripe-mock in CI.** 6 wire-shape tests are allowlisted skips because CI has no `stripe-mock` v0.206.0. **Default:** foundation adds the binary to the Test Core image; until then they stay allowlisted.
+11. **The AP2 SDK oracle in CI.** 6 tests are allowlisted skips. **Default:** keep allowlisted; run them locally per release (S21 ran 40/40).
+12. **New wire fields need adoption by the contracts owner:**
+    - `autonomy_boundary` on delegations;
+    - `PUT /delegations/:id/autonomy-boundary`;
+    - `PUT /providers/:id/tier`;
+    - `completed_by` and `autonomy_codes` on the approval challenge and on `purchase.request`.
+
+    **Default:** I hand the owner a diff; the routes stay unmounted until adopted.
+13. **Deploy ordering.** The first deployed commerce build must include the boundary reader, because older builds ignore boundaries on buy grants. **Default:** I record it as a deploy gate for the integration lane.
+14. **Retention.** Autonomy and tier decisions are kept at `security_audit_180d`, with no fields about member behaviour. **Default:** keep.
+
+**Scope and sequencing (7)**
+15. **Item 10 (outbox registration)** waits on foundation's Q8 catalog import. **Default:** I register the commerce catalog the day it lands.
+16. **Wardrobe gaps #16 and #17** (units cancelled mid-order; no link from a replacement to its original) belong to consumer-domains. **Default:** hand off; I do not touch their code.
+17. **Open authorization** (no approval for each purchase) stays shut. **Default:** keep it shut until a provider and AP2 open-mandate support are verified.
+18. **The brand-shelf load** (a caller for `load_shelf_page`) and a durable shelf store. **Default:** next round, after Q8.
+19. **A Chromium proof of the console tier block** needs a demo connection that offers 3D. **Default:** wait for a real 3D-capable partner rather than fake a capability in the simulator.
+20. **Live Nordstrom** stays link-out only until Impact publisher approval exists. **Default:** keep.
+21. **PR #64.** **Default:** undraft once CI is green on the final head and you have read this packet.
+
+### Next steps for the top three
+1. **Live money-path proof (Q8).** Once the test keys exist, run `tests/test_commerce_stripe_live.py` and the mission flow on the live Stripe test-mode rail. Record the PaymentIntent ids (test mode) here. No live charges.
+2. **Model planner proof (Q9).** Once the dev key exists, run the 3 live planner tests. Record model ids and token counts. Redacted run logs only.
+3. **Contract adoption (Q12) and the deploy gate (Q13).** Hand the contracts owner the wire diff, and record the reader-first deploy gate for the integration lane.
