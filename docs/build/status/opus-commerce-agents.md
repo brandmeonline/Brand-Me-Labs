@@ -1271,3 +1271,504 @@ are involved. This supersedes S21's pending-authorization state for the lock pat
   scripted transport through the real SDKs; they are not live Stripe or model evidence.
 - `git diff --check` passed. Full Linux/emulator CI on the new head remains required before undrafting
   or merging. Credentials remain absent; mounting and the other S20 integration limits are unchanged.
+## Stage S23 — Ultra plan 02 (money-path proof round): audit closure, console proof, BM-COM-011 fidelity (2026-10-25)
+
+**Trigger:** the founder delivered "Ultra plan 02 — Opus Commerce-Agents (money-path proof round)" to this lane's session. Its header says "DRAFT … not yet triggered"; I treat delivery as the trigger and build on its defaults. Its "State at issue" is partly stale:
+- The lane branch is `claude/opus-commerce-agents-setup-szpmf7` (PR #51), not the bench branch.
+- `provider.setup.update` / `provider.verify` and the audited assistant path shipped in S16 (`0f75b18`, `5ab141f`).
+
+**Item map:**
+
+| # | Item | State on `beed01f` |
+|---|---|---|
+| 1 | Q11 rebase | **Done by the founder (S22):** the lock pins were applied on #51 (`2fd6b29`); CI went green and #51 merged into `main` as `7c4c1cd`. This stage and item 6 were rebased onto that `main` and continue on a new PR. |
+| 2 | Audit path | Done; two gaps closed this stage (below) |
+| 3 | Provider setup/verify from the console | Built in S16; proven through the real stack this stage (below) |
+| 4 | Stripe test-mode proof run | `not_run`. The lane cannot create Stripe keys from this container (S21). The fixture-double and stripe-mock layers stand (S17/S20). |
+| 5 | Model planner on the dev key | `not_run`: no `BRANDME_DEV_ANTHROPIC_API_KEY` |
+| 6 | Autonomy boundaries | **Done (S24)**, after an independent review and fixes |
+| 7 | Tier enforcement | **Done (S25)** as mechanics with placeholder tiers |
+| 8 | Shell header swap | Blocked on `beed01f`: `main` had no published shell component. **Done (S26)** once console shell contract 1.1.1 merged (#65). |
+| 9 | S13 fidelity close-out | Done (checklist below) |
+| 10 | Outbox registration (Q8) | Blocked: `main` has no catalog-import mechanism. `brandme_core/events/README.md` still says "commerce implementations still need catalog alignment". |
+
+### Item 2 — zero tool calls bypass the audit record (`37771d4`)
+The audit itself found two real gaps, both now closed:
+- **Pre-verification refusals at the MCP hop.** `McpToolExecutor.invoke` returned on an `AuthError` with no record. A forged, replayed, expired or wrong-audience assertion now writes one `refused` record (`invalid_token`) with no member, client or delegation.
+- **Agents on the REST routes.** The gateway lets agents call `/carts`, `/carts/:id/quote`, `/operations`, `/purchases`, `/orders/:id/cancellation` and `/orders/:id/returns`. The domain's `CommerceHttpApi` wrote no audit record for any of them.
+  - `CommerceHttpApi` now takes a **required** `audit` sink, so mounting cannot omit it.
+  - Every agent request, and every request refused before verification, writes one `commerce.agent_request` line (`security_audit_180d`): operation, status, code, keyed member/delegation refs, never arguments. This holds whatever the outcome, including a handler that raised.
+  - A member's own requests are recorded by the domain records they create.
+- **Run log.** A memberless line is accepted only for an unauthenticated refusal (cross-field rule). Every other memberless line is a schema violation.
+- **`tests/test_commerce_audit_coverage.py` (77 tests):**
+  - every known tool name and three odd ones, at the MCP hop and as assistant proposals: exactly one record, each accepted by the strict run log;
+  - a full flow: one record per call;
+  - refusals before verification;
+  - agent REST requests: ok, error, unknown operation, unexpected field, crash;
+  - an AST check: nothing outside `tools.py` reaches `_dispatch` or the handlers, and the runtime only reads through its executor's commerce service.
+- Lane suites (proposed-lock venv, Spanner emulator, `BRANDME_REQUIRE_EMULATORS=1`): **1002 passed**. The 20 skips are all reported: the 8 key-gated tests, plus AP2 SDK-oracle and Pub/Sub tests that need their local binaries (S21 ran those: 40/40 and 30/30).
+
+### Item 3 — provider setup save/test from the console page, through the real stack
+**Scratch harness, not committed, nothing mounted:**
+- the built console (`next build` on this head), with `BRANDME_GATEWAY_URL` pointing at
+- the lane's real `createProvidersRouter` / `createCommerceOpsRouter` on a bare express app, with the gateway's own `problemHandler`, an operator principal stubbed for one fictional bearer, and the real `createHttpCommerceDomainClient` signing ES256 assertions to
+- the real `CommerceHttpApi` (uvicorn), over the in-memory demo world plus the Nordstrom Impact connection.
+
+**Chromium (Playwright): 15/15:**
+- **Save.** The Nordstrom form saves; the domain records version 1; no capability state changes.
+- **Refusals.**
+  - A secret-looking credential value → 422 "must be a Secret Manager resource name", and nothing is stored.
+  - A stale form → 409 `revision_conflict`.
+- **Connection tests.**
+  - The simulator `catalog.search` test passes and is recorded as a run.
+  - The Nordstrom `catalog.feed` test returns `blocked` (no publisher approval), never a pass, and no Nordstrom capability becomes executable.
+- **Health page.** It lists the recent test.
+- **No bearer.** The page shows the sign-in state with no form.
+- **Errors.** No page errors.
+
+Screenshots are content-only: `next start` does not serve the standalone build's CSS.
+
+### Item 9 — S13 fidelity checklist vs BM-COM-011 (`5cc2db0`)
+
+BM-COM-011 (MUST, W07, integration): "Receive partial shipment, exchange and refund → correct order lines and wardrobe quantities update with evidence." The ch.05 §6 requirements it rests on are listed with it.
+
+- **Environment:** the simulator (`LocalAtelierProvider`, a demo provider).
+- **Payment rails:** both — the simulated processor, and the real `StripeTestPaymentProcessor` over the fixture double (**fixture double, not Stripe**).
+- **Stores:** both, in-memory and the Spanner emulator, wherever the test takes the `commerce_store` fixture.
+- **Status labels** follow ch.06: `passed`, `blocked` or `not_run`, each with a reason.
+
+| # | Requirement (source) | Simulator behaviour | Test | Status |
+|---|---|---|---|---|
+| 1 | Partial shipment updates the exact lines (§6) | Per-line `ordered` / `shipped` / `delivered`; order `partially_fulfilled`, then `fulfilled` | `test_commerce_purchase.py::test_partial_fulfillment_then_full` | passed |
+| 2 | Order, payment and fulfillment states stay distinct (§6) | A capture at the first shipment; a refund can land while units are in transit | `test_refund_before_delayed_fulfillment_keeps_facts_independent`; `test_commerce_payments_flow.py::test_authorized_at_submit_captured_at_first_shipment` | passed |
+| 3 | Wardrobe quantities after a partial shipment (BM-COM-011) | Delivered units are owned; the rest are on the way | `test_commerce_wardrobe_contract.py::test_partial_shipment_moves_only_the_delivered_units` (wardrobe's own `order_unit_states`) | passed (in-process reducer; see #18) |
+| 4 | An exchange keeps the original history (§6) | Original line: delivered 1, returned 1. A replacement line is added with `exchanged_from_ref` | `test_exchange_keeps_history_and_tracks_the_replacement` | passed |
+| 5 | An exchange creates a new variant relationship (§6) | `exchanged_from_ref` on the line and in the event; a chain m→l→m keeps every step | `test_exchange_back_into_an_earlier_variant_keeps_every_step` (both rails) | passed |
+| 6 | An exchange is not a refund | No money moves; payment stays `captured`, `refunded_total` 0 | same tests as #4 | passed |
+| 7 | Exchanges the provider must refuse | A different price, undelivered units, units already being returned | `test_uneven_or_undelivered_exchange_is_refused_by_the_provider`, `test_units_being_returned_cannot_also_be_exchanged` | passed |
+| 8 | Wardrobe after an exchange (BM-COM-011) | Original unit archived as returned; replacement on the way, then owned | `test_exchange_archives_the_original_unit_and_tracks_the_replacement` | passed (the wardrobe item does not store the variant link: #17) |
+| 9 | A return request is not a refund (§6) | `return_requested`; payment unchanged | `test_return_request_is_not_a_refund` | passed |
+| 10 | A refund of delivered units (BM-COM-011) | Line `returned`; `partially_refunded`; exact refunded total including tax | `test_refund_before_delayed_fulfillment_keeps_facts_independent`; `test_refund_of_a_delivered_unit_archives_it_as_returned` | passed |
+| 11 | A refund before delivery cancels units, never "returns" them | Line `cancelled` 1, `returned` 0 | `test_refund_before_delivery_cancels_units_instead_of_returning_them` | passed |
+| 12 | Cancellation only of unshipped units; refund only for what was taken | Partial cancellation after a partial shipment refunds the unshipped units | `test_cancelling_after_a_partial_shipment_refunds_only_the_unshipped_units`, `test_shipped_units_are_returned_not_cancelled` | passed |
+| 13 | Wardrobe for a cancelled order | Every unit archived as cancelled | `test_a_cancelled_order_archives_every_unit_as_cancelled` | passed |
+| 14 | Wardrobe for units cancelled while the order goes on | Commerce sends per-line `cancelled` = 1 with `delivered` 0 | `test_units_cancelled_while_the_order_goes_on_are_carried_per_line` | commerce side passed; **wardrobe gap** (#16) |
+| 15 | Evidence on every observation (BM-COM-011 "with evidence") | `acquisition_evidence` refs on every `commerce.order.observed`; webhook receipts are stored | contract tests, `test_exchange_keeps_history_and_tracks_the_replacement` | passed |
+| 16 | Out-of-order and duplicate webhooks (§6) | A source re-read reconciles; the same event is applied once | `test_refund_before_delayed_fulfillment_keeps_facts_independent`, `test_duplicate_webhook_applied_once` | passed |
+
+**Not closed by this lane:**
+- **#16 (wardrobe side, consumer-domains).** `WardrobeService.apply_order_observation` passes only the order-level `order_status == "cancelled"` to `order_unit_states` (`brandme_core/domains/wardrobe/service.py`, `apply_order_observation`). A unit cancelled while the rest of the order goes on therefore stays "on the way". This happens on a member's partial cancellation of unshipped units, or a refund before shipment.
+  - The payload already carries the per-line `cancelled` count (schema v1, optional field).
+  - The fix belongs to the wardrobe lane: treat `cancelled` undelivered units as cancelled.
+- **#17 (wardrobe side).** The replacement unit's wardrobe item does not record which unit it replaced. The relationship exists on the commerce order line and in the event. Recording it is the wardrobe lane's design call.
+- **#18 (blocked, foundation).** Commerce events do not yet reach the wardrobe through the outbox. Foundation's dispatcher allowlist does not include the commerce catalog (Q8 / Q20). The contract tests reduce the real payloads in-process instead.
+- **Live provider:** `not_run`. No real retailer is connected, and Nordstrom stays link-out only.
+
+## Stage S24 — Item 6: member-set autonomy boundaries (2026-10-25)
+
+Built from a judge panel of three independent designs (policy engine first, threat model first, member and research first; `Workflow`). The first build (`de845a2`) then went through an independent review: five lenses (authority, races, privacy and logging, tests, spec), each finding checked by a refuter. The review found real defects, and the model was revised to the judge's recommendation (below). The final state is commit `674d532`.
+
+**What a boundary is.** It applies to buy-within-rules grants only. It says where an external agent (an MCP or REST client) may *place*, on its own, the exact quote the member approved. Brand.Me's own assistant prepares and the member completes, until it has a post-approval path (S28):
+- **Rules.** A rule names a merchant (`provider_id` + `merchant_id`, the identities sealed into every quote) or a wishlist (exact `source_variant_ref`s at one provider, pinned by the member). Each rule has a level (`prepare` | `buy_after_approval`) and an optional all-in cap.
+- **Line by line.** Each quote line is governed by every rule that names it: its merchant's rule, and every wishlist rule that contains it. A line no rule names falls to the default level and default cap. The quote's level is the lowest over its lines, and its cap is the lowest cap that applied to any line. A restriction the member set on an item holds whatever else is in the cart.
+- **Concierge prepares by default.** The default level is `prepare`. A buy grant with no boundary has no rules, so the agent prepares and the member completes everything. The agent places nothing until the member writes a rule that allows it.
+- **Outer bounds.** The grant's limits stay the outer bound: a rule can only name the grant's providers and merchants, and caps stay at or under the grant's per-order limit. Preparing (carts, quotes, approval requests) is never boundary-gated; the grant's mode and limits gate it, as before.
+
+**What it is not: unattended buying.** Every purchase still needs the member's approval on the trusted surface, or a member-signed AP2 closed mandate (ch.05 §4, ADR-14). A level that would skip it is refused with `autonomous_not_supported`. Plan item 6's "autonomous action only inside boundaries" is delivered as **"inside your rules, your agent places the exact quote you approved"**, for external agents (S28: Brand.Me's assistant hands back to the member). Outside them the approval is *held*: it binds to the member, and the member completes the purchase. This item builds and tests the bounded policy, which ch.05 §4 names as a precondition for open authorization. That gate stays shut.
+
+**Where it decides.** In `CommerceService`, so the assistant runtime, external MCP clients and REST agents all pass the same gates:
+- **At the approval's binding** (trusted surface and AP2): who the approval binds to. A grant that has expired or been revoked binds to the member (`autonomy_grant_inactive`). So does Brand.Me's own assistant (`autonomy_assistant_member_completes`, S28): it has no post-approval path to place an order yet.
+- **At execute,** inside its transaction, on the grant re-read there.
+- **Once more in `_submit`,** before provider I/O. A narrowing that lands in that window cancels the unsent order, as a revocation does.
+- **Held stays held.** A held approval is never rebound by a later widening. The agent's execute is refused with `autonomy_held_for_member`.
+- **The member can always complete** their own approved purchase, including one bound to their agent (S28), so a grant that expires or an agent that never follows through cannot strand it. The consumed approval then records the member as the one who placed it.
+- **Zero bypass.** A test classifies every public `CommerceService` method. A new method fails the test until it is classified, and every method that places an order is shown to consult the evaluator.
+- **Order follow-ups.** An agent may cancel or return only orders it placed itself. The approval it executed must have been bound to its grant. An order the member placed after a hold is the member's.
+
+**Growth only by explicit member change.**
+- `update_autonomy_boundary` / `PUT /delegations/:id/autonomy-boundary`: the member's session only, with If-Match on the grant version.
+- **Widening** needs step-up assurance (`aal2`) and is refused while a grant deletion is pending. Widening is classified conservatively; the classifier is property-tested against the evaluator on 3000 seeded pairs.
+- **Narrowing** is always possible. It hands approved-but-unsent agent work back to the member. Clearing the boundary is a narrowing.
+- **New buy grants** need the same step-up, so revoke-and-regrant cannot skip it. The dev identity counts only where every provider is a simulation.
+- Nothing in code widens a boundary. A test asserts that after three agent purchases and a reconcile, the boundary and version are unchanged.
+
+**Every decision logged.**
+- One `commerce.autonomy_decision` line per agent decision on a buy grant: the agent's execute and the last gate. Closed schema, `security_audit_180d`. Who an approval binds to is recorded on the approval and shown on the trusted surface (`completed_by`, `autonomy_codes`), never as a timed line (S28: the binding line timed the member's approval).
+- **When.** The line is written once the call's outcome is settled, after provider I/O for an execute. Each line says whether its own transaction `committed`: the execute transaction's line, and separately the last gate's cancellation. A retried attempt is logged once. A store raising on an unknown commit outcome reports false although the write may have applied (documented in the schema).
+- **Contents:** action, outcome and codes; level, scope and the cap-ratio band; keyed member, delegation, quote and task refs; client kind; simulation flag.
+- **Never logged:** amounts, caps, merchant ids, variant refs or raw ids. The member's own behaviour is never logged either: no approval-wait time, and no line when the member completes a purchase.
+- **A failing sink never changes or hides the outcome.** Every sink gets every line. An operational sink error is swallowed with a warning. A strict test log refusing a malformed line raises only after the outcome is settled; if the call is already failing, the call's own error propagates with a note and an error-level log (S28).
+- Lines join `mcp.tool_call` on request id and the quote ref. Every test world runs a strict decision log, and the domain HTTP API refuses to mount without a decision sink.
+
+**Storage and My Data.**
+- Stored in the existing `AgentDelegations.limits` JSON under `autonomy_boundary`, on buy grants only, so the document always carries the grant's limits. No migration. An empty boundary is stored as none.
+- An unreadable or newer document fails closed and is kept verbatim.
+- **Export:** the member's export carries it with the grant, and the approval export shows who placed each purchase.
+- **Erasure:** deleted with its grant, and cleared on a grant kept as order evidence (`boundaries_cleared`).
+
+### Review of the first build (`de845a2`) and dispositions
+
+The review confirmed 21 findings: 6 defects (3 medium, 3 low) and 15 test gaps, 2 of them moot once the `suggest` level was dropped. It refuted 8. Rows below group related findings.
+
+| Finding (lens) | Verdict | Disposition |
+|---|---|---|
+| A restrictive wishlist rule (prepare-only, or a lower cap) was shed by padding the cart with one item off the wishlist; the agent then placed the dress itself (authority; found again by tests) | **Confirmed, medium** | **Fixed**: rules apply line by line. `test_a_restriction_on_an_item_holds_whatever_else_is_in_the_cart`, `test_a_padded_cart_cannot_shed_the_members_restriction_on_an_item` |
+| An agent could cancel or return an order the member placed after a hold (spec) | **Confirmed, medium** | **Fixed**: authorized on who placed the order. `test_an_agent_cancels_or_returns_only_orders_it_placed_itself` |
+| `purchase.request` over MCP returned 403 after creating the request when the token lacked `commerce:research`, and a retry duplicated it (races, spec) | **Confirmed, medium** | **Fixed**: the preview needs only the request's scope and is best-effort. `test_purchase_request_over_mcp_needs_only_the_cart_scope_and_says_who_completes` |
+| Approval-wait band and "member completion" lines put the member's own behaviour into the security audit stream, even for grants with no boundary (privacy) | **Confirmed, low** | **Fixed**: both removed. Only buy grants log, and only agent-authority decisions are logged |
+| Binding an approval to an expired grant left a purchase nobody could place (races) | **Confirmed, low** | **Fixed**: it binds to the member. `test_an_approval_after_the_grant_expired_binds_to_the_member` |
+| The last gate's refusal line had no quote ref (privacy) | **Confirmed, low** | **Fixed**, and the test asserts the join |
+| A raising decision sink after the execute commit left the purchase stuck in `submitting` and hid the real refusal (races) | Refuted: the shipped sink never raises | **Hardened anyway**: lines are written after provider I/O, and operational sink errors are swallowed. `test_a_failing_decision_sink_never_strands_a_purchase_or_hides_the_refusal` |
+| Cart, quote and request decisions used a grant read outside the transaction and were logged before it ran (races, privacy) | Refuted: design | **Removed**: preparing is no longer boundary-gated. Every line now says whether its transaction committed |
+| aal1 revoke-and-regrant widened suggest → prepare without step-up (authority) | Refuted: design | **Moot**: there is no `suggest` level |
+| `{}` boundary refused on the default research connection (spec) | Refuted: design | **Changed anyway**: an empty boundary is no boundary, on any grant. `test_an_empty_boundary_is_no_boundary_on_any_grant` |
+| A narrowing racing an in-flight execute cancels instead of handing back; the narrowing response counts only approved work (races) | Refuted: intended fail-safe | **Kept**: an executing order is stopped by the last gate, as a revocation stops it, so it is never sent against the member's newer rules |
+| The previous release can't read boundary-only grant JSON (races) | Refuted: never deployed | **Moot**: boundaries live only on buy grants, whose document always has the limits. **Deploy note:** the first deployed commerce build must include this reader |
+| Test gaps: the stale-grant re-read inside execute, updates on revoked or expired grants, cross-provider matching, the dev identity with a real provider, AP2 hand-back and retries, `completed_by` on the challenge wire, client kind, run-log rule clauses (tests) | Gaps | **Added**: one test each |
+
+**Evidence.** In-memory store and Spanner emulator unless noted.
+- **Exit evidence, "cap enforced in a test where an over-cap action is held for approval":** `tests/test_commerce_autonomy.py::test_over_cap_request_is_held_and_the_agent_cannot_complete_it`.
+  - A $171.72 dress under a $150.00 rule is held. The member's approval binds to the member, and the agent's execute is refused with no reservation and no provider call. The member completes it.
+  - A $96.12 overshirt is placed by the agent. **passed.**
+- **Default:** `test_with_no_rules_the_concierge_prepares_and_the_member_completes` **passed**.
+- **Mission flow, "agent-assisted inside a user-set cap, fully audited":** `test_mission_agent_assisted_purchase_inside_a_member_cap_is_fully_audited`.
+  - The member sets a $250.00 cap. An external agent (`client-fictional-shopping-agent`) prepares through MCP, the member approves, and the agent places the order: authorization of 23544 on the rail, with the grant budget reserved.
+  - $332.64 is held for the member.
+  - Decision lines join the tool-call audit.
+  - Results by rail:
+    - simulated rail: **passed**;
+    - Stripe semantics double (**fixture double, not Stripe**): **passed**;
+    - live Stripe test mode: **not_run**, no key.
+- `tests/test_commerce_autonomy.py`: **106 passed** (both stores).
+- Lane suites on the merged head (both stores, `BRANDME_REQUIRE_EMULATORS=1`): **1276 passed**, 20 skipped. Every skip is on the allowlist: 8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary. 0 failed.
+- Gateway: route vitest 87 passed (16 skipped: suites outside these routes), `tsc` clean.
+
+**Deviations and decisions recorded:**
+- **D-6.1, "brand" means merchant.** A quote carries no verified brand id, and provider brand text is untrusted. A brand rule is a merchant rule until the brand-shelf work puts a verified brand id on quote lines.
+- **D-6.2, the wishlist is a member-pinned snapshot.** Commerce never reads the wardrobe; a live link would widen the boundary implicitly.
+- **D-6.3 (revised), a buy grant with no rules places nothing.** The first build let a buy grant without a boundary act on its limits alone. The judge and the review both read "concierge prepares by default" literally, and so does the final build. Existing test worlds give their buy grants an explicit member rule (`MEMBER_RULES` in the harness).
+- **D-6.4, no `suggest` level and no preparation gate.** Research grants already mean "suggest only". Gating preparation added stale-read and logging hazards for no item-6 benefit.
+- **The connection default stays `research`** (ch.05 §5). "Concierge prepares by default" is the boundary's default level, not a new grant default.
+
+## Stage S25 — Item 7: partner tiers behind a pricing-table interface (2026-10-25)
+
+**Not in the spec.** ch.05 has no partner tiers. Item 7 is founder-locked scope from Ultra plan 02, built as enforcement mechanics only. Built from three independent designs (pricing table first, enforcement points first, privacy and honesty first) and a judge (`Workflow`). The judge also found two gaps that none of the designs had. Commit `71f1155`, plus the sink hardening in `674d532`.
+
+**What a tier is.** An operator-assigned plan on a provider connection, `(environment, provider_id)`. It bounds what that partner's own operations may do. Enforcement reads only the `PricingTable` interface (`brandme_core/domains/providers/tiers.py`), so the founder's priced table drops in with no other code change.
+
+**No prices, no invented terms.**
+- `price_status` can only be `not_priced`, shown as "Not priced: founder decision pending". A tier that is not a placeholder must name a founder decision record (a reference, never an amount).
+- The shipped placeholder table has two tiers, at the two ends of every limit: `placeholder_floor` (nothing) and `placeholder_ceiling` (everything). Every gate can be exercised both ways **without inventing a quota number**. Quota numbers in tests are test values local to the test module.
+- Placeholder tiers are labelled "Placeholder … (not priced)" wherever they appear, and the table is refused outside demo and development.
+- Outside demo and development, no tier is configured until the founder's table exists, so every partner entitlement there is refused.
+
+**Fail closed.** No tier assigned, a tier the current table no longer knows, or no table at all all give nothing beyond the standard presentation every listing has. The refusal code says which: `tier_unassigned`, `tier_unknown` or `tier_not_configured`.
+
+**What is enforced:**
+
+| Dimension | Enforcement | Status |
+|---|---|---|
+| Customization up to 3D/AR | Activating `catalog.3d`, `tryon.photo` or `tryon.live` needs the tier. The tier is read in the activation transaction. Adapters cannot register these capabilities as executable | Reachable today (operator console) |
+| Downgrade | Resets the excluded capabilities to `unconfigured` in the same write, including ones a stale process activated, and every persisted activation the tier in force did not allow (S28: an activation from before a table change) | Reachable today |
+| Other processes | Every process applies the persisted setup and capability rows whenever the connection's persisted version moves, in version order, on its next setup call (S28). A connection test decides on the persisted state read in its own transaction, so a stale view can never refresh or degrade a reset capability. A process started under a new table never revives one | Reachable today |
+| Shelf quota | `ProviderSetupService.load_shelf_page` applies the tier's limit to each addition under the ingestor's lock. Updates and tombstones are never refused, a page's own tombstones free their slots for its additions, and a lower limit deletes nothing. Each page's line counts only its own additions (S28). A page applies whole; a failed page that changed nothing writes no line, and one from another ingestor that admitted listings before failing is still recorded (S30). A tombstone matching more than one merchant's variant refuses the page (S31). It is the only production caller of `ingest_page` (AST-pinned) | **No caller yet:** the brand-shelf load is not built; counts are per process |
+| Analytics, member connection | Check functions. The member's opt-in is read only after the tier passes, so a refusal never depends on it | **No caller yet:** neither surface exists |
+
+**Never gated:** member search, ranking, carts, quotes, approvals, purchases, MCP tools, delegations and autonomy. An AST guard asserts that none of those modules imports tiers.
+
+**Assignment.**
+- `PUT /providers/:id/tier` (operator only). `If-Match` is required, because a downgrade resets capabilities. `tier_id: null` clears the tier.
+- Stored as one `ProviderSetupItems` row (`tier`, evidence `<tier_id>@<table_version>`). No migration.
+- Assigning never enables anything: 3D and AR still need a passing connection test and activation.
+- The console setup page shows a tier block (tier, price label, placeholder notice, what it includes, and an assign form). It appears only on connections that offer 3D/AR or already have a tier, so Demo Atelier and the Nordstrom link-out are unchanged.
+
+**Logged.** One closed-schema `provider.tier_decision` line per decision (`security_audit_180d`): dimension, outcome, code, unit counts, keyed provider and operator refs, tier id and table version. Never prices, decision records or raw ids. The HTTP API refuses to mount without the sink. As in S24, an operational sink failure never fails the operation.
+
+**Evidence** (both stores unless noted):
+- `tests/test_providers_tiers.py`: 75 passed. Highlights:
+  - activation is refused with no tier and at the floor, and allowed at the ceiling;
+  - a downgrade resets in the same write;
+  - a stale-process connection test cannot bring a capability back, whether it passes or fails;
+  - a process under a new table does not revive one;
+  - the shelf quota applies per addition, and concurrent pages cannot both take the last slot;
+  - an unassigned connection loads nothing new;
+  - the member's opt-in is never read below the tier;
+  - the strict-log schema holds;
+  - over HTTP the operation is operator-only, needs If-Match (428), and a stale If-Match gets 409.
+- Lane suites on the tier commit (both stores, `BRANDME_REQUIRE_EMULATORS=1`): **1243 passed**, 20 skipped. Every skip is on the allowlist: 8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary.
+- Gateway: route vitest including `PUT /:id/tier` (operator only, 428 without If-Match, closed body). Console `tsc` clean.
+- Console Chromium proof of the tier form: **not_run**. No demo connection offers 3D/AR, so the block does not render in the demo world.
+
+**Founder decisions this needs** (also in the check-in): the real tier ladder, prices and their decision record; whether quotas include refresh frequency; which partner analytics exist; and whether member connection is a tier feature at all.
+
+## Stage S26 — Merged `main` (`7728024`); item 8 shell header swap (2026-10-25)
+
+- **Merge.** `origin/main` moved by two merges: #56 (consumer UI) and #65 (console shell contract 1.1.1). It was merged into this branch with a merge commit. No file is touched by both sides, so there were no conflicts.
+- **Item 8.** `brandme-console/app/(ops)/providers/_data/shell.ts` now re-exports the shell's own `ConsolePageHeader` (from `@/components/console-contract`, 1.1.1) as `PageHeader`, and the lane's stand-in `page-header.tsx` is deleted.
+  - The stand-in already had the contract's markup, classes and props, so the pages render the same.
+  - Pages affected: `/providers`, `/providers/[id]`, `/providers/[id]/health`, `/providers/[id]/setup`, `/commerce/operations`.
+- **Evidence:**
+  - `pnpm install --frozen-lockfile`;
+  - console `tsc` clean, and `next build` passes with all five routes;
+  - `brandme-frontend test:ui` 22/22, including shell adapter parity;
+  - gateway route vitest 87 passed, `tsc` clean.
+
+## Stage S27 — Check-in packet, Ultra plan 02 (2026-10-25)
+
+**Trigger:** the plan's check-in comes when the proof run is recorded and the audit fix is green. Both hold, with one gap stated plainly:
+- **The audit fix is green.** It merged in #51 and is green on PR #64's head.
+- **The proof run is recorded at the fixture-double level.** The mission flow passes on the simulated rail and on the Stripe semantics double (**fixture double, not Stripe**).
+- **Live Stripe test mode is `not_run`.** There is no `STRIPE_TEST_SECRET_KEY` in this environment. The live suite is written and key-gated, and it runs the day a test key exists.
+
+### Evidence by plan item
+
+| # | Item | State | Evidence |
+|---|---|---|---|
+| 1 | Q11 rebase | Done by the founder (S22) | #51 merged as `7c4c1cd` |
+| 2 | Audit path, no `_dispatch` bypass | Done (S23) | `tests/test_commerce_audit_coverage.py`; two gaps closed |
+| 3 | Setup and verify from the console | Done (S16, S23) | Chromium 15/15 through the real routers and domain API, in a scratch harness |
+| 4 | Stripe test-mode proof run | Fixture double and stripe-mock layers **passed**; live **not_run** (no key) | `test_mission_…[stripe_double]`; `tests/test_commerce_stripe_live.py` (5, key-gated) |
+| 5 | Model planner on the dev key | **not_run** (no `BRANDME_DEV_ANTHROPIC_API_KEY`) | `tests/test_commerce_model_live.py` (3, key-gated); the planner runs on recorded fixtures |
+| 6 | Autonomy boundaries | Done, reviewed, fixed (S24) | Exit test `test_over_cap_request_is_held_and_the_agent_cannot_complete_it` **passed** |
+| 7 | Tier enforcement | Done as mechanics with placeholder tiers (S25) | `tests/test_providers_tiers.py`, 75 passed |
+| 8 | Shell header swap | Done (S26) | One-line swap to `@/components/console-contract` 1.1.1 |
+| 9 | S13 fidelity vs BM-COM-011 | Done (S23) | 16-row checklist; wardrobe gaps #16 and #17 handed to consumer-domains |
+| 10 | Outbox registration with Q8 | **Blocked** | `main` still has no commerce catalog import |
+
+**Credentials this round:** none created, none needed beyond the founder-supplied ones (none were supplied). The manifest is unchanged, and no secret is in the repo.
+
+### 21 questions, each with the default I proceed on
+
+**Direction (7)**
+1. **No rules, no agent placement.** A buy grant with no rules places nothing; the member completes everything (D-6.3, revised). **Default:** keep.
+2. **"Brand" means merchant.** A brand rule is a merchant rule until quote lines carry a verified brand id (D-6.1). **Default:** keep; the brand-shelf work adds verified ids.
+3. **The wishlist is a member-pinned snapshot**, not a live wardrobe link (D-6.2). **Default:** keep.
+4. **An in-flight execute** that a narrowing races is cancelled at the last gate, as a revocation is, rather than handed back. **Default:** keep.
+5. **The tier ladder.** The shipped placeholders are floor and ceiling only. What are the real tiers, their limits and prices, and which decision record names them? **Default:** no tier outside demo/dev until you supply the table.
+6. **Refresh frequency.** Should quotas include refresh frequency per day? I dropped it as an invented number with no caller. **Default:** shelf size is the only quota.
+7. **Member connection.** Is it a tier feature at all, or a separate consented channel product? **Default:** a check function only (tier first, then the member's opt-in); no surface built.
+
+**Integration and security (7)**
+
+8. **Stripe test keys.** Add `STRIPE_TEST_SECRET_KEY` and `STRIPE_TEST_WEBHOOK_SECRET` as GitHub secrets or session environment variables. I cannot create a Stripe account from this container. **Default:** you add them; I run the live suite and record it.
+9. **A dev model key.** Add `BRANDME_DEV_ANTHROPIC_API_KEY`, dev-scoped and with a spend cap, for item 5. **Default:** you add it; I run the 3 live planner tests.
+10. **stripe-mock in CI.** 6 wire-shape tests are allowlisted skips because CI has no `stripe-mock` v0.206.0. **Default:** foundation adds the binary to the Test Core image; until then they stay allowlisted.
+11. **The AP2 SDK oracle in CI.** 6 tests are allowlisted skips. **Default:** keep allowlisted; run them locally per release (S21 ran 40/40).
+12. **New wire fields need adoption by the contracts owner:**
+    - `autonomy_boundary` on delegations;
+    - `PUT /delegations/:id/autonomy-boundary`;
+    - `PUT /providers/:id/tier`;
+    - `completed_by` and `autonomy_codes` on the approval challenge, and on the MCP tool `brandme.purchase.request` (the REST `purchase.request` response does not carry them; corrected in S28).
+
+    **Default:** I hand the owner a diff; the routes stay unmounted until adopted.
+13. **Deploy ordering.** The first deployed commerce build must include the boundary reader, because older builds ignore boundaries on buy grants. **Default:** I record it as a deploy gate for the integration lane.
+14. **Retention.** Autonomy and tier decisions are kept at `security_audit_180d`, with no fields about member behaviour. **Default:** keep.
+
+**Scope and sequencing (7)**
+15. **Item 10 (outbox registration)** waits on foundation's Q8 catalog import. **Default:** I register the commerce catalog the day it lands.
+16. **Wardrobe gaps #16 and #17** (units cancelled mid-order; no link from a replacement to its original) belong to consumer-domains. **Default:** hand off; I do not touch their code.
+17. **Open authorization** (no approval for each purchase) stays shut. **Default:** keep it shut until a provider and AP2 open-mandate support are verified.
+18. **The brand-shelf load** (a caller for `load_shelf_page`) and a durable shelf store. **Default:** next round, after Q8.
+19. **A Chromium proof of the console tier block** needs a demo connection that offers 3D. **Default:** wait for a real 3D-capable partner rather than fake a capability in the simulator.
+20. **Live Nordstrom** stays link-out only until Impact publisher approval exists. **Default:** keep.
+21. **PR #64.** **Default:** undraft once CI is green on the final head and you have read this packet.
+
+### Next steps for the top three
+1. **Live money-path proof (Q8).** Once the test keys exist, run `tests/test_commerce_stripe_live.py` and the mission flow on the live Stripe test-mode rail. Record the PaymentIntent ids (test mode) here. No live charges.
+2. **Model planner proof (Q9).** Once the dev key exists, run the 3 live planner tests. Record model ids and token counts. Redacted run logs only.
+3. **Contract adoption (Q12) and the deploy gate (Q13).** Hand the contracts owner the wire diff, and record the reader-first deploy gate for the integration lane.
+
+## Stage S28 — Second independent review of round 3, fixes, and oneshot plan 03 (2026-10-25)
+
+**Oneshot plan 03 received.** The orchestrator posted `oneshot-plan-03-opus-commerce-agents.md` on PR #64. It supersedes Ultra plan 02 for this lane, and its items match plan 02's. How they stand:
+
+| # | Plan-03 item | State |
+|---|---|---|
+| 1 | Stabilize #64 | #64 was green and clean at `8c1126f` (18 checks passed, GKE deploy skipped). The plan's "unstable" was the pending second review, closed below |
+| 2 | Audit-path proof | Done (S23): `tests/test_commerce_audit_coverage.py` |
+| 3 | Provider setup/verify | Done (S16, S23): Chromium 15/15 through the real routers |
+| 4 | Money-path proof on demo keys | **Blocked, see below.** Simulated rail and Stripe semantics double pass; live Stripe test mode `not_run` |
+| 5 | Model planner on the dev key | **not_run**: no `BRANDME_DEV_ANTHROPIC_API_KEY` |
+| 6 | Autonomy boundaries | Done (S24), reworked here |
+| 7 | Tier enforcement | Done as mechanics (S25), reworked here |
+| 8 | Shell header swap | Done (S26) |
+| 9 | S13 fidelity, outbox registration | Fidelity done (S23). Outbox registration **blocked**: `main` has no Q8 commerce catalog import |
+| 10 | Undraft and land | Undraft once CI is green on this head. This lane never merges and never enables auto-merge; landing is the founder's |
+
+**Merged `main` (`2b5ae88`, consumer-domains routers) as `26b01c3`.** 13 files from main, none also changed on this branch, so there were no conflicts.
+
+**Item 4 blocker, stated plainly.** Plan 03 says to run the proof on lane-created demo keys. Creating a Stripe account needs a person, so the only key this container could use is the publishable sample test key in Stripe's public documentation. This session's safety check refused that call as a third-party credential. I did not retry it or work around it. The proof needs one of two things from the founder:
+- add `STRIPE_TEST_SECRET_KEY` (and `STRIPE_TEST_WEBHOOK_SECRET`) as GitHub secrets or session environment variables; or
+- explicitly allow use of the public documentation sample key.
+
+The live suite then runs with no code change (`tests/test_commerce_stripe_live.py`). Credential manifest: unchanged. No key was created and none is in the repo.
+
+### The review
+
+Same shape as S24: lenses (authority, races, privacy and logging, tests, spec and docs) over `71f1155..8c1126f`, and two independent refuters per finding. **41 findings: 36 confirmed, 4 plausible, 1 refuted.** Three are medium (both refuters agreed), and one more was claimed medium but rated low by both refuters.
+
+| Finding | Verdict | Disposition |
+|---|---|---|
+| A connection test in a stale process re-enabled a reset 3D/AR capability (passed: `sandbox`; failed: executable as `degraded`) | Confirmed, medium | **Fixed.** The test decides on the persisted state read in its own transaction, and every process applies the persisted rows whenever the connection's version moves (`_refresh`). `test_a_connection_test_in_a_stale_process_never_brings_back_a_capability_the_tier_removed`, `test_a_downgrade_landing_between_a_stale_processs_read_and_its_test_write_still_wins`, `test_an_upgrade_after_a_downgrade_never_re_enables_through_a_stale_processs_passing_test` |
+| After a pricing-table change, re-assigning a tier let the next process revive the old activation without a new one; a table swap reset only the in-process view, so re-assignment plus a restart revived it | Confirmed, medium and low (2 findings) | **Fixed.** An assignment also resets every persisted activation the tier in force did not allow. `test_reassigning_under_a_new_table_resets_an_activation_the_old_table_granted` |
+| A purchase prepared by Brand.Me's own assistant inside the rules bound to the assistant, which has no post-approval path, and the member was refused | Confirmed, medium | **Fixed.** The assistant's approvals bind to the member (`autonomy_assistant_member_completes`), and the member may complete any of their own approvals. `test_brand_mes_assistant_prepares_and_the_member_completes_even_inside_the_rules` |
+| A downgrade never reached other processes | Confirmed, low (claimed medium) | **Fixed** by the same version-ordered `_refresh`. `test_a_stale_process_catches_up_on_its_next_setup_call` |
+| Same-process races: post-commit registry writes and hydration could overwrite a downgrade's reset | Confirmed, low | **Fixed.** The registry is written only from committed rows, in version order, under one lock |
+| A grant expiring after binding stranded the purchase (2 findings) | Confirmed, low | **Fixed** by member completion. `test_a_grant_that_expires_after_binding_never_strands_the_purchase`, `test_the_member_can_complete_an_approval_bound_to_their_agent_and_it_becomes_theirs` |
+| Every member approval on a buy grant wrote a timed 180-day line, so the member's approval wait could be derived; a narrowing's hand-back rebound approvals with no line | Confirmed, low (2 findings) | **Fixed.** No binding lines: who an approval binds to is recorded on the approval only. Only the agent's own acts are timed lines |
+| The last gate's refusal was logged `committed=True` when its cancellation failed | Confirmed, low | **Fixed.** `committed` is per line. `test_a_last_gate_cancel_that_fails_logs_its_refusal_as_not_committed`, `test_a_failure_after_the_execute_commit_still_logs_that_decision_as_committed` |
+| A commit with an unknown outcome is logged `committed=False` though it may have applied | Confirmed, low | **Documented** in the schema. The service cannot know; reconciliation decides |
+| On every exception path, a strict log's violation was silently discarded | Confirmed, low | **Fixed.** It rides on the call's own error as a note, with an error-level log. `test_a_strict_log_failure_rides_on_a_refusal_as_a_note_and_never_replaces_it`, `test_a_strict_log_failure_rides_on_a_post_commit_error_as_a_note` |
+| Registry setters had no tier rule: `record_verification` and `set_capability` could make try-on executable | Confirmed, low | **Fixed.** Only the setup service's tier-checked path makes a 3D/AR capability executable. `test_tier_gated_capabilities_never_become_executable_outside_the_tier_checked_setup_path` (all three capabilities) |
+| `load_shelf_page` wrote no line when a page failed after admitting additions | Confirmed, low | **Fixed.** `test_a_page_that_fails_part_way_still_logs_what_it_admitted` |
+| Tier lines on the HTTP path dropped the gateway's request id | Confirmed, low | **Fixed.** `test_a_tier_line_from_an_http_request_carries_that_requests_id` |
+| The console's `none` clear option collided with a valid tier id `none` | Confirmed, low | **Fixed**: the clear option is the empty value |
+| A `PricingTable` with an invalid `table_version` was accepted, and every decision line was then rejected | Confirmed, low | **Fixed.** Any supplied table is checked: version, tier types, duplicate ids, placeholders or emptiness outside dev. `test_any_supplied_table_is_checked_before_it_can_drive_enforcement` |
+| The run-log rules accepted contradictory lines (a weakened held-for-member clause; tier `allow` under an unassigned tier) | Confirmed, low | **Fixed.** Both events' rules tightened; 13 new malformed-line cases |
+| Two stale docstrings described a null boundary with the old, wider meaning | Confirmed, low | **Fixed** |
+| S27 Q12 said the REST `purchase.request` returns `completed_by` | Confirmed, low | **Corrected**: only the MCP tool and the approval challenge carry it |
+| 15 test gaps: the AR registry rule, 3D versus AR, a mixed or empty table outside dev, explicit-`True` opt-in, an assignment never resetting an included capability, activation reading the tier in its transaction, a stale process healing, `committed` after a post-commit failure, the best-effort MCP preview, a strict violation never replacing a refusal or a post-commit error, every sink getting every line, a strict tier line only after the registry is updated, the quote cap as the minimum over all lines | Confirmed, low | **Added**, one test each |
+| At the shelf cap, a page swapping one listing for another dropped the new one | Plausible | **Fixed.** A page's own tombstones free their slots. `test_updates_and_tombstones_are_never_refused_and_a_pages_tombstones_free_its_slots` |
+| Overlapping pages sharing one audit were logged with each other's counts | Plausible | **Fixed.** Each call counts its own additions under the ingestor's lock. `test_concurrent_pages_sharing_one_audit_each_log_their_own_counts` |
+| An unhashable item in `codes` raised `TypeError` in the run log | Plausible | **Fixed**: refused as a schema violation |
+| No test that a strict tier line surfaces only after a downgrade's reset reaches the registry | Plausible | **Added** (with the activation case) |
+| No tier block for a catalog-feed connection without 3D/AR | Refuted | No change: intended (S25) |
+
+**A test flake found on the way.** One in-memory lane run failed `test_run_log_lines_are_closed_schema_and_redacted` once. Its assertion message was not captured, and the failure did not recur in 37 further full lane runs or 150 runs of the test alone. One mechanism that can cause it is measured and fixed. That test, `test_injected_identity_and_scope_arguments_are_rejected` and `test_payment_card_data_rejected_and_never_logged` asserted that `"4111"`, the start of the planted test card number, never appears in logs that also hold random hex ids and keyed refs. In 3000 runs of the redaction flow, a random id contained `4111` twice. The checks first mask UUIDs and keyed hex refs (`without_random_ids` in the commerce test harness), then assert a bare `4111` is absent, as before. A card number has no hex letter, so it is never masked. (S28 first used `4111\D?1111`, which was looser; S29 corrected it.) No test was skipped. If it recurs, its message decides the next fix.
+
+### Evidence (this head)
+- **Python lane files** (`tests/test_commerce_*.py`, `tests/test_mcp.py`, `tests/test_providers*.py`), both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1249 passed, 20 skipped, 0 failed**. Every skip is on the allowlist: 8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary. The same files collect 1210 tests at `8c1126f` and 1269 here. S24's 1276 counted a wider file set; CI runs all of `tests/`.
+  - `tests/test_commerce_autonomy.py` and `tests/test_providers_tiers.py`: every new test above passes on both stores.
+  - In memory, 12 back-to-back full lane runs: 908 passed and 361 skipped each (341 emulator variants and the 20 allowlisted skips).
+- **Console:** `tsc` clean; `next build` passes with all provider routes; `brandme-frontend test:ui` 22/22.
+- **Gateway:** unchanged in this stage.
+- **ruff** on the changed Python files: no new finding except one F811 on a pytest fixture parameter, the file's existing idiom (7 at base).
+- **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, above).
+
+## Stage S29 — Third independent review: the S28 fixes (2026-10-25)
+
+A third review covered only the S28 fix diff (`26b01c3..72b432e`). Six lenses ran (authority and money, tier state and concurrency, logging and schema, ingestion and tables, test adequacy, docs and claims), with two independent refuters per finding and then one completeness round. **22 findings: 21 confirmed, 1 refuted, all low.** One was claimed medium, and both refuters rated it low. The completeness round found nothing new.
+
+| Finding | Disposition |
+|---|---|
+| Two approved requests for one quote blocked each other forever: an approved but unsent sibling counted as in flight. This predates S28, but it contradicted S28's "the member can always complete" | **Fixed** (S30 widened it: any sibling holding an order blocks). Only a sibling that is being sent, is unresolved or is placed blocks execute. The first of two approved requests to execute is placed, and the other is then refused, so nothing is bought twice. The check and the move to `submitting` share one transaction. `test_two_approved_requests_for_one_quote_never_block_each_other` (agent and member) |
+| `_refresh` and a passing test lifted an in-process suspension (`registry.suspend`, no production caller) | **Fixed.** A refresh never overwrites a suspended capability, and a test treats it as not enabled. A suspension is still in-process only, as before S28: nothing persists `suspended`, so nothing persisted can lift one either. `test_a_suspension_in_this_process_survives_refreshes_and_connection_tests` |
+| A failed read after a committed activation, assignment or test dropped its tier decision lines | **Fixed.** The lines are written whether or not the post-commit read succeeds; a strict log's refusal rides on the read error as a note. `test_a_failed_read_after_a_committed_write_still_writes_its_decision_lines` |
+| The hydrate refusal was re-logged on every version bump | **Fixed.** Logged when it first applies, and again only if the refusal changes (S30: or a fresh activation is refused). `test_a_hydrate_refusal_is_logged_once_however_often_the_version_moves` |
+| A page that failed part-way could keep an addition admitted on a slot its unapplied tombstone was to free, leaving the shelf over its limit (2 findings) | **Fixed.** A page applies whole: writes are staged and committed only after the last record, so a failed page changes nothing (S30: and writes no line, which would read as an empty page). `test_a_page_that_fails_part_way_changes_nothing_and_never_keeps_a_swap_over_the_limit` |
+| Tombstones were iterated twice, so a one-pass iterable lost them; pairs decoded from JSON (lists) raised | **Fixed.** Read once, validated as string pairs, and a malformed entry refuses the page before any write. `test_tombstones_are_read_once_from_any_iterable_and_a_malformed_one_refuses_the_page` |
+| A variant the page both adds and tombstones took a slot | **Fixed.** It takes none. `test_a_variant_a_page_adds_and_tombstones_takes_no_slot` |
+| No test pinned the connection test's persisted-state read (the S28 medium); the "window" test passed on pre-fix code | **Added.** `test_a_downgrade_and_re_upgrade_landing_inside_a_stale_processs_test_never_re_enables` (passed and failed) |
+| The same-process race fix had no test | **Added.** `test_a_downgrade_committed_right_after_an_activation_in_the_same_process_is_what_the_registry_shows`, `test_a_snapshot_read_before_a_newer_write_never_overwrites_it` |
+| The shared-audit concurrency test passed on pre-fix code (timing) | **Replaced** by a lockstep version that overlaps the pages deterministically. `test_overlapping_pages_sharing_one_audit_each_log_their_own_counts` |
+| The quote-cap test missed the "capped rule plus lower-level rule on one line" mutant | **Added** to `test_the_quote_cap_is_the_lowest_cap_that_applied_to_any_line` |
+| The 3D-versus-AR test covered photo try-on only | **Added** live try-on |
+| None of the new malformed-line cases guarded an allow carrying extra codes | **Added** 3 cases |
+| The `4111\D?1111` card check was looser than the old one, and S28 said nothing was loosened (2 findings) | **Fixed.** Mask UUIDs and keyed hex refs, then assert a bare `4111` is absent, as strict as before. Measured: every leak form the old check caught is still caught, with 0 matches across 600,000 random ids. S28's text corrected |
+| `test_each_agent_decision_writes_one_closed_schema_line…` could fail by chance when a random ref held `15000` or `17172` | **Fixed** the same way |
+| S24 still said the concierge places orders inside the rules | **Corrected**: external agents place them; Brand.Me's assistant hands back to the member. The mission proof covers an external MCP client |
+| The service docstring still described binding records | **Corrected** |
+| S28 evidence miscounted the in-memory skips; its table had no row for one confirmed finding | **Corrected** (341 emulator variants plus the 20 allowlisted skips; the table-change row now counts 2 findings) |
+| Refuted: a strict violation on a refused MCP or HTTP call leaves only a note and an error log | No change: by design (S24, S28). Production writes a `runlog_rejected` line |
+
+**Every new test fails on the code it pins.** All the new tests were run against code copies, in memory:
+- At `72b432e`, the 7 tests (8 cases) for this stage's defects fail.
+- At `26b01c3`, the 4 tests (5 cases) that pin S28's own fixes fail.
+- The three S28 regressions (suspension, failed read, hydrate line) pass at `26b01c3`, where that behaviour was still correct.
+
+### Evidence (this head)
+- **Python lane files**, both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1274 passed, 20 skipped, 0 failed**. The skips are the same allowlisted 20 (8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary).
+- An earlier run of this stage showed 6 setup errors in `tests/test_commerce_migrations.py` ("database not found"). The cause was my local environment, not the code. The S28 run's emulator was left running: killing its wrapper shell had not stopped the gateway or its child. Later emulators then shared port 9011 with it, and requests landed on different emulator processes. Every stray process was stopped by PID, and the clean run above has no errors. The file is unchanged in this diff, and CI runs it against its own emulator.
+- **ruff:** nothing new except three F811 hits on pytest fixture parameters, the files' existing idiom.
+- **Console and gateway:** unchanged in this stage.
+- **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, S28).
+
+## Stage S30 — Fourth independent review: the S29 fixes (2026-10-25)
+
+A fourth review covered only the S29 diff (`6fdffc4..e350254`). Four lenses ran (money and authority, provider setup state, catalog ingestion, tests and claims), with two independent refuters per finding and one completeness round. **14 findings, all confirmed: 1 medium, 1 rated low by one refuter and medium by the other, 12 low.**
+
+| Finding | Disposition |
+|---|---|
+| **Medium, money path.** S29 stopped counting an approved sibling as in flight, but the check still ignored every state after `accepted`. Once the first order moved on, the second approved request passed and the quote was bought twice. Ways to get there: a cancel whose reply was lost (`cancel_requested`), a shipment, a refund, a dispute. S29 made this reachable in the "both approved up front" order (a retried request); the "approve the second after the first shipped" order predates S29 | **Fixed.** A sibling blocks execute once it is being sent, is unresolved, or holds an order in any state. A placed order Brand.Me recorded never frees its quote, including a cancelled one; the member re-quotes. (S31: an order the merchant voided before Brand.Me saw it is reconciled as `rejected` with no order, and does free the quote; nothing was charged twice.) `test_a_placed_order_never_frees_its_quote_for_an_approved_sibling` (7 later states), `test_a_sibling_being_sent_blocks_the_other_approved_request` |
+| AP2 single use was keyed on the encoded mandate. A re-encoded member signature (ECDSA high-s) has different bytes but still verifies, so it gave a second approval for a sibling request (low and medium) | **Fixed.** Single use is also keyed on the checkout the member's signature covers, in the existing `Ap2UsedMandates` table (no migration). One member signature approves one request. `test_a_re_encoded_mandate_never_approves_a_sibling_request` |
+| A `suspend` landing between `_refresh`'s check and its write was lost | **Fixed.** The registry re-checks under its own lock (`set_capability(..., keep_suspension=True)`). `test_a_suspension_landing_inside_a_refresh_is_kept` |
+| The activation refusal path could still let a strict log's refusal replace `SetupRefused` | **Fixed** with the same `_lines_during`. `test_a_strict_log_refusing_an_activation_refusal_line_never_replaces_the_refusal` |
+| A failed shelf page logged `allow / no_new_listings`, the line an empty successful page writes | **Fixed.** A page that changed nothing writes no line. One that admitted listings before failing (another ingestor) is still recorded |
+| No test pinned that a failed page leaves the cursor and a shared audit unchanged (2 findings) | **Added** to `test_a_page_that_fails_part_way_changes_nothing_and_never_keeps_a_swap_over_the_limit` |
+| The tombstone scan copied every provider's variants on every page, even with no tombstones | **Fixed.** The copy is gone, and pages without tombstones skip the tombstone scan. (S31 correction: the shelf count and the tombstone scan still walk the whole in-process store; `CatalogIngestor` is the in-memory store with no production caller) |
+| Mapping or set tombstone entries raised `KeyError` or `TypeError` instead of the malformed-tombstone `ValueError` | **Fixed.** Only a tuple or list of two non-empty strings is a pair; cases added |
+| No test pinned that a sibling in `submitting` blocks, now the only guard while the first is being sent | **Added** (above) |
+| The failed-read test covered neither the connection-test path nor the strict-note path | **Added.** `test_a_failed_read_after_a_connection_test_still_writes_its_refusal_and_a_strict_refusal_is_a_note` |
+| The lockstep test dropped refusal coverage | **Changed** to 3 pages on a 2-slot tier, asserting per-page refusals |
+| Hydrate dedupe: no test for re-logging, and a fresh activation was not logged when this process never saw the reset in between (2 findings) | **Fixed.** The key includes the persisted activation's evidence and time. (S31 correction: that was the capability row's last test, so a re-test re-logged it; S31 keys it on the activation item.) `test_a_fresh_activation_is_logged_again_whether_or_not_the_reset_was_seen` (both orders) |
+
+**Every new test pins what it claims.** Run against `e350254`'s code, the 13 new cases for this stage's defects fail. The 4 guard cases for behaviour `e350254` already had pass there: the `submitting` sibling, the failed-read note, a reset that was seen, and the lockstep counts.
+
+### Evidence (this head)
+- **Python lane files**, both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1302 passed, 20 skipped, 0 failed**. The skips are the same allowlisted 20 (8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary). The new money-path tests pass on the Spanner store too.
+- **ruff:** no new finding on the changed files.
+- **Console and gateway:** unchanged in this stage.
+- **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, S28).
+
+## Stage S31 — Fifth independent review: the S30 fixes (2026-10-25)
+
+A fifth review covered only the S30 diff (`e350254..36dacbe`). It used the same shape: four lenses (money and authority, provider setup, ingestion, tests and claims), two refuters per finding, and one completeness round. **12 findings: 11 confirmed, all low, and 1 refuted.** Merging duplicates leaves 8 distinct issues. None is on the money path: every money finding either predates S30 or charges nobody twice.
+
+| Finding | Disposition |
+|---|---|
+| The hydrate dedupe key used the capability row's last test. A routine re-test in another process therefore logged the same refusal again, a regression from S29 (2 findings). And a re-activation that reused the still-fresh test was still not logged by a process that never saw the reset (2 findings) | **Fixed.** The key is the activation item (its run and time), which a re-test never changes and every activation rewrites. `test_a_re_test_elsewhere_never_logs_the_same_activations_hydrate_refusal_again`, and `test_a_fresh_activation_is_logged_again_whether_or_not_the_reset_was_seen` now covers re-activation with and without a new test |
+| Reconcile records an order the merchant voided before Brand.Me saw it (a lost reply, then the hold expired) as `rejected` with no order, so it frees the quote, contrary to S30's wording (2 findings). The member is charged once | **Claim narrowed** in S30: a placed order *Brand.Me recorded* never frees its quote. **Recorded as a follow-up:** reconcile keeps no order record of a merchant-accepted-then-voided submission, so My Data erasure treats it as order-less. Pre-existing; a reconcile change belongs with the order-evidence work, not in this PR |
+| A tombstone discontinued every merchant's variant with the same product and variant ids at one provider. The wire shape `[product, variant]` cannot name a merchant. Pre-existing | **Fixed fail-closed.** A tombstone matching more than one merchant's variant refuses the page before anything is written. **Follow-up:** add the merchant to the tombstone wire shape in `packages/provider-contracts`. `test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing` |
+| No test that one provider's tombstones leave another provider's variants alone | **Added.** `test_one_providers_tombstones_never_touch_another_providers_variants` |
+| No test that a declined, or cancelled-before-send, sibling frees the quote | **Added.** `test_a_sibling_that_was_never_bought_frees_the_quote` (both cases) |
+| S30's tombstone-scan claim overstated the gain: the shelf count and the scan still walk the whole in-process store | **Corrected** in S30 and in the code comment |
+| The S25 table and the `load_shelf_page` docstring still said every page writes a line | **Corrected** |
+| Refuted: AP2 single use keyed on the merchant checkout refuses a freshly signed mandate over a used checkout | No change. This is intended: V007's unique `(member_id, nonce)` index already enforced it on Spanner, and a retry fetches a fresh merchant checkout (non-deterministic ES256) |
+
+**The new tests pin what they claim.** Run against `36dacbe`'s code:
+- the 3 cases for this stage's defects fail;
+- the 6 guard cases pass, as they should, since `36dacbe` already behaved correctly there.
+
+### Evidence (this head)
+- **Python lane files**, both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1314 passed, 20 skipped, 0 failed**. The skips are the same allowlisted 20 (8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary).
+- **ruff:** no new finding on the changed files.
+- **Console and gateway:** unchanged in this stage.
+- **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, S28).
+
+## Stage S32 — Sixth independent review: the S31 fixes (2026-10-25)
+
+A sixth review covered only the S31 diff (`36dacbe..c8535f4`): three lenses (hydrate dedupe, ambiguous tombstones, tests and claims), two refuters per finding, one completeness round. **6 findings, all low: 4 confirmed, 1 plausible, 1 refuted.** No confirmed finding is a defect in the shipped code; the confirmed ones are a missing test and two stale texts.
+
+| Finding | Disposition |
+|---|---|
+| No test covered the staged half of the two-merchant tombstone check: a second merchant's variant arriving in the same page as the tombstone (2 findings) | **Added.** `test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing` now covers the second merchant stored, in the page, both in the page, and rejected in the page. Each case asserts that offers, cursor and a shared audit are unchanged. (S33: the in-page cases are now caught both by the staged keys and by the page's own records) |
+| Plausible: a second merchant's record that fails validation was left out of the check, so its tombstone discontinued the other merchant's live listing | **Hardened.** The page's own records count toward the check even when they are rejected (the `rejected_in_the_page` case) |
+| The comment on the money-path guard still stated the unnarrowed "a placed order never frees its quote" | **Corrected** to match S30/S31: an order Brand.Me recorded never frees its quote |
+| The S30 hydrate row still described S30's key as the activation's | **Annotated** with the S31 correction |
+| Refuted: a discontinued variant of another merchant makes a later tombstone ambiguous | No change: fail-closed by design, since it stops a replayed tombstone from removing the wrong merchant's listing. The merchant on the tombstone wire shape (S31 follow-up) resolves it |
+
+**The new cases pin what they claim.** Run against `c8535f4`'s code, the `rejected_in_the_page` case fails. The three guard cases pass there, because `c8535f4` already refused them.
+
+### Evidence (this head)
+- **Python lane files**, both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1317 passed, 20 skipped, 0 failed**. The skips are the same allowlisted 20 (8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary).
+- **ruff:** no new finding on the changed files.
+- **Console and gateway:** unchanged in this stage.
+- **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, S28).
+
+**Review loop.** Confirmed findings across the fix-diff rounds went 21 → 14 → 11 → 4. In this sixth round, no confirmed finding is a defect in the shipped code. One plausible gap was: a rejected second-merchant record was left out of the ambiguity check. The hardening loop closes it, and its case fails at `c8535f4`.
+
+## Stage S33 — Final verification of the S32 change (2026-10-25)
+
+A last, smaller review covered the S32 diff (`c8535f4..e97605b`): two finders (code and tests; docs and claims), with two refuters per finding. **4 findings, all low, all confirmed.**
+
+| Finding | Disposition |
+|---|---|
+| The S32 hardening read `page.items` a second time. With a one-pass items iterable, it saw nothing and the ambiguous page was applied (the same class S29 fixed for tombstones) | **Fixed.** `ingest_page` reads its items once. The two-merchant test now also runs every case with generator items, and `rejected_in_the_page` with one-pass items fails at `e97605b` |
+| Neither filter in the new loop was pinned: dropping the provider check or the tombstoned-ids check kept the suite green | **Added.** `test_only_this_providers_records_with_the_tombstoned_ids_make_a_tombstone_ambiguous`. Each of the two mutants fails one of its cases |
+| After S32, the in-page cases no longer guarded the staged half on its own | **Documented** in the S32 row: both paths catch them now. The stored case still pins the stored half |
+| S32's summary said the round "found no defect in the shipped code" without "confirmed" | **Corrected** |
+
+### Evidence (this head)
+- **Python lane files**, both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1323 passed, 20 skipped, 0 failed**. The skips are the same allowlisted 20 (8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary).
+- **ruff:** no new finding on the changed files.
+- **CI note:** `shell` failed once on `e97605b`, in `verify-visual.mjs` (`consumer-1440x900-light.png: dimensions changed`). The frontend under test was identical to the passing `c8535f4` run, and `main` had not moved. That points to a nondeterministic consumer-ui capture outside this lane, explained on PR #64. The job re-run returned 403 for this integration.
