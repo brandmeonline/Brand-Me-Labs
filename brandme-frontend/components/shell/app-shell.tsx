@@ -13,6 +13,8 @@ import {
 import {
   primaryNavigation,
   secondaryNavigation,
+  allNavigation,
+  currentNavigationItem,
   isActiveRoute,
 } from './navigation'
 import { Wordmark } from './wordmark'
@@ -85,17 +87,23 @@ export function AppShell({ children }: { children: ReactNode }) {
       sheetNavigation.current = false
     }
   }
-  const current = [...secondaryNavigation, ...primaryNavigation].find((item) =>
-    isActiveRoute(pathname, item.href),
-  )
-  const links = (kind: 'primary' | 'secondary', close = false) =>
-    (kind === 'primary' ? primaryNavigation : secondaryNavigation).map(
+  const current = currentNavigationItem(pathname, allNavigation)
+  const links = (kind: 'primary' | 'secondary', close = false) => {
+    const items = kind === 'primary' ? primaryNavigation : secondaryNavigation
+    const selected = currentNavigationItem(pathname, close ? allNavigation : items)
+    return items.map(
       ({ href, label, icon: Icon }) => (
         <Link
           key={href}
           href={href}
           className="bm-nav-link"
-          aria-current={isActiveRoute(pathname, href) ? 'page' : undefined}
+          aria-current={selected?.href === href ? 'page' : undefined}
+          data-active={
+            selected?.href === href ||
+            (kind === 'primary' && isActiveRoute(pathname, href))
+              ? true
+              : undefined
+          }
           title={label}
           onClick={() => close && navigateFromSheet()}
         >
@@ -104,6 +112,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
       ),
     )
+  }
   return (
     <div className={`bm-shell${publicPage ? ' bm-shell-public' : ''}`}>
       <a className="bm-skip-link" href="#main-content">

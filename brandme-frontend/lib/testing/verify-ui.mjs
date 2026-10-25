@@ -36,18 +36,27 @@ for (const name of [
   'KeyboardEvent',
   'MouseEvent',
   'getComputedStyle',
+  'addEventListener',
+  'removeEventListener',
 ]) {
   Object.defineProperty(globalThis, name, {
     configurable: true,
     value:
-      name === 'getComputedStyle'
-        ? dom.window.getComputedStyle.bind(dom.window)
+      ['getComputedStyle', 'addEventListener', 'removeEventListener'].includes(name)
+        ? dom.window[name].bind(dom.window)
         : dom.window[name],
   })
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 // Compile app TSX with the same automatic JSX runtime as Next, without modifying app config.
-const compile = (module, filename) =>
+const compile = (module, filename) => {
+  // Match the app's @/* tsconfig alias when loading real shell components.
+  const moduleRequire = module.require.bind(module)
+  module.require = (specifier) => moduleRequire(
+    specifier.startsWith('@/')
+      ? fileURLToPath(new URL(`../../${specifier.slice(2)}`, import.meta.url))
+      : specifier,
+  )
   module._compile(
     ts.transpileModule(readFileSync(filename, 'utf8'), {
       compilerOptions: {
@@ -60,6 +69,7 @@ const compile = (module, filename) =>
     }).outputText,
     filename,
   )
+}
 require.extensions['.ts'] = compile
 require.extensions['.tsx'] = compile
 const source = (relative) =>
@@ -91,6 +101,8 @@ const { useNavigationClearance } = source(
 const { primaryNavigation, secondaryNavigation, isActiveRoute } = source('../../components/shell/navigation.tsx')
 const { SocialHorizon } = source('../../features/social/horizons.tsx')
 const { Wordmark } = source('../../components/shell/wordmark.tsx')
+const { AppShell } = source('../../components/shell/app-shell.tsx')
+const { PathnameContext } = require('next/dist/shared/lib/hooks-client-context.shared-runtime')
 afterEach(() => {
   cleanup()
   document.documentElement.removeAttribute('style')
@@ -106,6 +118,51 @@ test('three rooms retain secondary destinations and legacy decision/product cont
   assert.equal(isActiveRoute('/socially', '/social'), false)
   render(h(Wordmark))
   assert.equal(screen.getByRole('link', { name: 'Brand.Me home' }).getAttribute('href'), '/social/flow')
+})
+
+test('shell menu marks one closest destination while retaining room context across nested routes', async () => {
+  const originalMedia = globalThis.matchMedia
+  globalThis.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} })
+  const user = userEvent.setup()
+  const shell = (path) => h(PathnameContext.Provider, { value: path },
+    h(ExperiencePreferencesProvider, null, h(AppShell, null, h('h1', null, 'Route content'))))
+  const currentHref = (navigation) => {
+    const current = navigation.querySelectorAll('[aria-current="page"]')
+    assert.equal(current.length, 1)
+    return current[0].getAttribute('href')
+  }
+  try {
+    const view = render(shell('/circle/decisions/example'))
+    assert.equal(currentHref(screen.getByRole('navigation', { name: 'Primary', exact: true })), '/social')
+    assert.equal(currentHref(screen.getByRole('navigation', { name: 'Explore', exact: true })), '/circle')
+    assert.equal(view.container.querySelector('.bm-breadcrumb strong').textContent, 'My circle')
+    await user.click(screen.getByRole('button', { name: 'Open menu' }))
+    let menu = screen.getByRole('navigation', { name: 'Menu navigation' })
+    assert.equal(currentHref(menu), '/circle')
+    assert.equal(menu.querySelector('a[href="/social"]').getAttribute('data-active'), 'true')
+    assert.equal(menu.querySelector('a[href="/social"]').getAttribute('aria-current'), null)
+
+    // Exercise the sheet link; the pathname provider supplies the router transition.
+    const dataLink = menu.querySelector('a[href="/me/data"]')
+    dataLink.addEventListener('click', event => event.preventDefault(), { once: true })
+    await user.click(dataLink)
+    assert.equal(screen.queryByRole('dialog', { name: 'Your space' }), null)
+    view.rerender(shell('/me/data'))
+    assert.equal(view.container.querySelector('.bm-breadcrumb strong').textContent, 'My Data')
+    assert.equal(currentHref(screen.getByRole('navigation', { name: 'Explore', exact: true })), '/me/data')
+    assert.equal(document.activeElement, screen.getByRole('main'))
+    await user.click(screen.getByRole('button', { name: 'Open menu' }))
+    menu = screen.getByRole('navigation', { name: 'Menu navigation' })
+    assert.equal(currentHref(menu), '/me/data')
+    assert.equal(menu.querySelector('a[href="/me"]').getAttribute('aria-current'), null)
+    assert.equal(menu.querySelector('a[href="/me"]').getAttribute('data-active'), null)
+    await user.keyboard('{Escape}')
+    assert.equal(screen.queryByRole('dialog', { name: 'Your space' }), null)
+    assert.equal(document.activeElement, screen.getByRole('button', { name: 'Open menu' }))
+  } finally {
+    cleanup()
+    globalThis.matchMedia = originalMedia
+  }
 })
 
 test('unavailable horizons remain navigable and contain no synthetic feed cards or prices', () => {
