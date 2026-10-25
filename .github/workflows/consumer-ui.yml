@@ -1,0 +1,116 @@
+name: Consumer UI
+
+on:
+  pull_request:
+    paths: ['brandme-frontend/**', 'brandme-console/**', 'packages/**', 'pnpm-lock.yaml', '.github/workflows/consumer-ui.yml']
+  push:
+    branches: ['bench/astra-consumer-ui-20261005']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consumer-ui-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  shell:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      BRANDME_MODE: development
+      BRANDME_CONSUMER_URL: http://127.0.0.1:3000
+      BRANDME_CONSOLE_URL: http://127.0.0.1:3002
+      BRANDME_EVIDENCE_DIR: ${{ github.workspace }}/consumer-ui-evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - name: Component behavior and gateway security
+        run: pnpm --dir brandme-frontend test:ui && pnpm --dir brandme-frontend test:gateway
+      - name: Consumer and console production builds
+        run: pnpm --dir brandme-frontend build && pnpm --dir brandme-console build
+      - name: Install pinned browser
+        # Ubuntu 24.04 runners already provide Chromium's required shared libraries.
+        # Browser launch remains mandatory; avoid unrelated apt/font upgrades on each run.
+        run: pnpm --dir brandme-frontend exec playwright install chromium
+      - name: Start development galleries
+        run: |
+          mkdir -p "$BRANDME_EVIDENCE_DIR"
+          pnpm --dir brandme-frontend exec next dev --hostname 127.0.0.1 -p 3000 > "$RUNNER_TEMP/consumer.log" 2>&1 &
+          pnpm --dir brandme-console exec next dev --hostname 127.0.0.1 -p 3002 > "$RUNNER_TEMP/console.log" 2>&1 &
+          node brandme-frontend/lib/testing/wait-for-apps.mjs
+      - name: Shell and controls accessibility, keyboard, reflow and screenshots
+        run: pnpm --dir brandme-frontend test:browser && node brandme-frontend/lib/testing/verify-domain-views.mjs
+      - name: Compare reviewed visual baselines
+        run: node brandme-frontend/lib/testing/verify-visual.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consumer-ui-${{ github.sha }}
+          path: ${{ env.BRANDME_EVIDENCE_DIR }}
+          retention-days: 14
+
+  live-domains:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      spanner:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.28
+        ports: ['9010:9010', '9020:9020']
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      BRANDME_MODE: development
+      SPANNER_EMULATOR_HOST: 127.0.0.1:9010
+      BRANDME_PYTHON: ${{ github.workspace }}/.venv/bin/python
+      BRANDME_DOMAIN_REFERENCE: ${{ github.workspace }}/domain-reference
+      BRANDME_GATEWAY_URL: http://127.0.0.1:3001
+      BRANDME_PUBLIC_ORIGIN: http://127.0.0.1:3000
+      BRANDME_GATEWAY_HEALTH_URL: http://127.0.0.1:3001/health
+      BRANDME_CONSUMER_URL: http://127.0.0.1:3000
+      BRANDME_EVIDENCE_DIR: ${{ github.workspace }}/live-ui-evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: dafd3b169da777ec3e3a7fc2c3f0cab573358e2b
+          path: domain-reference
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.15'
+      - name: Install pinned dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          python -m venv .venv
+          .venv/bin/pip install --require-hashes -r scripts/python/requirements.lock
+          ln -s "$GITHUB_WORKSPACE/brandme-gateway/node_modules" "$BRANDME_DOMAIN_REFERENCE/brandme-gateway/node_modules"
+          pnpm --dir brandme-frontend exec playwright install chromium
+      - name: Start unchanged domain sources with real emulator persistence
+        run: |
+          mkdir -p "$BRANDME_EVIDENCE_DIR"
+          node brandme-frontend/lib/testing/start-dev-gateway.mjs > "$RUNNER_TEMP/dev-gateway.log" 2>&1 &
+          pnpm --dir brandme-frontend exec next dev --hostname 127.0.0.1 -p 3000 > "$RUNNER_TEMP/live-consumer.log" 2>&1 &
+          node brandme-frontend/lib/testing/wait-for-apps.mjs
+      - name: Browser to gateway to domain to Spanner journeys
+        run: node brandme-frontend/lib/testing/verify-live-domains.mjs
+      - name: Startup diagnostics on failure (no HTTP access logs)
+        if: failure()
+        run: |
+          test ! -f "$RUNNER_TEMP/dev-gateway.log" || tail -100 "$RUNNER_TEMP/dev-gateway.log"
+          test ! -f "$RUNNER_TEMP/live-consumer.log" || tail -80 "$RUNNER_TEMP/live-consumer.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-consumer-ui-${{ github.sha }}
+          path: ${{ env.BRANDME_EVIDENCE_DIR }}
+          retention-days: 14

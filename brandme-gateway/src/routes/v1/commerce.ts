@@ -3,141 +3,177 @@
  *
  * /api/v1/commerce — UNMOUNTED router (lane: opus-commerce-agents).
  *
- * Mounting, session/CSRF middleware and principal resolution belong to opus-foundation.
- * These routers expect upstream middleware to set `req.principal` from a verified session
- * or MCP token and never read identity from the body or query. All domain decisions
- * (quote hashing, approvals, budgets, provider submission) happen in the Python commerce
- * service; the gateway validates shape, enforces scope and forwards with the principal.
+ * Built on foundation's /api/v1 conventions: the principal comes from
+ * `res.locals.principal` (session cookie or verified bearer, set by
+ * `principalMiddleware`), errors are `ApiProblem` → application/problem+json.
+ * Identity is never read from the body or query. All domain decisions (quote
+ * hashing, approvals, budgets, delegation resolution, provider submission)
+ * happen in the Python commerce domain; this layer checks shape, rejects
+ * identity fields, gates obvious authority, and forwards the principal in a
+ * gateway-signed assertion (`createHttpCommerceDomainClient`).
+ *
+ * Authority split:
+ * - A first-party session (`via: 'session'`, no delegation) is the member on
+ *   Brand.Me's own UI. It acts with the member's authority; `commerce:*` scopes
+ *   gate delegated clients, not the member.
+ * - Bearer callers are agents. They need the commerce scope here; the domain
+ *   also requires it in their one active grant for (member, client).
+ * - Operator roles (`provider:admin`) are always required, for everyone.
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
+import { Router, type NextFunction, type Request, type Response } from 'express';
+import { SignJWT, type KeyLike } from 'jose';
 import { z } from 'zod';
-
-export interface Principal {
-  memberId: string;
-  subject: string;
-  issuer: string;
-  clientId: string;
-  scopes: string[];
-  assuranceLevel: 'aal1' | 'aal2' | 'aal3';
-  environment: 'demo' | 'development' | 'sandbox' | 'production';
-  sessionId: string | null;
-  delegationId: string | null;
-  /** True only for Brand.Me's own first-party session (the trusted approval surface). */
-  firstPartySession: boolean;
-}
-
-export type PrincipalRequest = Request & { principal?: Principal; requestId?: string };
+import { ApiProblem, handle, problems } from '../../middleware/problem';
+import type { Principal } from '../../types';
 
 export interface DomainResult {
   status: number;
   body: unknown;
+  headers?: Record<string, string>;
 }
 
-/**
- * Transport to the Python commerce domain: POST {domain}/internal/commerce/v1/{operation}
- * with a gateway-signed principal assertion (same format as the MCP executor assertion).
- */
 export interface CommerceDomainClient {
   call(
     operation: string,
-    principal: Principal | null,
+    principal: Principal,
     body: unknown,
-    options?: { idempotencyKey?: string; ifMatch?: string; rawBody?: Buffer; headers?: Record<string, string> }
+    options?: { idempotencyKey?: string; ifMatch?: string; requestId?: string },
   ): Promise<DomainResult>;
+  /** Provider webhook relay: no principal; the domain verifies the provider's signature. */
+  webhook(providerId: string, headers: Record<string, string>, rawBody: Buffer): Promise<DomainResult>;
 }
 
-const IDENTITY_FIELDS = ['user_id', 'member_id', 'principal', 'owner_id', 'approved', 'scopes'];
+/** Fields that would claim identity, authority or approval. Never accepted from a request. */
+const IDENTITY_FIELDS = ['user_id', 'member_id', 'principal', 'owner_id', 'approved', 'scopes', 'subject', 'session_id'];
 
-export function problem(res: Response, status: number, code: string, detail: string, requestId?: string): void {
-  res
-    .status(status)
-    .type('application/problem+json')
-    .json({
-      type: `https://brand.me/problems/${code}`,
-      title: code.replace(/_/g, ' '),
-      status,
-      code,
-      detail,
-      instance: res.req?.originalUrl ?? '',
-      request_id: requestId ?? randomUUID(),
-      retryable: status === 429 || status === 503,
-    });
+export const principalOf = (res: Response): Principal | undefined => res.locals.principal as Principal | undefined;
+
+export const isFirstParty = (p: Principal): boolean =>
+  p.via === 'session' && p.sessionId !== null && p.delegationId === null;
+
+function insufficientScope(scopes: string[]): ApiProblem {
+  return new ApiProblem(403, 'insufficient_scope', 'Additional scope required', `This call needs: ${scopes.join(' ')}.`,
+    false, { required_scopes: scopes });
 }
 
-export function requireScope(...scopes: string[]) {
-  return (req: PrincipalRequest, res: Response, next: NextFunction): void => {
-    const p = req.principal;
-    if (!p) {
-      problem(res, 401, 'unauthenticated', 'authentication required', req.requestId);
-      return;
-    }
-    const missing = scopes.filter((s) => !p.scopes.includes(s));
-    if (missing.length) {
+/** Delegated clients need the scope; the member's own session acts with the member's authority. */
+export function requireAgentScope(...scopes: string[]) {
+  return (_req: Request, res: Response, next: NextFunction): void => {
+    const p = principalOf(res);
+    if (!p) return next(problems.unauthenticated());
+    if (isFirstParty(p)) return next();
+    if (scopes.some((s) => !p.scopes.includes(s))) {
       res.setHeader('WWW-Authenticate', `Bearer error="insufficient_scope", scope="${scopes.join(' ')}"`);
-      problem(res, 403, 'insufficient_scope', 'additional scope required', req.requestId);
-      return;
+      return next(insufficientScope(scopes));
     }
     next();
   };
 }
 
-/** Trusted approval surface: first-party member session only — never an agent or MCP client. */
-export function requireTrustedSurface(req: PrincipalRequest, res: Response, next: NextFunction): void {
-  const p = req.principal;
-  if (!p || !p.firstPartySession || p.delegationId) {
-    problem(res, 403, 'not_trusted_surface', 'approvals are only accepted from the member trusted surface', req.requestId);
-    return;
+/** Operator roles are never implied by a member session. */
+export function requireRole(scope: string) {
+  return (_req: Request, res: Response, next: NextFunction): void => {
+    const p = principalOf(res);
+    if (!p) return next(problems.unauthenticated());
+    if (!p.scopes.includes(scope)) return next(insufficientScope([scope]));
+    next();
+  };
+}
+
+/** Trusted approval surface: the member's first-party session only — never an agent or MCP client. */
+export function requireTrustedSurface(_req: Request, res: Response, next: NextFunction): void {
+  const p = principalOf(res);
+  if (!p) return next(problems.unauthenticated());
+  if (!isFirstParty(p)) {
+    return next(new ApiProblem(403, 'not_trusted_surface', 'Not the trusted surface',
+      'Grants and approvals are only accepted from your own Brand.Me session.'));
   }
   next();
 }
 
-export function rejectIdentityFields(req: PrincipalRequest, res: Response, next: NextFunction): void {
-  const body = req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : {};
+export function rejectIdentityFields(req: Request, _res: Response, next: NextFunction): void {
+  const body = req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body) ? (req.body as Record<string, unknown>) : {};
   const query = req.query as Record<string, unknown>;
   if (IDENTITY_FIELDS.some((f) => f in body || f in query)) {
-    problem(res, 400, 'identity_argument_rejected', 'identity comes from authentication, not request fields', req.requestId);
-    return;
+    return next(new ApiProblem(400, 'identity_argument_rejected', 'Identity comes from sign-in',
+      'Identity, scope and approval come from authentication, not request fields.'));
   }
   next();
 }
 
-export function validate<T extends z.ZodTypeAny>(schema: T) {
-  return (req: PrincipalRequest, res: Response, next: NextFunction): void => {
-    const parsed = schema.safeParse(req.body ?? {});
-    if (!parsed.success) {
-      problem(res, 400, 'invalid_request', parsed.error.issues[0]?.message ?? 'invalid request', req.requestId);
-      return;
-    }
-    req.body = parsed.data;
+export function validate<T extends z.ZodTypeAny>(schema: T, source: 'body' | 'query' = 'body') {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const parsed = schema.safeParse(source === 'body' ? (req.body ?? {}) : req.query);
+    if (!parsed.success) return next(problems.invalid(parsed.error.issues[0]?.message ?? 'invalid request'));
+    res.locals.input = parsed.data;
     next();
   };
 }
 
-export function forward(client: CommerceDomainClient, operation: string, pick: (req: PrincipalRequest) => unknown) {
-  return async (req: PrincipalRequest, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const result = await client.call(operation, req.principal ?? null, pick(req), {
-        idempotencyKey: req.get('Idempotency-Key') ?? undefined,
-        ifMatch: req.get('If-Match') ?? undefined,
-      });
-      res.setHeader('Cache-Control', 'private, no-store');
-      res.status(result.status).json(result.body);
-    } catch (err) {
-      next(err);
-    }
-  };
-}
-
-export function requireIdempotencyKey(req: PrincipalRequest, res: Response, next: NextFunction): void {
+/** Foundation contract: 16-128 characters, scoped by the domain to principal + operation + environment. */
+export function requireIdempotencyKey(req: Request, _res: Response, next: NextFunction): void {
   const key = req.get('Idempotency-Key');
-  if (!key || key.length < 8 || key.length > 128) {
-    problem(res, 400, 'idempotency_key_required', 'Idempotency-Key header (8-128 chars) is required', req.requestId);
-    return;
+  if (!key || key.length < 16 || key.length > 128) {
+    return next(new ApiProblem(400, 'idempotency_key_required', 'Idempotency-Key required',
+      'Send an Idempotency-Key header of 16-128 characters.'));
   }
   next();
 }
+
+export function requireIfMatch(req: Request, _res: Response, next: NextFunction): void {
+  if (!req.get('If-Match')) return next(problems.preconditionRequired());
+  next();
+}
+
+type DomainProblem = { code?: unknown; title?: unknown; detail?: unknown; retryable?: unknown; current_version?: unknown };
+
+const PROBLEM_CODE = /^[a-z][a-z0-9_]{0,79}$/;
+const REVISION = /^(0|[1-9][0-9]{0,17})$/;
+const text = (v: unknown, fallback: string) => (typeof v === 'string' && v.trim() ? v : fallback);
+
+/**
+ * Map a domain problem onto foundation's problem contract. The spec Problem has no extension members, so
+ * client metadata travels in headers: a version conflict's current revision as ETag (from the domain's ETag,
+ * or a legacy `current_version` body member), and the domain's Retry-After. Other body members are dropped.
+ * A refused gateway assertion is our fault, not the caller's.
+ */
+export function domainProblem(result: DomainResult): ApiProblem {
+  const body = (result.body ?? {}) as DomainProblem;
+  if (result.status === 401) return problems.unavailable('The commerce service is unavailable.');
+  const status = Number.isInteger(result.status) && result.status >= 400 && result.status <= 599 ? result.status : 502;
+  const code = typeof body.code === 'string' && PROBLEM_CODE.test(body.code) ? body.code : 'commerce_error';
+  const headers: Record<string, string> = {};
+  const legacy = typeof body.current_version === 'string' || typeof body.current_version === 'number'
+    ? String(body.current_version) : undefined;
+  const etag = result.headers?.etag ?? (legacy && REVISION.test(legacy) ? `"${legacy}"` : undefined);
+  if (status === 409 && etag) headers.ETag = etag;
+  const retryAfter = result.headers?.['retry-after'];
+  if ((status === 429 || status === 503) && retryAfter && /^[0-9]{1,6}$/.test(retryAfter)) headers['Retry-After'] = retryAfter;
+  return new ApiProblem(status, code, text(body.title, 'Commerce request refused'),
+    text(body.detail, 'The commerce service refused this request.'),
+    typeof body.retryable === 'boolean' ? body.retryable : status === 429 || status === 503, {}, headers);
+}
+
+export function forward(client: CommerceDomainClient, operation: string, pick: (req: Request, res: Response) => unknown) {
+  return handle(async (req: Request, res: Response) => {
+    const principal = principalOf(res);
+    if (!principal) throw problems.unauthenticated();
+    const result = await client.call(operation, principal, pick(req, res), {
+      idempotencyKey: req.get('Idempotency-Key') ?? undefined,
+      ifMatch: req.get('If-Match') ?? undefined,
+      requestId: res.locals.requestId as string | undefined,
+    });
+    if (result.status >= 400) throw domainProblem(result);
+    const etag = result.headers?.etag ?? result.headers?.ETag;
+    if (etag) res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.status(result.status).json(result.body);
+  });
+}
+
+const input = <T>(res: Response): T => res.locals.input as T;
 
 const uuid = z.string().uuid();
 const line = z
@@ -149,6 +185,8 @@ export const CartCreate = z
   .object({ provider_id: z.string().min(1).max(80), merchant_id: z.string().min(1).max(256), lines })
   .strict();
 export const CartUpdate = z.object({ lines }).strict();
+/** Lane extension (not yet in @brandme/contracts): ask for approval of an exact quote. */
+export const PurchaseRequestCreate = z.object({ quote_id: uuid }).strict();
 export const ApprovalCreate = z
   .object({
     operation_id: uuid,
@@ -157,10 +195,8 @@ export const ApprovalCreate = z
     displayed_quote_hash: z.string().regex(/^sha256:[0-9a-f]{64}$/),
   })
   .strict();
-/** Mirrors `PurchaseRequest` in contracts/domain.schema.json (no user_id, no approved flag). */
-export const PurchaseCreate = z
-  .object({ quote_id: uuid, approval_id: uuid, delegation_id: uuid.nullable() })
-  .strict();
+/** `PurchaseRequest` in @brandme/contracts. `delegation_id` is a consistency check the domain enforces, not authority. */
+export const PurchaseCreate = z.object({ quote_id: uuid, approval_id: uuid, delegation_id: uuid.nullable() }).strict();
 export const ReturnCreate = z
   .object({ source_variant_ref: z.string().min(1).max(256), quantity: z.number().int().min(1).max(99) })
   .strict();
@@ -169,60 +205,161 @@ export function createCommerceRouter(client: CommerceDomainClient): Router {
   const router = Router();
   router.use(rejectIdentityFields);
 
-  router.post('/carts', requireScope('commerce:cart'), requireIdempotencyKey, validate(CartCreate),
-    forward(client, 'cart.create', (r) => r.body));
-  router.patch('/carts/:id', requireScope('commerce:cart'), validate(CartUpdate), (req, res, next) => {
-    if (!req.get('If-Match')) {
-      problem(res, 428, 'if_match_required', 'If-Match with the cart revision is required');
-      return;
-    }
-    next();
-  }, forward(client, 'cart.update', (r) => ({ cart_id: r.params.id, ...r.body })));
-  router.post('/carts/:id/quote', requireScope('commerce:cart'),
-    forward(client, 'cart.quote', (r) => ({ cart_id: r.params.id })));
+  router.post('/carts', requireAgentScope('commerce:cart'), requireIdempotencyKey, validate(CartCreate),
+    forward(client, 'cart.create', (_q, res) => input(res)));
+  router.patch('/carts/:id', requireAgentScope('commerce:cart'), requireIfMatch, validate(CartUpdate),
+    forward(client, 'cart.update', (req, res) => ({ cart_id: req.params.id, ...input<object>(res) })));
+  router.post('/carts/:id/quote', requireAgentScope('commerce:cart'),
+    forward(client, 'cart.quote', (req) => ({ cart_id: req.params.id })));
 
+  // Lane extensions: the purchase operation and its trusted-surface challenge.
+  router.post('/operations', requireAgentScope('commerce:cart'), validate(PurchaseRequestCreate),
+    forward(client, 'purchase.request', (_q, res) => input(res)));
+  router.get('/operations/:id', requireAgentScope('commerce:research'),
+    forward(client, 'operation.get', (req) => ({ operation_id: req.params.id })));
   router.post('/operations/:id/approval-challenge', requireTrustedSurface,
-    forward(client, 'approval.challenge', (r) => ({ operation_id: r.params.id })));
-  router.post('/approvals', requireTrustedSurface, validate(ApprovalCreate),
-    forward(client, 'approval.create', (r) => r.body));
+    forward(client, 'approval.challenge', (req) => ({ operation_id: req.params.id })));
 
-  router.post('/purchases', requireScope('commerce:purchase'), requireIdempotencyKey, validate(PurchaseCreate),
-    (req: PrincipalRequest, res, next) => {
-      if ((req.body as z.infer<typeof PurchaseCreate>).delegation_id !== (req.principal?.delegationId ?? null)) {
-        problem(res, 403, 'delegation_mismatch', 'delegation must match the authenticated principal', req.requestId);
-        return;
-      }
-      next();
-    },
-    forward(client, 'purchase.execute', (r) => r.body));
-  router.get('/operations/:id', requireScope('commerce:research'),
-    forward(client, 'operation.get', (r) => ({ operation_id: r.params.id })));
-  router.get('/orders/:id', requireScope('commerce:research'),
-    forward(client, 'order.get', (r) => ({ order_id: r.params.id })));
-  router.post('/orders/:id/returns', requireScope('commerce:purchase'), requireIdempotencyKey, validate(ReturnCreate),
-    forward(client, 'order.return', (r) => ({ order_id: r.params.id, ...r.body })));
+  router.post('/approvals', requireTrustedSurface, validate(ApprovalCreate),
+    forward(client, 'approval.create', (_q, res) => input(res)));
+  router.post('/purchases', requireAgentScope('commerce:purchase'), requireIdempotencyKey, validate(PurchaseCreate),
+    forward(client, 'purchase.execute', (_q, res) => input(res)));
+  router.get('/orders/:id', requireAgentScope('commerce:research'),
+    forward(client, 'order.get', (req) => ({ order_id: req.params.id })));
+  // Cancellations and returns move money back: agents need purchase authority, and the domain
+  // checks the order was placed under their own grant.
+  router.post('/orders/:id/cancellation', requireAgentScope('commerce:purchase'), requireIdempotencyKey,
+    forward(client, 'order.cancel', (req) => ({ order_id: req.params.id })));
+  router.post('/orders/:id/returns', requireAgentScope('commerce:purchase'), requireIdempotencyKey, validate(ReturnCreate),
+    forward(client, 'order.return', (req, res) => ({ order_id: req.params.id, ...input<object>(res) })));
+  return router;
+}
+
+/** `GET /commerce/ops/queue` — operator view of purchases needing attention (no member identifiers). */
+export function createCommerceOpsRouter(client: CommerceDomainClient): Router {
+  const router = Router();
+  router.use(rejectIdentityFields, requireRole('commerce:operator'));
+  router.get('/queue', forward(client, 'commerce.ops.queue', () => ({})));
   return router;
 }
 
 /**
- * Provider webhooks: unauthenticated by session; the domain verifies the provider's signature,
- * replay window and event-id dedupe. Must be mounted with a raw-body parser.
+ * Provider webhooks: no session; the domain verifies signature, replay window and
+ * (provider, event_id) dedupe. Mount with `express.raw({ type: '*\/*', limit: '256kb' })`
+ * before any JSON parser so the signed bytes arrive unchanged.
  */
+/** Headers relayed to the domain with a webhook: content type and signature/timestamp/event-id fields. */
+export const WEBHOOK_HEADER =
+  /^(content-type|stripe-signature|webhook-(id|timestamp|signature)|x-[a-z0-9-]*-(signature|timestamp|event-id))$/;
+
 export function createCommerceWebhookRouter(client: CommerceDomainClient): Router {
   const router = Router();
-  router.post('/:providerId', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
-      const headers: Record<string, string> = {};
-      for (const [k, v] of Object.entries(req.headers)) if (typeof v === 'string') headers[k] = v;
-      const result = await client.call('webhook.receive', null, { provider_id: req.params.providerId }, {
-        rawBody: raw,
-        headers,
-      });
-      res.status(result.status === 200 ? 202 : result.status).json({ received: result.status === 200 });
-    } catch (err) {
-      next(err);
+  router.post('/:providerId', handle(async (req: Request, res: Response) => {
+    if (!Buffer.isBuffer(req.body)) throw problems.invalid('Webhook body must be delivered raw.');
+    // Only what a provider signature scheme needs; never cookies, authorization or proxy headers.
+    const headers: Record<string, string> = {};
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (typeof v === 'string' && WEBHOOK_HEADER.test(k)) headers[k] = v;
     }
-  });
+    const result = await client.webhook(req.params.providerId, headers, req.body);
+    // Say nothing about why a delivery was refused.
+    res.status(result.status === 200 ? 202 : result.status >= 500 ? 503 : 400).json({ received: result.status === 200 });
+  }));
   return router;
+}
+
+// --------------------------------------------------------------------- transport
+export interface HttpCommerceClientOptions {
+  /** Internal base URL of the commerce domain service. */
+  baseUrl: string;
+  /** Gateway issuer the domain trusts (`iss`). */
+  issuer: string;
+  kid: string;
+  /** ES256 private key; from Secret Manager at boot, never from the repo. */
+  privateKey: KeyLike;
+  fetchImpl?: typeof fetch;
+  ttlSeconds?: number;
+  timeoutMs?: number;
+}
+
+export const DOMAIN_AUDIENCE = 'brandme:commerce-domain';
+
+/** The assertion's principal claim (snake_case, as the Python verifier reads it). */
+export function principalClaim(p: Principal): Record<string, unknown> {
+  return {
+    member_id: p.memberId,
+    subject: p.subject,
+    session_id: p.via === 'session' ? p.sessionId : null,
+    client_id: p.clientId,
+    scopes: p.scopes,
+    assurance_level: p.assuranceLevel,
+    environment: p.environment,
+    delegation_id: p.delegationId,
+    identity_provider: p.identityProvider,
+  };
+}
+
+/**
+ * Gateway → commerce domain over HTTP with an ES256 assertion (aud
+ * `brandme:commerce-domain`, ≤60 s, unique `jti`). Never retried here: a
+ * purchase that timed out after sending is reconciled by the domain through its
+ * idempotency key, and the caller retries with the same Idempotency-Key.
+ */
+export function createHttpCommerceDomainClient(opts: HttpCommerceClientOptions): CommerceDomainClient {
+  const doFetch = opts.fetchImpl ?? fetch;
+  const ttl = Math.min(opts.ttlSeconds ?? 30, 60);
+  const base = opts.baseUrl.replace(/\/$/, '');
+  const sign = (principal: Record<string, unknown> | null) =>
+    new SignJWT({ principal })
+      .setProtectedHeader({ alg: 'ES256', kid: opts.kid })
+      .setIssuer(opts.issuer)
+      .setAudience(DOMAIN_AUDIENCE)
+      .setIssuedAt()
+      .setExpirationTime(`${ttl}s`)
+      .setJti(randomUUID())
+      .sign(opts.privateKey);
+
+  async function post(path: string, token: string, body: string, extra: Record<string, string>): Promise<DomainResult> {
+    let r: globalThis.Response;
+    try {
+      r = await doFetch(`${base}${path}`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', ...extra },
+        body,
+        signal: AbortSignal.timeout(opts.timeoutMs ?? 10_000),
+      });
+    } catch {
+      throw problems.unavailable('The commerce service did not answer. Retry with the same Idempotency-Key.');
+    }
+    const text = await r.text();
+    let parsed: unknown = null;
+    try {
+      parsed = text ? JSON.parse(text) : null;
+    } catch {
+      throw problems.unavailable('The commerce service returned an unreadable response.');
+    }
+    const headers: Record<string, string> = {};
+    const etag = r.headers.get('etag');
+    if (etag) headers.etag = etag;
+    const retryAfter = r.headers.get('retry-after');
+    if (retryAfter) headers['retry-after'] = retryAfter;
+    return { status: r.status, body: parsed, headers };
+  }
+
+  return {
+    async call(operation, principal, body, options) {
+      if (!/^[a-z]+(\.[a-z_]+)+$/.test(operation)) throw new Error(`invalid operation ${operation}`);
+      const extra: Record<string, string> = {};
+      if (options?.idempotencyKey) extra['idempotency-key'] = options.idempotencyKey;
+      if (options?.ifMatch) extra['if-match'] = options.ifMatch;
+      // The gateway's validated request id; domain events and audit records correlate on it.
+      if (options?.requestId) extra['x-request-id'] = options.requestId;
+      return post(`/internal/commerce/v1/${operation}`, await sign(principalClaim(principal)), JSON.stringify(body ?? {}), extra);
+    },
+    async webhook(providerId, headers, rawBody) {
+      if (!/^[a-z0-9_]{1,80}$/.test(providerId)) return { status: 404, body: null };
+      const envelope = JSON.stringify({ headers, body_b64: rawBody.toString('base64') });
+      return post(`/internal/commerce/v1/webhooks/${providerId}`, await sign(null), envelope, {});
+    },
+  };
 }

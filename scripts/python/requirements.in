@@ -15,8 +15,5 @@ jwcrypto==1.6.1
 PyJWT[crypto]==2.15.1
 rfc8785==0.1.4
 sd-jwt==0.10.4
-# Optional integrations of the same lane (Q11, 2026-10-25), imported lazily and only with dev/test keys:
-# the dev model planner and Stripe TEST mode. Pinned to the lane's verified versions (anthropic 0.125.0 is the
-# last release on httpx<1; stripe 16.0.0 runs on the locked httpx through stripe.HTTPXClient).
 anthropic==0.125.0
 stripe==16.0.0

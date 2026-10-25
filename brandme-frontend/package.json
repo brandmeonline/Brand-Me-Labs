@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:ui": "node --test lib/testing/verify-ui.mjs ../brandme-console/lib/testing/verify-shell-adapters.mjs",
+    "test:gateway": "node --test lib/testing/verify-gateway.mjs",
+    "test:browser": "node lib/testing/verify-shell.mjs && node lib/testing/verify-controls.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.0.5",
@@ -14,22 +17,38 @@
     "class-variance-authority": "^0.7.0",
     "classnames": "^2.5.1",
     "clsx": "^2.1.0",
-    "lucide-react": "^0.294.0",
+    "lucide-react": "0.469.0",
     "next": "15.5.28",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "tailwind-merge": "^2.2.0"
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "tailwind-merge": "^2.2.0",
+    "@brandme/design-system": "workspace:*",
+    "@brandme/contracts": "workspace:*",
+    "@google/model-viewer": "4.2.0",
+    "@mediapipe/tasks-vision": "0.10.22-rc.20250304",
+    "@react-three/fiber": "9.4.0",
+    "motion": "12.23.24",
+    "three": "0.182.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
-    "@types/react": "^18.2.46",
-    "@types/react-dom": "^18.2.18",
+    "@types/react": "19.1.16",
+    "@types/react-dom": "19.1.9",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-config-next": "15.5.28",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.3.3",
-    "tailwindcss-animate": "^1.0.7"
+    "playwright": "1.58.2",
+    "@axe-core/playwright": "4.10.2",
+    "jsdom": "26.1.0",
+    "@testing-library/react": "16.1.0",
+    "@testing-library/dom": "10.4.0",
+    "@testing-library/user-event": "14.6.1",
+    "pixelmatch": "7.1.0",
+    "pngjs": "7.0.0",
+    "@types/three": "0.182.0"
   }
 }

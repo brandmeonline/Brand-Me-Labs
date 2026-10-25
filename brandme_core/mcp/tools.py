@@ -12,24 +12,26 @@ object is closed (``additionalProperties: false``).
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 import time
-import unicodedata
-from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 import jsonschema
 
 from brandme_core.domains.commerce.errors import CommerceError
 from brandme_core.domains.commerce.principal import Principal
-from brandme_core.domains.commerce.service import CommerceService
+from brandme_core.domains.commerce.service import CommerceService, correlation
 from brandme_core.domains.providers.contracts import CartLineRequest, ProviderError
-from brandme_core.domains.providers.ingestion import price_freshness
+from brandme_core.domains.providers.catalog import UNTRUSTED_TEXT_LIMIT, search_catalog, untrusted_text  # noqa: F401
 from brandme_core.domains.providers.registry import ProviderRegistry
+# Card-number gate and masking live with the payment redaction helpers; the planner and runtime import them here.
+from brandme_core.domains.providers.redaction import contains_card_number as _contains_payment_credential
+from brandme_core.domains.providers.redaction import mask_card_numbers as mask_payment_credentials  # noqa: F401
 
 from .authz import MCP_PROTOCOL_VERSION, AuthError, ExecutorAssertionVerifier
+from .refs import log_ref
 
 SERVER_NAME = "brandme"
 SERVER_VERSION = "2.0.0"
@@ -46,7 +48,6 @@ LINES = {
 }
 IDENTITY_ARGUMENTS = frozenset({"user_id", "member_id", "principal", "subject", "owner_id", "delegation_id",
                                 "approved", "approval", "scopes", "scope"})
-UNTRUSTED_TEXT_LIMIT = 2000
 
 
 def _obj(required: List[str], props: Dict[str, Any]) -> Dict[str, Any]:
@@ -154,43 +155,6 @@ RETIRED_REASON = {
 }
 
 _SPECS = {t.name: t for t in TOOLS}
-_PAN_RE = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
-_UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
-
-
-def _luhn(digits: str) -> bool:
-    total, alt = 0, False
-    for ch in reversed(digits):
-        n = int(ch)
-        if alt:
-            n = n * 2 - 9 if n > 4 else n * 2
-        total += n
-        alt = not alt
-    return total % 10 == 0
-
-
-def _contains_payment_credential(value: Any) -> bool:
-    if isinstance(value, str):
-        # Identifiers are not card data: remove UUIDs so their digit runs cannot
-        # chain across hyphens into a Luhn-valid 13-19 digit sequence.
-        value = _UUID_RE.sub(" ", value)
-        for m in _PAN_RE.finditer(value):
-            d = re.sub(r"\D", "", m.group())
-            if 13 <= len(d) <= 19 and _luhn(d):
-                return True
-        return False
-    if isinstance(value, Mapping):
-        return any(_contains_payment_credential(k) or _contains_payment_credential(v) for k, v in value.items())
-    if isinstance(value, (list, tuple)):
-        return any(_contains_payment_credential(v) for v in value)
-    return False
-
-
-def untrusted_text(text: str, origin: str) -> Dict[str, str]:
-    """Provider/retrieved text is data: normalized, control chars stripped, length-capped, labeled."""
-    clean = "".join(ch for ch in unicodedata.normalize("NFKC", text or "")
-                    if ch in "\n\t" or unicodedata.category(ch)[0] != "C")
-    return {"type": "untrusted_text", "origin": origin, "text": clean[:UNTRUSTED_TEXT_LIMIT]}
 
 
 @dataclass(frozen=True)
@@ -218,6 +182,38 @@ def _problem(status: int, code: str, detail: str, **extra: Any) -> Dict[str, Any
 
 
 AuditSink = Callable[[Dict[str, Any]], None]
+
+# Audit references are keyed (``refs.log_ref``): they correlate records, and a short argument
+# (say, a two-word catalog query) cannot be recovered by hashing guesses. The assistant run log
+# uses the same refs, so its lines join to these records.
+
+# -- assistant runtime support ---------------------------------------------------
+# Every name a proposal may carry into events and audit records; anything else becomes UNKNOWN_TOOL.
+KNOWN_TOOL_NAMES = frozenset(_SPECS) | frozenset(RETIRED_TOOLS) | frozenset(UNAVAILABLE_TOOLS)
+UNKNOWN_TOOL = "unknown_tool"
+contains_payment_credential = _contains_payment_credential
+# A label ("cvv", "CVC2", "c.v.v.", "security code", "card verification value", ...) followed within 20
+# non-digit characters by exactly 3-4 digits: "cvv123", "CVV is 123", "my security code is 1234".
+_CSC_RE = re.compile(
+    r"(?i)\b(?:c\.?v\.?[vc]\.?2?s?|cv2s?|cvn2?|cav2|cscs?|cids?|security[\s_-]*(?:code|number)s?"
+    r"|card[\s_-]*verification(?:[\s_-]*(?:value|code|number))?)(?![a-z])\D{0,40}?(?<!\d)\d{3,4}(?!\d)")
+
+
+def contains_card_security_code(value: Any) -> bool:
+    """A card security code near its label ("cvv 123", "cvv123", "my security code is 1234"); the
+    number alone is not detectable."""
+    if isinstance(value, str):
+        return bool(_CSC_RE.search(value))
+    if isinstance(value, Mapping):
+        return any(contains_card_security_code(k) or contains_card_security_code(v) for k, v in value.items())
+    if isinstance(value, (list, tuple)):
+        return any(contains_card_security_code(v) for v in value)
+    return False
+
+
+def mask_card_security_codes(text: str) -> str:
+    """``text`` with each labelled security code (label and digits) replaced."""
+    return _CSC_RE.sub("[card security code removed]", text)
 
 
 class McpToolExecutor:
@@ -253,31 +249,84 @@ class McpToolExecutor:
     # -- invocation ----------------------------------------------------------
     def invoke(self, assertion: str, invocation: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
         """Returns (http_status, body). Authorization failures carry ``www_authenticate``."""
-        started = time.monotonic()
-        request_id = str(invocation.get("request_id", "")) if isinstance(invocation, dict) else ""
         try:
             principal = self.verifier.verify(assertion)
         except AuthError as e:
+            self._audit_unauthenticated(invocation, code=e.error)
             return e.status, {"problem": _problem(e.status, e.error, e.description),
                               "www_authenticate": e.www_authenticate()}
+        request_id = invocation.get("request_id") if isinstance(invocation, dict) else None
+        status, outcome = self.call(principal, invocation, correlation_id=request_id, origin="mcp")
+        return status, outcome.to_wire()
+
+    def call(self, principal: Principal, invocation: Dict[str, Any], *, correlation_id: Optional[str] = None,
+             task_id: Optional[str] = None, origin: str = "mcp", step: Optional[int] = None) -> Tuple[int, ToolOutcome]:
+        """The one audited path into the tools, for external MCP clients and the assistant runtime alike.
+
+        Validates the invocation envelope, dispatches under the verified principal, and writes one
+        audit record: codes, timings and keyed references only, never arguments or raw identifiers.
+        Commerce events emitted by the call carry ``correlation_id``. ``step`` is the assistant
+        planning step that proposed the call. A handler that raises anything else (a store deadline
+        after commit, a bug) still gets its record, ``status: error`` with the fixed code
+        ``internal_error`` and never the exception text, and the exception propagates.
+        """
+        started = time.monotonic()
+        request_id = str(invocation.get("request_id", "")) if isinstance(invocation, dict) else ""
+        tool = str(invocation.get("tool", "")) if isinstance(invocation, dict) else ""
+
+        def audit(status: str, code: Optional[str]) -> None:
+            self._audit(principal, request_id=request_id, origin=origin, tool=tool, task_id=task_id, step=step,
+                        status=status, code=code, duration_ms=int((time.monotonic() - started) * 1000),
+                        arguments=invocation.get("arguments") if isinstance(invocation, dict) else None)
+
         try:
             jsonschema.Draft202012Validator(self._invocation_schema,
                                             format_checker=jsonschema.FormatChecker()).validate(invocation)
         except jsonschema.ValidationError as e:
-            return 400, ToolOutcome(request_id, str(invocation.get("tool", "")) if isinstance(invocation, dict) else "",
-                                    "error", problem=_problem(400, "malformed_invocation", e.message[:300])).to_wire()
-        tool = invocation["tool"]
-        status, outcome = self._dispatch(principal, invocation)
+            status, outcome = 400, ToolOutcome(request_id, tool, "error",
+                                               problem=_problem(400, "malformed_invocation", e.message[:300]))
+        else:
+            try:
+                with correlation(correlation_id):
+                    status, outcome = self._dispatch(principal, invocation)
+            except BaseException:
+                audit("error", "internal_error")  # the call may have had side effects: it is still on record
+                raise
+        audit(outcome.status, (outcome.problem or {}).get("code"))
+        return status, outcome
+
+    def audit_refusal(self, principal: Principal, *, tool: str, arguments: Any, code: str, task_id: str,
+                      step: int, origin: str = "assistant") -> None:
+        """The audit record for a proposal the assistant runtime refused before dispatch (same shape
+        as ``call``'s, ``status: refused``): every proposal leaves exactly one record."""
+        self._audit(principal, request_id=None, origin=origin, tool=tool, task_id=task_id, step=step,
+                    status="refused", code=code, duration_ms=0, arguments=arguments)
+
+    def _audit_unauthenticated(self, invocation: Any, *, code: str) -> None:
+        """The record for an invocation refused before any principal was verified (a forged, replayed,
+        expired or wrong-audience assertion): ``status: refused`` with no member, client or delegation."""
+        inv = invocation if isinstance(invocation, dict) else {}
         self.audit({
-            "request_id": request_id, "tool": tool, "client_id": principal.client_id,
-            "member_ref": hashlib.sha256(principal.member_id.encode()).hexdigest()[:16],
-            "delegation_id": principal.delegation_id, "status": outcome.status,
-            "code": (outcome.problem or {}).get("code"), "duration_ms": int((time.monotonic() - started) * 1000),
-            # Arguments are never logged; only a digest for correlation.
-            "arguments_digest": hashlib.sha256(json.dumps(invocation.get("arguments"), sort_keys=True,
-                                                          default=str).encode()).hexdigest()[:16],
+            "request_id": str(inv.get("request_id", "")), "origin": "mcp", "tool": str(inv.get("tool", "")),
+            "client_id": None, "member_ref": None, "delegation_id": None, "task_ref": None, "step": None,
+            "status": "refused", "code": code, "duration_ms": 0, "arguments_digest": log_ref("args", inv.get("arguments")),
         })
-        return status, outcome.to_wire()
+
+    def _audit(self, principal: Principal, *, request_id: Optional[str], origin: str, tool: str,
+               task_id: Optional[str], step: Optional[int], status: str, code: Optional[str], duration_ms: int,
+               arguments: Any) -> None:
+        try:
+            principal = self.commerce.bind(principal)  # audit the resolved delegation
+        except Exception:  # unbound or store unavailable: the record is still written, as presented
+            pass
+        self.audit({
+            "request_id": request_id, "origin": origin, "tool": tool, "client_id": principal.client_id,
+            "member_ref": log_ref("member", principal.member_id), "delegation_id": principal.delegation_id,
+            "task_ref": log_ref("task", task_id) if task_id else None, "step": step, "status": status,
+            "code": code, "duration_ms": duration_ms,
+            # Arguments are never logged; only a keyed digest for correlation.
+            "arguments_digest": log_ref("args", arguments),
+        })
 
     def _dispatch(self, principal: Principal, inv: Dict[str, Any]) -> Tuple[int, ToolOutcome]:
         rid, tool, args = inv["request_id"], inv["tool"], inv["arguments"]
@@ -304,11 +353,22 @@ class McpToolExecutor:
         if _contains_payment_credential(args):
             return 400, ToolOutcome(rid, tool, "error", problem=_problem(
                 400, "payment_credential_rejected", "payment card data is never accepted by Brand.Me tools"))
+        if contains_card_security_code(args):  # a security code is card data too (BM-COM-018)
+            return 400, ToolOutcome(rid, tool, "error", problem=_problem(
+                400, "payment_credential_rejected", "payment card data is never accepted by Brand.Me tools"))
         try:
             jsonschema.Draft202012Validator(spec.input_schema, format_checker=jsonschema.FormatChecker()).validate(args)
         except jsonschema.ValidationError as e:
             return 400, ToolOutcome(rid, tool, "error", problem=_problem(400, "invalid_arguments", e.message[:300]))
-        missing = sorted(set(spec.scopes) - principal.scopes)
+        try:
+            principal = self.commerce.bind(principal)  # resolve the caller's one active delegation
+        except CommerceError as e:
+            return e.status, ToolOutcome(rid, tool, "error", problem=_problem(e.status, e.code, e.detail))
+        delegation = self.commerce.store.get("delegations", principal.delegation_id or "")
+        if delegation is None:  # first-party sessions use the trusted UI, never this hop
+            return 403, ToolOutcome(rid, tool, "error", problem=_problem(
+                403, "delegation_required", "MCP tools run only under a member-granted delegation"))
+        missing = sorted(set(spec.scopes) - (principal.scopes & delegation.scopes))
         if missing:
             err = AuthError(403, "insufficient_scope", "additional scope required", scope=" ".join(spec.scopes))
             return 403, ToolOutcome(rid, tool, "error", problem=_problem(
@@ -329,35 +389,10 @@ class McpToolExecutor:
 
     # -- handlers --------------------------------------------------------------
     def _catalog_search(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
-        self.commerce.require_active_delegation(p)
-        wanted = set(a.get("provider_ids") or [])
-        now = self.commerce.clock()
-        items, unavailable = [], []
-        for conn in self.registry.all():
-            if wanted and conn.provider_id not in wanted:
-                continue
-            if not conn.can_execute("catalog.search"):
-                unavailable.append({"provider_id": conn.provider_id,
-                                    "reason_code": conn.capability("catalog.search").reason_code,
-                                    "handoff": conn.capability("checkout.handoff").state})
-                continue
-            page = conn.adapter.search(a["query"], limit=a.get("limit", 12))
-            for v in page.items:
-                fresh = price_freshness(v, now)
-                items.append({
-                    "provider_id": v.provider_id, "merchant_id": v.merchant_id,
-                    "source_product_id": v.source_product_id, "source_variant_ref": v.source_variant_id,
-                    "variant_id": _variant_id(conn, v.source_variant_id),
-                    "title": untrusted_text(v.title, f"provider:{v.provider_id}"),
-                    "description": untrusted_text(v.description, f"provider:{v.provider_id}"),
-                    "category": v.category, "size_label": v.size_label, "availability": v.availability,
-                    "observed_price": v.price.to_wire() if v.price else None,
-                    "price_is_quote": False, "price_freshness": fresh.state,
-                    "checked_at": fresh.checked_at.strftime("%Y-%m-%dT%H:%M:%SZ") if fresh.checked_at else None,
-                    "simulation": conn.simulation, "disclosure": conn.disclosure,
-                })
-        return {"items": items, "unavailable_providers": unavailable,
-                "note": "Prices are observations; call brandme.checkout.quote for purchasable terms."}
+        out = search_catalog(self.registry, self.commerce.clock(), a["query"],
+                             provider_ids=a.get("provider_ids") or (), limit=a.get("limit", 12))
+        out["note"] = "Prices are observations; call brandme.checkout.quote for purchasable terms."
+        return out
 
     def _cart_create(self, p: Principal, a: Dict[str, Any], key: Optional[str]) -> Dict[str, Any]:
         cart = self.commerce.create_cart(p, provider_id=a["provider_id"], merchant_id=a["merchant_id"],
@@ -386,7 +421,6 @@ class McpToolExecutor:
         return self._op_status(p, op)
 
     def _order_status(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
-        self.commerce.require_active_delegation(p)
         return self._op_status(p, self.commerce.get_operation(p, a["operation_id"]))
 
     def _op_status(self, p: Principal, op) -> Dict[str, Any]:
@@ -401,9 +435,6 @@ class McpToolExecutor:
         return out
 
 
-def _variant_id(conn, source_variant_ref: str) -> Optional[str]:
-    fn = getattr(conn.adapter, "variant_id_for", None)
-    return fn(source_variant_ref) if fn is not None else None
 
 
 def _load_invocation_schema() -> str:

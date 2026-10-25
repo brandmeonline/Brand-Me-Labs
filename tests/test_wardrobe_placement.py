@@ -34,7 +34,7 @@ def body(**kw):
         "position_meters": list(g.slot_position("3")),
         "rotation_quaternion": [0, 0, 0, 1],
         "uniform_scale": 1.0,
-        "asset_revision": "original-v1",
+        "asset_revision": "original-shelves-v2",
     }
     b.update(kw)
     return b
@@ -109,18 +109,19 @@ def test_slot_room_category_and_revision_rules():
         parse_placement(body(room_template_id="garden_studio", semantic_group="rail.right"), category="top", product_id=SHIRT)
     with pytest.raises(ValidationFailed, match="unknown room"):
         parse_placement(body(room_template_id="penthouse"), category="top", product_id=SHIRT)
-    with pytest.raises(ValidationFailed, match="reload the room") as e:
-        parse_placement(body(asset_revision="original-v0"), category="top", product_id=SHIRT)
-    assert e.value.extra["current_asset_revision"] == "original-v1"
+    for stale_revision in ("original-v0", "original-v1"):
+        with pytest.raises(ValidationFailed, match="reload the room") as e:
+            parse_placement(body(asset_revision=stale_revision), category="top", product_id=SHIRT)
+        assert e.value.extra["current_asset_revision"] == "original-shelves-v2"
     with pytest.raises(ValidationFailed):
         parse_placement(body(owner_id="x"), category="top", product_id=SHIRT)  # no extra fields
 
 
 def test_unplaced_tray_has_no_transform():
-    p = parse_placement({"room_template_id": "walnut_atelier", "semantic_group": None, "asset_revision": "original-v1"}, category="top", product_id=None)
+    p = parse_placement({"room_template_id": "walnut_atelier", "semantic_group": None, "asset_revision": "original-shelves-v2"}, category="top", product_id=None)
     assert not p.placed and p.position is None
     with pytest.raises(ValidationFailed):
-        parse_placement({"room_template_id": "walnut_atelier", "semantic_group": None, "slot_id": "1", "asset_revision": "original-v1"}, category="top", product_id=None)
+        parse_placement({"room_template_id": "walnut_atelier", "semantic_group": None, "slot_id": "1", "asset_revision": "original-shelves-v2"}, category="top", product_id=None)
 
 
 def test_batch_slot_uniqueness():

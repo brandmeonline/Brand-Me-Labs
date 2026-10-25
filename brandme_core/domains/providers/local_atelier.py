@@ -2,8 +2,17 @@
 
 "Demo Atelier — fictional" sells the six fictional demo garments from
 ``contracts/demo-scenario.json``. It exists to prove application behavior
-under every required failure mode. It is not a retailer, it never moves
-money, and the registry refuses it outside ``demo``/``development``.
+under every required failure mode. It is not a retailer, nothing ships, and
+the registry refuses it outside ``demo``/``development``.
+
+It is a ``ComposedMerchantAdapter`` (``providers.merchant``): payments go through
+an injected ``PaymentProcessor`` — the deterministic ``SimulatedPaymentProcessor``
+by default, or Stripe **test mode** — and fulfillment through an injected
+``FulfillmentProvider`` (``SimulatedFulfillment`` by default), both chosen at
+startup by ``commerce.composition``. The merchant authorizes at submit (manual
+capture), captures once at the first shipment for the value of the units still
+owed, voids if every unit is cancelled before capture or the hold expires, and
+refunds after capture. No real money moves on either rail.
 
 Failure behaviors are armed explicitly and deterministically:
 
@@ -19,20 +28,36 @@ PARTIAL_FULFILLMENT    ship/deliver only part of an order's quantity
 REFUND                 refund all or part of an order (with return evidence)
 EXPIRED_QUOTE          next quote expires almost immediately
 =====================  ======================================================
+
+STOCK_LOSS, PRICE_CHANGE and EXPIRED_QUOTE act on the catalog, before any
+payment I/O. REJECTED_AUTH swaps the merchant's default test card for the
+processor's declining one (on Stripe test mode, Stripe declines a real test
+PaymentIntent). PARTIAL_FULFILLMENT goes to the fulfillment simulator.
+
+``exchange()`` simulates an even exchange (same price, e.g. another size): the
+original line records the return, a new line records the replacement with
+``exchanged_from_ref``, and no money moves. A different-priced exchange is
+refused; that is a return plus a new purchase. ``cancel()`` cancels units that
+have not shipped, and ``expire_authorization()`` (simulated rail) ages the hold
+past expiry, as for the demo scenario's ``authorization_expired``.
+
+``probe()`` is the setup console's connection test: read-only exercises of this
+simulator's own surface (search, detail, inventory, a scratch-cart quote that is
+never submitted, a signed webhook round trip). Armed behaviors apply to it, so
+``STOCK_LOSS`` on ``PROBE_VARIANT`` fails the quote test and an armed
+``EXPIRED_QUOTE`` is consumed by it. Its evidence is ``conformance_suite``,
+which the registry records as ``sandbox`` for a simulation, never ``verified``.
+Payment capabilities have no read-only test: a probe never moves test money.
 """
 
 from __future__ import annotations
 
 import enum
-import hashlib
-import hmac
-import json
 import secrets
-import threading
 import uuid
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
-from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Callable, Dict, Optional, Sequence, Tuple
 
 import jwt
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -41,18 +66,47 @@ from brandme_core.domains.commerce.money import Money
 from brandme_core.domains.commerce.quote import CheckoutTerms
 
 from .contracts import (
-    CartLineRequest, CatalogPage, HandoffLink, InventoryObservation, ObservedLine,
-    OrderObservation, ProviderCart, ProviderError, ProviderErrorKind, ProviderQuote,
-    ProviderResult, QuotedLine, SourceVariant, SubmitAck, SubmitRequest, WebhookEvent,
+    CartLineRequest, CatalogPage, HandoffLink, InventoryObservation, ProbeResult, ProviderCart, ProviderError,
+    ProviderErrorKind, ProviderQuote, QuotedLine, SetupProfile, SourceVariant, SubmitRequest,
 )
+from .fulfillment import FulfillmentProvider
+from .fulfillment.simulated import SimulatedFulfillment
+from .merchant import SETTLE_WINDOW, ComposedMerchantAdapter
+from .payments import PaymentProcessor, payment_key  # noqa: F401  (payment_key re-exported for callers)
+from .payments.simulated import SimulatedPaymentProcessor
 from .registry import CapabilityStatus, ProviderConnection
 
 PROVIDER_ID = "demo_atelier"
 MERCHANT_ID = "fictional-demo-merchant"
 SIMULATION_LABEL = "Simulated provider — Demo Atelier is fictional; no real order or payment occurs."
+STRIPE_TEST_LABEL = ("Simulated provider — Demo Atelier is fictional and nothing ships. Payment runs in Stripe "
+                     "test mode: no real money moves; only Stripe test cards are used.")
+assert len(STRIPE_TEST_LABEL) <= 200 and len(SIMULATION_LABEL) <= 200
+STRIPE_TEST_OPERATOR_NOTICE = ("Payments use Stripe test mode. No real money moves; only Stripe test cards are used. "
+                               "Capability state is sandbox, never verified.")
+# Reconciliation treats "no payment found" as final only after this long (Stripe search lags writes).
+PAYMENT_SETTLE_WINDOW = SETTLE_WINDOW
 _NS = uuid.UUID("6f1c2a0e-6c38-5d43-9a4e-6e0b9a1d2c11")  # fixed namespace for deterministic ids
-WEBHOOK_TOLERANCE = timedelta(minutes=5)
 TAX_BPS = 800  # fictional 8% demo tax, integer basis points
+PROBE_VARIANT = "demo-overshirt-m"  # fixed, so a test can arm a deterministic probe failure
+_PROBE_NOTE = "Simulation: fictional data; no real retailer, order or payment was involved."
+SETUP_PROFILE = SetupProfile(
+    summary=(SIMULATION_LABEL + " It exercises catalog, quote, checkout, order, webhook and return flows against "
+             "fictional data so application behavior can be shown and tested. It proves nothing about a real "
+             "retailer and never reaches verified."),
+    fixed_rows=(
+        ("prerequisites", "simulation_mode", "Runs only in demo or development", "done",
+         "Selected at startup; the registry refuses this adapter in sandbox and production."),
+        ("credentials", "credential", "No credential", "not_needed",
+         "The simulation has no account or secret; nothing is entered here."),
+    ))
+STRIPE_TEST_SETUP_PROFILE = SetupProfile(
+    summary=SETUP_PROFILE.summary + " " + STRIPE_TEST_LABEL,
+    fixed_rows=(
+        SETUP_PROFILE.fixed_rows[0],
+        ("credentials", "credential", "Stripe test-mode secret key", "done",
+         "Read from STRIPE_TEST_SECRET_KEY at startup; sk_test_ or restricted rk_test_ only; never displayed."),
+    ))
 
 
 class Behavior(str, enum.Enum):
@@ -82,41 +136,35 @@ def variant_uuid(source_variant_ref: str) -> str:
     return str(uuid.uuid5(_NS, f"{PROVIDER_ID}:{source_variant_ref}"))
 
 
-@dataclass
-class _Order:
-    ref: str
-    idempotency_key: str
-    lines: List[ObservedLine]
-    total: Money
-    order_status: str
-    payment_status: str
-    refunded: int
-    created_at: datetime
+def variant_uuid(source_variant_ref: str) -> str:
+    return str(uuid.uuid5(_NS, f"{PROVIDER_ID}:{source_variant_ref}"))
 
 
-class LocalAtelierProvider:
-    """Implements Catalog/Feed/Inventory/Cart/Checkout/Order/Returns protocols."""
+class _ProbeFailed(Exception):
+    def __init__(self, detail: str, reason_code: str):
+        super().__init__(detail)
+        self.reason_code = reason_code
+
+
+class LocalAtelierProvider(ComposedMerchantAdapter):
+    """Catalog/Feed/Inventory/Cart/Checkout/Order/Returns/Cancellation protocols and ``VerifiableProvider``."""
 
     provider_id = PROVIDER_ID
+    merchant_id = MERCHANT_ID
     simulation = True
 
-    def __init__(self, clock: Callable[[], datetime], *, quote_ttl: timedelta = timedelta(minutes=10)):
-        self._clock = clock
-        self._lock = threading.RLock()
+    def __init__(self, clock: Callable[[], datetime], *, quote_ttl: timedelta = timedelta(minutes=10),
+                 payments: Optional[PaymentProcessor] = None, fulfillment: Optional[FulfillmentProvider] = None,
+                 environment: str = "development"):
+        super().__init__(clock, payments=payments or SimulatedPaymentProcessor(clock, environment=environment),
+                         fulfillment=fulfillment or SimulatedFulfillment(clock), environment=environment)
         self._quote_ttl = quote_ttl
-        # Generated per process; never committed. Signs this simulator's webhooks only.
-        self._webhook_secret = secrets.token_bytes(32)
         # Simulated merchant checkout-signing key (AP2 Checkout JWT, ES256). Per process, never committed.
         self._merchant_key = ec.generate_private_key(ec.SECP256R1())
         self._stock: Dict[str, int] = {}
         self._price: Dict[str, int] = {}
         self._variants: Dict[str, SourceVariant] = {}
         self._carts: Dict[str, Tuple[CartLineRequest, ...]] = {}
-        self._orders: Dict[str, _Order] = {}
-        self._by_key: Dict[str, str] = {}
-        self._armed: Dict[Behavior, dict] = {}
-        self._event_seq = 0
-        self.submit_calls: List[str] = []  # idempotency keys received (test evidence)
         epoch = datetime(2026, 10, 5, 12, 0, tzinfo=timezone.utc)
         for pid, slug, title, category, price in _PRODUCTS:
             for size in _SIZES:
@@ -131,6 +179,15 @@ class LocalAtelierProvider:
                     image_urls=(f"/demo/garments/{slug}/poster.webp",), price=Money(price, "USD"),
                     availability="in_stock", source_updated_at=epoch,
                     rights_policy_ref="original_demo_asset", description=f"{title}. Fictional demo garment.")
+
+    @property
+    def setup_profile(self) -> SetupProfile:
+        return SETUP_PROFILE if self.payments.descriptor.mode == "simulated" else STRIPE_TEST_SETUP_PROFILE
+
+    @property
+    def disclosure(self) -> str:
+        """The member-facing label for this rail (catalog items, capabilities, handoff)."""
+        return SIMULATION_LABEL if self.payments.descriptor.mode == "simulated" else STRIPE_TEST_LABEL
 
     @property
     def merchant_public_key(self):
@@ -160,19 +217,17 @@ class LocalAtelierProvider:
         return jwt.encode(doc, self._merchant_key, algorithm="ES256", headers={"kid": "demo-merchant-1"})
 
     def variant_id_for(self, source_variant_ref: str) -> str:
-        return variant_uuid(source_variant_ref)
+        return variant_uuid(source_variant_ref)  # pure: called inside commerce transactions
 
     # -- test/operator controls ----------------------------------------------
     def arm(self, behavior: Behavior, **params) -> None:
+        behavior = Behavior(behavior)
         with self._lock:
-            self._armed[behavior] = params
+            self._armed[behavior.value] = params
             if behavior is Behavior.STOCK_LOSS:
                 self._stock[params["source_variant_ref"]] = 0
             elif behavior is Behavior.PRICE_CHANGE:
                 self._price[params["source_variant_ref"]] = int(params["new_price_minor"])
-
-    def _take(self, behavior: Behavior) -> Optional[dict]:
-        return self._armed.pop(behavior, None)
 
     def set_description(self, ref: str, text: str) -> None:
         """Lets security tests inject hostile provider text."""
@@ -208,7 +263,7 @@ class LocalAtelierProvider:
     def handoff(self, source_product_id: str, source_variant_id: Optional[str]) -> HandoffLink:
         slug = next(s for p, s, *_ in _PRODUCTS if p == source_product_id)
         return HandoffLink(f"https://demo-atelier.example.invalid/p/{slug}", "Continue at Demo Atelier",
-                           SIMULATION_LABEL, affiliate=False)
+                           self.disclosure, affiliate=False)
 
     # -- cart / checkout -------------------------------------------------------
     def create_cart(self, merchant_id: str, lines: Sequence[CartLineRequest]) -> ProviderCart:
@@ -251,152 +306,155 @@ class LocalAtelierProvider:
             if not quoted:
                 raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "no purchasable lines (out of stock)")
             return ProviderQuote(
-                merchant_id=MERCHANT_ID, payee_ref="demo-payee", lines=tuple(quoted),
+                merchant_id=MERCHANT_ID, payee_ref=self.payee_ref, lines=tuple(quoted),
                 tax=Money(subtotal * TAX_BPS // 10_000, "USD"), shipping=Money(0, "USD"),
                 discount=Money(0, "USD"), delivery_ref="demo-delivery",
                 terms=CheckoutTerms(returnable=True, return_window_days=30, policy_ref="demo-returns-v1"),
                 checkout_reference=f"demo-checkout-{cart.provider_cart_ref}-{subtotal}",
                 expires_at=now + ttl, observed_at=now, evidence_ref=f"sim:{PROVIDER_ID}:quote")
 
-    def submit(self, request: SubmitRequest) -> SubmitAck:
-        now = self._clock()
+    # -- merchant hooks (in-process, no network) ---------------------------------
+    def validate_checkout(self, request: SubmitRequest) -> Tuple[Optional[str], Tuple[CartLineRequest, ...]]:
+        """Every merchant-side check before any payment I/O: cart, exact lines, stock, price."""
+        cart_ref = request.checkout_reference.split("demo-checkout-", 1)[-1].rsplit("-", 1)[0]
+        lines = self._carts.get(cart_ref)
+        if lines is None:
+            return "unknown_checkout", ()
+        exact = lambda ls: sorted((l.source_variant_ref, l.quantity) for l in ls)  # noqa: E731
+        if exact(lines) != exact(request.lines):
+            return "checkout_changed", ()  # never buy what was not approved
+        for l in lines:
+            if self._stock[l.source_variant_ref] < l.quantity:
+                return "out_of_stock", ()
+        expected = sum(self._price[l.source_variant_ref] * l.quantity for l in lines)
+        expected += expected * TAX_BPS // 10_000
+        if expected != request.expected_total.amount_minor:
+            return "price_changed", ()
+        return None, tuple(lines)
+
+    def reserve(self, units: Sequence[Tuple[str, int]]) -> None:
+        for ref, qty in units:
+            self._stock[ref] -= qty
+
+    def release(self, units: Sequence[Tuple[str, int]]) -> None:
+        for ref, qty in units:
+            self._stock[ref] += qty
+
+    def line_value_minor(self, source_variant_ref: str, quantity: int) -> int:
+        unit = self._price[source_variant_ref] * quantity
+        return unit + unit * TAX_BPS // 10_000
+
+    def check_exchange(self, order_ref: str, from_ref: str, to_ref: str, quantity: int) -> None:
         with self._lock:
-            self.submit_calls.append(request.idempotency_key)
-            existing = self._by_key.get(request.idempotency_key)
-            if existing:  # provider-side idempotency: same key, same order, no second charge
-                o = self._orders[existing]
-                return SubmitAck(o.order_status == "accepted", o.ref, None, now, f"sim:{PROVIDER_ID}:order")
-            if self._take(Behavior.REJECTED_AUTH) is not None:
-                return SubmitAck(False, None, "payment_authorization_declined", now, f"sim:{PROVIDER_ID}:decline")
-            cart_ref = request.checkout_reference.split("demo-checkout-", 1)[-1].rsplit("-", 1)[0]
-            lines = self._carts.get(cart_ref)
-            if lines is None:
-                return SubmitAck(False, None, "unknown_checkout", now)
-            for l in lines:
-                if self._stock[l.source_variant_ref] < l.quantity:
-                    return SubmitAck(False, None, "out_of_stock", now)
-            expected = sum(self._price[l.source_variant_ref] * l.quantity for l in lines)
-            expected += expected * TAX_BPS // 10_000
-            if expected != request.expected_total.amount_minor:
-                return SubmitAck(False, None, "price_changed", now)
-            for l in lines:
-                self._stock[l.source_variant_ref] -= l.quantity
-            ref = "demo-order-" + secrets.token_hex(6)
-            self._orders[ref] = _Order(ref, request.idempotency_key,
-                                       [ObservedLine(l.source_variant_ref, l.quantity) for l in lines],
-                                       request.expected_total, "accepted", "authorized", 0, now)
-            self._by_key[request.idempotency_key] = ref
-            if self._take(Behavior.TIMEOUT_AFTER_ACCEPT) is not None:
-                raise ProviderError(ProviderErrorKind.OUTCOME_UNKNOWN,
-                                    "response timed out after transmission", transmitted=True)
-            return SubmitAck(True, ref, None, now, f"sim:{PROVIDER_ID}:order:{ref}")
+            if from_ref not in self._variants or to_ref not in self._variants:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "unknown replacement variant")
+            if self._price[to_ref] != self._price[from_ref]:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED,
+                                    "uneven exchange: return and buy the replacement instead")
+            if not 1 <= quantity <= 99 or self._stock[to_ref] < quantity:
+                raise ProviderError(ProviderErrorKind.CONTRACT_RESTRICTED, "replacement out of stock")
 
-    # -- orders ----------------------------------------------------------------
-    def _observe(self, o: _Order) -> OrderObservation:
-        return OrderObservation(o.ref, o.order_status, o.payment_status, tuple(o.lines),
-                                Money(o.refunded, "USD"), self._clock(), f"sim:{PROVIDER_ID}:order:{o.ref}")
+    def move_exchange_stock(self, from_ref: str, to_ref: str, quantity: int) -> None:
+        self._stock[to_ref] -= quantity
+        self._stock[from_ref] += quantity
 
-    def lookup_by_idempotency_key(self, idempotency_key: str) -> Optional[OrderObservation]:
-        with self._lock:
-            ref = self._by_key.get(idempotency_key)
-            return self._observe(self._orders[ref]) if ref else None
+    # -- connection tests (operator setup console) -------------------------------
+    _PROBES = {"catalog.search": "_probe_search", "catalog.detail": "_probe_detail",
+               "inventory.read": "_probe_inventory", "price.quote": "_probe_quote",
+               "orders.webhook": "_probe_webhook"}
 
-    def lookup(self, provider_order_ref: str) -> OrderObservation:
-        with self._lock:
-            o = self._orders.get(provider_order_ref)
-            if o is None:
-                raise ProviderError(ProviderErrorKind.MALFORMED_RESPONSE, "unknown order")
-            return self._observe(o)
+    def probe(self, capability: str, mode: str, now: datetime) -> ProbeResult:
+        """Read-only exercise of one capability. Never submits, captures, ships or returns anything."""
+        if mode != "read_only_test":
+            return ProbeResult("blocked", "none", f"blocked:{mode}_not_built",
+                               f"The simulation has no {mode.replace('_', ' ')} test; run the read-only test.",
+                               f"{mode}_not_built")
+        method = self._PROBES.get(capability)
+        if method is None:
+            return ProbeResult("blocked", "none", "blocked:no_read_only_probe",
+                               f"{capability} has no read-only test in the simulation: exercising it would create "
+                               "or change a cart, order or return.", "no_read_only_probe")
+        ref = f"sim:{PROVIDER_ID}:probe:{capability}:{now.astimezone(timezone.utc):%Y%m%dT%H%M%SZ}"
+        try:
+            observed = getattr(self, method)()
+        except ProviderError as e:
+            return ProbeResult("failed", "conformance_suite", ref, f"The simulated {capability} call answered "
+                               f"{e.kind.value}. {_PROBE_NOTE}", f"simulation_{e.kind.value}")
+        except _ProbeFailed as e:
+            return ProbeResult("failed", "conformance_suite", ref, f"{e} {_PROBE_NOTE}", e.reason_code)
+        return ProbeResult("passed", "conformance_suite", ref, f"{observed} {_PROBE_NOTE}")
 
-    def request_return(self, provider_order_ref: str, source_variant_ref: str, quantity: int) -> ProviderResult:
-        now = self._clock()
-        return ProviderResult(PROVIDER_ID, "simulation", str(uuid.uuid4()),
-                              f"demo-return-{provider_order_ref}-{source_variant_ref}", now, None, "requested")
+    def _probe_search(self) -> str:
+        page = self.search("overshirt", limit=3)
+        if not page.items or any(v.provider_id != PROVIDER_ID or not v.product_url.startswith("https://")
+                                 for v in page.items):
+            raise _ProbeFailed("Search returned no usable variants.", "search_empty")
+        return f"Search returned {len(page.items)} fictional variants."
 
-    # -- simulated provider-side events (produce signed webhooks) -------------
-    def capture(self, order_ref: str) -> List[Tuple[Dict[str, str], bytes]]:
-        with self._lock:
-            o = self._orders[order_ref]
-            o.payment_status = "captured"
-        return self._webhook(order_ref, "payment.captured")
+    def _probe_detail(self) -> str:
+        variants = self.detail(self._variants[PROBE_VARIANT].source_product_id)
+        if len(variants) != len(_SIZES):
+            raise _ProbeFailed("Product detail did not return every variant.", "detail_incomplete")
+        return f"Product detail returned {len(variants)} variants of one fictional product."
 
-    def ship(self, order_ref: str, *, deliver: bool = True) -> List[Tuple[Dict[str, str], bytes]]:
-        partial = self._take(Behavior.PARTIAL_FULFILLMENT)
-        with self._lock:
-            o = self._orders[order_ref]
-            new = []
-            for l in o.lines:
-                qty = l.quantity_ordered
-                if partial is not None and l.source_variant_ref == partial.get("source_variant_ref", l.source_variant_ref):
-                    qty = min(qty, int(partial.get("quantity", 1)))
-                new.append(replace(l, quantity_shipped=max(l.quantity_shipped, qty),
-                                   quantity_delivered=max(l.quantity_delivered, qty if deliver else 0)))
-            o.lines = new
-        return self._webhook(order_ref, "fulfillment.updated")
+    def _probe_inventory(self) -> str:
+        obs = self.check([PROBE_VARIANT])
+        if len(obs) != 1 or obs[0].source_variant_id != PROBE_VARIANT or obs[0].available_quantity is None:
+            raise _ProbeFailed("Inventory read returned no stock level.", "inventory_unreadable")
+        return "Inventory read returned a stock level for one fictional variant."
 
-    def refund(self, order_ref: str) -> List[Tuple[Dict[str, str], bytes]]:
-        params = self._take(Behavior.REFUND)
-        if params is None:
-            raise RuntimeError("arm Behavior.REFUND first")
-        with self._lock:
-            o = self._orders[order_ref]
-            ref = params.get("source_variant_ref")
-            qty = int(params.get("quantity", 0))
-            amount = 0
-            new = []
-            for l in o.lines:
-                if ref is None or l.source_variant_ref == ref:
-                    q = qty or (l.quantity_ordered - l.quantity_returned)
-                    unit = self._price[l.source_variant_ref]
-                    amount += (unit * q) + (unit * q * TAX_BPS // 10_000)
-                    l = replace(l, quantity_returned=l.quantity_returned + q)
-                new.append(l)
-            o.lines = new
-            o.refunded = min(o.total.amount_minor, o.refunded + amount)
-            o.payment_status = "refunded" if o.refunded >= o.total.amount_minor else "partially_refunded"
-        return self._webhook(order_ref, "refund.completed")
+    def _probe_quote(self) -> str:
+        cart = self.create_cart(MERCHANT_ID, [CartLineRequest(variant_uuid(PROBE_VARIANT), PROBE_VARIANT, 1)])
+        try:
+            q = self.quote(cart)
+        finally:
+            with self._lock:  # scratch cart: quoted, never submitted, then discarded
+                self._carts.pop(cart.provider_cart_ref, None)
+        if q.expires_at - q.observed_at < timedelta(minutes=1):
+            raise _ProbeFailed("The quote expired almost immediately.", "quote_expires_immediately")
+        line = q.lines[0]
+        return (f"Quoted a one-line scratch cart at {line.unit_price.amount_minor} {line.unit_price.currency} "
+                "minor units; it was discarded without submitting.")
 
-    def _webhook(self, order_ref: str, event_type: str) -> List[Tuple[Dict[str, str], bytes]]:
-        with self._lock:
-            self._event_seq += 1
-            event_id = f"demo-evt-{self._event_seq:06d}"
-            dup = self._take(Behavior.DUPLICATE_WEBHOOK) is not None
-        ts = str(int(self._clock().timestamp()))
-        body = json.dumps({"id": event_id, "type": event_type, "order_ref": order_ref,
-                           "simulation": True}, sort_keys=True).encode()
-        sig = hmac.new(self._webhook_secret, ts.encode() + b"." + body, hashlib.sha256).hexdigest()
-        headers = {"x-demo-timestamp": ts, "x-demo-signature": f"v1={sig}"}
-        return [(headers, body)] * (2 if dup else 1)
+    def _probe_webhook(self) -> str:
+        headers, body = self._signed("demo-evt-probe", "probe.ping", "demo-order-probe")
+        if self.verify_webhook(headers, body).event_id != "demo-evt-probe":
+            raise _ProbeFailed("A signed webhook did not round-trip.", "webhook_round_trip_failed")
+        try:
+            self.verify_webhook(headers, body.replace(b"probe.ping", b"probe.pong"))
+        except ProviderError:
+            return "Signed a webhook, verified it, and refused a tampered copy."
+        raise _ProbeFailed("A tampered webhook was accepted.", "webhook_tamper_accepted")
 
-    def verify_webhook(self, headers: Mapping[str, str], body: bytes) -> WebhookEvent:
-        h = {k.lower(): v for k, v in headers.items()}
-        ts, sig = h.get("x-demo-timestamp"), h.get("x-demo-signature", "")
-        if not ts or not ts.isdigit() or not sig.startswith("v1="):
-            raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "missing webhook signature")
-        expected = hmac.new(self._webhook_secret, ts.encode() + b"." + body, hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected, sig[3:]):
-            raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "invalid webhook signature")
-        sent = datetime.fromtimestamp(int(ts), tz=timezone.utc)
-        if abs(self._clock() - sent) > WEBHOOK_TOLERANCE:
-            raise ProviderError(ProviderErrorKind.UNAUTHORIZED, "webhook outside replay window")
-        data = json.loads(body)
-        return WebhookEvent(PROVIDER_ID, data["id"], data["type"], data["order_ref"], sent, data)
+
+PAYMENT_CAPABILITIES = ("checkout.submit", "orders.read", "orders.webhook", "refunds.read")
 
 
 def local_atelier_connection(provider: LocalAtelierProvider, environment: str,
                              checked_at: datetime) -> ProviderConnection:
+    """The merchant stays a simulation on either payment rail, so it is refused outside demo/development
+    and can never be ``verified``. On the Stripe test rail, payment-touching capabilities say so and carry
+    no evidence until a run exercises them."""
+    rail = provider.payments.descriptor
+    stripe_rail = rail.mode != "simulated"
     caps = {}
     for name in ("catalog.search", "catalog.detail", "catalog.feed", "inventory.read", "price.quote",
                  "cart.create", "cart.update", "checkout.submit", "orders.read", "orders.webhook",
                  "returns.request", "refunds.read", "checkout.handoff"):
+        if stripe_rail and name in PAYMENT_CAPABILITIES:
+            caps[name] = CapabilityStatus(name, "sandbox", "simulated_merchant_stripe_test_payments", checked_at)
+            continue
         # Simulation never reaches "verified": it proves app behavior only.
         caps[name] = CapabilityStatus(name, "sandbox", "deterministic_local_simulation",
                                       checked_at, f"sim:{PROVIDER_ID}:{name}", "conformance_suite")
     return ProviderConnection(
-        provider_id=PROVIDER_ID, display_name="Demo Atelier (simulated, fictional)",
+        provider_id=PROVIDER_ID,
+        display_name="Demo Atelier (simulated, fictional)" + (" · Stripe test mode" if stripe_rail else ""),
         environment=environment, simulation=True, country_codes=("US",),
-        disclosure=SIMULATION_LABEL, capabilities=caps, access_level="simulation",
+        disclosure=provider.disclosure, capabilities=caps,
+        access_level="simulation_stripe_test" if stripe_rail else "simulation",
+        credential_ref="env:STRIPE_TEST_SECRET_KEY" if stripe_rail else None,
         data_use={"display_images": True, "cache_prices": True, "derive_3d": True},
         allowed_redirect_hosts=("demo-atelier.example.invalid",), adapter=provider,
         protocols={"ap2": "0.2"},  # simulated merchant; proves codec/flow behavior only
-        merchant_public_keys={MERCHANT_ID: provider.merchant_public_key})
+        merchant_public_keys={MERCHANT_ID: provider.merchant_public_key}, payment_rail=rail)

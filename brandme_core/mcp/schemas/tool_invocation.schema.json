@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brand.me/schemas/mcp/tool_invocation.v1.json",
+  "title": "ToolInvocation (gateway MCP transport -> Python tool executor)",
+  "description": "Body of POST /internal/mcp/v1/invoke. The principal is NOT in the body: it travels only in the gateway-signed executor assertion (Authorization: Bearer, aud=brandme:mcp-executor). The external MCP access token is never forwarded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "protocol_version", "environment", "tool", "arguments"],
+  "properties": {
+    "request_id": {"type": "string", "format": "uuid"},
+    "protocol_version": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "environment": {"type": "string", "enum": ["demo", "development", "sandbox", "production"]},
+    "tool": {"type": "string", "minLength": 1, "maxLength": 120},
+    "arguments": {"type": "object"},
+    "idempotency_key": {"type": ["string", "null"], "minLength": 16, "maxLength": 128}
+  }
+}

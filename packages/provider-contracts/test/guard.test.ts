@@ -25,3 +25,27 @@ test('adapter built for another environment is refused', () => {
 test('capability list matches chapter 05 (24 names)', () => {
   assert.equal(new Set(CAPABILITY_NAMES).size, 24);
 });
+
+test('unlisted capability reads as unsupported, never available', async () => {
+  const { canExecute, capabilityOf } = await import('../src/index.ts');
+  const p = {
+    provider_id: 'fixture-shop', display_name: 'Fixture', environment: 'demo' as const, country_codes: ['US'],
+    disclosure: 'Simulated store — no real order',
+    capabilities: [
+      { name: 'cart.create' as const, state: 'sandbox' as const, reason_code: 'deterministic_local_simulation', last_checked_at: null, evidence_ref: null },
+      { name: 'checkout.submit' as const, state: 'suspended' as const, reason_code: 'operator_suspended', last_checked_at: null, evidence_ref: null },
+    ],
+  };
+  assert.equal(canExecute(p, 'cart.create'), true);
+  assert.equal(canExecute(p, 'checkout.submit'), false);
+  assert.equal(capabilityOf(p, 'orders.webhook').state, 'unsupported');
+  assert.equal(canExecute(p, 'orders.webhook'), false);
+});
+test('a transmitted request is never retryable', async () => {
+  const { ProviderError } = await import('../src/index.ts');
+  assert.equal(new ProviderError('transient', 'p', 'x').retryable, true);
+  assert.equal(new ProviderError('transient', 'p', 'x', null, true).retryable, false);
+  const unknown = new ProviderError('outcome_unknown', 'p', 'timed out after send');
+  assert.equal(unknown.transmitted, true);
+  assert.equal(unknown.retryable, false);
+});

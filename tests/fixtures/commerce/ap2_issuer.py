@@ -7,10 +7,8 @@ issue mandates; they only verify them (``brandme_core.domains.commerce.ap2``).
 
 from __future__ import annotations
 
-import json
 from typing import Any, Dict, Optional
 
-import jwt
 from jwcrypto.jwk import JWK
 from sd_jwt.common import SDObj
 from sd_jwt.holder import SDJWTHolder

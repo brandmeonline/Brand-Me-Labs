@@ -8,12 +8,15 @@ scheduler or long-running worker can own.
   settle their counts (ch.01 §6.3).
 * ``benefits.expire_due``: release pending reservations past their expiry and
   return the points.
-* ``media.expire_due`` / ``purge_pending``: expire unsaved try-on media and
-  retry blob purges, on the GCS store selected by ``BRANDME_MEDIA_BUCKET``
-  (``media/gcs_store.from_environment``; ``STORAGE_EMULATOR_HOST`` for the
-  local emulator in demo/development). Without a bucket this reports
-  ``not_configured``. This process holds no try-on provider, so it records a
-  provider deletion it could not request as ``failed``, never as confirmed.
+* ``media.dispatch_queued`` / ``collect_processing`` / ``expire_due`` /
+  ``purge_pending``: send queued try-on jobs, collect results, expire unsaved
+  media and retry blob purges, on the GCS store selected by
+  ``BRANDME_MEDIA_BUCKET`` (``media/gcs_store.from_environment``;
+  ``STORAGE_EMULATOR_HOST`` for the local emulator in demo/development) and the
+  provider chosen by ``BRANDME_TRYON_PROVIDER``. Without a bucket this reports
+  ``not_configured``. Without a provider, queued jobs stay queued. A provider
+  deletion that could not be requested is recorded as ``failed``, never as
+  confirmed.
 * Benefit fulfillment needs a partner fulfiller per benefit; none exists, so it
   is ``not_configured`` too.
 
@@ -53,7 +56,8 @@ def run_jobs(database: Any, *, environment: str, media: Any = None, fulfillers: 
     if media is None:
         out["media"] = "not_configured"
     else:
-        out["media"] = {**media.expire_due(), "purge_retried": media.purge_pending()}
+        out["media"] = {"dispatched": media.dispatch_queued(), "collected": media.collect_processing(), **media.expire_due(),
+                        "purge_retried": media.purge_pending()}
     if not fulfillers:
         out["fulfillment"] = "not_configured"
     else:
@@ -76,11 +80,11 @@ def _config(env: Mapping[str, str]) -> Dict[str, str]:
 
 def _media(database: Any, env: Mapping[str, str]) -> Any:
     from brandme_core.domains.media import gcs_store
-    from brandme_core.domains.media.providers import ProviderRegistry
+    from brandme_core.domains.media.providers import registry_from_environment
     from brandme_core.domains.media.service import MediaService
 
     store = gcs_store.from_environment(env)
-    return None if store is None else MediaService(database, store, ProviderRegistry())
+    return None if store is None else MediaService(database, store, registry_from_environment(env))
 
 
 def main(argv: Optional[List[str]] = None) -> int:
