@@ -4,13 +4,13 @@
 The SHA256 is the one published in the release's checksums.txt. Tests start the
 binary themselves from GCS_EMULATOR_BIN (tests/test_media_gcs_store.py).
 """
-import hashlib
 from pathlib import Path
 import platform
 import sys
 import tarfile
 import tempfile
-import urllib.request
+
+from _fetch import download_verified
 
 VERSION = "1.56.1"
 ARCHIVES = {
@@ -29,13 +29,7 @@ def main():
     url = f"https://github.com/fsouza/fake-gcs-server/releases/download/v{VERSION}/fake-gcs-server_{VERSION}_{target}.tar.gz"
     with tempfile.TemporaryDirectory() as temporary:
         archive = Path(temporary) / "fake-gcs-server.tar.gz"
-        digest = hashlib.sha256()
-        with urllib.request.urlopen(url, timeout=60) as response, archive.open("wb") as output:
-            while chunk := response.read(1024 * 1024):
-                output.write(chunk)
-                digest.update(chunk)
-        if digest.hexdigest() != sha256:
-            raise RuntimeError("fake-gcs-server archive checksum mismatch")
+        download_verified(url, sha256, archive, timeout=60, label="fake-gcs-server")
         with tarfile.open(archive) as package:
             package.extract("fake-gcs-server", destination, filter="data")
     binary.chmod(0o755)
