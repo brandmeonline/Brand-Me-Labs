@@ -171,6 +171,8 @@ class TrustComponent(str, Enum):
     COMMERCE_MANDATE = "commerce.mandate"
     RIGHTS_REPRINT = "rights.reprint"
     AUTH_IDENTITY = "auth.identity"
+    # Provider capability name from packages/provider-contracts/src/index.ts.
+    TRYON_PHOTO = "tryon.photo"
 
 
 class AdapterKind(str, Enum):
@@ -344,7 +346,8 @@ LEGACY_SIMULATED_ADAPTERS: Mapping[str, tuple[AdapterRegistration, ...]] = {
 
 
 # ---------------------------------------------------------------------------
-# Audited foundation-era processes (read 2026-10-23 at the cited files).
+# Audited foundation-era processes (read 2026-10-23 at the cited files;
+# events_retention and consumer_domains read 2026-10-25).
 #
 # These processes fabricate no trust evidence. Their registrations describe
 # what they actually serve, classified from the configuration they will run
@@ -364,13 +367,16 @@ class AuditedProcess:
 
     ``environment_source`` names where the process reads ``ENVIRONMENT`` as its
     own mode; ``environment_default`` is what it falls back to when the
-    variable is unset (``None``: it refuses to start).
+    variable is unset (``None``: it refuses to start). ``strict_refused_env``
+    lists local-emulator variables the process's own loader refuses in
+    sandbox/production; the guard refuses them there too.
     """
 
     summary: str
     registrations: Callable[[Mode, Mapping[str, str]], tuple[AdapterRegistration, ...]]
     environment_source: str = ""
     environment_default: Optional[str] = None
+    strict_refused_env: tuple[str, ...] = ()
 
 
 def _midnight_scope(env: Mapping[str, str], variable: str, implementation: str, evidence: str,
@@ -440,7 +446,7 @@ def _privacy_exports(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistr
 
 
 def _gateway(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, ...]:
-    provider = (env.get("IDENTITY_PROVIDER") or "dev").strip()  # gateway config/index.ts:26 default 'dev'
+    provider = (env.get("IDENTITY_PROVIDER") or "dev").strip()  # gateway config/index.ts:77 default 'dev'
     if provider != "oidc":
         return (
             AdapterRegistration(
@@ -466,15 +472,81 @@ def _gateway(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, .
         AdapterRegistration(
             TrustComponent.AUTH_IDENTITY,
             AdapterKind.REAL if mode is Mode.PRODUCTION else AdapterKind.SANDBOX,
-            "brandme-gateway/src/middleware/session.ts:66-79 jose jwtVerify against the issuer JWKS "
+            "brandme-gateway/src/middleware/session.ts:83-88 jose jwtVerify against the issuer JWKS "
             "(issuer, audience, asymmetric algorithm allowlist)",
             evidence=(
                 "The issuer's tenant (sandbox or production) is attested by deployment configuration; this "
-                "guard checks its shape only. The gateway's own guard (middleware/mode.ts:30-49) also refuses "
+                "guard checks its shape only. The gateway's own guard (middleware/mode.ts:58-65) also refuses "
                 "JWT_SECRET, symmetric algorithms, a non-https OIDC_JWKS_URI and non-https PUBLIC_ORIGINS/CORS_ORIGINS."
             ),
         ),
     )
+
+
+def _public_jwks_problem(raw: str) -> str:
+    """Why ``raw`` is not a JWKS of public P-256 keys with a kid ('' when it is).
+
+    The same shape DomainAssertionVerifier.from_jwks accepts
+    (brandme_core/domains/persona/assertion.py:50-57); a private member is refused.
+    """
+    try:
+        keys = json.loads(raw).get("keys") if raw.strip() else None
+    except (ValueError, AttributeError):
+        return "is not a JSON Web Key Set"
+    if not isinstance(keys, list) or not keys:
+        return "is unset or holds no keys"
+    for jwk in keys:
+        if not isinstance(jwk, dict) or jwk.get("kty") != "EC" or jwk.get("crv") != "P-256" or not jwk.get("kid"):
+            return "holds a key that is not a P-256 key with a kid"
+        if "d" in jwk:
+            return "holds a private key (public keys only)"
+    return ""
+
+
+def _consumer_domains(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, ...]:
+    issuer = (env.get("CONSUMER_DOMAIN_ASSERTION_ISSUER") or "").strip()
+    jwks_problem = _public_jwks_problem(env.get("CONSUMER_DOMAIN_ASSERTION_JWKS") or "")
+    verifier = ("brandme_core/domains/persona/assertion.py DomainAssertionVerifier: ES256 gateway principal assertions "
+                "(kid, issuer, audience brandme:consumer-domains, lifetime <= 60 s, single-use jti, environment)")
+    if not issuer or jwks_problem:
+        missing = "CONSUMER_DOMAIN_ASSERTION_ISSUER is unset" if not issuer else f"CONSUMER_DOMAIN_ASSERTION_JWKS {jwks_problem}"
+        identity = AdapterRegistration(TrustComponent.AUTH_IDENTITY, AdapterKind.UNCONFIGURED, f"{verifier} [{missing}]",
+                                       required=True)
+    else:
+        identity = AdapterRegistration(
+            TrustComponent.AUTH_IDENTITY,
+            AdapterKind.REAL if mode is Mode.PRODUCTION else AdapterKind.SANDBOX,
+            verifier,
+            evidence=(
+                "The member is authenticated by the gateway (audited process 'gateway'); this service verifies "
+                "only the gateway's signature over that principal and holds public keys only. The gateway signs "
+                "with brandme-gateway/src/services/domains.ts; this guard checks the JWKS shape, not the key."
+            ),
+        )
+    # brandme_core/domains/media/providers.py:94-101 (registry_from_environment).
+    choice = (env.get("BRANDME_TRYON_PROVIDER") or "").strip()
+    if choice == "simulated":
+        tryon = AdapterRegistration(
+            TrustComponent.TRYON_PHOTO, AdapterKind.SIMULATED,
+            "brandme_core/domains/media/providers.py SimulatedTryOnProvider (BRANDME_TRYON_PROVIDER=simulated)",
+            # The job label the service returns (media/service.py:161); results carry
+            # generated_visual_preview_simulated (service.py:346).
+            "Generated visual preview. Not a fit or size guarantee. Simulated provider.",
+        )
+    elif choice:
+        tryon = AdapterRegistration(
+            TrustComponent.TRYON_PHOTO, AdapterKind.UNCONFIGURED,
+            f"brandme_core/domains/media/providers.py [BRANDME_TRYON_PROVIDER={choice!r} is not a known provider]",
+            required=True,
+        )
+    else:
+        tryon = AdapterRegistration(
+            TrustComponent.TRYON_PHOTO, AdapterKind.UNCONFIGURED,
+            "brandme_core/domains/media/providers.py: no approved provider; photo previews report "
+            "photo_preview_not_configured",
+            evidence="No try-on provider account, region or terms exist to verify an adapter against.",
+        )
+    return identity, tryon
 
 
 def _no_trust_path(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, ...]:
@@ -502,7 +574,7 @@ AUDITED_PROCESSES: Mapping[str, AuditedProcess] = {
         "Outbox publisher to pre-provisioned Pub/Sub topics (python -m brandme_core.events.worker); "
         "no wallet, chain submission, topic creation or application side effects (events/worker.py:1-5).",
         _no_trust_path,
-        environment_source="brandme_core/events/worker.py:38 (must equal BRANDME_MODE)",
+        environment_source="brandme_core/events/worker.py:41 (must equal BRANDME_MODE)",
     ),
     "events_retention": AuditedProcess(
         "Outbox retention job (python -m brandme_core.events.retention): purges delivered outbox rows 7 days "
@@ -510,6 +582,17 @@ AUDITED_PROCESSES: Mapping[str, AuditedProcess] = {
         "wallet, chain submission or application side effects (events/retention.py:1-25).",
         _no_trust_path,
         environment_source="brandme_core/events/retention.py:244 (must equal BRANDME_MODE)",
+    ),
+    "consumer_domains": AuditedProcess(
+        "Consumer-domain HTTP service (python -m brandme_core.domains.persona.app): persona, wardrobe, social and "
+        "rewards routers behind the gateway's ES256 principal assertion; /ops routers unmounted. Spanner via "
+        "SPANNER_* only: the emulator is required in demo/development and refused in sandbox/production "
+        "(persona/app.py:91-92). Media and try-on routes mount only with the optional BRANDME_MEDIA_BUCKET "
+        "(media/gcs_store.py:325-349: storage emulator refused in strict modes, bucket policy checked). It never "
+        "calls a try-on provider (the jobs process does), a wallet or a chain.",
+        _consumer_domains,
+        environment_source="brandme_core/domains/persona/app.py:88-90 (must equal BRANDME_MODE)",
+        strict_refused_env=("SPANNER_EMULATOR_HOST", "STORAGE_EMULATOR_HOST"),
     ),
     "gateway": AuditedProcess(
         "Node API gateway. Its trust-path component is member identity; it also runs its own guard "
@@ -552,6 +635,14 @@ def _environment_echo_violations(service: str, mode: Mode, env: Mapping[str, str
     return [f"{state} ({process.environment_source}); set ENVIRONMENT={mode.value}"]
 
 
+def _strict_env_violations(service: str, mode: Mode, env: Mapping[str, str]) -> list[str]:
+    process = AUDITED_PROCESSES.get(canonical_service(service))
+    if process is None or not mode.is_strict:
+        return []
+    return [f"{name} points at a local emulator; {service} uses real services in {mode.value}"
+            for name in process.strict_refused_env if str(env.get(name, "")).strip()]
+
+
 def enforce_boot_guard(
     service: str,
     registrations: Optional[Iterable[AdapterRegistration]] = None,
@@ -570,6 +661,7 @@ def enforce_boot_guard(
     resolve_environment(env)
     violations = check_legacy_flags(mode, env)
     violations.extend(_environment_echo_violations(service, mode, env))
+    violations.extend(_strict_env_violations(service, mode, env))
     if registrations is None:
         registrations = service_registrations(service, mode, env)
         if registrations is None:

@@ -1,11 +1,15 @@
 """Mode guard: strict modes fail closed on trust-path simulation (BM-BASE-002)."""
+import json
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric import ec
+from jwt.algorithms import ECAlgorithm
 
+from brandme_core.boot import guard
 from brandme_core.config import (
     AUDITED_PROCESSES,
     LEGACY_SIMULATED_ADAPTERS,
@@ -28,6 +32,14 @@ REPO = Path(__file__).resolve().parents[2]
 
 LEGACY_FAKES = ["orchestrator", "mcp", "identity", "compliance", "cube", "brain", "policy", "knowledge", "governance"]
 
+
+def _jwk(key, kid="k-1"):
+    """A JWK generated at runtime (nothing is stored); a private key keeps its ``d``."""
+    return {**json.loads(ECAlgorithm.to_jwk(key)), "kid": kid}
+
+
+PUBLIC_JWKS = json.dumps({"keys": [_jwk(ec.generate_private_key(ec.SECP256R1()).public_key())]})
+
 # What a correctly configured sandbox deployment of each audited process sets
 # (no credentials: the shared guard does not read them).
 CONFIGURED = {
@@ -38,7 +50,13 @@ CONFIGURED = {
     "privacy-exports": {"EXPORT_NETWORK": "undeployed"},
     "events_worker": {},
     "events-worker": {},
+    "events_retention": {},
     "gateway": {"IDENTITY_PROVIDER": "oidc", "OIDC_ISSUER": "https://issuer.example.test", "OIDC_AUDIENCE": "brandme-api"},
+    # brandme_core/domains/persona/app.py _config: Spanner ids plus the assertion issuer and public JWKS.
+    "consumer_domains": {"SPANNER_PROJECT_ID": "p", "SPANNER_INSTANCE_ID": "i", "SPANNER_DATABASE_ID": "d",
+                         "CONSUMER_DOMAIN_ASSERTION_ISSUER": "brandme-gateway", "CONSUMER_DOMAIN_ASSERTION_JWKS": PUBLIC_JWKS},
+    "consumer-domains": {"CONSUMER_DOMAIN_ASSERTION_ISSUER": "brandme-gateway", "CONSUMER_DOMAIN_ASSERTION_JWKS": PUBLIC_JWKS,
+                         "BRANDME_MEDIA_BUCKET": "brandme-sandbox-media-x"},
 }
 
 
@@ -137,7 +155,7 @@ def test_test_network_only_processes_are_refused_in_production(service):
     assert any("chain.midnight" in v and "sandbox, not allowed in production" in v for v in exc.value.violations)
 
 
-@pytest.mark.parametrize("service", ["events_worker", "gateway"])
+@pytest.mark.parametrize("service", ["events_worker", "events_retention", "gateway", "consumer_domains"])
 def test_processes_without_test_network_scope_are_allowed_in_production(service):
     assert enforce_boot_guard(service, env=_configured(service, "production")) is Mode.PRODUCTION
 
@@ -168,7 +186,8 @@ def test_chain_inventory_is_current():
 def _all_registrations():
     for regs in LEGACY_SIMULATED_ADAPTERS.values():
         yield from regs
-    env = {**CONFIGURED["gateway"], "MIDNIGHT_NETWORK": "preprod", "READ_API_NETWORK": "preprod", "EXPORT_NETWORK": "preprod"}
+    env = {**CONFIGURED["gateway"], **CONFIGURED["consumer_domains"], "BRANDME_TRYON_PROVIDER": "simulated",
+           "MIDNIGHT_NETWORK": "preprod", "READ_API_NETWORK": "preprod", "EXPORT_NETWORK": "preprod"}
     for name, process in AUDITED_PROCESSES.items():
         for mode in Mode:
             yield from process.registrations(mode, env)
@@ -206,6 +225,100 @@ def test_gateway_oidc_without_issuer_and_audience_is_refused(override):
         enforce_boot_guard("gateway", env=_configured("gateway", "production", **override))
 
 
+# --- consumer_domains (brandme_core/domains/persona/app.py guard("consumer_domains")) ----
+
+
+def test_consumer_domains_is_audited_and_allowed_in_sandbox_with_complete_config():
+    """It was refused as unaudited ("has no audited trust-path inventory") before this entry."""
+    assert "consumer_domains" in AUDITED_PROCESSES
+    env = _configured("consumer_domains", "sandbox")
+    assert guard("consumer_domains", env=env) is Mode.SANDBOX
+    regs = {r.component: r for r in service_registrations("consumer_domains", Mode.SANDBOX, env)}
+    assert regs[TrustComponent.AUTH_IDENTITY].kind is AdapterKind.SANDBOX
+    assert "persona/assertion.py DomainAssertionVerifier" in regs[TrustComponent.AUTH_IDENTITY].implementation
+    assert regs[TrustComponent.TRYON_PHOTO].kind is AdapterKind.UNCONFIGURED and not regs[TrustComponent.TRYON_PHOTO].required
+    production = service_registrations("consumer_domains", Mode.PRODUCTION, env)
+    assert production[0].kind is AdapterKind.REAL
+
+
+@pytest.mark.parametrize("mode", ["sandbox", "production"])
+@pytest.mark.parametrize("flag", ["ENABLE_STUB_MODE", "ALLOW_STUB_FALLBACK", "ZK_ALLOW_STUB_FALLBACK"])
+def test_consumer_domains_still_refuses_stub_flags(mode, flag):
+    with pytest.raises(TrustPathViolation, match=f"{flag}='true' enables a stub fallback"):
+        enforce_boot_guard("consumer_domains", env=_configured("consumer_domains", mode, **{flag: "true"}))
+
+
+@pytest.mark.parametrize("mode", ["sandbox", "production"])
+@pytest.mark.parametrize("emulator", ["SPANNER_EMULATOR_HOST", "STORAGE_EMULATOR_HOST"])
+def test_consumer_domains_refuses_emulators_in_strict_modes(mode, emulator):
+    with pytest.raises(TrustPathViolation) as exc:
+        enforce_boot_guard("consumer_domains", env=_configured("consumer_domains", mode, **{emulator: "localhost:9010"}))
+    assert exc.value.violations == [f"{emulator} points at a local emulator; consumer_domains uses real services in {mode}"]
+
+
+@pytest.mark.parametrize("mode", ["sandbox", "production"])
+def test_consumer_domains_refuses_the_simulated_tryon_provider_in_strict_modes(mode):
+    with pytest.raises(TrustPathViolation, match=f"tryon.photo via .*SimulatedTryOnProvider.* is simulated, not allowed in {mode}"):
+        enforce_boot_guard("consumer_domains", env=_configured("consumer_domains", mode, BRANDME_TRYON_PROVIDER="simulated"))
+
+
+def test_consumer_domains_local_modes_use_emulators_and_label_the_simulated_provider():
+    env = _configured("consumer_domains", "development", SPANNER_EMULATOR_HOST="localhost:9010",
+                      STORAGE_EMULATOR_HOST="http://127.0.0.1:4443", BRANDME_TRYON_PROVIDER="simulated")
+    assert enforce_boot_guard("consumer_domains", env=env) is Mode.DEVELOPMENT
+    assert simulation_labels("consumer_domains", env) == [{
+        "component": "tryon.photo",
+        "label": "Generated visual preview. Not a fit or size guarantee. Simulated provider.",
+        "implementation": "brandme_core/domains/media/providers.py SimulatedTryOnProvider (BRANDME_TRYON_PROVIDER=simulated)",
+    }]
+
+
+def _private_jwks():
+    return json.dumps({"keys": [_jwk(ec.generate_private_key(ec.SECP256R1()))]})
+
+
+@pytest.mark.parametrize("override,reason", [
+    ({"CONSUMER_DOMAIN_ASSERTION_ISSUER": ""}, "CONSUMER_DOMAIN_ASSERTION_ISSUER is unset"),
+    ({"CONSUMER_DOMAIN_ASSERTION_JWKS": ""}, "CONSUMER_DOMAIN_ASSERTION_JWKS is unset or holds no keys"),
+    ({"CONSUMER_DOMAIN_ASSERTION_JWKS": '{"keys": []}'}, "CONSUMER_DOMAIN_ASSERTION_JWKS is unset or holds no keys"),
+    ({"CONSUMER_DOMAIN_ASSERTION_JWKS": "not json"}, "CONSUMER_DOMAIN_ASSERTION_JWKS is not a JSON Web Key Set"),
+    ({"CONSUMER_DOMAIN_ASSERTION_JWKS": '{"keys": [{"kty": "RSA", "kid": "k", "n": "x", "e": "AQAB"}]}'},
+     "holds a key that is not a P-256 key with a kid"),
+    ({"CONSUMER_DOMAIN_ASSERTION_JWKS": None}, "CONSUMER_DOMAIN_ASSERTION_JWKS holds a private key (public keys only)"),
+    ({"BRANDME_TRYON_PROVIDER": "vendor-x"}, "BRANDME_TRYON_PROVIDER='vendor-x' is not a known provider"),
+])
+def test_consumer_domains_misconfiguration_is_required_but_unconfigured(override, reason):
+    override = {k: (_private_jwks() if v is None else v) for k, v in override.items()}
+    with pytest.raises(TrustPathViolation) as exc:
+        enforce_boot_guard("consumer_domains", env=_configured("consumer_domains", "sandbox", **override))
+    assert len(exc.value.violations) == 1
+    assert reason in exc.value.violations[0] and exc.value.violations[0].endswith("is required but unconfigured")
+
+
+def _domain_check(env):
+    # GOOGLE_APPLICATION_CREDENTIALS at a missing file: credential lookup fails without a network call.
+    return subprocess.run([sys.executable, "-m", "brandme_core.domains.persona.app", "--check"], cwd=REPO,
+                          env={"PATH": "", "GOOGLE_APPLICATION_CREDENTIALS": str(REPO / "no-such-credentials.json"), **env},
+                          capture_output=True, text=True, timeout=120)
+
+
+def test_domain_service_entrypoint_passes_the_boot_guard_in_sandbox():
+    """The real entrypoint: complete sandbox config gets past guard("consumer_domains") (exit 3 before
+    this entry) and then refuses only because no Google credential exists here (exit 2)."""
+    out = _domain_check(_configured("consumer_domains", "sandbox"))
+    assert out.returncode == 2, out.stderr
+    assert out.stdout == '{"status":"startup_refused"}\n'
+    assert "[brandme boot]" not in out.stderr and "Traceback" not in out.stderr
+
+
+@pytest.mark.parametrize("extra,reason", [({"ENABLE_STUB_MODE": "true"}, "ENABLE_STUB_MODE"),
+                                          ({"BRANDME_TRYON_PROVIDER": "simulated"}, "tryon.photo")])
+def test_domain_service_entrypoint_boot_guard_refuses_stub_and_simulated_provider(extra, reason):
+    out = _domain_check(_configured("consumer_domains", "sandbox", **extra))
+    assert out.returncode == 3 and out.stdout == ""
+    assert "[brandme boot] consumer_domains: REFUSED" in out.stderr and reason in out.stderr
+
+
 # --- single mode source --------------------------------------------------------
 
 
@@ -224,7 +337,7 @@ def test_conflicting_environment_refuses_every_service(service):
         enforce_boot_guard(service, env=_env("development", ENVIRONMENT="production"))
 
 
-@pytest.mark.parametrize("service", ["read_api", "privacy_exports", "events_worker"])
+@pytest.mark.parametrize("service", ["read_api", "privacy_exports", "events_worker", "events_retention", "consumer_domains"])
 @pytest.mark.parametrize("mode", ["sandbox", "development"])
 def test_processes_that_read_environment_need_it_set(service, mode):
     with pytest.raises(TrustPathViolation, match="ENVIRONMENT is unset"):
@@ -283,6 +396,7 @@ def test_inventory_cli_lists_legacy_and_audited_processes():
     out = subprocess.run([sys.executable, "-m", "brandme_core.config", "inventory"], cwd=REPO,
                          env={"PATH": "", "BRANDME_MODE": "sandbox"}, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
-    for name in ("orchestrator", "chain", "read_api", "privacy_exports", "events_worker", "gateway"):
+    for name in ("orchestrator", "chain", "read_api", "privacy_exports", "events_worker", "events_retention", "gateway",
+                 "consumer_domains"):
         assert f'"{name}"' in out.stdout
     assert "services/midnight-client.ts" not in out.stdout
