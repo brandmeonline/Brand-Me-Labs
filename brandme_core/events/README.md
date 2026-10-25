@@ -38,11 +38,39 @@ the broker**, not that a consumer applied a business effect.
    and disable its legacy HTTP healthcheck for the worker. No target deployment
    or migration is performed by this code change.
 
-The default allowlist is the closed catalog in `brandme_core/domains/events.py`:
-identity/session/consent, rights/chain projection, and privacy deletion contracts.
-`OUTBOX_EVENT_TYPES` can restrict it with an exact comma-separated subset.
-Unsupported types stay pending for their owning domain. The separate persona and
-commerce implementations still need catalog alignment and real subscribers.
+## Event catalogs
+
+The default allowlist is every contract registered by the closed catalog list in
+`brandme_core/events/catalogs.py`, loaded by `WorkerConfig.from_env` after the
+mode guard:
+
+| Lane | Catalog module | Contracts |
+|---|---|---|
+| foundation | `brandme_core.domains.events` | 11: identity/session/consent, rights/chain projection, privacy deletion |
+| consumer-domains | `brandme_core.domains.persona.lane`, then `load_domains()` | 36: persona, wardrobe, social, rewards, media |
+| commerce-agents | `brandme_core.domains.commerce.events` | 6 on PR #51; `absent` on main until it merges |
+
+`OUTBOX_EVENT_TYPES` can restrict the allowlist with an exact comma-separated
+subset. Types no catalog registers stay pending. The ready line reports each
+lane's catalog as `loaded` or `absent`. Pub/Sub topics stay per privacy class;
+subscribers filter by the `event_type` attribute.
+
+- **Adding a catalog** is a foundation PR: add a `Catalog` entry, pin its
+  contract count in `tests/foundation/test_outbox_lane_catalogs.py`, and keep the
+  module importable without services, providers or credentials. Nothing is read
+  from the environment. A lane needs no private worker:
+  `brandme_core/domains/persona/outbox_worker.py` is now redundant.
+- **`absent`** applies only to an entry with `until_merged` whose module does not
+  exist at all. Any other failure (a missing required module, an import error in
+  a present module, a failing loader) refuses startup with exit 2 and
+  `{"status":"startup_refused","reason":"event_catalog_unavailable","lane":LANE}`.
+  The import error's text is not logged. Delete `until_merged` once the lane's PR
+  merges.
+- **Version rollout.** The dispatcher claims rows by `event_type` name only
+  (`outbox.py:112-115`), while the registry is keyed by `(event_type,
+  schema_version)`. A row at a version this worker image has not registered is
+  dead-lettered as `invalid_event`, not left pending (`outbox.py:201-204`). Ship
+  each new contract version in the worker image before any writer emits it.
 
 ## Recovery and privacy
 
