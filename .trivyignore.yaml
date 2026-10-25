@@ -14,17 +14,12 @@
 # default pip analyzer only reads files named requirements.txt). These five were the only CRITICAL, fixable
 # findings; the merge results of PR #51, #52 and #54 add none.
 #
-# Renewal triage (foundation, 2026-10-25, same image and flags, run without this file): four of the five are
-# fixed and deleted. certifi refreshed to 2026.10.23 in scripts/python/requirements.lock (GHSA-6q48-6c7w-9gw2);
+# Renewal triage (foundation, 2026-10-25, same image and flags, run without this file): all five are fixed
+# and deleted. certifi refreshed to 2026.10.23 in scripts/python/requirements.lock (GHSA-6q48-6c7w-9gw2);
 # the unused python-jose 3.3.0 pins removed from brandme-core/ and brandme-cube/requirements.txt
 # (CVE-2024-33663, no `jose` import in any .py file); the unused sentence-transformers 2.3.1 pin removed from
 # brandme-agents/agentic/requirements.txt (CVE-2026-68770, no import).
-vulnerabilities:
-  # owner: foundation expires: 2026-11-30 reason: anyio 3.7.1 in the CI/dev venv lock is held below 4.0
-  # by fastapi==0.104.1 (brandme_core/requirements.txt). Fix needs the fastapi/starlette upgrade, then a lock
-  # recompile; starlette 0.27.0 in the same lock also has fixable HIGH findings.
-  - id: CVE-2026-63374
-    paths:
-      - "scripts/python/requirements.lock"
-    expired_at: 2026-11-30
-    statement: "owner foundation; anyio pinned <4 by fastapi 0.104.1; fix with the fastapi upgrade"
+# anyio (CVE-2026-63374) is fixed the same day: fastapi 0.104.1 -> 0.115.14 in brandme_core/requirements.txt
+# lets the lock take anyio 4.15.1 / starlette 0.46.2 (full tests/ suite: same 824 passed, 4 allowlisted
+# skips, 32 quarantined as before). The baseline is empty; a new entry needs the same four fields.
+vulnerabilities: []

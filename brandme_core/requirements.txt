@@ -2,7 +2,7 @@
 # Requirements for brandme_core package
 
 # Core dependencies
-fastapi==0.104.1
+fastapi==0.115.14
 uvicorn==0.24.0
 asyncpg==0.29.0
 httpx==0.25.1

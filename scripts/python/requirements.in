@@ -3,6 +3,9 @@
 -r ../../brandme_core/requirements.txt
 -r ../../docs/design/brandme/contracts/requirements.txt
 pytest-timeout==2.3.1
+# CVE-2026-63374 (CRITICAL, fixed in anyio 4.14.2). fastapi 0.115.14 (brandme_core/requirements.txt) allows
+# anyio 4; this floor keeps a recompile from resolving back to the 3.x release that fastapi 0.104.1 required.
+anyio>=4.14.2
 datamodel-code-generator==0.34.0
 # Commerce/providers/MCP lane (commerce-agents) runtime pins, consumed by brandme_core/domains/commerce,
 # brandme_core/mcp and their tests. Listed directly (not `-r` of the lane's
