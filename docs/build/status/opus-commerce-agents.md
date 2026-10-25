@@ -1232,3 +1232,23 @@ Orchestration's founder file (`docs/build/orchestration/questions-for-founder-20
   Then I fix whatever their end-to-end test finds.
 - *This lane mounts it:* that needs permission to edit gateway `index.ts` and the compose files. Then I add an end-to-end test through the gateway, plus `stripe listen` webhook delivery once Q8 is done.
 - *Defer:* everything stays unmounted, and the console keeps reading through the existing gateway client.
+
+## Stage S21 — Orchestrator note: demo keys; non-key skips now run (2026-10-25)
+
+The orchestrator (PR #51 comment, 2026-10-24) relayed founder direction: use demo keys now, and do not apply
+the lock patch before the Q11 ruling.
+
+- **Keys:** none are available. This container has no Stripe or Anthropic account access, so the lane cannot
+  create a Stripe test-mode key or an Anthropic dev key. They must be added as environment secrets:
+  `STRIPE_TEST_SECRET_KEY` (restricted `rk_test_…` preferred), optional `STRIPE_TEST_WEBHOOK_SECRET`, and
+  `BRANDME_DEV_ANTHROPIC_API_KEY`. The manifest stays "Not present" until they exist. When they land, the 8
+  live tests (5 Stripe, 3 model) run as sandbox evidence. From this container the live runs also set the
+  explicit egress variables (`BRANDME_STRIPE_EGRESS_PROXY` / `BRANDME_STRIPE_CA_BUNDLE`, and the assistant
+  equivalents), because ambient proxy settings are deliberately ignored.
+- **Non-key skips, now run locally:**
+  - The 6 AP2 official-SDK oracle tests ran against the oracle's pinned SDK (`e1ea56d`):
+    `test_commerce_ap2.py` 40/40.
+  - The 4 Pub/Sub emulator tests ran with the emulator from foundation's SHA-verified fetch script:
+    `tests/foundation/test_outbox_delivery.py` 30/30.
+  - Of the 18 skips, the 8 key-gated ones remain.
+- **Lock patch (Q11):** not applied, as directed.
