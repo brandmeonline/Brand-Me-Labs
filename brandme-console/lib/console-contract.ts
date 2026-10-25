@@ -7,7 +7,7 @@
 import type { ReactNode } from 'react'
 
 export const CONSOLE_SHELL_CONTRACT = {
-  version: '1.1.0',
+  version: '1.1.1',
   mainId: 'console-content',
   pageRoot: 'app/(ops)',
   headerClass: 'console-page-header',

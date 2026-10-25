@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
+import { createRequire, Module } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { afterEach, test } from 'node:test'
 
@@ -423,5 +423,104 @@ test('navigation clearance measures growth, clears public routes, and disconnect
     assert.equal(disconnected, 2)
   } finally {
     globalThis.ResizeObserver = originalObserver
+  }
+})
+
+// Use the console's own React runtime: the consumer uses React 19 and the
+// console uses React 18. Routing is the only framework behavior replaced here.
+const consoleRequire = createRequire(
+  new URL('../../../brandme-console/package.json', import.meta.url),
+)
+const consoleReact = consoleRequire('react')
+const renderConsole = consoleRequire('react-dom/server').renderToStaticMarkup
+const consoleSource = (path) => source(`../../../brandme-console/${path}`)
+const {
+  CONSOLE_SHELL_CONTRACT: consoleContract,
+  ConsolePageHeader,
+} = consoleSource('components/console-contract.ts')
+const { isLegacyConsolePath } = consoleSource('lib/console-contract.ts')
+const { ExperiencePreferencesProvider: ConsolePreferences } = consoleSource(
+  'lib/client/experience-preferences.tsx',
+)
+const consoleElement = consoleReact.createElement
+function renderConsoleShell(pathname, children) {
+  const filename = fileURLToPath(
+    new URL('../../../brandme-console/components/console-shell.tsx', import.meta.url),
+  )
+  const shellModule = new Module(filename)
+  shellModule.filename = filename
+  const shellRequire = createRequire(filename)
+  shellModule.require = (request) => {
+    if (request === 'next/navigation') return { usePathname: () => pathname }
+    if (request.startsWith('@/')) return consoleSource(request.slice(2))
+    return shellRequire(request)
+  }
+  compile(shellModule, filename)
+  return renderConsole(consoleElement(
+    ConsolePreferences,
+    null,
+    consoleElement(shellModule.exports.ConsoleShell, { environment: 'development environment' }, children),
+  ))
+}
+
+test('console patch contract preserves public exports, reserved routes and header imports', () => {
+  const publicEntry = consoleSource('components/console-contract.ts')
+  assert.deepEqual(Object.keys(publicEntry).sort(), ['CONSOLE_SHELL_CONTRACT', 'ConsolePageHeader'])
+  assert.equal(ConsolePageHeader, consoleSource('components/console-page-header.tsx').ConsolePageHeader)
+  assert.equal(consoleContract.version, '1.1.1')
+  assert.equal(consoleContract.mainId, 'console-content')
+  assert.equal(consoleContract.pageRoot, 'app/(ops)')
+  assert.equal(consoleContract.headerClass, 'console-page-header')
+  assert.equal(consoleContract.tableClass, 'console-table-region')
+  assert.deepEqual(consoleContract.navigation.map(({ href }) => href), [
+    '/', '/providers', '/ingestion', '/commerce/operations', '/chain/operations',
+    '/rights/issuers', '/manufacturing/jobs', '/moderation', '/rewards-disputes', '/capabilities',
+  ])
+  assert.deepEqual(consoleContract.legacyRoots, ['/dashboard', '/proof'])
+})
+
+test('console public header preserves optional slots and owns only the page heading', () => {
+  const title = 'Provider <review> & approval'
+  const document = new JSDOM(renderConsole(consoleElement(ConsolePageHeader, {
+    eyebrow: 'Operations',
+    title,
+    description: 'Authorized records only.',
+    actions: consoleElement('a', { href: '/providers/new' }, 'Add provider'),
+  }))).window.document
+  assert.equal(document.querySelectorAll('h1').length, 1)
+  assert.equal(document.querySelector('h1').textContent, title)
+  assert.equal(document.querySelector('header').className, consoleContract.headerClass)
+  assert.equal(document.querySelector('.console-eyebrow').textContent, 'Operations')
+  assert.equal(document.querySelector('.console-page-actions a').getAttribute('href'), '/providers/new')
+  assert.equal(document.querySelectorAll('main, nav').length, 0)
+  const minimal = new JSDOM(renderConsole(consoleElement(ConsolePageHeader, { title }))).window.document
+  assert.equal(minimal.querySelectorAll('h1').length, 1)
+  assert.equal(minimal.querySelector('.console-eyebrow, .console-page-actions, p'), null)
+})
+
+test('console shell owns one focusable main and skip target around a domain header', () => {
+  const document = new JSDOM(renderConsoleShell('/providers/example/setup',
+    consoleElement('section', null, consoleElement(ConsolePageHeader, { title: 'Provider setup' })),
+  )).window.document
+  assert.equal(document.querySelectorAll('main').length, 1)
+  const main = document.querySelector('main')
+  assert.equal(main.id, consoleContract.mainId)
+  assert.equal(main.getAttribute('tabindex'), '-1')
+  assert.equal(document.querySelector('.console-skip').getAttribute('href'), `#${main.id}`)
+  assert.equal(main.querySelectorAll('h1').length, 1)
+  assert.equal(main.querySelector('nav'), null)
+  assert.equal(document.querySelector('nav[aria-label="Operations"] [aria-current="page"]').getAttribute('href'), '/providers')
+})
+
+test('console legacy roots pass through without duplicate landmarks or prefix collisions', () => {
+  const legacyPage = consoleElement('main', { id: 'legacy-content' },
+    consoleElement('h1', null, 'Existing surface'),
+  )
+  for (const pathname of ['/dashboard', '/dashboard/scans', '/proof', '/proof/scan-123']) {
+    assert.equal(isLegacyConsolePath(pathname), true, pathname)
+    assert.equal(renderConsoleShell(pathname, legacyPage), renderConsole(legacyPage), pathname)
+  }
+  for (const pathname of ['/', '/providers', '/dashboard-archive', '/proofing']) {
+    assert.equal(isLegacyConsolePath(pathname), false, pathname)
   }
 })

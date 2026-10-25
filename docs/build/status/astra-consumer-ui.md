@@ -229,11 +229,11 @@ Scope includes W01 publication, first review-ready PR, journey UI, a11y/visual C
 and same-origin gateway integration. Dev/test credentials are authorized; no
 production credentials, customer data, real purchases or messages are needed.
 
-### Console shell layout contract 1.1.0 — public code artifact
+### Console shell layout contract 1.1.1 — public code artifact
 
 **Stable import:** `@/components/console-contract` in `brandme-console`.
 Exports: `ConsolePageHeader`, `ConsolePageHeaderProps`,
-`CONSOLE_SHELL_CONTRACT` (literal version `1.1.0`, landmark ID, CSS helpers,
+`CONSOLE_SHELL_CONTRACT` (literal version `1.1.1`, landmark ID, CSS helpers,
 reserved navigation paths and legacy exclusions). Source metadata lives in
 `brandme-console/lib/console-contract.ts`; the live shell and navigation consume
 it. The existing `@/components/console-page-header` import remains compatible.
@@ -264,6 +264,14 @@ of the contract. Domain subtrees stay owned by their backend lanes.
 - `1.1.0` (2026-10-23): first versioned public code entry point and exported props;
   shared metadata drives shell/nav; correct reward-dispute nav to
   `/rewards-disputes` (PD-19, the backend lane's actual owned route).
+- `1.1.1` (2026-10-24): compatible React runtime isolation correction. The console
+  owns its preference provider rather than importing the consumer's React-bearing
+  module. The `brandme:experience:v1` storage format and display behavior are
+  unchanged. Console-owned font and token adapters resolve the console's declared
+  dependencies while preserving shared assets, font options and CSS output.
+  Public exports, header props/markup, reserved routes, skip/main
+  ownership and legacy pass-through remain unchanged; backend pages need no
+  migration. Focused compatibility checks run in the existing UI component suite.
 
 Semver: landmark/ownership or required-prop breaks require a major version;
 additive exports/slots a minor; compatible fixes a patch. Record future changes
@@ -271,6 +279,12 @@ here and update the code version in the same commit. Local domain headers remain
 valid under v1's optional-header rule until the founder's enforce/retire decision.
 Recommendation: adopt this import when integrating each domain, retain existing
 content and authorization, then retire duplicate header implementations.
+
+The preference provider is a shell implementation detail, not a new domain-page
+API. Backend lanes continue to consume `@/components/console-contract` and own
+their `(ops)` subtrees and authorization. The consumer and console may use
+different React runtimes; domain pages must not import the consumer's provider
+to join the console shell.
 
 **W01 contract publication: delivered. W01 release acceptance: still open** until
 the supported framework/token integration and current browser checks pass;
@@ -521,3 +535,38 @@ The filtered install, sequential console TypeScript check and two adapter parity
 The founder explicitly approved the prepared four-line domain correction in this thread. The three room definitions and their documentation now match the spatial manifests' `original-shelves-v2` revision; geometry, garment revisions and all spatial sources/assets are unchanged. Eight corresponding room-revision literals in Python and gateway test fixtures are synchronized so revision rejection cannot mask transform, placement or stale-ETag checks. The existing rejection test additionally covers the formerly current `original-v1`, preserving the reload instruction and the exact current-revision response. No validation or assertion is bypassed.
 
 The local placement suite passes all 25 cases, including manifest consistency. Thirteen API/service cases require the Spanner emulator and are skipped locally; the mandatory CI domain suite must execute them before merge. The earlier source-adapter head `aafc231` passed [Consumer UI run 40154375907](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40154375907), including 18 UI/adapter and 13 gateway/security tests, both Linux production builds, all browser/accessibility journeys, all 74 unchanged reviewed visual comparisons and the real live-domain journey. The approved domain correction requires fresh full CI and complete container/runtime verification before #56 merges.
+
+## Stage 16 — console contract 1.1.1 prepared for post-#56 adoption
+
+Prepared in an isolated worktree from integrated consumer head
+`cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8`, after the approved room-revision correction,
+console runtime and source-adapter fixes, and
+prerequisite integration. Publication remains pending until PR #56 merges to main.
+This patch publishes that compatible correction through the versioned public
+contract; it adds no exports, components, routes or required props. The stable
+header entry point, existing direct header import, single main/skip target and
+legacy root boundaries are covered by the existing `test:ui` runner using the
+console's own React runtime. These are component/markup checks, not browser,
+visual-baseline or device evidence.
+
+Validation after rebasing onto `aafc231` with Node 24.21.0 / pnpm 10.34.6:
+`pnpm --dir brandme-frontend test:ui` passed **22/22** cases with no skips
+(the existing 16, two adapter parity cases and four console compatibility cases);
+`pnpm --dir brandme-console exec tsc --noEmit --incremental false` and
+`git diff --check` passed. Static rendering emits React 18/Radix layout-effect
+diagnostics in the JSDOM process; browser hydration remains a separate gate.
+Dependencies were reused from the fresh, pinned React-type-peer installation
+through newly created junctions in a new validation worktree. Existing worktrees
+and their junctions remain untouched; this publication changes no manifest or
+lockfile. The rebase resolved only this status-document append and preserves the
+complete Stage 14/15 evidence, including the filtered-install repair and approved
+room-revision receipts.
+Contract metadata and the four compatibility cases remain unchanged. The checks
+were repeated because the inherited source adapters changed the console's imports.
+The subsequent rebase onto `cccfe7b` changes only domain/test fixtures and status
+evidence in the parent; console/frontend sources and dependency metadata are
+identical to `aafc231`. The 22 UI cases and console type check were not rerun for
+that rebase; the publication diff and whitespace check were reviewed again.
+
+Adopt this local publication only after PR #56 is integrated on main. No baseline
+is changed and no credential is created.
