@@ -9,7 +9,7 @@ export default async function ShopPage() {
       <div className="text-center space-y-4 pb-8">
         <h1 className="text-5xl font-bold">Discover</h1>
         <p className="text-gray-400 text-lg">
-          Authentic looks. Verified creators. Chain-backed integrity.
+          Explore the original demo wardrobe in 2D and 3D.
         </p>
       </div>
 
@@ -18,6 +18,7 @@ export default async function ShopPage() {
           <GarmentCard
             key={index}
             imageUrl={item.imageUrl}
+            href={item.href}
             title={item.title}
             subtitle={item.subtitle}
             integrityStatus={item.integrityStatus}

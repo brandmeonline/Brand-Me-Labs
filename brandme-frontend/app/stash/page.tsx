@@ -9,7 +9,7 @@ export default async function StashPage() {
       <div className="space-y-4">
         <h1 className="text-5xl font-bold">Your Stash</h1>
         <p className="text-gray-400 text-lg">
-          {stash.length} verified item{stash.length !== 1 ? 's' : ''} in your collection
+          {stash.length} demo item{stash.length !== 1 ? 's' : ''} in this preview collection
         </p>
       </div>
 
@@ -24,6 +24,7 @@ export default async function StashPage() {
             <GarmentCard
               key={index}
               imageUrl={item.imageUrl}
+              href={item.href}
               title={item.title}
               subtitle={item.subtitle}
               integrityStatus={item.integrityStatus}
