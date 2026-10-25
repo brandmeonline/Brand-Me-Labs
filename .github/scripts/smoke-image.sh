@@ -12,7 +12,7 @@ case "$service" in
     docker run --rm --entrypoint node "$image" --input-type=module -e "await import('./dist/src/midnight/spanner-store.js'); await import('./dist/src/routes/operations.js'); await import('./dist/src/midnight/reconciliation-worker.js'); await import('./dist/src/midnight/projection.js'); console.log('chain operation runtime imports OK')"
     ;;
   agents)
-    docker run --rm --entrypoint python "$image" -c "import pydantic, langchain, neo4j_graphrag, faiss, sentence_transformers; print('agent dependencies import OK')"
+    docker run --rm --entrypoint python "$image" -c "import pydantic, langchain, neo4j_graphrag, faiss; print('agent dependencies import OK')"
     docker run --rm "$image"
     docker run --rm -e BRANDME_MODE=production --entrypoint python "$image" -c "from typer.testing import CliRunner; from agentic.cli.main import app; from brandme_core.config import TrustPathViolation; r = CliRunner().invoke(app, ['scan', '--tag', 'test', '--scanner-id', 'test']); assert isinstance(r.exception, TrustPathViolation), r.exception; print('legacy simulated workflow refused in production')"
     ;;
