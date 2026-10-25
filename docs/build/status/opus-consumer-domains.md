@@ -840,3 +840,76 @@ Under strict xfail both entries would XPASS and fail the run. Per the registry r
 | console build; gateway lint, type-check, vitest | covered by CI on this head (Build Docker Images (console), Test Gateway): both green |
 
 **CI on `a4f7ef0`.** All 20 check runs succeed; Deploy to GKE (sandbox) is skipped, as on every PR. That includes Test Frontend, both Security Scan jobs, Foundation check, Test Core, Test Consumer Domains and the five image builds. `mergeable_state` is `clean`.
+
+## Stage 13 — GCS media store on a local GCS emulator (ruling Q19) — 2026-10-24
+PR #52 merged into `main` (`3d4cc0b`). This stage starts fresh from `main` on the same branch name.
+
+**What ships (`brandme_core/domains/media/gcs_store.py`)**
+- **`GcsMediaStore` implements `MediaStore` on a private bucket.** It speaks the JSON API through an authorized session and signs upload URLs with V4 (GOOG4-RSA-SHA256). It uses only `requests`, `google-auth` and `cryptography`, all already in the hashed lock, so the lock needs no recompile.
+- **Upload URLs.** Path style, valid at most 15 minutes. Each URL signs:
+  - `content-type`;
+  - `x-goog-content-length-range: 0,<declared bytes>`;
+  - `x-goog-if-generation-match: 0`, so uploads are create-only and a verified object cannot be swapped;
+  - `x-goog-custom-time`.
+
+  `complete_upload` still checks size, magic bytes and SHA-256 itself.
+- **`stat`** hashes the bytes, because GCS reports only MD5/CRC32C. The download is pinned to the generation just read and checked against the object's MD5. An object over 10 MB is reported by size without being downloaded.
+- **Lifecycle backstop.** Every object starts with `customTime` = creation time. The bucket rule `Delete if daysSinceCustomTime >= 2` catches anything the 24 h app sweeper missed.
+  - `save_job` first calls the new `MediaStore.retain`, which moves the saved preview's `customTime` to 9999-12-31; GCS only allows moving it later.
+  - Then the save commits. If storage is down, the save fails with a 503 and the preview stays unsaved and expiring. The bucket can never delete a saved preview.
+- **Purge** is a JSON API delete. `bucket_findings` lists what would stop that delete from being final, and strict modes refuse to start on a bucket with any finding:
+  - soft delete on, object versioning, or a retention policy or hold;
+  - uniform access off, or public access prevention not enforced;
+  - the backstop rule missing, or a lifecycle rule that could delete saved media;
+  - no CORS `PUT` entry.
+- **Selection: `from_environment`.**
+  - `BRANDME_MEDIA_BUCKET` picks GCS.
+  - `STORAGE_EMULATOR_HOST` picks the emulator. It is allowed in demo/development only, and a throwaway key signs the URLs there.
+  - Otherwise Application Default Credentials are used. A key file signs locally; workload identity signs through IAM `signBlob`.
+- **The jobs process** (`python -m brandme_core.domains.persona.jobs`) now sweeps unsaved media and retries purges whenever a bucket is configured. Without one it still reports `not_configured`.
+- **Emulator.** fake-gcs-server 1.56.1, fetched by `scripts/python/fetch_gcs_emulator.py`. The SHA256 is the one published in the release's `checksums.txt`. Tests start it from `GCS_EMULATOR_BIN`, and CI fetches it in `test-core` and `test-consumer-domains`.
+
+**Evidence (this branch, Spanner emulator 1.5.45, fake-gcs-server 1.56.1)**
+| Check | Result |
+|---|---|
+| V4 signing vs Google's conformance vectors (`tests/fixtures/media/gcs_v4_signing_vectors.json`: 18 path-style `signingV4Tests`, Apache-2.0) | **18/18**: canonical request, string-to-sign and full URL match byte for byte. Google's expected signature verifies over our string-to-sign under the published dummy key's public half. The private key is not vendored. |
+| Signing, bucket policy, environment selection and credential shapes (`test_media_gcs_signing.py`) | **25 passed** |
+| Emulator suite (`test_media_gcs_store.py`, own migrated database) | **6 passed**: store contract; full try-on flow with every byte in the bucket (verify, dispatch, input deleted at processing end, result, save → retained, delete → object gone and `purged_at` set); oversize and type-spoofed uploads that the emulator accepts are still rejected and purged; save fails closed on a storage outage (503, unsaved); the jobs process sweeps unsaved media on the bucket; a default bucket is flagged unfit |
+| Mutation checks | Removing the retain call fails 2 tests; inverting the MD5 check fails the flow test |
+| Media, My Data and jobs suites with the `save_job` change | 49 passed |
+| Trivy secret scan (pinned `aquasec/trivy:0.75.0`, `trivy-secret.yaml`, repo-wide) | 0 findings. On `6a81c26` it found 1 CRITICAL: a test built a service-account info dict around a key generated at runtime, and its key-type field matched Trivy's GCP service-account rule. The test now omits that unneeded field; no allow rule was added. |
+| Clean `git worktree` of `6a81c26`, CI commands verbatim (fresh venv from the hashed lock; fake-gcs-server fetched by the script) | Lane suites **249 passed**, 1 allowlisted skip. `pytest tests` with `BRANDME_REQUIRE_EMULATORS=1`: **818 passed**, 4 allowlisted skips, 32 quarantined, none of them consumer-domains. No new skip: every GCS test ran. Firestore rules pass. `pnpm check` 0 (10 steps). `pnpm smoke` passed. `pnpm audit --prod` clean. Frontend and console builds 0. Gateway lint, type-check and 145 vitest pass. Later commits change only one test dict and this document; the secret scan covers them |
+
+**Honest limits**
+- **The emulator enforces none of the signed constraints.** It checks no signatures and ignores `x-goog-if-generation-match`, `x-goog-content-length-range` and `x-goog-custom-time` on the signed PUT. It also has no lifecycle execution and no soft delete. The emulator runs prove the object flow and the service's own checks, not GCS enforcement.
+- **No dev-bucket run (Q14): NOT RUN.** This session's environment holds no valid GCP credential (the injected access token is rejected), so no bucket or service account was created. GCS's acceptance of `customTime` 9999-12-31 is part of what that run must confirm.
+- **The `MediaService` HTTP API is still unmounted.** The API process does not yet build the store from the environment; only the jobs process does.
+
+**Dev bucket the run needs** (dev project only; log it in the manifest when created). `check_bucket()` verifies each setting:
+- uniform bucket-level access on, public access prevention enforced;
+- soft delete off (retention 0) and object versioning off;
+- no retention policy and no default event-based hold;
+- lifecycle `{"rule":[{"action":{"type":"Delete"},"condition":{"daysSinceCustomTime":2}}]}` and no other delete rule;
+- a CORS entry allowing `PUT` from the app origins whose `responseHeader` lists every signed upload header: `Content-Type`, `x-goog-content-length-range`, `x-goog-if-generation-match`, `x-goog-custom-time`. Without them the browser preflight fails.
+
+The service account needs:
+- object create, get, update and delete on that bucket only;
+- `storage.buckets.get` for the policy check;
+- under workload identity, `iam.serviceAccounts.signBlob` on itself. The store requests the `devstorage.read_write` and `iam` scopes.
+
+**Codex review on `64cc4b1`: 5 findings, all verified as real and fixed with regression tests.** Each regression test fails when its fix is reverted.
+| # | Finding | Fix |
+|---|---|---|
+| P1 | A client's unsigned `Content-Encoding: gzip` let a tiny upload expand in memory, because `requests` decodes it | Downloads ask for the stored bytes (`Accept-Encoding: gzip`, no decoding) and stream them with a hard 10 MB cap. `write` refuses objects over the cap. A local server playing real GCS (which keeps gzip uploads compressed) shows the store returns the stored bytes, which then fail the magic-byte check. On the emulator (which decompresses on write), the upload is rejected and a read stops at 10 MB. |
+| P2 | Bucket CORS check accepted a `PUT` entry without the signed `x-goog-*` headers, so the browser preflight would fail | `bucket_findings` adds `cors_upload_headers_missing`. It checks the same header list `upload_target` signs. |
+| P2 | ADC requested a storage-only scope, so `signBlob` fails on runtimes that honour requested scopes | Requests `devstorage.read_write` + `iam`; nothing broader. |
+| P2 | An unexpired upload URL can recreate a purged input, because create-only succeeds again once the object is gone | Each store declares `replay_window`: GCS uses the URL lifetime plus 1 minute; the memory store uses 0, because its tokens are single use. `purge_pending` purges such inputs once more after the window, and the new `purged_at` makes the row final. Account deletion keeps those tombstoned inputs and reports the purge as pending until the window closes, then deletes the blob again and the rows. No schema change. Rows purged more than a day ago are left to the lifecycle backstop. |
+| P2 | Retain ran before the save transaction could refuse, so a refused save left the preview without its backstop | The save's own checks (finished, unexpired, not frozen) run in a read before `retain`. Only a failed commit can still leave a retained but unsaved preview. That case is not reconciled durably: GCS cannot move `customTime` back, and a ledger would need a schema change. The app sweeper still deletes that preview at its expiry. |
+
+After the fixes: `test_media_gcs_signing.py` **27 passed**, `test_media_gcs_store.py` **10 passed**.
+
+**Credential manifest.** No credential was created in this stage.
+
+**Handoffs (foundation)**
+- `scripts/brandme.mjs` should treat `GCS_EMULATOR_BIN` the way it treats `PUBSUB_EMULATOR_BIN`, so `pnpm check` with `BRANDME_REQUIRE_EMULATORS=1` reports it up front. Today the skip fails inside pytest, with a clear reason.
+- Fill in the `docs/build/security/lane-service-accounts.md` row "media bucket once GCS replaces MemoryMediaStore" with the roles above when the bucket is provisioned.

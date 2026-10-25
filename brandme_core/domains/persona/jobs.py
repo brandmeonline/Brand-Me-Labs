@@ -8,16 +8,20 @@ scheduler or long-running worker can own.
   settle their counts (ch.01 §6.3).
 * ``benefits.expire_due``: release pending reservations past their expiry and
   return the points.
-* Media retention (unsaved previews, blob purge retries) needs the API's real
-  object store. Only a per-process in-memory store exists, so this process
-  reports it as ``not_configured`` instead of pretending to sweep.
+* ``media.expire_due`` / ``purge_pending``: expire unsaved try-on media and
+  retry blob purges, on the GCS store selected by ``BRANDME_MEDIA_BUCKET``
+  (``media/gcs_store.from_environment``; ``STORAGE_EMULATOR_HOST`` for the
+  local emulator in demo/development). Without a bucket this reports
+  ``not_configured``. This process holds no try-on provider, so it records a
+  provider deletion it could not request as ``failed``, never as confirmed.
 * Benefit fulfillment needs a partner fulfiller per benefit; none exists, so it
   is ``not_configured`` too.
 
 Every job is bounded and idempotent; output is counts only (no member ids).
 Configuration: ``BRANDME_MODE`` equal to ``ENVIRONMENT``, ``SPANNER_PROJECT_ID``,
 ``SPANNER_INSTANCE_ID``, ``SPANNER_DATABASE_ID``; the Spanner emulator is
-required in demo/development and refused in sandbox/production.
+required in demo/development and refused in sandbox/production, and so is
+the storage emulator.
 """
 
 from __future__ import annotations
@@ -70,6 +74,15 @@ def _config(env: Mapping[str, str]) -> Dict[str, str]:
     return {"environment": environment, **{k: env[k] for k in keys}}
 
 
+def _media(database: Any, env: Mapping[str, str]) -> Any:
+    from brandme_core.domains.media import gcs_store
+    from brandme_core.domains.media.providers import ProviderRegistry
+    from brandme_core.domains.media.service import MediaService
+
+    store = gcs_store.from_environment(env)
+    return None if store is None else MediaService(database, store, ProviderRegistry())
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Consumer-domains scheduled jobs")
     parser.add_argument("--once", action="store_true", help="run one pass and exit")
@@ -79,6 +92,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         from google.cloud import spanner
 
         db = spanner.Client(project=cfg["SPANNER_PROJECT_ID"]).instance(cfg["SPANNER_INSTANCE_ID"]).database(cfg["SPANNER_DATABASE_ID"])
+        media = _media(db, os.environ)
     except Exception:
         print('{"status":"startup_refused"}', flush=True)
         return 2
@@ -87,7 +101,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         signal.signal(sig, lambda *_: stop.set())
     while not stop.is_set():
         try:
-            print(json.dumps({"status": "ran", **run_jobs(db, environment=cfg["environment"])}, sort_keys=True), flush=True)
+            print(json.dumps({"status": "ran", **run_jobs(db, environment=cfg["environment"], media=media)}, sort_keys=True), flush=True)
         except Exception:
             print('{"status":"jobs_unavailable"}', flush=True)
             if args.once:

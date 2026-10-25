@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from brandme_core.domains import DataCategory as FoundationDataCategory, register_data_category
-from brandme_core.domains.persona.kernel import STR, STR_ARRAY, iso, query, run_read, run_txn
+from brandme_core.domains.persona.kernel import INT, STR, STR_ARRAY, iso, query, run_read, run_txn
 from brandme_core.domains.persona.privacy_guard import record_scope_refusal
 
 DOMAIN = "media"
@@ -101,8 +101,20 @@ def purge_member(db, member_id: str) -> Dict[str, Any]:
         return {"done": False, "pending": len(rows), "detail": "media store not configured; blobs pending purge"}
     for _, ref in rows:
         _STORE.delete(ref)
-    run_txn(db, lambda t: t.execute_update("DELETE FROM MediaObjects WHERE member_id=@m AND deleted_at IS NOT NULL",
-                                           params={"m": member_id}, param_types=_M))
+    # An input whose upload target is still valid could be recreated through it: its
+    # tombstone stays (and the purge stays pending) until the target expires, and the
+    # next run deletes the blob again.
+    window = int(_STORE.replay_window.total_seconds()) if _STORE is not None else 0
+
+    def remove(t):
+        t.execute_update("DELETE FROM MediaObjects WHERE member_id=@m AND deleted_at IS NOT NULL "
+                         "AND (kind != 'tryon_input' OR TIMESTAMP_ADD(created_at, INTERVAL @w SECOND) <= CURRENT_TIMESTAMP())",
+                         params={"m": member_id, "w": window}, param_types={"m": STR, "w": INT})
+        return query(t, "SELECT COUNT(*) FROM MediaObjects WHERE member_id=@m AND deleted_at IS NOT NULL", {"m": member_id}, _M)[0][0]
+
+    waiting = run_txn(db, remove)
+    if waiting:
+        return {"done": False, "purged": len(rows), "detail": "an upload link is still valid; the final purge runs after it expires"}
     return {"done": True, "purged": len(rows)}
 
 
