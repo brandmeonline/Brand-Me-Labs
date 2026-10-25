@@ -430,9 +430,11 @@ The existing spatial route/feature ownership remains respected: consume its impl
 
 ### Evidence and gates
 
-Re-sync commit `1b9d320eb8a7a2946591d3fd27e324dd2c80affa` is pushed. Local Node 24.21.0 / pnpm 10.34.6 frozen installation passed, as did all 29 component/security tests. The first Consumer UI CI run `40151614227` passed the frontend production build but failed the console build: importing the consumer's React 19 preference provider from the React 18 console creates incompatible JSX types. Isolate the same preference implementation inside console-owned `lib/client/`, preserving its storage key and behavior; nonincremental TypeScript checks for both apps then pass. The production console build and successor browser/live/pixel gates remain **pending**.
+Re-sync commit `1b9d320eb8a7a2946591d3fd27e324dd2c80affa` merged the updated spec head `b313731` (including spatial PR #36). Local Node 24.21.0 / pnpm 10.34.6 frozen installation passed, as did all 29 component/security tests. The first Consumer UI CI run `40151614227` passed the frontend production build but failed the console build: importing the consumer's React 19 preference provider from the React 18 console created incompatible JSX types. Commit `15c9d3f` isolated the equivalent provider inside console-owned `lib/client/`, preserving its storage key and behavior.
 
-The 74 existing reviewed baselines are unchanged; any replacement requires human review. Real-device and screen-reader sessions remain **not_run**, with dates still to be supplied. The 21-question check-in is due once rooms plus Now/Flow are live against the dev gateway on main; it has not been reached. Spatial runtime acceptance is separate: its asset package has a dedicated pinned install, and the consumer CI workflow does not run the spatial E2E suites.
+[Consumer UI run 40151816381](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40151816381) passed on `15c9d3f`: both production builds, 29 component/security tests, Linux development-gallery browser/accessibility checks, all 74 existing reviewed pixel comparisons, and the real browser-to-gateway-to-domain-to-Spanner journey. [Foundation run 40151816391](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40151816391) also passed. The supplemental Windows development-gallery run passed 14 of 15 shell checks; `/me` exceeded the 30-second network-idle navigation limit in the remaining check. This local partial result is not represented as a complete pass. The integrated main head needs fresh CI evidence.
+
+The 74 existing reviewed baselines are unchanged; any replacement requires human review. Real-device and screen-reader sessions remain **not_run**, with dates still to be supplied. The 21-question check-in is due once rooms plus Now/Flow are live against the dev gateway on main; it has not been reached. Spatial runtime acceptance is separate: the consumer CI workflow does not run the spatial E2E suites.
 
 Credential manifest update: no credentials created or copied. Existing authenticated Git access is reused; dependency downloads and local disposable tooling require no new application credential.
 
@@ -485,3 +487,9 @@ The pinned-pnpm checks ran directly, but Linux CI must run the normal guard and 
 Whitespace checks pass for the resolved files and deployment-helper/status changes; three inherited
 whitespace findings in incoming foundation/domain files remain unchanged. No credential,
 external-provider, deployment or manual-device evidence is claimed.
+
+### Prerequisite merged; retarget authorized
+
+PR #51 merged to main as `7c4c1cd2af9ae2c52a1238bb6cdfb712a2ad7384` after its exact-head checks passed. [Run 40151728166](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40151728166) includes 1,741 Python passes, 21 allowlisted skips, 17 pre-existing quarantined xfails, Firestore rules and all five container build/runtime checks. Separate workspace, module-regression, chain and deployment-manifest checks passed; deployment was skipped. No live Stripe/model or AP2 oracle result is implied by those skips.
+
+The prepared integration was adopted and main's actual merge commit incorporated without further tree changes. Retarget #56 to main and rerun its complete CI, live journey and unchanged reviewed visual comparisons before merging. No external release is authorized by this merge.
