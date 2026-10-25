@@ -27,6 +27,8 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Mapping, Optional, Protocol, TextIO, Tuple
 
 from brandme_core.domains.commerce import autonomy as _autonomy
+from brandme_core.domains.providers import tiers as _tiers
+from brandme_core.domains.providers.contracts import CAPABILITIES
 from brandme_core.mcp.refs import log_ref
 from brandme_core.mcp.tools import KNOWN_TOOL_NAMES, UNKNOWN_TOOL
 
@@ -151,6 +153,17 @@ EVENTS: Dict[str, Tuple[str, Spec]] = {
         "client_kind": (_one_of({"assistant", "external"}), False), "quote_ref": (_rx(_REF16), True),
         "simulation": (lambda v: isinstance(v, bool), False), "wait_band": (_one_of(_autonomy.WAIT_BANDS), True),
     }),
+    # One partner-tier decision (``providers/tiers.py``): codes, keyed provider and operator refs, unit counts;
+    # never prices, decision records or raw ids.
+    "provider.tier_decision": ("security_audit_180d", {
+        "request_id": (_uuid, True), "origin": (_one_of(_tiers.ORIGINS), False),
+        "dimension": (_one_of(_tiers.DIMENSIONS), False), "outcome": (_one_of({"allow", "refuse", "partial"}), False),
+        "code": (_one_of(_tiers.CODES), False), "provider_ref": (_rx(_REF16), False), "actor_ref": (_rx(_REF16), True),
+        "tier_id": (_rx(_tiers.TIER_ID_RE), True), "tier_source": (_one_of(_tiers.SOURCES), False),
+        "placeholder": (lambda v: isinstance(v, bool), False),
+        "table_version": (_rx(_tiers.TABLE_VERSION_RE), False), "capability": (_one_of(CAPABILITIES), True),
+        "units_requested": (_count, True), "units_refused": (_count, True),
+    }),
     # An agent's request to the commerce domain's HTTP API (``CommerceHttpApi``): operation and outcome only.
     "commerce.agent_request": ("security_audit_180d", {
         "request_id": (_uuid, True), "operation": (_operation, False), "client_id": (_rx(_CLIENT_ID), True),
@@ -167,6 +180,20 @@ RULES: Dict[str, Callable[[Mapping[str, Any]], bool]] = {
         and f["delegation_ref"] is None and f["task_ref"] is None),
     "commerce.agent_request": lambda f: f["member_ref"] is not None or (
         f["status"] == "refused" and f["client_id"] is None and f["delegation_ref"] is None),
+    # allow carries an allow code; partial is only an ingestion page with some, not all, additions refused;
+    # ingestion and hydration have no operator, operator actions always name one; a tier id only when assigned.
+    "provider.tier_decision": lambda f: (
+        (f["outcome"] == "allow") == (f["code"] in _tiers.ALLOW_CODES)
+        and (f["outcome"] != "partial" or (f["origin"] == "ingestion" and f["units_refused"] is not None
+                                           and f["units_requested"] is not None
+                                           and 0 < f["units_refused"] < f["units_requested"]))
+        and (f["units_refused"] is None or f["units_requested"] is None or f["units_refused"] <= f["units_requested"])
+        and (f["origin"] != "ingestion" or (f["actor_ref"] is None and f["units_requested"] is not None))
+        and (f["origin"] != "hydrate" or f["actor_ref"] is None)
+        and (f["origin"] not in ("assignment", "activation", "verification") or f["actor_ref"] is not None)
+        and (f["dimension"] != "assignment" or f["origin"] == "assignment")
+        and (f["code"] != "no_new_listings" or f["dimension"] == "shelf_variants")
+        and ((f["tier_id"] is not None) == (f["tier_source"] == "assigned"))),
     # allow carries exactly an allow code; only requests and bindings are held; "held for the member" is
     # only ever an execute refusal; an assistant decision names its task; no boundary means no rules.
     "commerce.autonomy_decision": lambda f: (
@@ -200,6 +227,8 @@ class RunLog(Protocol):
 
     def autonomy_decision(self, record: Mapping[str, Any]) -> None: ...
 
+    def tier_decision(self, record: Mapping[str, Any]) -> None: ...
+
 
 def _level(event: str, f: Mapping[str, Any]) -> str:
     if event == "assistant.model_call":
@@ -208,8 +237,8 @@ def _level(event: str, f: Mapping[str, Any]) -> str:
         return "warning" if f.get("state") == "failed" else "info"
     if event in ("mcp.tool_call", "commerce.agent_request"):
         return "info" if f.get("status") == "ok" else "warning"
-    if event == "commerce.autonomy_decision":
-        return "warning" if f.get("outcome") == "refuse" else "info"
+    if event in ("commerce.autonomy_decision", "provider.tier_decision"):
+        return "warning" if f.get("outcome") in ("refuse", "partial") else "info"
     return "warning" if event == REJECTED else "info"
 
 
@@ -264,6 +293,15 @@ def autonomy_decision_fields(record: Mapping[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def tier_decision_fields(record: Mapping[str, Any]) -> Dict[str, Any]:
+    """A ``tiers.decision_record`` as a run-log line: exactly the closed fields, the request id a UUID or None."""
+    out = {k: record.get(k) for k in ("origin", "dimension", "outcome", "code", "provider_ref", "actor_ref", "tier_id",
+                                       "tier_source", "placeholder", "table_version", "capability", "units_requested",
+                                       "units_refused")}
+    out["request_id"] = record.get("request_id") if _uuid(record.get("request_id")) else None
+    return out
+
+
 class JsonLineRunLog:
     def __init__(self, *, environment: str, stream: Optional[TextIO] = None,
                  wall: Callable[[], datetime] = lambda: datetime.now(timezone.utc)):
@@ -308,6 +346,14 @@ class JsonLineRunLog:
         except Exception:
             fields = {}
         self._emit("commerce.autonomy_decision", fields)
+
+    def tier_decision(self, record: Mapping[str, Any]) -> None:
+        """A partner-tier sink (``ProviderSetupService`` ``tier_audit``)."""
+        try:
+            fields = tier_decision_fields(record)
+        except Exception:
+            fields = {}
+        self._emit("provider.tier_decision", fields)
 
     # -- emission ----------------------------------------------------------------
     def _emit(self, event: str, fields: Mapping[str, Any]) -> None:
@@ -388,4 +434,7 @@ class NullRunLog:
         pass
 
     def autonomy_decision(self, record: Mapping[str, Any]) -> None:
+        pass
+
+    def tier_decision(self, record: Mapping[str, Any]) -> None:
         pass

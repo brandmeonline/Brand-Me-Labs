@@ -67,6 +67,18 @@ export async function activateCapability(providerId: string, form: FormData): Pr
   back(providerId, r.ok ? { kind: 'activated' } : refused(r.status, r.code, r.detail))
 }
 
+const TIER = /^[a-z][a-z0-9_]{1,39}$/
+
+/** The connection's partner tier. Assigning a tier never enables a capability; "none" clears it. */
+export async function assignTier(providerId: string, form: FormData): Promise<void> {
+  if (!PROVIDER_ID.test(providerId)) back('unknown', refused(404, 'not_found', 'Unknown provider.'))
+  const choice = field(form, 'tier_id')
+  if (choice !== 'none' && !TIER.test(choice)) back(providerId, refused(400, 'tier_unknown', 'Choose a tier.'))
+  const r = await sendToGateway('PUT', `/providers/${encodeURIComponent(providerId)}/tier`,
+    { tier_id: choice === 'none' ? null : choice }, ifMatch(form))
+  back(providerId, r.ok ? { kind: 'tier_assigned' } : refused(r.status, r.code, r.detail))
+}
+
 export async function runConnectionTest(providerId: string, form: FormData): Promise<void> {
   const capability = field(form, 'capability')
   const mode = field(form, 'mode') || 'read_only_test'

@@ -152,12 +152,14 @@ AuditSink = Callable[[Dict[str, Any]], None]
 
 class CommerceHttpApi:
     def __init__(self, *, service: CommerceService, verifier: ExecutorAssertionVerifier, audit: AuditSink,
-                 runtime: Any = None, planner_factory: Optional[Callable[[], Any]] = None,
-                 setup_store: Any = None, task_runner: Any = None):
+                 tier_audit: AuditSink, runtime: Any = None, planner_factory: Optional[Callable[[], Any]] = None,
+                 setup_store: Any = None, task_runner: Any = None, pricing_table: Any = None):
         if verifier.audience != DOMAIN_AUDIENCE or not verifier.allow_session:
             raise ValueError("the commerce domain hop needs a verifier for brandme:commerce-domain with sessions")
         if not callable(audit):
             raise ValueError("the commerce domain hop needs an audit sink for agent requests")
+        if not callable(tier_audit):
+            raise ValueError("the commerce domain hop needs a partner-tier decision sink (RunLog.tier_decision)")
         if not service._autonomy_sinks:
             raise ValueError("the commerce domain hop needs an autonomy decision sink (add_autonomy_sink)")
         self.svc = service
@@ -168,7 +170,8 @@ class CommerceHttpApi:
         # Runs planners marked ``runs_in_background`` (model runs) off the request (``BackgroundRunner``).
         self.task_runner = task_runner
         # Operator setup and connection tests; the store defaults to in-memory (InMemoryProviderSetupStore).
-        self.setup = ProviderSetupService(service.registry, setup_store, clock=service.clock)
+        self.setup = ProviderSetupService(service.registry, setup_store, clock=service.clock,
+                                          pricing_table=pricing_table, tier_audit=tier_audit)
         # operation -> (allowed argument names, handler)
         self.ops: Dict[str, Tuple[frozenset, Handler]] = {
             "cart.create": (frozenset({"provider_id", "merchant_id", "lines"}), self._cart_create),
@@ -198,6 +201,7 @@ class CommerceHttpApi:
             "provider.setup.get": (frozenset({"provider_id"}), self._provider_setup_get),
             "provider.setup.update": (frozenset({"provider_id"}) | SETUP_UPDATE_FIELDS, self._provider_setup_update),
             "provider.verify": (frozenset({"provider_id", "capability", "mode"}), self._provider_verify),
+            "provider.tier.assign": (frozenset({"provider_id", "tier_id"}), self._provider_tier_assign),
             "provider.runs": (frozenset({"provider_id", "capability", "limit"}), self._provider_runs),
             "commerce.ops.queue": (frozenset(), lambda p, a, h: (200, self.svc.operator_queue(p))),
             "assistant.task.create": (frozenset({"goal", "assistance_mode", "budget_hint"}), self._task_create),
@@ -516,6 +520,16 @@ class CommerceHttpApi:
         if_match = self._if_match(h) if h.get("if-match") else None  # optional lost-update guard
         fields = {k: v for k, v in a.items() if k != "provider_id"}
         return 200, self.setup.update_setup(p, str(a.get("provider_id", "")), fields, if_match=if_match)
+
+    def _provider_tier_assign(self, p, a, h):
+        """The connection's partner tier (``tier_id: null`` clears it). Never enables a capability."""
+        self._require_admin(p)
+        self._need(a, "tier_id")
+        tier_id = a["tier_id"]
+        if tier_id is not None and not isinstance(tier_id, str):
+            raise InvalidRequest("tier_id must be a string or null", code="tier_unknown")
+        # If-Match is required (428 without it): a downgrade resets capabilities, so never on a stale view.
+        return 200, self.setup.assign_tier(p, str(a.get("provider_id", "")), tier_id, if_match=self._if_match(h))
 
     def _provider_verify(self, p, a, h):
         self._require_admin(p)

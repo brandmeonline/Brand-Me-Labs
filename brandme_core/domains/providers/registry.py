@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from .contracts import CAPABILITIES, CAPABILITY_STATES, EXECUTABLE_STATES, VERIFYING_EVIDENCE
+from .tiers import CAPABILITY_CUSTOMIZATION
 
 
 class RegistryError(ValueError):
@@ -107,6 +108,12 @@ class ProviderRegistry:
         if connection.simulation and self.environment not in ("demo", "development"):
             raise SimulationInProductionError(
                 f"simulation provider {connection.provider_id} refused in {self.environment}")
+        # Partner-tier presentation capabilities (3D, AR try-on) start unconfigured: only activation, which
+        # checks the partner tier, may enable them. An adapter cannot declare them executable.
+        gated = [n for n, s in connection.capabilities.items()
+                 if n in CAPABILITY_CUSTOMIZATION and s.state in EXECUTABLE_STATES]
+        if gated:
+            raise RegistryError(f"tier_gated_capability_must_be_activated: {sorted(gated)}")
         with self._lock:
             if connection.provider_id in self._connections:
                 raise RegistryError(f"duplicate provider {connection.provider_id}")

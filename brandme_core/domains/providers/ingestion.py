@@ -6,6 +6,9 @@
 * Prices from feeds are *observations*: they carry ``checked_at`` and a
   freshness label, and checkout always requires a fresh provider quote.
 * Media transformations are allowed only when the source rights grant them.
+* A shelf limit (``max_active_listings``, a partner tier's quota applied by
+  ``ProviderSetupService.load_shelf_page``) refuses each addition beyond it under the same lock as the
+  write. Updates to loaded variants and tombstones are never refused, and a lower limit deletes nothing.
 """
 
 from __future__ import annotations
@@ -46,6 +49,9 @@ class IngestionAudit:
     tombstoned: int = 0
     rejections: List[str] = field(default_factory=list)
     final_cursor: Optional[str] = None
+    new_listings: int = 0  # additions to the shelf (a revived tombstone counts)
+    quota_refused: int = 0  # additions refused by the shelf limit (also counted in ``rejected``)
+    admitted_refs: List[str] = field(default_factory=list)  # source variant ids added to the shelf
 
 
 class CatalogIngestor:
@@ -54,9 +60,18 @@ class CatalogIngestor:
         self.variants: Dict[VariantKey, StoredVariant] = {}
         self.cursors: Dict[str, Optional[str]] = {}
 
-    def ingest_page(self, page: CatalogPage, *, provider_id: str, now: datetime,
-                    audit: IngestionAudit) -> None:
+    def shelf_usage(self, provider_id: str) -> int:
+        """Active (non-tombstoned) variants on this connection's shelf."""
         with self._lock:
+            return sum(1 for k, sv in self.variants.items() if k[0] == provider_id and not sv.tombstoned)
+
+    def ingest_page(self, page: CatalogPage, *, provider_id: str, now: datetime,
+                    audit: IngestionAudit, max_active_listings: Optional[int] = None) -> None:
+        limit = max_active_listings
+        if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
+            raise ValueError("max_active_listings must be a non-negative int or None")
+        with self._lock:
+            active = self.shelf_usage(provider_id)
             for v in page.items:
                 problem = _validate(v, provider_id)
                 if problem:
@@ -74,6 +89,15 @@ class CatalogIngestor:
                 if prev is not None and v.source_updated_at < prev.variant.source_updated_at:
                     audit.unchanged += 1  # out-of-order older record never overwrites newer data
                     continue
+                if prev is None or prev.tombstoned:  # an addition to the shelf
+                    if limit is not None and active >= limit:
+                        audit.rejected += 1
+                        audit.quota_refused += 1
+                        audit.rejections.append(f"{v.source_variant_id}:shelf_quota_exceeded")
+                        continue
+                    active += 1
+                    audit.new_listings += 1
+                    audit.admitted_refs.append(v.source_variant_id)
                 self.variants[key] = StoredVariant(
                     v, (prev.revision + 1) if prev else 1, prev.first_seen_at if prev else now, now, False)
                 audit.accepted += 1

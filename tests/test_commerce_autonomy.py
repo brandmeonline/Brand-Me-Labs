@@ -726,7 +726,7 @@ def test_the_domain_http_api_refuses_to_mount_without_an_autonomy_sink():
     verifier = ExecutorAssertionVerifier(gateway_issuer="gw", keys={}, environment="development",
                                          audience=DOMAIN_AUDIENCE, allow_session=True)
     with pytest.raises(ValueError):
-        CommerceHttpApi(service=w.svc, verifier=verifier, audit=lambda r: None)
+        CommerceHttpApi(service=w.svc, verifier=verifier, audit=lambda r: None, tier_audit=lambda r: None)
 
 
 def test_http_boundary_create_update_and_refusals():

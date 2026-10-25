@@ -248,6 +248,27 @@ describe('delegations, providers, catalog, assistant', () => {
     expect(op.calls[0]).toMatchObject({ op: 'provider.setup.update', body: { provider_id: 'nordstrom_impact' } });
   });
 
+  it('partner tier assignment is operator-only, closed, and requires If-Match', async () => {
+    const mount = (a: express.Express, c: CommerceDomainClient) => a.use('/providers', createProvidersRouter(c));
+    const v = { 'If-Match': '"3"' };
+    const m = await app(MEMBER, mount);
+    expect((await m.call('PUT', '/providers/demo_atelier/tier', { tier_id: 'placeholder_ceiling' }, v)).status).toBe(403);
+    expect(m.calls).toHaveLength(0);
+    server?.close();
+    const op = await app({ ...AGENT, clientId: 'ops-console', scopes: ['provider:admin'] }, mount);
+    expect((await op.call('PUT', '/providers/demo_atelier/tier', { tier_id: 'placeholder_ceiling' })).status).toBe(428);
+    expect((await op.call('PUT', '/providers/demo_atelier/tier', { tier_id: null })).status).toBe(428);
+    for (const bad of [{}, { tier_id: 'Gold Tier' }, { tier_id: 'placeholder_ceiling', price: '99.00' }, { tier_id: 7 }]) {
+      expect((await op.call('PUT', '/providers/demo_atelier/tier', bad, v)).status, JSON.stringify(bad)).toBe(422);
+    }
+    expect(op.calls).toHaveLength(0);
+    expect((await op.call('PUT', '/providers/demo_atelier/tier', { tier_id: 'placeholder_ceiling' }, v)).status).toBe(200);
+    expect((await op.call('PUT', '/providers/demo_atelier/tier', { tier_id: null }, { 'If-Match': '"4"' })).status).toBe(200);
+    expect(op.calls.map((c) => [c.op, c.body, c.ifMatch])).toEqual([
+      ['provider.tier.assign', { provider_id: 'demo_atelier', tier_id: 'placeholder_ceiling' }, '"3"'],
+      ['provider.tier.assign', { provider_id: 'demo_atelier', tier_id: null }, '"4"']]);
+  });
+
   it('setup routes refuse secret-looking values in every reference field and forward only clean input', async () => {
     const mount = (a: express.Express, c: CommerceDomainClient) => a.use('/providers', createProvidersRouter(c));
     const op = await app({ ...AGENT, clientId: 'ops-console', scopes: ['provider:admin'] }, mount);
