@@ -20,6 +20,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 import jsonschema
 
+from brandme_core.domains.commerce.autonomy import decision_context
 from brandme_core.domains.commerce.errors import CommerceError
 from brandme_core.domains.commerce.principal import Principal
 from brandme_core.domains.commerce.service import CommerceService, correlation
@@ -287,7 +288,9 @@ class McpToolExecutor:
                                                problem=_problem(400, "malformed_invocation", e.message[:300]))
         else:
             try:
-                with correlation(correlation_id):
+                rid = invocation.get("request_id")
+                with correlation(correlation_id), decision_context(
+                        origin=origin, request_id=rid if isinstance(rid, str) else None, task_id=task_id, step=step):
                     status, outcome = self._dispatch(principal, invocation)
             except BaseException:
                 audit("error", "internal_error")  # the call may have had side effects: it is still on record
@@ -411,9 +414,12 @@ class McpToolExecutor:
 
     def _purchase_request(self, p: Principal, a: Dict[str, Any], _key: Optional[str]) -> Dict[str, Any]:
         op = self.commerce.request_purchase(p, a["quote_id"])
+        completed_by, codes = self.commerce.completion_preview(p, op.id)
         return {"operation_id": op.id, "state": op.state,
                 "next": "The member reviews and approves on Brand.Me's trusted approval screen.",
-                "approval_surface": f"/approvals/{op.id}"}
+                "approval_surface": f"/approvals/{op.id}",
+                # Who places the order once approved: the member's rules decide, never the agent.
+                "completed_by": completed_by, "autonomy_codes": list(codes)}
 
     def _purchase_execute(self, p: Principal, a: Dict[str, Any], key: Optional[str]) -> Dict[str, Any]:
         op = self.commerce.execute_purchase(p, operation_id=a["operation_id"], approval_id=a["approval_id"],

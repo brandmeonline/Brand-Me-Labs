@@ -26,6 +26,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Mapping, Optional, Protocol, TextIO, Tuple
 
+from brandme_core.domains.commerce import autonomy as _autonomy
 from brandme_core.mcp.refs import log_ref
 from brandme_core.mcp.tools import KNOWN_TOOL_NAMES, UNKNOWN_TOOL
 
@@ -85,6 +86,14 @@ def _operation(v: Any) -> bool:
     return v == UNRECOGNIZED or _rx(_OPERATION)(v)
 
 
+def _decision_codes(v: Any) -> bool:
+    return (isinstance(v, list) and 1 <= len(v) <= 4 and len(set(v)) == len(v)
+            and all(isinstance(c, str) and c in _autonomy.CODES for c in v))
+
+
+_LEVELS = tuple(lv.value for lv in _autonomy.AutonomyLevel)
+
+
 _MODES = ("research", "prepare", "buy_within_rules")
 # field -> (validator, nullable)
 Spec = Dict[str, Tuple[Callable[[Any], bool], bool]]
@@ -127,6 +136,21 @@ EVENTS: Dict[str, Tuple[str, Spec]] = {
         "code": (_rx(_CODE), True), "origin": (_one_of({"mcp", "assistant"}), False),
         "duration_ms": (_count, False), "arguments_digest": (_rx(_REF16), False),
     }),
+    # One agent autonomy decision (``CommerceService``, ``autonomy.evaluate``): codes and a cap-ratio band,
+    # never amounts, caps, merchant ids, variant refs or raw ids.
+    "commerce.autonomy_decision": ("security_audit_180d", {
+        "request_id": (_uuid, True), "origin": (_one_of({"mcp", "assistant", "api", "service"}), False),
+        "task_ref": (_rx(_REF16), True), "step": (_count, True), "member_ref": (_rx(_REF16), False),
+        "delegation_ref": (_rx(_REF16), False), "client_id": (_rx(_CLIENT_ID), False),
+        "mode": (_one_of(_MODES), False), "action": (_one_of(a.value for a in _autonomy.Action), False),
+        "outcome": (_one_of(o.value for o in _autonomy.Outcome), False),
+        "autonomy_level": (_one_of(_LEVELS), False), "required_autonomy_level": (_one_of(_LEVELS), False),
+        "scope": (_one_of(_autonomy.SCOPES), False), "codes": (_decision_codes, False),
+        "cap_bucket": (_one_of(_autonomy.CAP_BUCKETS), False), "rule_count": (_count, False),
+        "boundary_version": (_count, False), "evaluator": (_rx(_SEMVER), False),
+        "client_kind": (_one_of({"assistant", "external"}), False), "quote_ref": (_rx(_REF16), True),
+        "simulation": (lambda v: isinstance(v, bool), False), "wait_band": (_one_of(_autonomy.WAIT_BANDS), True),
+    }),
     # An agent's request to the commerce domain's HTTP API (``CommerceHttpApi``): operation and outcome only.
     "commerce.agent_request": ("security_audit_180d", {
         "request_id": (_uuid, True), "operation": (_operation, False), "client_id": (_rx(_CLIENT_ID), True),
@@ -143,6 +167,17 @@ RULES: Dict[str, Callable[[Mapping[str, Any]], bool]] = {
         and f["delegation_ref"] is None and f["task_ref"] is None),
     "commerce.agent_request": lambda f: f["member_ref"] is not None or (
         f["status"] == "refused" and f["client_id"] is None and f["delegation_ref"] is None),
+    # allow carries exactly an allow code; only requests and bindings are held; "held for the member" is
+    # only ever an execute refusal; an assistant decision names its task; no boundary means no rules.
+    "commerce.autonomy_decision": lambda f: (
+        (f["outcome"] == "allow") == bool(_autonomy.ALLOW_CODES & set(f["codes"]))
+        and (f["outcome"] != "hold" or f["action"] in ("approval_request", "approval_binding"))
+        and ("autonomy_held_for_member" not in f["codes"] or (f["action"] == "execute" and f["outcome"] == "refuse"))
+        and (f["origin"] != "assistant" or f["task_ref"] is not None)
+        and (f["scope"] != "no_boundary" or f["rule_count"] == 0)
+        and (f["wait_band"] is None or f["action"] == "approval_binding")
+        and ((f["action"] == "member_completion") == ("completed_by_member" in f["codes"]))
+        and (f["action"] != "member_completion" or (f["outcome"] == "allow" and f["codes"] == ["completed_by_member"]))),
 }
 REJECTED = "assistant.runlog_rejected"
 _ENVIRONMENTS = frozenset({"demo", "development", "sandbox", "production"})
@@ -163,6 +198,8 @@ class RunLog(Protocol):
 
     def agent_request(self, audit_record: Mapping[str, Any]) -> None: ...
 
+    def autonomy_decision(self, record: Mapping[str, Any]) -> None: ...
+
 
 def _level(event: str, f: Mapping[str, Any]) -> str:
     if event == "assistant.model_call":
@@ -171,6 +208,8 @@ def _level(event: str, f: Mapping[str, Any]) -> str:
         return "warning" if f.get("state") == "failed" else "info"
     if event in ("mcp.tool_call", "commerce.agent_request"):
         return "info" if f.get("status") == "ok" else "warning"
+    if event == "commerce.autonomy_decision":
+        return "warning" if f.get("outcome") == "refuse" else "info"
     return "warning" if event == REJECTED else "info"
 
 
@@ -212,6 +251,19 @@ def agent_request_fields(record: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
+def autonomy_decision_fields(record: Mapping[str, Any]) -> Dict[str, Any]:
+    """A ``CommerceService`` autonomy decision as a run-log line; ids become keyed refs or are dropped."""
+    delegation, client, rid = record.get("delegation_id"), record.get("client_id"), record.get("request_id")
+    out = {k: record.get(k) for k in ("origin", "task_ref", "step", "member_ref", "mode", "action", "outcome",
+                                       "autonomy_level", "required_autonomy_level", "scope", "codes", "cap_bucket",
+                                       "rule_count", "boundary_version", "evaluator", "client_kind", "quote_ref",
+                                       "simulation", "wait_band")}
+    out["request_id"] = rid if _uuid(rid) else None
+    out["delegation_ref"] = log_ref("delegation", delegation) if isinstance(delegation, str) and delegation else None
+    out["client_id"] = client if _rx(_CLIENT_ID)(client) else UNRECOGNIZED
+    return out
+
+
 class JsonLineRunLog:
     def __init__(self, *, environment: str, stream: Optional[TextIO] = None,
                  wall: Callable[[], datetime] = lambda: datetime.now(timezone.utc)):
@@ -248,6 +300,14 @@ class JsonLineRunLog:
         except Exception:
             fields = {}
         self._emit("commerce.agent_request", fields)
+
+    def autonomy_decision(self, record: Mapping[str, Any]) -> None:
+        """A ``CommerceService`` autonomy sink (``add_autonomy_sink``)."""
+        try:
+            fields = autonomy_decision_fields(record)
+        except Exception:
+            fields = {}
+        self._emit("commerce.autonomy_decision", fields)
 
     # -- emission ----------------------------------------------------------------
     def _emit(self, event: str, fields: Mapping[str, Any]) -> None:
@@ -325,4 +385,7 @@ class NullRunLog:
         pass
 
     def agent_request(self, audit_record: Mapping[str, Any]) -> None:
+        pass
+
+    def autonomy_decision(self, record: Mapping[str, Any]) -> None:
         pass

@@ -204,6 +204,36 @@ describe('delegations, providers, catalog, assistant', () => {
     expect(m.calls).toHaveLength(0);
   });
 
+  it('autonomy boundaries change only from the member session, strictly, with If-Match; no level skips approval', async () => {
+    const mount = (a: express.Express, c: CommerceDomainClient) => a.use('/delegations', createDelegationsRouter(c));
+    const boundary = { default_level: 'prepare', rules: [{ scope: 'merchant', provider_id: 'demo_atelier',
+      merchant_id: 'fictional-demo-merchant', level: 'buy_after_approval', max_total: { amount_minor: '15000', currency: 'USD' } }] };
+    const path = `/delegations/${q}/autonomy-boundary`;
+    const a = await app(AGENT, mount);
+    expect((await a.call('PUT', path, { autonomy_boundary: boundary }, { 'If-Match': '"1"' })).status).toBe(403);
+    expect(a.calls).toHaveLength(0);
+    server?.close();
+    const m = await app(MEMBER, mount);
+    expect((await m.call('PUT', path, { autonomy_boundary: boundary })).status).toBe(428);
+    for (const bad of [
+      { ...boundary, default_level: 'buy_without_approval' },
+      { ...boundary, rules: [{ ...boundary.rules[0], level: 'autonomous' }] },
+      { ...boundary, extra: true },
+      { rules: [{ scope: 'merchant', provider_id: 'demo_atelier', merchant_id: 'fictional demo merchant', level: 'prepare' }] },
+      { rules: [{ scope: 'wishlist', provider_id: 'demo_atelier', variant_refs: [], level: 'prepare' }] },
+      { rules: [{ scope: 'brand', provider_id: 'demo_atelier', brand: 'Atelier', level: 'prepare' }] },
+    ]) {
+      expect((await m.call('PUT', path, { autonomy_boundary: bad }, { 'If-Match': '"1"' })).status, JSON.stringify(bad)).toBe(422);
+    }
+    expect((await m.call('PUT', path, { autonomy_boundary: boundary, member_id: 'x' }, { 'If-Match': '"1"' })).status).toBe(400);
+    expect(m.calls).toHaveLength(0);
+    expect((await m.call('PUT', path, { autonomy_boundary: boundary }, { 'If-Match': '"1"' })).status).toBe(200);
+    expect((await m.call('PUT', path, { autonomy_boundary: null }, { 'If-Match': '"2"' })).status).toBe(200);
+    expect(m.calls.map((c) => [c.op, (c.body as { delegation_id: string }).delegation_id, c.ifMatch])).toEqual([
+      ['delegation.boundary.update', q, '"1"'], ['delegation.boundary.update', q, '"2"']]);
+    expect((m.calls[0].body as { autonomy_boundary: typeof boundary }).autonomy_boundary.rules[0].level).toBe('buy_after_approval');
+  });
+
   it('provider console requires provider:admin for everyone and refuses raw secrets', async () => {
     const mount = (a: express.Express, c: CommerceDomainClient) => a.use('/providers', createProvidersRouter(c));
     const m = await app({ ...MEMBER, scopes: [...MEMBER.scopes] }, mount);

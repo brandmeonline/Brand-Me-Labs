@@ -45,6 +45,7 @@ from brandme_core.mcp.authz import DOMAIN_AUDIENCE, AuthError, ExecutorAssertion
 from brandme_core.mcp.refs import log_ref
 from brandme_core.orchestrator.runtime import IdempotencyReuse, TaskConstraints
 
+from .autonomy import ASSISTANT_CLIENT_ID, AutonomyBoundary, decision_context  # noqa: F401  (re-exported)
 from .delegation import AssistanceMode, DelegationLimits
 from .errors import AssistantBusy, Forbidden, IdempotencyConflict, InvalidRequest, NotFound
 from .money import Money, MoneyError
@@ -53,7 +54,6 @@ from .records import ApprovalChallenge, Cart, Order, PurchaseApproval, PurchaseO
 from .service import CommerceService, _uuid_or_none, correlation
 
 PREFIX = "/internal/commerce/v1"
-ASSISTANT_CLIENT_ID = "brandme-assistant"  # Brand.Me's own assistant acts only under a grant to this client
 PROVIDER_ADMIN_SCOPE = "provider:admin"
 
 
@@ -92,7 +92,9 @@ def operation_wire(o: PurchaseOperation) -> Dict[str, Any]:
 def challenge_wire(c: ApprovalChallenge) -> Dict[str, Any]:
     # The trusted surface needs the plaintext nonce exactly once, to post it back with the approval.
     return {"id": c.id, "operation_id": c.operation_id, "quote_id": c.quote_id, "quote_hash": c.quote_hash,
-            "nonce": c.nonce, "expires_at": _iso(c.expires_at)}
+            "nonce": c.nonce, "expires_at": _iso(c.expires_at),
+            # who places the order if the member approves now: the member's assistant rules decide
+            "completed_by": c.completed_by or "member", "autonomy_codes": list(c.autonomy_codes)}
 
 
 def approval_wire(a: PurchaseApproval) -> Dict[str, Any]:
@@ -126,7 +128,8 @@ def delegation_wire(d) -> Dict[str, Any]:
                 "allowed_merchants": sorted(lim.allowed_merchants), "allowed_categories": sorted(lim.allowed_categories),
                 "delivery_ref": lim.delivery_ref, "require_returnable": lim.require_returnable,
                 "refund_credit_back": lim.refund_credit_back,
-                "require_final_human_approval": lim.require_final_human_approval}}
+                "require_final_human_approval": lim.require_final_human_approval},
+            "autonomy_boundary": d.boundary.to_wire() if d.boundary is not None else None}
 
 
 def _summary_state(conn, capability: str) -> str:
@@ -155,6 +158,8 @@ class CommerceHttpApi:
             raise ValueError("the commerce domain hop needs a verifier for brandme:commerce-domain with sessions")
         if not callable(audit):
             raise ValueError("the commerce domain hop needs an audit sink for agent requests")
+        if not service._autonomy_sinks:
+            raise ValueError("the commerce domain hop needs an autonomy decision sink (add_autonomy_sink)")
         self.svc = service
         self.verifier = verifier
         self.audit = audit
@@ -179,8 +184,10 @@ class CommerceHttpApi:
             "order.return": (frozenset({"order_id", "source_variant_ref", "quantity"}), self._order_return),
             "order.cancel": (frozenset({"order_id"}), self._order_cancel),
             "delegation.list": (frozenset(), self._delegation_list),
-            "delegation.create": (frozenset({"client_id", "mode", "allowed_providers", "expires_at", "limits"}),
-                                  self._delegation_create),
+            "delegation.create": (frozenset({"client_id", "mode", "allowed_providers", "expires_at", "limits",
+                                             "autonomy_boundary"}), self._delegation_create),
+            "delegation.boundary.update": (frozenset({"delegation_id", "autonomy_boundary"}),
+                                           self._delegation_boundary_update),
             "delegation.revoke": (frozenset({"delegation_id"}), self._delegation_revoke),
             "catalog.search": (frozenset({"q", "provider", "cursor", "limit"}), self._catalog_search),
             "catalog.product": (frozenset({"product_id"}), self._catalog_product),
@@ -262,7 +269,8 @@ class CommerceHttpApi:
         if allowed is not None and set(args) - allowed:
             # Identity, scope and approval never come from request fields.
             raise InvalidRequest(f"unexpected fields: {sorted(set(args) - allowed)}", code="unexpected_field")
-        with correlation(headers.get("x-request-id")):  # the gateway's request id, when it is a UUID
+        rid = headers.get("x-request-id")
+        with correlation(rid), decision_context(origin="api", request_id=rid):  # the gateway's request id
             status, payload = handler(principal, args, headers)
         extra = {"ETag": f'"{payload["revision"]}"'} if isinstance(payload, dict) and "revision" in payload else {}
         return status, payload, extra
@@ -396,10 +404,21 @@ class CommerceHttpApi:
                     allow_substitution=bool(l.get("allow_substitution", False)))
             except (KeyError, TypeError, ValueError):  # MoneyError is a ValueError; DelegationInvalid propagates
                 raise InvalidRequest("invalid delegation limits") from None
+        raw = a.get("autonomy_boundary")
+        boundary = AutonomyBoundary.from_wire(raw) if raw is not None else None
         d = self.svc.create_delegation(p, client_id=str(a["client_id"]), mode=mode,
                                        allowed_providers=[str(x) for x in a["allowed_providers"]],
-                                       limits=limits, expires_at=expires_at)
+                                       limits=limits, expires_at=expires_at, boundary=boundary)
         return 201, delegation_wire(d)
+
+    def _delegation_boundary_update(self, p, a, h):
+        """The member's explicit boundary change (If-Match: the grant version). ``null`` returns the grant
+        to its own mode and limits."""
+        self._need(a, "delegation_id", "autonomy_boundary")
+        raw = a["autonomy_boundary"]
+        boundary = AutonomyBoundary.from_wire(raw) if raw is not None else None
+        d = self.svc.update_autonomy_boundary(p, str(a["delegation_id"]), boundary, if_match=self._if_match(h))
+        return 200, delegation_wire(d)
 
     def _delegation_revoke(self, p, a, h):
         self._need(a, "delegation_id")

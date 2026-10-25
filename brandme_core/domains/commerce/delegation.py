@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import FrozenSet, Optional
 
+from .autonomy import LEVEL_RANK, AutonomyBoundary, AutonomyLevel, RuleScope
 from .errors import DelegationInvalid, Forbidden
 from .money import Money
 from .principal import Principal, is_agent
@@ -22,6 +23,12 @@ MODE_SCOPES = {
     AssistanceMode.RESEARCH: frozenset({"commerce:research"}),
     AssistanceMode.PREPARE: frozenset({"commerce:research", "commerce:cart"}),
     AssistanceMode.BUY_WITHIN_RULES: frozenset({"commerce:research", "commerce:cart", "commerce:purchase"}),
+}
+# The most an autonomy boundary may allow under each mode: a boundary only ever narrows its grant.
+MODE_CEILING = {
+    AssistanceMode.RESEARCH: AutonomyLevel.SUGGEST,
+    AssistanceMode.PREPARE: AutonomyLevel.PREPARE,
+    AssistanceMode.BUY_WITHIN_RULES: AutonomyLevel.BUY_AFTER_APPROVAL,
 }
 # Categories excluded from the default fashion scope regardless of grant text.
 DEFAULT_EXCLUDED_CATEGORIES = frozenset({"gift_card", "subscription", "restricted"})
@@ -73,6 +80,8 @@ class AgentDelegation:
     expires_at: datetime
     revoked_at: Optional[datetime] = None
     version: int = 1
+    # The member's autonomy boundary (``autonomy.py``); None: the grant's own mode and limits decide.
+    boundary: Optional[AutonomyBoundary] = None
 
     def is_active(self, now: datetime) -> bool:
         return self.revoked_at is None and now < self.expires_at
@@ -87,10 +96,40 @@ class AgentDelegation:
             raise DelegationInvalid("delegation expired", code="delegation_expired")
 
 
+def check_boundary_fits(boundary: Optional[AutonomyBoundary], *, mode: AssistanceMode,
+                        allowed_providers: FrozenSet[str], limits: Optional[DelegationLimits]) -> None:
+    """A boundary may only narrow its grant: no level above the mode, no provider or merchant the grant
+    does not name, no cap above the grant's per-order limit or in another currency."""
+    if boundary is None:
+        return
+    if boundary.unreadable:
+        raise DelegationInvalid("this boundary cannot be read; replace it", code="autonomy_boundary_unreadable")
+    ceiling = MODE_CEILING[mode]
+    if any(LEVEL_RANK[lv] > LEVEL_RANK[ceiling]
+           for lv in (boundary.default_level, *(r.level for r in boundary.rules))):
+        raise DelegationInvalid(f"a {mode.value} grant allows at most the {ceiling.value} level",
+                                code="autonomy_level_exceeds_mode")
+    if any(r.provider_id not in allowed_providers for r in boundary.rules):
+        raise DelegationInvalid("a rule names a provider the grant does not allow",
+                                code="autonomy_rule_provider_not_granted")
+    caps = boundary.caps()
+    if caps and limits is None:
+        raise DelegationInvalid("caps need a grant with purchase limits", code="autonomy_cap_exceeds_grant")
+    for cap in caps:
+        if cap.currency != limits.currency:
+            raise DelegationInvalid("a cap must be in the grant currency", code="currency_mismatch")
+        if cap.amount_minor > limits.max_per_order.amount_minor:
+            raise DelegationInvalid("a cap is above the grant's per-order limit", code="autonomy_cap_exceeds_grant")
+    if limits is not None and any(r.scope is RuleScope.MERCHANT and r.merchant_id not in limits.allowed_merchants
+                                  for r in boundary.rules):
+        raise DelegationInvalid("a rule names a merchant the grant does not allow",
+                                code="autonomy_merchant_not_granted")
+
+
 def build_delegation(*, granting: Principal, delegation_id: str, client_id: str,
                      mode: AssistanceMode, allowed_providers: FrozenSet[str],
                      limits: Optional[DelegationLimits], now: datetime,
-                     expires_at: datetime) -> AgentDelegation:
+                     expires_at: datetime, boundary: Optional[AutonomyBoundary] = None) -> AgentDelegation:
     """Only a first-party trusted-UI session may create a grant."""
     if is_agent(granting):
         raise Forbidden("agents cannot create or widen delegations")
@@ -101,7 +140,8 @@ def build_delegation(*, granting: Principal, delegation_id: str, client_id: str,
             raise DelegationInvalid("buy-within-rules requires explicit limits")
         if not limits.allowed_merchants:
             raise DelegationInvalid("buy-within-rules requires named merchants")
+    check_boundary_fits(boundary, mode=mode, allowed_providers=frozenset(allowed_providers), limits=limits)
     return AgentDelegation(
         id=delegation_id, member_id=granting.member_id, client_id=client_id, mode=mode,
         scopes=MODE_SCOPES[mode], allowed_providers=frozenset(allowed_providers),
-        limits=limits, created_at=now, expires_at=expires_at)
+        limits=limits, created_at=now, expires_at=expires_at, boundary=boundary)

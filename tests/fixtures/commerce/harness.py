@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from brandme_core.domains.commerce.autonomy import AutonomyBoundary, AutonomyLevel, BoundaryRule, RuleScope
 from brandme_core.domains.commerce.delegation import AssistanceMode, DelegationLimits
 from brandme_core.domains.commerce.money import Money
 from brandme_core.domains.commerce.principal import Principal
@@ -20,6 +21,7 @@ from brandme_core.domains.providers.local_atelier import (
     MERCHANT_ID, PROVIDER_ID, LocalAtelierProvider, local_atelier_connection, variant_uuid,
 )
 from brandme_core.domains.providers.registry import ProviderRegistry
+from brandme_core.orchestrator.runlog import MemoryRunLog
 
 MEMBER = "2ad9041e-561e-527b-aa0d-5a7fda5f710b"  # fictional demo member
 OTHER_MEMBER = "fa9ad97d-0187-5b71-a602-b05aabb329e1"
@@ -63,6 +65,26 @@ def limits(per_order: int = 50_000, cumulative: int = 50_000, **kw) -> Delegatio
                             allowed_merchants=frozenset({MERCHANT_ID}), **kw)
 
 
+def usd(minor: Optional[int]) -> Optional[Money]:
+    return Money(minor, "USD") if minor is not None else None
+
+
+def merchant_rule(level: str = "buy_after_approval", cap: Optional[int] = None, *, provider: str = PROVIDER_ID,
+                  merchant: str = MERCHANT_ID) -> BoundaryRule:
+    return BoundaryRule(RuleScope.MERCHANT, provider, AutonomyLevel(level), merchant_id=merchant, max_total=usd(cap))
+
+
+def wishlist_rule(*refs: str, level: str = "buy_after_approval", cap: Optional[int] = None,
+                  provider: str = PROVIDER_ID) -> BoundaryRule:
+    return BoundaryRule(RuleScope.WISHLIST, provider, AutonomyLevel(level), variant_refs=frozenset(refs),
+                        max_total=usd(cap))
+
+
+def boundary(*rules: BoundaryRule, default: str = "prepare", default_cap: Optional[int] = None) -> AutonomyBoundary:
+    """A member's assistant rules; the concierge prepares by default."""
+    return AutonomyBoundary(default_level=AutonomyLevel(default), default_max_total=usd(default_cap), rules=rules)
+
+
 @dataclass
 class World:
     clock: Clock
@@ -71,13 +93,20 @@ class World:
     store: object  # InMemoryCommerceStore | SpannerCommerceStore
     svc: CommerceService
     member: Principal = field(default_factory=member_session)
+    # Every agent autonomy decision, through the strict closed run-log schema: a malformed line raises.
+    decisions: MemoryRunLog = field(default_factory=lambda: MemoryRunLog(strict=True))
 
-    def delegate(self, mode=AssistanceMode.BUY_WITHIN_RULES, lim: Optional[DelegationLimits] = None):
+    def delegate(self, mode=AssistanceMode.BUY_WITHIN_RULES, lim: Optional[DelegationLimits] = None,
+                 boundary: Optional[AutonomyBoundary] = None):
         d = self.svc.create_delegation(
             self.member, client_id=AGENT_CLIENT, mode=mode, allowed_providers={PROVIDER_ID},
             limits=lim if lim is not None else (limits() if mode is AssistanceMode.BUY_WITHIN_RULES else None),
-            expires_at=self.clock.now + timedelta(days=7))
+            expires_at=self.clock.now + timedelta(days=7), boundary=boundary)
         return d, agent(d.id, d.scopes)
+
+    def decided(self):
+        """``(action, outcome, primary code)`` for each logged autonomy decision, in order."""
+        return [(ln["action"], ln["outcome"], ln["codes"][0]) for ln in self.decisions.events("commerce.autonomy_decision")]
 
     def prepared(self, actor: Principal, *lines_):
         cart = self.svc.create_cart(actor, provider_id=PROVIDER_ID, merchant_id=MERCHANT_ID,
@@ -101,5 +130,7 @@ def world(environment: str = "development", store=None, payments=None, fulfillme
     registry = ProviderRegistry(environment)
     registry.register(local_atelier_connection(provider, environment, clock.now))
     store = store if store is not None else InMemoryCommerceStore()
-    return World(clock, provider, registry, store, CommerceService(
+    w = World(clock, provider, registry, store, CommerceService(
         store=store, registry=registry, environment=environment, clock=clock))
+    w.svc.add_autonomy_sink(w.decisions.autonomy_decision)
+    return w
