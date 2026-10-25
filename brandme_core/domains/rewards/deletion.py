@@ -51,6 +51,13 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "on_edit": "Resolved disputes keep their resolution note",
         "tables": ("RewardDisputes",),
     },
+    "rewards.standings": {
+        "title": "Your standing tier with each house, computed from your verified purchases",
+        "supplied_by": "system",
+        "retention": "Until the next daily recompute, or until you delete your account",
+        "on_edit": "Tiers are recomputed, never edited; only the tier is kept, not counts or spend",
+        "tables": ("HouseStandings",),
+    },
 }
 
 
@@ -81,6 +88,9 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
                  "created_at": iso(r[6]), "resolved_at": iso(r[7])}
                 for r in query(snap, "SELECT dispute_id, entry_id, category, message, state, resolution_note, created_at, resolved_at "
                                      "FROM RewardDisputes WHERE member_id=@m ORDER BY created_at", m, _M)]
+    if category == "rewards.standings":
+        return [{"house_ref": r[0], "tier": r[1], "computed_at": iso(r[2])}
+                for r in query(snap, "SELECT house_ref, tier, computed_at FROM HouseStandings WHERE member_id=@m ORDER BY house_ref", m, _M)]
     raise KeyError(category)
 
 
@@ -116,6 +126,8 @@ def delete_category(txn, member_id: str, category: str) -> int:
         return txn.execute_update("DELETE FROM BenefitReservations WHERE member_id=@m", params=m, param_types=_M)
     if category == "rewards.disputes":
         return txn.execute_update("DELETE FROM RewardDisputes WHERE member_id=@m", params=m, param_types=_M)
+    if category == "rewards.standings":
+        return txn.execute_update("DELETE FROM HouseStandings WHERE member_id=@m", params=m, param_types=_M)
     raise KeyError(category)
 
 

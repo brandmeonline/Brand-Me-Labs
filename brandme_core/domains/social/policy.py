@@ -12,6 +12,10 @@ be changed here alone; services and tests read these names.
   status to 404 makes a gone share indistinguishable from an unknown one.
 * PD-09 (endpoints and ``target_member_id``) is a contract-surface proposal, not
   a tunable; it is listed here so the ratification record is in one place.
+* Now loop (Ultra plan 02, item 2; check-in default "~5-minute default,
+  asker-set variants"): a decision window is one of ``NOW_WINDOWS`` seconds,
+  ``NOW_DEFAULT_WINDOW`` when the asker picks none. Comments are taken only
+  inside the window, at most ``COMMENTS_PER_AUTHOR`` per decision.
 """
 
 from __future__ import annotations
@@ -22,5 +26,9 @@ SHARE_MIN_LIFETIME = timedelta(minutes=5)
 SHARE_MAX_LIFETIME = timedelta(days=365)
 SHARE_MAX_ACTIVE = 200
 SHARE_GONE_STATUS = 410  # 404 is the alternative under PD-11
+
+NOW_WINDOWS = (180, 300, 600, 900)
+NOW_DEFAULT_WINDOW = 300
+COMMENTS_PER_AUTHOR = 20
 
 RATIFICATION = {"PD-09": "ratified 2026-10-23", "PD-10": "ratified 2026-10-23", "PD-11": "ratified 2026-10-23"}

@@ -1145,6 +1145,11 @@ class PersonaService:
             limit=limit,
         )
 
+    def lens_request(self, snap, member_id: str) -> RecommendationRequest:
+        """The member's persona lens inside a caller's read (Flow): effective axes and
+        hard constraints, with no candidate source involved."""
+        return self._request_for(snap, self._load_visible(snap, member_id), self.clock.now(), None, 6)
+
     def recommendations(self, principal: Principal, *, occasion: Optional[str] = None, limit: int = 6) -> Dict[str, Any]:
         require_scope(principal, "profile:read")
         limit = require_strict_int(limit, name="limit", lo=1, hi=24)

@@ -53,7 +53,7 @@ from . import events as _events  # noqa: F401
 from .notifications import blocked_between, notify
 from .shares import revoke_grant
 
-TARGETS = ("decision_response", "share", "outfit_proposal", "member")
+TARGETS = ("decision_response", "decision_comment", "share", "outfit_proposal", "member")
 REASONS = ("harassment", "spam", "hate", "sexual_content", "self_harm", "privacy", "other")
 DAILY_LIMIT = 20
 COLS = ("report_id", "reporter_id", "target_type", "target_ref", "target_owner_id", "reason", "note", "state", "action", "resolved_by",
@@ -91,6 +91,20 @@ class ReportService:
             if not sees or not exists:
                 raise NotFound("content not found")
             return f"decision:{did}/response:{respondent}", respondent
+        if target_type == "decision_comment":
+            did = require_uuid(target.get("decision_id"), name="decision_id")
+            cid = require_uuid(target.get("comment_id"), name="comment_id")
+            d = query(txn, "SELECT member_id FROM Decisions@{FORCE_INDEX=DecisionsById} WHERE decision_id=@d", {"d": did}, {"d": STR})
+            if not d:
+                raise NotFound("content not found")
+            creator = d[0][0]
+            sees = creator == reporter or query(txn, "SELECT 1 FROM DecisionAudience WHERE member_id=@c AND decision_id=@d AND recipient_id=@r AND NOT removed",
+                                                {"c": creator, "d": did, "r": reporter}, {"c": STR, "d": STR, "r": STR})
+            author = query(txn, "SELECT author_id FROM DecisionComments WHERE member_id=@c AND decision_id=@d AND comment_id=@k AND removed_at IS NULL",
+                           {"c": creator, "d": did, "k": cid}, {"c": STR, "d": STR, "k": STR})
+            if not sees or not author:
+                raise NotFound("content not found")
+            return f"decision:{did}/comment:{cid}", author[0][0]
         if target_type == "share":
             sid = require_uuid(target.get("share_id"), name="share_id")
             g = query(txn, "SELECT member_id, recipient_ids FROM ShareGrants@{FORCE_INDEX=ShareGrantsById} WHERE share_id=@s", {"s": sid}, {"s": STR})
@@ -212,6 +226,14 @@ class ReportService:
             if creator:
                 txn.execute_update("UPDATE DecisionResponses SET note = NULL WHERE member_id=@c AND decision_id=@d AND respondent_id=@r",
                                    params={"c": creator[0][0], "d": did, "r": respondent}, param_types={"c": STR, "d": STR, "r": STR})
+            return "content_removed"
+        if r["target_type"] == "decision_comment":
+            did, cid = ref.split("/")[0].split(":")[1], ref.split("/")[1].split(":")[1]
+            creator = query(txn, "SELECT member_id FROM Decisions@{FORCE_INDEX=DecisionsById} WHERE decision_id=@d", {"d": did}, {"d": STR})
+            if creator:
+                txn.execute_update("UPDATE DecisionComments SET body = '', removed_at = CURRENT_TIMESTAMP(), removed_reason = 'moderation' "
+                                   "WHERE member_id=@c AND decision_id=@d AND comment_id=@k AND removed_at IS NULL",
+                                   params={"c": creator[0][0], "d": did, "k": cid}, param_types={"c": STR, "d": STR, "k": STR})
             return "content_removed"
         if r["target_type"] == "share":
             from .shares import GRANT_COLS

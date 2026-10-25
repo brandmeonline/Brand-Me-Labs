@@ -62,7 +62,8 @@ def test_member_routes_and_no_award_route(spanner_db, svc, client):
     assert body["account"]["available"] == 100 and len(body["badges"]) == 6 and body["next_milestone"]["rule_id"] == "meaningful_style_setup"
     # Only wired rules are advertised; referral/research ids are reserved, not shown (Q21).
     assert {r["rule_id"] for r in body["rules"]} == {"meaningful_style_setup", "first_owned_item", "friend_decision_response",
-                                                     "styling_proposal_accepted", "catalog_correction_accepted", "verified_repair"}
+                                                     "styling_proposal_accepted", "catalog_correction_accepted", "verified_repair",
+                                                     "decision_influence"}
     assert "not currency" in body["points_are"]
     for method, path, payload in (("post", "/rewards", {"available": 1_000_000}), ("patch", "/rewards", {"available": 1}),
                                   ("put", "/rewards/entries", {}), ("post", "/rewards/entries", {"points": 500}),

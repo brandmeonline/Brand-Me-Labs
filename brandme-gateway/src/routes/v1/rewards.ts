@@ -1,11 +1,10 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * /api/v1 rewards, benefits and disputes — UNMOUNTED routers
- * (lane: opus-consumer-domains). Mount at integration after principalMiddleware:
- *
- *   router.use(rewardsRouter(domainClient));
- *   router.use(rewardsOpsRouter(domainClient));   // console origin only
+ * /api/v1 rewards, benefits, disputes and house standings (lane:
+ * opus-consumer-domains). `rewardsRouter` is mounted from index.ts behind
+ * principalMiddleware; `rewardsOpsRouter` stays unmounted until the console
+ * has operator auth.
  *
  * There is deliberately no member route that awards, edits or transfers
  * points (ch.01 §5, BM-LOY-005): bodies on member routes never carry amounts.
@@ -39,6 +38,7 @@ export function rewardsRouter(client: DomainClient): Router {
   r.use(['/rewards', '/benefits'], requirePrincipal);
 
   r.get('/rewards', requireScope('rewards:read'), forwardTo(client, () => ({ method: 'GET', path: '/rewards' })));
+  r.get('/rewards/standings', requireScope('rewards:read'), forwardTo(client, () => ({ method: 'GET', path: '/rewards/standings' })));
   r.get(
     '/rewards/entries',
     requireScope('rewards:read'),
@@ -134,9 +134,13 @@ export function rewardsOpsRouter(client: DomainClient): Router {
   r.post(
     '/ops/benefits',
     forwardTo(client, (req) => {
-      const b = objectBody(req, 9);
-      onlyKeys(b, ['kind', 'title', 'description', 'cost_points', 'inventory_total', 'funded', 'sponsor', 'available_until', 'reservation_ttl_seconds']);
+      const b = objectBody(req, 11);
+      onlyKeys(b, ['kind', 'title', 'description', 'cost_points', 'inventory_total', 'funded', 'sponsor', 'available_until', 'reservation_ttl_seconds',
+        'house_ref', 'min_standing']);
       if (b.kind === 'partner' && (b.funded !== true || typeof b.sponsor !== 'string')) throw problems.invalid('Partner benefits must be funded and name a sponsor.');
+      if ((b.house_ref === undefined) !== (b.min_standing === undefined) || (b.house_ref !== undefined && b.kind !== 'partner')) {
+        throw problems.invalid('A house reward is a partner benefit with both house_ref and min_standing.');
+      }
       return { method: 'POST', path: '/ops/benefits', body: b };
     }),
   );

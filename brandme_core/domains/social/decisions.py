@@ -2,8 +2,9 @@
 Five-minute social decisions (ch.01 §6; contracts invariant 5;
 BM-SOC-002..008, BM-SOC-012).
 
-* The server fixes ``opened_at``/``closes_at`` (opened_at + 300 s) from Spanner
-  server time inside the opening transaction. ``duration_seconds`` must be 300.
+* The server fixes ``opened_at``/``closes_at`` (opened_at + the window) from
+  Spanner server time inside the opening transaction. The asker picks the
+  window from ``policy.NOW_WINDOWS`` (default 300 s) and may state a ``why``.
 * A response is accepted only if the server time read inside its own
   transaction is strictly before ``closes_at`` and the decision is open
   (see ``clock.py``). Late calls get ``decision_closed``. One response record
@@ -62,14 +63,16 @@ from brandme_core.domains.persona.kernel import (
 from . import events as _events  # noqa: F401
 from .clock import SpannerTxnClock, TxnClock, utc_day_start
 from .notifications import blocked_between, notify
+from .policy import COMMENTS_PER_AUTHOR, NOW_DEFAULT_WINDOW, NOW_WINDOWS
 from .relationships import are_friends
 
-DURATION_SECONDS = 300
+DURATION_SECONDS = NOW_DEFAULT_WINDOW
 SUBJECT_TYPES = ("wardrobe_item", "catalog_product", "outfit_version")
 MODES = ("blind_until_response", "open")
 CHOICES = ("yes", "pass", "alternative")
 OUTCOMES = ("bought", "saved", "passed", "still_deciding")
-CREATE_KEYS = ("subject_type", "subject_id", "prompt", "recipient_ids", "duration_seconds", "discussion_mode")
+CREATE_KEYS = ("subject_type", "subject_id", "prompt", "recipient_ids", "duration_seconds", "discussion_mode", "why")
+REQUIRED_CREATE_KEYS = ("subject_type", "subject_id", "prompt", "recipient_ids", "discussion_mode")
 
 
 @dataclass(frozen=True)
@@ -83,10 +86,11 @@ class DecisionLimits:
 # (txn, creator_id, product_id) -> bool : catalog subjects are owned by the providers lane.
 CatalogCheck = Callable[[Any, str], bool]
 
-DEC_COLS = ("member_id", "decision_id", "subject_type", "subject_id", "prompt", "discussion_mode", "duration_seconds", "state",
+DEC_COLS = ("member_id", "decision_id", "subject_type", "subject_id", "prompt", "why", "discussion_mode", "duration_seconds", "state",
             "created_by_actor", "request_fingerprint", "repeat_of", "opened_at", "closes_at", "closed_at", "close_reason",
             "yes_count", "pass_count", "alternative_count", "requester_outcome", "version")
 RESP_COLS = ("respondent_id", "choice", "alternative_ref", "note", "revision", "first_submitted_at", "submitted_at", "eligible")
+COMMENT_COLS = ("comment_id", "author_id", "body", "created_at", "removed_at", "removed_reason")
 
 
 def fingerprint(subject_type: str, subject_id: str, prompt: str, recipients: Sequence[str]) -> str:
@@ -106,13 +110,17 @@ def parse_create(body: Any) -> Dict[str, Any]:
         raise ValidationFailed("body must be an object")
     reject_non_finite(body)
     reject_unknown_keys(body, CREATE_KEYS, where="decision")
-    missing = [k for k in CREATE_KEYS if k not in body]
+    missing = [k for k in REQUIRED_CREATE_KEYS if k not in body]
     if missing:
         raise ValidationFailed(f"missing fields: {', '.join(missing)}", extra={"missing_fields": missing})
     if body["subject_type"] not in SUBJECT_TYPES:
         raise ValidationFailed("unsupported subject_type", extra={"field": "subject_type"})
-    if body["duration_seconds"] != DURATION_SECONDS or isinstance(body["duration_seconds"], bool):
-        raise ValidationFailed("decisions last exactly 300 seconds", extra={"field": "duration_seconds"})
+    window = body.get("duration_seconds", NOW_DEFAULT_WINDOW)
+    if type(window) is not int or window not in NOW_WINDOWS:  # 300.0 and True are not windows
+        raise ValidationFailed(f"duration_seconds must be one of {list(NOW_WINDOWS)}", extra={"field": "duration_seconds"})
+    why = body.get("why")
+    if why is not None:
+        why = require_text(why, name="why", max_len=280)
     if body["discussion_mode"] not in MODES:
         raise ValidationFailed("discussion_mode must be blind_until_response or open", extra={"field": "discussion_mode"})
     recips = body["recipient_ids"]
@@ -125,6 +133,8 @@ def parse_create(body: Any) -> Dict[str, Any]:
         "subject_type": body["subject_type"],
         "subject_id": require_uuid(body["subject_id"], name="subject_id"),
         "prompt": require_text(body["prompt"], name="prompt", max_len=280),
+        "why": why,
+        "duration_seconds": window,
         "recipient_ids": recips,
         "discussion_mode": body["discussion_mode"],
     }
@@ -195,6 +205,7 @@ class DecisionService:
             "subject_type": d["subject_type"],
             "subject_id": d["subject_id"],
             "prompt": d["prompt"],
+            "why": d["why"],
             "discussion_mode": d["discussion_mode"],
             "duration_seconds": d["duration_seconds"],
             "state": d["state"],
@@ -277,10 +288,11 @@ class DecisionService:
             prior = None if as_draft else self._repeat_of(txn, creator, fp, now, None)
             decision_id = stable_id("decision", creator, ctx.correlation_id)
             opened = None if as_draft else now
-            closes = None if as_draft else now + timedelta(seconds=DURATION_SECONDS)
+            closes = None if as_draft else now + timedelta(seconds=req["duration_seconds"])
             row = {
                 "member_id": creator, "decision_id": decision_id, "subject_type": req["subject_type"], "subject_id": req["subject_id"],
-                "prompt": req["prompt"], "discussion_mode": req["discussion_mode"], "duration_seconds": DURATION_SECONDS,
+                "prompt": req["prompt"], "why": req["why"], "discussion_mode": req["discussion_mode"],
+                "duration_seconds": req["duration_seconds"],
                 "state": "draft" if as_draft else "open", "created_by_actor": principal.actor_ref, "request_fingerprint": fp,
                 "repeat_of": prior, "opened_at": opened, "closes_at": closes, "closed_at": None,
                 "close_reason": None, "yes_count": 0, "pass_count": 0, "alternative_count": 0, "requester_outcome": None, "version": 1,
@@ -337,7 +349,7 @@ class DecisionService:
             recipients = [r for r in active if are_friends(txn, d["member_id"], r) and processing_allowed(txn, r, "social.decisions")]
             if not recipients:
                 raise DetailedInvalidTransition("no eligible recipients remain", code="ineligible_recipients")
-            closes = now + timedelta(seconds=DURATION_SECONDS)
+            closes = now + timedelta(seconds=d["duration_seconds"])
             repeat_of = self._repeat_of(txn, d["member_id"], d["request_fingerprint"], now, decision_id)
             d.update(state="open", opened_at=now, closes_at=closes, repeat_of=repeat_of, version=d["version"] + 1)
             txn.update("Decisions", columns=("member_id", "decision_id", "state", "opened_at", "closes_at", "repeat_of", "version", "updated_at"),
@@ -521,6 +533,100 @@ class DecisionService:
             txn.update("Decisions", columns=("member_id", "decision_id", "requester_outcome", "updated_at"),
                        values=[(d["member_id"], decision_id, outcome, COMMIT_TIMESTAMP)])
             return {"decision_id": decision_id, "requester_outcome": outcome, "label": "self-reported"}
+
+        return command(self.db, principal, tx)
+
+    # ------------------------------------------------------------ comments
+
+    def _comments_visible(self, txn, d: Mapping[str, Any], viewer: str, role: str) -> bool:
+        """Blind mode keeps the thread hidden from a recipient until they answer, so
+        comments never anchor anyone's verdict; it opens to all once closed."""
+        if role == "creator" or d["state"] == "closed" or d["discussion_mode"] == "open":
+            return True
+        return bool(query(txn, "SELECT 1 FROM DecisionResponses WHERE member_id=@m AND decision_id=@d AND respondent_id=@r",
+                          {"m": d["member_id"], "d": d["decision_id"], "r": viewer}, {"m": STR, "d": STR, "r": STR}))
+
+    def add_comment(self, principal: Principal, decision_id: Any, body: Any, idempotency_key: Optional[str]) -> Dict[str, Any]:
+        """A short comment in the decision's thread, inside the window only."""
+        require_scope(principal, "social:write")
+        decision_id = require_uuid(decision_id, name="decision_id")
+        if not isinstance(body, Mapping):
+            raise ValidationFailed("body must be an object")
+        reject_unknown_keys(body, ("body",), where="comment")
+        text = require_text(body.get("body"), name="body", max_len=500)
+        me = principal.member_id
+
+        def tx(txn, ctx: CommandContext):
+            d = self._locate(txn, decision_id)
+            if d is None:
+                raise NotFound("decision not found")
+            role = self._visible(txn, d, me)
+            guard_write(txn, me, "social.decisions")
+            now = self.clock.now(txn)
+            if d["state"] != "open" or now >= d["closes_at"]:
+                raise DetailedInvalidTransition("this decision has closed", code="decision_closed",
+                                                extra={"closes_at": iso(d["closes_at"]), "server_time": iso(now)})
+            if not self._comments_visible(txn, d, me, role):
+                raise DetailedInvalidTransition("answer first; the thread opens after your answer", code="answer_first")
+            mine = query(txn, "SELECT COUNT(*) FROM DecisionComments WHERE member_id=@m AND decision_id=@d AND author_id=@a",
+                         {"m": d["member_id"], "d": decision_id, "a": me}, {"m": STR, "d": STR, "a": STR})[0][0]
+            if mine >= COMMENTS_PER_AUTHOR:
+                raise RateLimited(f"at most {COMMENTS_PER_AUTHOR} comments per decision", extra={"limit": "comments_per_decision"})
+            comment_id = stable_id("decision-comment", decision_id, me, ctx.correlation_id)
+            txn.insert("DecisionComments", columns=("member_id", "decision_id", "comment_id", "author_id", "body", "created_at"),
+                       values=[(d["member_id"], decision_id, comment_id, me, text, COMMIT_TIMESTAMP)])
+            return {"decision_id": decision_id, "comment_id": comment_id, "author_id": me, "body": text, "created_at": iso(now)}
+
+        response, _ = idempotent_command(self.db, principal, "decisions.comment", idempotency_key, dict(body), tx)
+        return response
+
+    def comments(self, principal: Principal, decision_id: Any) -> Dict[str, Any]:
+        require_scope(principal, "social:read")
+        decision_id = require_uuid(decision_id, name="decision_id")
+        me = principal.member_id
+
+        def read(s):
+            d = self._locate(s, decision_id)
+            if d is None:
+                raise NotFound("decision not found")
+            role = self._visible(s, d, me)
+            if not self._comments_visible(s, d, me, role):
+                return {"decision_id": decision_id, "items": [], "hidden_until_you_answer": True}
+            rows = [dict(zip(COMMENT_COLS, r)) for r in query(
+                s, f"SELECT {', '.join(COMMENT_COLS)} FROM DecisionComments WHERE member_id=@m AND decision_id=@d ORDER BY created_at, comment_id",
+                {"m": d["member_id"], "d": decision_id}, {"m": STR, "d": STR})]
+            items = []
+            for c in rows:
+                if c["author_id"] != me and blocked_between(s, me, c["author_id"]):
+                    continue
+                if c["removed_at"] is not None:
+                    items.append({"comment_id": c["comment_id"], "removed": True, "created_at": iso(c["created_at"])})
+                else:
+                    items.append({"comment_id": c["comment_id"], "author_id": c["author_id"], "body": c["body"], "removed": False,
+                                  "created_at": iso(c["created_at"]), "mine": c["author_id"] == me})
+            return {"decision_id": decision_id, "items": items, "hidden_until_you_answer": False}
+
+        return run_read(self.db, read)
+
+    def remove_comment(self, principal: Principal, decision_id: Any, comment_id: Any) -> Dict[str, Any]:
+        """The author withdraws a comment; its text is erased, a placeholder stays."""
+        require_scope(principal, "social:write")
+        decision_id = require_uuid(decision_id, name="decision_id")
+        comment_id = require_uuid(comment_id, name="comment_id")
+        me = principal.member_id
+
+        def tx(txn, ctx: CommandContext):
+            d = self._locate(txn, decision_id)
+            if d is None:
+                raise NotFound("comment not found")
+            c = query(txn, "SELECT author_id, removed_at FROM DecisionComments WHERE member_id=@m AND decision_id=@d AND comment_id=@c",
+                      {"m": d["member_id"], "d": decision_id, "c": comment_id}, {"m": STR, "d": STR, "c": STR})
+            if not c or c[0][0] != me:
+                raise NotFound("comment not found")
+            if c[0][1] is None:
+                txn.update("DecisionComments", columns=("member_id", "decision_id", "comment_id", "body", "removed_at", "removed_reason"),
+                           values=[(d["member_id"], decision_id, comment_id, "", self.clock.now(txn), "author")])
+            return {"decision_id": decision_id, "comment_id": comment_id, "removed": True}
 
         return command(self.db, principal, tx)
 

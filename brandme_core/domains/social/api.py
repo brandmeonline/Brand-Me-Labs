@@ -23,6 +23,8 @@ from brandme_core.domains.persona.http import PrincipalResolver, _headers, _pars
 from brandme_core.domains.persona.kernel import DomainError, ValidationFailed
 
 from .decisions import DecisionService
+from .flow import FlowService
+from .houses import HouseService
 from .notifications import NotificationService
 from .relationships import RelationshipService
 from .reports import ReportService
@@ -109,6 +111,19 @@ def create_social_router(relationships: RelationshipService, decisions: Decision
     async def cancel(request: Request, decision_id: str):
         return await execute(request, resolve_principal, lambda p: decisions.cancel(p, decision_id))
 
+    @r.get("/decisions/{decision_id}/comments")
+    async def decision_comments(request: Request, decision_id: str):
+        return await execute(request, resolve_principal, lambda p: decisions.comments(p, decision_id))
+
+    @r.post("/decisions/{decision_id}/comments")
+    async def add_decision_comment(request: Request, decision_id: str):
+        k = request.headers.get("idempotency-key")
+        return await execute(request, resolve_principal, lambda p, b: decisions.add_comment(p, decision_id, b, k), status=201, with_body=True)
+
+    @r.delete("/decisions/{decision_id}/comments/{comment_id}")
+    async def remove_decision_comment(request: Request, decision_id: str, comment_id: str):
+        return await execute(request, resolve_principal, lambda p: decisions.remove_comment(p, decision_id, comment_id))
+
     @r.put("/decisions/{decision_id}/outcome")
     async def outcome(request: Request, decision_id: str):
         return await execute(request, resolve_principal, lambda p, b: decisions.record_outcome(p, decision_id, _single(b, "outcome")),
@@ -169,6 +184,37 @@ def create_social_router(relationships: RelationshipService, decisions: Decision
         @r.get("/reports")
         async def my_reports(request: Request):
             return await execute(request, resolve_principal, reports.my_reports)
+
+    return r
+
+
+def create_flow_router(flow: FlowService, houses: HouseService, resolve_principal: PrincipalResolver) -> APIRouter:
+    """Home = Flow, and the houses that feed it (Ultra plan 02, item 3)."""
+    r = APIRouter()
+
+    @r.get("/flow")
+    async def home(request: Request):
+        q = request.query_params
+        limit = q.get("limit")
+
+        def run(p):
+            if limit is not None and not limit.isdigit():
+                raise ValidationFailed("limit must be an integer", extra={"field": "limit"})
+            return flow.flow(p, limit=int(limit) if limit else 24, cursor=q.get("cursor"))
+
+        return await execute(request, resolve_principal, run)
+
+    @r.get("/houses")
+    async def my_houses(request: Request):
+        return await execute(request, resolve_principal, houses.list)
+
+    @r.put("/houses/{house_ref}/follow")
+    async def follow(request: Request, house_ref: str):
+        return await execute(request, resolve_principal, lambda p, b: houses.follow(p, house_ref, b), with_body=True)
+
+    @r.delete("/houses/{house_ref}/follow")
+    async def unfollow(request: Request, house_ref: str):
+        return await execute(request, resolve_principal, lambda p: houses.unfollow(p, house_ref))
 
     return r
 

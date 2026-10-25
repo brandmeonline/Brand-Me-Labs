@@ -1,5 +1,5 @@
-"""W10 privacy registration for relationships, blocks, decisions, shares and
-notifications.
+"""W10 privacy registration for relationships, blocks, decisions, shares,
+reports, notifications and followed houses.
 
 Same pattern as persona/wardrobe: foundation ``register_data_category``
 always, the privacy lane's ``DomainPrivacyHandler`` when present.
@@ -37,11 +37,11 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "tables": ("MemberBlocks", "MemberMutes"),
     },
     "social.decisions": {
-        "title": "Decisions you asked and answers you gave",
+        "title": "Decisions you asked, answers you gave and comments you wrote",
         "supplied_by": "member",
         "retention": "Until you delete them or your account; closed tallies keep counts only",
         "on_edit": "Answers can change until the deadline, never after",
-        "tables": ("Decisions", "DecisionAudience", "DecisionResponses"),
+        "tables": ("Decisions", "DecisionAudience", "DecisionResponses", "DecisionComments"),
     },
     "social.shares": {
         "title": "Shares you created and their previews",
@@ -64,6 +64,13 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "on_edit": "Blocking withdraws unread notifications between you",
         "tables": ("Notifications",),
     },
+    "social.houses": {
+        "title": "Houses you follow and whether each may see your standing",
+        "supplied_by": "member",
+        "retention": "Until you unfollow or delete your account",
+        "on_edit": "Turning sharing off hides your tier from that house at once",
+        "tables": ("MemberHouses",),
+    },
 }
 
 
@@ -81,15 +88,21 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
     if category == "social.decisions":
         asked = []
         for d in query(snap, "SELECT decision_id, subject_type, subject_id, prompt, discussion_mode, state, opened_at, closes_at, closed_at, "
-                             "yes_count, pass_count, alternative_count, requester_outcome FROM Decisions WHERE member_id=@m ORDER BY created_at", m, _M):
+                             "yes_count, pass_count, alternative_count, requester_outcome, why, duration_seconds FROM Decisions WHERE member_id=@m "
+                             "ORDER BY created_at", m, _M):
             asked.append({"decision_id": d[0], "subject_type": d[1], "subject_id": d[2], "prompt": d[3], "discussion_mode": d[4], "state": d[5],
                           "opened_at": iso(d[6]), "closes_at": iso(d[7]), "closed_at": iso(d[8]),
-                          "result": {"yes": d[9], "pass": d[10], "alternative": d[11]}, "requester_outcome": d[12]})
+                          "result": {"yes": d[9], "pass": d[10], "alternative": d[11]}, "requester_outcome": d[12], "why": d[13],
+                          "duration_seconds": d[14]})
         answered = [{"decision_owner_ref": r[0], "decision_id": r[1], "choice": r[2], "alternative_ref": r[3], "note": r[4],
                      "submitted_at": iso(r[5]), "eligible": r[6]}
                     for r in query(snap, "SELECT member_id, decision_id, choice, alternative_ref, note, submitted_at, eligible FROM DecisionResponses"
                                          "@{FORCE_INDEX=DecisionResponsesByRespondent} WHERE respondent_id=@m ORDER BY submitted_at", m, _M)]
-        return [{"asked": asked, "answered": answered}]
+        commented = [{"decision_owner_ref": r[0], "decision_id": r[1], "comment_id": r[2], "body": r[3], "created_at": iso(r[4]),
+                      "removed": r[5] is not None}
+                     for r in query(snap, "SELECT member_id, decision_id, comment_id, body, created_at, removed_at FROM DecisionComments"
+                                          "@{FORCE_INDEX=DecisionCommentsByAuthor} WHERE author_id=@m ORDER BY created_at", m, _M)]
+        return [{"asked": asked, "answered": answered, "commented": commented}]
     if category == "social.shares":
         out = []
         for r in query(snap, "SELECT g.share_id, g.subject_type, g.subject_id, g.audience, g.allowed_fields, g.recipient_ids, g.expires_at, "
@@ -108,6 +121,9 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
         return [{"notification_id": r[0], "type": r[1], "subject_ref": r[2], "payload": json_value(r[3]), "created_at": iso(r[4]), "read_at": iso(r[5])}
                 for r in query(snap, "SELECT notification_id, type, subject_ref, sanitized_payload, created_at, read_at FROM Notifications "
                                      "WHERE member_id=@m ORDER BY created_at", m, _M)]
+    if category == "social.houses":
+        return [{"house_ref": r[0], "share_standing": r[1], "followed_at": iso(r[2])}
+                for r in query(snap, "SELECT house_ref, share_standing, followed_at FROM MemberHouses WHERE member_id=@m ORDER BY house_ref", m, _M)]
     raise KeyError(category)
 
 
@@ -120,6 +136,7 @@ def delete_category(txn, member_id: str, category: str) -> int:
         return n + txn.execute_update("DELETE FROM MemberMutes WHERE member_id=@m OR muted_member_id=@m", params=m, param_types=_M)
     if category == "social.decisions":
         n = txn.execute_update("DELETE FROM DecisionResponses WHERE respondent_id=@m", params=m, param_types=_M)
+        n += txn.execute_update("DELETE FROM DecisionComments WHERE author_id=@m", params=m, param_types=_M)
         n += txn.execute_update("DELETE FROM DecisionAudience WHERE recipient_id=@m", params=m, param_types=_M)
         return n + txn.execute_update("DELETE FROM Decisions WHERE member_id=@m", params=m, param_types=_M)  # audience/responses cascade
     if category == "social.shares":
@@ -145,6 +162,8 @@ def delete_category(txn, member_id: str, category: str) -> int:
     if category == "social.notifications":
         n = txn.execute_update("DELETE FROM Notifications WHERE member_id=@m", params=m, param_types=_M)
         return n + txn.execute_update("UPDATE Notifications SET actor_member_id=NULL WHERE actor_member_id=@m", params=m, param_types=_M)
+    if category == "social.houses":
+        return txn.execute_update("DELETE FROM MemberHouses WHERE member_id=@m", params=m, param_types=_M)
     raise KeyError(category)
 
 

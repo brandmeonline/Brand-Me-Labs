@@ -152,12 +152,13 @@ class LaneSubscriber:
             raise ValueError("explicit Brand.Me environment required")
         from brandme_core.domains.persona.lane import load_domains
         from brandme_core.domains.rewards.consumer import HANDLED, RewardsConsumer
+        from brandme_core.domains.social.houses import catalog_variant_lookup
         from brandme_core.domains.wardrobe.service import WardrobeService
 
         load_domains()
         self.environment = environment
         rewards = rewards or RewardsConsumer(database)
-        wardrobe = wardrobe or WardrobeService(database)
+        wardrobe = wardrobe or WardrobeService(database, catalog_lookup=catalog_variant_lookup(database))
         self.routes: Dict[str, Callable[[EventEnvelope], Mapping[str, Any]]] = {t: rewards.handle for t in HANDLED}
         self.routes["commerce.order.observed"] = wardrobe.apply_order_observation
 

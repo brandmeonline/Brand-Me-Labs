@@ -22,6 +22,7 @@ from brandme_core.domains.persona.kernel import ValidationFailed, reject_unknown
 
 from .benefits import BenefitService
 from .service import RewardsService
+from .standing import StandingService
 
 
 def _limit(raw: Optional[str], default: int = 24) -> int:
@@ -32,12 +33,18 @@ def _limit(raw: Optional[str], default: int = 24) -> int:
     return require_strict_int(int(raw), name="limit", lo=1, hi=100)
 
 
-def create_rewards_router(rewards: RewardsService, benefits: BenefitService, resolve_principal: PrincipalResolver) -> APIRouter:
+def create_rewards_router(rewards: RewardsService, benefits: BenefitService, resolve_principal: PrincipalResolver,
+                          standings: Optional[StandingService] = None) -> APIRouter:
     r = APIRouter()
 
     @r.get("/rewards")
     async def summary(request: Request):
         return await execute(request, resolve_principal, rewards.summary)
+
+    if standings is not None:
+        @r.get("/rewards/standings")
+        async def my_standings(request: Request):
+            return await execute(request, resolve_principal, standings.mine)
 
     @r.get("/rewards/entries")
     async def entries(request: Request):

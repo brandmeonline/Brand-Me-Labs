@@ -17,6 +17,8 @@ scheduler or long-running worker can own.
   ``not_configured``. Without a provider, queued jobs stay queued. A provider
   deletion that could not be requested is recorded as ``failed``, never as
   confirmed.
+* ``standings.recompute_if_due``: rebuild per-house loyalty tiers from
+  verified purchases at most once a day (``rewards/standing.py``).
 * Benefit fulfillment needs a partner fulfiller per benefit; none exists, so it
   is ``not_configured`` too.
 
@@ -43,7 +45,9 @@ def run_jobs(database: Any, *, environment: str, media: Any = None, fulfillers: 
     """One bounded pass of every lane job. ``media`` is a MediaService wired to
     the real object store; ``fulfillers`` maps benefit_id → fulfiller."""
     from brandme_core.domains.rewards.benefits import BenefitService
+    from brandme_core.domains.rewards.standing import StandingService
     from brandme_core.domains.social.decisions import DecisionService
+    from brandme_core.domains.social.houses import CatalogHouses
 
     from .lane import load_domains
 
@@ -52,6 +56,7 @@ def run_jobs(database: Any, *, environment: str, media: Any = None, fulfillers: 
     out: Dict[str, Any] = {
         "decisions": DecisionService(database).close_due(environment=environment),
         "reservations": benefits.expire_due(environment=environment),
+        "standings": StandingService(database, catalog=CatalogHouses()).recompute_if_due(),
     }
     if media is None:
         out["media"] = "not_configured"

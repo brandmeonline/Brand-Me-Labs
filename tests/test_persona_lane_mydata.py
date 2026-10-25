@@ -15,6 +15,7 @@ import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import ANY
 
 import pytest
 
@@ -43,6 +44,7 @@ from brandme_core.domains.privacy.privacy import MyDataService  # noqa: E402
 from brandme_core.domains.rewards.benefits import BenefitService  # noqa: E402
 from brandme_core.domains.rewards.service import RewardsService  # noqa: E402
 from brandme_core.domains.social.decisions import DecisionService  # noqa: E402
+from brandme_core.domains.social.houses import HouseService  # noqa: E402
 from brandme_core.domains.social.relationships import RelationshipService  # noqa: E402
 from brandme_core.domains.social.reports import ReportService  # noqa: E402
 from brandme_core.domains.social.shares import ShareService  # noqa: E402
@@ -62,6 +64,13 @@ def key():
 
 def now():
     return datetime.now(timezone.utc)
+
+
+class OneHouse:
+    """Catalog stand-in: the house exists without seeding the providers lane's tables."""
+
+    def house_name(self, snap, house_ref):
+        return "Atelier North" if house_ref == "atelier-north" else None
 
 
 class MemoryObjectStore:
@@ -122,6 +131,7 @@ def seed(db, store, provider):
     theirs = decisions.create(friend, {"subject_type": "wardrobe_item", "subject_id": f_item, "prompt": "Scarf?",
                                        "recipient_ids": [gone.member_id], "duration_seconds": 300, "discussion_mode": "open"}, key())
     decisions.respond(gone, theirs["decision_id"], {"choice": "yes", "note": "Nice"})
+    decisions.add_comment(gone, theirs["decision_id"], {"body": "With the navy coat"}, key())
     decisions.create(gone, {"subject_type": "wardrobe_item", "subject_id": item, "prompt": "Shirt?", "recipient_ids": [friend.member_id],
                             "duration_seconds": 300, "discussion_mode": "open"}, key())
     ShareService(db).create(gone, {"subject_type": "wardrobe_item", "subject_id": item, "audience": "unlisted", "allowed_fields": ["title"],
@@ -140,6 +150,9 @@ def seed(db, store, provider):
                                        "inventory_total": 5})
     benefits.reserve(gone, benefit["benefit_id"], key())
     rewards.open_dispute(gone, {"category": "other", "message": "question"})
+    HouseService(db, catalog=OneHouse()).follow(gone, "atelier-north", {"share_standing": True})
+    run_txn(db, lambda t: t.insert("HouseStandings", columns=("member_id", "house_ref", "tier", "computed_at", "run_id"),
+                                   values=[(gone.member_id, "atelier-north", "top_10", now(), str(uuid.uuid4()))]))
 
     media = MediaService(db, store, ProviderRegistry([provider]))
     u = media.create_upload(gone, {"kind": "tryon_input", "content_type": "image/png", "bytes": len(PNG)}, key())
@@ -160,7 +173,8 @@ MEMBER_COLUMNS = {
     "DecisionAudience": "recipient_id", "ShareGrants": "member_id", "Notifications": "member_id",
     "MemberReports": "reporter_id", "MemberMutes": "muted_member_id", "RewardAccounts": "member_id", "RewardEntries": "member_id",
     "BenefitReservations": "member_id", "RewardDisputes": "member_id", "TryOnConsents": "member_id",
-    "TryOnJobs": "member_id", "MediaObjects": "member_id",
+    "TryOnJobs": "member_id", "MediaObjects": "member_id", "DecisionComments": "author_id", "MemberHouses": "member_id",
+    "HouseStandings": "member_id",
 }
 
 
@@ -169,7 +183,8 @@ def remaining(db, member_id):
 
 
 MIGRATIONS = Path(__file__).resolve().parents[1] / "brandme-data" / "spanner" / "migrations"
-LANE_TABLES = frozenset(t for f in MIGRATIONS.glob("V00[2-5]_*.sql") for t in re.findall(r"CREATE TABLE (\w+)", f.read_text()))
+LANE_FILES = [*MIGRATIONS.glob("V00[2-5]_*.sql"), *MIGRATIONS.glob("V016_*.sql")]
+LANE_TABLES = frozenset(t for f in LANE_FILES for t in re.findall(r"CREATE TABLE (\w+)", f.read_text()))
 # Kept on purpose: member id + time only, so a racing job cannot recreate the profile.
 RETAINED = frozenset({"PersonaTombstones"})
 
@@ -220,10 +235,13 @@ def test_consumer_domains_through_my_data(db):
     cats = out["package"]["categories"]
     assert len(out["sha256"]) == 64 and set(cats) == set(inventory)
     for k in ("persona.declared", "persona.snapshots", "wardrobe.items", "wardrobe.outfits", "social.relationships", "social.decisions",
-              "social.shares", "social.reports", "rewards.ledger", "rewards.redemptions", "rewards.disputes", "media.tryon_consents",
-              "media.tryon_media"):
+              "social.shares", "social.reports", "social.houses", "rewards.ledger", "rewards.redemptions", "rewards.disputes",
+              "rewards.standings", "media.tryon_consents", "media.tryon_media"):
         assert cats[k]["records"], k
     assert cats["social.decisions"]["records"][0]["answered"][0]["note"] == "Nice"
+    assert cats["social.decisions"]["records"][0]["commented"][0]["body"] == "With the navy coat"
+    assert cats["social.houses"]["records"] == [{"house_ref": "atelier-north", "share_standing": True, "followed_at": ANY}]
+    assert cats["rewards.standings"]["records"][0]["tier"] == "top_10"
     assert cats["rewards.ledger"]["records"][0]["account"]["available"] == 50  # 100 earned, 50 reserved
     assert cats["media.tryon_media"]["records"][0]["jobs"][0]["saved"] is True
 

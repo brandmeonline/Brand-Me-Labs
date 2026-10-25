@@ -8,6 +8,11 @@ qualifying server event time; a member's profile timezone never moves them.
 Rules with no wired source in this repository are listed but never settle:
 ``referral_activated`` (no referral system) and
 ``optional_research_contribution`` (no campaign with defined compensation).
+
+``EXTENSIONS`` are lane rules for the founder-locked design that the contract
+does not list yet. Each names its proposed deviation. The contract mirror test
+checks every contract rule exactly and requires every other rule to be listed
+here.
 """
 
 from __future__ import annotations
@@ -48,7 +53,15 @@ RULES: Dict[str, Rule] = {r.id: r for r in (
          member_text="Not available yet"),
     Rule("verified_repair", 1, 50, "approved_repair_workflow_supplies_unique_valid_completion_evidence",
          cap_points=200, cap_window="calendar_month", member_text="An approved repair workflow confirms a repair"),
+    # Ultra plan 02 item 2 (Now loop): influence credit when a friend's verdict moves a verified purchase.
+    Rule("decision_influence", 1, 25, "verified_delivered_order_of_subject_or_chosen_alternative_within_14_days_after_in_window_verdict",
+         cap_points=100, cap_window="calendar_day", member_text="A friend bought what you helped them choose"),
 )}
+
+EXTENSIONS: Dict[str, str] = {"decision_influence": "PD-20"}
+
+# Influence: the decision closed at most this long before the purchase was delivered.
+INFLUENCE_WINDOW = timedelta(days=14)
 
 # Disclosed anti-collusion policy for proposals: one award per owner→proposer
 # pair per UTC day (contracts: collusive_repeated_acceptance; no hidden scores).
