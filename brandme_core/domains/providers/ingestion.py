@@ -140,6 +140,10 @@ class CatalogIngestor:
                 merchants: Dict[Tuple[str, str], set] = {}
                 for k in keys:
                     merchants.setdefault((k[2], k[3]), set()).add(k[1])
+                for v in page.items:  # the page's own records count too, even ones it rejected
+                    ids = (getattr(v, "source_product_id", None), getattr(v, "source_variant_id", None))
+                    if getattr(v, "provider_id", None) == provider_id and ids in removed:
+                        merchants.setdefault(ids, set()).add(getattr(v, "merchant_id", None))
                 if any(len(m) > 1 for m in merchants.values()):
                     raise ValueError("a tombstone matches variants of more than one merchant; tombstones need a "
                                      "merchant to remove one merchant's listing")

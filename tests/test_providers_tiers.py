@@ -925,15 +925,25 @@ def test_tombstones_are_read_once_from_any_iterable_and_a_malformed_one_refuses_
     assert "v8" not in {v.source_variant_id for v in ing.offers(SHOP)} and ing.cursors[SHOP] == "c3"
 
 
-def test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing():
+@pytest.mark.parametrize("second", ["stored", "in_the_page", "both_in_the_page", "rejected_in_the_page"])
+def test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing(second):
     """Tombstones carry no merchant on the wire. Two merchants at one provider may share source ids, so a
-    tombstone that matches both is refused instead of discontinuing the other merchant's live listing."""
+    tombstone that matches both, whether stored, arriving in the same page, or only seen in the page, is refused
+    instead of discontinuing the other merchant's live listing. Nothing is written, counted or moved."""
     ing = CatalogIngestor()
     mine, theirs = _variant("1001-S"), replace(_variant("1001-S"), merchant_id="another-fictional-brand")
-    _ingest(ing, [mine, theirs], None)
+    stored = {"stored": [mine, theirs], "both_in_the_page": [_variant("v0")]}.get(second, [mine])
+    in_page = {"in_the_page": [theirs], "both_in_the_page": [mine, theirs],
+               "rejected_in_the_page": [replace(theirs, price=Money(0, "USD"))]}.get(second, [])
+    audit = IngestionAudit("multi-page", SHOP)
+    ing.ingest_page(_page(stored, cursor="c1"), provider_id=SHOP, now=T0, audit=audit)
+    before_offers = sorted((v.merchant_id, v.source_variant_id) for v in ing.offers(SHOP))
+    before = replace(audit, rejections=list(audit.rejections), admitted_refs=list(audit.admitted_refs))
     with pytest.raises(ValueError):
-        _ingest(ing, [_variant("v9")], None, run="r2", tombstones=[("p1", "1001-S")])
-    assert sorted(v.merchant_id for v in ing.offers(SHOP)) == ["another-fictional-brand", "fictional-brand"]
+        ing.ingest_page(_page(in_page + [_variant("v9")], [("p1", "1001-S")], cursor="c2"), provider_id=SHOP,
+                        now=T0 + timedelta(hours=1), audit=audit)
+    assert sorted((v.merchant_id, v.source_variant_id) for v in ing.offers(SHOP)) == before_offers
+    assert ing.cursors[SHOP] == "c1" and audit == before
 
 
 def test_one_providers_tombstones_never_touch_another_providers_variants():

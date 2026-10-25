@@ -1700,7 +1700,7 @@ A fourth review covered only the S29 diff (`6fdffc4..e350254`). Four lenses ran 
 | No test pinned that a sibling in `submitting` blocks, now the only guard while the first is being sent | **Added** (above) |
 | The failed-read test covered neither the connection-test path nor the strict-note path | **Added.** `test_a_failed_read_after_a_connection_test_still_writes_its_refusal_and_a_strict_refusal_is_a_note` |
 | The lockstep test dropped refusal coverage | **Changed** to 3 pages on a 2-slot tier, asserting per-page refusals |
-| Hydrate dedupe: no test for re-logging, and a fresh activation was not logged when this process never saw the reset in between (2 findings) | **Fixed.** The key includes the persisted activation's evidence and time. `test_a_fresh_activation_is_logged_again_whether_or_not_the_reset_was_seen` (both orders) |
+| Hydrate dedupe: no test for re-logging, and a fresh activation was not logged when this process never saw the reset in between (2 findings) | **Fixed.** The key includes the persisted activation's evidence and time. (S31 correction: that was the capability row's last test, so a re-test re-logged it; S31 keys it on the activation item.) `test_a_fresh_activation_is_logged_again_whether_or_not_the_reset_was_seen` (both orders) |
 
 **Every new test pins what it claims.** Run against `e350254`'s code, the 13 new cases for this stage's defects fail. The 4 guard cases for behaviour `e350254` already had pass there: the `submitting` sibling, the failed-read note, a reset that was seen, and the lockstep counts.
 
@@ -1734,3 +1734,25 @@ A fifth review covered only the S30 diff (`e350254..36dacbe`). It used the same 
 - **ruff:** no new finding on the changed files.
 - **Console and gateway:** unchanged in this stage.
 - **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, S28).
+
+## Stage S32 — Sixth independent review: the S31 fixes (2026-10-25)
+
+A sixth review covered only the S31 diff (`36dacbe..c8535f4`): three lenses (hydrate dedupe, ambiguous tombstones, tests and claims), two refuters per finding, one completeness round. **6 findings, all low: 4 confirmed, 1 plausible, 1 refuted.** No confirmed finding is a defect in the shipped code; the confirmed ones are a missing test and two stale texts.
+
+| Finding | Disposition |
+|---|---|
+| No test covered the staged half of the two-merchant tombstone check: a second merchant's variant arriving in the same page as the tombstone (2 findings) | **Added.** `test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing` now covers the second merchant stored, in the page, both in the page, and rejected in the page. Each case asserts that offers, cursor and a shared audit are unchanged |
+| Plausible: a second merchant's record that fails validation was left out of the check, so its tombstone discontinued the other merchant's live listing | **Hardened.** The page's own records count toward the check even when they are rejected (the `rejected_in_the_page` case) |
+| The comment on the money-path guard still stated the unnarrowed "a placed order never frees its quote" | **Corrected** to match S30/S31: an order Brand.Me recorded never frees its quote |
+| The S30 hydrate row still described S30's key as the activation's | **Annotated** with the S31 correction |
+| Refuted: a discontinued variant of another merchant makes a later tombstone ambiguous | No change: fail-closed by design, since it stops a replayed tombstone from removing the wrong merchant's listing. The merchant on the tombstone wire shape (S31 follow-up) resolves it |
+
+**The new cases pin what they claim.** Run against `c8535f4`'s code, the `rejected_in_the_page` case fails. The three guard cases pass there, because `c8535f4` already refused them.
+
+### Evidence (this head)
+- **Python lane files**, both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1317 passed, 20 skipped, 0 failed**. The skips are the same allowlisted 20 (8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary).
+- **ruff:** no new finding on the changed files.
+- **Console and gateway:** unchanged in this stage.
+- **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, S28).
+
+**Review loop.** The rounds over each fix diff went 21 → 14 → 11 → 4 confirmed findings. This sixth round found no defect in the shipped code. This stage changes one code comment, adds a four-line hardening loop, and adds test cases.

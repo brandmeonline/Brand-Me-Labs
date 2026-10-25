@@ -911,10 +911,12 @@ class CommerceService:
                 raise ApprovalInvalid("the cart changed after approval; review a new quote", code="quote_changed")
             if approval.allowed_total != quote.total or approval.merchant_id != quote.merchant_id:
                 raise ApprovalInvalid("approved amount or merchant does not match")
-            # One quote is bought at most once. Another purchase of it blocks this one once it is being sent, is
-            # unresolved, or holds an order in any later state (cancel requested, shipped, refunded, cancelled):
-            # a placed order never frees its quote. An approved but unsent sibling does not block: the first to
-            # execute turns ``submitting`` in this same transaction, so two approved requests never deadlock.
+            # Another purchase of the same quote blocks this one once it is being sent, is unresolved, or holds an
+            # order Brand.Me recorded, in any later state (cancel requested, shipped, refunded, cancelled): such an
+            # order never frees its quote. (A submission the merchant voided before Brand.Me saw it is reconciled
+            # as rejected with no order and does free it, with nothing charged twice; see S31.) An approved but
+            # unsent sibling does not block: the first to execute turns ``submitting`` in this same transaction,
+            # so two approved requests never deadlock.
             for other in tx.operations_for_quote_hash(op.quote_hash):
                 if other.id != op.id and (other.order_id is not None or other.state in ("submitting", "outcome_unknown")):
                     raise IdempotencyConflict("this quote is already being purchased", code="purchase_in_progress")
