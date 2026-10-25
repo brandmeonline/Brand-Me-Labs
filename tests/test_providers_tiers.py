@@ -925,8 +925,9 @@ def test_tombstones_are_read_once_from_any_iterable_and_a_malformed_one_refuses_
     assert "v8" not in {v.source_variant_id for v in ing.offers(SHOP)} and ing.cursors[SHOP] == "c3"
 
 
+@pytest.mark.parametrize("one_pass", [False, True])  # an adapter may hand over its page items as a generator
 @pytest.mark.parametrize("second", ["stored", "in_the_page", "both_in_the_page", "rejected_in_the_page"])
-def test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing(second):
+def test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing(second, one_pass):
     """Tombstones carry no merchant on the wire. Two merchants at one provider may share source ids, so a
     tombstone that matches both, whether stored, arriving in the same page, or only seen in the page, is refused
     instead of discontinuing the other merchant's live listing. Nothing is written, counted or moved."""
@@ -939,11 +940,30 @@ def test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_l
     ing.ingest_page(_page(stored, cursor="c1"), provider_id=SHOP, now=T0, audit=audit)
     before_offers = sorted((v.merchant_id, v.source_variant_id) for v in ing.offers(SHOP))
     before = replace(audit, rejections=list(audit.rejections), admitted_refs=list(audit.admitted_refs))
+    records = in_page + [_variant("v9")]
+    page = CatalogPage((r for r in records) if one_pass else tuple(records), "c2", (("p1", "1001-S"),))
     with pytest.raises(ValueError):
-        ing.ingest_page(_page(in_page + [_variant("v9")], [("p1", "1001-S")], cursor="c2"), provider_id=SHOP,
-                        now=T0 + timedelta(hours=1), audit=audit)
+        ing.ingest_page(page, provider_id=SHOP, now=T0 + timedelta(hours=1), audit=audit)
     assert sorted((v.merchant_id, v.source_variant_id) for v in ing.offers(SHOP)) == before_offers
     assert ing.cursors[SHOP] == "c1" and audit == before
+
+
+@pytest.mark.parametrize("unrelated", ["another_providers_record", "ids_no_tombstone_names"])
+def test_only_this_providers_records_with_the_tombstoned_ids_make_a_tombstone_ambiguous(unrelated):
+    """The ambiguity check reads the page's records for this provider and for the tombstoned ids only: a
+    misrouted record of another provider, or two merchants sharing ids nobody tombstones, never refuse a page."""
+    ing = CatalogIngestor()
+    mine, theirs = _variant("1001-S"), replace(_variant("1001-S"), merchant_id="another-fictional-brand")
+    if unrelated == "another_providers_record":
+        _ingest(ing, [mine], None)
+        extra, tombstone = [replace(theirs, provider_id="another_fixture_shop", price=Money(0, "USD"))], ("p1", "1001-S")
+    else:
+        _ingest(ing, [_variant("v0")], None)
+        shared = [_variant("2002-M"), replace(_variant("2002-M"), merchant_id="another-fictional-brand")]
+        extra, tombstone = shared, ("p1", "v0")  # two merchants share 2002-M in the page; only v0 is removed
+    audit = IngestionAudit("r2", SHOP)
+    ing.ingest_page(_page(extra, [tombstone], cursor="c2"), provider_id=SHOP, now=T0 + timedelta(hours=1), audit=audit)
+    assert audit.tombstoned == 1 and ing.cursors[SHOP] == "c2"  # applied
 
 
 def test_one_providers_tombstones_never_touch_another_providers_variants():

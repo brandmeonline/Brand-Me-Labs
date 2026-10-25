@@ -1741,7 +1741,7 @@ A sixth review covered only the S31 diff (`36dacbe..c8535f4`): three lenses (hyd
 
 | Finding | Disposition |
 |---|---|
-| No test covered the staged half of the two-merchant tombstone check: a second merchant's variant arriving in the same page as the tombstone (2 findings) | **Added.** `test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing` now covers the second merchant stored, in the page, both in the page, and rejected in the page. Each case asserts that offers, cursor and a shared audit are unchanged |
+| No test covered the staged half of the two-merchant tombstone check: a second merchant's variant arriving in the same page as the tombstone (2 findings) | **Added.** `test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing` now covers the second merchant stored, in the page, both in the page, and rejected in the page. Each case asserts that offers, cursor and a shared audit are unchanged. (S33: the in-page cases are now caught both by the staged keys and by the page's own records) |
 | Plausible: a second merchant's record that fails validation was left out of the check, so its tombstone discontinued the other merchant's live listing | **Hardened.** The page's own records count toward the check even when they are rejected (the `rejected_in_the_page` case) |
 | The comment on the money-path guard still stated the unnarrowed "a placed order never frees its quote" | **Corrected** to match S30/S31: an order Brand.Me recorded never frees its quote |
 | The S30 hydrate row still described S30's key as the activation's | **Annotated** with the S31 correction |
@@ -1755,4 +1755,20 @@ A sixth review covered only the S31 diff (`36dacbe..c8535f4`): three lenses (hyd
 - **Console and gateway:** unchanged in this stage.
 - **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, S28).
 
-**Review loop.** The rounds over each fix diff went 21 → 14 → 11 → 4 confirmed findings. This sixth round found no defect in the shipped code. This stage changes one code comment, adds a four-line hardening loop, and adds test cases.
+**Review loop.** Confirmed findings across the fix-diff rounds went 21 → 14 → 11 → 4. In this sixth round, no confirmed finding is a defect in the shipped code. One plausible gap was: a rejected second-merchant record was left out of the ambiguity check. The hardening loop closes it, and its case fails at `c8535f4`.
+
+## Stage S33 — Final verification of the S32 change (2026-10-25)
+
+A last, smaller review covered the S32 diff (`c8535f4..e97605b`): two finders (code and tests; docs and claims), with two refuters per finding. **4 findings, all low, all confirmed.**
+
+| Finding | Disposition |
+|---|---|
+| The S32 hardening read `page.items` a second time. With a one-pass items iterable, it saw nothing and the ambiguous page was applied (the same class S29 fixed for tombstones) | **Fixed.** `ingest_page` reads its items once. The two-merchant test now also runs every case with generator items, and `rejected_in_the_page` with one-pass items fails at `e97605b` |
+| Neither filter in the new loop was pinned: dropping the provider check or the tombstoned-ids check kept the suite green | **Added.** `test_only_this_providers_records_with_the_tombstoned_ids_make_a_tombstone_ambiguous`. Each of the two mutants fails one of its cases |
+| After S32, the in-page cases no longer guarded the staged half on its own | **Documented** in the S32 row: both paths catch them now. The stored case still pins the stored half |
+| S32's summary said the round "found no defect in the shipped code" without "confirmed" | **Corrected** |
+
+### Evidence (this head)
+- **Python lane files**, both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1323 passed, 20 skipped, 0 failed**. The skips are the same allowlisted 20 (8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary).
+- **ruff:** no new finding on the changed files.
+- **CI note:** `shell` failed once on `e97605b`, in `verify-visual.mjs` (`consumer-1440x900-light.png: dimensions changed`). The frontend under test was identical to the passing `c8535f4` run, and `main` had not moved. That points to a nondeterministic consumer-ui capture outside this lane, explained on PR #64. The job re-run returned 403 for this integration.

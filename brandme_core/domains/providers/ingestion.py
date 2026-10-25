@@ -81,6 +81,7 @@ class CatalogIngestor:
         if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
             raise ValueError("max_active_listings must be a non-negative int or None")
         counts = counts if counts is not None else ShelfCounts()
+        items = tuple(page.items)  # read once: an adapter may hand over a one-pass iterable
         tombstones = _tombstone_pairs(page.tombstones)  # read once; a malformed entry refuses the whole page
         removed = set(tombstones)
         with self._lock:
@@ -98,7 +99,7 @@ class CatalogIngestor:
             # another stays within the limit it was already at.
             active = sum(1 for k, sv in self.variants.items()
                          if k[0] == provider_id and not sv.tombstoned and (k[2], k[3]) not in removed)
-            for v in page.items:
+            for v in items:
                 problem = _validate(v, provider_id)
                 if problem:
                     delta.rejected += 1
@@ -140,7 +141,7 @@ class CatalogIngestor:
                 merchants: Dict[Tuple[str, str], set] = {}
                 for k in keys:
                     merchants.setdefault((k[2], k[3]), set()).add(k[1])
-                for v in page.items:  # the page's own records count too, even ones it rejected
+                for v in items:  # the page's own records count too, even ones it rejected
                     ids = (getattr(v, "source_product_id", None), getattr(v, "source_variant_id", None))
                     if getattr(v, "provider_id", None) == provider_id and ids in removed:
                         merchants.setdefault(ids, set()).add(getattr(v, "merchant_id", None))
