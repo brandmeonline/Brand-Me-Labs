@@ -1,0 +1,73 @@
+name: Spatial validation
+
+on:
+  push:
+    branches: ['bench/astra-spatial-ar-20261005']
+  pull_request:
+    branches: [main]
+    paths:
+      - 'brandme-frontend/features/spatial/**'
+      - 'brandme-frontend/features/closet/**'
+      - 'brandme-frontend/app/add/**'
+      - 'brandme-frontend/app/closet/**'
+      - 'brandme-frontend/app/style/**'
+      - 'brandme-frontend/app/try/**'
+      - 'brandme-frontend/public/demo/**'
+      - 'scripts/assets/**'
+      - 'tests/e2e/spatial*'
+      - '.github/workflows/spatial-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spatial-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  assets-and-types:
+    name: Spatial assets and types
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.21.0'
+      - name: Install isolated pinned lane dependencies
+        run: npx --yes pnpm@11.25.0 --dir scripts/assets install --ignore-workspace --frozen-lockfile --ignore-scripts
+      - name: Link lane dependencies for component checks
+        run: node scripts/assets/prepare-checks.mjs
+      - name: Check component types
+        run: node scripts/assets/node_modules/typescript/bin/tsc -p scripts/assets/tsconfig.json
+      - name: Validate original asset rights, integrity and budgets
+        run: node scripts/assets/validate.mjs
+      - name: Verify synthetic evidence arithmetic (not physical fit accuracy)
+        run: node scripts/assets/fit-evidence.mjs
+
+  browser:
+    name: Spatial browser and local pose
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.21.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated pinned lane dependencies
+        run: npx --yes pnpm@11.25.0 --dir scripts/assets install --ignore-workspace --frozen-lockfile --ignore-scripts
+      - run: node scripts/assets/prepare-checks.mjs
+      - name: Prepare hash-pinned local inference (payloads never uploaded)
+        run: python scripts/assets/prepare-vision.py
+      - run: node scripts/assets/node_modules/@playwright/test/cli.js install --with-deps chromium
+      - name: Load starter rooms and verify shelf support from their actual cameras
+        run: node scripts/assets/starter-environments.mjs --check
+      - name: Test guest journeys, gates and real local inference
+        env:
+          SPATIAL_EVIDENCE_FILE: test-results/spatial-browser.json
+          SPATIAL_RUN_DIR: test-results/spatial-runs
+        run: node scripts/assets/node_modules/@playwright/test/cli.js test -c scripts/assets/playwright.config.mjs

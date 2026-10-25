@@ -1,4 +1,5 @@
 /** Tape-measure preparation and interval arithmetic. This is not a drape/fit solver. */
+import { parseBodyMeasurement, utcTimestamp, type MeasurementProvenance } from "./measurementProvenance";
 export const measurementDefinitions = {
   height: {
     label: "Height",
@@ -44,21 +45,22 @@ export type Calibration = {
   unit: "cm";
   measurements: Record<
     MeasurementKey,
-    { value: number; uncertainty: number; spread: number }
+    { value: number; uncertainty: number; spread: number; provenance: MeasurementProvenance }
   >;
   valid: boolean;
   issues: string[];
 };
-export function calibrateMeasurements(input: MeasurementInput): Calibration {
+export function calibrateMeasurements(input: MeasurementInput, capturedAt = new Date().toISOString()): Calibration {
+  utcTimestamp(capturedAt, "Measurement time");
   const measurements = {} as Calibration["measurements"],
     issues: string[] = [];
   for (const key of Object.keys(measurementDefinitions) as MeasurementKey[]) {
     const def = measurementDefinitions[key],
-      values = input[key];
+      values = input?.[key];
     if (
       !Array.isArray(values) ||
       values.length !== 3 ||
-      values.some((n) => !Number.isFinite(n) || n < def.min || n > def.max)
+      Array.from(values).some((n) => !Number.isFinite(n) || n < def.min || n > def.max)
     ) {
       issues.push(
         `${def.label}: enter three plausible measurements in centimeters.`,
@@ -76,6 +78,14 @@ export function calibrateMeasurements(input: MeasurementInput): Calibration {
       value: Math.round(ordered[1] * 10) / 10,
       uncertainty: Math.max(1, spread / 2),
       spread,
+      provenance: {
+        tier: "tier-1",
+        measuredEntity: key === "inseam" ? "garment-proxy" : "body",
+        source: { kind: "self-reported", reference: "local-manual-preparation" },
+        method: { id: key === "inseam" ? "garment-inseam-repeat" : "manual-tape-repeat", version: "v1" },
+        unit: "cm", capturedAt,
+        uncertainty: { plusMinusCm: Math.max(1, spread / 2), basis: "unvalidated" },
+      },
     };
   }
   return {
@@ -97,21 +107,26 @@ export function compareCircumference(
   key: "chest" | "waist" | "hip",
   garment: GarmentMeasurement,
 ) {
-  const b = body.measurements[key];
+  const b = body?.measurements?.[key];
   if (
-    !body.valid ||
+    !body?.valid || body.method !== "manual-repeat-v1" || body.unit !== "cm" ||
     !b ||
+    !Number.isFinite(b.value) || !Number.isFinite(b.uncertainty) ||
+    b.uncertainty < 1 || b.uncertainty > 30 || !Number.isFinite(b.spread) || b.spread < 0 || b.spread > 2 ||
+    !garment || !["measured-garment", "supplier-spec", "demo"].includes(garment.source) ||
     !Number.isFinite(garment.circumferenceCm) ||
     garment.circumferenceCm < 20 ||
     garment.circumferenceCm > 300 ||
     !Number.isFinite(garment.uncertaintyCm) ||
     garment.uncertaintyCm < 0 ||
     garment.uncertaintyCm > 20 ||
-    !garment.revision
+    typeof garment.revision !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/.test(garment.revision)
   )
     throw Error(
       "Valid repeated body measurements and a versioned garment measurement are required.",
     );
+  parseBodyMeasurement({ id: `manual-${key}`, subjectRef: "local-session", dimension: key, valueCm: b.value, provenance: b.provenance });
+  if (b.provenance.tier !== "tier-1" || b.provenance.source.kind !== "self-reported" || b.provenance.uncertainty.plusMinusCm !== b.uncertainty) throw Error("Manual measurement provenance must match its uncertainty and tier.");
   const ease = garment.circumferenceCm - b.value,
     uncertainty = garment.uncertaintyCm + b.uncertainty;
   return {

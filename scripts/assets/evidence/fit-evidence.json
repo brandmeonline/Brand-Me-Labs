@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "garment-dimension-evidence-v1",
+  "kind": "synthetic-arithmetic",
+  "method": {
+    "referenceMethod": "invented-reference-circumferences-v1",
+    "estimateMethod": "reference-plus-known-offset-v1",
+    "revision": "synthetic-v1",
+    "evidenceRef": "synthetic-arithmetic-fixtures-v1",
+    "errorDefinition": "estimateCm - referenceCm",
+    "aggregation": "unweighted per distinct garment/dimension; no population extrapolation",
+    "referenceUncertainty": "reported separately; not subtracted from error or treated as a statistical confidence interval"
+  },
+  "fixtureCount": 6,
+  "garmentCount": 3,
+  "dimensionCount": 3,
+  "metrics": {
+    "unit": "cm",
+    "meanSignedErrorCm": 0,
+    "meanAbsoluteErrorCm": 0.833333,
+    "rootMeanSquareErrorCm": 1.040833,
+    "maxAbsoluteErrorCm": 2,
+    "meanReferenceUncertaintyCm": 0
+  },
+  "physicalBenchmark": {
+    "status": "NOT_RUN",
+    "physicalGarmentCount": 0,
+    "physicalMeasurementCount": 0
+  },
+  "calibratedFitAvailable": false,
+  "limits": "Synthetic arithmetic verification only. No physical garment was measured; these numbers do not establish measurement accuracy, sizing, comfort, drape or fit.",
+  "fixtureSha256": "acda2d303b067cff746e60b07e5292cc38895527af769ede0c8cd91d6e61df0f",
+  "evaluatorSha256": "f658fe66293457aa3dac503019009984ff6dc12af2dc9d675cfef56caf2346ab",
+  "reproduction": "node scripts/assets/fit-evidence.mjs"
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Original starter closet review</title>
+<style>html,body{margin:0;background:#eee9df}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"/tools/node_modules/three/build/three.module.js","three/addons/":"/tools/node_modules/three/examples/jsm/"}}</script></head>
+<body><script type="module">
+import * as T from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+const id = new URLSearchParams(location.search).get("room");
+if (!["starter_wooden", "starter_modular"].includes(id)) throw Error("Unknown starter room");
+const manifest = await (await fetch(`/demo/rooms/${id}/manifest.json`)).json();
+const renderer = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+document.body.append(renderer.domElement);
+const scene = new T.Scene(); scene.background = new T.Color("#eee9df");
+scene.add(new T.HemisphereLight("#fff5e4", "#80796f", 1.7));
+const key = new T.DirectionalLight("#fff4e5", 3.4); key.position.set(-2.5, 5, 4); key.castShadow = true; key.shadow.mapSize.set(2048,2048); key.shadow.camera.left=-3;key.shadow.camera.right=3;key.shadow.camera.top=3;key.shadow.camera.bottom=-3;key.shadow.normalBias=0.015;scene.add(key);
+const fill=new T.DirectionalLight("#e6eeff",1.1);fill.position.set(3,3,2);scene.add(fill);
+const loader = new GLTFLoader();
+async function load(url){const asset=(await loader.loadAsync(url)).scene;asset.traverse((node)=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});return asset;}
+const room = await load(manifest.glb);scene.add(room);room.updateMatrixWorld(true);
+const shelfGrounding = [];
+const folded = manifest.groups.find((group)=>group.id==="shelf.folded").positions;
+for(let i=0;i<folded.length;i++){
+  const point=folded[i];const hit=new T.Raycaster(new T.Vector3(...point).add(new T.Vector3(0,0.08,0)),new T.Vector3(0,-1,0),0,0.1).intersectObject(room,true)[0];
+  const gap=hit?Math.abs(hit.point.y-point[1]):null;
+  if(gap===null||gap>0.002)throw Error(`Ungrounded starter folded slot ${i}: ${gap}`);
+  shelfGrounding.push({slot:i,gapMeters:gap});
+  const item=await load(`/demo/garments/${["tee","knit","trousers","overshirt","jacket","dress"][i]}/folded.glb`);item.position.set(...point);scene.add(item);
+}
+for(const [slug,position] of [["overshirt",[-1.25,1.85,-0.86]],["tee",[-0.55,1.85,-0.86]],["sneaker",[0.45,0.25,-1.0]],["bag",[-0.85,0.515,0.315]]]){
+const item=await load(`/demo/garments/${slug}/lod1.glb`);item.position.set(...position);scene.add(item);}
+const camera=new T.PerspectiveCamera(manifest.camera.fov,innerWidth/innerHeight,manifest.camera.near,manifest.camera.far);camera.position.set(...manifest.camera.position);camera.lookAt(...manifest.camera.target);
+renderer.render(scene,camera);await new Promise(requestAnimationFrame);renderer.render(scene,camera);
+window.starterReview={ready:true,triangles:renderer.info.render.triangles,calls:renderer.info.render.calls,shelfGrounding,webp:()=>renderer.domElement.toDataURL("image/webp",0.94)};
+</script></body></html>

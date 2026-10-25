@@ -4,6 +4,7 @@ import { useCloset } from "../closet/useCloset";
 import { allAssets, photoOnly } from "./catalog";
 import { fidelityLabels } from "./types";
 import { MeasurementPreparation } from "./MeasurementPreparation";
+import { FitLadder } from "./FitLadder";
 import { PhotoPreview } from "./PhotoPreview";
 import styles from "./spatial.module.css";
 const ModelPreview = lazy(() =>
@@ -81,6 +82,12 @@ export default function TryPage({ itemId }: { itemId: string }) {
       enabled: true,
     },
     {
+      id: "fit-history",
+      title: "Find your fit",
+      detail: "Tailor questions and your house-specific history. Non-calibrated.",
+      enabled: true,
+    },
+    {
       id: "fit",
       title: "Calibrated fit",
       detail: "Unavailable. No validated measurement and material pipeline.",
@@ -151,9 +158,12 @@ export default function TryPage({ itemId }: { itemId: string }) {
             </Suspense>
           )}
           {mode === "measurements" && <MeasurementPreparation />}
+          {mode === "fit-history" && <FitLadder />}
           {mode === "photo" && <PhotoPreview asset={asset} />}
           <span className={styles.fidelity}>
-            {mode === "measurements"
+            {mode === "fit-history"
+              ? "Self-reported history · non-calibrated"
+              : mode === "measurements"
               ? "Measurement preparation · calibrated fit unavailable"
               : mode === "image"
                 ? "Photo display"
