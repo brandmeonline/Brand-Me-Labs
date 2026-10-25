@@ -48,7 +48,7 @@ mode guard:
 |---|---|---|
 | foundation | `brandme_core.domains.events` | 11: identity/session/consent, rights/chain projection, privacy deletion |
 | consumer-domains | `brandme_core.domains.persona.lane`, then `load_domains()` | 36: persona, wardrobe, social, rewards, media |
-| commerce-agents | `brandme_core.domains.commerce.events` | 6 on PR #51; `absent` on main until it merges |
+| commerce-agents | `brandme_core.domains.commerce.events` | 6: delegation, quote, purchase approval/authorization, order observation |
 
 `OUTBOX_EVENT_TYPES` can restrict the allowlist with an exact comma-separated
 subset. Types no catalog registers stay pending. The ready line reports each
@@ -61,11 +61,18 @@ subscribers filter by the `event_type` attribute.
   from the environment. A lane needs no private worker:
   `brandme_core/domains/persona/outbox_worker.py` is now redundant.
 - **`absent`** applies only to an entry with `until_merged` whose module does not
-  exist at all. Any other failure (a missing required module, an import error in
-  a present module, a failing loader) refuses startup with exit 2 and
+  exist at all. No entry on main sets it: every listed catalog must load. Any
+  other failure (a missing required module, an import error in a present module
+  such as a missing dependency, or a failing loader) refuses startup with exit 2 and
   `{"status":"startup_refused","reason":"event_catalog_unavailable","lane":LANE}`.
-  The import error's text is not logged. Delete `until_merged` once the lane's PR
-  merges.
+  The import error's text is not logged. A new lane's entry may set
+  `until_merged` while its PR is open; delete it when the PR merges.
+- **Pending backlog.** Rows of a type no catalog registered stay pending, so the
+  first rollout of a worker image that adds a catalog publishes every such row
+  already in the database (`outbox.py:112-115`). Before pointing a new worker
+  image at a long-lived database, purge or erase those rows under the Q9 policy
+  ("Retention and erasure"). The hourly job never purges pending rows by age
+  (`retention.py:176`).
 - **Version rollout.** The dispatcher claims rows by `event_type` name only
   (`outbox.py:112-115`), while the registry is keyed by `(event_type,
   schema_version)`. A row at a version this worker image has not registered is
@@ -107,7 +114,8 @@ required. With a running Spanner emulator:
 ```sh
 SPANNER_EMULATOR_HOST=127.0.0.1:9010 \
 PUBSUB_EMULATOR_BIN=.cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator \
-python -m pytest tests/foundation/test_outbox_emulator.py tests/foundation/test_outbox_delivery.py -q
+python -m pytest tests/foundation/test_outbox_emulator.py tests/foundation/test_outbox_delivery.py \
+  tests/foundation/test_outbox_lane_catalogs.py -q
 ```
 
 Tests exercise actual Spanner migrations and a real local Pub/Sub process,

@@ -32,7 +32,6 @@ from .test_outbox_delivery import config_env, outbox_db, provision, pubsub_serve
 REPO = Path(__file__).resolve().parents[2]
 # Contracts each lane adds to the worker, pinned so a new lane contract is a
 # reviewed change here too (it starts flowing on the foundation's topics).
-# commerce-agents: PR #51 at cc693f1, absent on main until it merges.
 EXPECTED_CONTRACTS = {"foundation": 11, "consumer-domains": 36, "commerce-agents": 6}
 UUID_TEXT = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
@@ -158,7 +157,9 @@ def test_worker_allowlist_covers_every_catalog(probe):
         assert len(lane["contracts"]) == EXPECTED_CONTRACTS[catalog.lane], (catalog.lane, lane["contracts"])
         missing = {t for t, _ in lane["contracts"]} - set(probe["event_types"])
         assert not missing, (catalog.lane, sorted(missing))
-    assert probe["lanes"]["foundation"]["status"] == probe["lanes"]["consumer-domains"]["status"] == "loaded"
+    # Every lane on main is loaded, commerce-agents included (PR #51 merged).
+    statuses = {lane: probe["lanes"][lane]["status"] for lane in EXPECTED_CONTRACTS}
+    assert statuses == dict.fromkeys(EXPECTED_CONTRACTS, "loaded"), statuses
     # Nothing in the allowlist comes from outside the catalogs.
     attributed = {t for lane in probe["lanes"].values() for t, _ in lane["contracts"]}
     assert attributed == set(probe["event_types"])
@@ -226,10 +227,12 @@ raise SystemExit(worker.main(["--check"]))
 @pytest.mark.parametrize("module,loader,until_merged", [
     ("brandme_core.domains.no_such_catalog", "", ""),  # a required catalog is missing
     ("q8_probe_broken_catalog", "", "PR #0"),  # present but broken: never "absent"
+    ("q8_probe_dependency_catalog", "", "PR #0"),  # present, a dependency is missing (ModuleNotFoundError)
     ("q8_probe_loader_catalog", "load", "PR #0"),  # its loader fails
 ])
 def test_catalog_failure_refuses_startup_with_a_fixed_code(tmp_path, module, loader, until_merged):
     (tmp_path / "q8_probe_broken_catalog.py").write_text('raise ImportError("PROBE_PRIVATE_DETAIL")\n')
+    (tmp_path / "q8_probe_dependency_catalog.py").write_text("import q8_no_such_dependency_PROBE_PRIVATE_DETAIL\n")
     (tmp_path / "q8_probe_loader_catalog.py").write_text('def load():\n    raise RuntimeError("PROBE_PRIVATE_DETAIL")\n')
     env = {**os.environ, **config_env(), "PYTHONPATH": os.pathsep.join([str(tmp_path), str(REPO)])}
     out = python(REFUSAL, module, loader, until_merged, env=env)
@@ -302,8 +305,9 @@ def test_one_event_per_contract_round_trips_through_the_foundation_worker(outbox
             received.append(ev)
 
     per_lane = Counter(lane_of[(e.event_type, e.schema_version)] for e in received)
-    expected = {lane: EXPECTED_CONTRACTS[lane] for lane, status in probe["catalogs"].items() if status == "loaded"}
-    assert dict(per_lane) == expected  # foundation 11, consumer-domains 36 (+ commerce-agents 6 once PR #51 lands)
+    assert probe["catalogs"] == dict.fromkeys(EXPECTED_CONTRACTS, "loaded")
+    assert dict(per_lane) == EXPECTED_CONTRACTS  # foundation 11, consumer-domains 36, commerce-agents 6
+    assert len(received) == len(events) == 53
     ids = {i for e in events for i in (e.event_id, e.aggregate_id, e.correlation_id)}
     ids |= {i for e in events for i in UUID_TEXT.findall(json.dumps(e.payload))}
     assert not [i for i in ids if i in logs]
