@@ -52,16 +52,16 @@ def test_create_place_and_reject_non_finite_json(client, spanner_db):
     item = r.json()["items"][0]["id"]
     g = ROOMS["walnut_atelier"].groups["rail.left"]
     raw = ('{"room_template_id":"walnut_atelier","semantic_group":"rail.left","slot_id":"0","position_meters":[NaN,1.75,-0.65],'
-           '"rotation_quaternion":[0,0,0,1],"uniform_scale":1,"asset_revision":"original-v1"}')
+           '"rotation_quaternion":[0,0,0,1],"uniform_scale":1,"asset_revision":"original-shelves-v2"}')
     bad = client.put(f"/closet/placements/{item}", content=raw.encode(), headers={**h(mid, if_match='"0"'), "content-type": "application/json"})
     assert bad.status_code == 422 and bad.headers["content-type"].startswith("application/problem+json")
     inf = client.put(f"/closet/placements/{item}", content=raw.replace("NaN", "Infinity").encode(), headers={**h(mid, if_match='"0"'), "content-type": "application/json"})
     assert inf.status_code == 422
     ok = client.put(f"/closet/placements/{item}", json={"room_template_id": "walnut_atelier", "semantic_group": "rail.left", "slot_id": "0",
                                                         "position_meters": list(g.slot_position("0")), "rotation_quaternion": [0, 0, 0, 1],
-                                                        "uniform_scale": 1, "asset_revision": "original-v1"}, headers=h(mid, if_match='"0"'))
+                                                        "uniform_scale": 1, "asset_revision": "original-shelves-v2"}, headers=h(mid, if_match='"0"'))
     assert ok.status_code == 200 and ok.headers["etag"] == '"1"'
-    stale = client.put(f"/closet/placements/{item}", json={"room_template_id": "walnut_atelier", "semantic_group": None, "asset_revision": "original-v1"},
+    stale = client.put(f"/closet/placements/{item}", json={"room_template_id": "walnut_atelier", "semantic_group": None, "asset_revision": "original-shelves-v2"},
                        headers=h(mid, if_match='"0"'))
     assert stale.status_code == 409 and stale.json()["current_placement"]["slot_id"] == "0"
     assert client.get("/closet/layout", headers=h(mid)).json()["placements"][0]["wardrobe_item_id"] == item

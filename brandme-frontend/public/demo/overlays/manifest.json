@@ -1,0 +1,70 @@
+{
+  "fidelity": "P1",
+  "label": "Approximate image overlay",
+  "source": "scripts/assets/overlay.mjs + overlay.html; existing original GLBs, neutral orthographic export without hanger",
+  "rights": "/demo/rights.json",
+  "fit": false,
+  "bodyBinding": false,
+  "assets": [
+    {
+      "slug": "overshirt",
+      "file": "/demo/overlays/overshirt.png",
+      "sha256": "f599ddb8513d5c65a373dbfe67e6fea8d07c9b3ca859c3c5e1d7b933ba720914",
+      "bytes": 371994,
+      "dimensions": [
+        0.9247715771198273,
+        0.6679846495389938,
+        0.21653016656637192
+      ],
+      "removed": [
+        "aged_brass",
+        "ash_grain"
+      ]
+    },
+    {
+      "slug": "tee",
+      "file": "/demo/overlays/tee.png",
+      "sha256": "bc2281cbf9a359f1521fffe737ee96506e53c06b1f8a1b96d7047ef83bb455b5",
+      "bytes": 315371,
+      "dimensions": [
+        0.8043890297412872,
+        0.6788784042000771,
+        0.204592727124691
+      ],
+      "removed": [
+        "aged_brass",
+        "ash_grain"
+      ]
+    },
+    {
+      "slug": "knit",
+      "file": "/demo/overlays/knit.png",
+      "sha256": "3e35cf04cc4a4067e041c23b7d9408abc40866dbb94aec08754297b97a97416f",
+      "bytes": 386538,
+      "dimensions": [
+        0.9247715771198273,
+        0.6788784042000771,
+        0.20717769116163254
+      ],
+      "removed": [
+        "aged_brass",
+        "ash_grain"
+      ]
+    },
+    {
+      "slug": "jacket",
+      "file": "/demo/overlays/jacket.png",
+      "sha256": "99b3978fee50ff18794ccf96451f5380418d44544bf16fa6c50a795b724ca9f1",
+      "bytes": 360263,
+      "dimensions": [
+        0.9247715771198273,
+        0.6679846495389938,
+        0.21229586005210876
+      ],
+      "removed": [
+        "aged_brass",
+        "ash_grain"
+      ]
+    }
+  ]
+}

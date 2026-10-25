@@ -113,14 +113,14 @@ build_images() {
             docker build -t brandme/chain:latest ./brandme-chain
             ;;
         console)
-            docker build -t brandme/console:latest ./brandme-console
+            docker build -f brandme-console/Dockerfile -t brandme/console:latest .
             ;;
         all)
             docker build -t brandme/gateway:latest ./brandme-gateway &
             docker build -t brandme/core:latest ./brandme-core &
             docker build -t brandme/agents:latest ./brandme-agents &
             docker build -t brandme/chain:latest ./brandme-chain &
-            docker build -t brandme/console:latest ./brandme-console &
+            docker build -f brandme-console/Dockerfile -t brandme/console:latest . &
             wait
             ;;
         *)
