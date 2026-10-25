@@ -6,6 +6,7 @@
 #   consumer (brandme-frontend) 3000   gateway 3001   console 3002
 #   brain 8000  policy 8001  orchestrator 8002  knowledge 8003  compliance 8004
 #   identity 8005  governance 8006  cube 8007
+#   consumer-domains 8010 (inside the gateway's network namespace, not published)
 #   spanner emulator 9010 (gRPC) / 9020 (REST)   firestore emulator 8080
 #
 # BRANDME_MODE selects demo | development | sandbox | production. Every Python
@@ -13,14 +14,20 @@
 # in sandbox/production a service that still contains a trust-path fake refuses
 # to start (docs/build/evidence/w00/trust-path-fixtures.md).
 #
-# Profiles: default = emulators + migrate + brain + policy + gateway + consumer.
+# Consumer-domain routes need a dev key pair first (gitignored .dev-keys/):
+#   node scripts/dev/consumer-domain-keys.mjs
+# Without it consumer-domains refuses to start and the gateway answers 503 on
+# those routes.
+#
+# Profiles: default = emulators + migrate + brain + policy + gateway +
+#           consumer-domains + consumer.
 #           `--profile legacy` adds orchestrator/cube/agents/governance.
 #           `--profile events` adds NATS for the legacy /scan publisher.
 
 name: brandme
 
 x-python-service: &python-service
-  build:
+  build: &python-build
     context: .
     dockerfile_inline: |
       FROM python:3.11.15-slim
@@ -163,11 +170,47 @@ services:
       OIDC_ISSUER: ${OIDC_ISSUER:-}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
       NATS_URL: ${NATS_URL:-}
+      # consumer-domains shares this network namespace (see below).
+      CONSUMER_DOMAIN_SERVICE_URL: http://127.0.0.1:8010
+    # CONSUMER_DOMAIN_ASSERTION_KEY (private) and CONSUMER_DOMAIN_ASSERTION_KID; gitignored, generated at runtime.
+    env_file:
+      - path: ./.dev-keys/consumer-domains-gateway.env
+        required: false
     ports: ["3001:3001"]
     depends_on:
       node-install:
         condition: service_completed_successfully
       brain:
+        condition: service_started
+
+  # Consumer-domain service (python -m brandme_core.domains.persona.app) behind
+  # the gateway's ES256 principal assertion. In demo/development it binds
+  # 127.0.0.1 only (brandme_core/domains/persona/app.py:130), so it joins the
+  # gateway's network namespace: only the gateway reaches it, at 127.0.0.1:8010,
+  # and it reaches the Spanner emulator through the gateway's network. Recreate
+  # it whenever the gateway container is recreated. No BRANDME_MEDIA_BUCKET here:
+  # media and try-on stay unmounted (no storage emulator in this stack).
+  consumer-domains:
+    build: *python-build
+    image: brandme/python-dev:foundation
+    volumes:
+      - ./:/app:ro
+    network_mode: "service:gateway"
+    environment:
+      <<: *python-env
+      ENVIRONMENT: ${BRANDME_MODE:-development}
+      PORT: "8010"
+      # The gateway's fixed issuer (brandme-gateway/src/services/domains.ts:23).
+      CONSUMER_DOMAIN_ASSERTION_ISSUER: brandme-gateway
+    # CONSUMER_DOMAIN_ASSERTION_JWKS (public key only); gitignored, generated at runtime.
+    env_file:
+      - path: ./.dev-keys/consumer-domains-service.env
+        required: false
+    command: ["sh", "-c", "test -n \"$${CONSUMER_DOMAIN_ASSERTION_JWKS:-}\" || { echo 'consumer-domains: no dev key pair; run node scripts/dev/consumer-domain-keys.mjs' >&2; exit 2; }; python -m brandme_core.config preflight --service consumer_domains && exec python -m brandme_core.domains.persona.app"]
+    depends_on:
+      spanner-migrate:
+        condition: service_completed_successfully
+      gateway:
         condition: service_started
 
   consumer:
