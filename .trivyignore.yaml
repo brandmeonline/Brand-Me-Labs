@@ -13,6 +13,12 @@
 # --file-patterns 'pip:requirements\.lock$' so the hashed venv lock that CI installs is included (Trivy's
 # default pip analyzer only reads files named requirements.txt). These five were the only CRITICAL, fixable
 # findings; the merge results of PR #51, #52 and #54 add none.
+#
+# Renewal triage (foundation, 2026-10-25, same image and flags, run without this file): four of the five are
+# fixed and deleted. certifi refreshed to 2026.10.23 in scripts/python/requirements.lock (GHSA-6q48-6c7w-9gw2);
+# the unused python-jose 3.3.0 pins removed from brandme-core/ and brandme-cube/requirements.txt
+# (CVE-2024-33663, no `jose` import in any .py file); the unused sentence-transformers 2.3.1 pin removed from
+# brandme-agents/agentic/requirements.txt (CVE-2026-68770, no import).
 vulnerabilities:
   # owner: foundation expires: 2026-11-30 reason: anyio 3.7.1 in the CI/dev venv lock is held below 4.0
   # by fastapi==0.104.1 (brandme_core/requirements.txt). Fix needs the fastapi/starlette upgrade, then a lock
@@ -22,32 +28,3 @@ vulnerabilities:
       - "scripts/python/requirements.lock"
     expired_at: 2026-11-30
     statement: "owner foundation; anyio pinned <4 by fastapi 0.104.1; fix with the fastapi upgrade"
-  # owner: foundation expires: 2026-11-30 reason: certifi 2026.7.22 in the venv lock; fixed in
-  # 2026.10.19. A lock-only refresh, deferred because the change that added this baseline was limited to
-  # adding the four commerce pins to the lock.
-  - id: GHSA-6q48-6c7w-9gw2
-    paths:
-      - "scripts/python/requirements.lock"
-    expired_at: 2026-11-30
-    statement: "owner foundation; certifi lock refresh to >=2026.10.19 pending"
-  # owner: unowned-legacy expires: 2026-11-30 reason: python-jose 3.3.0 is declared but imported nowhere in
-  # the repo; brandme-core/Dockerfile installs this file into the core image. Fix: drop it or pin >=3.4.0.
-  - id: CVE-2024-33663
-    paths:
-      - "brandme-core/requirements.txt"
-    expired_at: 2026-11-30
-    statement: "owner unowned-legacy; unused python-jose 3.3.0; fix by removal or >=3.4.0"
-  # owner: unowned-legacy expires: 2026-11-30 reason: same unused python-jose 3.3.0 pin in the cube service
-  # (CLAUDE.md marks brandme-cube STUB/UNVERIFIED). Fix: drop it or pin >=3.4.0.
-  - id: CVE-2024-33663
-    paths:
-      - "brandme-cube/requirements.txt"
-    expired_at: 2026-11-30
-    statement: "owner unowned-legacy; unused python-jose 3.3.0; fix by removal or >=3.4.0"
-  # owner: unowned-legacy expires: 2026-11-30 reason: sentence-transformers 2.3.1 is declared but imported
-  # nowhere; the agentic CLI is not a deployed service. Fix: drop it or pin >=5.6.0.
-  - id: CVE-2026-68770
-    paths:
-      - "brandme-agents/agentic/requirements.txt"
-    expired_at: 2026-11-30
-    statement: "owner unowned-legacy; unused sentence-transformers 2.3.1; fix by removal or >=5.6.0"

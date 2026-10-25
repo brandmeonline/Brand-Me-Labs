@@ -16,7 +16,6 @@ neo4j-graphrag==0.7.0
 
 # Vector Search & Embeddings
 openai==1.10.0
-sentence-transformers==2.3.1
 faiss-cpu==1.7.4
 
 # Graph Algorithms
