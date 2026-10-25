@@ -2,7 +2,7 @@
   "name": "brandme-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Brand.Me \u2014 Be More U. Consumer app, domain services and trust infrastructure.",
+  "description": "Brand.Me — Be More U. Consumer app, domain services and trust infrastructure.",
   "scripts": {
     "setup:demo": "node scripts/brandme.mjs setup --mode demo",
     "dev:demo": "node scripts/brandme.mjs dev --mode demo",
@@ -16,17 +16,47 @@
     "test:providers": "node scripts/brandme.mjs not-yet test:providers W06-W07",
     "test:midnight:local": "node scripts/brandme.mjs not-yet test:midnight:local W09",
     "test:midnight:preprod": "node scripts/brandme.mjs not-yet test:midnight:preprod W09",
-    "assets:validate": "node scripts/brandme.mjs not-yet assets:validate W04",
+    "assets:validate": "node scripts/assets/validate.mjs",
     "evidence:report": "node scripts/brandme.mjs evidence",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
-    "type-check": "pnpm -r type-check"
+    "type-check": "pnpm -r type-check",
+    "assets:generate": "node scripts/assets/generate.mjs",
+    "assets:review": "node scripts/assets/review.mjs"
   },
   "license": "PROPRIETARY",
   "engines": {
     "node": ">=20.0.0 <25",
     "pnpm": "10.34.6"
   },
-  "packageManager": "pnpm@10.34.6"
+  "packageManager": "pnpm@10.34.6",
+  "pnpm": {
+    "packageExtensions": {
+      "@react-three/fiber@9.4.0": {
+        "peerDependencies": {
+          "@types/react": "^19.0.0"
+        },
+        "peerDependenciesMeta": {
+          "@types/react": {
+            "optional": true
+          }
+        }
+      },
+      "next@15.5.28": {
+        "peerDependencies": {
+          "@types/react": "^18.0.0 || ^19.0.0",
+          "@types/react-dom": "^18.0.0 || ^19.0.0"
+        },
+        "peerDependenciesMeta": {
+          "@types/react": {
+            "optional": true
+          },
+          "@types/react-dom": {
+            "optional": true
+          }
+        }
+      }
+    }
+  }
 }

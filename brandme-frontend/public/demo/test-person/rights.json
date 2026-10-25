@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "file": "synthetic-adult.png",
+  "creator": "Brand.Me development session via OpenAI image generation",
+  "created": "2026-10-23",
+  "rights": "Original AI-generated test asset; no third-party photograph or real subject supplied",
+  "use": "Development-only pose and photo-provider fixture, no biometric identity or fit claim",
+  "prompt": "Entirely fictional adult fashion model, full body, facing camera, arms gently away from torso, plain charcoal t-shirt, jeans, sneakers, neutral studio background, no logos or text.",
+  "method": "Built-in image generation; unedited output",
+  "sha256": "bb8204dbccc47f16a42f88e82fc2a77231703e08391654b633dba255f81a7408",
+  "bytes": 1914350
+}

@@ -4,7 +4,7 @@ import { useEffect, type RefObject } from 'react'
 
 /** Keep page/scroll clearance equal to the rendered bar, including safe area and large text. */
 export function useNavigationClearance(
-  navigation: RefObject<HTMLElement>,
+  navigation: RefObject<HTMLElement | null>,
   publicPage: boolean,
 ) {
   useEffect(() => {

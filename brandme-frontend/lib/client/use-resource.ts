@@ -6,7 +6,7 @@ import { invalidateAccountRequests, read, type Resource } from './gateway'
 export function useResource<T>(path: string | null) {
   const [state, setState] = useState<Resource<T>>({ data: null, error: null, loading: true })
   const [revision, setRevision] = useState(0)
-  const abort = useRef<AbortController>()
+  const abort = useRef<AbortController | null>(null)
   const reload = useCallback(() => setRevision(v => v + 1), [])
   useEffect(() => {
     abort.current?.abort()

@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Original upper-body overlay export</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/tools/node_modules/three/build/three.module.js",
+          "three/addons/": "/tools/node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <script type="module">
+      import * as T from "three";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+      const slug = new URLSearchParams(location.search).get("slug");
+      const model = (
+        await new GLTFLoader().loadAsync(`/demo/garments/${slug}/lod0.glb`)
+      ).scene;
+      const removals = [];
+      model.traverse((o) => {
+        if (["aged_brass", "ash_grain"].includes(o.name)) removals.push(o);
+      });
+      removals.forEach((o) => o.removeFromParent());
+      const bounds = new T.Box3().setFromObject(model),
+        size = bounds.getSize(new T.Vector3()),
+        center = bounds.getCenter(new T.Vector3());
+      const scene = new T.Scene();
+      scene.add(model, new T.HemisphereLight("#ffffff", "#777777", 2));
+      const light = new T.DirectionalLight("#ffffff", 3);
+      light.position.set(-2, 4, 5);
+      scene.add(light);
+      const renderer = new T.WebGLRenderer({
+        alpha: true,
+        antialias: true,
+        preserveDrawingBuffer: true,
+      });
+      renderer.setSize(768, Math.round((768 * size.y) / size.x));
+      renderer.setPixelRatio(1);
+      renderer.toneMapping = T.ACESFilmicToneMapping;
+      document.body.append(renderer.domElement);
+      const camera = new T.OrthographicCamera(
+        -size.x / 2,
+        size.x / 2,
+        size.y / 2,
+        -size.y / 2,
+        0.01,
+        10,
+      );
+      camera.position.set(center.x, center.y, 3);
+      camera.lookAt(center);
+      renderer.render(scene, camera);
+      window.exported = {
+        png: renderer.domElement.toDataURL("image/png"),
+        dimensions: [size.x, size.y, size.z],
+        removed: removals.map((o) => o.name),
+      };
+    </script>
+  </body>
+</html>

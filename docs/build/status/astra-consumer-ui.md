@@ -400,3 +400,36 @@ Next steps for the top three decisions:
 - **#1 Enforce:** version-check imports and migrate duplicate headers as domain PRs integrate. **Retire:** document a successor ownership contract, preserve landmarks/accessibility, and remove shared-header imports only after consumers migrate.
 - **#2 Wardrobe/Circle:** close catalog-to-owned-item mapping and shared mounts, then verify the save/ask/respond loop. **Shopping:** first obtain canonical identities, complete quote terms and order readers, then build review/approval/receipt UI with explicit delegated authority.
 - **#3 Three axes:** keep the current short guest flow and verify its handoff to the full editor. **All twelve:** expand the guided flow with resumable progress and optional answers, then rerun mobile/keyboard and guest-migration coverage.
+
+## Stage 14 — October 24 design wave: re-sync and integration preparation
+
+The founder triggered the attached Consumer UI execution plan and explicitly authorized the necessary PR merges on 2026-10-24 (America/Los_Angeles). The integration order is #51, then #56. The earlier Q20 default to retain the spec base is superseded by that instruction. Production deployment and external release remain outside this dev/test scope.
+
+### Verified starting state
+
+- Consumer head: `7fd94757c1395c442b305abfbac003c883256e80`; spec base: `4511236afb00deeb3c3f45d67a3c7c9b429525be`; main: `d5b993f202092c8bcb522a99d08ad849a5f0f03d`.
+- Recomputed merge conflicts are in three files: root `package.json`, `brandme-frontend/package.json`, and `pnpm-lock.yaml`. The draft's count of five is stale. Incoming spatial sources/assets are inherited unchanged.
+- Resolve manifests by retaining foundation commands, workspace dependencies, security overrides and UI verification tools while incorporating the spatial React 19 tuple. Keep the console on its existing React 18 tuple. Regenerate and verify the lock with pnpm 10.34.6; both apps require build and browser verification.
+- #51 head `beed01ffac02163ad965ae54bbb9bd8b9b3ce681` remains draft. Its exact-head hashed Python lock lacks its required Stripe 16.0.0 and Anthropic 0.125.0 dependencies. Do not merge until the prerequisite is repaired and required checks pass.
+
+### Live integration dependencies
+
+| Requested behavior | Existing capability | Remaining dependency |
+| --- | --- | --- |
+| Rooms and Now | Shell primitives; persona/wardrobe/decision/reward clients; server-enforced 300-second decisions | Shared dev gateway mounts and integrated route verification |
+| Home = Flow, friends and parallel house streams | Notifications and authorized individual shares | Published feed, subscriptions, media, ranking, pagination and revocation contracts; notifications are not a substitute for Flow |
+| Editorial and runway shop window | Text/variant catalog client | Editorial publication and licensed runway-media delivery contracts; catalog is absent from the current isolated live harness |
+| Invite-only entry and waitlist perks | Existing session client | Server membership entitlement, invite issue/redeem/revoke, waitlist and perk-allocation contracts |
+| Public persona card | Own persona axes, rewards and wardrobe | Authorized public projection, search/follow, house standings and curated-highlight contracts |
+| Mastery and earned closet upgrades | Presentation preferences and starter room identifiers | Server-owned mastery/entitlement and fulfilled upgrade state |
+| House pings | Existing notification preferences | House subscriptions, interest/loyalty targeting and delivery policy |
+
+The live harness currently composes unchanged consumer-domain sources at `dafd3b169da777ec3e3a7fc2c3f0cab573358e2b` with real Spanner persistence and development identity. Main contains domain sources but its shared `/api/v1` mount still omits persona, wardrobe, social, rewards and catalog. Retargeting does not close these dependencies. No frontend state may award membership, rewards or upgrade entitlements.
+
+The existing spatial route/feature ownership remains respected: consume its implementations and provide shell integration without editing spatial assets or its protected feature sources. Backend feature gaps are recorded here for their owners; no new backend contract is implied by a frontend layout.
+
+### Evidence and gates
+
+Re-sync build/test/browser/pixel evidence: **pending execution**. The 74 existing reviewed baselines are unchanged; any replacement requires human review. Real-device and screen-reader sessions remain **not_run**, with dates still to be supplied. The 21-question check-in is due once rooms plus Now/Flow are live against the dev gateway on main; it has not been reached.
+
+Credential manifest update: no credentials created or copied. Existing authenticated Git access is reused; dependency downloads and local disposable tooling require no new application credential.
