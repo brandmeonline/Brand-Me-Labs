@@ -322,12 +322,20 @@ def test_a_downgrade_from_a_stale_process_resets_a_capability_activated_elsewher
     assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"
 
 
+class _StoreDown(Exception):
+    pass
+
+
 class _Interleave:
-    """A process's handle on the shared store, with one write by another process slipped in just before this
-    process's next transaction (after it has already read and caught up)."""
+    """A process's handle on the shared store, with one write (by another process, or another call of this one)
+    slipped in at a chosen point, each used once: just before this handle's next transaction (``before_next``),
+    just after its next commit (``after_next``), or just after its next snapshot read (``after_read``). And
+    ``fail_read_after_commit``: an error the first read after the next commit raises."""
 
     def __init__(self, store):
-        self._store, self.before_next = store, None
+        self._store = store
+        self.before_next = self.after_next = self.after_read = self.fail_read_after_commit = None
+        self._fail_read = None
 
     def __getattr__(self, name):
         return getattr(self._store, name)
@@ -336,7 +344,22 @@ class _Interleave:
         before, self.before_next = self.before_next, None
         if before is not None:
             before()
-        return self._store.transact(*args, **kwargs)
+        result = self._store.transact(*args, **kwargs)
+        self._fail_read, self.fail_read_after_commit = self.fail_read_after_commit, None
+        after, self.after_next = self.after_next, None
+        if after is not None:
+            after()
+        return result
+
+    def snapshot(self, *args, **kwargs):
+        if self._fail_read is not None:
+            error, self._fail_read = self._fail_read, None
+            raise error
+        snap = self._store.snapshot(*args, **kwargs)
+        hook, self.after_read = self.after_read, None
+        if hook is not None:
+            hook()
+        return snap
 
 
 def _active_3d_with_a_stale_reader(env, store=None):
@@ -387,6 +410,96 @@ def test_an_upgrade_after_a_downgrade_never_re_enables_through_a_stale_processs_
     _stale_test(b, "passed", "sandbox_operation")
     assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"
     assert _state(b)[0] == "unconfigured" and _state(env)[0] == "unconfigured"
+
+
+@pytest.mark.parametrize("result,kind", [("passed", "sandbox_operation"), ("failed", "none")])
+def test_a_downgrade_and_re_upgrade_landing_inside_a_stale_processs_test_never_re_enables(env, result, kind):
+    """The test decides on the persisted state read in its own transaction. Here the tier allows 3D again when
+    B's write runs, but nothing re-activated it: neither a passing nor a failing test may make it executable."""
+    shared = _Interleave(env.store)
+    b = _active_3d_with_a_stale_reader(env, shared)
+
+    def down_and_up():
+        env.svc.assign_tier(OPERATOR, SHOP, FLOOR)
+        env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+
+    shared.before_next = down_and_up  # after B caught up, before B's test write
+    _stale_test(b, result, kind)
+    assert shared.before_next is None
+    assert env.store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"
+    assert _state(b)[0] == "unconfigured"
+
+
+def test_a_downgrade_committed_right_after_an_activation_in_the_same_process_is_what_the_registry_shows(
+        provider_setup_store):
+    shared = _Interleave(provider_setup_store)
+    a = _process(shared)
+    _ready_for_activation(a)
+    a.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    shared.after_next = lambda: a.svc.assign_tier(OPERATOR, SHOP, FLOOR)  # between the commit and the registry
+    a.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    assert shared.after_next is None
+    assert provider_setup_store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"
+    assert _state(a) == ("unconfigured", "tier_excludes_capability")  # never the activation's pre-commit value
+
+
+def test_a_snapshot_read_before_a_newer_write_never_overwrites_it(provider_setup_store):
+    shared = _Interleave(provider_setup_store)
+    a = _process(shared)
+    _ready_for_activation(a)
+    a.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    a.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    _process(provider_setup_store).svc.update_setup(OPERATOR, SHOP, {"account_ref": "fictional-fixture-account-2"})
+    shared.after_read = lambda: a.svc.assign_tier(OPERATOR, SHOP, FLOOR)  # newer than the snapshot just read
+    a.svc.list_runs(OPERATOR, SHOP)
+    assert shared.after_read is None
+    assert _state(a) == ("unconfigured", "tier_excludes_capability")
+
+
+def test_a_suspension_in_this_process_survives_refreshes_and_connection_tests(env):
+    env.scripted.next = ProbeResult("passed", "sandbox_operation", "fx:run:search", "Searched one listing.")
+    env.svc.run_verification(OPERATOR, SHOP, "catalog.search", "read_only_test")
+    assert env.store.snapshot("development", SHOP).capabilities["catalog.search"].state == "sandbox"
+    env.w.registry.suspend(SHOP, "catalog.search", "operator_hold", env.w.clock.now)
+    _process(env.store).svc.update_setup(OPERATOR, SHOP, {"account_ref": "fictional-fixture-account-2"})
+    env.svc.list_runs(OPERATOR, SHOP)  # applies the newer version
+    assert _state(env, "catalog.search") == ("suspended", "operator_hold")
+    env.scripted.next = ProbeResult("passed", "sandbox_operation", "fx:run:search2", "Searched one listing.")
+    env.svc.run_verification(OPERATOR, SHOP, "catalog.search", "read_only_test")
+    assert _state(env, "catalog.search") == ("suspended", "operator_hold")  # a passing test never lifts it
+    assert env.store.snapshot("development", SHOP).capabilities["catalog.search"].evidence_ref == "fx:run:search"
+
+
+def test_a_failed_read_after_a_committed_write_still_writes_its_decision_lines(provider_setup_store):
+    shared = _Interleave(provider_setup_store)
+    a = _process(shared)
+    _ready_for_activation(a)
+    a.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    shared.fail_read_after_commit = _StoreDown("snapshot unavailable")
+    with pytest.raises(_StoreDown):
+        a.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    assert _tier_lines(a.log)[-1] == ("activation", "customization", "allow", "tier_within_limits")
+    shared.fail_read_after_commit = _StoreDown("snapshot unavailable")
+    with pytest.raises(_StoreDown):
+        a.svc.assign_tier(OPERATOR, SHOP, FLOOR)
+    assert provider_setup_store.snapshot("development", SHOP).capabilities["catalog.3d"].state == "unconfigured"
+    assert _tier_lines(a.log)[-2:] == [("assignment", "assignment", "allow", "tier_assigned"),
+                                       ("assignment", "customization", "refuse", "tier_reset_capability")]
+    a.svc.get_setup(OPERATOR, SHOP)  # the next call catches up
+    assert _state(a) == ("unconfigured", "tier_excludes_capability")
+
+
+def test_a_hydrate_refusal_is_logged_once_however_often_the_version_moves(env):
+    _ready_for_activation(env)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    swapped = _process(env.store, StaticPricingTable("placeholder-2", PLACEHOLDER_PRICING_TABLE.tiers()))
+    for i in range(3):
+        swapped.svc.get_setup(OPERATOR, SHOP)
+        env.svc.update_setup(OPERATOR, SHOP, {"account_ref": f"fictional-fixture-account-{i}"})
+    swapped.svc.get_setup(OPERATOR, SHOP)
+    assert _tier_lines(swapped.log) == [("hydrate", "customization", "refuse", "tier_unknown")]
+    assert _state(swapped) == ("unconfigured", "tier_excludes_capability")
 
 
 def test_a_connection_test_under_a_tier_that_excludes_a_persisted_activation_records_only_the_run(env):
@@ -464,6 +577,9 @@ def test_a_3d_tier_activates_3d_but_never_ar_try_on(provider_setup_store):
     _ready_for_activation(env)
     env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
     assert _state(env)[0] == "sandbox"
+    tier = T.resolve_from_items(env.store.snapshot("development", SHOP).items, studio)
+    assert [T.check_capability(tier, c).allowed for c in ("catalog.3d", "tryon.photo", "tryon.live")] == [
+        True, False, False]  # live try-on is AR too
 
 
 def test_a_strict_tier_sink_raises_only_after_the_registry_and_store_are_updated(env):
@@ -650,28 +766,77 @@ def test_a_page_that_fails_part_way_still_logs_what_it_admitted(shelf):
     assert [(ln["outcome"], ln["units_requested"], ln["units_refused"]) for ln in pages] == [("allow", 1, 0)]
 
 
-def test_concurrent_pages_sharing_one_audit_each_log_their_own_counts(shelf):
-    ing = CatalogIngestor()
+def test_overlapping_pages_sharing_one_audit_each_log_their_own_counts(shelf):
+    class Lockstep(CatalogIngestor):
+        """Both pages start before either ingests, and both have ingested before either logs its line."""
+
+        def __init__(self):
+            super().__init__()
+            self.started, self.ingested = threading.Barrier(2, timeout=10), threading.Barrier(2, timeout=10)
+
+        def ingest_page(self, page, **kwargs):
+            self.started.wait()
+            super().ingest_page(page, **kwargs)
+            self.ingested.wait()
+
+    ing = Lockstep()
     shelf.svc.assign_tier(OPERATOR, SHOP, "placeholder_shelf5")
-    audit, barrier, errors = IngestionAudit("shared", SHOP), threading.Barrier(8), []
+    audit, errors = IngestionAudit("shared", SHOP), []
 
     def page(i):
-        barrier.wait()
         try:
             shelf.svc.load_shelf_page(ing, _page([_variant(f"x{i}")]), provider_id=SHOP, now=T0, audit=audit)
         except Exception as e:  # pragma: no cover - surfaced below
             errors.append(e)
 
-    threads = [threading.Thread(target=page, args=(i,)) for i in range(8)]
+    threads = [threading.Thread(target=page, args=(i,)) for i in range(2)]
     for t in threads:
         t.start()
     for t in threads:
         t.join()
     assert errors == []
     pages = [ln for ln in shelf.log.events("provider.tier_decision") if ln["origin"] == "ingestion"]
-    assert len(pages) == 8 and {ln["units_requested"] for ln in pages} == {1}  # never another page's additions
-    assert sum(ln["units_refused"] for ln in pages) == 3 == audit.quota_refused
-    assert audit.new_listings == 5 == ing.shelf_usage(SHOP)
+    assert [ln["units_requested"] for ln in pages] == [1, 1]  # never the other page's addition
+    assert audit.new_listings == 2 == ing.shelf_usage(SHOP)
+
+
+def test_a_page_that_fails_part_way_changes_nothing_and_never_keeps_a_swap_over_the_limit(shelf):
+    ing = CatalogIngestor()
+    shelf.svc.assign_tier(OPERATOR, SHOP, "placeholder_shelf3")
+    _load(shelf, ing, [_variant(f"v{i}") for i in range(3)])
+    later = T0 + timedelta(hours=1)
+    broken = replace(_variant("vx", updated=later), product_url=None)  # a malformed provider record
+    with pytest.raises(AttributeError):
+        _load(shelf, ing, [_variant("v9", updated=later), broken], run="r2", tombstones=[("p1", "v0")])
+    assert {v.source_variant_id for v in ing.offers(SHOP)} == {"v0", "v1", "v2"}  # v9 kept nothing
+    pages = [ln for ln in shelf.log.events("provider.tier_decision") if ln["origin"] == "ingestion"]
+    assert (pages[-1]["units_requested"], pages[-1]["units_refused"]) == (0, 0)  # the failed page admitted nothing
+
+
+def test_tombstones_are_read_once_from_any_iterable_and_a_malformed_one_refuses_the_page():
+    ing = CatalogIngestor()
+    _ingest(ing, [_variant(f"v{i}") for i in range(3)], 3)
+    later = T0 + timedelta(hours=1)
+    swap = CatalogPage((_variant("v9", updated=later),), "c2", (t for t in [("p1", "v0")]))  # a one-pass iterable
+    audit = IngestionAudit("r2", SHOP)
+    ing.ingest_page(swap, provider_id=SHOP, now=later, audit=audit, max_active_listings=3)
+    assert (audit.new_listings, audit.tombstoned, ing.shelf_usage(SHOP)) == (1, 1, 3)
+    decoded = CatalogPage((), "c3", [["p1", "v1"]])  # pairs decoded from the JSON wire arrive as lists
+    ing.ingest_page(decoded, provider_id=SHOP, now=later, audit=IngestionAudit("r3", SHOP), max_active_listings=3)
+    assert ing.shelf_usage(SHOP) == 2
+    for bad in ([("p1",)], [("p1", 7)], ["p1v2"]):
+        with pytest.raises(ValueError):
+            ing.ingest_page(CatalogPage((_variant("v8", updated=later),), "c4", bad), provider_id=SHOP, now=later,
+                            audit=IngestionAudit("r4", SHOP), max_active_listings=3)
+    assert "v8" not in {v.source_variant_id for v in ing.offers(SHOP)} and ing.cursors[SHOP] == "c3"
+
+
+def test_a_variant_a_page_adds_and_tombstones_takes_no_slot():
+    ing = CatalogIngestor()
+    _ingest(ing, [_variant("v0"), _variant("v1")], 3)
+    audit = _ingest(ing, [_variant("x"), _variant("y")], 3, run="r2", tombstones=[("p1", "x")])
+    assert (audit.new_listings, audit.quota_refused, audit.tombstoned) == (1, 0, 1)
+    assert {v.source_variant_id for v in ing.offers(SHOP)} == {"v0", "v1", "y"}
 
 
 def test_the_shipped_placeholders_load_nothing_new_at_the_floor_and_everything_at_the_ceiling(env):

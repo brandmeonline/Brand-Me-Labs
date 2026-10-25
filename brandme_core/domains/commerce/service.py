@@ -21,11 +21,12 @@ Invariants enforced here:
 * Order, payment and fulfillment facts stay separate; webhooks are verified,
   deduplicated, and applied by re-reading the source of truth.
 * The member's autonomy boundary (``autonomy.py``) decides who places an order a buy
-  grant's agent prepared: at the approval's binding (who the approval binds to), at
-  execute (inside its transaction, on the grant re-read there) and once more before
-  provider I/O. Each decision leaves one closed-schema record once the call's outcome is
-  settled, saying whether its transaction committed; a failing record sink never changes
-  or hides the outcome.
+  grant's agent prepared: at the approval's binding (who the approval binds to, recorded
+  on the approval only), at the agent's execute (inside its transaction, on the grant
+  re-read there) and once more before provider I/O. The member may always place their own
+  approved purchase. Each agent decision leaves one closed-schema record once the call's
+  outcome is settled, saying whether its own transaction committed; a failing record sink
+  never changes or hides the outcome.
 """
 
 from __future__ import annotations
@@ -904,8 +905,11 @@ class CommerceService:
                 raise ApprovalInvalid("the cart changed after approval; review a new quote", code="quote_changed")
             if approval.allowed_total != quote.total or approval.merchant_id != quote.merchant_id:
                 raise ApprovalInvalid("approved amount or merchant does not match")
+            # Another purchase of the same quote that is being sent, unresolved or placed blocks this one. An
+            # approved but unsent sibling does not: both cannot pass this check, because the first to execute
+            # turns ``submitting`` in this same transaction, so two approved requests never block each other.
             for other in tx.operations_for_quote_hash(op.quote_hash):
-                if other.id != op.id and other.state in IN_FLIGHT | {"accepted"}:
+                if other.id != op.id and other.state in (IN_FLIGHT - {"approved"}) | {"accepted"}:
                     raise IdempotencyConflict("this quote is already being purchased", code="purchase_in_progress")
             self._require_capability(op.provider_id, "checkout.submit")
             if grant is not None:

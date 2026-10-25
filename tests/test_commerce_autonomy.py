@@ -34,7 +34,7 @@ from brandme_core.domains.commerce.store import InMemoryCommerceStore
 from brandme_core.domains.providers.local_atelier import MERCHANT_ID, PROVIDER_ID
 from brandme_core.orchestrator.runlog import MemoryRunLog, RunLogViolation
 from tests.fixtures.commerce.harness import (
-    AGENT_CLIENT, boundary, limits, line, member_session, merchant_rule, usd, wishlist_rule, world,
+    AGENT_CLIENT, boundary, limits, line, member_session, merchant_rule, usd, wishlist_rule, without_random_ids, world,
 )
 from tests.fixtures.commerce.stores import _spanner_db, commerce_store  # noqa: F401  (fixtures)
 from tests.test_commerce_privacy import my_data  # noqa: F401  (fixture)
@@ -130,6 +130,10 @@ def test_the_quote_cap_is_the_lowest_cap_that_applied_to_any_line():
                              default_cap=30_000), BUY, facts(refs=both, total=26_784)).allowed
     item_lower = boundary(merchant_rule(cap=30_000), wishlist_rule("demo-dress-m", cap=20_000))  # the dress's own cap
     assert evaluate(item_lower, BUY, facts(refs=both, total=26_784)).primary_code == "over_autonomy_cap"
+    # A cap applies even when another rule on the same line sets the lower level: both reasons are kept.
+    mixed = evaluate(boundary(merchant_rule(cap=15_000), wishlist_rule("demo-dress-m", level="prepare")), BUY,
+                     facts(total=17_172))
+    assert (mixed.codes, mixed.cap_bucket) == (("autonomy_level_prepare_only", "over_autonomy_cap"), "over")
 
 
 @pytest.mark.parametrize("item_rule,code", [
@@ -653,8 +657,10 @@ def test_each_agent_decision_writes_one_closed_schema_line_without_amounts_or_re
     assert all(ln["member_ref"] == log_ref("member", w.member.member_id) and ln["rule_count"] == 1
                and ln["scope"] == "merchant" and ln["evaluator"] == A.EVALUATOR_VERSION for ln in lines)
     text = json.dumps(w.decisions.lines)
-    for secret in (w.member.member_id, d.id, op.id, "17172", "15000", "demo-dress-m", MERCHANT_ID):
+    for secret in (w.member.member_id, d.id, op.id, "demo-dress-m", MERCHANT_ID):
         assert secret not in text, secret
+    for amount in ("17172", "15000"):  # keyed refs are random hex, and can hold any digit run by chance
+        assert amount not in without_random_ids(text), amount
 
 
 @pytest.mark.parametrize("change", [
@@ -674,6 +680,9 @@ def test_each_agent_decision_writes_one_closed_schema_line_without_amounts_or_re
     {"scope": "no_boundary"}, {"scope": "unreadable", "rule_count": 0},  # no rules means no cap and no count
     {"action": "approval_binding"}, {"outcome": "hold"},  # only execute decisions are logged
     {"codes": [["within_boundary"]]}, {"codes": "within_boundary"},
+    {"codes": ["autonomy_held_for_member", "within_boundary"]},  # an allow carries within_boundary alone
+    {"codes": ["over_autonomy_cap", "within_boundary"], "cap_bucket": "over"},
+    {"scope": "no_boundary", "rule_count": 0, "cap_bucket": "over"},  # no rules, so no cap to be over
 ])
 def test_the_run_log_refuses_a_malformed_decision_line(change):
     from brandme_core.orchestrator.runlog import autonomy_decision_fields

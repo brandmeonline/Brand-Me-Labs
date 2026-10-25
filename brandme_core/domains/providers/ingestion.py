@@ -9,7 +9,8 @@
 * A shelf limit (``max_active_listings``, a partner tier's quota applied by
   ``ProviderSetupService.load_shelf_page``) refuses each addition beyond it under the same lock as the
   write. Updates to loaded variants and tombstones are never refused, a page's own tombstones free their
-  slots for its additions, and a lower limit deletes nothing.
+  slots for its additions (and a variant the page also tombstones takes none), and a lower limit deletes
+  nothing. A page applies whole or not at all.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
-from typing import Dict, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from .contracts import CatalogPage, SourceVariant
 
@@ -80,55 +81,88 @@ class CatalogIngestor:
         if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
             raise ValueError("max_active_listings must be a non-negative int or None")
         counts = counts if counts is not None else ShelfCounts()
+        tombstones = _tombstone_pairs(page.tombstones)  # read once; a malformed entry refuses the whole page
+        removed = set(tombstones)
         with self._lock:
-            # The page's own tombstones free their slots for the page's additions: a page that swaps one
-            # listing for another stays within the limit it was already at.
-            removed = set(page.tombstones)
+            # The page applies whole: every write is staged, and nothing is stored, counted or audited until
+            # the last record has been processed. A page that fails part-way therefore changes nothing, and can
+            # never keep an addition admitted on a slot its unapplied tombstones were to free.
+            staged: Dict[VariantKey, StoredVariant] = {}
+            delta = IngestionAudit(audit.run_id, audit.provider_id)
+            added = refused = 0
+
+            def current(key: VariantKey) -> Optional[StoredVariant]:
+                return staged[key] if key in staged else self.variants.get(key)
+
+            # The page's own tombstones free their slots for its additions: a page that swaps one listing for
+            # another stays within the limit it was already at.
             active = sum(1 for k, sv in self.variants.items()
                          if k[0] == provider_id and not sv.tombstoned and (k[2], k[3]) not in removed)
             for v in page.items:
                 problem = _validate(v, provider_id)
                 if problem:
-                    audit.rejected += 1
-                    audit.rejections.append(f"{v.source_variant_id}:{problem}")
+                    delta.rejected += 1
+                    delta.rejections.append(f"{v.source_variant_id}:{problem}")
                     continue
                 key = variant_key(v)
-                prev = self.variants.get(key)
+                prev = current(key)
                 if prev is not None and prev.tombstoned and v.source_updated_at <= prev.last_ingested_at:
-                    audit.unchanged += 1  # a replayed page never resurrects a deleted variant
+                    delta.unchanged += 1  # a replayed page never resurrects a deleted variant
                     continue
                 if prev is not None and prev.variant == v and not prev.tombstoned:
-                    audit.unchanged += 1
+                    delta.unchanged += 1
                     continue
                 if prev is not None and v.source_updated_at < prev.variant.source_updated_at:
-                    audit.unchanged += 1  # out-of-order older record never overwrites newer data
+                    delta.unchanged += 1  # out-of-order older record never overwrites newer data
                     continue
-                if prev is None or prev.tombstoned:  # an addition to the shelf
+                # An addition to the shelf, unless this page also tombstones it (it never occupies a slot).
+                if (prev is None or prev.tombstoned) and (key[2], key[3]) not in removed:
                     if limit is not None and active >= limit:
-                        audit.rejected += 1
-                        audit.quota_refused += 1
-                        counts.refused += 1
-                        audit.rejections.append(f"{v.source_variant_id}:shelf_quota_exceeded")
+                        delta.rejected += 1
+                        delta.quota_refused += 1
+                        refused += 1
+                        delta.rejections.append(f"{v.source_variant_id}:shelf_quota_exceeded")
                         continue
                     active += 1
-                    audit.new_listings += 1
-                    counts.added += 1
-                    audit.admitted_refs.append(v.source_variant_id)
-                self.variants[key] = StoredVariant(
+                    delta.new_listings += 1
+                    added += 1
+                    delta.admitted_refs.append(v.source_variant_id)
+                staged[key] = StoredVariant(
                     v, (prev.revision + 1) if prev else 1, prev.first_seen_at if prev else now, now, False)
-                audit.accepted += 1
-            for (pid, vid) in page.tombstones:
-                for key, sv in list(self.variants.items()):
-                    if key[0] == provider_id and key[2] == pid and key[3] == vid and not sv.tombstoned:
-                        self.variants[key] = replace(sv, tombstoned=True, revision=sv.revision + 1,
-                                                     variant=replace(sv.variant, availability="discontinued"),
-                                                     last_ingested_at=now)
-                        audit.tombstoned += 1
+                delta.accepted += 1
+            keys = [k for k in {**self.variants, **staged} if k[0] == provider_id and (k[2], k[3]) in removed]
+            for key in keys:
+                sv = current(key)
+                if not sv.tombstoned:
+                    staged[key] = replace(sv, tombstoned=True, revision=sv.revision + 1,
+                                          variant=replace(sv.variant, availability="discontinued"),
+                                          last_ingested_at=now)
+                    delta.tombstoned += 1
+            # Commit the page.
+            self.variants.update(staged)
             self.cursors[provider_id] = page.next_cursor
+            for name in ("accepted", "unchanged", "rejected", "tombstoned", "new_listings", "quota_refused"):
+                setattr(audit, name, getattr(audit, name) + getattr(delta, name))
+            audit.rejections.extend(delta.rejections)
+            audit.admitted_refs.extend(delta.admitted_refs)
             audit.final_cursor = page.next_cursor
+            counts.added += added
+            counts.refused += refused
 
     def offers(self, provider_id: str) -> List[SourceVariant]:
         return [sv.variant for k, sv in self.variants.items() if k[0] == provider_id and not sv.tombstoned]
+
+
+def _tombstone_pairs(raw: Any) -> Tuple[Tuple[str, str], ...]:
+    """A page's tombstones as ``(source_product_id, source_variant_id)`` string pairs, read exactly once (an
+    adapter may hand over any iterable, and pairs decoded from JSON arrive as lists)."""
+    pairs = []
+    for entry in raw or ():
+        if isinstance(entry, (str, bytes)) or not hasattr(entry, "__len__") or len(entry) != 2 \
+                or not all(isinstance(part, str) and part for part in entry):
+            raise ValueError("each tombstone must be a (source_product_id, source_variant_id) pair of strings")
+        pairs.append((entry[0], entry[1]))
+    return tuple(pairs)
 
 
 def _validate(v: SourceVariant, provider_id: str) -> Optional[str]:

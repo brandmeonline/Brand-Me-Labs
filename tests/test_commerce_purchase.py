@@ -345,6 +345,23 @@ def test_timeout_after_accept_reconciles_to_one_order(w):  # BM-COM-009 + failur
     assert w.svc.reconcile(op.id).state == "accepted"  # idempotent
 
 
+@pytest.mark.parametrize("drafter", ["agent", "member"])
+def test_two_approved_requests_for_one_quote_never_block_each_other(w, drafter):
+    """Review finding: an approved but unsent sibling counted as in flight, so two approved requests for one
+    quote (a retried request, say) each refused the other forever. The first to execute is placed; then the
+    other is refused because the quote is bought, never because both are merely approved."""
+    d, ag = w.delegate()
+    actor = ag if drafter == "agent" else w.member
+    _, quote, op1 = w.prepared(actor)
+    op2 = w.svc.request_purchase(actor, quote.id)
+    a1, a2 = w.approve(op1), w.approve(op2)
+    done = w.svc.execute_purchase(w.member, operation_id=op2.id, approval_id=a2.id, idempotency_key="pair-00000000001")
+    assert done.state == "accepted" and len(w.provider.submit_calls) == 1
+    with pytest.raises(IdempotencyConflict) as e:
+        w.svc.execute_purchase(actor, operation_id=op1.id, approval_id=a1.id, idempotency_key="pair-00000000002")
+    assert e.value.code == "purchase_in_progress" and len(w.provider.submit_calls) == 1  # never bought twice
+
+
 # ------------------------------------------------------------------ webhooks
 def _accepted_order(w, *lines_):
     d, ag = w.delegate()

@@ -1368,13 +1368,13 @@ BM-COM-011 (MUST, W07, integration): "Receive partial shipment, exchange and ref
 
 Built from a judge panel of three independent designs (policy engine first, threat model first, member and research first; `Workflow`). The first build (`de845a2`) then went through an independent review: five lenses (authority, races, privacy and logging, tests, spec), each finding checked by a refuter. The review found real defects, and the model was revised to the judge's recommendation (below). The final state is commit `674d532`.
 
-**What a boundary is.** It applies to buy-within-rules grants only. It says where the assistant may *place*, on its own, the exact quote the member approved:
+**What a boundary is.** It applies to buy-within-rules grants only. It says where an external agent (an MCP or REST client) may *place*, on its own, the exact quote the member approved. Brand.Me's own assistant prepares and the member completes, until it has a post-approval path (S28):
 - **Rules.** A rule names a merchant (`provider_id` + `merchant_id`, the identities sealed into every quote) or a wishlist (exact `source_variant_ref`s at one provider, pinned by the member). Each rule has a level (`prepare` | `buy_after_approval`) and an optional all-in cap.
 - **Line by line.** Each quote line is governed by every rule that names it: its merchant's rule, and every wishlist rule that contains it. A line no rule names falls to the default level and default cap. The quote's level is the lowest over its lines, and its cap is the lowest cap that applied to any line. A restriction the member set on an item holds whatever else is in the cart.
 - **Concierge prepares by default.** The default level is `prepare`. A buy grant with no boundary has no rules, so the agent prepares and the member completes everything. The agent places nothing until the member writes a rule that allows it.
 - **Outer bounds.** The grant's limits stay the outer bound: a rule can only name the grant's providers and merchants, and caps stay at or under the grant's per-order limit. Preparing (carts, quotes, approval requests) is never boundary-gated; the grant's mode and limits gate it, as before.
 
-**What it is not: unattended buying.** Every purchase still needs the member's approval on the trusted surface, or a member-signed AP2 closed mandate (ch.05 §4, ADR-14). A level that would skip it is refused with `autonomous_not_supported`. Plan item 6's "autonomous action only inside boundaries" is delivered as **"inside your rules, the concierge places the exact quote you approved"**. Outside them the approval is *held*: it binds to the member, and the member completes the purchase. This item builds and tests the bounded policy, which ch.05 §4 names as a precondition for open authorization. That gate stays shut.
+**What it is not: unattended buying.** Every purchase still needs the member's approval on the trusted surface, or a member-signed AP2 closed mandate (ch.05 §4, ADR-14). A level that would skip it is refused with `autonomous_not_supported`. Plan item 6's "autonomous action only inside boundaries" is delivered as **"inside your rules, your agent places the exact quote you approved"**, for external agents (S28: Brand.Me's assistant hands back to the member). Outside them the approval is *held*: it binds to the member, and the member completes the purchase. This item builds and tests the bounded policy, which ch.05 §4 names as a precondition for open authorization. That gate stays shut.
 
 **Where it decides.** In `CommerceService`, so the assistant runtime, external MCP clients and REST agents all pass the same gates:
 - **At the approval's binding** (trusted surface and AP2): who the approval binds to. A grant that has expired or been revoked binds to the member (`autonomy_grant_inactive`). So does Brand.Me's own assistant (`autonomy_assistant_member_completes`, S28): it has no post-approval path to place an order yet.
@@ -1432,7 +1432,7 @@ The review confirmed 21 findings: 6 defects (3 medium, 3 low) and 15 test gaps, 
   - A $96.12 overshirt is placed by the agent. **passed.**
 - **Default:** `test_with_no_rules_the_concierge_prepares_and_the_member_completes` **passed**.
 - **Mission flow, "agent-assisted inside a user-set cap, fully audited":** `test_mission_agent_assisted_purchase_inside_a_member_cap_is_fully_audited`.
-  - The member sets a $250.00 cap. The concierge prepares through MCP, the member approves, and the agent places the order: authorization of 23544 on the rail, with the grant budget reserved.
+  - The member sets a $250.00 cap. An external agent (`client-fictional-shopping-agent`) prepares through MCP, the member approves, and the agent places the order: authorization of 23544 on the rail, with the grant budget reserved.
   - $332.64 is held for the member.
   - Decision lines join the tool-call audit.
   - Results by rail:
@@ -1610,7 +1610,7 @@ Same shape as S24: lenses (authority, races, privacy and logging, tests, spec an
 | Finding | Verdict | Disposition |
 |---|---|---|
 | A connection test in a stale process re-enabled a reset 3D/AR capability (passed: `sandbox`; failed: executable as `degraded`) | Confirmed, medium | **Fixed.** The test decides on the persisted state read in its own transaction, and every process applies the persisted rows whenever the connection's version moves (`_refresh`). `test_a_connection_test_in_a_stale_process_never_brings_back_a_capability_the_tier_removed`, `test_a_downgrade_landing_between_a_stale_processs_read_and_its_test_write_still_wins`, `test_an_upgrade_after_a_downgrade_never_re_enables_through_a_stale_processs_passing_test` |
-| After a pricing-table change, re-assigning a tier let the next process revive the old activation without a new one | Confirmed, medium | **Fixed.** An assignment also resets every persisted activation the tier in force did not allow. `test_reassigning_under_a_new_table_resets_an_activation_the_old_table_granted` |
+| After a pricing-table change, re-assigning a tier let the next process revive the old activation without a new one; a table swap reset only the in-process view, so re-assignment plus a restart revived it | Confirmed, medium and low (2 findings) | **Fixed.** An assignment also resets every persisted activation the tier in force did not allow. `test_reassigning_under_a_new_table_resets_an_activation_the_old_table_granted` |
 | A purchase prepared by Brand.Me's own assistant inside the rules bound to the assistant, which has no post-approval path, and the member was refused | Confirmed, medium | **Fixed.** The assistant's approvals bind to the member (`autonomy_assistant_member_completes`), and the member may complete any of their own approvals. `test_brand_mes_assistant_prepares_and_the_member_completes_even_inside_the_rules` |
 | A downgrade never reached other processes | Confirmed, low (claimed medium) | **Fixed** by the same version-ordered `_refresh`. `test_a_stale_process_catches_up_on_its_next_setup_call` |
 | Same-process races: post-commit registry writes and hydration could overwrite a downgrade's reset | Confirmed, low | **Fixed.** The registry is written only from committed rows, in version order, under one lock |
@@ -1634,13 +1634,51 @@ Same shape as S24: lenses (authority, races, privacy and logging, tests, spec an
 | No test that a strict tier line surfaces only after a downgrade's reset reaches the registry | Plausible | **Added** (with the activation case) |
 | No tier block for a catalog-feed connection without 3D/AR | Refuted | No change: intended (S25) |
 
-**A test flake found on the way.** One in-memory lane run failed `test_run_log_lines_are_closed_schema_and_redacted` once. Its assertion message was not captured, and the failure did not recur in 37 further full lane runs or 150 runs of the test alone. One mechanism that can cause it is measured and fixed. That test, `test_injected_identity_and_scope_arguments_are_rejected` and `test_payment_card_data_rejected_and_never_logged` asserted that `"4111"`, the start of the planted test card number, never appears in logs that also hold random hex ids and keyed refs. In 3000 runs of the redaction flow, a random id contained `4111` twice. The checks now look for the card number in any separator form (`4111\D?1111`), which hex ids do not produce by chance. No test was skipped or loosened. If it recurs, its message decides the next fix.
+**A test flake found on the way.** One in-memory lane run failed `test_run_log_lines_are_closed_schema_and_redacted` once. Its assertion message was not captured, and the failure did not recur in 37 further full lane runs or 150 runs of the test alone. One mechanism that can cause it is measured and fixed. That test, `test_injected_identity_and_scope_arguments_are_rejected` and `test_payment_card_data_rejected_and_never_logged` asserted that `"4111"`, the start of the planted test card number, never appears in logs that also hold random hex ids and keyed refs. In 3000 runs of the redaction flow, a random id contained `4111` twice. The checks first mask UUIDs and keyed hex refs (`without_random_ids` in the commerce test harness), then assert a bare `4111` is absent, as before. A card number has no hex letter, so it is never masked. (S28 first used `4111\D?1111`, which was looser; S29 corrected it.) No test was skipped. If it recurs, its message decides the next fix.
 
 ### Evidence (this head)
 - **Python lane files** (`tests/test_commerce_*.py`, `tests/test_mcp.py`, `tests/test_providers*.py`), both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1249 passed, 20 skipped, 0 failed**. Every skip is on the allowlist: 8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary. The same files collect 1210 tests at `8c1126f` and 1269 here. S24's 1276 counted a wider file set; CI runs all of `tests/`.
   - `tests/test_commerce_autonomy.py` and `tests/test_providers_tiers.py`: every new test above passes on both stores.
-  - In memory, 12 back-to-back full lane runs: 908 passed each (the 361 emulator variants skip without one).
+  - In memory, 12 back-to-back full lane runs: 908 passed and 361 skipped each (341 emulator variants and the 20 allowlisted skips).
 - **Console:** `tsc` clean; `next build` passes with all provider routes; `brandme-frontend test:ui` 22/22.
 - **Gateway:** unchanged in this stage.
 - **ruff** on the changed Python files: no new finding except one F811 on a pytest fixture parameter, the file's existing idiom (7 at base).
 - **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, above).
+
+## Stage S29 — Third independent review: the S28 fixes (2026-10-25)
+
+A third review covered only the S28 fix diff (`26b01c3..72b432e`). Six lenses ran (authority and money, tier state and concurrency, logging and schema, ingestion and tables, test adequacy, docs and claims), with two independent refuters per finding and then one completeness round. **22 findings: 21 confirmed, 1 refuted, all low.** One was claimed medium, and both refuters rated it low. The completeness round found nothing new.
+
+| Finding | Disposition |
+|---|---|
+| Two approved requests for one quote blocked each other forever: an approved but unsent sibling counted as in flight. This predates S28, but it contradicted S28's "the member can always complete" | **Fixed.** Only a sibling that is being sent, is unresolved or is placed blocks execute. The first of two approved requests to execute is placed, and the other is then refused, so nothing is bought twice. The check and the move to `submitting` share one transaction. `test_two_approved_requests_for_one_quote_never_block_each_other` (agent and member) |
+| `_refresh` and a passing test lifted an in-process suspension (`registry.suspend`, no production caller) | **Fixed.** A refresh never overwrites a suspended capability, and a test treats it as not enabled. A suspension is still in-process only, as before S28: nothing persists `suspended`, so nothing persisted can lift one either. `test_a_suspension_in_this_process_survives_refreshes_and_connection_tests` |
+| A failed read after a committed activation, assignment or test dropped its tier decision lines | **Fixed.** The lines are written whether or not the post-commit read succeeds; a strict log's refusal rides on the read error as a note. `test_a_failed_read_after_a_committed_write_still_writes_its_decision_lines` |
+| The hydrate refusal was re-logged on every version bump | **Fixed.** Logged when it first applies, and again only if the refusal changes. `test_a_hydrate_refusal_is_logged_once_however_often_the_version_moves` |
+| A page that failed part-way could keep an addition admitted on a slot its unapplied tombstone was to free, leaving the shelf over its limit (2 findings) | **Fixed.** A page applies whole: writes are staged and committed only after the last record, so a failed page changes nothing and logs that it admitted nothing. `test_a_page_that_fails_part_way_changes_nothing_and_never_keeps_a_swap_over_the_limit` |
+| Tombstones were iterated twice, so a one-pass iterable lost them; pairs decoded from JSON (lists) raised | **Fixed.** Read once, validated as string pairs, and a malformed entry refuses the page before any write. `test_tombstones_are_read_once_from_any_iterable_and_a_malformed_one_refuses_the_page` |
+| A variant the page both adds and tombstones took a slot | **Fixed.** It takes none. `test_a_variant_a_page_adds_and_tombstones_takes_no_slot` |
+| No test pinned the connection test's persisted-state read (the S28 medium); the "window" test passed on pre-fix code | **Added.** `test_a_downgrade_and_re_upgrade_landing_inside_a_stale_processs_test_never_re_enables` (passed and failed) |
+| The same-process race fix had no test | **Added.** `test_a_downgrade_committed_right_after_an_activation_in_the_same_process_is_what_the_registry_shows`, `test_a_snapshot_read_before_a_newer_write_never_overwrites_it` |
+| The shared-audit concurrency test passed on pre-fix code (timing) | **Replaced** by a lockstep version that overlaps the pages deterministically. `test_overlapping_pages_sharing_one_audit_each_log_their_own_counts` |
+| The quote-cap test missed the "capped rule plus lower-level rule on one line" mutant | **Added** to `test_the_quote_cap_is_the_lowest_cap_that_applied_to_any_line` |
+| The 3D-versus-AR test covered photo try-on only | **Added** live try-on |
+| None of the new malformed-line cases guarded an allow carrying extra codes | **Added** 3 cases |
+| The `4111\D?1111` card check was looser than the old one, and S28 said nothing was loosened (2 findings) | **Fixed.** Mask UUIDs and keyed hex refs, then assert a bare `4111` is absent, as strict as before. Measured: every leak form the old check caught is still caught, with 0 matches across 600,000 random ids. S28's text corrected |
+| `test_each_agent_decision_writes_one_closed_schema_line…` could fail by chance when a random ref held `15000` or `17172` | **Fixed** the same way |
+| S24 still said the concierge places orders inside the rules | **Corrected**: external agents place them; Brand.Me's assistant hands back to the member. The mission proof covers an external MCP client |
+| The service docstring still described binding records | **Corrected** |
+| S28 evidence miscounted the in-memory skips; its table had no row for one confirmed finding | **Corrected** (341 emulator variants plus the 20 allowlisted skips; the table-change row now counts 2 findings) |
+| Refuted: a strict violation on a refused MCP or HTTP call leaves only a note and an error log | No change: by design (S24, S28). Production writes a `runlog_rejected` line |
+
+**Every new test fails on the code it pins.** All the new tests were run against code copies, in memory:
+- At `72b432e`, the 7 tests (8 cases) for this stage's defects fail.
+- At `26b01c3`, the 4 tests (5 cases) that pin S28's own fixes fail.
+- The three S28 regressions (suspension, failed read, hydrate line) pass at `26b01c3`, where that behaviour was still correct.
+
+### Evidence (this head)
+- **Python lane files**, both stores, `BRANDME_REQUIRE_EMULATORS=1`, Spanner emulator: **1274 passed, 20 skipped, 0 failed**. The skips are the same allowlisted 20 (8 key-gated, 6 AP2 SDK oracle, 6 stripe-mock binary).
+- An earlier run of this stage showed 6 setup errors in `tests/test_commerce_migrations.py` ("database not found"). The cause was my local environment, not the code. The S28 run's emulator was left running: killing its wrapper shell had not stopped the gateway or its child. Later emulators then shared port 9011 with it, and requests landed on different emulator processes. Every stray process was stopped by PID, and the clean run above has no errors. The file is unchanged in this diff, and CI runs it against its own emulator.
+- **ruff:** nothing new except three F811 hits on pytest fixture parameters, the files' existing idiom.
+- **Console and gateway:** unchanged in this stage.
+- **Mission flow:** simulated rail **passed**; Stripe semantics double (**fixture double, not Stripe**) **passed**; live Stripe test mode **not_run** (no key, S28).

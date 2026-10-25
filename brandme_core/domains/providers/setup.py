@@ -95,6 +95,16 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _lines_during(exc: BaseException, lines: Callable[[], Any]) -> None:
+    """Writes an operation's decision lines while ``exc`` propagates. ``emit`` swallows operational sink
+    failures, so only a strict (test) log refusing a line raises here; it rides on ``exc`` as a note and never
+    replaces it."""
+    try:
+        lines()
+    except Exception as refused:
+        exc.add_note(f"tier decision log refused a line: {refused}")
+
+
 def _iso(ts: Optional[datetime]) -> Optional[str]:
     return ts.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if ts else None
 
@@ -497,6 +507,7 @@ class ProviderSetupService:
         self.tier_audit = tier_audit
         self._lock = threading.RLock()  # serializes applying persisted state to this process's registry
         self._applied: Dict[str, int] = {}  # provider -> the persisted connection version this process applied
+        self._hydrate_refused: Dict[str, frozenset] = {}  # provider -> the hydrate refusals already logged
 
     # -- helpers -------------------------------------------------------------
     def _require_operator(self, principal: Principal) -> None:
@@ -522,7 +533,8 @@ class ProviderSetupService:
         persisted version moved: the first use (hydration), every write here, and writes by other processes
         (a downgrade elsewhere reaches this process on its next setup call). Versions apply in order, so a
         stale snapshot never overwrites a newer one. A 3D/AR capability applies as executable only where the
-        current tier allows it; the store stays the record."""
+        current tier allows it; the store stays the record. An operator's suspension in this process is never
+        lifted by a refresh. A hydrate refusal is logged when it first applies, not again on each version."""
         if snap is None:
             snap = self.store.snapshot(self.environment, conn.provider_id)  # a failed read is retried next time
         version = snap.connection.version if snap.connection is not None else 0
@@ -532,19 +544,36 @@ class ProviderSetupService:
                 return
             tier = resolve_from_items(snap.items, self.pricing_table)
             self._sync(conn, snap)
+            refused = set()
             for status in snap.capabilities.values():
+                if conn.capability(status.name).state == "suspended":
+                    continue  # in-process only (registry.suspend): held until the process lifts it
                 if status.name in GATED_CAPABILITIES and status.state in EXECUTABLE_STATES:
                     d = check_capability(tier, status.name)
                     if not d.allowed:  # e.g. the pricing table changed since activation: never revive it
                         status = CapabilityStatus(status.name, "unconfigured", "tier_excludes_capability",
                                                   self.clock())
-                        overridden.append((status.name, d))
+                        key = (status.name, d.code, tier.tier_id, tier.source, tier.table_version)
+                        refused.add(key)
+                        if key not in self._hydrate_refused.get(conn.provider_id, frozenset()):
+                            overridden.append((status.name, d))
                 self.registry.set_capability(conn.provider_id, status, tier_checked=True)
+            self._hydrate_refused[conn.provider_id] = frozenset(refused)
             self._applied[conn.provider_id] = version
         for name, d in overridden:
             emit(self.tier_audit, decision_record(
                 origin="hydrate", dimension="customization", outcome="refuse", code=d.code,
                 provider_id=conn.provider_id, tier=tier, capability=name))
+
+    def _after_commit(self, conn: ProviderConnection, lines: Callable[[], Any]) -> None:
+        """Applies a committed write to this process's registry, then writes the operation's decision lines.
+        The lines are written even when the post-commit read fails, because the write did commit."""
+        try:
+            self._refresh(conn)
+        except BaseException as exc:
+            _lines_during(exc, lines)
+            raise
+        lines()
 
     def _sync(self, conn: ProviderConnection, snap: SetupSnapshot) -> None:
         """Committed setup → in-process connection and adapter (never capability states)."""
@@ -737,9 +766,8 @@ class ProviderSetupService:
             if gated and e.code == "activation_tier_excludes_capability" and seen:
                 record(seen[0])
             raise
-        self._refresh(conn)  # the committed row, in commit order (never the value computed before commit)
-        if gated and seen:
-            record(seen[0])
+        # The committed row, in commit order (never the value computed before commit).
+        self._after_commit(conn, lambda: record(seen[0]) if gated and seen else None)
 
     # -- partner tiers -----------------------------------------------------------
     def assign_tier(self, principal: Principal, provider_id: str, tier_id: Optional[str], *,
@@ -776,15 +804,19 @@ class ProviderSetupService:
             return SetupWrite(replace(row, version=row.version + 1), tuple(items), tuple(resets)), (new_tier, resets)
 
         new_tier, resets = self.store.transact(self.environment, conn.provider_id, fn)
-        self._refresh(conn)
-        emit(self.tier_audit, decision_record(
-            origin="assignment", dimension="assignment", outcome="allow",
-            code="tier_assigned" if tier_id is not None else "tier_cleared", provider_id=conn.provider_id,
-            tier=new_tier, actor_ref=principal.actor_ref))
-        for status in resets:
+
+        def lines() -> None:
             emit(self.tier_audit, decision_record(
-                origin="assignment", dimension="customization", outcome="refuse", code="tier_reset_capability",
-                provider_id=conn.provider_id, tier=new_tier, actor_ref=principal.actor_ref, capability=status.name))
+                origin="assignment", dimension="assignment", outcome="allow",
+                code="tier_assigned" if tier_id is not None else "tier_cleared", provider_id=conn.provider_id,
+                tier=new_tier, actor_ref=principal.actor_ref))
+            for status in resets:
+                emit(self.tier_audit, decision_record(
+                    origin="assignment", dimension="customization", outcome="refuse", code="tier_reset_capability",
+                    provider_id=conn.provider_id, tier=new_tier, actor_ref=principal.actor_ref,
+                    capability=status.name))
+
+        self._after_commit(conn, lines)
         snap = self.store.snapshot(self.environment, conn.provider_id)
         return self._view(conn, snap, self.store.recent_runs(self.environment, conn.provider_id, limit=20))
 
@@ -796,16 +828,22 @@ class ProviderSetupService:
         conn = self._connection(provider_id)
         tier = resolve_from_items(self.store.snapshot(self.environment, conn.provider_id).items, self.pricing_table)
         counts = ShelfCounts()  # this page's own counts, kept under the ingestor's lock (an audit may be shared)
-        try:
-            ingestor.ingest_page(page, provider_id=conn.provider_id, now=now, audit=audit,
-                                 max_active_listings=tier.limits.shelf_variants, counts=counts)
-        finally:  # a page that fails part-way still records what it admitted
+
+        def line() -> Tuple[str, str]:
             outcome, code = shelf_decision(tier, requested=counts.added + counts.refused, refused=counts.refused)
             emit(self.tier_audit, decision_record(
                 origin="ingestion", dimension="shelf_variants", outcome=outcome, code=code,
                 provider_id=conn.provider_id, tier=tier, units_requested=counts.added + counts.refused,
                 units_refused=counts.refused, request_id=request_id))
-        return outcome, code
+            return outcome, code
+
+        try:
+            ingestor.ingest_page(page, provider_id=conn.provider_id, now=now, audit=audit,
+                                 max_active_listings=tier.limits.shelf_variants, counts=counts)
+        except BaseException as exc:
+            _lines_during(exc, line)  # a failed page is recorded too, with what it admitted
+            raise
+        return line()
 
     # -- connection tests -------------------------------------------------------
     def run_verification(self, principal: Principal, provider_id: str, capability: Any, mode: Any) -> Dict[str, Any]:
@@ -828,8 +866,11 @@ class ProviderSetupService:
             status = None
             # Enabled means enabled in the store (or declared by the adapter and never changed), read in this
             # transaction: a process whose view is stale can never refresh or degrade a reset capability.
+            # An operator's suspension in this process wins: a test never lifts it.
             persisted = snap.capabilities.get(capability)
             state = persisted.state if persisted is not None else conn.capability(capability).state
+            if conn.capability(capability).state == "suspended":
+                state = "suspended"
             if state in EXECUTABLE_STATES:  # not yet enabled: only activation enables
                 if capability in GATED_CAPABILITIES:
                     tier = resolve_from_items(snap.items, self.pricing_table)
@@ -850,12 +891,15 @@ class ProviderSetupService:
             return SetupWrite(replace(row, version=row.version + 1), (), (status,), (run,)), status
 
         self.store.transact(self.environment, conn.provider_id, fn)
-        self._refresh(conn)
-        if gate:
-            tier, d = gate[0]
-            emit(self.tier_audit, decision_record(
-                origin="verification", dimension="customization", outcome="refuse", code=d.code,
-                provider_id=conn.provider_id, tier=tier, actor_ref=principal.actor_ref, capability=capability))
+
+        def lines() -> None:
+            if gate:
+                tier, d = gate[0]
+                emit(self.tier_audit, decision_record(
+                    origin="verification", dimension="customization", outcome="refuse", code=d.code,
+                    provider_id=conn.provider_id, tier=tier, actor_ref=principal.actor_ref, capability=capability))
+
+        self._after_commit(conn, lines)
         current = conn.capability(capability)
         return dict(run.to_wire(), capability_state=dict(current.to_public(), evidence_kind=current.evidence_kind))
 

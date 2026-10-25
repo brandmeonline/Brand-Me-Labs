@@ -6,6 +6,7 @@ All people, merchants and products are fictional (contracts/demo-scenario.json).
 from __future__ import annotations
 
 import inspect
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -26,6 +27,16 @@ from brandme_core.orchestrator.runlog import MemoryRunLog
 MEMBER = "2ad9041e-561e-527b-aa0d-5a7fda5f710b"  # fictional demo member
 OTHER_MEMBER = "fa9ad97d-0187-5b71-a602-b05aabb329e1"
 AGENT_CLIENT = "client-fictional-shopping-agent"
+
+_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+_HEX_REF = re.compile(r"(?<![0-9A-Za-z])(?=[0-9]*[a-f])[0-9a-f]{16,64}(?![0-9A-Za-z])")
+
+
+def without_random_ids(text: str) -> str:
+    """``text`` with UUIDs and keyed hex refs replaced, so a check that a digit string (a card number, an
+    amount) never reaches a log cannot match inside a random id by chance. A run of digits alone is never
+    replaced (a card number or amount has no hex letter), so the check stays as strict as a plain ``in``."""
+    return _HEX_REF.sub("<ref>", _UUID.sub("<id>", text))
 
 
 class Clock:
