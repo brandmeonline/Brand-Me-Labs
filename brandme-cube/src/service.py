@@ -26,6 +26,7 @@ from fastapi import HTTPException
 from brandme_core.logging import get_logger, redact_user_id, truncate_id
 from brandme_core.metrics import MetricsCollector
 
+from .passport_filter import chain_ref_for_display, filter_face_data
 from .models import (
     ProductCube,
     CubeFace,
@@ -123,8 +124,8 @@ class CubeService:
                         visibility=cube_data["visibility_settings"].get(
                             face_name.value, VisibilityLevel.PUBLIC
                         ),
-                        data=face_data.get("data"),
-                        blockchain_tx_hash=face_data.get("blockchain_tx_hash")
+                        data=filter_face_data(face_data.get("data"), viewer_is_owner=(viewer_id == owner_id)),
+                        blockchain_tx_hash=chain_ref_for_display(face_data.get("blockchain_tx_hash"))
                     )
 
                     # Log successful access to Compliance
@@ -270,8 +271,8 @@ class CubeService:
                 visibility=cube_data["visibility_settings"].get(
                     face_name.value, VisibilityLevel.PUBLIC
                 ),
-                data=face_data.get("data"),
-                blockchain_tx_hash=face_data.get("blockchain_tx_hash")
+                data=filter_face_data(face_data.get("data"), viewer_is_owner=(viewer_id == owner_id)),
+                blockchain_tx_hash=chain_ref_for_display(face_data.get("blockchain_tx_hash"))
             )
 
         elif policy_decision == PolicyDecision.ESCALATE:

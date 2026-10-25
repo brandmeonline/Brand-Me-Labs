@@ -1,0 +1,50 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# Workspace guard
+# ===============
+# pnpm workspace + toolchain governance (docs/build/workspace-governance.md):
+# every tracked package.json is registered or STANDALONE, lockfile importers
+# match the manifests, and packageManager / .nvmrc are the only pnpm / Node
+# pins. No dependency install is needed: --with-pnpm runs pnpm's
+# `install --frozen-lockfile --lockfile-only`, which writes nothing.
+
+name: Workspace guard
+
+on:
+  # No branch filter on purpose: lane PRs into bench/* and docs/* bases get the
+  # guard too, once their branch carries this file. pull_request runs check the
+  # merge ref (refs/pull/N/merge), i.e. the tree that would land.
+  pull_request:
+  # Scoped to main so a PR branch does not also run on push (see ci-cd.yml:9-16).
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Workspace guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # No `version:` here: package.json "packageManager" is the only pnpm pin,
+      # and action-setup@v4 refuses to start when both are set.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Workspace + toolchain guard
+        run: node scripts/check-workspace.mjs --with-pnpm
+
+      - name: Guard self-tests
+        run: node --test scripts/check-workspace.test.mjs

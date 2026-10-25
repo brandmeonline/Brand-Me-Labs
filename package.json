@@ -14,8 +14,8 @@
     "contracts:check": "pnpm --filter @brandme/contracts check && pnpm --filter @brandme/design-system check",
     "test:journeys": "node scripts/brandme.mjs not-yet test:journeys W03-W11",
     "test:providers": "node scripts/brandme.mjs not-yet test:providers W06-W07",
-    "test:midnight:local": "node scripts/brandme.mjs not-yet test:midnight:local W09",
-    "test:midnight:preprod": "node scripts/brandme.mjs not-yet test:midnight:preprod W09",
+    "test:midnight:local": "pnpm --filter @brandme/chain test:midnight:local",
+    "test:midnight:preprod": "pnpm --filter @brandme/chain test:midnight:preprod",
     "assets:validate": "node scripts/assets/validate.mjs",
     "evidence:report": "node scripts/brandme.mjs evidence",
     "build": "pnpm -r build",
@@ -30,33 +30,5 @@
     "node": ">=20.0.0 <25",
     "pnpm": "10.34.6"
   },
-  "packageManager": "pnpm@10.34.6",
-  "pnpm": {
-    "packageExtensions": {
-      "@react-three/fiber@9.4.0": {
-        "peerDependencies": {
-          "@types/react": "^19.0.0"
-        },
-        "peerDependenciesMeta": {
-          "@types/react": {
-            "optional": true
-          }
-        }
-      },
-      "next@15.5.28": {
-        "peerDependencies": {
-          "@types/react": "^18.0.0 || ^19.0.0",
-          "@types/react-dom": "^18.0.0 || ^19.0.0"
-        },
-        "peerDependenciesMeta": {
-          "@types/react": {
-            "optional": true
-          },
-          "@types/react-dom": {
-            "optional": true
-          }
-        }
-      }
-    }
-  }
+  "packageManager": "pnpm@10.34.6"
 }

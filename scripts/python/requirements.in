@@ -4,3 +4,13 @@
 -r ../../docs/design/brandme/contracts/requirements.txt
 pytest-timeout==2.3.1
 datamodel-code-generator==0.34.0
+# Commerce/providers/MCP lane (commerce-agents) runtime pins, consumed by brandme_core/domains/commerce,
+# brandme_core/mcp and their tests. Listed directly (not `-r` of the lane's
+# brandme_core/domains/commerce/requirements.txt) so a lane edit cannot change this lock without a foundation
+# recompile. Keep in step with that file. PyJWT CVE-2026-103001 note: see that file.
+jwcrypto==1.6.1
+PyJWT[crypto]==2.15.1
+rfc8785==0.1.4
+sd-jwt==0.10.4
+anthropic==0.125.0
+stripe==16.0.0

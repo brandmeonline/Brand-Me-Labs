@@ -15,8 +15,14 @@ Tasks:
 """
 
 import os
-from celery import Celery
-from kombu import Exchange, Queue
+
+# The beat/worker entry imports this module directly, outside the FastAPI guard.
+from brandme_core.boot import guard
+
+guard("orchestrator")
+
+from celery import Celery  # noqa: E402
+from kombu import Exchange, Queue  # noqa: E402
 
 # Initialize Celery app
 app = Celery(

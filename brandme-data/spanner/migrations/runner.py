@@ -17,7 +17,8 @@ refuses to run against an unsupported schema range.
 
 Version reservations (do not reuse another lane's number): V001 identity/platform
 (foundation), V002 persona, V003 wardrobe, V004 social, V005 rewards,
-V006 providers, V007 commerce, V008 rights, V009 privacy.
+V006 providers, V007 commerce, V008 rights, V009 privacy, V010 projection revision,
+V011 durable chain operations, V012 chain reconciliation, V013 outbox delivery.
 """
 from __future__ import annotations
 

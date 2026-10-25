@@ -25,11 +25,25 @@ import { IdentityStore, sha256 } from './identity/store';
 export const SESSION_COOKIE = 'bm_session';
 const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+/**
+ * Cookies on the request. A value that is not valid percent-encoding (a
+ * foreign cookie such as `promo=50%off` on the parent domain) is kept raw
+ * instead of throwing, so one unrelated cookie can never turn every request
+ * into a 500. A raw session value then simply fails the session lookup.
+ */
 export function parseCookies(header: string | undefined): Record<string, string> {
   const out: Record<string, string> = {};
   for (const part of (header ?? '').split(';')) {
     const i = part.indexOf('=');
-    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+    if (i <= 0) continue;
+    const raw = part.slice(i + 1).trim();
+    let value = raw;
+    try {
+      value = decodeURIComponent(raw);
+    } catch {
+      // keep raw
+    }
+    out[part.slice(0, i).trim()] = value;
   }
   return out;
 }
@@ -90,6 +104,7 @@ export function principalMiddleware({ cfg, store, jwks }: PrincipalResolverDeps)
           identityProvider: 'oidc',
           expiresAt: new Date((payload.exp ?? 0) * 1000),
           via: 'bearer',
+          authenticatedAt: typeof payload.auth_time === 'number' && Number.isFinite(payload.auth_time) ? new Date(payload.auth_time * 1000) : undefined,
         } satisfies Principal;
         return next();
       }
@@ -110,13 +125,14 @@ export function principalMiddleware({ cfg, store, jwks }: PrincipalResolverDeps)
             subject: session.member_id,
             sessionId: sha256(secret).slice(0, 16),
             clientId: session.client_id,
-            scopes: ['profile:read', 'profile:write', 'privacy:manage'],
+            scopes: ['profile:read', 'profile:write', 'privacy:manage', 'rights:read', 'rights:transfer', 'rights:reprint'],
             assuranceLevel: session.assurance_level,
             environment: cfg.mode,
             delegationId: null,
             identityProvider: session.identity_provider,
             expiresAt: session.expires_at,
             via: 'session',
+            authenticatedAt: session.created_at,
           } satisfies Principal;
         }
       }

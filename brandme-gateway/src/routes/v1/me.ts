@@ -4,7 +4,8 @@
  * GET/PATCH /api/v1/me — current member, settings, onboarding state and
  * capability summary. PATCH requires If-Match and only allowlisted fields
  * (MePatch in @brandme/contracts); a stale revision gets 409 with the current
- * revision, never a silent last-write-wins.
+ * revision in the ETag header (quoted, ready for If-Match), never a silent
+ * last-write-wins. The 409 body is a plain spec Problem.
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -106,7 +107,7 @@ export function meRouter(cfg: GatewayConfig, store: IdentityStore): Router {
         await store.patchMember(principal.memberId, expected, req.body as MePatch, res.locals.requestId);
       } catch (err) {
         if (err instanceof VersionConflictError) {
-          throw problems.conflict('The profile changed since you loaded it. Reload to merge your edits.', { current_version: String(err.currentVersion) });
+          throw problems.conflict('The profile changed since you loaded it. Reload to merge your edits.', err.currentVersion);
         }
         if (err instanceof HandleTakenError) throw problems.invalid('That handle is not available.');
         if (err instanceof MemberInactiveError) throw problems.notFound();

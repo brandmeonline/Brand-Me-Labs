@@ -28,7 +28,6 @@
     "@mediapipe/tasks-vision": "0.10.22-rc.20250304",
     "@react-three/fiber": "9.4.0",
     "motion": "12.23.24",
-    "tailwindcss-animate": "^1.0.7",
     "three": "0.182.0"
   },
   "devDependencies": {
@@ -40,6 +39,7 @@
     "eslint-config-next": "15.5.28",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.3.3",
     "playwright": "1.58.2",
     "@axe-core/playwright": "4.10.2",

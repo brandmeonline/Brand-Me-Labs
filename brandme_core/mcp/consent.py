@@ -7,7 +7,7 @@ Verifies user consent for MCP tool access by external agents.
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional
 
 from brandme_core.logging import get_logger
 

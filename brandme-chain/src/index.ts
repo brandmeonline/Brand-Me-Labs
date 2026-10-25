@@ -3,105 +3,89 @@
  *
  * Brand.Me Chain Service
  * ======================
- * Blockchain integration for Cardano and Midnight chains
- * - TX Builder for both chains
- * - Cross-chain verification
- * - Secure wallet management
+ * Midnight rights network adapter (primary). Optional Cardano anchoring is a
+ * separate adapter and never gates the Midnight path.
  */
 
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import { config } from './config';
-import { logger } from './config/logger';
-import { errorHandler } from './middleware/errorHandler';
-import { requestLogger} from './middleware/requestLogger';
-import txRouter from './routes/tx';
-import healthRouter from './routes/health';
-import { initCardanoWallet } from './services/cardano-wallet';
-import { initCardanoTxBuilder } from './services/cardano-tx-builder';
-import { initMidnightClient } from './services/midnight-client';
+import { config } from './config/index.js';
+import { logger } from './config/logger.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { requestLogger } from './middleware/requestLogger.js';
+import healthRouter from './routes/health.js';
+import midnightRouter from './routes/midnight.js';
+import { createOperationsRouter } from './routes/operations.js';
+import { operationDatabase, SpannerOperationStore } from './midnight/spanner-store.js';
+import { IndexerTransactionLookup, OperationReconciler } from './midnight/reconciler.js';
+import { FinalizedEntitlementProjector, IndexerFinalizedLedgerReader } from './midnight/projection.js';
+import { SpannerReconciliationQueue } from './midnight/reconciliation-queue.js';
+import { ReconciliationWorker } from './midnight/reconciliation-worker.js';
+import { NodeRpcFinalityOracle } from './midnight/adapter.js';
+import { resolveEndpoints } from './midnight/capability.js';
+import { midnightCapability } from './midnight/capability.js';
 
 const app = express();
-
-// Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: config.corsOrigins,
-  credentials: true,
-}));
-
-// Body parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Request logging
+app.use(cors({ origin: config.corsOrigins, credentials: true }));
+app.use(express.json({ limit: '256kb' }));
 app.use(requestLogger);
 
-// Routes
 app.use('/health', healthRouter);
-app.use('/tx', txRouter);
+app.use('/midnight', midnightRouter);
+const database = config.spannerProjectId && config.spannerInstanceId && config.spannerDatabaseId
+  ? operationDatabase(config.spannerProjectId, config.spannerInstanceId, config.spannerDatabaseId) : undefined;
+const store = database ? new SpannerOperationStore(database, config.environment) : undefined;
+const endpoints = resolveEndpoints(config);
+const finality = endpoints ? new NodeRpcFinalityOracle(endpoints.nodeRpc) : undefined;
+const reconciler = store && endpoints && config.midnightContractAddress ? new OperationReconciler({
+  store, endpoints, contractAddress: config.midnightContractAddress,
+  lookup: new IndexerTransactionLookup(endpoints), finality: finality!,
+}) : undefined;
+const worker = config.chainReconciliationEnabled !== false && store && reconciler && finality && endpoints &&
+  config.midnightContractAddress && config.midnightNetwork !== 'mainnet' ? new ReconciliationWorker({
+    network: config.midnightNetwork, contractAddress: config.midnightContractAddress, store, reconciler,
+    queue: new SpannerReconciliationQueue(store),
+    projector: new FinalizedEntitlementProjector({ network: config.midnightNetwork, contractAddress: config.midnightContractAddress,
+      finality, reader: new IndexerFinalizedLedgerReader(endpoints) }),
+    report: (counts) => { if (counts.processed || counts.errors) logger.info(counts, 'chain reconciliation batch'); },
+  }) : undefined;
+app.use('/midnight', createOperationsRouter({ token: config.chainServiceToken, store, reconciler,
+  network: config.midnightNetwork, contractAddress: config.midnightContractAddress }));
 
-// Error handling
+// Retired: these returned simulated hashes and a hardcoded "consistent" result.
+app.all(['/tx/anchor-scan', '/tx/verify-root'], (_req, res) => {
+  res.status(410).json({
+    error: 'Gone',
+    message: 'Simulated dual-chain anchoring was removed. Rights operations use the Midnight adapter; see GET /midnight/capability.',
+  });
+});
+
 app.use(errorHandler);
 
-// Start server
-async function start() {
-  try {
-    logger.info('Initializing Brand.Me Chain Service...');
+try { await store?.initialize(); }
+catch { logger.fatal('operation database unavailable or V012 migration missing'); await database?.close(); process.exit(1); }
 
-    // Initialize Cardano wallet and TX builder
-    if (config.cardanoMnemonicPath || config.cardanoWalletPath) {
-      logger.info('Initializing Cardano wallet...');
-      initCardanoWallet({
-        network: config.cardanoNetwork,
-        mnemonicPath: config.cardanoMnemonicPath,
-        privateKeyPath: config.cardanoWalletPath,
-      });
-
-      if (config.blockfrostApiKey) {
-        logger.info('Initializing Cardano TX Builder with Blockfrost...');
-        initCardanoTxBuilder(config.blockfrostApiKey, config.cardanoNetwork);
-      } else {
-        logger.warn('Blockfrost API key not provided - Cardano transactions will use fallback mode');
-      }
-    } else {
-      logger.warn('Cardano wallet not configured - using fallback mode');
-    }
-
-    // Initialize Midnight client
-    logger.info('Initializing Midnight client...');
-    initMidnightClient({
-      network: config.midnightNetwork,
-      walletPath: config.midnightWalletPath,
-      rpcUrl: config.midnightRpcUrl,
-    });
-
-    // Start HTTP server
-    const port = config.port;
-    app.listen(port, () => {
-      logger.info(`Brand.Me Chain Service listening on port ${port}`);
-      logger.info(`Environment: ${config.environment}`);
-      logger.info(`Cardano Network: ${config.cardanoNetwork}`);
-      logger.info(`Midnight Network: ${config.midnightNetwork}`);
-      logger.info(`Cardano Fallback Mode: ${config.cardanoFallbackMode}`);
-      logger.info(`Midnight Fallback Mode: ${config.midnightFallbackMode}`);
-    });
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
-  }
+const cap = midnightCapability(config);
+if (worker && !cap.artifacts.verified) {
+  logger.fatal('reconciliation requires verified compiled contract artifacts');
+  await database?.close();
+  process.exit(1);
 }
+logger.info({ network: cap.network, status: cap.status, reasons: cap.reasons }, 'Midnight capability');
+const server = app.listen(config.port, () => logger.info(`Brand.Me Chain Service listening on port ${config.port}`));
+worker?.start();
+logger.info({ enabled: Boolean(worker) }, 'read-only reconciliation worker');
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  process.exit(0);
-});
-
-start();
+let closing = false;
+const shutdown = () => {
+  if (closing) return;
+  closing = true;
+  logger.info('shutting down');
+  const httpClosed = new Promise<void>((resolve) => server.close(() => resolve()));
+  void Promise.all([httpClosed, worker?.stop()]).then(() => database?.close()).then(() => process.exit(0), () => process.exit(1));
+  setTimeout(() => process.exit(1), 10_000).unref();
+};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

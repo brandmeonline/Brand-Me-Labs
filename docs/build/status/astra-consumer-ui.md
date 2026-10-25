@@ -435,3 +435,53 @@ Re-sync commit `1b9d320eb8a7a2946591d3fd27e324dd2c80affa` is pushed. Local Node 
 The 74 existing reviewed baselines are unchanged; any replacement requires human review. Real-device and screen-reader sessions remain **not_run**, with dates still to be supplied. The 21-question check-in is due once rooms plus Now/Flow are live against the dev gateway on main; it has not been reached. Spatial runtime acceptance is separate: its asset package has a dedicated pinned install, and the consumer CI workflow does not run the spatial E2E suites.
 
 Credential manifest update: no credentials created or copied. Existing authenticated Git access is reused; dependency downloads and local disposable tooling require no new application credential.
+
+## Stage 15 — Main integration prepared after the prerequisite repair
+
+Prepared locally from consumer head `15c9d3f4ee0a7575a786f64879d262e44742ad34` by merging commerce
+head `2fd6b291e58118ba0dd2a5c5a5ed479d7bb4f607`, which includes main `d5b993f`. This preparation
+does not bypass the required #51-then-#56 merge order; retargeting and merging remain separate actions.
+
+Seven files conflicted: `.github/workflows/module-regression.yml`, `brandme-console/next.config.js`,
+both app manifests, root `package.json`, `pnpm-workspace.yaml`, and `pnpm-lock.yaml`.
+
+- Preserve main's pre-install workspace guard, zod 4.6.7, body-parser/fast-uri security overrides,
+  functional Midnight test commands, console standalone output and root tracing configuration.
+- Preserve the consumer's React 19/spatial tuple, React 18 console isolation, shell dependencies,
+  UI verification tools, disabled dev indicators, and actual asset-tool commands.
+- Move the inherited React peer extensions into `pnpm-workspace.yaml`. Register `scripts/assets`
+  as the tenth workspace package, remove its conflicting pnpm 11 declaration and nested lock, and
+  preserve all its source, assets and dependency versions. This is integration metadata repair.
+- Start with the incoming foundation lock and regenerate using Node 24.21.0 / pnpm 10.34.6 from the
+  root. No lockfile conflict hunks are hand-merged.
+- Mechanical deployment-helper exception: change only the two console build commands in
+  `scripts/deploy.sh` to root context with `-f brandme-console/Dockerfile`. Their existing tags and
+  other component commands are preserved. Bash syntax passed; no image was built or deployed locally.
+- Correct the frontend's build-only `tailwindcss-animate` classification to `devDependencies`, as
+  already used by the console. Only `tailwind.config.js` loads it. Its `^1.0.7` specifier and resolved
+  version remain unchanged; the regenerated lock's packages and snapshots are byte-identical to
+  their pre-classification values. No dependency was upgraded and no audit command was weakened.
+
+Backend/domain sources, Python locks, foundation CI and Docker sources match the incoming commerce
+head. Consumer/spatial routes, feature sources, public assets and asset scripts match the consumer
+head. Reviewed visual baselines remain unchanged.
+
+Validation under Node 24.21.0 / pnpm 10.34.6: the root frozen install passed, and pnpm lists all ten
+workspace packages. The offline workspace guard passed with ten manifests/importers and five
+inherited advisory warnings. All 29 focused UI/gateway tests passed with no skips. Asset validation
+passed for 36 required paths and 12 manifests. The frontend production build passed. The console
+passed compilation, type checks and page generation, then standalone packaging failed on Windows
+`EPERM` while creating dependency symlinks; Linux CI must validate its complete artifact.
+
+After the build-only dependency correction, `pnpm audit --prod` passes with no known vulnerabilities
+and `pnpm audit --audit-level=critical` passes. The development graph still reports 32 advisories
+(2 low, 21 moderate, 9 high); this includes the selector-parser moderate
+[GHSA-rj75-hqrm-r3gf](https://github.com/advisories/GHSA-rj75-hqrm-r3gf). It was removed from the
+production dependency classification, not eliminated from the build toolchain.
+
+The guard's `--with-pnpm` command cannot spawn the Windows `.cmd` shim; its self-tests report 30 pass,
+three skips for that platform limitation, and one Windows `EPERM` when creating a fixture symlink.
+The pinned-pnpm checks ran directly, but Linux CI must run the normal guard and all its self-tests.
+Whitespace checks pass for the resolved files and deployment-helper/status changes; three inherited
+whitespace findings in incoming foundation/domain files remain unchanged. No credential,
+external-provider, deployment or manual-device evidence is claimed.

@@ -19,3 +19,15 @@ python brandme-data/spanner/migrations/runner.py verify   # exit 1 on drift or p
 | `--create-database` | Emulator only |
 
 The legacy `../schema.sql` is **not** applied by the runner. It contains PostgreSQL syntax that GoogleSQL rejects (see `docs/build/evidence/w00/baseline-test-report.md`). Lanes that need legacy tables port them into their reserved migration with valid GoogleSQL. V001 has been verified on an empty database and on top of the partially-applied legacy schema.
+
+V010 adds an independent projection revision to `RightsEntitlements` for transactional outbox events. Apply it before deploying the integrated rights projection; V008 and V009 remain unchanged. Existing rows receive revision 1 on their next verified update.
+
+V011 adds the authenticated owner/environment and observation timestamp to `ChainOperations`, replaces global idempotency with a member/network/contract/environment index, and adds transactional subject locks. Apply before configuring durable chain status/reconciliation. Old rows remain unowned and are excluded; do not assign them to a member or regenerate their digest without reviewing the original request and any broadcast evidence. Existing migrations are unchanged.
+
+V012 adds reconciliation leases, attempt counters and projection-completion markers to `ChainOperations`. Apply before deploying the background worker and updated rights privacy handler. Existing owned operations are due immediately; legacy unowned operations stay excluded. This migration does not enable any network writes.
+
+V013 adds the environment-scoped outbox dispatch index. Apply before starting the Pub/Sub worker. No event payload or delivery status is rewritten. Stop older dispatchers before rolling out the new unique-lease-token and claim-time attempt semantics. Pub/Sub topics, subscriptions, workload IAM and consumers must be provisioned separately; see `brandme_core/events/README.md`.
+
+V014 adds the separate selected-category privacy export queue, member-scoped idempotency records and recurring object cleanup ledger. Apply before deploying `brandme_core.privacy_exports`. The legacy synchronous `ExportJobs` remains unchanged. Provision an isolated private export bucket and API/worker identities separately; see `brandme_core/privacy_exports/README.md`. This migration neither enables account deletion nor completes full-account export coverage.
+
+V015 (commerce lane) adds `CheckoutQuotes.terms`, the recorded return/recurrence terms whose digest is already the material `terms_hash`, plus member/delegation indexes used by privacy export, erasure and grant revocation. V007 is unchanged. Rows written before V015 get `{}` terms, which the commerce store refuses to decode, so such a quote can only be re-quoted, never approved; quotes expire within minutes.

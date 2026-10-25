@@ -45,11 +45,11 @@ Everything past the orchestrator's response is mocked.
 | `brandme-core/policy` | 8001 | Py | **REAL** | Real consent graph queries via `brandme_core/spanner/consent_graph.py`; provenance verify endpoint live. |
 | `brandme-core/orchestrator` | 8002 | Py | **STUB** | Returns hardcoded `f"cardano_tx_{transfer_id[:16]}"` at `brandme-core/orchestrator/main.py:99`; comment at `:93-94` says "v6 simplified, in production this would trigger Celery." No Celery service in compose. |
 | `brandme-cube` | 8007 | Py | **STUB / UNVERIFIED** | Routes import; policy gates real; **all tests are `test_placeholder()`** in `brandme-cube/tests/test_api.py`. `PRODUCT_CUBE_SUMMARY.md` explicitly states startup is untested. |
-| `brandme-governance` | 8006 | Py | **STUB** | Only escalation listing implemented (`brandme-governance/governance_console/main.py:62-100`). No approve/deny endpoint. |
-| `brandme-gateway` | 3000 | TS | **REAL** | helmet/CORS/rate-limit framework wired in `brandme-gateway/src/index.ts`; OAuth uses dev-client-id placeholders in compose. |
+| `brandme-governance` | 8006 | Py | **STUB** | Escalation listing plus a decision endpoint (`brandme-governance/governance_console/main.py:119`) that records an **unauthenticated** `reviewer_user_id` as the approver; it therefore refuses strict modes at import (`brandme_core/boot.py`, verified 2026-10-24). |
+| `brandme-gateway` | 3001 | TS | **REAL** | helmet/CORS wired in `brandme-gateway/src/index.ts`; config-driven per-address and per-member rate limits with problem+json 429 (`brandme-gateway/src/middleware/rateLimiter.ts`, in-process only); OIDC/JWKS in strict modes (`middleware/mode.ts`). Default port `src/config/index.ts:73`. |
 | `brandme-frontend` | — | TS | **NOT WIRED** | Components are placeholder UI (`<div>[Image]</div>` in `brandme-frontend/components/GarmentCard.tsx:21-22`); not in `docker-compose.yml`. |
 | `brandme-console` | 3002 | TS | **NOT WIRED** | Service block commented out in `docker-compose.dev.yml:168-184`. |
-| `brandme-chain` | — | TS | **NOT WIRED** | TX builder service commented out in `docker-compose.dev.yml:152-166`. Type defs only, no Cardano/Midnight client code. |
+| `brandme-chain` | 3001 | TS | **PARTIAL** | Verified 2026-10-23. Real Midnight adapter (`brandme-chain/src/midnight/adapter.ts:204`) over a compiled Compact contract (`brandme-chain/contracts/src/brandme_rights.compact`, 15 circuits), served under `/midnight` (`brandme-chain/src/index.ts:36,54`); the gateway calls it when configured (`brandme-gateway/src/services/rights.ts:70-72`). Real proofs observed on a local network only (`brandme-chain/evidence/`); Preprod writes not yet observed; no Mainnet writes. Fallback flags are rejected (`brandme-chain/src/config/index.ts:33-34`); Cardano anchoring is unavailable by default (`brandme-chain/src/cardano/anchor.ts:64`). Not in `docker-compose.yml`. |
 | `brandme-agents/identity` | 8005 | Py | **PARTIAL** | Init real; `ZKProofManager` framework present; actual proofs use stubs / `allow_stub_fallback`. |
 | `brandme-agents/knowledge` | 8003 | Py | **STUB** | Spanner pool init only; no visible endpoint impls. |
 | `brandme-agents/compliance` | 8004 | Py | **STUB** | `MIDNIGHT_ENABLED: "false"` in `docker-compose.yml:304`; ESG threshold hardcoded `0.5`; no real oracle. |
@@ -81,10 +81,15 @@ A small but real set:
 - Region policy YAML loading (`brandme-core/policy/region_rules.py:13` →
   `brandme-core/policies/{default,eu-west1,us-east1}.yaml`).
 - Hash-chained audit-log writes (compliance service).
-- JWT + token-bucket rate-limit middleware (in `brandme_gateway/`, not actually
-  wired into `brandme-gateway/` — see below).
-- Tests that actually pass: `tests/test_consent_graph.py`,
-  `tests/test_provenance.py`, `tests/test_wardrobe.py`.
+- Token-bucket rate limiting wired into `brandme-gateway/`
+  (`brandme-gateway/src/middleware/rateLimiter.ts`); the older copy in
+  `brandme_gateway/` is an orphan (see the kill-list).
+- Tests: CI `test-core` runs **all of `tests/`** (`.github/workflows/ci-cd.yml`).
+  Verified 2026-10-24: `tests/test_consent_graph.py`, `tests/test_provenance.py`
+  and `tests/test_wardrobe.py` do **not** pass (no fixture applies the legacy
+  schema; `brandme_core/firestore/wardrobe.py:280` puts `SERVER_TIMESTAMP` in an
+  array). They are quarantined as strict xfail with an owner and a blocker in
+  `tests/conftest.py` `QUARANTINE`; the summary prints the quarantined count.
 
 ## Known broken imports
 
@@ -127,8 +132,9 @@ docker-compose up -d
 # brandme-gateway, brandme-frontend, brandme-console, brandme-chain,
 # mcp-server, midnight-stub, cardano-stub: NOT running by default
 
-pytest tests/test_consent_graph.py tests/test_provenance.py tests/test_wardrobe.py -v
-# These actually pass. Other suites are placeholders.
+pnpm check            # everything CI's foundation gate runs, incl. the full pytest suite
+python -m pytest tests -q --timeout=300 -ra
+# Known-broken tests are quarantined (tests/conftest.py QUARANTINE), never reported as passing.
 ```
 
 Make targets: `make install`, `make lint`, `make format`, `make type-check`.

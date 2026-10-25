@@ -1,0 +1,33 @@
+{
+  "fictional": true,
+  "note": "Fictional demo catalog for deterministic recommender tests. Product ids/titles/prices for the first six come from docs/design/brandme/contracts/demo-scenario.json; style-axis attributes, materials and occasions are invented test attributes, not merchant data.",
+  "candidates": [
+    {"product_id": "a4036cb0-7ab2-54b5-9238-ee5ffb378771", "title": "Field Linen Overshirt", "brand": "Demo Atelier", "category": "top", "color_family": "neutral",
+     "axes": {"sport_couture": 40, "expression": 45, "fit_language": 75, "detail": 25, "color": 25, "finish": 20, "structure": 60, "setting": 55},
+     "materials": ["linen"], "occasions": ["everyday", "work"], "price_minor": 8900, "currency": "USD"},
+    {"product_id": "6b4ee94a-4998-55d8-8298-c8f81a40b7aa", "title": "Soft Pleat Trousers", "brand": "Demo Atelier", "category": "bottom", "color_family": "neutral",
+     "axes": {"sport_couture": 60, "expression": 40, "fit_language": 65, "detail": 30, "color": 20, "finish": 30, "structure": 55, "setting": 25},
+     "materials": ["wool"], "occasions": ["work", "everyday"], "price_minor": 11900, "currency": "USD"},
+    {"product_id": "9572fdc7-31e0-5b80-be82-147ef4a5e69c", "title": "Evening Fluid Dress", "brand": "Demo Atelier", "category": "dress", "color_family": "color",
+     "axes": {"sport_couture": 85, "expression": 80, "fit_language": 55, "detail": 55, "color": 70, "finish": 75, "structure": 85, "setting": 15},
+     "materials": ["silk"], "occasions": ["going_out", "occasion"], "price_minor": 15900, "currency": "USD"},
+    {"product_id": "5a0ccc0d-d627-52fa-ab80-de662ef92b1b", "title": "Structured Field Jacket", "brand": "Demo Outfitters", "category": "outerwear", "color_family": "color",
+     "axes": {"sport_couture": 35, "expression": 55, "fit_language": 30, "detail": 40, "color": 50, "finish": 25, "structure": 15, "setting": 80},
+     "materials": ["cotton", "wax"], "occasions": ["everyday"], "price_minor": 17900, "currency": "USD"},
+    {"product_id": "bdbff281-45f2-5887-b09b-6db9151126f6", "title": "Everyday Low Sneaker", "brand": "Demo Outfitters", "category": "shoes", "color_family": "neutral",
+     "axes": {"sport_couture": 15, "expression": 30, "fit_language": 70, "detail": 15, "color": 15, "finish": 20, "structure": 40, "setting": 45},
+     "materials": ["leather", "rubber"], "occasions": ["everyday"], "price_minor": 9900, "currency": "USD"},
+    {"product_id": "21e655b5-f16d-57c8-bf99-c7af6e942c6f", "title": "Sculpted Everyday Bag", "brand": "Demo Leatherworks", "category": "accessory", "color_family": "color",
+     "axes": {"sport_couture": 70, "expression": 70, "fit_language": 50, "detail": 45, "color": 45, "finish": 60, "structure": 20, "setting": 30},
+     "materials": ["leather"], "occasions": ["work", "going_out", "everyday"], "price_minor": 12900, "currency": "USD"},
+    {"product_id": "0f6f5c1e-7b9a-5d2c-9d1e-0a1b2c3d4e01", "title": "Sponsored Merino Knit", "brand": "Demo Sponsor Co", "category": "top", "color_family": "neutral",
+     "axes": {"sport_couture": 55, "expression": 70, "fit_language": 60, "detail": 30, "color": 55, "finish": 25, "structure": 40, "setting": 30},
+     "materials": ["merino"], "occasions": ["everyday", "work"], "price_minor": 24900, "currency": "USD", "sponsored": true},
+    {"product_id": "0f6f5c1e-7b9a-5d2c-9d1e-0a1b2c3d4e02", "title": "Out of Stock Scarf", "brand": "Demo Atelier", "category": "accessory", "color_family": "color",
+     "axes": {"expression": 72}, "materials": ["wool"], "occasions": ["everyday"], "price_minor": 4900, "currency": "USD", "available": false},
+    {"product_id": "0f6f5c1e-7b9a-5d2c-9d1e-0a1b2c3d4e03", "title": "Euro-priced Belt", "brand": "Demo Leatherworks", "category": "accessory", "color_family": "neutral",
+     "axes": {"expression": 70}, "materials": ["leather"], "occasions": ["work"], "price_minor": 5900, "currency": "EUR"},
+    {"product_id": "0f6f5c1e-7b9a-5d2c-9d1e-0a1b2c3d4e04", "title": "Unpriced Cap", "brand": "Demo Outfitters", "category": "accessory", "color_family": "neutral",
+     "axes": {"expression": 60}, "materials": ["cotton"], "occasions": ["everyday"], "price_minor": null, "currency": null}
+  ]
+}

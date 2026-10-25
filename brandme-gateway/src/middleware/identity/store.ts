@@ -49,6 +49,7 @@ export interface SessionRow {
   csrf_hash: string;
   environment: Mode;
   expires_at: Date;
+  created_at: Date;
 }
 
 export interface MePatch {
@@ -236,14 +237,14 @@ export class IdentityStore {
   /** Returns the session only if unrevoked, unexpired and minted in this mode. */
   async loadSession(secret: string): Promise<SessionRow | null> {
     const [rows] = await this.database.run({
-      sql: `SELECT member_id, identity_provider, assurance_level, client_id, csrf_hash, environment, expires_at
+      sql: `SELECT member_id, identity_provider, assurance_level, client_id, csrf_hash, environment, expires_at, created_at
             FROM Sessions WHERE session_hash = @h AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP()`,
       params: { h: sha256(secret) },
       json: true,
     });
-    const row = rows[0] as (Omit<SessionRow, 'expires_at'> & { expires_at: string }) | undefined;
+    const row = rows[0] as (Omit<SessionRow, 'expires_at' | 'created_at'> & { expires_at: string; created_at: string }) | undefined;
     if (!row || row.environment !== this.mode) return null;
-    return { ...row, expires_at: new Date(row.expires_at) };
+    return { ...row, expires_at: new Date(row.expires_at), created_at: new Date(row.created_at) };
   }
 
   async rotateCsrf(secret: string): Promise<string> {

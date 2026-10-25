@@ -1,12 +1,15 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * Error Handler Middleware
+ * Error Handler Middleware (app level: legacy /scan and anything outside
+ * /api/v1, which has its own problemHandler). Every error leaves as an
+ * application/problem+json spec Problem; stack traces, error messages and
+ * request bodies are neither sent nor logged.
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../config/logger';
 import { ZodError } from 'zod';
+import { ApiProblem, problemHandler, problems } from './problem';
 
 export class AppError extends Error {
   constructor(
@@ -23,38 +26,13 @@ export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
-  _next: NextFunction
+  next: NextFunction
 ): void {
-  // Log error (but not PII)
-  logger.error({
-    err,
-    path: req.path,
-    method: req.method,
-    requestId: req.headers['x-request-id'],
-  }, 'Error handling request');
-
-  // Handle Zod validation errors
   if (err instanceof ZodError) {
-    res.status(400).json({
-      error: 'Validation Error',
-      message: 'Invalid request data',
-      details: err.errors,
-    });
-    return;
+    return problemHandler(problems.invalid('The request data is invalid.'), req, res, next);
   }
-
-  // Handle custom AppError
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({
-      error: err.message,
-      message: err.message,
-    });
-    return;
+  if (err instanceof AppError && err.statusCode >= 400 && err.statusCode <= 599) {
+    return problemHandler(new ApiProblem(err.statusCode, 'request_failed', 'Request failed', 'The request could not be completed.', err.statusCode >= 500), req, res, next);
   }
-
-  // Default error response
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: 'An unexpected error occurred',
-  });
+  problemHandler(err, req, res, next);
 }
