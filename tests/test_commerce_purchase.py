@@ -379,6 +379,36 @@ def test_a_placed_order_never_frees_its_quote_for_an_approved_sibling(w, later):
     assert e.value.code == "purchase_in_progress" and len(w.provider.submit_calls) == 1
 
 
+@pytest.mark.parametrize("first", ["declined", "cancelled_before_send"])
+def test_a_sibling_that_was_never_bought_frees_the_quote(w, first):
+    """The other side of the rule: a request the merchant declined, or one cancelled before it was sent,
+    bought nothing, so the member's other approved request for that quote can still be placed."""
+    from brandme_core.domains.commerce.autonomy import AutonomyBoundary, AutonomyLevel, BoundaryRule, RuleScope
+    from brandme_core.domains.providers.local_atelier import MERCHANT_ID, PROVIDER_ID
+    d, ag = w.delegate()
+    _, quote, op1 = w.prepared(ag)
+    op2 = w.svc.request_purchase(ag, quote.id)
+    a1, a2 = w.approve(op1), w.approve(op2)
+    if first == "declined":
+        w.provider.arm(Behavior.REJECTED_AUTH)
+    else:  # the member narrows the rules after the execute committed: the last gate cancels op1 unsent
+        real_submit = w.svc._submit
+
+        def narrow_first(op_, quote_, principal, *rest):
+            g = w.store.get("delegations", d.id)
+            tight = AutonomyBoundary(rules=(BoundaryRule(RuleScope.MERCHANT, PROVIDER_ID, AutonomyLevel.PREPARE,
+                                                         merchant_id=MERCHANT_ID),))
+            w.store.run(lambda tx: tx.put("delegations", d.id, replace(g, boundary=tight, version=g.version + 1)))
+            w.svc._submit = real_submit
+            return real_submit(op_, quote_, principal, *rest)
+
+        w.svc._submit = narrow_first
+    gone = w.svc.execute_purchase(ag, operation_id=op1.id, approval_id=a1.id, idempotency_key="free-00000000001")
+    assert gone.state in ("rejected", "cancelled") and gone.order_id is None
+    done = w.svc.execute_purchase(w.member, operation_id=op2.id, approval_id=a2.id, idempotency_key="free-00000000002")
+    assert done.state == "accepted" and len(w.store.rows("orders")) == 1
+
+
 def test_a_sibling_being_sent_blocks_the_other_approved_request(w, monkeypatch):
     d, ag = w.delegate()
     _, quote, op1 = w.prepared(ag)

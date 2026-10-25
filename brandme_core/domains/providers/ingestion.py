@@ -131,9 +131,18 @@ class CatalogIngestor:
                     v, (prev.revision + 1) if prev else 1, prev.first_seen_at if prev else now, now, False)
                 delta.accepted += 1
             keys = set()
-            if removed:  # most pages tombstone nothing: no scan at all
+            if removed:  # most pages tombstone nothing and skip this scan of the store
                 keys = {k for k in self.variants if k[0] == provider_id and (k[2], k[3]) in removed}
                 keys |= {k for k in staged if (k[2], k[3]) in removed}  # staged keys are all this provider's
+                # A tombstone names no merchant (wire shape [product, variant]). If its ids match variants of
+                # more than one merchant at this provider, it is ambiguous: the page is refused rather than
+                # discontinuing every merchant's listing. Nothing has been written yet.
+                merchants: Dict[Tuple[str, str], set] = {}
+                for k in keys:
+                    merchants.setdefault((k[2], k[3]), set()).add(k[1])
+                if any(len(m) > 1 for m in merchants.values()):
+                    raise ValueError("a tombstone matches variants of more than one merchant; tombstones need a "
+                                     "merchant to remove one merchant's listing")
             for key in keys:
                 sv = current(key)
                 if not sv.tombstoned:

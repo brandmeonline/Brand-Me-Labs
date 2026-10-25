@@ -555,8 +555,9 @@ def test_a_hydrate_refusal_is_logged_once_however_often_the_version_moves(env):
     assert _state(swapped) == ("unconfigured", "tier_excludes_capability")
 
 
+@pytest.mark.parametrize("retest", [True, False])
 @pytest.mark.parametrize("sees_the_reset", [True, False])
-def test_a_fresh_activation_is_logged_again_whether_or_not_the_reset_was_seen(env, sees_the_reset):
+def test_a_fresh_activation_is_logged_again_whether_or_not_the_reset_was_seen(env, sees_the_reset, retest):
     _ready_for_activation(env)
     env.svc.assign_tier(OPERATOR, SHOP, CEILING)
     env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
@@ -567,10 +568,25 @@ def test_a_fresh_activation_is_logged_again_whether_or_not_the_reset_was_seen(en
         swapped.svc.get_setup(OPERATOR, SHOP)
     env.svc.assign_tier(OPERATOR, SHOP, CEILING)
     env.w.clock.advance(minutes=1)
-    _ready_for_activation(env)
-    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})  # a new operator act with new evidence
+    if retest:
+        _ready_for_activation(env)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})  # a new operator act (maybe the same test)
     swapped.svc.get_setup(OPERATOR, SHOP)
     assert _tier_lines(swapped.log) == [("hydrate", "customization", "refuse", "tier_unknown")] * 2
+
+
+def test_a_re_test_elsewhere_never_logs_the_same_activations_hydrate_refusal_again(env):
+    _ready_for_activation(env)
+    env.svc.assign_tier(OPERATOR, SHOP, CEILING)
+    env.svc.update_setup(OPERATOR, SHOP, {"activate": "catalog.3d"})
+    swapped = _process(env.store, StaticPricingTable("placeholder-2", PLACEHOLDER_PRICING_TABLE.tiers()))
+    swapped.svc.get_setup(OPERATOR, SHOP)
+    for i, (result, kind) in enumerate([("passed", "sandbox_operation"), ("failed", "none")]):
+        env.w.clock.advance(minutes=1)
+        env.scripted.next = ProbeResult(result, kind, f"fx:retest:{i}", "Routine re-test.")
+        env.svc.run_verification(OPERATOR, SHOP, "catalog.3d", "read_only_test")  # rewrites the capability row
+        swapped.svc.get_setup(OPERATOR, SHOP)
+    assert _tier_lines(swapped.log) == [("hydrate", "customization", "refuse", "tier_unknown")]
 
 
 def test_a_connection_test_under_a_tier_that_excludes_a_persisted_activation_records_only_the_run(env):
@@ -907,6 +923,26 @@ def test_tombstones_are_read_once_from_any_iterable_and_a_malformed_one_refuses_
             ing.ingest_page(CatalogPage((_variant("v8", updated=later),), "c4", bad), provider_id=SHOP, now=later,
                             audit=IngestionAudit("r4", SHOP), max_active_listings=3)
     assert "v8" not in {v.source_variant_id for v in ing.offers(SHOP)} and ing.cursors[SHOP] == "c3"
+
+
+def test_a_tombstone_matching_two_merchants_refuses_the_page_and_drops_neither_listing():
+    """Tombstones carry no merchant on the wire. Two merchants at one provider may share source ids, so a
+    tombstone that matches both is refused instead of discontinuing the other merchant's live listing."""
+    ing = CatalogIngestor()
+    mine, theirs = _variant("1001-S"), replace(_variant("1001-S"), merchant_id="another-fictional-brand")
+    _ingest(ing, [mine, theirs], None)
+    with pytest.raises(ValueError):
+        _ingest(ing, [_variant("v9")], None, run="r2", tombstones=[("p1", "1001-S")])
+    assert sorted(v.merchant_id for v in ing.offers(SHOP)) == ["another-fictional-brand", "fictional-brand"]
+
+
+def test_one_providers_tombstones_never_touch_another_providers_variants():
+    ing, other = CatalogIngestor(), "another_fixture_shop"
+    _ingest(ing, [_variant("v0")], None)
+    ing.ingest_page(_page([_variant("v0", provider=other)]), provider_id=other, now=T0,
+                    audit=IngestionAudit("o1", other))
+    ing.ingest_page(_page([], [("p1", "v0")]), provider_id=other, now=T0, audit=IngestionAudit("o2", other))
+    assert [v.provider_id for v in ing.offers(SHOP)] == [SHOP] and ing.offers(other) == []
 
 
 def test_a_variant_a_page_adds_and_tombstones_takes_no_slot():

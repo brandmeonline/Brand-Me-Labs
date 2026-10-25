@@ -551,10 +551,12 @@ class ProviderSetupService:
                 if status.name in GATED_CAPABILITIES and status.state in EXECUTABLE_STATES:
                     d = check_capability(tier, status.name)
                     if not d.allowed:  # e.g. the pricing table changed since activation: never revive it
-                        # One line per persisted activation and tier: a fresh activation is logged even when
-                        # this process never saw the reset between them.
-                        key = (status.name, status.evidence_ref, status.last_checked_at, d.code, tier.tier_id,
-                               tier.source, tier.table_version)
+                        # One line per activation and tier, keyed on the activation item (its run and time): a
+                        # re-test elsewhere never logs it again, and a fresh activation is logged even when this
+                        # process never saw the reset between them.
+                        item = snap.items.get(f"activate:{status.name}")
+                        key = (status.name, item.evidence_ref if item else None, item.recorded_at if item else None,
+                               d.code, tier.tier_id, tier.source, tier.table_version)
                         status = CapabilityStatus(status.name, "unconfigured", "tier_excludes_capability",
                                                   self.clock())
                         refused.add(key)
@@ -828,7 +830,8 @@ class ProviderSetupService:
                         audit: IngestionAudit, request_id: Optional[str] = None) -> Tuple[str, str]:
         """Loads one catalog page onto a connection's shelf within its tier's quota (the only production
         entry to ``CatalogIngestor.ingest_page``; no caller yet, the brand-shelf load is not built). The tier
-        is read from the setup store for each page; one decision line per page; returns ``(outcome, code)``."""
+        is read from the setup store for each page; one decision line per page that applies (a failed page
+        that changed nothing writes none); returns ``(outcome, code)``."""
         conn = self._connection(provider_id)
         tier = resolve_from_items(self.store.snapshot(self.environment, conn.provider_id).items, self.pricing_table)
         counts = ShelfCounts()  # this page's own counts, kept under the ingestor's lock (an audit may be shared)
