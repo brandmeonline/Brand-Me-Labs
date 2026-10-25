@@ -7,10 +7,10 @@ The owner sets two things for each owned or digital piece:
   (accepted, unblocked friends) or ``members`` (any signed-in member who is not
   blocked);
 * **how much**:
-  - ``piece``: title, category, house, and whether ownership is verified;
+  - ``piece``: title, category and house;
   - ``story``: adds the owner's showcase note and how often it is worn;
-  - ``full``: adds the price and the year it entered the closet, for friends
-    only.
+  - ``full``: adds the price, the year it entered the closet and whether
+    ownership is verified, for friends only.
 
 Strangers (``members``) never see more than ``story``. That is the locked
 disclosure default: price, ownership evidence and logistics stay hidden.
@@ -75,13 +75,13 @@ def allowed(item_visibility: Optional[str], rel: Optional[str]) -> bool:
 def shown_piece(row: Mapping[str, Any], houses: Mapping[str, str]) -> Dict[str, Any]:
     detail = row["visible_detail"] or "piece"
     out: Dict[str, Any] = {"item_id": row["item_id"], "title": row["title"], "category": row["category"],
-                           "house_ref": houses.get(row["product_id"]) if row["product_id"] else None,
-                           "verified": row["claim_level"] != "self_reported", "detail": detail}
+                           "house_ref": houses.get(row["product_id"]) if row["product_id"] else None, "detail": detail}
     if detail in ("story", "full"):
         out.update(showcase_note=row["showcase_note"], worn_count=row["worn_count"])
     if detail == "full":
+        # Ownership evidence (the claim level) is ownership, not identity: only on the owner's unfold.
         out.update(price=None if row["price_minor"] is None else {"minor": row["price_minor"], "currency": row["price_currency"]},
-                   in_closet_since=row["created_at"].year)
+                   in_closet_since=row["created_at"].year, verified=row["claim_level"] != "self_reported")
     return out
 
 

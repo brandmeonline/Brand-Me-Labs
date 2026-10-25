@@ -18,9 +18,9 @@ from brandme_core.domains.wardrobe.visibility import ClosetVisibilityService
 from brandme_core.events import EventEnvelope
 from test_persona_harness import MEMBER_SCOPES, count, insert_member, spanner_db  # noqa: F401
 
-PIECE = {"item_id", "title", "category", "house_ref", "verified", "detail"}
+PIECE = {"item_id", "title", "category", "house_ref", "detail"}
 STORY = PIECE | {"showcase_note", "worn_count"}
-FULL = STORY | {"price", "in_closet_since"}
+FULL = STORY | {"price", "in_closet_since", "verified"}
 
 
 def key():

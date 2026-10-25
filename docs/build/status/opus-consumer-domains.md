@@ -1061,7 +1061,7 @@ Built on the check-in defaults (packet above), without waiting for answers. Ever
 **Persona card and closet visibility (item 6)**
 - **Per-piece closet visibility** (`wardrobe/visibility.py`) is private by default, with a sliding scale.
   - Audience: `friends` or `members`.
-  - Detail: `piece`, `story` (adds the showcase note and wear count) or `full` (adds price and the year acquired, friends only).
+  - Detail: `piece`, `story` (adds the showcase note and wear count) or `full` (adds price, the year acquired and whether ownership is verified, friends only).
   - Strangers never see more than the story: the locked disclosure default.
   - Receipts, order and source references, tag serials, sizes, care and private notes are never shown.
   - Routes: `PUT /wardrobe/items/{id}/visibility` and `GET /members/{id}/closet`.
@@ -1143,5 +1143,17 @@ Built on the check-in defaults (packet above), without waiting for answers. Ever
 | Five experiment definitions written and flag-wired; none running without approval | done | this stage |
 | Lane outbox worker deleted post-Q8; share projector registered | projector done; worker blocked on Q8 | this stage |
 | Dev-bucket run recorded, or emulator-only status stated | emulator only, stated | Stage 14 and here |
+
+**Credential manifest.** No credential was created in this stage.
+
+## Stage 17 — Ultra plan 03, step 1: landing #66 — 2026-10-25
+Plan 03 supersedes plan 02. #66 carries plan 03 items 2–8 and 10; item 12 (disclosure facets at the API layer) follows in its own PR after #66 merges.
+
+**Fix before landing: ownership evidence reached strangers.** Re-reading `wardrobe/visibility.py` against the locked disclosure default (strangers see identity/house/maker/story; price/ownership/logistics stay hidden unless the owner unfolds) found one leak in this PR's own code.
+- **What leaked.** The `piece` level returned `verified`, which is derived from the member's ownership claim level (receipt, tag or issuer evidence). Strangers therefore learned whether the owner holds ownership evidence, although the module's docstring said ownership stays hidden.
+- **Fix.** `verified` moves to `full`, the owner's unfold, which is friends-only. `piece` is title, category and house; `story` adds the note and wear count.
+- **Test.** `test_persona_card_visibility.py` asserts the exact key sets per level, so a stranger's piece without `verified` is enforced. Putting `verified` back at `piece` fails it.
+
+**Shell visual check.** On `ecdee84`, which changed only this document, `consumer-ui / shell` failed with `consumer-1440x900-light.png: dimensions changed`. The same code passed on `29913cb`. The check and its baselines are frontend code, outside this lane. Re-running the job was refused twice (403, no actions permission), so the push carrying this fix gives the check a fresh run.
 
 **Credential manifest.** No credential was created in this stage.
