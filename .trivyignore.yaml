@@ -19,7 +19,8 @@
 # the unused python-jose 3.3.0 pins removed from brandme-core/ and brandme-cube/requirements.txt
 # (CVE-2024-33663, no `jose` import in any .py file); the unused sentence-transformers 2.3.1 pin removed from
 # brandme-agents/agentic/requirements.txt (CVE-2026-68770, no import).
-# anyio (CVE-2026-63374) is fixed the same day: fastapi 0.104.1 -> 0.115.14 in brandme_core/requirements.txt
-# lets the lock take anyio 4.15.1 / starlette 0.46.2 (full tests/ suite: same 824 passed, 4 allowlisted
-# skips, 32 quarantined as before). The baseline is empty; a new entry needs the same four fields.
+# anyio (CVE-2026-63374) is fixed the same day: fastapi 0.104.1 -> 0.134.0 and pydantic 2.5.0 -> 2.7.4 in
+# brandme_core/requirements.txt let the lock take anyio 4.15.1 and starlette 1.3.1, which also clears
+# starlette's three HIGH findings (CVE-2025-62727, CVE-2026-54283, CVE-2026-48818). The baseline is empty;
+# a new entry needs the same four fields.
 vulnerabilities: []
