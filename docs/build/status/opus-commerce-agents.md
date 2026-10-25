@@ -1281,7 +1281,7 @@ are involved. This supersedes S21's pending-authorization state for the lock pat
 
 | # | Item | State on `beed01f` |
 |---|---|---|
-| 1 | Q11 rebase | Blocked: no lock pins on `main` (`d5b993f`) and no founder exception. Merged `main` again (`beed01f`, no conflicts). |
+| 1 | Q11 rebase | **Done by the founder (S22):** the lock pins were applied on #51 (`2fd6b29`); CI went green and #51 merged into `main` as `7c4c1cd`. This stage and item 6 were rebased onto that `main` and continue on a new PR. |
 | 2 | Audit path | Done; two gaps closed this stage (below) |
 | 3 | Provider setup/verify from the console | Built in S16; proven through the real stack this stage (below) |
 | 4 | Stripe test-mode proof run | `not_run`. The lane cannot create Stripe keys from this container (S21). The fixture-double and stripe-mock layers stand (S17/S20). |
