@@ -1271,3 +1271,95 @@ are involved. This supersedes S21's pending-authorization state for the lock pat
   scripted transport through the real SDKs; they are not live Stripe or model evidence.
 - `git diff --check` passed. Full Linux/emulator CI on the new head remains required before undrafting
   or merging. Credentials remain absent; mounting and the other S20 integration limits are unchanged.
+## Stage S23 — Ultra plan 02 (money-path proof round): audit closure, console proof, BM-COM-011 fidelity (2026-10-25)
+
+**Trigger:** the founder delivered "Ultra plan 02 — Opus Commerce-Agents (money-path proof round)" to this lane's session. Its header says "DRAFT … not yet triggered"; I treat delivery as the trigger and build on its defaults. Its "State at issue" is partly stale:
+- The lane branch is `claude/opus-commerce-agents-setup-szpmf7` (PR #51), not the bench branch.
+- `provider.setup.update` / `provider.verify` and the audited assistant path shipped in S16 (`0f75b18`, `5ab141f`).
+
+**Item map:**
+
+| # | Item | State on `beed01f` |
+|---|---|---|
+| 1 | Q11 rebase | Blocked: no lock pins on `main` (`d5b993f`) and no founder exception. Merged `main` again (`beed01f`, no conflicts). |
+| 2 | Audit path | Done; two gaps closed this stage (below) |
+| 3 | Provider setup/verify from the console | Built in S16; proven through the real stack this stage (below) |
+| 4 | Stripe test-mode proof run | `not_run`. The lane cannot create Stripe keys from this container (S21). The fixture-double and stripe-mock layers stand (S17/S20). |
+| 5 | Model planner on the dev key | `not_run`: no `BRANDME_DEV_ANTHROPIC_API_KEY` |
+| 6 | Autonomy boundaries | In design (judge panel running), next stage |
+| 7 | Tier enforcement | In design, next stage |
+| 8 | Shell header swap | Blocked. `main` has no published shell component. The `ConsolePageHeader` at `brandme-console/app/(ops)/_shell/console-page-header.tsx` is consumer-domains' own local stand-in ("The shell's own component is not on this lane's base branch"). The one-line seam in `providers/_data/shell.ts` is unchanged. |
+| 9 | S13 fidelity close-out | Done (checklist below) |
+| 10 | Outbox registration (Q8) | Blocked: `main` has no catalog-import mechanism. `brandme_core/events/README.md` still says "commerce implementations still need catalog alignment". |
+
+### Item 2 — zero tool calls bypass the audit record (`37771d4`)
+The audit itself found two real gaps, both now closed:
+- **Pre-verification refusals at the MCP hop.** `McpToolExecutor.invoke` returned on an `AuthError` with no record. A forged, replayed, expired or wrong-audience assertion now writes one `refused` record (`invalid_token`) with no member, client or delegation.
+- **Agents on the REST routes.** The gateway lets agents call `/carts`, `/carts/:id/quote`, `/operations`, `/purchases`, `/orders/:id/cancellation` and `/orders/:id/returns`. The domain's `CommerceHttpApi` wrote no audit record for any of them.
+  - `CommerceHttpApi` now takes a **required** `audit` sink, so mounting cannot omit it.
+  - Every agent request, and every request refused before verification, writes one `commerce.agent_request` line (`security_audit_180d`): operation, status, code, keyed member/delegation refs, never arguments. This holds whatever the outcome, including a handler that raised.
+  - A member's own requests are recorded by the domain records they create.
+- **Run log.** A memberless line is accepted only for an unauthenticated refusal (cross-field rule). Every other memberless line is a schema violation.
+- **`tests/test_commerce_audit_coverage.py` (77 tests):**
+  - every known tool name and three odd ones, at the MCP hop and as assistant proposals: exactly one record, each accepted by the strict run log;
+  - a full flow: one record per call;
+  - refusals before verification;
+  - agent REST requests: ok, error, unknown operation, unexpected field, crash;
+  - an AST check: nothing outside `tools.py` reaches `_dispatch` or the handlers, and the runtime only reads through its executor's commerce service.
+- Lane suites (proposed-lock venv, Spanner emulator, `BRANDME_REQUIRE_EMULATORS=1`): **1002 passed**. The 20 skips are all reported: the 8 key-gated tests, plus AP2 SDK-oracle and Pub/Sub tests that need their local binaries (S21 ran those: 40/40 and 30/30).
+
+### Item 3 — provider setup save/test from the console page, through the real stack
+**Scratch harness, not committed, nothing mounted:**
+- the built console (`next build` on this head), with `BRANDME_GATEWAY_URL` pointing at
+- the lane's real `createProvidersRouter` / `createCommerceOpsRouter` on a bare express app, with the gateway's own `problemHandler`, an operator principal stubbed for one fictional bearer, and the real `createHttpCommerceDomainClient` signing ES256 assertions to
+- the real `CommerceHttpApi` (uvicorn), over the in-memory demo world plus the Nordstrom Impact connection.
+
+**Chromium (Playwright): 15/15:**
+- **Save.** The Nordstrom form saves; the domain records version 1; no capability state changes.
+- **Refusals.**
+  - A secret-looking credential value → 422 "must be a Secret Manager resource name", and nothing is stored.
+  - A stale form → 409 `revision_conflict`.
+- **Connection tests.**
+  - The simulator `catalog.search` test passes and is recorded as a run.
+  - The Nordstrom `catalog.feed` test returns `blocked` (no publisher approval), never a pass, and no Nordstrom capability becomes executable.
+- **Health page.** It lists the recent test.
+- **No bearer.** The page shows the sign-in state with no form.
+- **Errors.** No page errors.
+
+Screenshots are content-only: `next start` does not serve the standalone build's CSS.
+
+### Item 9 — S13 fidelity checklist vs BM-COM-011 (`5cc2db0`)
+
+BM-COM-011 (MUST, W07, integration): "Receive partial shipment, exchange and refund → correct order lines and wardrobe quantities update with evidence." The ch.05 §6 requirements it rests on are listed with it.
+
+- **Environment:** the simulator (`LocalAtelierProvider`, a demo provider).
+- **Payment rails:** both — the simulated processor, and the real `StripeTestPaymentProcessor` over the fixture double (**fixture double, not Stripe**).
+- **Stores:** both, in-memory and the Spanner emulator, wherever the test takes the `commerce_store` fixture.
+- **Status labels** follow ch.06: `passed`, `blocked` or `not_run`, each with a reason.
+
+| # | Requirement (source) | Simulator behaviour | Test | Status |
+|---|---|---|---|---|
+| 1 | Partial shipment updates the exact lines (§6) | Per-line `ordered` / `shipped` / `delivered`; order `partially_fulfilled`, then `fulfilled` | `test_commerce_purchase.py::test_partial_fulfillment_then_full` | passed |
+| 2 | Order, payment and fulfillment states stay distinct (§6) | A capture at the first shipment; a refund can land while units are in transit | `test_refund_before_delayed_fulfillment_keeps_facts_independent`; `test_commerce_payments_flow.py::test_authorized_at_submit_captured_at_first_shipment` | passed |
+| 3 | Wardrobe quantities after a partial shipment (BM-COM-011) | Delivered units are owned; the rest are on the way | `test_commerce_wardrobe_contract.py::test_partial_shipment_moves_only_the_delivered_units` (wardrobe's own `order_unit_states`) | passed (in-process reducer; see #18) |
+| 4 | An exchange keeps the original history (§6) | Original line: delivered 1, returned 1. A replacement line is added with `exchanged_from_ref` | `test_exchange_keeps_history_and_tracks_the_replacement` | passed |
+| 5 | An exchange creates a new variant relationship (§6) | `exchanged_from_ref` on the line and in the event; a chain m→l→m keeps every step | `test_exchange_back_into_an_earlier_variant_keeps_every_step` (both rails) | passed |
+| 6 | An exchange is not a refund | No money moves; payment stays `captured`, `refunded_total` 0 | same tests as #4 | passed |
+| 7 | Exchanges the provider must refuse | A different price, undelivered units, units already being returned | `test_uneven_or_undelivered_exchange_is_refused_by_the_provider`, `test_units_being_returned_cannot_also_be_exchanged` | passed |
+| 8 | Wardrobe after an exchange (BM-COM-011) | Original unit archived as returned; replacement on the way, then owned | `test_exchange_archives_the_original_unit_and_tracks_the_replacement` | passed (the wardrobe item does not store the variant link: #17) |
+| 9 | A return request is not a refund (§6) | `return_requested`; payment unchanged | `test_return_request_is_not_a_refund` | passed |
+| 10 | A refund of delivered units (BM-COM-011) | Line `returned`; `partially_refunded`; exact refunded total including tax | `test_refund_before_delayed_fulfillment_keeps_facts_independent`; `test_refund_of_a_delivered_unit_archives_it_as_returned` | passed |
+| 11 | A refund before delivery cancels units, never "returns" them | Line `cancelled` 1, `returned` 0 | `test_refund_before_delivery_cancels_units_instead_of_returning_them` | passed |
+| 12 | Cancellation only of unshipped units; refund only for what was taken | Partial cancellation after a partial shipment refunds the unshipped units | `test_cancelling_after_a_partial_shipment_refunds_only_the_unshipped_units`, `test_shipped_units_are_returned_not_cancelled` | passed |
+| 13 | Wardrobe for a cancelled order | Every unit archived as cancelled | `test_a_cancelled_order_archives_every_unit_as_cancelled` | passed |
+| 14 | Wardrobe for units cancelled while the order goes on | Commerce sends per-line `cancelled` = 1 with `delivered` 0 | `test_units_cancelled_while_the_order_goes_on_are_carried_per_line` | commerce side passed; **wardrobe gap** (#16) |
+| 15 | Evidence on every observation (BM-COM-011 "with evidence") | `acquisition_evidence` refs on every `commerce.order.observed`; webhook receipts are stored | contract tests, `test_exchange_keeps_history_and_tracks_the_replacement` | passed |
+| 16 | Out-of-order and duplicate webhooks (§6) | A source re-read reconciles; the same event is applied once | `test_refund_before_delayed_fulfillment_keeps_facts_independent`, `test_duplicate_webhook_applied_once` | passed |
+
+**Not closed by this lane:**
+- **#16 (wardrobe side, consumer-domains).** `WardrobeService.apply_order_observation` passes only the order-level `order_status == "cancelled"` to `order_unit_states` (`brandme_core/domains/wardrobe/service.py`, `apply_order_observation`). A unit cancelled while the rest of the order goes on therefore stays "on the way". This happens on a member's partial cancellation of unshipped units, or a refund before shipment.
+  - The payload already carries the per-line `cancelled` count (schema v1, optional field).
+  - The fix belongs to the wardrobe lane: treat `cancelled` undelivered units as cancelled.
+- **#17 (wardrobe side).** The replacement unit's wardrobe item does not record which unit it replaced. The relationship exists on the commerce order line and in the event. Recording it is the wardrobe lane's design call.
+- **#18 (blocked, foundation).** Commerce events do not yet reach the wardrobe through the outbox. Foundation's dispatcher allowlist does not include the commerce catalog (Q8 / Q20). The contract tests reduce the real payloads in-process instead.
+- **Live provider:** `not_run`. No real retailer is connected, and Nordstrom stays link-out only.
