@@ -32,7 +32,7 @@ from .test_outbox_delivery import config_env, outbox_db, provision, pubsub_serve
 REPO = Path(__file__).resolve().parents[2]
 # Contracts each lane adds to the worker, pinned so a new lane contract is a
 # reviewed change here too (it starts flowing on the foundation's topics).
-EXPECTED_CONTRACTS = {"foundation": 11, "consumer-domains": 36, "commerce-agents": 6}
+EXPECTED_CONTRACTS = {"foundation": 11, "consumer-domains": 36, "commerce-agents": 7}
 UUID_TEXT = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 # The JSON Schema subset the catalogs use. example() refuses anything else, so a
@@ -306,8 +306,8 @@ def test_one_event_per_contract_round_trips_through_the_foundation_worker(outbox
 
     per_lane = Counter(lane_of[(e.event_type, e.schema_version)] for e in received)
     assert probe["catalogs"] == dict.fromkeys(EXPECTED_CONTRACTS, "loaded")
-    assert dict(per_lane) == EXPECTED_CONTRACTS  # foundation 11, consumer-domains 36, commerce-agents 6
-    assert len(received) == len(events) == 53
+    assert dict(per_lane) == EXPECTED_CONTRACTS  # foundation 11, consumer-domains 36, commerce-agents 7
+    assert len(received) == len(events) == 54
     ids = {i for e in events for i in (e.event_id, e.aggregate_id, e.correlation_id)}
     ids |= {i for e in events for i in UUID_TEXT.findall(json.dumps(e.payload))}
     assert not [i for i in ids if i in logs]
