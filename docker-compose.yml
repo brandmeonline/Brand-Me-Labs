@@ -15,7 +15,7 @@
 # to start (docs/build/evidence/w00/trust-path-fixtures.md).
 #
 # Consumer-domain routes need a dev key pair first, written outside the repository
-# (BRANDME_DEV_KEYS_DIR, default ~/.config/brandme/dev-keys) so the ./:/app bind
+# (BRANDME_DEV_ASSERTION_DIR, default ~/.config/brandme/dev-keys) so the ./:/app bind
 # mounts never expose the private key to the Python containers:
 #   node scripts/dev/consumer-domain-keys.mjs
 # Without it consumer-domains refuses to start and the gateway answers 503 on
@@ -176,7 +176,7 @@ services:
       CONSUMER_DOMAIN_SERVICE_URL: http://127.0.0.1:8010
     # CONSUMER_DOMAIN_ASSERTION_KEY (private) and CONSUMER_DOMAIN_ASSERTION_KID; gitignored, generated at runtime.
     env_file:
-      - path: ${BRANDME_DEV_KEYS_DIR:-${HOME}/.config/brandme/dev-keys}/consumer-domains-gateway.env
+      - path: ${BRANDME_DEV_ASSERTION_DIR:-${HOME}/.config/brandme/dev-keys}/consumer-domains-gateway.env
         required: false
     ports: ["3001:3001"]
     depends_on:
@@ -206,7 +206,7 @@ services:
       CONSUMER_DOMAIN_ASSERTION_ISSUER: brandme-gateway
     # CONSUMER_DOMAIN_ASSERTION_JWKS (public key only); gitignored, generated at runtime.
     env_file:
-      - path: ${BRANDME_DEV_KEYS_DIR:-${HOME}/.config/brandme/dev-keys}/consumer-domains-service.env
+      - path: ${BRANDME_DEV_ASSERTION_DIR:-${HOME}/.config/brandme/dev-keys}/consumer-domains-service.env
         required: false
     command: ["sh", "-c", "test -n \"$${CONSUMER_DOMAIN_ASSERTION_JWKS:-}\" || { echo 'consumer-domains: no dev key pair; run node scripts/dev/consumer-domain-keys.mjs' >&2; exit 2; }; python -m brandme_core.config preflight --service consumer_domains && exec python -m brandme_core.domains.persona.app"]
     depends_on:
