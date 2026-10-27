@@ -305,7 +305,12 @@ def _domain_check(env):
 def test_domain_service_entrypoint_passes_the_boot_guard_in_sandbox():
     """The real entrypoint: complete sandbox config gets past guard("consumer_domains") (exit 3 before
     this entry) and then refuses only because no Google credential exists here (exit 2)."""
-    out = _domain_check(_configured("consumer_domains", "sandbox"))
+    env = _configured("consumer_domains", "sandbox")
+    # Same exit 2 as a config refusal, so prove first that neither _config nor the guard refuses this env.
+    from brandme_core.domains.persona.app import _config
+    assert _config(env)["environment"] == "sandbox"
+    assert guard("consumer_domains", env=env) is Mode.SANDBOX
+    out = _domain_check(env)
     assert out.returncode == 2, out.stderr
     assert out.stdout == '{"status":"startup_refused"}\n'
     assert "[brandme boot]" not in out.stderr and "Traceback" not in out.stderr

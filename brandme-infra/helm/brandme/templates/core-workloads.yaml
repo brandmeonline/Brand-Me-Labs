@@ -8,9 +8,10 @@ Processes from the core image. Entrypoints and configuration contracts:
   outbox retention (CronJob) python -m brandme_core.events.retention --once (events/retention.py)
   consumer domains python -m brandme_core.domains.persona.app (domains/persona/app.py)
 Each refuses to start (exit 2, {"status":"startup_refused"}) on a missing or
-inconsistent setting, an emulator in a strict mode, or an unapplied schema.
-The consumer-domain service checks its configuration (exit 2), then runs the
-shared boot guard as consumer_domains (exit 3 on a refusal, brandme_core/boot.py).
+inconsistent setting or an emulator in a strict mode; all but the consumer-domain
+service also refuse an unapplied schema. The consumer-domain service checks its
+configuration (exit 2), then runs the shared boot guard as consumer_domains (exit 3
+on a refusal, brandme_core/boot.py); it makes no Spanner call before serving.
 */ -}}
 {{- $root := . -}}
 {{- if .Values.readApi.enabled }}

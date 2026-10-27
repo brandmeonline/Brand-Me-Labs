@@ -507,7 +507,7 @@ def _consumer_domains(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegist
     issuer = (env.get("CONSUMER_DOMAIN_ASSERTION_ISSUER") or "").strip()
     jwks_problem = _public_jwks_problem(env.get("CONSUMER_DOMAIN_ASSERTION_JWKS") or "")
     verifier = ("brandme_core/domains/persona/assertion.py DomainAssertionVerifier: ES256 gateway principal assertions "
-                "(kid, issuer, audience brandme:consumer-domains, lifetime <= 60 s, single-use jti, environment)")
+                "(kid, issuer, audience brandme:consumer-domains, lifetime <= 60 s, jti single-use within the process (in-memory cache; the chart runs one replica), environment)")
     if not issuer or jwks_problem:
         missing = "CONSUMER_DOMAIN_ASSERTION_ISSUER is unset" if not issuer else f"CONSUMER_DOMAIN_ASSERTION_JWKS {jwks_problem}"
         identity = AdapterRegistration(TrustComponent.AUTH_IDENTITY, AdapterKind.UNCONFIGURED, f"{verifier} [{missing}]",

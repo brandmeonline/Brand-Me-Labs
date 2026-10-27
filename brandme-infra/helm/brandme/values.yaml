@@ -189,7 +189,11 @@ privacyExports:
 # gateway answers 503 on every consumer-domain route.
 consumerDomains:
   enabled: false
-  replicas: 2
+  # One replica: the assertion verifier's jti replay cache lives in process memory
+  # (brandme_core/domains/persona/assertion.py:46, :80-87), so a second pod would accept
+  # an assertion the first already consumed. Raise this only after the lane moves the
+  # replay cache to a shared store.
+  replicas: 1
   # GSA account ID (bm-<env3>-dom-api) or a full GSA email. Its KSA is
   # <release>-consumer-domains-api (scripts/provision/gcp-dev-identities.sh).
   gcpServiceAccount: ""

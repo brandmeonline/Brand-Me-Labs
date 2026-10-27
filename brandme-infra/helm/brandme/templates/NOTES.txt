@@ -18,6 +18,7 @@ Verify each process against its real dependencies:
   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "read-api") }} -- python -m brandme_core.read_api --check
 {{- end }}
 {{- if .Values.consumerDomains.enabled }}
+  # configuration and boot guard only: this --check does not reach Spanner
   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "consumer-domains") }} -- python -m brandme_core.domains.persona.app --check
 {{- end }}
 
