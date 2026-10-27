@@ -8,6 +8,9 @@ Verify each process against its real dependencies:
 {{- if .Values.eventsWorker.enabled }}
   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "events-worker") }} -- python -m brandme_core.events.worker --check
 {{- end }}
+{{- if .Values.eventsRetention.enabled }}
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "brandme.componentName" (list . "events-retention") }} {{ include "brandme.componentName" (list . "events-retention") }}-now   # one pass; then kubectl logs job/...-now
+{{- end }}
 {{- if .Values.exportsWorker.enabled }}
   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "exports-worker") }} -- python -m brandme_core.privacy_exports --check
 {{- end }}

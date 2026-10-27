@@ -504,6 +504,13 @@ AUDITED_PROCESSES: Mapping[str, AuditedProcess] = {
         _no_trust_path,
         environment_source="brandme_core/events/worker.py:38 (must equal BRANDME_MODE)",
     ),
+    "events_retention": AuditedProcess(
+        "Outbox retention job (python -m brandme_core.events.retention): purges delivered outbox rows 7 days "
+        "after delivery and re-erases deleted subjects' event and replay records; Spanner only, no Pub/Sub, "
+        "wallet, chain submission or application side effects (events/retention.py:1-25).",
+        _no_trust_path,
+        environment_source="brandme_core/events/retention.py:244 (must equal BRANDME_MODE)",
+    ),
     "gateway": AuditedProcess(
         "Node API gateway. Its trust-path component is member identity; it also runs its own guard "
         "(brandme-gateway/src/middleware/mode.ts). The legacy /scan route is a placeholder, not trust evidence.",

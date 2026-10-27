@@ -15,7 +15,7 @@ from dataclasses import asdict, dataclass
 from typing import Mapping
 
 from brandme_core.config import check_legacy_flags, get_mode
-from brandme_core.domains import events as domain_events  # noqa: F401 registers supported contracts
+from .catalogs import CatalogUnavailable, load_catalogs
 from .envelope import PRIVACY_CLASSES, registry, _envelope_validator
 from .outbox import OutboxDispatcher
 from .pubsub import PubSubPublisher, emulator_endpoint
@@ -30,11 +30,14 @@ class WorkerConfig:
     topics: dict[str, str]
     emulator_host: str
     event_types: tuple[str, ...]
+    catalogs: tuple[tuple[str, str], ...] = ()
     poll_seconds: float = 2
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> "WorkerConfig":
         mode = get_mode(env)
+        # Registers every lane's contracts (catalogs.py) before the allowlist is built.
+        catalogs = tuple(sorted(load_catalogs().items()))
         if env.get("ENVIRONMENT") != mode.value or check_legacy_flags(mode, env):
             raise ValueError("worker mode and environment must agree without stub flags")
         if mode.is_strict and (env.get("SPANNER_EMULATOR_HOST") or env.get("PUBSUB_EMULATOR_HOST")):
@@ -52,7 +55,7 @@ class WorkerConfig:
         selected = set(env.get("OUTBOX_EVENT_TYPES", ",".join(sorted(known))).split(","))
         if not selected or not selected <= known:
             raise ValueError("event allowlist contains an unsupported contract")
-        return cls(mode.value, *(env[k] for k in required), topics, emulator, tuple(sorted(selected)))
+        return cls(mode.value, *(env[k] for k in required), topics, emulator, tuple(sorted(selected)), catalogs)
 
 
 def verify_schema(database) -> None:
@@ -81,7 +84,7 @@ def run(config: WorkerConfig, *, once: bool = False, check: bool = False) -> int
         publisher.check_topics()
         print(json.dumps({"status": "ready", "environment": config.environment,
                           "transport": "pubsub_emulator" if config.emulator_host else "pubsub",
-                          "event_contracts": len(config.event_types)}), flush=True)
+                          "event_contracts": len(config.event_types), "catalogs": dict(config.catalogs)}), flush=True)
         if check:
             return 0
         dispatcher = OutboxDispatcher(db, publisher, environment=config.environment, event_types=config.event_types)
@@ -124,6 +127,11 @@ def main(argv=None) -> int:
     guard("events_worker")
     try:
         return run(WorkerConfig.from_env(os.environ), once=args.once, check=args.check)
+    except CatalogUnavailable as refused:
+        # Fixed code and lane only: an import error's text is not logged.
+        print(json.dumps({"status": "startup_refused", "reason": "event_catalog_unavailable", "lane": refused.lane},
+                         separators=(",", ":")), flush=True)
+        return 2
     except Exception:
         print('{"status":"startup_refused"}', flush=True)
         return 2

@@ -5,6 +5,7 @@ Processes from the core image. Entrypoints and configuration contracts:
   exports API     python -m brandme_core.privacy_exports     (privacy_exports/__main__.py, config.py)
   exports worker  python -m brandme_core.privacy_exports --worker
   outbox worker   python -m brandme_core.events.worker       (events/worker.py, events/README.md)
+  outbox retention (CronJob) python -m brandme_core.events.retention --once (events/retention.py)
 Each refuses to start (exit 2, {"status":"startup_refused"}) on a missing or
 inconsistent setting, an emulator in a strict mode, or an unapplied schema.
 */ -}}
@@ -53,4 +54,66 @@ inconsistent setting, an emulator in a strict mode, or an unapplied schema.
 {{- end }}
 ---
 {{ include "brandme.coreDeployment" (dict "root" $root "component" "events-worker" "cfg" .Values.eventsWorker "command" (list "python" "-m" "brandme_core.events.worker") "env" $env "http" false "grace" 60) }}
+{{- end }}
+{{- if .Values.eventsRetention.enabled }}
+{{- /* Founder ruling Q19: delivered outbox rows go 7 days after delivery; deleted
+subjects' event and replay records are re-erased (events/README.md "Retention and
+erasure"). Not in the publisher: the worker's audited contract is publish-only. */}}
+{{- $c := .Values.eventsRetention }}
+{{- $name := include "brandme.componentName" (list $root "events-retention") }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "brandme.labels" (list $root "events-retention") | nindent 4 }}
+spec:
+  schedule: {{ include "brandme.req" (list $c.schedule "eventsRetention.schedule") | quote }}
+  timeZone: Etc/UTC
+  # One pass at a time. A skipped hour is covered by the next pass: the purge
+  # works by age and the sweep re-reads 30 days of tombstones.
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "brandme.labels" (list $root "events-retention") | nindent 8 }}
+    spec:
+      # Every statement is idempotent (partitioned DML and keyed deletes), so one retry is safe.
+      backoffLimit: 1
+      activeDeadlineSeconds: {{ $c.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: {{ $c.ttlSecondsAfterFinished }}
+      template:
+        metadata:
+          labels:
+            {{- include "brandme.labels" (list $root "events-retention") | nindent 12 }}
+          {{- with $root.Values.podDefaults.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ $name }}
+          {{- include "brandme.podDefaults" $root | nindent 10 }}
+          securityContext:
+            {{- include "brandme.podSecurityContext" (list $root 10001) | nindent 12 }}
+          containers:
+            - name: events-retention
+              image: {{ include "brandme.image" (list $root "core") | quote }}
+              imagePullPolicy: {{ $root.Values.images.pullPolicy }}
+              command: ["python", "-m", "brandme_core.events.retention", "--once"]
+              env:
+                {{- include "brandme.modeEnv" $root | nindent 16 }}
+                {{- include "brandme.spannerEnv" $root | nindent 16 }}
+              resources:
+                {{- toYaml $c.resources | nindent 16 }}
+              securityContext:
+                {{- include "brandme.containerSecurityContext" $root | nindent 16 }}
+              volumeMounts:
+                {{- include "brandme.tmpMount" $root | nindent 16 }}
+          volumes:
+            {{- include "brandme.tmpVolume" $root | nindent 12 }}
 {{- end }}
