@@ -19,8 +19,9 @@ class Catalog:
     lane: str
     module: str
     loader: Optional[str] = None
-    # Set only while the lane's PR is unmerged. Then, and only then, a module
-    # that does not exist is reported "absent" instead of refusing startup.
+    # Set only while a new lane's PR is unmerged; delete it when the PR merges.
+    # Then, and only then, a module that does not exist is reported "absent"
+    # instead of refusing startup.
     until_merged: Optional[str] = None
 
 
@@ -28,7 +29,7 @@ CATALOGS = (
     Catalog("foundation", "brandme_core.domains.events"),
     # Importing the lane module registers only persona; load_domains() adds the rest.
     Catalog("consumer-domains", "brandme_core.domains.persona.lane", loader="load_domains"),
-    Catalog("commerce-agents", "brandme_core.domains.commerce.events", until_merged="PR #51"),
+    Catalog("commerce-agents", "brandme_core.domains.commerce.events"),
 )
 
 
