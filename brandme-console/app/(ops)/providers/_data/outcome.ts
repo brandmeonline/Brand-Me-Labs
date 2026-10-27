@@ -2,7 +2,7 @@
 // (lane: opus-commerce-agents). Only a kind, an HTTP status, a problem code, the domain's short
 // detail and a run id travel — never a submitted value, so a refused secret is not reflected.
 export type Outcome =
-  | { kind: 'saved' | 'activated' }
+  | { kind: 'saved' | 'activated' | 'tier_assigned' }
   | { kind: 'tested'; run: string; result: string }
   | { kind: 'refused'; status: number; code: string; detail: string }
 
@@ -29,7 +29,7 @@ const one = (v: string | string[] | undefined): string => (typeof v === 'string'
 
 export function readOutcome(sp: Search): Outcome | null {
   const kind = one(sp.outcome)
-  if (kind === 'saved' || kind === 'activated') return { kind }
+  if (kind === 'saved' || kind === 'activated' || kind === 'tier_assigned') return { kind }
   if (kind === 'tested') {
     const run = one(sp.run)
     const result = one(sp.result)

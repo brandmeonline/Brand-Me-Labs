@@ -15,7 +15,8 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-COMMERCE_TYPES = {"commerce.delegation.created", "commerce.delegation.revoked", "commerce.quote.ready",
+COMMERCE_TYPES = {"commerce.delegation.created", "commerce.delegation.revoked", "commerce.delegation.boundary_changed",
+                  "commerce.quote.ready",
                   "commerce.purchase.approval_requested", "commerce.purchase.authorized", "commerce.order.observed"}
 WORKER_ENV = {"BRANDME_MODE": "development", "ENVIRONMENT": "development", "SPANNER_EMULATOR_HOST": "localhost:9010",
               "PUBSUB_EMULATOR_HOST": "localhost:8085", "SPANNER_PROJECT_ID": "p", "SPANNER_INSTANCE_ID": "i",
