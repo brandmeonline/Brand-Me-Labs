@@ -34,6 +34,7 @@ secretRefs:
   privacyExportServiceToken: {name: ci-fake-privacy-export-service-token}
   chainServiceToken: {name: ci-fake-chain-service-token}
   midnightBlockfrostProjectId: {name: ci-fake-midnight-blockfrost-project-id}
+  consumerDomainAssertionKey: {name: ci-fake-dom-domain-assertion-key}
 
 gateway:
   gcpServiceAccount: bm-sbx-fnd-gateway
@@ -60,6 +61,19 @@ exportsWorker:
 privacyExports:
   bucket: brandme-sandbox-exports-ci-fake
 
+# Two public keys (a rotation overlap). Public P-256 points generated once for
+# CI; their private keys were never stored.
+consumerDomains:
+  enabled: true
+  gcpServiceAccount: bm-sbx-dom-api
+  assertion:
+    signingKid: ci-fake-2
+    jwks:
+      keys:
+        - {kty: EC, crv: P-256, kid: ci-fake-1, x: qL6DpcXnJ0dyF-o4b4XFG26Ecfd0jysMUjLCfkg1v7U, "y": IWmovsbqBaF-JEwZCX33RU_W2pG88QVN-OQxphX8azg}
+        - {kty: EC, crv: P-256, kid: ci-fake-2, use: sig, alg: ES256, x: GeFyexXO8BmeoJR8tH0dQwMw6ylDnBuTgroL9tF8N7E, "y": MeAKMhdEtO0Ah9fd8E1GN8MMqBvreenX78Y3Fwx_Pw8}
+  mediaBucket: brandme-sandbox-media-ci-fake
+
 eventsWorker:
   gcpServiceAccount: bm-sbx-fnd-outbox
   topics:
@@ -68,7 +82,7 @@ eventsWorker:
     restricted: brandme-sandbox-restricted
 
 eventsRetention:
-  gcpServiceAccount: bm-sbx-fnd-outbox
+  gcpServiceAccount: bm-sbx-fnd-retention
 
 migrations:
   gcpServiceAccount: bm-sbx-fnd-migrator

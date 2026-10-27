@@ -24,6 +24,8 @@ id_ed25519*
 .deployment/
 secrets/
 **/secrets/
+# Dev-only consumer-domain assertion key pair (scripts/dev/consumer-domain-keys.mjs).
+.dev-keys/
 **/.env
 **/.env.local
 
