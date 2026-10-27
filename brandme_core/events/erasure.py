@@ -4,18 +4,28 @@ The privacy orchestrator never knows table names: every table owner registers
 a handler (domains/privacy/deletion.py:6-10). Foundation owns ``OutboxEvents``
 and ``IdempotencyRecords`` (V001), so it declares two categories:
 
-* ``platform.event_outbox``: undelivered events naming the subject are
-  withdrawn in place and delivered ones deleted (``retention.py``);
+* ``platform.event_outbox``: the subject's own undelivered events are
+  withdrawn in place and their delivered ones deleted; other members' events
+  that name them keep their rows with the subject unlinked (``retention.py``);
 * ``platform.request_replay``: the subject's replay records are deleted and
   other members' replay bodies are unlinked from them.
+
+Both are account-scope only: they hold the records an active account needs
+(undelivered changes, replay protection), so a category-only request, a
+record-level request and a subject ref the platform cannot match safely are
+refused with a truthful outcome that changes nothing, never an error that
+would stop the job's other categories.
 
 ``register_platform_privacy`` puts them in the foundation ``data_categories()``
 catalog (so ``bridge_foundation_categories`` sees them) and, when the privacy
 lane is installed, in its default registry as a native handler. The handler is
-non-transactional: ``delete_outside_txn`` runs Partitioned DML before the
-orchestrator's tombstone transaction, and restore re-applies it the same way
-(privacy.py:296-299, :444-455). ``brandme_core/domains/__init__.py`` calls it;
-the privacy lane is imported lazily, never at module level.
+non-transactional: ``delete_outside_txn`` runs before the orchestrator's
+tombstone transaction, and restore re-applies it the same way
+(privacy.py:296-299, :444-455). The catalog callbacks used by the bridge only
+receive a member id and cannot report a refusal, so they erase only for a
+subject with an account deletion job and are a no-op otherwise; compositions
+use the native handler. ``brandme_core/domains/__init__.py`` calls it; the
+privacy lane is imported lazily, never at module level.
 """
 from __future__ import annotations
 
@@ -26,27 +36,39 @@ from . import retention
 DOMAIN = "platform"
 EVENT_OUTBOX, REQUEST_REPLAY = retention.CATEGORIES
 VISIBLE_TO = "brand.me services"
+ACCOUNT_ONLY = ("These records are erased only when you delete your whole account; a request to delete only this "
+                "category is refused and changes nothing.")
 
 CATEGORIES = {
     EVENT_OUTBOX: {
         "title": "Delivery records of changes you made, and of other members' changes that name you",
-        "retention": ("Delivered event records are purged 7 days after delivery; records not yet delivered are "
-                      "withdrawn when you delete your account; copies already handed to our message broker are not "
-                      "recalled and expire under its retention (configured at 24 hours or more)."),
+        "retention": ("Delivered event records are purged 7 days after delivery. Records whose delivery failed keep "
+                      "their contents until our operators resolve them or you delete your account. When you delete "
+                      "your account, records of your own changes are deleted, or emptied and never sent if not yet "
+                      "delivered; in other members' records that name you, your ID is replaced by a placeholder for a "
+                      "deleted member. A delivery already in progress at that moment may still reach our message "
+                      "broker, and copies already handed to it are not recalled; they expire under its retention "
+                      "(configured at 24 hours or more). " + ACCOUNT_ONLY),
         "on_edit": "Not editable: each record describes a change that was already made",
         "tables": ("OutboxEvents",),
     },
     REQUEST_REPLAY: {
         "title": "Saved responses that stop a retried request from being applied twice",
         "retention": ("Each record is marked to expire 30 days after the request, but expired records are not yet "
-                      "purged automatically; yours are deleted when you delete your account, and you are unlinked "
-                      "from other members' records that mention you."),
+                      "purged automatically. When you delete your account, yours are deleted, and in other members' "
+                      "records that mention you, your ID is replaced by a placeholder for a deleted member. "
+                      + ACCOUNT_ONLY),
         "on_edit": "Not editable: a retried request replays the saved response",
         "tables": ("IdempotencyRecords",),
     },
 }
 RECORD_LEVEL_REFUSED = ("platform records are erased per subject only; a record-level request was not applied "
                         "so nothing was over-deleted")
+ACCOUNT_SCOPE_REFUSED = ("platform records are erased only by a whole-account deletion; this category-only request "
+                         "was not applied, so an active account keeps its undelivered changes and replay protection")
+UNMATCHABLE_REFUSED = ("platform records were not erased: this subject reference contains characters the platform "
+                       "cannot match safely")
+REFUSAL_REAPPLIED = "refused when the deletion ran; nothing to re-apply"
 BROKER_COPIES = "published broker copies are not recalled; they expire with topic retention (24 hours or more)"
 EVENT_NOTES = ["Only events caused by your own actions are listed. Event contents are not exported because they "
                "can name other members."]
@@ -62,7 +84,48 @@ def _privacy():
 def _params(subject_ref: str) -> tuple[dict, dict]:
     from google.cloud.spanner_v1 import param_types
 
-    return {"s": list(retention.subject_keys(subject_ref))}, {"s": param_types.Array(param_types.STRING)}
+    # Export matches actors and principals by equality only, which is safe for any ref.
+    keys = retention.subject_keys(subject_ref) if retention.matchable(subject_ref) else (subject_ref,)
+    return {"s": list(keys)}, {"s": param_types.Array(param_types.STRING)}
+
+
+def _refusal(database: Any, ctx: Any, category: str) -> Optional[tuple[str, bool]]:
+    """Why this request may not erase platform records, and whether that refusal is already recorded.
+
+    ``None`` means erase: a whole-category step of an account-scope job for a
+    matchable subject. The refusal is recorded when the job's step for this
+    category is already done: then this call is a restore re-applying the
+    tombstone (run_deletion only calls a step that is not done, privacy.py:295).
+    """
+    from google.cloud.spanner_v1 import param_types
+
+    with database.snapshot() as snap:
+        rows = list(snap.execute_sql(
+            "SELECT j.scope, j.subject_ref, (SELECT s.state FROM DeletionSteps AS s WHERE s.job_id = j.job_id "
+            "AND s.category = @c AND s.step = 'delete_records') FROM DeletionJobs AS j WHERE j.job_id = @j",
+            params={"j": ctx.job_id, "c": category}, param_types={"j": param_types.STRING, "c": param_types.STRING}))
+    scope, subject, step = rows[0] if rows else (None, None, None)
+    if ctx.record_keys:
+        reason = RECORD_LEVEL_REFUSED  # same answer as the lanes' whole-category handlers
+    elif scope != "account" or subject != ctx.subject_ref:
+        reason = ACCOUNT_SCOPE_REFUSED
+    elif not retention.matchable(ctx.subject_ref):
+        reason = UNMATCHABLE_REFUSED
+    else:
+        return None
+    return reason, step in ("done", "exception_done")
+
+
+def _account_deleted(database: Any, member_id: str) -> bool:
+    from google.cloud.spanner_v1 import param_types
+
+    if not retention.matchable(member_id):
+        return False
+    with database.snapshot() as snap:
+        return bool(list(snap.execute_sql(
+            "SELECT 1 FROM DeletionJobs@{FORCE_INDEX=DeletionJobsBySubject} "
+            "WHERE subject_ref = @s AND scope = 'account' LIMIT 1",
+            params={"s": member_id}, param_types={"s": param_types.STRING})))
 
 
 def export_events(reader: Any, subject_ref: str) -> list[dict]:
@@ -101,11 +164,13 @@ def _export_requests(database: Any, member_id: str) -> list[dict]:
 
 
 def _delete_events(database: Any, member_id: str) -> None:
-    retention.erase_subject_events(database, [member_id])
+    if _account_deleted(database, member_id):
+        retention.erase_subject_events(database, [member_id])
 
 
 def _delete_requests(database: Any, member_id: str) -> None:
-    retention.erase_subject_requests(database, [member_id])
+    if _account_deleted(database, member_id):
+        retention.erase_subject_requests(database, [member_id])
 
 
 class PlatformPrivacyHandler:
@@ -136,13 +201,19 @@ class PlatformPrivacyHandler:
         pd = _privacy()
         if category not in CATEGORIES:
             raise KeyError(category)
-        if ctx.record_keys:
-            # Same answer as the lanes' whole-category handlers: refused, truthfully.
-            return pd.DeletionOutcome(category, 0, done=True, exception=RECORD_LEVEL_REFUSED)
+        refused = _refusal(database, ctx, category)
+        if refused:
+            reason, recorded = refused
+            if recorded:
+                # A restore re-applying a refused tombstone: nothing was erased, so nothing is owed.
+                return pd.DeletionOutcome(category, 0, detail=REFUSAL_REAPPLIED)
+            # The lanes' refusal shape: done, nothing changed, the truthful reason.
+            return pd.DeletionOutcome(category, 0, done=True, exception=reason)
         if category == EVENT_OUTBOX:
-            withdrawn, deleted = retention.erase_subject_events(database, [ctx.subject_ref])
-            return pd.DeletionOutcome(category, withdrawn + deleted,
-                                      detail=f"{withdrawn} undelivered withdrawn, {deleted} delivered deleted")
+            withdrawn, deleted, unlinked = retention.erase_subject_events(database, [ctx.subject_ref])
+            return pd.DeletionOutcome(category, withdrawn + deleted + unlinked,
+                                      detail=f"{withdrawn} undelivered withdrawn, {deleted} delivered deleted, "
+                                             f"{unlinked} other events unlinked")
         deleted, unlinked = retention.erase_subject_requests(database, [ctx.subject_ref])
         return pd.DeletionOutcome(category, deleted + unlinked,
                                   detail=f"{deleted} deleted, {unlinked} other members' records unlinked")
