@@ -1,6 +1,7 @@
 /**
  * Mock backend response data for development and testing
  */
+import catalog from '../features/spatial/generated-catalog.json'
 
 export interface GarmentPassport {
   garment_id: string
@@ -24,9 +25,10 @@ export interface GarmentPassport {
 
 export interface GarmentFeedItem {
   imageUrl: string
+  href: string
   title: string
   subtitle: string
-  integrityStatus: 'verified' | 'pending'
+  integrityStatus: 'verified' | 'pending' | 'demo'
 }
 
 export interface EscalationItem {
@@ -87,70 +89,27 @@ export async function resolveScanAndFetchPassport(): Promise<GarmentPassport> {
  * Fetch discovery feed (mock)
  */
 export async function getDiscoveryFeed(): Promise<GarmentFeedItem[]> {
-  return [
-    {
-      imageUrl: '/placeholder-garment-1.jpg',
-      title: 'Organic Cotton Tee',
-      subtitle: 'Climate-neutral production with ethical sourcing',
-      integrityStatus: 'verified',
-    },
-    {
-      imageUrl: '/placeholder-garment-2.jpg',
-      title: 'Recycled Denim Jacket',
-      subtitle: 'Made from 100% post-consumer denim waste',
-      integrityStatus: 'verified',
-    },
-    {
-      imageUrl: '/placeholder-garment-3.jpg',
-      title: 'Hemp Linen Dress',
-      subtitle: 'Regenerative agriculture with zero pesticides',
-      integrityStatus: 'pending',
-    },
-    {
-      imageUrl: '/placeholder-garment-4.jpg',
-      title: 'Upcycled Wool Coat',
-      subtitle: 'Deadstock fabric transformed by Italian artisans',
-      integrityStatus: 'verified',
-    },
-    {
-      imageUrl: '/placeholder-garment-5.jpg',
-      title: 'Bamboo Silk Blouse',
-      subtitle: 'Closed-loop water recycling in production',
-      integrityStatus: 'verified',
-    },
-    {
-      imageUrl: '/placeholder-garment-6.jpg',
-      title: 'Tencel Trousers',
-      subtitle: 'FSC-certified wood pulp with circular design',
-      integrityStatus: 'verified',
-    },
-  ]
+  return ['tee', 'jacket', 'dress', 'knit', 'overshirt', 'trousers'].map(demoGarment)
+}
+
+// Keep demo titles, posters and preview destinations tied to the same original asset.
+function demoGarment(slug: string): GarmentFeedItem {
+  const garment = catalog.products.find(product => product.slug === slug)
+  if (!garment) throw new Error(`Missing demo garment: ${slug}`)
+  return {
+    imageUrl: garment.poster,
+    href: `/try/${garment.slug}`,
+    title: garment.title,
+    subtitle: 'Explore the original garment image and approximate 3D preview.',
+    integrityStatus: 'demo',
+  }
 }
 
 /**
  * Fetch user's stash collection (mock)
  */
 export async function getMyStash(): Promise<GarmentFeedItem[]> {
-  return [
-    {
-      imageUrl: '/placeholder-stash-1.jpg',
-      title: 'Archive Wool Sweater',
-      subtitle: 'Vintage 1990s sourced from Copenhagen',
-      integrityStatus: 'verified',
-    },
-    {
-      imageUrl: '/placeholder-stash-2.jpg',
-      title: 'Japanese Selvedge Jeans',
-      subtitle: 'Hand-loomed denim with natural indigo dye',
-      integrityStatus: 'verified',
-    },
-    {
-      imageUrl: '/placeholder-stash-3.jpg',
-      title: 'Ethical Cashmere Scarf',
-      subtitle: 'Mongolian cashmere with traceable supply chain',
-      integrityStatus: 'verified',
-    },
-  ]
+  return ['knit', 'trousers', 'bag'].map(demoGarment)
 }
 
 /**

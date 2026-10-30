@@ -12,3 +12,5 @@ evidence/runs/.playwright-artifacts*/
 !evidence/pose-inference.json
 !evidence/ultra-browser-results.json
 !evidence/ultra-asset-validation.json
+!evidence/fit-evidence.json
+!evidence/round2-summary.json

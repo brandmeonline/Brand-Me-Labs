@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "status": "presentation-assets-only",
+  "consumerShellIntegrated": false,
+  "rights": "Each room manifest names its rights record.",
+  "starters": [
+    {
+      "id": "starter_wooden",
+      "title": "Oak Starter",
+      "manifest": "/demo/rooms/starter_wooden/manifest.json",
+      "availableByDefault": true
+    },
+    {
+      "id": "starter_modular",
+      "title": "Modular Studio",
+      "manifest": "/demo/rooms/starter_modular/manifest.json",
+      "availableByDefault": true
+    }
+  ],
+  "upgrades": [
+    {
+      "id": "walnut_atelier",
+      "manifest": "/demo/rooms/walnut_atelier/manifest.json",
+      "presentationTier": "earned-upgrade",
+      "gate": "Requires authoritative rewards entitlement supplied by the consumer shell; no local points, purchase or unlock authority."
+    },
+    {
+      "id": "limestone_gallery",
+      "manifest": "/demo/rooms/limestone_gallery/manifest.json",
+      "presentationTier": "earned-upgrade",
+      "gate": "Requires authoritative rewards entitlement supplied by the consumer shell; no local points, purchase or unlock authority."
+    },
+    {
+      "id": "garden_studio",
+      "manifest": "/demo/rooms/garden_studio/manifest.json",
+      "presentationTier": "earned-upgrade",
+      "gate": "Requires authoritative rewards entitlement supplied by the consumer shell; no local points, purchase or unlock authority."
+    }
+  ],
+  "transitions": [
+    {
+      "from": "starter_wooden",
+      "to": "walnut_atelier",
+      "placement": "Remap by matching semantic group; capacity overflow goes to Unplaced with item identity retained."
+    },
+    {
+      "from": "starter_wooden",
+      "to": "limestone_gallery",
+      "placement": "Remap by matching semantic group; capacity overflow goes to Unplaced with item identity retained."
+    },
+    {
+      "from": "starter_wooden",
+      "to": "garden_studio",
+      "placement": "Remap by matching semantic group; capacity overflow goes to Unplaced with item identity retained."
+    },
+    {
+      "from": "starter_modular",
+      "to": "walnut_atelier",
+      "placement": "Remap by matching semantic group; capacity overflow goes to Unplaced with item identity retained."
+    },
+    {
+      "from": "starter_modular",
+      "to": "limestone_gallery",
+      "placement": "Remap by matching semantic group; capacity overflow goes to Unplaced with item identity retained."
+    },
+    {
+      "from": "starter_modular",
+      "to": "garden_studio",
+      "placement": "Remap by matching semantic group; capacity overflow goes to Unplaced with item identity retained."
+    }
+  ],
+  "limits": "Progression is an asset handoff proposal. It does not award points, sell upgrades, lock existing rooms or change shell behavior. Rich 3D remains for the owner; friend projections use the consumer shell's disclosure-filtered 2D view."
+}
