@@ -1173,11 +1173,33 @@ Plan 03 supersedes plan 02. #66 carries plan 03 items 2–8 and 10; item 12 (dis
 - When both are green, #66 is undrafted for auto-merge.
 
 **Next**
-- **Item 12** (disclosure facets at the API layer, Stage 18) is ready as `780397b` on top of `9770927`. It opens as its own PR once #66 merges.
+- **Item 12** (disclosure facets at the API layer, now Stage 21) is ready on a local branch. It opens as its own PR once #66 merges.
 - **Check-in packet.** After that, the fresh 21-question packet: #66 merged is the plan's remaining trigger condition.
 
 **Blocked**
 - Item 9 (deleting the lane outbox worker) waits for foundation's Q8 import (#62, not merged).
 - Item 11 (dev bucket) waits for the GCP credential; the emulator is used.
+
+**Credential manifest.** No credential was created in this stage.
+
+## Stage 20 — `main` `97d5447` (#62, foundation round 4) merged in — 2026-10-30
+Mia's note on #66 (Oct 30): #62 merged with founder decision D-007; re-sync and undraft when green and clean. The `qs` advisory that keeps `main` red is a separate founder decision, not this PR's.
+
+**Merge** (`a89df83`)
+- **One conflict.** The reservation row in `brandme-data/spanner/migrations/README.md`. I kept `main`'s fuller table and added `V016 consumer_design (consumer-domains, PR #66)`, as that row instructs; the next number is V017.
+- **Q8 landed.** `brandme_core/events/catalogs.py` loads this lane's catalog, and #62 rewrote `tests/test_persona_lane_events.py` to publish through the foundation worker (D-006).
+
+**Deviation: a minimal edit to a foundation test** (`c488c25`)
+- **Requirement.** Lane ownership: foundation files are not edited by this lane.
+- **Reason.** `tests/foundation/test_deletion_leaves_no_member_rows.py` (from #62) reuses this lane's My Data `seed` and pins three counts taken from the seed as it was on `main`. #66 extends that seed, so the test fails on the merged code.
+  - The member has 12 idempotency records, not 7. The five new ones are `credits.convert`, `decisions.comment`, `rooms.create`, `rooms.post` and `surveys.respond`.
+  - The friend's room also names the member: 3 such records, not 2.
+  - After deletion the friend keeps 5 replay bodies, not 3. The member id is in none of them, and 3 now hold the nil subject.
+- **Replacement.** Only those three numbers change, each with a comment. Every deletion assertion is unchanged, and the room's member list is scrubbed to the nil subject like the decisions. This mirrors foundation's D-006 edit of a lane test.
+- **Approval.** Foundation, at review.
+
+**Evidence so far.** The foundation deletion proof, migrations and lane-catalog tests, and `test_persona_lane_events.py` with the Pub/Sub emulator all pass on the merged code. A full clean-checkout CI mirror of `c488c25` is running; GitHub CI runs on the pushed head.
+
+**Follow-up PR (opens after #66 merges).** It carries item 12 (Stage 21) and item 9 (Stage 22: the lane outbox worker deleted now that Q8 is on `main`, verified over Pub/Sub). Both are on a local branch.
 
 **Credential manifest.** No credential was created in this stage.
