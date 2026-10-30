@@ -1,14 +1,13 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * /api/v1 five-minute decisions — UNMOUNTED router (lane: opus-consumer-domains).
- * Mount at integration after principalMiddleware:
+ * /api/v1 Now decisions (lane: opus-consumer-domains), mounted from index.ts
+ * behind principalMiddleware.
  *
- *   router.use(decisionsRouter(domainClient));
- *
- * The deadline is server-owned: `duration_seconds` must be exactly 300 and no
- * client time is forwarded. Whether a response is on time is decided in the
- * domain transaction against Spanner time (BM-SOC-005). An agent principal
+ * The deadline is server-owned: the asker picks a window (`duration_seconds`
+ * 180, 300, 600 or 900; 300 when omitted) and no client time is forwarded.
+ * Whether a response is on time is decided in the domain transaction against
+ * Spanner time (BM-SOC-005). An agent principal
  * without `social:send` gets a draft that only the member can send.
  */
 
@@ -21,6 +20,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const SUBJECTS = ['wardrobe_item', 'catalog_product', 'outfit_version'];
 const CHOICES = ['yes', 'pass', 'alternative'];
 const OUTCOMES = ['bought', 'saved', 'passed', 'still_deciding'];
+const WINDOWS = [180, 300, 600, 900];
 
 function onlyKeys(b: Record<string, unknown>, allowed: string[]): void {
   const extra = Object.keys(b).filter((k) => !allowed.includes(k));
@@ -29,11 +29,16 @@ function onlyKeys(b: Record<string, unknown>, allowed: string[]): void {
 
 /** Cheap shape check of contracts #DecisionCreate; the domain re-checks everything. */
 export function decisionShape(b: Record<string, unknown>): void {
-  onlyKeys(b, ['subject_type', 'subject_id', 'prompt', 'recipient_ids', 'duration_seconds', 'discussion_mode']);
+  onlyKeys(b, ['subject_type', 'subject_id', 'prompt', 'recipient_ids', 'duration_seconds', 'discussion_mode', 'why']);
   if (typeof b.subject_type !== 'string' || !SUBJECTS.includes(b.subject_type)) throw problems.invalid('Unknown subject_type.');
   if (typeof b.subject_id !== 'string' || !UUID_RE.test(b.subject_id)) throw problems.invalid('subject_id must be an id.');
   if (typeof b.prompt !== 'string' || b.prompt.trim().length < 1 || b.prompt.length > 280) throw problems.invalid('prompt must be 1-280 characters.');
-  if (b.duration_seconds !== 300) throw problems.invalid('Decisions last exactly 300 seconds.');
+  if (b.duration_seconds !== undefined && !WINDOWS.includes(b.duration_seconds as number)) {
+    throw problems.invalid('duration_seconds must be 180, 300, 600 or 900.');
+  }
+  if (b.why !== undefined && (typeof b.why !== 'string' || b.why.trim().length < 1 || b.why.length > 280)) {
+    throw problems.invalid('why must be 1-280 characters.');
+  }
   if (b.discussion_mode !== 'blind_until_response' && b.discussion_mode !== 'open') throw problems.invalid('Unknown discussion_mode.');
   const recips = b.recipient_ids;
   if (!Array.isArray(recips) || recips.length < 1 || recips.length > 12 || !recips.every((r) => typeof r === 'string' && UUID_RE.test(r))) {
@@ -70,7 +75,7 @@ export function decisionsRouter(client: DomainClient): Router {
     '/decisions',
     requireScope('social:write'),
     forwardTo(client, (req) => {
-      const body = objectBody(req, 6);
+      const body = objectBody(req, 7);
       decisionShape(body);
       return { method: 'POST', path: '/decisions', body, idempotencyKey: idempotencyKey(req) };
     }),
@@ -88,6 +93,20 @@ export function decisionsRouter(client: DomainClient): Router {
       forwardTo(client, (req) => ({ method: 'POST', path: `/decisions/${uuidParam(req, 'decisionId')}/${action}` })),
     );
   }
+  r.get('/decisions/:decisionId/comments', requireScope('social:read'),
+    forwardTo(client, (req) => ({ method: 'GET', path: `/decisions/${uuidParam(req, 'decisionId')}/comments` })));
+  r.post(
+    '/decisions/:decisionId/comments',
+    requireScope('social:write'),
+    forwardTo(client, (req) => {
+      const b = objectBody(req, 1);
+      onlyKeys(b, ['body']);
+      if (typeof b.body !== 'string' || b.body.trim().length < 1 || b.body.length > 500) throw problems.invalid('body must be 1-500 characters.');
+      return { method: 'POST', path: `/decisions/${uuidParam(req, 'decisionId')}/comments`, body: { body: b.body }, idempotencyKey: idempotencyKey(req) };
+    }),
+  );
+  r.delete('/decisions/:decisionId/comments/:commentId', requireScope('social:write'),
+    forwardTo(client, (req) => ({ method: 'DELETE', path: `/decisions/${uuidParam(req, 'decisionId')}/comments/${uuidParam(req, 'commentId')}` })));
   r.put(
     '/decisions/:decisionId/outcome',
     requireScope('social:write'),

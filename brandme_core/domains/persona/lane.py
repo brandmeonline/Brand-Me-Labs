@@ -13,6 +13,9 @@ event types and foundation data categories).
 * ``consumer_event_types()`` lists this lane's registered event contracts by
   privacy class: the closed catalog an outbox worker must load (by importing
   this module) before it can publish them. Types not loaded stay pending.
+* ``register_consumer_projections(database, registry=None)`` registers this
+  lane's Firestore projection reducers (the share projector) with foundation's
+  projection framework, for the worker that applies it.
 """
 
 from __future__ import annotations
@@ -59,6 +62,15 @@ def register_consumer_domains(registry: Any, *, database: Any = None, media_stor
             continue  # already registered in this registry
         registry.register(handler)
     return list(CONSUMER_DOMAINS)
+
+
+def register_consumer_projections(database: Any, registry: Any = None) -> List[str]:
+    """Share projector reducers (``social/projection.py``) on foundation's
+    ``ProjectionRegistry`` (its module-level ``registry`` by default)."""
+    from brandme_core.domains.social.projection import register_share_projector
+
+    load_domains()
+    return register_share_projector(database, registry)
 
 
 def consumer_event_types() -> Dict[str, List[str]]:

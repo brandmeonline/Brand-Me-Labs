@@ -47,7 +47,7 @@ mode guard:
 | Lane | Catalog module | Contracts |
 |---|---|---|
 | foundation | `brandme_core.domains.events` | 11: identity/session/consent, rights/chain projection, privacy deletion |
-| consumer-domains | `brandme_core.domains.persona.lane`, then `load_domains()` | 36: persona, wardrobe, social, rewards, media |
+| consumer-domains | `brandme_core.domains.persona.lane`, then `load_domains()` | 37: persona, wardrobe, social, rewards, media |
 | commerce-agents | `brandme_core.domains.commerce.events` | 7: delegation (created, revoked, boundary changed), quote, purchase approval/authorization, order observation |
 
 `OUTBOX_EVENT_TYPES` can restrict the allowlist with an exact comma-separated

@@ -58,7 +58,7 @@ from . import ledger
 from .operators import require_operator
 
 BENEFIT_COLS = ("benefit_id", "kind", "title", "description", "cost_points", "inventory_total", "inventory_reserved", "inventory_fulfilled",
-                "funded", "sponsor", "active", "available_until", "reservation_ttl_seconds", "version")
+                "funded", "sponsor", "active", "available_until", "reservation_ttl_seconds", "house_ref", "min_standing", "version")
 CLAIM_LEASE = timedelta(minutes=5)
 RES_COLS = ("member_id", "reservation_id", "benefit_id", "cost_points", "state", "expires_at", "release_reason", "version", "created_at", "settled_at")
 KINDS = ("room_finish", "composition_template", "partner")
@@ -74,7 +74,8 @@ def _benefit_dto(b: Mapping[str, Any], now) -> Dict[str, Any]:
     expired = b["available_until"] is not None and b["available_until"] <= now
     return {"benefit_id": b["benefit_id"], "kind": b["kind"], "title": b["title"], "description": b["description"],
             "cost_points": b["cost_points"], "remaining": left, "sponsor": b["sponsor"], "available_until": iso(b["available_until"]),
-            "available": bool(b["active"]) and not expired and left > 0}
+            "available": bool(b["active"]) and not expired and left > 0,
+            "house_ref": b.get("house_ref"), "min_standing": b.get("min_standing")}
 
 
 def _res_dto(r: Mapping[str, Any]) -> Dict[str, Any]:
@@ -95,7 +96,7 @@ class BenefitService:
             raise ValidationFailed("body must be an object")
         reject_non_finite(body)
         reject_unknown_keys(body, ("kind", "title", "description", "cost_points", "inventory_total", "funded", "sponsor",
-                                   "available_until", "reservation_ttl_seconds"), where="benefit")
+                                   "available_until", "reservation_ttl_seconds", "house_ref", "min_standing"), where="benefit")
         kind = body.get("kind")
         if kind not in KINDS:
             raise ValidationFailed(f"kind must be one of {KINDS}", extra={"field": "kind"})
@@ -103,6 +104,17 @@ class BenefitService:
         sponsor = body.get("sponsor")
         if kind == "partner" and (not funded or not isinstance(sponsor, str) or not sponsor.strip()):
             raise ValidationFailed("a partner benefit must be funded under a contract and name its sponsor", extra={"field": "funded"})
+        # A house reward is a funded partner benefit gated by standing at that house.
+        house_ref, min_standing = body.get("house_ref"), body.get("min_standing")
+        if (house_ref is None) != (min_standing is None):
+            raise ValidationFailed("house_ref and min_standing go together", extra={"field": "min_standing"})
+        if house_ref is not None:
+            from .standing import TIER_ORDER
+            from brandme_core.domains.social.houses import HOUSE_REF
+
+            if kind != "partner" or not isinstance(house_ref, str) or not HOUSE_REF.match(house_ref) or min_standing not in TIER_ORDER:
+                raise ValidationFailed(f"a house reward is a partner benefit with a house_ref and min_standing in {TIER_ORDER}",
+                                       extra={"field": "house_ref"})
         row = {
             "benefit_id": new_id(), "kind": kind, "title": require_text(body.get("title"), name="title", max_len=120),
             "description": require_text(body.get("description"), name="description", max_len=500),
@@ -112,6 +124,7 @@ class BenefitService:
             "sponsor": sponsor.strip()[:120] if isinstance(sponsor, str) and sponsor.strip() else None, "active": True,
             "available_until": parse_iso(body["available_until"], name="available_until") if body.get("available_until") else None,
             "reservation_ttl_seconds": require_strict_int(body.get("reservation_ttl_seconds", 900), name="reservation_ttl_seconds", lo=60, hi=2_592_000),
+            "house_ref": house_ref, "min_standing": min_standing,
             "version": 1,
         }
 
@@ -150,6 +163,12 @@ class BenefitService:
             if (b["available_until"] is not None and b["available_until"] <= now) or \
                     b["inventory_reserved"] + b["inventory_fulfilled"] >= b["inventory_total"]:
                 raise DetailedInvalidTransition("this benefit is not available right now", code="benefit_unavailable")
+            if b["house_ref"] is not None:
+                from .standing import meets, standing_for
+
+                if not meets(standing_for(txn, member, b["house_ref"]), b["min_standing"]):
+                    raise DetailedInvalidTransition("this house reward needs a higher standing with the house", code="standing_required",
+                                                    extra={"house_ref": b["house_ref"], "min_standing": b["min_standing"]})
             acct = ledger.load_account(txn, member)
             cost = b["cost_points"]
             if acct.available < cost:

@@ -56,6 +56,21 @@ def friendship_proposal_policy(txn, owner: str, proposer: str) -> bool:
     return are_friends(txn, owner, proposer)
 
 
+def leave_shares(txn, ctx: CommandContext, a: str, b: str) -> int:
+    """Each party leaves the other's active selected-member shares. The grant's version moves on and
+    ``share.audience_changed`` lets the share projector drop the removed member's copy."""
+    n = 0
+    for owner, other in ((a, b), (b, a)):
+        for share_id, recips, version in query(txn, "SELECT share_id, recipient_ids, version FROM ShareGrants WHERE member_id=@o "
+                                                    "AND revoked_at IS NULL AND @r IN UNNEST(recipient_ids)",
+                                               {"o": owner, "r": other}, {"o": STR, "r": STR}):
+            txn.update("ShareGrants", columns=("member_id", "share_id", "recipient_ids", "version"),
+                       values=[(owner, share_id, [x for x in recips if x != other], version + 1)])
+            ctx.emit("share.audience_changed", "1", "share", share_id, version + 1, {"share_id": share_id, "owner_id": owner}, "member_private")
+            n += 1
+    return n
+
+
 class RelationshipService:
     def __init__(self, database):
         self.db = database
@@ -137,6 +152,7 @@ class RelationshipService:
             if self._pair(txn, me, other) is None:
                 raise NotFound("relationship not found")
             txn.delete("Relationships", KeySet(keys=[[me, other], [other, me]]))
+            leave_shares(txn, ctx, me, other)  # selected-member shares are for friends
             return {"removed": True}
 
         return command(self.db, principal, tx)
@@ -173,14 +189,7 @@ class RelationshipService:
                     "UPDATE DecisionAudience SET removed = TRUE WHERE member_id=@o AND recipient_id=@r AND removed = FALSE "
                     "AND decision_id IN (SELECT decision_id FROM Decisions WHERE member_id=@o AND state IN ('draft','open'))",
                     params={"o": owner, "r": other}, param_types={"o": STR, "r": STR})
-            # Each party leaves the other's selected-member shares.
-            revoked = 0
-            for owner, other in ((me, target), (target, me)):
-                for share_id, recips in query(txn, "SELECT share_id, recipient_ids FROM ShareGrants WHERE member_id=@o AND revoked_at IS NULL "
-                                                   "AND @r IN UNNEST(recipient_ids)", {"o": owner, "r": other}, {"o": STR, "r": STR}):
-                    txn.update("ShareGrants", columns=("member_id", "share_id", "recipient_ids"),
-                               values=[(owner, share_id, [x for x in recips if x != other])])
-                    revoked += 1
+            revoked = leave_shares(txn, ctx, me, target)
             withdrawn = withdraw_between(txn, me, target)
             ctx.emit("member.blocked", "1", "member_block", me, 1, {"blocker_id": me, "blocked_id": target}, "restricted")
             return {"blocked": True, "already": False, "audience_removals": removed, "share_removals": revoked, "notifications_withdrawn": withdrawn}

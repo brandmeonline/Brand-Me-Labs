@@ -21,7 +21,7 @@ from brandme_core.domains.persona.kernel import (
 from brandme_core.domains.persona.service import PersonaService
 from brandme_core.domains.rewards import ledger
 from brandme_core.domains.rewards.consumer import RewardsConsumer
-from brandme_core.domains.rewards.rules import BADGES, RULES, cap_window
+from brandme_core.domains.rewards.rules import BADGES, EXTENSIONS, RULES, cap_window
 from brandme_core.domains.rewards.service import RewardsService
 from brandme_core.domains.social.clock import FixedTxnClock
 from brandme_core.domains.social.decisions import DecisionService
@@ -111,7 +111,9 @@ def consistent(db, member_id):
 def test_rules_mirror_the_contract():
     spec = json.loads((REPO / "docs/design/brandme/contracts/reward-rules.json").read_text())
     assert spec["window_timezone"] == "UTC"
-    assert {r["id"] for r in spec["rules"]} == set(RULES)
+    # Every contract rule exactly; anything else must be a declared extension with its deviation id.
+    assert {r["id"] for r in spec["rules"]} == set(RULES) - set(EXTENSIONS)
+    assert all(pd.startswith("PD-") and r not in {x["id"] for x in spec["rules"]} for r, pd in EXTENSIONS.items())
     for r in spec["rules"]:
         mine = RULES[r["id"]]
         assert (mine.version, mine.points) == (r["version"], r["points"]), r["id"]

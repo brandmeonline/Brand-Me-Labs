@@ -98,11 +98,16 @@ describe('social/decisions routers (unmounted)', () => {
     ]);
   });
 
-  it('decision create: exactly 300 s, 1-12 unique recipients, Idempotency-Key', async () => {
+  it('decision create: an offered window, a short why, 1-12 unique recipients, Idempotency-Key', async () => {
     expect(() => decisionShape(decision)).not.toThrow();
+    for (const ok of [180, 600, 900, undefined]) expect(() => decisionShape({ ...decision, duration_seconds: ok })).not.toThrow();
+    expect(() => decisionShape({ ...decision, why: 'Dinner at eight' })).not.toThrow();
     for (const bad of [
       { ...decision, duration_seconds: 299 },
       { ...decision, duration_seconds: '300' },
+      { ...decision, duration_seconds: 3600 },
+      { ...decision, why: '' },
+      { ...decision, why: 'x'.repeat(281) },
       { ...decision, recipient_ids: [] },
       { ...decision, recipient_ids: [OTHER, OTHER.toUpperCase()] },
       { ...decision, recipient_ids: Array.from({ length: 13 }, () => OTHER) },
@@ -133,6 +138,20 @@ describe('social/decisions routers (unmounted)', () => {
     }
     expect((await request(a).put(`/decisions/${ID}/outcome`).send({ outcome: 'won' })).status).toBe(422);
     expect((await request(a).get('/decisions?role=everyone')).status).toBe(422);
+  });
+
+  it('comments: a 1-500 character body only, with an Idempotency-Key', async () => {
+    const a = app(client, ALL);
+    for (const body of [{ body: '' }, { body: 'x'.repeat(501) }, { body: 'hi', author_id: OTHER }, { text: 'hi' }]) {
+      expect((await request(a).post(`/decisions/${ID}/comments`).set('Idempotency-Key', KEY).send(body)).status).toBe(422);
+    }
+    expect((await request(a).post(`/decisions/${ID}/comments`).send({ body: 'hi' })).status).toBe(400);
+    expect((await request(a).post(`/decisions/${ID}/comments`).set('Idempotency-Key', KEY).send({ body: 'The navy one' })).status).toBe(200);
+    expect(client.calls[0]).toMatchObject({ method: 'POST', path: `/decisions/${ID}/comments`, body: { body: 'The navy one' }, idempotencyKey: KEY });
+    expect((await request(a).get(`/decisions/${ID}/comments`)).status).toBe(200);
+    expect((await request(a).delete(`/decisions/${ID}/comments/${OTHER}`)).status).toBe(200);
+    expect(client.calls.at(-1)).toMatchObject({ method: 'DELETE', path: `/decisions/${ID}/comments/${OTHER}` });
+    expect((await request(a).delete(`/decisions/${ID}/comments/not-an-id`)).status).toBe(404);
   });
 
   it('share create shape and Idempotency-Key', async () => {

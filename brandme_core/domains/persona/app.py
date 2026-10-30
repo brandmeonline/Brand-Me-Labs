@@ -5,8 +5,9 @@ principal assertion (Ultra plan 02, item 1).
     python -m brandme_core.domains.persona.app [--check]
 
 Mounted: persona, wardrobe and outfits, social (relationships, decisions,
-shares, notifications, reports), rewards and benefits, media uploads and
-try-on. The gateway mounts the matching public routers
+shares, notifications, reports), Home = Flow and followed houses, rewards,
+benefits, house standings, surveys and in-app credit, closet visibility and
+the persona card, small-group rooms, media uploads and try-on. The gateway mounts the matching public routers
 (brandme-gateway/src/routes/v1/index.ts) and reaches this service through
 its DomainClient (brandme-gateway/src/services/domains.ts).
 
@@ -43,36 +44,54 @@ from .lane import load_domains
 DEFAULT_PORT = 8010
 
 
-def create_app(database: Any, *, resolve_principal: Callable[[Any], Any], media_store: Any = None, providers: Any = None) -> FastAPI:
+def create_app(database: Any, *, resolve_principal: Callable[[Any], Any], media_store: Any = None, providers: Any = None,
+               catalog: Any = None) -> FastAPI:
+    """``catalog`` is the houses port for Flow and standings; default ``CatalogHouses``."""
     load_domains()
     from brandme_core.domains.media.api import create_media_router
     from brandme_core.domains.media.providers import ProviderRegistry
     from brandme_core.domains.media.service import MediaService
     from brandme_core.domains.rewards.api import create_rewards_router
     from brandme_core.domains.rewards.benefits import BenefitService
+    from brandme_core.domains.rewards.credits import CreditService
     from brandme_core.domains.rewards.service import RewardsService
-    from brandme_core.domains.social.api import create_social_router
+    from brandme_core.domains.rewards.standing import StandingService
+    from brandme_core.domains.rewards.surveys import SurveyService
+    from brandme_core.domains.social.api import create_flow_router, create_rooms_router, create_social_router
     from brandme_core.domains.social.decisions import DecisionService
+    from brandme_core.domains.social.flow import FlowService
+    from brandme_core.domains.social.houses import CatalogHouses, HouseService, catalog_piece_exists
     from brandme_core.domains.social.notifications import NotificationService
     from brandme_core.domains.social.relationships import RelationshipService, friendship_proposal_policy
     from brandme_core.domains.social.reports import ReportService
+    from brandme_core.domains.social.rooms import RoomService
     from brandme_core.domains.social.shares import ShareService
     from brandme_core.domains.wardrobe.api import create_wardrobe_router
     from brandme_core.domains.wardrobe.outfits import OutfitService
     from brandme_core.domains.wardrobe.service import WardrobeService
 
-    from .api import create_persona_router
+    from brandme_core.domains.wardrobe.visibility import ClosetVisibilityService
+
+    from .api import create_card_router, create_persona_router
+    from .card import PersonaCardService
     from .onboarding import GuestMigrationService
     from .service import PersonaService
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     persona = PersonaService(database)
     app.include_router(create_persona_router(persona, GuestMigrationService(database, persona), resolve_principal))
+    houses = catalog if catalog is not None else CatalogHouses()
     app.include_router(create_wardrobe_router(WardrobeService(database), OutfitService(database, proposal_policy=friendship_proposal_policy),
-                                              resolve_principal))
-    app.include_router(create_social_router(RelationshipService(database), DecisionService(database), ShareService(database),
+                                              resolve_principal, ClosetVisibilityService(database, catalog=houses)))
+    app.include_router(create_card_router(PersonaCardService(database, persona=persona, catalog=houses), resolve_principal))
+    app.include_router(create_social_router(RelationshipService(database), DecisionService(database, catalog_check=catalog_piece_exists),
+                                            ShareService(database),
                                             NotificationService(database), resolve_principal, ReportService(database)))
-    app.include_router(create_rewards_router(RewardsService(database), BenefitService(database), resolve_principal))
+    app.include_router(create_rooms_router(RoomService(database, catalog_check=catalog_piece_exists), resolve_principal))
+    app.include_router(create_flow_router(FlowService(database, catalog=houses, persona=persona), HouseService(database, catalog=houses),
+                                          resolve_principal))
+    app.include_router(create_rewards_router(RewardsService(database), BenefitService(database), resolve_principal,
+                                             StandingService(database, catalog=houses), SurveyService(database), CreditService(database)))
     if media_store is not None:
         app.include_router(create_media_router(MediaService(database, media_store, providers or ProviderRegistry()), resolve_principal))
 

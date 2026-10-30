@@ -19,6 +19,7 @@ from brandme_core.domains.persona.kernel import ValidationFailed, require_strict
 
 from .outfits import OutfitService
 from .service import WardrobeService
+from .visibility import ClosetVisibilityService
 
 
 def _limit(raw: Optional[str], default: int = 24) -> int:
@@ -33,7 +34,8 @@ def _version(result) -> Optional[str]:
     return result.get("version") if isinstance(result, dict) else None
 
 
-def create_wardrobe_router(wardrobe: WardrobeService, outfits: OutfitService, resolve_principal: PrincipalResolver) -> APIRouter:
+def create_wardrobe_router(wardrobe: WardrobeService, outfits: OutfitService, resolve_principal: PrincipalResolver,
+                           visibility: Optional[ClosetVisibilityService] = None) -> APIRouter:
     r = APIRouter()
     H = lambda req, name: req.headers.get(name)  # noqa: E731
 
@@ -163,5 +165,15 @@ def create_wardrobe_router(wardrobe: WardrobeService, outfits: OutfitService, re
             return outfits.set_packing_entry_state(p, list_id, entry_id, b["state"], im)
 
         return await execute(request, resolve_principal, run, etag=_version, with_body=True)
+
+    # ------------------------------------------------- closet visibility (item 6)
+    if visibility is not None:
+        @r.put("/wardrobe/items/{item_id}/visibility")
+        async def set_visibility(request: Request, item_id: str):
+            return await execute(request, resolve_principal, lambda p, b: visibility.set_visibility(p, item_id, b), with_body=True)
+
+        @r.get("/members/{member_id}/closet")
+        async def member_closet(request: Request, member_id: str):
+            return await execute(request, resolve_principal, lambda p: visibility.closet(p, member_id))
 
     return r
