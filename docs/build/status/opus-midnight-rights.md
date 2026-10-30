@@ -656,3 +656,71 @@ At 2026-10-22, four registered lane events had no producer (`docs/build/evidence
 - `brandme-chain` reconciliation suite: 11 passed, including the new attestation test.
   - That suite's teardown validates every emitted outbox row against the Python event registry (`brandme-chain/tests/support/store-database.py:21-34`), so the new `reprint.attested` payload is checked across languages.
 - `brandme-chain` type-check clean.
+
+## Stage 15 — check-in packet (2026-10-30)
+
+- **Trigger met:** authenticated commands (Stage 13), producers (Stage 14) and redaction (D-007, Stage 12) are complete.
+- **Single outstanding item: Preprod finality.** `MIDNIGHT_BLOCKFROST_PROJECT_ID` and `MN_PREPROD_SEEDS` are still absent (names-only check). The day they land, the lane runs `pnpm test:midnight:preprod` and records tx IDs, block heights and hashes, and finality timestamps here. Screenshots are not evidence.
+- **Head:** this packet sits on Stage 14 `6a4a11a`, branch `claude/midnight-rights-lifecycle-yhfyyu` (PR #70).
+
+### Exit evidence against the plan
+- [x] **New PR off `main`, authenticated command backends behind auth, exercised end to end.** Signed OIDC → mounted gateway → real Python process → Spanner, for transfer creation, reprint quotes and ownership challenges, including recent auth, scope, idempotent replay, relayed refusals and the cookie CSRF refusal (Stage 13).
+  - **Caveat:** accept and status ship unmounted (foundation's mount file), and strict modes refuse the process until its trust-path entry exists.
+- [ ] **Op store/reconciler hardening.** Not started this round (question 17).
+- [~] **Producers and My Data.**
+  - Done: `ownership.transfer.requested` and `reprint.attested` are produced, and My Data is composed in dev form across all eight domains.
+  - Open: `license.issued` is deliberately unproduced (question 15).
+- [x] **Q9 redaction (undelivered path) and the joint deletion proof are green.** Foundation's handler runs through this lane's orchestrator (D-007, Stage 12).
+- [ ] **Anchor record and disclosure-filtered scan response.** Not started (questions 18–19).
+- [ ] **Preprod finality.** Blocked on credentials; this is the single outstanding item.
+- [ ] **7/7 local re-run and Blockfrost-only audit on the final head.** Deferred to the final head (question 17).
+- [x] **Privacy suite green throughout.**
+  - Stage 12: full `tests/` 2107 passed.
+  - Stage 13: full `tests/` 2118 passed, 67 skipped, 12 xfailed, 0 failed. Collected before the frozen-sender test and Stage 14's tests, which passed separately (11 command and 2 composition tests).
+  - Each stage's joint proof and privacy suites pass.
+
+### Questions (21, with recommended defaults)
+Several of the plan's questions are settled: the trust-inventory retype has landed, D-007 replaced the redaction question, and commands and producers are built. Their slots carry the decisions this round surfaced.
+
+**Direction (7)**
+1. **Preprod credentials.** Does the founder provision both secrets in the GitHub `sandbox` environment (`docs/build/security/credential-manifest.yaml:206-246`)? **Default: yes; the lane runs the day they land.**
+2. **Mainnet criteria.** Should the lane define the go/no-go criteria next stage (not a Mainnet decision)? **Default: yes.**
+3. **RFID split.** Midnight owns the anchor record and spatial owns the scan UX; confirm? **Default: yes.**
+4. **Verification scope.** Disclosure invariants first, then the rights contracts? **Default: disclosure invariants first.**
+5. **F-identity ordering.**
+   - Identity erasure runs last (`final = True`, contract item 9). Sessions survive until that step so a pending receipt stays readable. Foundation registers the identity handler and decides what happens at acceptance (`account_state`, session revocation) and how the receipt reaches a member whose identity is gone.
+   - **Default: yes, as built.**
+6. **Wallet custody.** Test seeds go only in the environment secret, the manifest holds names only, and rotation means funding new wallets and sweeping the old ones (never editing in place)? **Default: yes.**
+7. **Transfer invite design.**
+   - The sender's app generates a ≥256-bit invite, the server stores only its digest, and the recipient binds their wallet's commitment (V016).
+   - The alternative is recipient-issued receive codes, which need a new table.
+   - **Default: sender-generated, as built.**
+
+**Integration & security (7)**
+
+8. **Command principal transport.**
+   - Today: a service credential plus principal headers, with scope and `auth_time` re-checked by the backend.
+   - Alternative: a signed short-lived assertion with its own audience, as the consumer domains use.
+   - **Default: keep the service credential now; move to a signed assertion when foundation generalizes its signer.**
+9. **Trust-path entry for `rights_commands`** (foundation's edit). **Default: a sandbox-grade entry citing `brandme_core/domains/rights/commands.py`, with no Mainnet mode.**
+10. **Mount `/transfers`** (foundation's mount file, one line). **Default: mount now.**
+11. **Public contract shapes** for `createTransfer`, `acceptTransfer`, `createReprintQuote` and a transfer read (foundation's `packages/contracts`). **Default: foundation adds them; the lane supplies the request/response shapes from `commands.py`.**
+12. **Receipt notes (D-007c).** Expose `records_detail`/`derived_detail` through `DeletionOutcomeRead`? Contract item 8 now governs that text. **Default: add one optional plain-language field.**
+13. **Q9 restore guard.**
+   - Refuse to serve when a tombstone's deletion job is missing, because a tombstone-only restore loses the account barrier.
+   - This changes foundation's `test_restore_without_the_job_ledger_reerases_and_serves`.
+   - **Default: yes; foundation updates its test.**
+14. **Finality evidence format.** Tx IDs, block heights and hashes, and finality timestamps, independently verifiable through Blockfrost, no screenshots? **Default: yes.**
+
+**Scope & sequencing (7)**
+
+15. **`license.issued`.**
+    - Producing it needs an issuer-authenticated license command, because permissions and territory are the rights holder's (spec 03 `LicenseGrant`) and are not on chain.
+    - No issuer principal exists yet.
+    - **Default: keep it unproduced until issuer authority exists; never infer it from chain facts.**
+16. **Client-proven operation journal.** Build the wallet flow's journal next, so `offerTransfer`/`acceptTransfer`/`proveControl` are journaled before broadcast? **Default: yes, next stage.**
+17. **Order of the rest:** op-store hardening → client journal → anchor record → disclosure invariants → Preprod prep → final 7/7 and Blockfrost audit → finality when credentials land. **Default: yes.**
+18. **Disclosure default owner.** One shared facet-class definition, owned by this lane and consumed by consumer-domains item 12? **Default: yes.**
+19. **Anchor migration.** V017 (V016 is now transfer invites), with its `RESERVED` row in the same change, as the migrations README requires. **Default: yes.**
+20. **Exports.** Harden only? Received offers are now included in the same contract-valid shape. **Default: harden only.**
+21. **Next round.** A Mainnet-readiness round after Preprod finality, gated on the founder's go/no-go? **Default: yes.**
