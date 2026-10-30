@@ -226,6 +226,7 @@ class SurveyService:
                 raise NotFound("survey not found")
             answers = _answers(sv["questions"], body)
             guard_write(txn, me, "rewards.surveys")
+            guard_write(txn, me, "rewards.ledger")  # the response posts points; refused, not unpaid, while the ledger is frozen
             if query(txn, "SELECT 1 FROM SurveyResponses WHERE member_id=@m AND survey_id=@s", {"m": me, "s": survey_id}, {"m": STR, "s": STR}):
                 raise DetailedInvalidTransition("you already answered this survey", code="already_answered")
             score = None

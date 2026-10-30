@@ -141,7 +141,11 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
 def delete_category(txn, member_id: str, category: str) -> int:
     m = {"m": member_id}
     if category == "social.relationships":
-        return txn.execute_update("DELETE FROM Relationships WHERE member_id=@m OR other_member_id=@m", params=m, param_types=_M)
+        from .shares import end_share_audiences
+
+        # Friendship is what selected-member shares rest on: end those audiences, and their projected copies, too.
+        n = end_share_audiences(txn, member_id)
+        return n + txn.execute_update("DELETE FROM Relationships WHERE member_id=@m OR other_member_id=@m", params=m, param_types=_M)
     if category == "social.blocks":
         n = txn.execute_update("DELETE FROM MemberBlocks WHERE member_id=@m OR blocked_member_id=@m", params=m, param_types=_M)
         return n + txn.execute_update("DELETE FROM MemberMutes WHERE member_id=@m OR muted_member_id=@m", params=m, param_types=_M)

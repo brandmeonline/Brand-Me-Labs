@@ -200,12 +200,36 @@ def purge_member_shares(txn, member_id: str) -> int:
     events = [("share.revoked", sid, v + 1, NIL_SUBJECT) for sid, v in query(
         txn, "SELECT share_id, version FROM ShareGrants WHERE member_id=@m AND revoked_at IS NULL AND audience='selected_members'", m, mt)]
     n = txn.execute_update("DELETE FROM ShareGrants WHERE member_id=@m", params=m, param_types=mt)  # previews cascade
+    n += _leave_received(txn, member_id, events)
+    _purge_events(txn, member_id, events)
+    return n
+
+
+def _leave_received(txn, member_id: str, events: List[Tuple[str, str, int, str]]) -> int:
+    """The member leaves every grant they receive; each grant's version moves on."""
+    n = 0
     for owner, share_id, recips, version in query(
-            txn, "SELECT member_id, share_id, recipient_ids, version FROM ShareGrants WHERE @m IN UNNEST(recipient_ids)", m, mt):
+            txn, "SELECT member_id, share_id, recipient_ids, version FROM ShareGrants WHERE @m IN UNNEST(recipient_ids)",
+            {"m": member_id}, {"m": STR}):
         txn.update("ShareGrants", columns=("member_id", "share_id", "recipient_ids", "version"),
                    values=[(owner, share_id, [x for x in recips if x != member_id] or None, version + 1)])
         events.append(("share.audience_changed", share_id, version + 1, owner))
         n += 1
+    return n
+
+
+def end_share_audiences(txn, member_id: str) -> int:
+    """Privacy deletion of ``social.relationships``: with every friendship gone, the member leaves the
+    selected-member grants they receive, and their own grants lose every recipient (the grants stay;
+    they belong to ``social.shares``). ``share.audience_changed`` lets the projector drop the copies;
+    the member's own grants name the owner only as ``NIL_SUBJECT``."""
+    events: List[Tuple[str, str, int, str]] = []
+    own = query(txn, "SELECT share_id, version FROM ShareGrants WHERE member_id=@m AND revoked_at IS NULL "
+                     "AND audience='selected_members' AND ARRAY_LENGTH(recipient_ids) > 0", {"m": member_id}, {"m": STR})
+    for share_id, version in own:
+        txn.update("ShareGrants", columns=("member_id", "share_id", "recipient_ids", "version"), values=[(member_id, share_id, None, version + 1)])
+        events.append(("share.audience_changed", share_id, version + 1, NIL_SUBJECT))
+    n = len(own) + _leave_received(txn, member_id, events)
     _purge_events(txn, member_id, events)
     return n
 

@@ -188,3 +188,40 @@ def test_privacy_deletion_removes_projected_share_copies(spanner_db, store):
     run_txn(db, lambda t: delete_wardrobe(t, friend.member_id, "wardrobe.items"))
     assert reg.apply(store, event(db, "share.revoked", again)) == ["applied"]
     assert copy(again, other) is None
+
+
+def test_deleting_relationships_removes_projected_share_copies(spanner_db, store):
+    db = spanner_db
+    owner, friend, other = (member_principal(insert_member(db), MEMBER_SCOPES) for _ in range(3))
+    rel = RelationshipService(db)
+    for a, b in ((owner, friend), (friend, other)):
+        rel.accept(b, rel.request(a, b.member_id)["relationship_id"])
+    w = WardrobeService(db)
+    mine = w.create_items(owner, {"source": "manual", "title": "Linen coat", "category": "outerwear"}, key())["items"][0]["id"]
+    theirs = w.create_items(friend, {"source": "manual", "title": "Straw hat", "category": "accessory"}, key())["items"][0]["id"]
+    reg = ProjectionRegistry()
+    register_share_projector(db, reg)
+    shares = ShareService(db)
+
+    def share(who, item, recipients):
+        return shares.create(who, {"subject_type": "wardrobe_item", "subject_id": item, "audience": "selected_members", "allowed_fields": ["title"],
+                                   "recipient_ids": [r.member_id for r in recipients], "expires_at": "2027-01-01T00:00:00+00:00"}, key())["share_id"]
+
+    out, inbound = share(owner, mine, [friend]), share(friend, theirs, [owner, other])
+    for sid in (out, inbound):
+        assert reg.apply(store, event(db, "share.created", sid)) == ["applied"]
+
+    def copy(sid, who):
+        return store.get(SHARE_SPEC, {"share_id": sid}, recipient=who.member_id)
+
+    # The owner deletes only their friendships: shares rest on them, so both audiences end too.
+    run_txn(db, lambda t: delete_social(t, owner.member_id, "social.relationships"))
+    (emptied,) = events(db, "share.audience_changed", out)
+    assert emptied.payload["owner_id"] == NIL_SUBJECT and owner.member_id not in json.dumps(emptied.to_wire())
+    for changed in (emptied, events(db, "share.audience_changed", inbound)[-1]):
+        assert reg.apply(store, changed) == ["applied"]
+    assert copy(out, friend) is None and copy(inbound, owner) is None and copy(inbound, other)["preview"] == {"title": "Straw hat"}
+    # The owner's grant itself stays (it is social.shares data), with nobody left in it.
+    with db.snapshot() as s:
+        assert list(s.execute_sql("SELECT recipient_ids FROM ShareGrants WHERE share_id=@s", params={"s": out},
+                                  param_types={"s": param_types.STRING})) == [[None]]

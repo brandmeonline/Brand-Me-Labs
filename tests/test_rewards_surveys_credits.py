@@ -239,3 +239,23 @@ def test_a_credit_outlives_a_deleted_ledger_without_breaking_it(spanner_db):
     acct = account(db, me.member_id)
     assert (acct.available, acct.reserved, acct.spent_total) == (200, 0, 0)
     assert run_read(db, lambda s: ledger.consistency(s, me.member_id))["ok"]
+
+
+def test_nothing_posts_points_while_the_ledger_is_frozen(spanner_db):
+    from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
+
+    db = spanner_db
+    op, me = operator(db), person(db)
+    grant(db, me.member_id)
+    before = account(db, me.member_id)
+    survey = SurveyService(db).create_survey(op, {**SURVEY, "title": "Frozen ledger"})["survey_id"]
+    run_txn(db, lambda t: t.insert("ProcessingFreezes", columns=("subject_ref", "category", "reason", "deletion_job_id", "created_at"),
+                                   values=[(me.member_id, "rewards.ledger", "deletion", str(uuid.uuid4()), COMMIT_TIMESTAMP)]))
+    for attempt in (lambda: SurveyService(db).respond(me, survey, ANSWERS, key()), lambda: CreditService(db).convert(me, {"points": 500}, key())):
+        with pytest.raises(DetailedInvalidTransition) as e:
+            attempt()
+        assert e.value.code == "processing_frozen"
+    # Refused, not answered without pay: the member can answer once the deletion is done.
+    assert count(db, "SELECT COUNT(*) FROM SurveyResponses WHERE member_id=@m", m=me.member_id) == 0
+    assert count(db, "SELECT COUNT(*) FROM PurchaseCredits WHERE member_id=@m", m=me.member_id) == 0
+    assert account(db, me.member_id) == before

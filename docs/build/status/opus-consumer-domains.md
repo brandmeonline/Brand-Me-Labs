@@ -1260,3 +1260,22 @@ The share purge adds no contract and changes no foundation pin. `tests/foundatio
 **Same gaps outside this PR.** Benefit reservations from the earlier rewards PR, already on `main`, have both gaps: the release path in `benefits.py` and the redemptions deletion path. They are fixed in the follow-up PR rather than widening #66.
 
 **Credential manifest (fourth review).** No credential was created.
+
+**Clean-checkout CI mirror of `5f3e2b4`.** All green:
+- lane suite: 301 passed;
+- full `tests/`: 2185 passed, 20 skipped, 17 xfailed (quarantined);
+- Firestore rules, `pnpm check` and `pnpm smoke`: passed;
+- `pnpm audit --prod`: no known vulnerabilities, none critical;
+- frontend and console builds: passed;
+- gateway: 182/182.
+
+GitHub CI is fully green on both `5f3e2b4` and `f27e37c`.
+
+**Fifth Codex review (`f27e37c`): 2 findings, both real, both fixed.** Each fix has a test that fails without it, and 6 mutations are all killed.
+
+| # | Finding | Fix | Test (fails without the fix) |
+|---|---|---|---|
+| J1 (P2) | A survey response posted points while only `rewards.ledger` was frozen for deletion. It was guarded for `rewards.surveys` only, so it could recreate ledger rows after the ledger's deletion step. Converting points to credit had the same single guard | Both also guard `rewards.ledger` and are refused (`processing_frozen`) while it is frozen. The survey is refused rather than answered without pay, so the member can answer it once the deletion is done | `test_nothing_posts_points_while_the_ledger_is_frozen`: no response, no credit and no account change |
+| J2 (P2) | Deleting `social.relationships` through My Data deleted the friendships but left projected selected-member shares readable until expiry. Only `block()` and `remove()` cleaned up grants | `end_share_audiences` runs in the deleting transaction. The member leaves every grant they receive. Their own grants lose every recipient, but stay as `social.shares` data. Each change bumps the version and writes `share.audience_changed`, naming the owner of the member's own grants only as `NIL_SUBJECT` | `test_deleting_relationships_removes_projected_share_copies` (Spanner + Firestore emulators): both directions' copies go, a third member keeps theirs, and the deleted member's id is not in the event |
+
+**Credential manifest (fifth review).** No credential was created.

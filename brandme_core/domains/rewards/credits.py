@@ -99,6 +99,7 @@ class CreditService:
             if not member_active(txn, me):
                 raise NotFound("member not found")
             guard_write(txn, me, "rewards.credits")
+            guard_write(txn, me, "rewards.ledger")  # converting writes the ledger's reserve entry
             acct = ledger.load_account(txn, me)
             if acct.available < points:
                 raise DetailedInvalidTransition("not enough available points", code="insufficient_points",
