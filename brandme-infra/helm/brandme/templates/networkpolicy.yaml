@@ -3,8 +3,8 @@ Copyright (c) Brand.Me, Inc. All rights reserved.
 Default deny for the namespace, then one allow-list policy per workload.
 Flows (nothing else is permitted):
   load balancer (only if ingress.enabled) -> gateway, console
-  gateway -> chain, read-api, exports-api
-  every Google-identity workload -> DNS, GKE metadata server, HTTPS egress
+  gateway -> chain, read-api, exports-api, consumer-domains (each reachable from the gateway pods only)
+  every Google-identity workload (incl. the events-retention CronJob) -> DNS, GKE metadata server, HTTPS egress
   console -> DNS only
 Kubelet probes come from the node and are not subject to these policies on
 GKE Dataplane V2 / Calico.
@@ -26,6 +26,7 @@ spec:
 {{- if .Values.chain.enabled }}{{ $backends = append $backends (list "chain" .Values.chain.port) }}{{ end }}
 {{- if .Values.readApi.enabled }}{{ $backends = append $backends (list "read-api" .Values.readApi.port) }}{{ end }}
 {{- if .Values.exportsApi.enabled }}{{ $backends = append $backends (list "exports-api" .Values.exportsApi.port) }}{{ end }}
+{{- if .Values.consumerDomains.enabled }}{{ $backends = append $backends (list "consumer-domains" .Values.consumerDomains.port) }}{{ end }}
 {{- if .Values.gateway.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
@@ -86,7 +87,7 @@ spec:
   egress:
     {{- include "brandme.egressBase" $root | nindent 4 }}
 {{- end }}
-{{- range $w := list (list "exports-worker" $root.Values.exportsWorker.enabled) (list "events-worker" $root.Values.eventsWorker.enabled) }}
+{{- range $w := list (list "exports-worker" $root.Values.exportsWorker.enabled) (list "events-worker" $root.Values.eventsWorker.enabled) (list "events-retention" $root.Values.eventsRetention.enabled) }}
 {{- if index $w 1 }}
 ---
 apiVersion: networking.k8s.io/v1

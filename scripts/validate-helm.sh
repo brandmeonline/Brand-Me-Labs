@@ -140,7 +140,7 @@ assert_hardened() { # assert_hardened <rendered file> <expected Deployments...>
     grep -qx "  name: $name" "$f" || die "$f: expected resource $name was not rendered"
   done
   local pods images
-  pods=$(count '^kind: (Deployment|Job)$' "$f")
+  pods=$(count '^kind: (Deployment|Job|CronJob)$' "$f")
   images=$(count '^ +image: ' "$f")
   [ "$pods" -gt 0 ] || die "$f: no workloads rendered"
   [ "$images" -eq "$pods" ] || die "$f: expected one container per pod ($images images, $pods pods)"
@@ -151,8 +151,12 @@ assert_hardened() { # assert_hardened <rendered file> <expected Deployments...>
   [ "$(count '^ +runAsNonRoot: true$' "$f")" -eq "$pods" ] || die "$f: a pod may run as root"
   [ "$(count '^ +type: RuntimeDefault$' "$f")" -eq "$pods" ] || die "$f: a pod lacks the RuntimeDefault seccomp profile"
   [ "$(count '^kind: Secret$' "$f")" -eq 0 ] || die "$f: the chart must never render a Secret"
-  if grep -A1 -E '^ +- name: [A-Z_]*(TOKEN|SECRET|BLOCKFROST_PROJECT_ID)$' "$f" | grep -qE '^ +value:'; then
+  if grep -A1 -E '^ +- name: [A-Z_]*(TOKEN|SECRET|BLOCKFROST_PROJECT_ID|ASSERTION_KEY)$' "$f" | grep -qE '^ +value:'; then
     die "$f: a credential env var has an inline value (must use secretKeyRef)"
+  fi
+  # The consumer-domain JWKS is public: no JWK private member may ever render.
+  if grep -A1 -E '^ +- name: CONSUMER_DOMAIN_ASSERTION_JWKS$' "$f" | grep -qE '\\"(d|p|q|dp|dq|qi|k)\\":'; then
+    die "$f: CONSUMER_DOMAIN_ASSERTION_JWKS carries a private JWK member"
   fi
   [ "$(count '^kind: PodDisruptionBudget$' "$f")" -eq "$(count '^kind: Deployment$' "$f")" ] || die "$f: every Deployment needs a PDB"
   grep -q 'name: brandme-default-deny' "$f" || die "$f: default-deny NetworkPolicy missing"
@@ -172,7 +176,7 @@ expect_failure() {
 install_tools
 
 CI_VALUES="$CHART/ci/test-values.yaml"
-ALL_DEPLOYMENTS=(brandme-gateway brandme-chain brandme-console brandme-read-api brandme-exports-api brandme-exports-worker brandme-events-worker brandme-migrations)
+ALL_DEPLOYMENTS=(brandme-gateway brandme-chain brandme-console brandme-read-api brandme-exports-api brandme-exports-worker brandme-events-worker brandme-events-retention brandme-consumer-domains brandme-migrations)
 
 log "helm lint --strict (ci/test-values.yaml)"
 "$HELM" lint --strict "$CHART" --namespace brandme --kube-version "${KUBE_VERSIONS[0]}" -f "$CI_VALUES"
@@ -184,6 +188,15 @@ for kv in "${KUBE_VERSIONS[@]}"; do
   assert_hardened "$WORK/ci-$kv.yaml" "${ALL_DEPLOYMENTS[@]}"
 done
 
+# consumerDomains is off by default: then nothing of it renders and the gateway
+# gets no CONSUMER_DOMAIN_* env (its lane routes answer 503).
+log "render ci/test-values.yaml with consumerDomains.enabled=false"
+render "${KUBE_VERSIONS[0]}" "$WORK/ci-no-domains.yaml" -f "$CI_VALUES" --set consumerDomains.enabled=false
+conform "${KUBE_VERSIONS[0]}" "$WORK/ci-no-domains.yaml"
+if grep -qE 'consumer-domains|CONSUMER_DOMAIN_' "$WORK/ci-no-domains.yaml"; then
+  die "consumerDomains.enabled=false still renders consumer-domain resources or gateway env"
+fi
+
 # values-sandbox.yaml exactly as the deploy job uses it: registry and digests
 # via --set-string, every REPLACE_ME supplied by an overlay (fake values here).
 cat >"$WORK/sandbox-filled.yaml" <<'YAML'
@@ -193,6 +206,12 @@ gateway:
   oidc: {issuer: "https://issuer.example.invalid", audience: ci-fake-audience}
   publicOrigins: ["https://app.example.invalid"]
 privacyExports: {bucket: brandme-sandbox-exports-ci-fake}
+consumerDomains:
+  assertion:
+    signingKid: ci-fake-1
+    jwks:
+      keys:
+        - {kty: EC, crv: P-256, kid: ci-fake-1, x: qL6DpcXnJ0dyF-o4b4XFG26Ecfd0jysMUjLCfkg1v7U, "y": IWmovsbqBaF-JEwZCX33RU_W2pG88QVN-OQxphX8azg}
 YAML
 DIGESTS=(--set-string images.registry=registry.invalid/ci-fake-project)
 for image in core gateway chain console; do
@@ -203,10 +222,15 @@ for kv in "${KUBE_VERSIONS[@]}"; do
   render "$kv" "$WORK/sandbox-$kv.yaml" -f "$CHART/values-sandbox.yaml" -f "$WORK/sandbox-filled.yaml" "${DIGESTS[@]}"
   conform "$kv" "$WORK/sandbox-$kv.yaml"
   assert_hardened "$WORK/sandbox-$kv.yaml" brandme-gateway brandme-chain brandme-read-api brandme-exports-api \
-    brandme-exports-worker brandme-events-worker brandme-migrations
+    brandme-exports-worker brandme-events-worker brandme-events-retention brandme-consumer-domains brandme-migrations
   modes=$(count '^ +- name: (BRANDME_MODE|ENVIRONMENT)$' "$WORK/sandbox-$kv.yaml")
   sandbox=$(grep -A1 -E '^ +- name: (BRANDME_MODE|ENVIRONMENT)$' "$WORK/sandbox-$kv.yaml" | grep -cE '^ +value: "sandbox"$' || true)
   [ "$modes" -gt 0 ] && [ "$modes" -eq "$sandbox" ] || die "values-sandbox.yaml must render BRANDME_MODE=ENVIRONMENT=sandbox everywhere"
+  # Fixed identities (scripts/provision/gcp-dev-identities.sh): each KSA maps to its own GSA.
+  for pair in brandme-consumer-domains-api=bm-sbx-dom-api brandme-events-retention=bm-sbx-fnd-retention; do
+    grep -A12 -E "^  name: ${pair%%=*}$" "$WORK/sandbox-$kv.yaml" | grep -qE "iam.gke.io/gcp-service-account: \"${pair#*=}@" \
+      || die "values-sandbox.yaml: ServiceAccount ${pair%%=*} must map to ${pair#*=}"
+  done
 done
 
 log "negative tests (rendering must fail)"
@@ -238,18 +262,68 @@ expect_failure "missing Secret name" "secretRefs.chainServiceToken.name is requi
   -f "$CI_VALUES" --set secretRefs.chainServiceToken.name=
 expect_failure "missing Workload Identity GSA" "readApi.gcpServiceAccount is required" -f "$CI_VALUES" --set readApi.gcpServiceAccount=
 expect_failure "topic outside brandme-<mode>-" "must start with brandme-sandbox-" -f "$CI_VALUES" --set eventsWorker.topics.public=outbox-public
+expect_failure "events-retention without a Workload Identity GSA" "eventsRetention.gcpServiceAccount is required" \
+  -f "$CI_VALUES" --set eventsRetention.gcpServiceAccount=
+expect_failure "events-retention daily" "must be hourly at a fixed minute" -f "$CI_VALUES" --set-string 'eventsRetention.schedule=17 3 * * *'
+expect_failure "events-retention without a schedule" "eventsRetention.schedule is required" -f "$CI_VALUES" --set-string 'eventsRetention.schedule='
+expect_failure "events-retention every minute" "must be hourly at a fixed minute" -f "$CI_VALUES" --set-string 'eventsRetention.schedule=* * * * *'
+expect_failure "consumer domains without a Workload Identity GSA" "consumerDomains.gcpServiceAccount is required" \
+  -f "$CI_VALUES" --set consumerDomains.gcpServiceAccount=
+expect_failure "consumer domains without an assertion issuer" "consumerDomains.assertion.issuer is required" \
+  -f "$CI_VALUES" --set consumerDomains.assertion.issuer=
+expect_failure "consumer domains with an issuer the gateway never signs" "the gateway signs every assertion with the fixed issuer" \
+  -f "$CI_VALUES" --set consumerDomains.assertion.issuer=https://issuer.example.invalid
+expect_failure "consumer domains without a gateway" "consumerDomains.enabled requires gateway.enabled" \
+  -f "$CI_VALUES" --set gateway.enabled=false --set ingress.enabled=false
+expect_failure "gateway without the assertion kid" "consumerDomains.assertion.signingKid is required" \
+  -f "$CI_VALUES" --set consumerDomains.assertion.signingKid=
+expect_failure "gateway kid not in the service's JWKS" "names no key in consumerDomains.assertion.jwks" \
+  -f "$CI_VALUES" --set consumerDomains.assertion.signingKid=ci-fake-9
+expect_failure "gateway without the assertion key Secret" "secretRefs.consumerDomainAssertionKey.name is required" \
+  -f "$CI_VALUES" --set secretRefs.consumerDomainAssertionKey.name=
+expect_failure "consumer domains media bucket as a URL" "is not a GCS bucket name" \
+  -f "$CI_VALUES" --set consumerDomains.mediaBucket=gs://brandme-sandbox-media
+X1=qL6DpcXnJ0dyF-o4b4XFG26Ecfd0jysMUjLCfkg1v7U
+Y1=IWmovsbqBaF-JEwZCX33RU_W2pG88QVN-OQxphX8azg
+jwks_case() { # jwks_case <name> <one JWK flow map, or "[]">
+  local keys=$2
+  [ "$keys" = "[]" ] || keys="[$keys]"
+  printf 'consumerDomains:\n  assertion:\n    signingKid: ci-fake-1\n    jwks:\n      keys: %s\n' "$keys" >"$WORK/jwks-$1.yaml"
+  printf '%s' "$WORK/jwks-$1.yaml"
+}
+expect_failure "consumer domains without a JWKS" "consumerDomains.assertion.jwks.keys is required" \
+  -f "$CI_VALUES" -f "$(jwks_case empty '[]')"
+# A private member, even with a placeholder value, never renders.
+expect_failure "private JWK in the service's JWKS" "holds a private key" \
+  -f "$CI_VALUES" -f "$(jwks_case private "{kty: EC, crv: P-256, kid: ci-fake-1, x: $X1, \"y\": $Y1, d: ci-fake-not-a-key}")"
+expect_failure "JWK with an unknown member" "only the public members" \
+  -f "$CI_VALUES" -f "$(jwks_case unknown "{kty: EC, crv: P-256, kid: ci-fake-1, x: $X1, \"y\": $Y1, x5c: [ci-fake]}")"
+expect_failure "JWK with a bare y key (YAML true)" "quote the y member" \
+  -f "$CI_VALUES" -f "$(jwks_case bare-y "{kty: EC, crv: P-256, kid: ci-fake-1, x: $X1, y: $Y1}")"
+expect_failure "non-P-256 JWK" "must be kty EC, crv P-256" \
+  -f "$CI_VALUES" -f "$(jwks_case p384 "{kty: EC, crv: P-384, kid: ci-fake-1, x: $X1, \"y\": $Y1}")"
+expect_failure "JWK with a malformed coordinate" "base64url P-256 coordinates" \
+  -f "$CI_VALUES" -f "$(jwks_case short "{kty: EC, crv: P-256, kid: ci-fake-1, x: abc, \"y\": $Y1}")"
 expect_failure "production with Midnight test-network workloads" "mode=production with chain/read-api/exports enabled is refused" -f "$CI_VALUES" --set mode=production
 expect_failure "production values with sandbox resources" "must start with brandme-production-" -f "$CI_VALUES" --set mode=production --set chain.enabled=false --set readApi.enabled=false --set exportsApi.enabled=false --set exportsWorker.enabled=false
 
 if [ -n "${BRANDME_PYTHON:-}" ]; then
   log "env contract: rendered env -> each core process's own strict-mode validator ($BRANDME_PYTHON)"
   (cd "$ROOT" && PYTHONPATH="$ROOT" "$BRANDME_PYTHON" - "$WORK/ci-${KUBE_VERSIONS[0]}.yaml" <<'PY'
+import re
 import sys
+from urllib.parse import urlsplit
 
 import google.auth
 import yaml
 
+from brandme_core.config import enforce_boot_guard
+from brandme_core.domains.media import gcs_store
+from brandme_core.domains.media.providers import registry_from_environment
+from brandme_core.domains.persona import app as domain_app
+from brandme_core.domains.persona.assertion import DomainAssertionVerifier
 from brandme_core.events import pubsub
+from brandme_core.events.retention import RetentionConfig
 from brandme_core.events.worker import WorkerConfig
 from brandme_core.privacy_exports.config import ExportConfig
 from brandme_core.read_api.config import ReadConfig
@@ -267,6 +341,7 @@ google.auth.default = no_adc
 
 docs = [d for d in yaml.safe_load_all(open(sys.argv[1])) if d]
 pods = {d["metadata"]["name"]: d["spec"]["template"]["spec"] for d in docs if d["kind"] in ("Deployment", "Job")}
+pods.update({d["metadata"]["name"]: d["spec"]["jobTemplate"]["spec"]["template"]["spec"] for d in docs if d["kind"] == "CronJob"})
 secret_values = {}
 
 
@@ -299,6 +374,50 @@ except AdcReached:
     checked.append("brandme-events-worker")
 else:
     raise SystemExit("PubSubPublisher did not reach credential lookup")
+
+retention_pod = pods["brandme-events-retention"]
+assert retention_pod["containers"][0]["command"] == ["python", "-m", "brandme_core.events.retention", "--once"]
+assert retention_pod["restartPolicy"] == "Never" and retention_pod["serviceAccountName"] == "brandme-events-retention"
+retention_env = env_of("brandme-events-retention")
+assert RetentionConfig.from_env(retention_env).environment == "sandbox"
+assert enforce_boot_guard("events_retention", env=retention_env).value == "sandbox"
+checked.append("brandme-events-retention")
+
+# Consumer-domain service: its own _config, the shared boot guard, the JWKS
+# verifier (public P-256 keys only), the try-on registry and the media store.
+domain_pod = pods["brandme-consumer-domains"]
+assert domain_pod["containers"][0]["command"] == ["python", "-m", "brandme_core.domains.persona.app"]
+assert domain_pod["serviceAccountName"] == "brandme-consumer-domains-api"
+domain_env = env_of("brandme-consumer-domains")
+domain_cfg = domain_app._config(domain_env)
+assert domain_cfg["environment"] == "sandbox" and domain_cfg["port"] == 8010, domain_cfg
+assert enforce_boot_guard("consumer_domains", env=domain_env).value == "sandbox"
+verifier = DomainAssertionVerifier.from_jwks(issuer=domain_cfg["CONSUMER_DOMAIN_ASSERTION_ISSUER"],
+                                             jwks=domain_cfg["CONSUMER_DOMAIN_ASSERTION_JWKS"], environment="sandbox")
+assert registry_from_environment(domain_env).active() is None  # no try-on provider is approved
+assert domain_env.get("BRANDME_MEDIA_BUCKET")
+try:
+    gcs_store.from_environment(domain_env)
+except AdcReached:
+    checked.append("brandme-consumer-domains")
+else:
+    raise SystemExit("the media store did not reach credential lookup")
+
+# Gateway side of the hop (brandme-gateway/src/config/index.ts:126-128, src/services/domains.ts).
+gateway_pod = pods["brandme-gateway"]
+gateway_env = {i["name"]: i for i in gateway_pod["containers"][0]["env"]}
+url = urlsplit(gateway_env["CONSUMER_DOMAIN_SERVICE_URL"]["value"])
+services = {d["metadata"]["name"]: d for d in docs if d["kind"] == "Service"}
+assert url.scheme == "http" and url.hostname == "brandme-consumer-domains.brandme.svc.cluster.local", url
+assert url.port in {p["port"] for p in services["brandme-consumer-domains"]["spec"]["ports"]} and url.port == domain_cfg["port"]
+kid = gateway_env["CONSUMER_DOMAIN_ASSERTION_KID"]["value"]
+assert re.fullmatch(r"[A-Za-z0-9._-]{1,64}", kid) and kid in verifier.keys, (kid, sorted(verifier.keys))
+key_ref = gateway_env["CONSUMER_DOMAIN_ASSERTION_KEY"]["valueFrom"]["secretKeyRef"]
+assert "value" not in gateway_env["CONSUMER_DOMAIN_ASSERTION_KEY"] and key_ref["optional"] is False
+domains_ts = open("brandme-gateway/src/services/domains.ts").read()
+assert f"DOMAIN_ISSUER = '{domain_cfg['CONSUMER_DOMAIN_ASSERTION_ISSUER']}'" in domains_ts
+assert not any("CONSUMER_DOMAIN_ASSERTION_KEY" == i["name"] for i in domain_pod["containers"][0]["env"])
+checked.append("brandme-gateway (consumer-domain hop)")
 
 mig = env_of("brandme-migrations")
 assert mig["BRANDME_MODE"] == mig["ENVIRONMENT"] == "sandbox" and all(

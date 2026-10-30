@@ -1,9 +1,16 @@
 # GKE deploy-verification packet — first deploy `BRANDME_MODE=sandbox`
 
 Prepared 2026-10-23 on base `744d593` (main `5174ec2` + PR #53 round-2
-foundation work). Owner: foundation lane.
+foundation work). Revised 2026-10-25 on `bf31c98` (main `2b5ae88` with PRs #51,
+#56, #61 and #65, plus foundation round 4). Section C is now an execution
+checklist with a verify and an undo command for each step, and the `ci-cd.yml`
+line references are refreshed. Revised 2026-10-30 on `375180b` (PR #62, foundation
+round 4, re-synced with main `22ff053`): the consumer-domains service and the retention
+identity are in the chart and the provisioning script, so C-13 to C-21 now cover them; every
+Verify fails with a message instead of passing on a failed check; and the values-PR check
+(C-19) renders the filled file the way the deploy job does. Owner: foundation lane.
 
-**Nothing has been deployed.** No GCP credential works from the environment
+**Nothing has been deployed, and no step in section C has been run.** No GCP credential works from the environment
 that produced this packet (`gcloud auth list` → "No credentialed accounts"),
 so the existence of a GKE cluster in `lux-realestate-app` / `us-east1` is
 **UNCONFIRMED**. The deliverable is this packet plus manifests that are
@@ -33,11 +40,11 @@ mainnet writes" (`docs/design/brandme/06-delivery-verification.md:115`).
 |---|---|---|
 | D1 | GCP project: keep `lux-realestate-app` (set deliberately in `9e6699b`, 2026-10-09, "ci: use lux-realestate-app GCP project for Docker push") or create a dedicated `brandme-sandbox` project. Every ID below depends on it. | Dedicated project per mode; if not, keep `lux-realestate-app` and accept the shared blast radius knowingly. |
 | D2 | GKE now, or Cloud Run per ADR-06. | Confirm GKE explicitly in writing, or switch to Cloud Run and reuse sections C-5…C-17. |
-| D3 | Migration numbering. The consumer-domains lane branch (PR #52) adds `V003_wardrobe`, `V004_social`, `V005_rewards`. Once V006+ are applied to a real database, lower versions can never be applied there: the runner refuses out-of-order versions (`brandme-data/spanner/migrations/runner.py:195-202`) and refuses `--allow-out-of-order` in sandbox/production (`:294-295`). | Merge or renumber V003–V005 before the first `up` against Cloud Spanner. |
+| D3 | **Resolved (2026-10-25).** `main` packages V001–V015 with no gap (V003–V005 merged with the consumer-domains lane, V015 with PR #51). On an empty Cloud Spanner database the runner applies them in order. The runner still refuses out-of-order versions (`brandme-data/spanner/migrations/runner.py:195-202`) and `--allow-out-of-order` in sandbox/production (`:294-295`), so `tests/foundation/test_migrations.py::test_packaged_versions_are_contiguous_and_reserved_once` now fails any gap. It reads only the files, so it also runs without the Spanner emulator. | Nothing to decide. New migrations take V016 onward (`brandme-data/spanner/migrations/README.md`). |
 | D4 | How Secret Manager values reach Kubernetes Secrets. | GKE secret sync add-on (GKE ≥ 1.33), step C-15. |
-| D5 | OIDC issuer and audience the gateway trusts (strict modes require https issuer + audience, `brandme-gateway/src/middleware/mode.ts:38-41`). | Google Identity Platform (spec `03-architecture-data-api.md` item 9). |
-| D6 | Public exposure and domain. The legacy files disagree (`api.brandme.io` vs `console.brandme.com`). | No public ingress for the first sandbox deploy. |
-| D7 | Who deploys the Midnight Preprod rights contract and owns the Blockfrost token. read-api and exports refuse to start without a 64-hex contract address. | Midnight-rights lane, with the address recorded in `values-sandbox.yaml`. |
+| D5 | OIDC issuer and audience the gateway trusts (strict modes require an https issuer and an audience, `brandme-gateway/src/middleware/mode.ts:53-56`). | Google Identity Platform (spec `03-architecture-data-api.md` item 9); values in C-11. |
+| D6 | Public exposure and domain. The legacy files disagree (`api.brandme.io` vs `console.brandme.com`). An https origin for `gateway.publicOrigins` is needed even without ingress (`mode.ts:64`). | No public ingress for the first sandbox deploy; name the origin the app will use. |
+| D7 | Who deploys the Midnight Preprod rights contract and owns the Blockfrost token. read-api and exports refuse to start without a 64-hex contract address. No deploy command for it exists in the repository (C-12). | Midnight-rights lane, with the address recorded in `values-sandbox.yaml`. |
 | D8 | Cluster mode if one must be created. | Autopilot, Regular channel. |
 | D9 | Retire the legacy deploy paths in section F (CLAUDE.md lists `agents/` as DO NOT DELETE). | Retire in one change that also updates CLAUDE.md. |
 
@@ -45,13 +52,13 @@ mainnet writes" (`docs/design/brandme/06-delivery-verification.md:115`).
 
 | # | Fact | Evidence | How verified |
 |---|---|---|---|
-| A1 | CI pushes images to `gcr.io/lux-realestate-app/brandme-{gateway,core,agents,chain,console}` with tags `:main` and `:sha-<7>` on every push to `main`. Run 39902216424 (push, sha `5174ec2`) pushed core `sha256:a8c6a22e9e50…`, chain `sha256:69f9a96bf1b3…`, console `sha256:f6627c1f184a…`, agents `sha256:5b215c7a4d2e…`, gateway `sha256:adbf595add0e…`. | `.github/workflows/ci-cd.yml:219` (`PUBLISH_IMAGES`), `:241-251` (metadata tags), `:273-290` (JSON-key auth, push). Run log lines "The push refers to repository [gcr.io/lux-realestate-app/brandme-core]" / "main: digest: sha256:a8c6a22e…". | `gh run view 39902216424` (all build jobs `success`) and the saved run log. |
-| A2 | At the audited baseline (`744d593`) the CI credential was a long-lived JSON key, `secrets.GCP_SA_KEY`, and no workflow had `id-token: write`. After this change set, image publishing still uses the key; the deploy job uses WIF (`id-token: write`) and is gated by `BM_DEPLOY_ENABLED`. | Baseline `ci-cd.yml:32-34`, `:277`, `:309`; now the `build-images` and `deploy` jobs in `ci-cd.yml`. | Read. Which service account backs the key, and its roles, is unknown (GitHub secrets API returns 403 here). |
-| A3 | The `Deploy to GKE` job has never run: it only runs on `refs/tags/v*` and the repository has no tags. | `ci-cd.yml:296-300`. Run 39902216424 lists "Deploy to GKE" with conclusion `skipped`. | `git ls-remote --tags` → 0 tags; `gh run view`. |
+| A1 | CI pushes images to `gcr.io/lux-realestate-app/brandme-{gateway,core,agents,chain,console}` with tags `:main` and `:sha-<7>` on every push to `main`. Run 39902216424 (push, sha `5174ec2`) pushed core `sha256:a8c6a22e9e50…`, chain `sha256:69f9a96bf1b3…`, console `sha256:f6627c1f184a…`, agents `sha256:5b215c7a4d2e…`, gateway `sha256:adbf595add0e…`. | `.github/workflows/ci-cd.yml:310` (`PUBLISH_IMAGES`), `:332-342` (metadata tags), `:364-391` (JSON-key auth, push). Line numbers are on this head. Run log lines "The push refers to repository [gcr.io/lux-realestate-app/brandme-core]" / "main: digest: sha256:a8c6a22e…". | `gh run view 39902216424` (all build jobs `success`) and the saved run log. |
+| A2 | At the audited baseline (`744d593`) the CI credential was a long-lived JSON key, `secrets.GCP_SA_KEY`, and no workflow had `id-token: write`. Since round 2, image publishing still uses the key, while the deploy job uses WIF (`id-token: write`) and is gated by `BM_DEPLOY_ENABLED`. | Baseline `ci-cd.yml:32-34`, `:277`, `:309` (at `744d593`). On this head: `build-images` `:298-391`, `deploy` `:397-524`. | Read. Which service account backs the key, and its roles, is unknown (GitHub secrets API returns 403 here). |
+| A3 | The `Deploy to GKE` job has never run: it only runs on `refs/tags/v*` and the repository has no tags. | Gate at `ci-cd.yml:404`. Run 39902216424 lists "Deploy to GKE" with conclusion `skipped`. | `git ls-remote --tags` → 0 tags; `gh run view`. |
 | A4 | Container Registry stopped accepting writes on 2025-03-18, so successful 2026 pushes to `gcr.io/lux-realestate-app` imply Artifact Registry `gcr.io` repositories exist in that project. | Google transition guide (audit map). | **Inference**, not a live check: an anonymous registry probe returns the same 401 for this project and for a nonexistent one. |
 | A5 | The repository is public (`visibility: public`); repository id `1083300600`, owner id `25632130` (used to pin WIF in C-16). | — | `gh api repos/brandmeonline/Brand-Me-Labs`. |
-| A6 | **New:** chart `brandme-infra/helm/brandme` for gateway, chain, console, read-api, exports-api, exports-worker, events-worker and a migration hook Job. | `brandme-infra/helm/brandme/` | `scripts/validate-helm.sh` passes: helm 3.22.1 lint `--strict`; 42/42 resources valid with `kubeconform -strict` against Kubernetes 1.35.0 and 1.36.0 (CI values, ingress on, GKE CRDs included); 32/32 for the filled sandbox values; 18 negative rendering tests refuse as expected (as of 2026-10-24); env contract OK. A deliberate typo in a core field and in a FrontendConfig field were both rejected (kubeconform exit 1). |
-| A7 | **New:** the core image's last stage is `runtime`, so CI's default build of `core` produces it: hash-verified install of `scripts/python/requirements.lock`, uid 10001, no `--reload`, no celery, no default process (bare run prints usage, exit 64). | `brandme-core/Dockerfile` (final stage). Compose does not build this Dockerfile (`docker-compose.yml:22-30` uses an inline Dockerfile). | Built from the repo root with `-f brandme-core/Dockerfile --build-arg NODE_VERSION=24.21.0`, no `--target` (as `ci-cd.yml:253-264`); `bash .github/scripts/smoke-image.sh core <image>` exits 0. See G for the one local build deviation. |
+| A6 | **New:** chart `brandme-infra/helm/brandme` for gateway, chain, console, read-api, exports-api, exports-worker, events-worker, consumer-domains, the hourly events-retention CronJob and a migration hook Job. | `brandme-infra/helm/brandme/` | `scripts/validate-helm.sh` passes on `375180b` (2026-10-30): helm 3.22.1 lint `--strict`; 50/50 resources valid with `kubeconform -strict` against Kubernetes 1.35.0 and 1.36.0 (CI values, ingress on, GKE CRDs included); 45/45 with `consumerDomains.enabled=false`; 40/40 for the filled sandbox values; 36 negative rendering tests refuse as expected; env contract OK. A deliberate typo in a core field and in a FrontendConfig field were both rejected (kubeconform exit 1). |
+| A7 | **New:** the core image's last stage is `runtime`, so CI's default build of `core` produces it: hash-verified install of `scripts/python/requirements.lock`, uid 10001, no `--reload`, no celery, no default process (bare run prints usage, exit 64). | `brandme-core/Dockerfile` (final stage). Compose does not build this Dockerfile (`docker-compose.yml:22-30` uses an inline Dockerfile). | Built from the repo root with `-f brandme-core/Dockerfile --build-arg NODE_VERSION=24.21.0`, no `--target` (as `ci-cd.yml:344-355`); `bash .github/scripts/smoke-image.sh core <image>` exits 0. See G for the one local build deviation. |
 | A8 | The core image runs the chart's commands as uid 10001 with a read-only root, `/tmp` tmpfs, all capabilities dropped: `runner.py up` applied V001–V014 to a fresh emulator database, `read_api --check` printed `{"status":"ready","read_only":true}`, the server answered `GET /health` 200 and an unauthenticated private read 401. | `docker run --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges …` | Ran against the local Spanner emulator (development mode; strict modes refuse emulators). |
 | A9 | The chart's rendered env satisfies each process's own strict-mode validator: `ReadConfig.from_env`, `ExportConfig.from_env` (API and worker), `WorkerConfig.from_env` + `PubSubPublisher` topic checks (reached the credential lookup), and the gateway's `loadConfig` + `checkGatewayMode` (no violations), and the chain config parser. | Python stage of `scripts/validate-helm.sh`; gateway/chain run locally with `tsx`. | Ran with fake, distinct 40-char tokens. |
 | A10 | The gateway and console images (unchanged Dockerfiles) serve `/healthz` and `/` as uid 1000 with a read-only root (`/tmp`, and for the console `.next/cache`, as tmpfs). | — | Built locally and run with the chart's settings; existing `smoke-image.sh gateway` / `console` pass. The chain image was **not** built here. |
@@ -62,12 +69,12 @@ mainnet writes" (`docs/design/brandme/06-delivery-verification.md:115`).
 | # | Gap | Blocks first deploy? | Where it is fixed |
 |---|---|---|---|
 | G1 | Cluster existence, mode, version, Workload Identity pool and dataplane are unconfirmed. | Yes | C-3 / C-6 (founder) |
-| G2 | The current deploy job cannot succeed: it installs `./brandme-umbrella`, whose subcharts and `values/values-prod.yaml` do not exist (helm 3.22.1: "missing in charts/ directory…", "open values/values-prod.yaml: no such file"); it pins `global.image.tag=v1.2.3` while metadata-action pushes `1.2.3`/`1.2`/`sha-…` (`ci-cd.yml:246-251` vs `:329`); it rolls out `brandme-core` (celery beat) and `brandme-agents` (a CLI) (`:336-337`); JSON key, no environment, no concurrency. | Yes (job now gated off) | **Section E applied in this change set:** the deploy job uses the new chart, deploys by digest, runs under `environment: sandbox` with WIF, and runs only when a `v*` tag AND `vars.BM_DEPLOY_ENABLED == 'true'`. Until the founder sets that variable, a tag cannot start a half-configured deploy. |
+| G2 | The current deploy job cannot succeed: it installs `./brandme-umbrella`, whose subcharts and `values/values-prod.yaml` do not exist (helm 3.22.1: "missing in charts/ directory…", "open values/values-prod.yaml: no such file"); it pins `global.image.tag=v1.2.3` while metadata-action pushes `1.2.3`/`1.2`/`sha-…` (`ci-cd.yml:246-251` vs `:329` at `744d593`); it rolls out `brandme-core` (celery beat) and `brandme-agents` (a CLI) (`:336-337` at `744d593`); JSON key, no environment, no concurrency. | Yes (job now gated off) | **Section E applied in this change set:** the deploy job uses the new chart, deploys by digest, runs under `environment: sandbox` with WIF, and runs only when a `v*` tag AND `vars.BM_DEPLOY_ENABLED == 'true'`. Until the founder sets that variable, a tag cannot start a half-configured deploy. |
 | G3 | No repo artifact provisions the data plane the code needs: Spanner instance/database, three Pub/Sub topics (≥ 24 h retention), the export bucket with its exact policy, Secret Manager secrets, per-workload GSAs and IAM, WIF. | Yes | C-5…C-17 |
-| G4 | Migration numbering (D3). | Yes (before the first `up`) | Founder decision, then lane merge |
+| G4 | **Resolved:** migration numbering (D3). V001–V015 are contiguous on `main`; a test guards it. | No | — |
 | G5 | No Midnight Preprod contract address exists (`docs/build/evidence/midnight-integration-2026-10-22.md:53`). read-api and exports refuse to start without one; chain starts but reports the capability `unavailable`. | Yes for read-api/exports | D7, then `values-sandbox.yaml` |
 | G6 | No OIDC issuer/audience; the gateway refuses strict modes without them (verified: "OIDC_ISSUER is required; OIDC_AUDIENCE is required"). | Yes for gateway | D5, then `values-sandbox.yaml` |
-| G7 | The console bakes its API URLs at build time and CI passes none, so browsers would call `http://localhost:3000` (`brandme-console/lib/api.ts:11-14`; `ci-cd.yml:258`). `console.enabled: false` in `values-sandbox.yaml`. | No (console off) | Console build args (console owner) |
+| G7 | The console bakes its API URLs at build time and CI passes none, so browsers would call `http://localhost:3000` (`brandme-console/lib/api.ts:11-14`; `ci-cd.yml:349` passes only `NODE_VERSION`). `console.enabled: false` in `values-sandbox.yaml`. | No (console off) | Console build args (console owner) |
 | G8 | **Fixed in this change set (gateway package):** the limiter exempts `/health`/`/healthz`, keys members by principal and addresses by `req.ip` with a configurable `TRUST_PROXY` (`brandme-gateway/src/middleware/rateLimiter.ts`, `src/config/index.ts:36-66`). The chart passes `gateway.trustProxy` and refuses `ingress.enabled` without it (`templates/validate.yaml`). The GKE value (2) is documented, not observed on a cluster. | No | Confirm `req.ip` on first ingress deploy |
 | G9 | The gateway exits immediately on SIGTERM (`brandme-gateway/src/index.ts:98`). The chart adds a 5 s `preStop` sleep so endpoints are removed first; in-flight requests still drop at exit. | No | Gateway lane: drain on SIGTERM |
 | G10 | Observed locally: with no ADC and no emulator, the gateway logs "listening" and then dies on an unhandled rejection from the Spanner client ("Could not load the default credentials"). With Workload Identity this should not occur, but a broken binding shows as a restart loop after the startup probe has briefly passed. | No | Gateway lane: fail before listening |
@@ -77,9 +84,9 @@ mainnet writes" (`docs/design/brandme/06-delivery-verification.md:115`).
 | G14 | No Pub/Sub subscriptions or consumers exist; the outbox README asks for subscriptions before publishing (`brandme_core/events/README.md:15-26`). Topic retention (≥ 24 h, required by `brandme_core/events/pubsub.py:94-103`) is the only replay window until consumers exist. | No | Consumer owners |
 | G15 | The Firestore projection writer has no process entrypoint, so Firestore is not provisioned or deployed here. | No | Foundation lane, later |
 | G16 | No secret-delivery mechanism is installed (D4). | Yes | C-15 |
-| G17 | `automountServiceAccountToken: false` relies on the GKE metadata server issuing Workload Identity tokens without the pod's KSA token. **Inference**; the in-cluster `--check` commands in E prove or disprove it on first deploy (`podDefaults.automountServiceAccountToken` toggles it). | Maybe | First deploy |
+| G17 | `automountServiceAccountToken: false` relies on the GKE metadata server issuing Workload Identity tokens without the pod's KSA token. **Inference**; the in-cluster `--check` commands (C-21) prove or disprove it on first deploy (`podDefaults.automountServiceAccountToken` toggles it). | Maybe | First deploy |
 | G18 | NetworkPolicy egress for the metadata server uses Google's documented addresses (169.254.169.252/32:987,988; Dataplane V2 169.254.169.254/32:80,8080) and DNS (kube-dns, 169.254.20.10, 169.254.169.254). Not exercised on a real dataplane. | Maybe | First deploy |
-| G19 | Spanner custom role permissions (C-12) are derived from `roles/spanner.databaseUser` minus schema rights; not exercised live. | Maybe | First deploy (`--check` + logs) |
+| G19 | Spanner custom role permissions (`brandmeSpannerDataReadWrite`, created by the script in C-13) are derived from `roles/spanner.databaseUser` minus schema rights; not exercised live. | Maybe | First deploy (`--check`, the retention pass and logs) |
 | G20 | The core image installs the whole foundation lock, including test tools (pytest, black, datamodel-code-generator). | No | Split a runtime-only lock |
 | G21 | Base images are pinned by tag (`python:3.11.15-slim`, `node:24.21.0-bookworm-slim`), not digest; third-party actions are not SHA-pinned; no Dependabot/Renovate. | No | Foundation follow-up |
 | G22 | **Fixed in this change set:** `.cache/` is in `.gitignore` and `.dockerignore`. | No | — |
@@ -88,467 +95,835 @@ mainnet writes" (`docs/design/brandme/06-delivery-verification.md:115`).
 | G25 | The export API cannot check that its token differs from the read API and chain tokens, because those are not in its pod. Distinctness depends on generating independent values (C-14). | No | C-14 |
 | G26 | The gateway's write-side calls have no server among the deployed processes. `POST /challenges`, `/assets/{id}/transfers` and `/assets/{id}/reprint-quotes` go to `RIGHTS_SERVICE_URL` (`brandme-gateway/src/routes/v1/ownership.ts:44`, `assets.ts:55`, `assets.ts:71`), and `POST /deletion` goes to `PRIVACY_SERVICE_URL` (`routes/v1/privacy.ts:110`). The chart points both URLs at the read API (`templates/gateway.yaml`), which serves only GET routes (`brandme_core/read_api/app.py:95-117`). In sandbox those routes would get 404/405. | No (reads work) | midnight-rights / privacy lanes: name the write-side service |
 | G27 | **Inference, not tested:** `@google-cloud/spanner` 9.0.0 (gateway, chain) may export client-side metrics to Cloud Monitoring by default. If it does, GSAs without `monitoring.timeSeries.create` will log export errors. Grant `roles/monitoring.metricWriter` to those GSAs, or turn the client metrics off. | No | First deploy logs |
+| G28 | consumer-domains runs one replica, because its assertion `jti` replay cache lives in process memory (`brandme-infra/helm/brandme/values.yaml:192-196`). Its `--check` validates configuration and the boot guard only and never reaches Spanner (`templates/NOTES.txt`), so a broken `bm-sbx-dom-api` binding shows first on a member request. | No | Consumer-domains lane: shared replay store; a Spanner probe in `--check` |
 
-## C. Exact founder / console actions (in order)
+## C. Founder execution checklist (in order)
 
-Run in Cloud Shell or a workstation as a project owner. Each step is marked
-**[read-only check]** or **[creates resource]**. Never paste secret values into
-commands, tickets or chat; the commands below pipe them.
+**Every step below is `not run`.** Nothing in this section has been executed against GCP,
+GitHub settings or a cluster from this repository. Run the steps in Cloud Shell or on a
+workstation, as a project owner, in one shell. Each step is marked **[read-only check]** or
+**[creates resource]**. Each step has a **Verify** command, which must succeed before the
+next step, and an **Undo** command. Every check inside a block either passes or ends the
+block with exit 1 and a message on stderr, so a block that exits 0 passed all of its checks.
+Never paste a secret value into a command, a ticket or a
+chat: the commands pipe values, and the checks compare digests without printing them. Record
+each step's verify output, redacted to its status line, in the deploy evidence.
+
+### C-0 [decision gate] Write the answers down before any step that creates a resource
+
+| ID | Decision | Needed by | Answer (fill in) |
+|---|---|---|---|
+| D1 | Project: a dedicated sandbox project, or `lux-realestate-app` with its shared blast radius | every step | |
+| D2 | GKE (this packet) or Cloud Run per ADR-06 | C-6 onward | |
+| D5 | OIDC issuer and audience the gateway trusts | C-11, C-19 | |
+| D6 | The https origin for `gateway.publicOrigins`. It is required even with no ingress, because the strict gateway refuses non-https origins (`brandme-gateway/src/middleware/mode.ts:64`) | C-19 | |
+| D7 | Who deploys the Preprod rights contract (recommended: midnight-rights) and owns the Blockfrost account | C-12, C-14 | |
+
+D3 is **resolved**. `main` packages V001–V015 contiguously, and
+`tests/foundation/test_migrations.py::test_packaged_versions_are_contiguous_and_reserved_once`
+keeps it that way. A first `runner.py up` on an empty Cloud Spanner database applies them in
+order. D4 (secret sync add-on), D8 (Autopilot, Regular channel) and D9 (legacy retirement) keep
+the defaults in section 0. If any row above is empty, stop.
+
+### Preamble: save as `~/brandme-sandbox-deploy/env.sh`
+
+The file holds no secret. Every later block starts with `set -euo pipefail` and sources it.
+Run each block as its own script (`bash step.sh`), or paste it into a fresh `bash --norc`
+sub-shell, so that a failing command ends that step and not your login shell. Steps pass
+values to later steps through files in `$WORK` (the bucket name, for example). For a new
+project (D1 = dedicated), run C-1's new-project block first, because the `PROJECT_NUMBER`
+lookup below needs the project to exist.
 
 ```bash
-# --- set once per shell ---
+set -euo pipefail
 export PROJECT_ID=REPLACE_ME            # D1
-export REGION=us-east1
-export CLUSTER=brandme-cluster
-export NS=brandme
-export REPO=brandmeonline/Brand-Me-Labs
-export REPO_ID=1083300600 OWNER_ID=25632130        # from gh api repos/$REPO (A5)
-export PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+# Where build-images pushes and the nodes pull: gcr.io/$GCP_PROJECT_ID (ci-cd.yml:43, :448). D1 does not move it.
+export IMAGE_PROJECT=lux-realestate-app
+export REGION=us-east1 CLUSTER=brandme-cluster NS=brandme MODE=sandbox
+export REPO=brandmeonline/Brand-Me-Labs REPO_ID=1083300600   # gh api repos/$REPO --jq .id (A5)
+export WORK="$HOME/brandme-sandbox-deploy"   # operator files (bucket name, pins, public JWK); never secrets
+[[ "$PROJECT_ID" != REPLACE_ME* && "$PROJECT_ID" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || { echo "PROJECT_ID is unset or REPLACE_ME (D1)" >&2; exit 1; }
+[[ "$IMAGE_PROJECT" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || { echo "IMAGE_PROJECT is not a project id" >&2; exit 1; }
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+[[ "$PROJECT_NUMBER" =~ ^[0-9]+$ ]] || { echo "PROJECT_NUMBER lookup failed for $PROJECT_ID" >&2; exit 1; }
+export PROJECT_NUMBER
+mkdir -p "$WORK"; chmod 700 "$WORK"
 sa() { echo "$1@${PROJECT_ID}.iam.gserviceaccount.com"; }
 ```
 
+Create the directory before saving the file into it: `mkdir -p -m 700 ~/brandme-sandbox-deploy`.
+
 **C-1 [read-only check] Who you are and what the project is.**
 ```bash
-gcloud auth list
-gcloud projects describe "$PROJECT_ID"
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+gcloud auth list --filter=status:ACTIVE --format='value(account)'
+gcloud projects describe "$PROJECT_ID" --format='value(projectId,projectNumber,lifecycleState)'
 gcloud projects get-iam-policy "$PROJECT_ID" --flatten=bindings --format='table(bindings.role,bindings.members)'
 ```
-
-**C-2 [read-only check] Which service account backs `GCP_SA_KEY` and what it can do.**
+New project branch (D1 = dedicated) **[creates resource]**:
 ```bash
-gcloud iam service-accounts list --project "$PROJECT_ID"
-gcloud iam service-accounts keys list --iam-account=<SA_FROM_LIST> --managed-by=user
-gcloud projects get-iam-policy "$PROJECT_ID" --flatten=bindings \
-  --filter="bindings.members:serviceAccount:<SA_FROM_LIST>" --format='value(bindings.role)'
+set -euo pipefail
+PROJECT_ID=REPLACE_ME     # the same value as in env.sh
+[[ "$PROJECT_ID" != REPLACE_ME* ]] || { echo "set PROJECT_ID" >&2; exit 1; }
+gcloud projects create "$PROJECT_ID" --name="Brand.Me sandbox"            # optionally --folder / --organization
+gcloud billing accounts list --filter=open=true --format='value(name,displayName)'
+BILLING=REPLACE_ME_BILLING_ACCOUNT; [[ "$BILLING" != REPLACE_ME* ]] || { echo "set BILLING from the list above" >&2; exit 1; }
+gcloud billing projects link "$PROJECT_ID" --billing-account="$BILLING"
+gcloud resource-manager org-policies enable-enforce iam.disableServiceAccountKeyCreation --project "$PROJECT_ID"
+```
+From here on, `env.sh` resolves `PROJECT_NUMBER`. **Verify:**
+`gcloud billing projects describe "$PROJECT_ID" --format='value(billingEnabled)'` prints `True`.
+**Undo:** `gcloud projects delete "$PROJECT_ID"`. The project stays recoverable for 30 days.
+
+**C-2 [read-only check] Which service account backs `GCP_SA_KEY`, and what can it do.** The key
+pushes to `$IMAGE_PROJECT`, so look there; with a dedicated project (D1) that is not `$PROJECT_ID`.
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+gcloud iam service-accounts list --project "$IMAGE_PROJECT" --format='value(email)'
+SA=REPLACE_ME_SA_FROM_LIST; [[ "$SA" != REPLACE_ME* ]] || { echo "set SA from the list above" >&2; exit 1; }
+gcloud iam service-accounts keys list --iam-account="$SA" --managed-by=user --format='table(name.basename(),validAfterTime,disabled)'
+gcloud projects get-iam-policy "$IMAGE_PROJECT" --flatten=bindings --filter="bindings.members:serviceAccount:$SA" --format='value(bindings.role)'
+printf '%s\n' "$SA" > "$WORK/gcp-sa-key-account.txt"
 ```
 
 **C-3 [read-only check] Does the cluster exist, and how is it configured?**
 ```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
 gcloud container clusters list --project "$PROJECT_ID"
 gcloud container clusters describe "$CLUSTER" --region "$REGION" --project "$PROJECT_ID" \
-  --format='yaml(autopilot.enabled,releaseChannel.channel,currentMasterVersion,workloadIdentityConfig.workloadPool,networkConfig.datapathProvider,privateClusterConfig.enablePrivateNodes)'
+  --format='yaml(autopilot.enabled,releaseChannel.channel,currentMasterVersion,workloadIdentityConfig.workloadPool,networkConfig.datapathProvider,privateClusterConfig.enablePrivateNodes,secretManagerConfig)'
 ```
-Need: Workload Identity pool `$PROJECT_ID.svc.id.goog`, network policy
-enforcement (Autopilot / Dataplane V2 always enforce), version ≥ 1.33 (chart
-`kubeVersion` and secret sync).
+Need: Workload Identity pool `$PROJECT_ID.svc.id.goog`; network policy enforcement
+(Autopilot and Dataplane V2 always enforce); version ≥ 1.33 (the chart's `kubeVersion`, and
+the secret sync add-on). If the cluster does not exist, C-6 creates it.
 
-**C-4 [read-only check] Registry and images.**
+**C-4 [read-only check] Registry and images.** They are in `$IMAGE_PROJECT`, where `build-images`
+pushes (`ci-cd.yml:43`) and the deploy job points the chart (`:448`). The `gcr.io`-domain
+repository lives in location `us`, the provisioning script's default (`scripts/provision/gcp-dev-identities.sh:30`).
 ```bash
-gcloud artifacts repositories list --project "$PROJECT_ID" --format='table(name,format,location)'
-gcloud artifacts docker images list "gcr.io/$PROJECT_ID/brandme-core" --include-tags --limit 5
-```
-
-**C-5 [creates resource] Enable APIs.**
-```bash
-gcloud services enable container.googleapis.com artifactregistry.googleapis.com spanner.googleapis.com \
-  pubsub.googleapis.com storage.googleapis.com secretmanager.googleapis.com iam.googleapis.com \
-  iamcredentials.googleapis.com sts.googleapis.com cloudresourcemanager.googleapis.com --project "$PROJECT_ID"
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+gcloud artifacts repositories describe gcr.io --location=us --project "$IMAGE_PROJECT" --format='value(name,format)' \
+  || { echo "no gcr.io repository (location us) in $IMAGE_PROJECT" >&2; exit 1; }
+gcloud artifacts docker images list "gcr.io/$IMAGE_PROJECT/brandme-core" --include-tags --limit 5
 ```
 
-**C-6 [creates resource] Cluster — only if C-3 found none (D8).**
+**C-5 [creates resource] Enable APIs** (identitytoolkit is for D5, C-11).
 ```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+apis="container.googleapis.com artifactregistry.googleapis.com spanner.googleapis.com pubsub.googleapis.com
+  storage.googleapis.com secretmanager.googleapis.com iam.googleapis.com iamcredentials.googleapis.com
+  sts.googleapis.com cloudresourcemanager.googleapis.com identitytoolkit.googleapis.com"
+# shellcheck disable=SC2086
+gcloud services enable $apis --project "$PROJECT_ID"
+enabled=$(gcloud services list --enabled --project "$PROJECT_ID" --format='value(config.name)')
+for a in $apis; do grep -qx "$a" <<<"$enabled" || { echo "not enabled: $a" >&2; exit 1; }; done; echo "all APIs enabled"
+```
+**Undo:** `gcloud services disable <api> --project "$PROJECT_ID"`. Only do this in a dedicated
+project; in a shared one, other workloads may depend on the API.
+
+**C-6 [creates resource] Cluster, only if C-3 found none (D8).**
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
 gcloud container clusters create-auto "$CLUSTER" --project "$PROJECT_ID" --region "$REGION" \
   --release-channel=regular --enable-secret-sync
 # existing cluster instead:
-gcloud container clusters update "$CLUSTER" --location "$REGION" --project "$PROJECT_ID" --enable-secret-sync
+#   gcloud container clusters update "$CLUSTER" --location "$REGION" --project "$PROJECT_ID" --enable-secret-sync
+gcloud container clusters get-credentials "$CLUSTER" --region "$REGION" --project "$PROJECT_ID"
 ```
-`--enable-secret-sync` is from docs.cloud.google.com/secret-manager/docs/sync-k8-secrets
-(read 2026-10-23, GKE ≥ 1.33); it was not executed here. A Standard cluster
-also needs `--workload-pool="$PROJECT_ID.svc.id.goog"` and network policy
-enforcement. Private nodes need Cloud NAT for the chain's Blockfrost calls.
+**Verify:** run the C-3 describe again. It must show `autopilot.enabled: true`, the
+Workload Identity pool and secret sync enabled.
+**Undo:** `gcloud container clusters delete "$CLUSTER" --region "$REGION" --project "$PROJECT_ID"`.
+The `--enable-secret-sync` flag is from docs.cloud.google.com/secret-manager/docs/sync-k8-secrets
+(read 2026-10-23, GKE ≥ 1.33). A Standard cluster also needs `--workload-pool="$PROJECT_ID.svc.id.goog"`
+and network policy enforcement. Private nodes need Cloud NAT for the chain's Blockfrost calls.
 
 **C-7 [creates resource] Namespace with Pod Security "restricted".**
 ```bash
-gcloud container clusters get-credentials "$CLUSTER" --region "$REGION" --project "$PROJECT_ID"
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
 kubectl create namespace "$NS"
 kubectl label namespace "$NS" pod-security.kubernetes.io/enforce=restricted pod-security.kubernetes.io/enforce-version=latest
+enforce=$(kubectl get namespace "$NS" -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}')
+[ "$enforce" = restricted ] || { echo "namespace $NS enforces '${enforce:-nothing}', not restricted" >&2; exit 1; }
+echo "namespace $NS: Pod Security restricted"
 ```
-Release name and namespace must both be `brandme`: the KSA names in C-13 are
-`brandme-<component>`.
+**Undo:** `kubectl delete namespace "$NS"`. This deletes everything in it. The release name and
+the namespace must both be `brandme`, because the KSA names are `brandme-<component>`.
 
-**C-8 [creates resource] Spanner (GoogleSQL).** Do **not** run migrations by
-hand: the chart's hook Job does, after D3.
+**C-8 [creates resource] Spanner (GoogleSQL).** Do **not** run migrations by hand: the chart's
+hook Job runs `runner.py up` at C-20.
 ```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
 gcloud spanner instances create brandme-sandbox --project "$PROJECT_ID" --config=regional-us-east1 \
   --processing-units=100 --description="Brand.Me sandbox"
 gcloud spanner databases create brandme-sandbox --instance=brandme-sandbox --project "$PROJECT_ID" \
   --database-dialect=GOOGLE_STANDARD_SQL
+gcloud spanner databases describe brandme-sandbox --instance=brandme-sandbox --project "$PROJECT_ID" --format=json \
+  | jq -e '.state == "READY" and .databaseDialect == "GOOGLE_STANDARD_SQL"' >/dev/null \
+  || { echo "database brandme-sandbox is not READY with GoogleSQL" >&2; exit 1; }
+echo "database brandme-sandbox: READY, GoogleSQL"
 ```
+**Undo:** `gcloud spanner databases delete brandme-sandbox --instance=brandme-sandbox --project "$PROJECT_ID"`,
+then `gcloud spanner instances delete brandme-sandbox --project "$PROJECT_ID"`. Both are irreversible.
 
-**C-9 [creates resource] Pub/Sub topics (names must start `brandme-sandbox-`, retention ≥ 24 h).**
+**C-9 [creates resource] Pub/Sub topics.** Names must start with `brandme-sandbox-`, and
+retention must be ≥ 24 h (`brandme_core/events/pubsub.py:94-103`).
 ```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
 for t in public member-private restricted; do
   gcloud pubsub topics create "brandme-sandbox-$t" --project "$PROJECT_ID" --message-retention-duration=1d
+  gcloud pubsub topics describe "brandme-sandbox-$t" --project "$PROJECT_ID" --format=json \
+    | jq -e '((.messageRetentionDuration // "0s") | rtrimstr("s") | tonumber) >= 86400' >/dev/null \
+    || { echo "brandme-sandbox-$t: describe failed or retention is below 24 h" >&2; exit 1; }
+  echo "brandme-sandbox-$t retention ok"
 done
 ```
+**Undo:** `gcloud pubsub topics delete brandme-sandbox-{public,member-private,restricted} --project "$PROJECT_ID"`.
 
 **C-10 [creates resource] Export bucket with the exact policy `PrivateStore.check` enforces** (`brandme_core/privacy_exports/storage.py:100-112`).
 ```bash
-export SUFFIX=$(openssl rand -hex 3); export BUCKET="brandme-sandbox-exports-$SUFFIX"
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+BUCKET="brandme-sandbox-exports-$(openssl rand -hex 3)"; printf '%s\n' "$BUCKET" > "$WORK/bucket.txt"
 gcloud storage buckets create "gs://$BUCKET" --project "$PROJECT_ID" --location="$REGION" \
   --uniform-bucket-level-access --public-access-prevention --soft-delete-duration=0
-printf '%s\n' '{"lifecycle":{"rule":[{"action":{"type":"Delete"},"condition":{"age":1}}]}}' > /tmp/lc.json
-gcloud storage buckets update "gs://$BUCKET" --lifecycle-file=/tmp/lc.json
-gcloud storage buckets describe "gs://$BUCKET" --format=json   # [read-only check]: versioning off, no retention policy
+printf '%s\n' '{"lifecycle":{"rule":[{"action":{"type":"Delete"},"condition":{"age":1}}]}}' > "$WORK/lifecycle.json"
+gcloud storage buckets update "gs://$BUCKET" --lifecycle-file="$WORK/lifecycle.json"
+# Verify: the JSON API fields storage.py:100-112 reads, with the same rules.
+gcloud storage buckets describe "gs://$BUCKET" --project "$PROJECT_ID" --raw --format=json | jq -e --arg b "$BUCKET" '
+  .name == $b
+  and .iamConfiguration.publicAccessPrevention == "enforced"
+  and .iamConfiguration.uniformBucketLevelAccess.enabled == true
+  and ((.versioning.enabled // false) == false)
+  and ((.softDeletePolicy.retentionDurationSeconds // "") | tostring) == "0"
+  and .retentionPolicy == null and ((.defaultEventBasedHold // false) == false)
+  and ((.objectRetention.mode // "") != "Enabled")
+  and any(.lifecycle.rule[]?; . == {"action":{"type":"Delete"},"condition":{"age":1}})' >/dev/null \
+  || { echo "gs://$BUCKET does not match PrivateStore.check" >&2; exit 1; }
+echo "gs://$BUCKET matches PrivateStore.check"
 ```
+**Undo:** `gcloud storage rm --recursive "gs://$(cat "$WORK/bucket.txt")"`. That deletes the
+bucket and its objects. The bucket name goes into the values PR (C-19).
 
-**C-11 [creates resource] One Google service account per workload. No keys.**
+**C-11 [creates resource] OIDC issuer for the gateway (D5).** The recommended default is Google
+Identity Platform (spec `03-architecture-data-api.md` item 9). Enabling Identity Platform the
+first time is a console step: Identity Platform → Enable, then add a sign-in provider. The
+values below are the ones Google documents for Identity Platform ID tokens. They were **not
+verified here**.
 ```bash
-for id in bm-sbx-fnd-deployer bm-sbx-fnd-migrator bm-sbx-fnd-gateway bm-sbx-fnd-outbox \
-          bm-sbx-rts-chain bm-sbx-rts-read-api bm-sbx-rts-export-api bm-sbx-rts-export-wkr; do
-  gcloud iam service-accounts create "$id" --project "$PROJECT_ID" --display-name="Brand.Me sandbox $id"
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+ISSUER="https://securetoken.google.com/$PROJECT_ID"
+AUDIENCE="$PROJECT_ID"
+JWKS="https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+curl -fsS "$JWKS" | jq -e '.keys | length > 0' >/dev/null || { echo "JWKS $JWKS unreachable or empty" >&2; exit 1; }
+echo "JWKS reachable"
+printf 'issuer=%s\naudience=%s\njwksUri=%s\n' "$ISSUER" "$AUDIENCE" "$JWKS" > "$WORK/oidc.txt"
+```
+The values PR (C-19) needs all three. `gateway.oidc.jwksUri` must be set, because the gateway
+otherwise derives `<issuer>/.well-known/jwks.json` (`brandme-gateway/src/middleware/session.ts:71`),
+which this issuer does not serve. ID tokens are RS256, which the default `OIDC_ALGORITHMS`
+allows (`src/config/index.ts:81`). **Undo:** disable the provider in the console. A different
+D5 answer replaces this step, keeping the same three outputs.
+
+**C-12 [external; owner midnight-rights] Preprod rights contract address (D7).** read-api and
+exports refuse to start without a 64-hex contract address (`values-sandbox.yaml:27`). **No
+command in this repository deploys the contract.** `brandme-chain/package.json` has only
+`test:midnight:local`, `test:midnight:network`, `test:midnight:preprod` and
+`midnight:local-network`. The midnight-rights lane deploys `brandme_rights` to Preprod with its
+own tooling and hands over the address. The founder records it:
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+ADDR=REPLACE_ME_64_HEX; [[ "$ADDR" =~ ^[0-9a-f]{64}$ ]] || { echo "not 64 lowercase hex" >&2; exit 1; }
+printf '%s\n' "$ADDR" > "$WORK/preprod-contract-address.txt"
+```
+**Verify:** this block checks only the format. After C-20, C-21's capability check must
+show `network` `preprod` and a `status` other than `unavailable`. That proves only what the
+chain builds from its own configuration and local artifacts, with no network call
+(`brandme-chain/src/routes/midnight.ts:16-18`, `src/midnight/capability.ts:30-81`): a
+well-formed address and Preprod project id, and verified proving artifacts. It does **not**
+prove that a contract exists at that address on Preprod. That evidence is the midnight-rights
+lane's: the deploy transaction and the indexer showing the contract, recorded with the
+address. C-21's Blockfrost probe proves only that Blockfrost accepts the project id.
+**Undo:** none (on-chain). A new address replaces it through the values PR.
+
+**C-13 [creates resource] Service accounts, custom roles, resource grants, Workload Identity
+and the two GitHub WIF pools: one path, the script.** `scripts/provision/gcp-dev-identities.sh`
+is the only maintained path, so do not mix it with hand-written grants. It creates one keyless
+GSA per workload and the least-privilege custom roles (`brandmeSpannerDataReadWrite` includes
+`beginPartitionedDmlTransaction`, which the retention job needs). It grants on the resources
+only and binds each KSA `brandme/brandme-<component>` to its GSA. It also creates the
+`github-deploy` pool and the separate `github-push` pool for the image pusher (G24). The
+deploy pool's condition pins the immutable repository id, the repository name, `v*` tags and
+the Environment `sandbox` (`scripts/provision/gcp-dev-identities.sh:417-419`); the push
+pool's condition pins `main` and `v*` tags (`:421`). Both KSAs that the consumer-domains merge
+added are in the script on this head: `brandme-events-retention` → `bm-sbx-fnd-retention`
+(`:303`) and `brandme-consumer-domains-api` → `bm-sbx-dom-api` (`:310`). The images stay in
+`gcr.io/$IMAGE_PROJECT` (`ci-cd.yml:43`, `:448`), so the flags always name that project with
+`--ar-project`. With a dedicated project (D1) the script's registry prerequisite and the
+pusher's `artifactregistry.writer` grant then land on the repository in `$IMAGE_PROJECT`, which
+needs IAM rights there too. Without `--ar-project` the script looks for the registry in
+`--project` (`:164`), so `--apply` on a dedicated project, which has no `gcr.io` repository,
+would stop at the registry prerequisite (`:266`). First, a dry run, which executes nothing:
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+BUCKET=$(cat "$WORK/bucket.txt")
+flags=(--project "$PROJECT_ID" --export-bucket "$BUCKET" --github-repo-id "$REPO_ID" --ar-project "$IMAGE_PROJECT")
+case "$PROJECT_ID" in *prod*|*lux-realestate*) flags+=(--i-understand-shared-project) ;; esac   # D1 = shared project
+printf '%s\n' "${flags[@]}" > "$WORK/identities-flags.txt"   # the apply block reuses exactly these flags
+plan="$WORK/identities-plan.txt"
+bash scripts/provision/gcp-dev-identities.sh "${flags[@]}" > "$plan"
+# Stop on an outdated checkout: both KSA bindings, and the pusher's grant on the image project's registry.
+grep -F "serviceAccount:$PROJECT_ID.svc.id.goog[$NS/brandme-events-retention]" "$plan" | grep -q "bm-sbx-fnd-retention@" \
+  || { echo "plan lacks bm-sbx-fnd-retention -> brandme-events-retention: update the checkout" >&2; exit 1; }
+grep -F "serviceAccount:$PROJECT_ID.svc.id.goog[$NS/brandme-consumer-domains-api]" "$plan" | grep -q "bm-sbx-dom-api@" \
+  || { echo "plan lacks bm-sbx-dom-api -> brandme-consumer-domains-api: update the checkout" >&2; exit 1; }
+grep -F "repositories add-iam-policy-binding gcr.io --location us --project $IMAGE_PROJECT " "$plan" \
+  | grep -q "bm-sbx-fnd-pusher@.*roles/artifactregistry.writer" \
+  || { echo "plan does not grant the pusher on gcr.io in $IMAGE_PROJECT" >&2; exit 1; }
+echo "plan: both KSA bindings present; pusher granted on gcr.io in $IMAGE_PROJECT"
+```
+Read `$WORK/identities-plan.txt`, then apply exactly that plan. The script asks you to type the project id.
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+mapfile -t flags < "$WORK/identities-flags.txt"
+[ "${#flags[@]}" -gt 0 ] || { echo "run the dry-run block first" >&2; exit 1; }
+bash scripts/provision/gcp-dev-identities.sh "${flags[@]}" --apply
+```
+The fixed identities that other lanes rely on:
+
+| KSA (`brandme/…`) | GSA | Grants (from the script) |
+|---|---|---|
+| `brandme-events-retention` (hourly CronJob) | `bm-sbx-fnd-retention` (`gcp-dev-identities.sh:303`) | `brandmeSpannerDataReadWrite` on database `brandme-sandbox` only; **no Pub/Sub** |
+| `brandme-consumer-domains-api` | `bm-sbx-dom-api` (`gcp-dev-identities.sh:310`) | `brandmeSpannerDataReadWrite` on the database; media bucket only with `--dom-media-bucket` (MediaService is unmounted, so leave it out) |
+| `brandme-gateway`, `-chain`, `-read-api`, `-exports-api`, `-exports-worker`, `-events-worker`, `-migrations` | `bm-sbx-fnd-gateway`, `bm-sbx-rts-chain`, `bm-sbx-rts-read-api`, `bm-sbx-rts-export-api`, `bm-sbx-rts-export-wkr`, `bm-sbx-fnd-outbox`, `bm-sbx-fnd-migrator` | as in `lane-service-accounts.md` |
+
+**Verify** (Workload Identity for the two KSAs, retention's least privilege, and the deploy
+pool's condition):
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+for pair in "bm-sbx-fnd-retention brandme-events-retention" "bm-sbx-dom-api brandme-consumer-domains-api"; do
+  read -r gsa ksa <<<"$pair"
+  gcloud iam service-accounts get-iam-policy "$(sa "$gsa")" --project "$PROJECT_ID" --format=json \
+    | jq -e --arg m "serviceAccount:$PROJECT_ID.svc.id.goog[$NS/$ksa]" \
+      '[.bindings[]? | select(.role == "roles/iam.workloadIdentityUser") | .members[]] | index($m) != null' >/dev/null \
+    || { echo "$ksa is not bound to $gsa" >&2; exit 1; }
+  echo "$ksa -> $gsa bound"
 done
-```
-
-**C-12 [creates resource] Custom roles (least privilege).** First compare
-against the predefined role **[read-only check]**:
-`gcloud iam roles describe roles/spanner.databaseUser --format='value(includedPermissions)'`.
-`roles/spanner.databaseUser` includes `spanner.databases.updateDdl`, so runtime
-workloads get a data-only custom role instead.
-```bash
-gcloud iam roles create brandmeSpannerDataRW --project "$PROJECT_ID" --stage=GA \
-  --title="Brand.Me Spanner data read/write (no DDL)" \
-  --permissions=spanner.databases.beginOrRollbackReadWriteTransaction,spanner.databases.beginReadOnlyTransaction,spanner.databases.read,spanner.databases.select,spanner.databases.write,spanner.sessions.create,spanner.sessions.delete,spanner.sessions.get,spanner.sessions.list
-gcloud iam roles create brandmeExportBucketRead --project "$PROJECT_ID" --stage=GA \
-  --title="Brand.Me export bucket read" --permissions=storage.buckets.get,storage.objects.get
-gcloud iam roles create brandmeExportBucketWrite --project "$PROJECT_ID" --stage=GA \
-  --title="Brand.Me export bucket write" \
-  --permissions=storage.buckets.get,storage.objects.get,storage.objects.create,storage.objects.delete
-```
-
-**C-13 [creates resource] Resource-level grants and Workload Identity bindings.**
-```bash
-DB=(--instance=brandme-sandbox --project "$PROJECT_ID")
-RW="projects/$PROJECT_ID/roles/brandmeSpannerDataRW"
-# Spanner, database level
-gcloud spanner databases add-iam-policy-binding brandme-sandbox "${DB[@]}" --member="serviceAccount:$(sa bm-sbx-fnd-migrator)" --role=roles/spanner.databaseUser   # DDL + ledger writes; no drop/IAM
-gcloud spanner databases add-iam-policy-binding brandme-sandbox "${DB[@]}" --member="serviceAccount:$(sa bm-sbx-rts-read-api)" --role=roles/spanner.databaseReader
-for id in bm-sbx-fnd-gateway bm-sbx-fnd-outbox bm-sbx-rts-chain bm-sbx-rts-export-api bm-sbx-rts-export-wkr; do
-  gcloud spanner databases add-iam-policy-binding brandme-sandbox "${DB[@]}" --member="serviceAccount:$(sa $id)" --role="$RW"
-done
-# Pub/Sub, topic level: publish + topics.get (the worker checks retention)
+gcloud spanner databases get-iam-policy brandme-sandbox --instance=brandme-sandbox --project "$PROJECT_ID" --format=json \
+  | jq -e --arg m "serviceAccount:$(sa bm-sbx-fnd-retention)" --arg r "projects/$PROJECT_ID/roles/brandmeSpannerDataReadWrite" \
+    '[.bindings[]? | select(.members | index($m)) | .role] == [$r]' >/dev/null \
+  || { echo "retention must hold exactly brandmeSpannerDataReadWrite on brandme-sandbox" >&2; exit 1; }
+echo "retention: Spanner data read/write on brandme-sandbox only"
 for t in public member-private restricted; do
-  for role in roles/pubsub.publisher roles/pubsub.viewer; do
-    gcloud pubsub topics add-iam-policy-binding "brandme-sandbox-$t" --project "$PROJECT_ID" \
-      --member="serviceAccount:$(sa bm-sbx-fnd-outbox)" --role="$role"
-  done
+  pol=$(gcloud pubsub topics get-iam-policy "brandme-sandbox-$t" --project "$PROJECT_ID" --format=json)
+  if grep -q "bm-sbx-fnd-retention@" <<<"$pol"; then echo "retention has a grant on $t" >&2; exit 1; fi
+done; echo "retention: no Pub/Sub grant"
+cond=$(gcloud iam workload-identity-pools providers describe brandme-deploy --workload-identity-pool=github-deploy \
+  --location=global --project "$PROJECT_ID" --format='value(attributeCondition)')
+for want in "assertion.repository_id == \"$REPO_ID\"" 'assertion.ref.startsWith("refs/tags/v")' 'assertion.environment == "sandbox"'; do
+  grep -qF "$want" <<<"$cond" || { echo "deploy provider condition lacks: $want" >&2; exit 1; }
 done
-# Export bucket, bucket level: API reads, worker reads/creates/deletes (privacy_exports/README.md:75-80)
-gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAccount:$(sa bm-sbx-rts-export-api)" --role="projects/$PROJECT_ID/roles/brandmeExportBucketRead"
-gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAccount:$(sa bm-sbx-rts-export-wkr)" --role="projects/$PROJECT_ID/roles/brandmeExportBucketWrite"
-# Workload Identity: KSA brandme/<name> may act as its GSA
-while read -r ksa id; do
-  gcloud iam service-accounts add-iam-policy-binding "$(sa $id)" --project "$PROJECT_ID" \
-    --role=roles/iam.workloadIdentityUser --member="serviceAccount:$PROJECT_ID.svc.id.goog[$NS/$ksa]"
-done <<'EOF'
-brandme-gateway bm-sbx-fnd-gateway
-brandme-chain bm-sbx-rts-chain
-brandme-read-api bm-sbx-rts-read-api
-brandme-exports-api bm-sbx-rts-export-api
-brandme-exports-worker bm-sbx-rts-export-wkr
-brandme-events-worker bm-sbx-fnd-outbox
-brandme-migrations bm-sbx-fnd-migrator
-EOF
+echo "deploy provider: repository $REPO_ID, v* tags, environment sandbox"
 ```
-The console KSA (`brandme-console`) gets no Google service account and no roles.
+**Undo:** `gcloud iam service-accounts delete "$(sa <id>)" --project "$PROJECT_ID"` for each
+GSA; `gcloud iam roles delete <role> --project "$PROJECT_ID"` for each custom role;
+`gcloud iam workload-identity-pools delete github-deploy --location=global --project "$PROJECT_ID"`;
+and the same for `github-push`.
 
-**C-14 [creates resource] Secret Manager.** Five secrets, IDs
-`brandme-<mode>-<lane>-<purpose>`. The four service tokens are independent
-random values (32–256 chars of `[A-Za-z0-9._~+/-]`, distinct by construction);
-the Blockfrost Preprod project id comes from the provider (D7).
+**C-14 [creates resource] Secret Manager: six secrets.** IDs are `brandme-<mode>-<lane>-<purpose>`.
+The four service tokens are independent random values, all from one generator (the same one
+as the rotation runbook, 5.1). The Blockfrost Preprod project id comes from the provider (D7).
+The domain assertion key is a fresh P-256 pair for the sandbox gateway. Node writes its public
+JWK (`kty`, `crv`, `kid`, `x`, `y`; never `d`) to `$WORK`, and the PKCS#8 private key to stdout,
+which pipes straight into Secret Manager. The private key never touches disk, a shell variable
+or a command argument. The public half and the kid go into the values PR (C-19).
 ```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
 for id in rights-service-token privacy-service-token privacy-export-service-token chain-service-token; do
   gcloud secrets create "brandme-sandbox-rts-$id" --project "$PROJECT_ID" --replication-policy=automatic \
     --labels=lane=rts,mode=sandbox,rotation-days=90
-  head -c 48 /dev/urandom | base64 | tr -d '=\n' | gcloud secrets versions add "brandme-sandbox-rts-$id" --project "$PROJECT_ID" --data-file=-
+  python3 -c 'import secrets; print(secrets.token_urlsafe(48), end="")' \
+    | gcloud secrets versions add "brandme-sandbox-rts-$id" --project "$PROJECT_ID" --data-file=-
 done
 gcloud secrets create brandme-sandbox-rts-midnight-blockfrost-project-id --project "$PROJECT_ID" \
   --replication-policy=automatic --labels=lane=rts,mode=sandbox
-read -rs BF && printf '%s' "$BF" | gcloud secrets versions add brandme-sandbox-rts-midnight-blockfrost-project-id --project "$PROJECT_ID" --data-file=- && unset BF
+read -rs BF; [[ "$BF" =~ ^nightpreprod[A-Za-z0-9_-]{8,}$ ]] || { unset BF; echo "not a Preprod project id" >&2; exit 1; }
+printf '%s' "$BF" | gcloud secrets versions add brandme-sandbox-rts-midnight-blockfrost-project-id --project "$PROJECT_ID" --data-file=-; unset BF
+gcloud secrets create brandme-sandbox-dom-domain-assertion-key --project "$PROJECT_ID" \
+  --replication-policy=automatic --labels=lane=dom,mode=sandbox,rotation-days=180
+KID="dom-sandbox-$(date -u +%Y%m%d%H%M)"; printf '%s\n' "$KID" > "$WORK/domain-assertion-kid.txt"
+node -e 'const c=require("crypto"),f=require("fs");
+  const {privateKey,publicKey}=c.generateKeyPairSync("ec",{namedCurve:"P-256"});
+  const {kty,crv,x,y}=publicKey.export({format:"jwk"});
+  f.writeFileSync(process.argv[1],JSON.stringify({kty,crv,kid:process.argv[2],x,y,use:"sig",alg:"ES256"})+"\n");
+  process.stdout.write(privateKey.export({type:"pkcs8",format:"pem"}))' "$WORK/domain-assertion-public.json" "$KID" \
+  | gcloud secrets versions add brandme-sandbox-dom-domain-assertion-key --project "$PROJECT_ID" --data-file=-
+# The two values lines for C-19 (public; safe to commit).
+jq -r '"    signingKid: \(.kid)", "        - {kty: EC, crv: P-256, kid: \(.kid), x: \(.x), \"y\": \(.y)}"' \
+  "$WORK/domain-assertion-public.json" > "$WORK/domain-assertion-values.txt"
+cat "$WORK/domain-assertion-values.txt"
 ```
-
-**C-15 [creates resource] Deliver secrets into the namespace (D4).** Recommended:
-GKE secret sync (C-6 enabled it). One sync identity reads only these five secrets.
+**Verify** (names, one enabled version each, the tokens pairwise distinct, and the stored
+domain key paired with the public JWK; no value printed):
 ```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+gcloud secrets list --project "$PROJECT_ID" --filter='labels.mode=sandbox' --format='value(name.basename())' | sort
+for s in $(gcloud secrets list --project "$PROJECT_ID" --filter='labels.mode=sandbox' --format='value(name.basename())'); do
+  n=$(gcloud secrets versions list "$s" --project "$PROJECT_ID" --filter=state:ENABLED --format='value(name)' | wc -l)
+  [ "$n" -eq 1 ] && echo "$s: 1 enabled version" || { echo "$s: $n enabled versions" >&2; exit 1; }
+done
+dups=$(for id in rights-service-token privacy-service-token privacy-export-service-token chain-service-token; do
+  gcloud secrets versions access 1 --secret "brandme-sandbox-rts-$id" --project "$PROJECT_ID" | sha256sum | cut -d' ' -f1
+done | sort | uniq -d | wc -l)
+[ "$dups" -eq 0 ] && echo "four service tokens pairwise distinct" || { echo "token values repeat" >&2; exit 1; }
+# The stored key is PKCS#8 P-256 and signs for the public JWK in $WORK (in memory; prints one line).
+gcloud secrets versions access 1 --secret brandme-sandbox-dom-domain-assertion-key --project "$PROJECT_ID" \
+  | node -e 'const c=require("crypto"),f=require("fs");const pem=f.readFileSync(0,"utf8"),pub=JSON.parse(f.readFileSync(process.argv[1],"utf8"));
+    const k=c.createPrivateKey(pem),m=c.randomBytes(32);
+    if(!pem.startsWith("-----BEGIN PRIVATE KEY-----")||k.asymmetricKeyDetails.namedCurve!=="prime256v1"||"d" in pub
+      ||!c.verify("sha256",m,c.createPublicKey({key:pub,format:"jwk"}),c.sign("sha256",m,k)))process.exit(1);
+    process.stdout.write("domain assertion key: PKCS#8 P-256, pairs with kid "+pub.kid+"\n")' "$WORK/domain-assertion-public.json" \
+  || { echo "brandme-sandbox-dom-domain-assertion-key v1 does not pair with $WORK/domain-assertion-public.json" >&2; exit 1; }
+```
+**Undo:** `gcloud secrets delete <id> --project "$PROJECT_ID"` for each of the six. Rotation
+of all six is in [credential-rotation.md](../runbooks/credential-rotation.md); the domain key
+rotates by kid overlap over two deploys (runbook 5.2).
+
+**C-15 [creates resource] Deliver the six secrets into the namespace (D4: GKE secret sync).**
+One sync identity reads only these six secrets. Pods never read Secret Manager.
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+ids="brandme-sandbox-rts-rights-service-token brandme-sandbox-rts-privacy-service-token
+  brandme-sandbox-rts-privacy-export-service-token brandme-sandbox-rts-chain-service-token
+  brandme-sandbox-rts-midnight-blockfrost-project-id brandme-sandbox-dom-domain-assertion-key"
 kubectl -n "$NS" create serviceaccount brandme-secret-sync
-for id in rights-service-token privacy-service-token privacy-export-service-token chain-service-token midnight-blockfrost-project-id; do
-  gcloud secrets add-iam-policy-binding "brandme-sandbox-rts-$id" --project "$PROJECT_ID" --role=roles/secretmanager.secretAccessor \
+for id in $ids; do
+  gcloud secrets add-iam-policy-binding "$id" --project "$PROJECT_ID" --role=roles/secretmanager.secretAccessor \
     --member="principal://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$PROJECT_ID.svc.id.goog/subject/ns/$NS/sa/brandme-secret-sync"
 done
+# Explicit versions, never versions/latest: a new version is inert until its pin changes (runbook section 4).
+{
+  printf 'apiVersion: secrets-store.csi.x-k8s.io/v1\nkind: SecretProviderClass\nmetadata: {name: brandme-sandbox-rts, namespace: %s}\n' "$NS"
+  printf 'spec:\n  provider: gke\n  parameters:\n    secrets: |\n'
+  for id in $ids; do
+    printf '      - resourceName: "projects/%s/secrets/%s/versions/1"\n        path: "%s"\n' "$PROJECT_ID" "$id" "$id"
+  done
+  for id in $ids; do   # one SecretSync per Kubernetes Secret; metadata.name becomes the Secret name, key "value"
+    printf -- '---\napiVersion: secret-sync.gke.io/v1\nkind: SecretSync\nmetadata: {name: %s, namespace: %s}\n' "$id" "$NS"
+    printf 'spec:\n  serviceAccountName: brandme-secret-sync\n  secretProviderClassName: brandme-sandbox-rts\n'
+    printf '  secretObject:\n    type: Opaque\n    data:\n      - sourcePath: "%s"\n        targetKey: "value"\n' "$id"
+  done
+} > "$WORK/secret-sync.yaml"
+kubectl apply -f "$WORK/secret-sync.yaml"
 ```
-Then apply, with `PROJECT_ID` substituted (shape copied from the Google page
-above; **not schema-validated here**, the CRDs exist only on a cluster with the add-on):
-```yaml
-apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
-metadata: {name: brandme-sandbox-rts, namespace: brandme}
-spec:
-  provider: gke
-  parameters:
-    secrets: |
-      - resourceName: "projects/PROJECT_ID/secrets/brandme-sandbox-rts-rights-service-token/versions/latest"
-        path: "rights-service-token"
-      - resourceName: "projects/PROJECT_ID/secrets/brandme-sandbox-rts-privacy-service-token/versions/latest"
-        path: "privacy-service-token"
-      - resourceName: "projects/PROJECT_ID/secrets/brandme-sandbox-rts-privacy-export-service-token/versions/latest"
-        path: "privacy-export-service-token"
-      - resourceName: "projects/PROJECT_ID/secrets/brandme-sandbox-rts-chain-service-token/versions/latest"
-        path: "chain-service-token"
-      - resourceName: "projects/PROJECT_ID/secrets/brandme-sandbox-rts-midnight-blockfrost-project-id/versions/latest"
-        path: "midnight-blockfrost-project-id"
----
-# One SecretSync per Kubernetes Secret; metadata.name becomes the Secret name.
-# Repeat for the other four (sourcePath = the path above, targetKey: value).
-apiVersion: secret-sync.gke.io/v1
-kind: SecretSync
-metadata: {name: brandme-sandbox-rts-chain-service-token, namespace: brandme}
-spec:
-  serviceAccountName: brandme-secret-sync
-  secretProviderClassName: brandme-sandbox-rts
-  secretObject:
-    type: Opaque
-    data:
-      - sourcePath: "chain-service-token"
-        targetKey: "value"
-```
-Fallback without the add-on (no rotation sync; value never touches disk):
-`gcloud secrets versions access latest --secret=<id> --project "$PROJECT_ID" | kubectl -n "$NS" create secret generic <id> --from-file=value=/dev/stdin`.
-External Secrets Operator is the other option; it is not installed anywhere.
-**[read-only check]** `kubectl -n "$NS" get secrets` lists the five names (never `-o yaml`).
+The rendered file holds six SecretSyncs, written out in full in `$WORK/secret-sync.yaml`, plus
+one SecretProviderClass. It names resources only, never values. Its shape was copied from the
+Google page cited at C-6 and was **not schema-validated here**: the CRDs exist only on a
+cluster with the add-on. The chart references all six Secret names
+(`values-sandbox.yaml:30-35`). The gateway reads `brandme-sandbox-dom-domain-assertion-key`
+(key `value`) as `CONSUMER_DOMAIN_ASSERTION_KEY` (`templates/gateway.yaml:106`) with
+`optional: false` (`templates/_helpers.tpl:217`), so gateway pods do not start until C-15 has
+synced it. The consumer-domains service gets no Secret: it holds only the public JWKS, from values.
 
-**C-16 [creates resource] Workload Identity Federation for the deploy job.** The
-condition pins the repository **and** owner by immutable numeric id, the ref to
-`v*` tags, and the GitHub Environment. `scripts/provision/gcp-dev-identities.sh --apply --github-repo-id N`
-creates the same pool and provider (without the owner-id clause) plus a separate
-`github-push` pool for the image pusher (`bm-sbx-fnd-pusher`, G24); run one or the other.
+**Verify (key presence, without printing values):** each Kubernetes Secret exists, has a
+non-empty `value`, and matches version 1 in Secret Manager.
 ```bash
-gcloud iam workload-identity-pools create github-deploy --project "$PROJECT_ID" --location=global --display-name="GitHub Actions deploy"
-gcloud iam workload-identity-pools providers create-oidc brandme-deploy --project "$PROJECT_ID" --location=global \
-  --workload-identity-pool=github-deploy --display-name="Brand-Me-Labs sandbox deploy" \
-  --issuer-uri="https://token.actions.githubusercontent.com" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_id=assertion.repository_id,attribute.repository_owner_id=assertion.repository_owner_id,attribute.ref=assertion.ref,attribute.environment=assertion.environment" \
-  --attribute-condition="assertion.repository_id == '$REPO_ID' && assertion.repository_owner_id == '$OWNER_ID' && assertion.ref.startsWith('refs/tags/v') && assertion.environment == 'sandbox'"
-gcloud iam service-accounts add-iam-policy-binding "$(sa bm-sbx-fnd-deployer)" --project "$PROJECT_ID" \
-  --role=roles/iam.workloadIdentityUser \
-  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github-deploy/attribute.repository_id/$REPO_ID"
-# Deployer: may fetch cluster credentials; Kubernetes rights only inside the namespace.
-gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$(sa bm-sbx-fnd-deployer)" --role=roles/container.clusterViewer
-kubectl create rolebinding brandme-deployer -n "$NS" --clusterrole=admin --user="$(sa bm-sbx-fnd-deployer)"
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+ids="brandme-sandbox-rts-rights-service-token brandme-sandbox-rts-privacy-service-token
+  brandme-sandbox-rts-privacy-export-service-token brandme-sandbox-rts-chain-service-token
+  brandme-sandbox-rts-midnight-blockfrost-project-id brandme-sandbox-dom-domain-assertion-key"
+for id in $ids; do
+  for _ in $(seq 1 30); do kubectl -n "$NS" get secret "$id" >/dev/null 2>&1 && break; sleep 10; done
+  kubectl -n "$NS" get secret "$id" >/dev/null 2>&1 || { echo "$id: no Kubernetes Secret after 5 minutes" >&2; exit 1; }
+  bytes=$(kubectl -n "$NS" get secret "$id" -o jsonpath='{.data.value}' | base64 -d | wc -c)
+  [ "$(kubectl -n "$NS" get secret "$id" -o jsonpath='{.data.value}' | base64 -d | sha256sum)" = \
+    "$(gcloud secrets versions access 1 --secret "$id" --project "$PROJECT_ID" | sha256sum)" ] \
+    && echo "$id: present, $bytes bytes, matches version 1" || { echo "$id: missing or differs" >&2; exit 1; }
+done
 ```
-The namespaced `admin` role covers what helm needs here (Deployments,
-Services, ServiceAccounts, Jobs, NetworkPolicies, PDBs, release Secrets,
-`pods/exec` for the checks). If ingress is enabled later, also grant the
-deployer the `cloud.google.com` and `networking.gke.io` resources
-(BackendConfig, ManagedCertificate, FrontendConfig) in the namespace.
+**Undo:** `kubectl delete -f "$WORK/secret-sync.yaml"` and
+`kubectl -n "$NS" delete serviceaccount brandme-secret-sync`. Then remove the six IAM bindings
+with `gcloud secrets remove-iam-policy-binding`, using the same member and role. The fallback
+without the add-on gives no rotation sync, and the value never touches disk:
+`gcloud secrets versions access 1 --secret=<id> --project "$PROJECT_ID" | kubectl -n "$NS" create secret generic <id> --from-file=value=/dev/stdin`.
+
+**C-16 [creates resource] Deployer rights inside the namespace only.** C-13 created the deployer
+GSA, its `container.clusterViewer` grant and the `github-deploy` pool. Kubernetes rights are
+namespaced:
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+kubectl create rolebinding brandme-deployer -n "$NS" --clusterrole=admin --user="$(sa bm-sbx-fnd-deployer)"
+# can-i prints yes or no; compare the answer, so an API error never counts as "no".
+can() { kubectl auth can-i "$@" --as="$(sa bm-sbx-fnd-deployer)" 2>/dev/null || true; }
+for res in deployments jobs; do   # jobs: the retention pass
+  [ "$(can create "$res" -n "$NS")" = yes ] || { echo "deployer cannot create $res in $NS" >&2; exit 1; }
+done
+[ "$(can create deployments -n default)" = no ] || { echo "deployer is not limited to $NS" >&2; exit 1; }
+echo "deployer: admin in $NS only"
+```
+**Undo:** `kubectl -n "$NS" delete rolebinding brandme-deployer`. The namespaced `admin` role
+covers what helm and the deploy job need: Deployments, Services, ServiceAccounts, Jobs,
+CronJobs, NetworkPolicies, PDBs, release Secrets, `pods/exec` for the checks, and
+`kubectl create job --from=cronjob` for the retention pass. If ingress is enabled later, also
+grant the `cloud.google.com` and `networking.gke.io` resources (BackendConfig,
+ManagedCertificate, FrontendConfig).
 
 **C-17 [creates resource] GitHub: environment, tag ruleset, repository variables.**
-- Settings → Environments → New environment **`sandbox`**: required reviewer =
-  the founder; "Deployment branches and tags" → selected → add tag rule `v*`.
-  With a single maintainer leave "Prevent self-review" off, or the founder
-  cannot approve their own tag.
-- Settings → Rules → Rulesets → New **tag** ruleset "release tags", target
-  `refs/tags/v*`, enforcement Active, rules: restrict creations, updates and
-  deletions; bypass list: repository admins only.
+- Settings → Environments → New environment **`sandbox`**: required reviewer = the founder;
+  "Deployment branches and tags" → selected → add tag rule `v*`. With a single maintainer, leave
+  "Prevent self-review" off, or the founder cannot approve their own tag.
+- Settings → Rules → Rulesets → New **tag** ruleset "release tags", target `refs/tags/v*`,
+  enforcement Active, rules: restrict creations, updates and deletions; bypass list:
+  repository admins only.
 - Repository variables (none of these is a secret):
 ```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
 gh variable set BM_GCP_PROJECT_ID   --repo "$REPO" --body "$PROJECT_ID"
 gh variable set BM_GCP_REGION       --repo "$REPO" --body "$REGION"
 gh variable set BM_GKE_CLUSTER      --repo "$REPO" --body "$CLUSTER"
 gh variable set BM_GCP_WIF_PROVIDER --repo "$REPO" --body "projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github-deploy/providers/brandme-deploy"
 gh variable set BM_GCP_DEPLOYER_SA  --repo "$REPO" --body "$(sa bm-sbx-fnd-deployer)"
 gh variable set BM_DEPLOY_ENABLED   --repo "$REPO" --body false
+gh variable list --repo "$REPO"
+rules=$(gh api "repos/$REPO/environments/sandbox" --jq '[.protection_rules[]?.type] | join(",")')
+[[ ",$rules," == *,required_reviewers,* ]] || { echo "environment sandbox has no required reviewer" >&2; exit 1; }
+tags=$(gh api "repos/$REPO/environments/sandbox/deployment-branch-policies" --jq '[.branch_policies[]? | select(.type == "tag") | .name] | join(",")')
+[[ ",$tags," == *,v\*,* ]] || { echo "environment sandbox does not allow the tag rule v*" >&2; exit 1; }
+echo "environment sandbox: required reviewer, tag rule v*"
 ```
+**Undo:** `gh variable delete <NAME> --repo "$REPO"`; delete the environment and the ruleset in
+Settings.
 
-**C-18 [read-only check, then creates resource if needed] Nodes can pull the images.**
+**C-18 [read-only check, then creates resource if needed] Nodes can pull the images** from the
+`gcr.io` repository in `$IMAGE_PROJECT` (C-4).
 ```bash
-gcloud container clusters describe "$CLUSTER" --region "$REGION" --project "$PROJECT_ID" --format='value(autopilot.enabled,nodeConfig.serviceAccount)'
-gcloud artifacts repositories get-iam-policy gcr.io --location=<LOCATION_FROM_C-4> --project "$PROJECT_ID"
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+node_sa=$(gcloud container clusters describe "$CLUSTER" --region "$REGION" --project "$PROJECT_ID" \
+  --format='value(autoscaling.autoprovisioningNodePoolDefaults.serviceAccount)')
+case "$node_sa" in ""|default) node_sa="$PROJECT_NUMBER-compute@developer.gserviceaccount.com" ;; esac
+echo "nodes pull as $node_sa"
+repo_pol=$(gcloud artifacts repositories get-iam-policy gcr.io --location=us --project "$IMAGE_PROJECT" --format=json)
+proj_pol=$(gcloud projects get-iam-policy "$IMAGE_PROJECT" --format=json)
+if printf '%s\n%s\n' "$repo_pol" "$proj_pol" | jq -se --arg m "serviceAccount:$node_sa" '[.[].bindings[]?
+     | select(.role | test("^roles/(artifactregistry\\.(reader|writer|repoAdmin|admin)|editor|owner)$")) | .members[]]
+     | index($m) != null' >/dev/null; then
+  echo "$node_sa can pull from gcr.io in $IMAGE_PROJECT"
+else
+  echo "$node_sa has no Artifact Registry read role in $IMAGE_PROJECT; grant it, then run this step again:" >&2
+  echo "  gcloud artifacts repositories add-iam-policy-binding gcr.io --location=us --project $IMAGE_PROJECT --member=serviceAccount:$node_sa --role=roles/artifactregistry.reader" >&2
+  exit 1
+fi
 ```
-Grant `roles/artifactregistry.reader` on that repository to the node service
-account only if it is missing, or if the images live in another project than
-the cluster (D1).
+Autopilot nodes use the cluster's `autoscaling.autoprovisioningNodePoolDefaults.serviceAccount`;
+empty or `default` means the Compute Engine default account. Standard clusters use each node
+pool's `nodeConfig.serviceAccount`; check that one instead. The check reads only direct
+bindings on the repository and the image project, so a grant through a group shows as missing.
+Then add the reader grant anyway: it is the one C-13's script prints, and does not run, when
+`$IMAGE_PROJECT` differs from `$PROJECT_ID`. **Undo:** `gcloud artifacts repositories remove-iam-policy-binding`
+with the same member and role.
 
-**C-19 [creates resource] Optional public edge — not for the first deploy (D6, G8).**
-`gcloud compute addresses create brandme-sandbox-edge --global --project "$PROJECT_ID"`, an
-A record for the chosen host(s), then set `ingress.*` in `values-sandbox.yaml`.
+**C-19 [repository change] The values PR.** It must merge before the tag. While any
+`REPLACE_ME` other than `gcp.projectId` remains in `brandme-infra/helm/brandme/values-sandbox.yaml`,
+the deploy job's render fails by design (`templates/validate.yaml`).
 
-**C-20 First deploy.** After the in-repo changes in D are merged:
-`gh variable set BM_DEPLOY_ENABLED --repo "$REPO" --body true`, then push a
-`v*` tag (for example `v0.1.0`) and approve the `sandbox` environment.
+| Line on this head | Key | Value from |
+|---|---|---|
+| `:16` | `gcp.projectId` | may stay: the deploy job passes `--set-string gcp.projectId=${{ vars.BM_GCP_PROJECT_ID }}` (`ci-cd.yml:447`) |
+| `:27` | `midnight.contractAddress` | `$WORK/preprod-contract-address.txt` (C-12) |
+| `:41-42` | `gateway.oidc.issuer`, `gateway.oidc.audience` | `$WORK/oidc.txt` (C-11) |
+| new, under `gateway.oidc` | `gateway.oidc.jwksUri` | `$WORK/oidc.txt` (C-11) |
+| `:45` | `gateway.publicOrigins` | D6 (https), even with ingress off |
+| `:66` | `privacyExports.bucket` | `$WORK/bucket.txt` (C-10) |
+| `:77` | `consumerDomains.assertion.signingKid` | line 1 of `$WORK/domain-assertion-values.txt` (C-14) |
+| `:80` | the one key in `consumerDomains.assertion.jwks.keys` | line 2 of that file: the public `kid`, `x` and quoted `"y"`, never `d` |
+
+Already right on this head, so leave them: `consumerDomains.enabled: true` and its GSA
+`bm-sbx-dom-api` (`:74-75`), `eventsRetention.gcpServiceAccount: bm-sbx-fnd-retention` (`:96`),
+the six Secret names (`:30-35`), and the migrations comment, which no longer calls D3 a
+blocker (`:98-101`).
+
+**Verify** on the PR branch, from the repository root. The check refuses any placeholder but
+`gcp.projectId`, then renders the filled file the way the deploy job does
+(`ci-cd.yml:440-455`: `--set-string gcp.projectId`, the registry and four digests; fake
+digests here) and validates the result with the pinned kubeconform against the same schemas
+and Kubernetes versions as `scripts/validate-helm.sh`. That script alone is not enough: while
+the `gcp.projectId` placeholder stays, it only asserts that the committed file does **not**
+render (`scripts/validate-helm.sh:240-242`).
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+F=brandme-infra/helm/brandme/values-sandbox.yaml
+[ -f "$F" ] || { echo "run this from the repository root" >&2; exit 1; }
+if grep -vE '^[[:space:]]*#' "$F" | grep -vE '^[[:space:]]*projectId: REPLACE_ME_GCP_PROJECT_ID[[:space:]]*$' | grep -q REPLACE_ME; then
+  echo "unfilled REPLACE_ME in $F (only gcp.projectId may keep its placeholder):" >&2
+  grep -nE 'REPLACE_ME' "$F" | grep -vE '^[0-9]+:[[:space:]]*(#|projectId: REPLACE_ME_GCP_PROJECT_ID)' >&2 || true
+  exit 1
+fi
+BRANDME_PYTHON="$(command -v python3)" bash scripts/validate-helm.sh   # installs the pinned helm and kubeconform; chart gates
+tools="${BRANDME_TOOLS_DIR:-.cache/tools}"
+args=(--namespace=brandme "--values=$F" "--set-string=gcp.projectId=$PROJECT_ID" "--set-string=images.registry=gcr.io/$IMAGE_PROJECT")
+for i in gateway core chain console; do args+=("--set-string=images.$i.digest=sha256:$(printf '%064d' 0)"); done
+out="$WORK/values-pr-release.yaml"
+"$tools/bin/helm" template brandme brandme-infra/helm/brandme "${args[@]}" > "$out" \
+  || { echo "the filled $F does not render (helm error above)" >&2; exit 1; }
+k8s=$(sed -nE 's/^K8S_SCHEMAS="(.*)"$/\1/p' scripts/validate-helm.sh)
+crd=$(sed -nE 's/^CRD_SCHEMAS="(.*)"$/\1/p' scripts/validate-helm.sh)
+kvs=$(sed -nE 's/^KUBE_VERSIONS=\((.*)\)$/\1/p' scripts/validate-helm.sh)
+[ -n "$k8s" ] && [ -n "$crd" ] && [ -n "$kvs" ] || { echo "schema settings not found in scripts/validate-helm.sh" >&2; exit 1; }
+for kv in $kvs; do
+  "$tools/bin/kubeconform" -strict -summary -kubernetes-version "$kv" -schema-location "$k8s" -schema-location "$crd" \
+    -cache "$tools/kubeconform-cache" "$out" || { echo "the rendered release is invalid for Kubernetes $kv" >&2; exit 1; }
+done
+echo "values PR: no placeholder left but gcp.projectId; the release renders and validates"
+```
+**Undo:** revert the PR.
+
+**C-20 [creates resource] First deploy.**
+
+This step deploys real infrastructure, so start with a backup point (rollback R-1). On the
+empty database it records the known-empty state; take one before every later tag that adds a
+migration.
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+TAG=v0.1.0
+gcloud spanner backups create "pre-${TAG//./-}" --instance=brandme-sandbox --database=brandme-sandbox \
+  --retention-period=7d --project "$PROJECT_ID"
+state=$(gcloud spanner backups describe "pre-${TAG//./-}" --instance=brandme-sandbox --project "$PROJECT_ID" --format='value(state)')
+[ "$state" = READY ] || { echo "backup pre-${TAG//./-} is '${state:-missing}', not READY" >&2; exit 1; }
+echo "backup pre-${TAG//./-} READY"
+```
+Next, tag the commit whose `main` run is green, with the values PR merged:
+```bash
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+TAG=v0.1.0
+[[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "TAG must look like v1.2.3" >&2; exit 1; }
+git fetch origin main --tags && git switch --detach origin/main
+sha=$(git rev-parse HEAD)
+green=$(gh run list --repo "$REPO" --workflow ci-cd.yml --branch main --event push --commit "$sha" \
+  --json conclusion --jq 'map(select(.conclusion == "success")) | length')
+[ "$green" -ge 1 ] || { echo "no green ci-cd.yml push run on main for $sha" >&2; exit 1; }
+gh variable set BM_DEPLOY_ENABLED --repo "$REPO" --body true
+git tag -s "$TAG" -m "sandbox $TAG" "$sha"      # -a instead of -s if no signing key is configured
+git push origin "$TAG"
+# The main push run for the same sha matches every other filter, so select the tag's own run by its
+# head branch (the tag name for a tag push) and wait until GitHub lists it.
+run=""
+for _ in $(seq 1 40); do
+  run=$(gh run list --repo "$REPO" --workflow ci-cd.yml --event push --commit "$sha" --json databaseId,headBranch \
+    --jq "map(select(.headBranch == \"$TAG\")) | .[0].databaseId // empty")
+  [ -n "$run" ] && break
+  sleep 15
+done
+[ -n "$run" ] || { echo "no ci-cd.yml run for tag $TAG after 10 minutes" >&2; exit 1; }
+echo "approve the 'sandbox' environment on: https://github.com/$REPO/actions/runs/$run"
+gh run watch "$run" --repo "$REPO" --exit-status
+```
+The run pauses at the `deploy` job until the founder approves the `sandbox` environment, on
+the run page or under Settings → Environments. The job then runs these steps in order:
+- validate the chart offline;
+- render the exact release by digest;
+- authenticate with WIF;
+- `helm upgrade --install --wait --wait-for-jobs`, with migrations first as the pre-install hook;
+- rollout status of the six always-on Deployments, plus `consumer-domains` when the rendered
+  release has it, and the three `--check` commands;
+- one retention pass from `cronjob/brandme-events-retention`. A failed pass fails the deploy
+  (`ci-cd.yml:499-517`).
+
+**Undo:** `gh variable set BM_DEPLOY_ENABLED --repo "$REPO" --body false` stops further tags,
+then roll back (R-3). Deleting the tag needs the ruleset bypass: `git push origin ":refs/tags/$TAG"`.
 
 **C-21 [read-only check] After the deploy.**
 ```bash
-kubectl -n "$NS" get deploy,pods,jobs
-kubectl -n "$NS" logs job/brandme-migrations
-kubectl label --dry-run=server --overwrite namespace "$NS" pod-security.kubernetes.io/enforce=restricted   # no warnings expected
+set -euo pipefail
+. ~/brandme-sandbox-deploy/env.sh
+kubectl -n "$NS" get deploy,pods,jobs,cronjobs
+kubectl -n "$NS" logs job/brandme-migrations --tail=60          # hook Job, kept until the next release
+# consumer-domains is on in values-sandbox.yaml (:74); drop it here only if that changes.
+for d in gateway chain read-api exports-api exports-worker events-worker consumer-domains; do
+  kubectl -n "$NS" rollout status "deploy/brandme-$d" --timeout=2m
+done
+kubectl -n "$NS" exec deploy/brandme-read-api -- python -m brandme_core.read_api --check
+kubectl -n "$NS" exec deploy/brandme-exports-api -- python -m brandme_core.privacy_exports --check
+kubectl -n "$NS" exec deploy/brandme-exports-worker -- python -m brandme_core.privacy_exports --check
 kubectl -n "$NS" exec deploy/brandme-events-worker -- python -m brandme_core.events.worker --check
+# Configuration and boot guard only: this --check does not reach Spanner (G28).
+kubectl -n "$NS" exec deploy/brandme-consumer-domains -- python -m brandme_core.domains.persona.app --check
+warn=$(kubectl label --dry-run=server --overwrite namespace "$NS" pod-security.kubernetes.io/enforce=restricted 2>&1 >/dev/null)
+[ -z "$warn" ] || { printf 'Pod Security warnings:\n%s\n' "$warn" >&2; exit 1; }
+# Blockfrost accepts the chain's Preprod project id: a GraphQL POST to the indexer URL the chain itself
+# builds (dist/src/midnight/network.js), from the chain pod, printing only the HTTP status (403 = refused).
+code=$(kubectl -n "$NS" exec deploy/brandme-chain -- node --input-type=module -e '
+  import { preprodEndpoints } from "./dist/src/midnight/network.js";
+  let out;
+  try {
+    const r = await fetch(preprodEndpoints(process.env.MIDNIGHT_BLOCKFROST_PROJECT_ID ?? "").indexerHttp, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: "{ __typename }" }),
+      redirect: "error", signal: AbortSignal.timeout(15000) });
+    out = String(r.status);
+  } catch (e) { out = "error " + (e?.cause?.code ?? e?.name ?? "unknown"); }
+  process.stdout.write(out);')
+[ "$code" = 200 ] || { echo "Blockfrost Preprod indexer answered '$code' to the chain's project id" >&2; exit 1; }
+echo "Blockfrost Preprod indexer: 200 for the chain's project id"
+# Gateway health and chain capability over port-forwards (nothing is exposed publicly).
+kubectl -n "$NS" port-forward deploy/brandme-gateway 18081:3001 >/dev/null 2>&1 & pf1=$!
+kubectl -n "$NS" port-forward deploy/brandme-chain 18082:3001 >/dev/null 2>&1 & pf2=$!
+trap 'kill "$pf1" "$pf2" 2>/dev/null' EXIT; sleep 3
+curl -fsS -o /dev/null -w 'gateway /healthz %{http_code}\n' http://127.0.0.1:18081/healthz
+# Capability is built from configuration and local artifacts only (C-12): not proof of a Preprod contract.
+for url in http://127.0.0.1:18082/midnight/capability http://127.0.0.1:18081/api/v1/chain/capability; do
+  curl -fsS "$url" | jq -e '.network == "preprod" and .status != "unavailable"' >/dev/null \
+    || { echo "$url: not network preprod with a status other than unavailable" >&2; exit 1; }
+  echo "$url: preprod, not unavailable"
+done
+# One more retention pass, as the operator.
+job="brandme-events-retention-manual-$(date -u +%Y%m%d%H%M)"
+kubectl -n "$NS" create job "$job" --from=cronjob/brandme-events-retention
+kubectl -n "$NS" wait --for=condition=complete "job/$job" --timeout=10m
+kubectl -n "$NS" logs "job/$job" --tail=20
 ```
+`/api/v1/system/health` is not a cluster check: it also calls the legacy brain service, which
+the chart does not deploy, so it reports `degraded` (`brandme-gateway/src/routes/v1/index.ts:67-81`).
+The consumer-domains Deployment is `brandme-consumer-domains`; its KSA is
+`brandme-consumer-domains-api`. Its first real check is one member request through the gateway,
+`GET /api/v1/me/persona` (`brandme-gateway/src/routes/v1/persona.ts:153`) with a sandbox test
+member's session: expect 200 and no assertion refusal in `kubectl -n "$NS" logs deploy/brandme-consumer-domains`.
 
-**C-22 [creates resource] Retire the JSON key** once both the deploy job and
-image publishing use WIF (G24): `gcloud iam service-accounts keys delete <KEY_ID> --iam-account=<SA_FROM_C-2>`,
-then delete the `GCP_SA_KEY` secret in GitHub.
+**C-22 [creates resource] Retire the JSON key.** Do this once image publishing also uses WIF
+(G24). The full sequence is in [credential-rotation.md](../runbooks/credential-rotation.md) 5.5:
+disable the key, wait for a green publishing run, delete the key, then delete the `GCP_SA_KEY`
+secret.
+
+**C-23 [creates resource] Optional public edge: not for the first deploy (D6, G8).** Run
+`gcloud compute addresses create brandme-sandbox-edge --global --project "$PROJECT_ID"`, add an
+A record for the chosen host(s), then set `ingress.*` and `gateway.trustProxy` in
+`values-sandbox.yaml`. The chart refuses ingress without `trustProxy`.
+
+### Rollback and teardown
+
+- **R-1 Backups before migrations.** Spanner migrations are forward-only. The runner has `up`,
+  `status`, `verify` and `repair` (`brandme-data/spanner/migrations/runner.py:282-288`), but no
+  down. So take the C-20 backup before every release that adds a migration. To restore,
+  create a new database from the backup:
+  `gcloud spanner databases restore --source-backup=pre-<tag> --source-instance=brandme-sandbox --destination-instance=brandme-sandbox --destination-database=brandme-sandbox-r1 --project "$PROJECT_ID"`.
+  Then point `spanner.databaseId` at it in a values PR. A restore cannot overwrite the live
+  database.
+- **R-2 A bad migration** is fixed forward with the next number (V016 onward, registry in
+  `brandme-data/spanner/migrations/README.md`), or by R-1. A failed DDL batch leaves an
+  `applying` row; inspect it, then run `runner.py repair --version N`. Never edit an applied
+  file: the checksum ledger refuses that.
+- **R-3 Application rollback:** `helm -n brandme history brandme`, then
+  `helm -n brandme rollback brandme <REVISION> --wait --timeout 10m`. Rollback runs no
+  pre-upgrade hook, so the schema stays at the newer version. The older images must accept it:
+  each service asserts its supported range at startup and refuses otherwise. If they refuse,
+  use R-1.
+- **R-4 Teardown, in this order:**
+  1. `helm -n brandme uninstall brandme`.
+  2. `kubectl -n brandme delete job/brandme-migrations serviceaccount/brandme-migrations networkpolicy/brandme-migrations-egress --ignore-not-found`.
+     These are hook resources, which `helm uninstall` keeps (`templates/migrations-job.yaml:10-11`).
+  3. Delete the retention Jobs from `C-20`/`C-21`.
+  4. Run the C-15 undo, then `kubectl delete namespace brandme`.
+  5. Then, in reverse order of creation, run the undo of C-14, C-13, C-10, C-9 and C-8,
+     including `gcloud spanner backups delete pre-<tag> --instance=brandme-sandbox`.
+  6. Finally C-6, if the cluster was created for this deploy, and C-17's variables.
+
+  Verify each undo with the describe command of the matching step: it must report "not found".
+
+### Cost note
+
+These are what keeps billing while the sandbox exists. Prices were not checked here; use
+cloud.google.com/spanner/pricing and cloud.google.com/kubernetes-engine/pricing.
+
+- **Spanner** `regional-us-east1`, 100 processing units. It bills per processing-unit hour from
+  C-8 until C-8's undo, even when idle, plus storage and backups. This is likely the largest
+  fixed cost.
+- **GKE Autopilot** bills a cluster management fee plus the pods' resource requests. With the
+  sandbox values and the console off, the seven always-on Deployments request about 2.35 vCPU
+  and 2.75 GiB in total. Gateway, read-api and exports-api run 2 replicas each at 250m and
+  256Mi; chain runs 1 at 250m and 512Mi; exports-worker and consumer-domains run 1 each at 250m
+  and 256Mi; events-worker runs 1 at 100m and 256Mi (`helm template` of `values-sandbox.yaml`
+  with the placeholders filled, 2026-10-30). The hourly retention Job adds 100m and 256Mi while
+  it runs.
+- **Small usage-based costs:** Pub/Sub retention (1 day on three topics), Secret Manager (six
+  secrets, their versions and access operations), Artifact Registry storage, and Cloud NAT if
+  private nodes are used.
 
 ## D. What changes in the repository after each cloud step
 
 | After | Change in repo | Owner |
 |---|---|---|
-| D2 confirmed GKE | Nothing. If Cloud Run is chosen instead, keep the core `runtime` stage, Secret IDs, GSAs and WIF; replace the chart with Cloud Run service/job definitions. | Foundation |
-| D1 / C-17 | Nothing for the deploy (it passes `gcp.projectId` from `vars.BM_GCP_PROJECT_ID`). If the image project changes too, change `GCP_PROJECT_ID` in `ci-cd.yml:37` (where `build-images` pushes). | ci-cd.yml owner |
-| D3 | Renumber or merge V003–V005 before the first deploy. | Foundation + consumer-domains |
-| C-8, C-9, C-11, C-14 | Nothing: `values-sandbox.yaml` already uses `brandme-sandbox` (instance and database), the three topic IDs, the `bm-sbx-*` GSAs and the `brandme-sandbox-rts-*` Secret names. | — |
-| C-10 | Replace `REPLACE_ME_SUFFIX` in `privacyExports.bucket`. | Foundation |
-| D5 | Fill `gateway.oidc.issuer` and `gateway.oidc.audience`. | Foundation |
-| D6 | Fill `gateway.publicOrigins` (https). Later, for C-19: `ingress.enabled`, `staticIpName`, hosts and `gateway.trustProxy` (G8; the chart refuses ingress without it). | Foundation / gateway |
-| D7 | Fill `midnight.contractAddress` (64 lowercase hex). | Midnight-rights |
-| C-16, C-17 | Section E is applied. Set `BM_DEPLOY_ENABLED=true` only after every step in section C. | Founder |
-| Console build args (G7) | `console.enabled: true` in `values-sandbox.yaml`; add `console` to the rollout loop in E. | Console owner |
-| Done | `.cache/` is in `.gitignore` and `.dockerignore` (G22). | — |
-| After the first green deploy | Update CLAUDE.md's service table with evidence (run URL, `kubectl` output); never before. | Parent |
+| D2 confirmed GKE | Nothing. If Cloud Run is chosen instead, keep the core `runtime` stage, Secret IDs, GSAs and WIF, and replace the chart with Cloud Run service and job definitions. | Foundation |
+| D1 / C-17 | Nothing for the deploy: it passes `gcp.projectId` from `vars.BM_GCP_PROJECT_ID` (`ci-cd.yml:447`). If the image project changes too, change `GCP_PROJECT_ID` at `ci-cd.yml:43`, where `build-images` pushes. | ci-cd.yml owner |
+| D3 | Nothing: resolved (C-0). | — |
+| C-8, C-9, C-14 | Nothing. `values-sandbox.yaml` already uses `brandme-sandbox` (instance and database), the three topic IDs and all six Secret names, the domain key's included (`:30-35`). | — |
+| C-10, C-11, C-12, C-14, D6 | The values PR (C-19): bucket, OIDC issuer/audience/JWKS URI, contract address, https public origin, and the domain key's `signingKid` and public JWK (`:77`, `:80`). | Foundation (values), midnight-rights (address) |
+| C-13 | Nothing. The script binds `brandme-events-retention` to `bm-sbx-fnd-retention` and `brandme-consumer-domains-api` to `bm-sbx-dom-api` (`scripts/provision/gcp-dev-identities.sh:303`, `:310`), and `values-sandbox.yaml` names both GSAs (`:75`, `:96`). | — |
+| C-14, C-15 (domain key) | Nothing beyond C-19: the chart reads the Secret (`values-sandbox.yaml:35`, `templates/gateway.yaml:106`). Each later rotation is two deploys with kid overlap, then a cleanup deploy ([credential-rotation.md](../runbooks/credential-rotation.md) 5.2). | Consumer-domains (owner), foundation (deploys) |
+| C-16, C-17 | Nothing; section E is applied. Set `BM_DEPLOY_ENABLED=true` only at C-20. | Founder |
+| Console build args (G7) | `console.enabled: true` in `values-sandbox.yaml`, and add `console` to the rollout list at `ci-cd.yml:489-491`, the same way as consumer-domains. | Console owner |
+| G24 | Switch `build-images` auth (`ci-cd.yml:364-368`) to `vars.BM_GCP_PUSH_WIF_PROVIDER` / `vars.BM_GCP_PUSHER_SA`, then C-22. | Foundation |
+| After the first green deploy | Update CLAUDE.md's service table with evidence (the run URL, `kubectl` output); never before. | Parent |
 
 While the committed `values-sandbox.yaml` contains any `REPLACE_ME`,
-`scripts/validate-helm.sh` asserts that rendering it fails; once none is left
-it asserts the committed file renders and validates. A separate negative test
-keeps proving that any `REPLACE_ME` value is refused. (The deploy job passes
-`gcp.projectId` from `vars.BM_GCP_PROJECT_ID`, so that placeholder may stay.)
+`scripts/validate-helm.sh` asserts that rendering it fails. Once none is left, it
+asserts that the committed file renders and validates. A separate negative test keeps
+proving that any `REPLACE_ME` value is refused. The deploy job passes
+`gcp.projectId` from `vars.BM_GCP_PROJECT_ID`, so that placeholder may stay; because it
+stays, `validate-helm.sh` never renders the founder's filled file, and C-19's Verify does that
+render instead.
 
-## E. `ci-cd.yml` deploy patch (applied in this change set; gated off until `vars.BM_DEPLOY_ENABLED == 'true'`)
+## E. `ci-cd.yml` deploy path (applied; gated off until `vars.BM_DEPLOY_ENABLED == 'true'`)
 
-Two parts. The result was linted with actionlint 1.7.7 on a scratch copy: no
-new findings (the only finding, SC2034 at the Firestore step, already exists
-on the base file).
+These are the jobs as they stand on this head. They are not copied here, so they cannot
+drift. Read the file.
 
-**E-1. `build-images` exposes the pushed digest per image.** Add under
-`timeout-minutes: 40`:
-```yaml
-    # Matrix legs write distinct output names, so the job outputs combine.
-    outputs:
-      digest-gateway: ${{ steps.publish.outputs.digest-gateway }}
-      digest-core: ${{ steps.publish.outputs.digest-core }}
-      digest-chain: ${{ steps.publish.outputs.digest-chain }}
-      digest-console: ${{ steps.publish.outputs.digest-console }}
-```
-and replace the `Publish verified images` step:
-```yaml
-      - name: Publish verified images
-        id: publish
-        if: env.PUBLISH_IMAGES == 'true'
-        env:
-          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
-          SERVICE: ${{ matrix.service }}
-        run: |
-          set -euo pipefail
-          digest=""
-          while IFS= read -r tag; do
-            out=$(docker push "$tag")
-            printf '%s\n' "$out"
-            pushed=$(printf '%s\n' "$out" | sed -nE 's/^.*: digest: (sha256:[a-f0-9]{64}) size: [0-9]+$/\1/p' | tail -n 1)
-            [[ "$pushed" =~ ^sha256:[a-f0-9]{64}$ ]] || { echo "registry reported no digest for $tag" >&2; exit 1; }
-            [ -z "$digest" ] || [ "$digest" = "$pushed" ] || { echo "tags of one build resolved to different digests" >&2; exit 1; }
-            digest=$pushed
-          done <<< "$IMAGE_TAGS"
-          echo "digest-${SERVICE}=${digest}" >> "$GITHUB_OUTPUT"
-```
-The `sed` expression was tested against the real push line from run
-39902216424 ("main: digest: sha256:a8c6a22e… size: 2766").
+- **`build-images`** (`ci-cd.yml:298-391`). It needs `test-gateway`, `test-core`,
+  `foundation-check`, `test-chain`, `test-frontend` and `security-scan` (`:301`). The
+  consumer-domains subset job is gone, because `foundation-check` now runs the full `pnpm check`,
+  pytest included. Each matrix leg builds, runs `.github/scripts/smoke-image.sh`, and only
+  then authenticates and pushes. It writes `digest-<service>` outputs (`:304-308`), parsed
+  from the registry's push line (`:374-391`). That `sed` expression was tested against the
+  real push line from run 39902216424 ("main: digest: sha256:a8c6a22e… size: 2766").
+- **`deploy`** (`ci-cd.yml:397-524`) runs only for a `v*` tag **and**
+  `vars.BM_DEPLOY_ENABLED == 'true'` (`:404`), under `environment: sandbox`, with no
+  cancel-in-progress and a 40-minute timeout. Its steps, in order:
+  1. Validate the chart offline (`:429-430`).
+  2. Render the exact release by digest. Rendering fails on any `REPLACE_ME`, and on a
+     missing or malformed digest, and writes the list of rendered Deployments (`:432-459`).
+  3. Authenticate with WIF (`:461-466`).
+  4. Get GKE credentials.
+  5. `helm upgrade --install … --wait --wait-for-jobs`, with the migrations hook first
+     (`:478-484`).
+  6. Rollout status and the three `--check` commands (`:486-497`). The rollout list is the six
+     always-on Deployments plus `consumer-domains` when the rendered release has it (`:489-491`).
+  7. One retention pass, `kubectl create job --from=cronjob/brandme-events-retention`.
+     It polls the Job's `Complete`/`Failed` condition for at most 10 minutes. Anything but
+     `Complete` fails the deploy (`:499-517`).
+  8. Diagnostics on failure, with no secret values (`:519-524`).
 
-**E-2. Replace the whole `deploy` job** (`ci-cd.yml:296-339`):
-```yaml
-  deploy:
-    name: Deploy to GKE (sandbox)
-    runs-on: ubuntu-latest
-    needs: [build-images]
-    # A v* tag alone is not enough: the founder sets the repo variable
-    # BM_DEPLOY_ENABLED=true only after every step in
-    # docs/build/deploy/gke-verification-packet.md section C is done.
-    if: startsWith(github.ref, 'refs/tags/v') && vars.BM_DEPLOY_ENABLED == 'true'
-    environment: sandbox
-    concurrency:
-      group: deploy-sandbox
-      cancel-in-progress: false
-    timeout-minutes: 30
-    # A job-level block replaces the workflow-level one: restate contents.
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-
-      # Installs pinned, checksum-verified helm/kubeconform into .cache/tools
-      # and runs the same offline gate as the 'Deploy manifests' workflow.
-      - name: Validate chart offline
-        run: bash scripts/validate-helm.sh
-
-      - name: Render this exact release (fails on any unfilled REPLACE_ME)
-        env:
-          DIGEST_GATEWAY: ${{ needs.build-images.outputs.digest-gateway }}
-          DIGEST_CORE: ${{ needs.build-images.outputs.digest-core }}
-          DIGEST_CHAIN: ${{ needs.build-images.outputs.digest-chain }}
-          DIGEST_CONSOLE: ${{ needs.build-images.outputs.digest-console }}
-          BM_GCP_PROJECT_ID: ${{ vars.BM_GCP_PROJECT_ID }}
-        run: |
-          set -euo pipefail
-          for d in "$DIGEST_GATEWAY" "$DIGEST_CORE" "$DIGEST_CHAIN" "$DIGEST_CONSOLE"; do
-            [[ "$d" =~ ^sha256:[a-f0-9]{64}$ ]] || { echo "missing or malformed image digest from build-images" >&2; exit 1; }
-          done
-          {
-            echo "--namespace=brandme"
-            echo "--values=brandme-infra/helm/brandme/values-sandbox.yaml"
-            echo "--set-string=gcp.projectId=${BM_GCP_PROJECT_ID}"
-            echo "--set-string=images.registry=${REGISTRY}/${GCP_PROJECT_ID}"
-            echo "--set-string=images.gateway.digest=${DIGEST_GATEWAY}"
-            echo "--set-string=images.core.digest=${DIGEST_CORE}"
-            echo "--set-string=images.chain.digest=${DIGEST_CHAIN}"
-            echo "--set-string=images.console.digest=${DIGEST_CONSOLE}"
-          } > "$RUNNER_TEMP/release-args"
-          mapfile -t args < "$RUNNER_TEMP/release-args"
-          .cache/tools/bin/helm template brandme brandme-infra/helm/brandme "${args[@]}" > "$RUNNER_TEMP/release.yaml"
-          grep -c '^kind: Deployment$' "$RUNNER_TEMP/release.yaml"
-
-      - name: Authenticate to Google Cloud (Workload Identity Federation, no key)
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.BM_GCP_WIF_PROVIDER }}
-          service_account: ${{ vars.BM_GCP_DEPLOYER_SA }}
-          project_id: ${{ vars.BM_GCP_PROJECT_ID }}
-
-      - name: Get GKE credentials
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: ${{ vars.BM_GKE_CLUSTER }}
-          location: ${{ vars.BM_GCP_REGION }}
-          project_id: ${{ vars.BM_GCP_PROJECT_ID }}
-
-      # Migrations run first as the chart's pre-install/pre-upgrade hook Job
-      # (runner.py up); helm stops before any workload changes if it fails.
-      # The namespace is created by the founder (packet C-7), not here.
-      - name: Migrate, then roll out by digest
-        run: |
-          set -euo pipefail
-          mapfile -t args < "$RUNNER_TEMP/release-args"
-          .cache/tools/bin/helm upgrade --install brandme brandme-infra/helm/brandme "${args[@]}" \
-            --wait --wait-for-jobs --timeout 15m --history-max 10
-          kubectl -n brandme logs job/brandme-migrations --tail=40
-
-      - name: Verify rollout and in-cluster checks
-        run: |
-          set -euo pipefail
-          for d in gateway chain read-api exports-api exports-worker events-worker; do
-            kubectl -n brandme rollout status "deployment/brandme-$d" --timeout=5m
-          done
-          kubectl -n brandme exec deploy/brandme-read-api -- python -m brandme_core.read_api --check
-          kubectl -n brandme exec deploy/brandme-exports-worker -- python -m brandme_core.privacy_exports --check
-          kubectl -n brandme exec deploy/brandme-events-worker -- python -m brandme_core.events.worker --check
-
-      - name: Diagnostics on failure (no secret values)
-        if: failure()
-        run: |
-          kubectl -n brandme get deploy,pods,jobs -o wide || true
-          kubectl -n brandme get events --sort-by=.lastTimestamp | tail -n 60 || true
-          .cache/tools/bin/helm -n brandme history brandme --max 5 || true
-```
-Notes: the agents image is still built and published but no longer deployed
-or rolled out (it is a CLI). The job name changes to "Deploy to GKE (sandbox)";
-it is skipped on pull requests, so no required check should depend on it.
+The agents image is still built and published, but it is not deployed: it is a CLI. The
+deploy job is skipped on pull requests, so no required check should depend on it.
 
 ## F. Legacy deploy paths — all non-functional; recommend retirement
 
@@ -576,8 +951,94 @@ Ran (all local, no cloud credentials):
 - Gateway `loadConfig` + `checkGatewayMode` and the chain config parser on the chart's rendered env via `tsx` (A9).
 - actionlint 1.7.7 on `.github/workflows/deploy-validate.yml` and on a scratch `ci-cd.yml` with the E patch.
 
-Not verified (needs the cluster or GCP): the cluster itself; Workload Identity
+Revision 2026-10-25 (on `bf31c98` plus this change; all offline, no cloud call):
+
+- **Section C blocks.** Every bash block in section C was extracted. Each was checked to
+  start with `set -euo pipefail`, parsed with `bash -n`, and run through shellcheck 0.10.0
+  at `-S warning`, excluding SC1090, SC1091, SC2034 and SC2154: the blocks source the shared
+  `env.sh`. All 28 blocks pass. The rotation runbook's 20 blocks pass the same checks. None was executed against GCP, GitHub or a cluster.
+- **C-13 plan assertions.** They were run against `scripts/provision/gcp-dev-identities.sh`'s
+  dry run, without `--apply` and with a placeholder project, so no `gcloud` command ran. The
+  `dom-api` → `brandme-consumer-domains-api` assertion passes. The `fnd-retention` →
+  `brandme-events-retention` assertion **fails on `bf31c98`**, because the script there has
+  no `fnd-retention` identity yet. The step stops, as designed, until the change that adds
+  it is merged.
+- **C-15 rendering.** The rendering loop was run with a placeholder project and parsed as
+  YAML: one SecretProviderClass with six `versions/1` pins, and six SecretSyncs whose names
+  equal their source paths. On the same output, the rotation runbook's `pinned`/`pin`
+  helpers read and rewrite exactly one entry.
+- **Chart render.** `helm template` with `ci/test-values.yaml` gives the per-Deployment
+  `secretKeyRef` consumers (rotation runbook 5.1) and the resource requests (cost note).
+- **ci-cd.yml lint.** actionlint 1.7.7 with shellcheck 0.10.0 on this head's
+  `ci-cd.yml` reports no findings, the same as the base file.
+- **C-11 JWKS.** The JWKS URL answered with four RS256 keys (curl, 2026-10-25). The
+  issuer/audience convention itself was not verified.
+- **C-10 flag.** `gcloud storage buckets describe --help` lists `--raw`. It was not run
+  against a bucket.
+
+Revision 2026-10-30 (on `375180b` plus this change; all offline, no cloud, GitHub or cluster
+call):
+
+- **Static checks.** The same extraction as above, on all 28 packet blocks and all 20 runbook
+  blocks: each starts with `set -euo pipefail`, parses with `bash -n`, and passes shellcheck
+  0.10.0 at `-S warning` (same exclusions). No `cmd && echo` check is left without a failure
+  branch, and no block negates a pipeline.
+- **Blocks executed against fakes.** The changed Verify blocks were run as written, with fake
+  `gcloud`, `kubectl`, `gh`, `git` and `curl` first on `PATH` and `env.sh` taken verbatim from
+  the preamble with a filled project id. Each was run once in the passing state and once per
+  failure: 38 runs, all as expected. Every failure exits 1 with its message:
+  - C-4: no `gcr.io` repository in the image project.
+  - C-7: a namespace that is not `restricted`.
+  - C-8: a database that is not READY.
+  - C-9: a topic with 1 h retention, which the old and-list let through.
+  - C-10: a bucket without public access prevention.
+  - C-11: an HTTP error, and a JWKS with no keys.
+  - C-13 dry run: against the real script, with the flags file holding `--ar-project`; and
+    against a copy of the script without `fnd-retention`, which stops.
+  - C-13 Verify: the retention KSA unbound (the review's case), the domain KSA unbound,
+    retention with an extra Spanner role, retention with a Pub/Sub grant, and a provider
+    condition without the environment pin.
+  - C-14: create, then Verify against an unrelated key.
+  - C-16: the deployer allowed in `default`, and the deployer denied in `brandme`.
+  - C-17: no required reviewer, and no `v*` tag rule.
+  - C-18: a node account with no read role in the image project, both a custom account and
+    the Autopilot default (the compute account).
+  - C-20: a backup that is not READY; the tag run, which appears only on the third listing
+    after the `main` run, is still the one watched; and no tag run at all.
+- **C-19 Verify on copies of this head's tree**, with the real `validate-helm.sh`, helm 3.22.1
+  and kubeconform 0.8.0:
+  - the committed file: exit 1, and the unfilled lines are listed;
+  - a filled file with one placeholder left: exit 1;
+  - a filled file (only `gcp.projectId` left; kid and JWK line from the C-14 run): exit 0,
+    40/40 resources valid on 1.35.0 and 1.36.0;
+  - the same file with a `signingKid` that names no key: exit 1, on the chart's own refusal
+    (`templates/validate.yaml:76`).
+- **Runbook 5.2 and 5.3**, the same way, with the real 4.1 helpers (`rotation-env.sh` taken from
+  the runbook): generate (version 2 added through the pipe, pairing checked); the deploy-1
+  check with both kids and with only the old one; pin and `wait_synced`; the deploy-2 verify
+  with the new kid and with the old one; and 5.3's verify, which stops before Retire when
+  Blockfrost refuses the id. 7 runs, all as expected.
+- **C-14 key pair.** The generated PKCS#8 key reached the fake Secret Manager only through the
+  pipe. The public file has no `d`. An ES256 assertion signed with that key was accepted by
+  `DomainAssertionVerifier.from_jwks` built from the public JWK.
+- **Blockfrost probe (C-21, runbook 5.3).** The snippet ran in a directory laid out like the
+  chain image's working directory, with `network.ts` from this head compiled to
+  `dist/src/midnight/network.js`. It used a well-formed fake project id against the real
+  Preprod indexer. Blockfrost answered 403, and the block stopped with "do not revoke". A 200
+  for a valid id was not observed: no real project id is available here.
+- **Deploy job (`ci-cd.yml`).** The Render and Verify-rollout steps were extracted from this
+  head's workflow and run on a filled copy of the values with a fake `kubectl`. With
+  `consumerDomains.enabled: true`, the rollout list includes `brandme-consumer-domains`; with
+  `false` it does not, and both runs exit 0. actionlint 1.7.7 (with shellcheck 0.10.0) reports
+  nothing.
+- **C-13 plan.** The dry run of `scripts/provision/gcp-dev-identities.sh` on this head now
+  contains both KSA bindings and the pusher's writer grant on `gcr.io` in `lux-realestate-app`.
+  The `fnd-retention` assertion that failed on `bf31c98` passes.
+
+Not verified (needs the cluster or GCP): every step in section C; the cluster itself; Workload Identity
 token issuance with `automountServiceAccountToken: false` (G17); NetworkPolicy
 behaviour on the real dataplane (G18); the custom roles (G19); secret sync
-(C-15 manifests are not schema-validated); the chain image under a read-only
-root; any Preprod transaction or finality.
+(the C-15 manifests are not schema-validated, and their refresh after a pin
+change is not observed); the chain image under a read-only root; any Preprod
+transaction or finality; the deploy job's retention pass (`ci-cd.yml:499-517`)
+on a real cluster.

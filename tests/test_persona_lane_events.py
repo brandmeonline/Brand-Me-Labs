@@ -5,7 +5,7 @@ foreign-environment, wrong-privacy-class or off-contract message, using real
 lane events read back from the outbox.
 
 Part 2 (needs the foundation outbox worker from PR #47 and a real Pub/Sub
-emulator via PUBSUB_EMULATOR_BIN): lane events published by the lane worker
+emulator via PUBSUB_EMULATOR_BIN): lane events published by the foundation worker
 reach the lane subscriber and are applied exactly once; an order observation
 reaches the wardrobe; foreign-environment messages are never acknowledged.
 """
@@ -246,20 +246,18 @@ def test_lane_events_flow_through_pubsub_exactly_once(flow_db, pubsub):
     OutfitService(db).create_outfit(me, {"title": "Monday", "item_refs": [item]}, key())
     lane_types = ("persona.updated", "wardrobe.item.created", "outfit.version.created")
 
-    # The foundation worker alone leaves lane contracts pending: they are not in its catalog.
-    foundation = run_module("brandme_core.events.worker", env, "--once")
-    assert foundation.returncode == 0, foundation.stdout + foundation.stderr
-    assert status_of(db, lane_types) == ["pending"]
-    # The lane worker loads the lane catalog and publishes them.
+    # The foundation worker loads the lane catalog (brandme_core/events/catalogs.py) and publishes them.
+    logs = ""
     for _ in range(5):
-        lane = run_module("brandme_core.domains.persona.outbox_worker", env, "--once")
-        assert lane.returncode == 0, lane.stdout + lane.stderr
+        worker = run_module("brandme_core.events.worker", env, "--once")
+        logs += worker.stdout + worker.stderr
+        assert worker.returncode == 0, worker.stdout + worker.stderr
         if status_of(db, lane_types) == ["delivered"]:
             break
     assert status_of(db, lane_types) == ["delivered"]
-    ready = json.loads(lane.stdout.splitlines()[0])
-    assert ready["status"] == "ready" and ready["event_contracts"] > json.loads(foundation.stdout.splitlines()[0])["event_contracts"]
-    assert me.member_id not in lane.stdout + lane.stderr
+    ready = json.loads(worker.stdout.splitlines()[0])
+    assert ready["status"] == "ready"
+    assert me.member_id not in logs
 
     transport = PubSubPull(sub, "development", emulator_host=pubsub)
     subscriber = LaneSubscriber(db, environment="development")

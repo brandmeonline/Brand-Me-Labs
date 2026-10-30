@@ -244,3 +244,66 @@ Commits: `7810282` CI, `4408e15` workspace guard, `fc0e406` secrets, `9bc9a40` G
 - **Q1 (target).** *GKE:* run packet C-1…C-19 with you, set `BM_DEPLOY_ENABLED`, tag `v0.1.0`, verify rollout + in-cluster `--check`s, then add the gateway ingress. *Cloud Run:* write `deploy-cloudrun.yml` reusing the runtime image, WIF and Secret Manager names; services per process, migrations as a Cloud Run Job; the chart stays validated as the alternative. *Both:* GKE for the workers, Cloud Run for the gateway/console; a larger change I would sequence after the first GKE deploy.
 - **Q16 (migrations).** *Renumber:* coordinate the consumer-domains lane to move V003–V005 above V015, drop the reservation table from the runner README, and add a guard that fails a new migration below the current maximum. *Reserved gaps:* teach the runner a signed reservation list that may apply late in sandbox with an audit row, plus tests for out-of-order safety. *Defer:* keep cloud databases ephemeral until all lanes merge (no persistent sandbox before then).
 - **Q12 (PD-07).** *Yes:* port the ES256 domain-assertion signer into gateway middleware, a Python verifier in `brandme_core.domains`, migrate rights/privacy reads off `X-Subject-Ref`, forward `X-Request-Id` on every hop, add a `jti` replay store. *No (keep tokens):* make each token per-service and per-environment, add `<NAME>_NEXT` dual-accept for rotation, and document that a token holder can act as any member. *Defer:* nothing changes; the risk stays listed in the packet.
+
+## Round 4 (2026-10-25 → 30): oneshot plan 03 — status: (d) done, pending merge
+
+Assignment: `docs/build/orchestration/oneshot-plan-03-opus-foundation.md` (supersedes ultra plan 02). Vehicle: PR #62.
+- **Restarts:** the session's container restarted several times between 2026-10-25 and 2026-10-30. Work was kept on local branches and pushed once verified.
+- **Deployment:** nothing in this round deploys anything.
+- **Credential manifest:** no credential was created, so it has no new entry. The new rows describe names that already exist.
+
+### Exit evidence (plan 03)
+
+| Exit item | State | Evidence |
+|---|---|---|
+| #62 merged (re-synced, Q11 trimmed, #61 flags in) | **ready for merge**; merging is the founder's/orchestrator's call | re-synced with main `22ff053`. CI green on `89ad5fa`: 21 checks pass, deploy skipped. `foundation-check` now runs the full pytest suite under `BRANDME_REQUIRE_EMULATORS=1`. |
+| Lock carries stripe/anthropic | done | `stripe==16.0.0` and `anthropic==0.125.0` come from #51's merge. This branch adds no pin (`docs/build/compatibility-lock.md`, "resolved by #51's merge"). |
+| Q8 round trip per lane | done | `tests/foundation/test_outbox_lane_catalogs.py` sends one envelope per registered contract through `write_events`, then `python -m brandme_core.events.worker --once`, then the Pub/Sub emulator. Each arrives exactly once on its privacy-class topic. Counts: **foundation 11, consumer-domains 36, commerce-agents 7 (54)**. `test_every_shipped_catalog_is_required` proves that a missing lane catalog refuses startup. |
+| Q9 joint deletion test | done | `tests/foundation/test_deletion_leaves_no_member_rows.py` drives the privacy lane's `request_deletion`/`run_deletion` with the platform handler. **Zero** `OutboxEvents`/`IdempotencyRecords` rows name the member, on both the delivered and undelivered paths. Other members' rows survive with the member unlinked. Without the handler, at least 21 rows remain. Two adversarial reviews; every finding is fixed or documented (`brandme_core/events/README.md`, "Retention and erasure"). |
+| Migration registry | done | V001–V015 are contiguous. `tests/foundation/test_migrations.py` guards contiguity and runs without the emulator. The README reservation row lists V001–V015. |
+| Member session reaches a lane route | done | the scope edit was already on main (`brandme-gateway/src/middleware/session.ts:128-132`). The gateway `consumer-domains.test.ts` e2e passed: dev session → `/wardrobe/items` (201) and try-on routes → domain service → Spanner + GCS emulators. |
+| Trivy triage, named owner | done | the blocking gate has **no baseline entries** (`.trivyignore.yaml` is empty). Fixed: python-jose ×2, sentence-transformers, certifi, anyio (fastapi 0.134.0 / starlette 1.3.1 / pydantic 2.7.4, which also clears starlette's HIGHs), and the qs advisory via a pnpm override. The HIGH backlog has owners and a next triage date of 2026-11-25 (`docs/build/security/trivy-triage-2026-10-25.md`). |
+| Zero deployment claims | done | packet section C is an execution checklist. Every step is "not run". Each verify block fails loudly; the stubbed gcloud/kubectl/gh runs are in the opsfix commit message. |
+
+Full CI-equivalent suite (Spanner, Firestore, Pub/Sub, GCS emulators, `BRANDME_REQUIRE_EMULATORS=1`): CI `Test Core` and `Foundation check`, both full `tests/` runs, pass on `89ad5fa`. Local run on `4c4307a` (same code as `89ad5fa`; only docs differ): **2146 passed, 20 skipped, 17 quarantined (xfail), 0 failed**. The 20 skips are all allowlisted commerce-agents ones: AP2 SDK oracle 6, live Stripe key 5, live model 3, stripe-mock 6. The 17 quarantined tests are unowned-legacy.
+
+### What else landed
+
+- **#61 flags:**
+  - `consumer_domains` AuditedProcess.
+  - Helm `consumerDomains` with 1 replica, because the jti replay cache is per process.
+  - gateway `CONSUMER_DOMAIN_*` wiring.
+  - a compose service whose dev key pair is generated outside the repo (`BRANDME_DEV_ASSERTION_DIR`).
+- **Q9 runtime:** an hourly `events-retention` CronJob running as its own least-privilege GSA `fnd-retention`, and the `events_retention` AuditedProcess.
+- **CI:**
+  - `check()` provisions every emulator.
+  - `foundation-check` runs the full suite.
+  - the hand-picked `test-consumer-domains` job is gone. `test-core` stays until one run shows identical counts.
+  - emulator downloads retry.
+- **Docs:**
+  - full credential rotation runbook.
+  - deploy checklist covering the consumer-domains and retention identities.
+- **Deviations:** D-006 (two minimal lane-test edits for Q8), D-007 (the Q9 redaction split), D-008 (dependency fixes outside the listed files).
+
+### Founder flags (short list, per plan 03)
+
+1. **Deploy execution** (WIF, cluster, Secret Manager) stays founder-only; packet section C is the action list. The release lane is still unapproved.
+2. **F-identity (identity-table erasure).** Account deletion still leaves `Members`, `MemberSettings`, `MemberIdentities`, `ConsentGrants` and `Sessions`. Sessions keep working and `account_state` is never set to `deleted`. This is a launch-blocker of the same kind as Q9. *Proposed:* foundation adds a final identity step once the privacy lane rules on ordering.
+3. **Firebase custom-token minting** is built and reviewed on local branch `wip/fb2` (bundle at `fb2.bundle` in the session scratchpad):
+   - gateway full suite: 211 passed, rules suite "skipped 0".
+   - plan 03 defers it to round 5, and this session may push only its designated branch.
+   - *Decide:* fold it into #62 or a follow-up PR on this branch, or authorize a separate branch.
+4. **Q9 trade-off:** a restore that carries only `DeletionTombstones` re-erases ambiguous platform tombstones, choosing privacy over a rare refused category request. Carrying `DeletionJobs` with the tombstones avoids it.
+5. **`.trivyignore` owner:** foundation, monthly. No renewal is pending, because no entries remain.
+
+### Lane follow-ups
+
+- **consumer-domains:**
+  - delete `brandme_core/domains/persona/outbox_worker.py` (unused since Q8);
+  - fix the `persona/lane.py:13-15` docstring;
+  - move the assertion jti cache to a shared store before running more than one domain replica.
+- **midnight-rights:**
+  - acknowledge D-007;
+  - surface `purge_derived` detail in receipts;
+  - supply a Preprod contract deploy procedure and the seed-rotation tooling.
+- **commerce-agents:** `tests/test_commerce_payments_flow.py::test_payment_identifiers_never_reach_models_events_or_wires[simulated-spanner]` failed once under heavy local load and passed in 4 other runs. No traceback was captured.

@@ -12,6 +12,8 @@ Status (2026-10-23, base `744d593`): **design plus a dry-run script.**
     that it executes exactly the commands it prints and never a key-creating
     command;
   - `bash -n` and shellcheck 0.10.0.
+- 2026-10-25: the `fnd-retention` identity and the consumer-domain assertion key
+  container were added; again only the dry run, `bash -n` and shellcheck 0.10.0 ran.
 
 Naming follows [secrets-conventions.md](secrets-conventions.md). Credentials are
 listed in [credential-manifest.yaml](credential-manifest.yaml).
@@ -23,7 +25,9 @@ identity is useless in `development`, because development requires emulators:
 
 - the read API (`brandme_core/read_api/config.py:28-30`);
 - the export API (`brandme_core/privacy_exports/config.py:26-31`);
-- the outbox worker (`brandme_core/events/worker.py:40-43`).
+- the outbox worker (`brandme_core/events/worker.py:43-46`);
+- the outbox retention job (`brandme_core/events/retention.py:246-249`);
+- the consumer-domain service (`brandme_core/domains/persona/app.py:91-92`).
 
 The script refuses `--mode development` and `--mode production`. Production
 identities need their own reviewed change, in a dedicated project.
@@ -58,14 +62,15 @@ All roles are granted on the resource, not the project, except two:
 | `bm-sbx-fnd-pusher` | none (GitHub WIF, pool `github-push`) | CI image push from main and `v*` tags (after `build-images` moves off `GCP_SA_KEY`) | `roles/artifactregistry.writer` on the image repository only | none |
 | `bm-sbx-fnd-migrator` | `brandme-migrations` | `runner.py up` (helm pre-upgrade Job) | `roles/spanner.databaseUser` on the database (DDL plus ledger writes; no create, drop or IAM) | none |
 | `bm-sbx-fnd-outbox` | `brandme-events-worker` | outbox to Pub/Sub dispatcher | `brandmeSpannerDataReadWrite` on the database; `brandmeOutboxPublisher` on the three outbox topics only | none |
-| `bm-sbx-fnd-gateway` | `brandme-gateway` | API gateway (identity/session store) | `brandmeSpannerDataReadWrite` on the database | the four service tokens; the planned commerce assertion key (`--include-planned`) |
+| `bm-sbx-fnd-retention` | `brandme-events-retention` | outbox retention and erasure (hourly CronJob, `python -m brandme_core.events.retention --once`) | `brandmeSpannerDataReadWrite` on the database only (it includes `spanner.databases.beginPartitionedDmlTransaction`, which the delivered-row purge uses); no Pub/Sub, bucket or secret | none |
+| `bm-sbx-fnd-gateway` | `brandme-gateway` | API gateway (identity/session store) | `brandmeSpannerDataReadWrite` on the database | the four service tokens; the consumer-domain assertion key `brandme-sandbox-dom-domain-assertion-key` (gateway only); the planned commerce assertion key (`--include-planned`) |
 | `bm-sbx-fnd-projector` (only with `--with-projector`) | `brandme-projector` | Firestore projection writer (no process exists yet) | `roles/datastore.user` conditioned on the one Firestore database; `roles/pubsub.subscriber` on its subscription | none |
 | `bm-sbx-rts-chain` | `brandme-chain` | Midnight chain service (operation store) | `brandmeSpannerDataReadWrite` on the database | `CHAIN_SERVICE_TOKEN`, `MIDNIGHT_BLOCKFROST_PROJECT_ID` |
 | `bm-sbx-rts-read-api` | `brandme-read-api` | rights/privacy read API | `roles/spanner.databaseReader` on the database (`brandme_core/read_api/README.md:47-48`) | `RIGHTS_SERVICE_TOKEN`, `PRIVACY_SERVICE_TOKEN` |
 | `bm-sbx-rts-export-api` | `brandme-exports-api` | privacy export API | `brandmeSpannerDataReadWrite` on the database; `brandmeExportObjectReader` on the export bucket | `PRIVACY_EXPORT_SERVICE_TOKEN` |
 | `bm-sbx-rts-export-wkr` | `brandme-exports-worker` | privacy export worker | `brandmeSpannerDataReadWrite` on the database; `brandmeExportObjectWriter` on the export bucket | `PRIVACY_EXPORT_SERVICE_TOKEN` (the worker parses the same `ExportConfig`, `brandme_core/privacy_exports/__main__.py:32`) |
 | `bm-sbx-com-domain` | `brandme-commerce-domain` | commerce domain service | `brandmeSpannerDataReadWrite` on the database | `roles/secretmanager.secretAccessor` conditioned on `projects/<number>/secrets/brandme-sandbox-com-provider-*` |
-| `bm-sbx-dom-api` | `brandme-consumer-domains-api` | consumer domains API | `brandmeSpannerDataReadWrite` on the database; with `--dom-media-bucket`, `roles/storage.objectUser` on the media bucket and `roles/iam.serviceAccountTokenCreator` on itself (keyless V4 signed URLs) | none |
+| `bm-sbx-dom-api` | `brandme-consumer-domains-api` (Helm `consumerDomains`; Deployment `brandme-consumer-domains`) | consumer domains API (`python -m brandme_core.domains.persona.app`) | `brandmeSpannerDataReadWrite` on the database; with `--dom-media-bucket`, `roles/storage.objectUser` on the media bucket and `roles/iam.serviceAccountTokenCreator` on itself (keyless V4 signed URLs) | none: it verifies the gateway's assertions with the public JWKS from Helm values (`consumerDomains.assertion.jwks`) |
 
 The two privacy export identities are separate, as
 `brandme_core/privacy_exports/README.md:75-79` requires. Only the worker can

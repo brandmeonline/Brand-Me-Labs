@@ -1,11 +1,11 @@
 """Commerce events and main's Pub/Sub outbox worker (brandme_core.events.worker).
 
-The worker publishes only event types registered in its process, and it imports
-only the foundation catalog (``brandme_core.domains.events``). Until it also imports
-``brandme_core.domains.commerce.events``, committed commerce events stay pending.
-These tests pin what that one-line import needs to be safe: the commerce catalog
-loads on its own, without the commerce service or provider adapters, and with it
-loaded the worker accepts commerce types in its allowlist.
+The worker publishes only event types registered in its process. Its closed
+catalog list (``brandme_core/events/catalogs.py``) imports
+``brandme_core.domains.commerce.events``, so committed commerce events are published.
+These tests pin what that import needs to be safe: the commerce catalog loads on
+its own, without the commerce service or provider adapters, and with it loaded the
+worker accepts commerce types in its allowlist.
 """
 
 import json
@@ -45,17 +45,16 @@ print(json.dumps({"types": sorted(t.event_type for t in registry.types() if t.ev
 
 def test_worker_allowlist_accepts_commerce_types_once_the_catalog_is_imported():
     got = _run(f"""
-import json
+import json, sys
 from brandme_core.events.worker import WorkerConfig
 env = {WORKER_ENV!r}
-try:
-    WorkerConfig.from_env(env)
-    before = "accepted"
-except ValueError as e:
-    before = str(e)
-import brandme_core.domains.commerce.events  # the one line main's worker needs
+imported = "brandme_core.domains.commerce.events" in sys.modules
+default = WorkerConfig.from_env({{k: v for k, v in env.items() if k != "OUTBOX_EVENT_TYPES"}})
 after = WorkerConfig.from_env(env).event_types
-print(json.dumps({{"before": before, "after": list(after)}}))
+print(json.dumps({{"imported": imported, "default": list(default.event_types), "catalogs": dict(default.catalogs),
+                  "after": list(after)}}))
 """)
-    assert got["before"] == "event allowlist contains an unsupported contract"
+    # Nothing here imports commerce: the worker's own catalog list loads it.
+    assert got["imported"] is False and got["catalogs"]["commerce-agents"] == "loaded"
+    assert COMMERCE_TYPES <= set(got["default"])
     assert got["after"] == ["commerce.order.observed"]

@@ -11,11 +11,14 @@ dict:
   env       extra env YAML (string, already rendered)
   http      true when the process listens on cfg.port with GET /health
   grace     terminationGracePeriodSeconds
+  ksa       optional ServiceAccount suffix when it differs from component
+            (templates/serviceaccounts.yaml renders it)
 */}}
 {{- define "brandme.coreDeployment" -}}
 {{- $root := .root -}}
 {{- $c := .cfg -}}
 {{- $name := include "brandme.componentName" (list $root .component) -}}
+{{- $ksa := include "brandme.componentName" (list $root (default .component .ksa)) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,7 +48,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
-      serviceAccountName: {{ $name }}
+      serviceAccountName: {{ $ksa }}
       {{- include "brandme.podDefaults" $root | nindent 6 }}
       terminationGracePeriodSeconds: {{ .grace }}
       securityContext:
@@ -69,6 +72,8 @@ spec:
           # GET /health opens a Spanner snapshot (read_api/reads.py:95-97,
           # privacy_exports/app.py:44-47): readiness tracks the database;
           # liveness is a TCP check so a Spanner outage does not restart pods.
+          # The consumer-domain service's /health is static
+          # (domains/persona/app.py:79-82): its readiness tracks the process only.
           startupProbe:
             httpGet: {path: /health, port: http}
             periodSeconds: 5
