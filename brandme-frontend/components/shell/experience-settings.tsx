@@ -5,10 +5,12 @@ import {
   useExperiencePreferences,
   type ThemeMode,
 } from "@/lib/client/experience-preferences";
+import { useFriendResponseHaptics } from "@/lib/client/haptic-preferences";
 export function ExperienceSettings() {
   const id = useId();
   const { preferences, update, storageAvailable, reducedMotion, ready } =
     useExperiencePreferences();
+  const haptics = useFriendResponseHaptics();
   return (
     <div className="bm-experience-settings">
       <fieldset className="bm-choice-fieldset" disabled={!ready}>
@@ -48,6 +50,18 @@ export function ExperienceSettings() {
           ? "Reduced motion is active."
           : "Your device’s motion preference is also respected."}
       </p>
+      <Switch
+        label="Friend response heartbeat"
+        disabled={!haptics.ready}
+        description="A gentle vibration when a friend answers your request. When supported; paused with reduced motion."
+        checked={haptics.enabled}
+        onCheckedChange={haptics.setEnabled}
+      />
+      {!haptics.storageAvailable && (
+        <p className="bm-support" role="status">
+          Your heartbeat preference could not be saved on this device.
+        </p>
+      )}
       <Switch
         label="Prefer Simple View"
         disabled={!ready}

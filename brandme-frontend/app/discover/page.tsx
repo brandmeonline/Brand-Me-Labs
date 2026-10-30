@@ -4,7 +4,7 @@ export default function Page() {
   return (
     <>
       <PageHeading
-        eyebrow="Discover"
+        eyebrow="Shops"
         title="A world to discover."
         description="Search connected catalogs with source, freshness and provider disclosures in view."
       />

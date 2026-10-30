@@ -450,6 +450,39 @@ Re-sync commit `1b9d320eb8a7a2946591d3fd27e324dd2c80affa` merged the updated spe
 
 The 74 existing reviewed baselines are unchanged; any replacement requires human review. Real-device and screen-reader sessions remain **not_run**, with dates still to be supplied. The 21-question check-in is due once rooms plus Now/Flow are live against the dev gateway on main; it has not been reached. Spatial runtime acceptance is separate: the consumer CI workflow does not run the spatial E2E suites.
 
+## Consumer rooms preview — isolated follow-on (2026-10-24)
+
+**Scope:** initially prepared from `15c9d3f`, then consolidated with optional haptics on `codex/consumer-design-preview` above the updated #56 head `987afce`. This is a reviewable UI preview, not completion of the locked live experience or permission to approve replacement visual baselines. It is [draft PR #63](https://github.com/brandmeonline/Brand-Me-Labs/pull/63); #56 and contract publication retain their required merge order.
+
+- Primary navigation is Shops / Social / Closet. Today, Style, Me, My circle and all prior secondary functions remain reachable. Existing product and decision URLs retain their room context; spatial routes and assets are unchanged.
+- Home wordmarks and the landing action lead to `/social/flow`. `/social` redirects there. Now / Flow / Editorial have ordinary accessible navigation links. Flow, Editorial and the separate Brands & designers stream explicitly report that they are unavailable. They contain no invented feed cards, media, prices or API requests.
+- Now reuses the existing decisions client and legacy detail/composer routes. The optional `Circle.showPeople` prop avoids loading friend-management data in the Now view. Its server timing, response choices and write payloads are unchanged; the detail view adds optional feedback for newly observed friend responses to the requester.
+- `/me` now reads identity before requesting persona, rewards or wardrobe. Only a 401 is presented as a guest account; connection failure stays a connection failure. The private card shows the authenticated member's existing name/handle, visible saved axes, earned badges and up to three own wardrobe titles. Hidden axes, unearned badges and mismatched wardrobe owners are excluded. Persona ownership is checked against `/me`; account changes clear and remount the private card. No public profile, search, follow, house standing or curated-highlight claim is made.
+
+### Verification of this preview
+
+- Pinned Node **24.21.0** / pnpm **10.34.6** frozen install: **passed**.
+- Frontend production build, including four Social routes and private `/me` card: **passed** (30 static pages generated).
+- Existing UI behavior runner: **18 passed, 0 failed**, including new three-room reachability/Home-link and unavailable-horizon checks.
+- `verify-experience.mjs`: **passed** at 320, 390, 768 and 1440 px in light and dark themes. All 32 axe scans had no WCAG A/AA violations; no horizontal overflow or browser runtime errors. Checks cover Now role switching, absence of synthetic feed calls/cards/prices, guest and unavailable identity gating, hidden/unearned/other-owner filtering, reload updates, account switching and sign-out clearing.
+- These browser checks use explicit HTTP test doubles, not live-domain acceptance evidence. Their runner is included in `test:browser`; captures are stored separately under `experience-preview/` so they cannot become approved baselines implicitly.
+- Local evidence: `C:\Users\Adamus\Documents\Codex\2026-10-24\new-chat-2\evidence\rooms-preview\experience-preview\results.json` plus 32 screenshots. The result explicitly records `visual_approval: not_run`. Representative mobile screenshots were inspected for layout; this does not count as human baseline approval.
+- `git diff --check`: **passed**. Protected spatial routes/features/assets and all 74 reviewed baseline files are unchanged. No credentials, backend files or production configuration were created or changed.
+
+### Gates that remain open
+
+Flow, editorial publication, licensed runway-media delivery, house subscriptions/ranking, public persona projections, membership/invites/waitlist/perks, mastery and earned closet entitlements still require their owning backend contracts. The main gateway mount (`src/routes/v1/index.ts`) does not yet mount consumer-domain/catalog routers; the existing CI dev harness mounts pinned consumer sources from `dafd3b1`. The inherited `/closet` still uses its guest-only device repository without an authenticated adapter; the new navigation does not change or certify that integration. The check-in trigger (rooms plus Now/Flow live on main) remains **not reached**.
+
+New navigation, settings and persona visuals change existing screenshots. Replacement baselines require human review before this preview can pass the visual gate or merge into main. Device and screen-reader sessions remain **not_run**, with dates pending founder input. No deployment is performed by this preview stage.
+
+### Preview layout follow-up
+
+- Social now uses parallel main/brand columns when the available content area reaches 46 rem. The brand column is 15 rem; the main control area remains at least 440 px in the 1440 px browser check. Narrower content and enlarged text retain the stacked layout.
+- Added keyboard checks for Tab / Shift+Tab traversal and Enter activation between Editorial, Flow and Now. The active horizon updates after navigation.
+- Added viewport captures of the brand/badge midsection and the final control at 100% and 200% text, supplementing the full-page overview. The test waits for the measured navigation height and verifies the final control and page end clear the actual fixed bar, with no horizontal overflow.
+- Rebuilt frontend: **passed**. UI behavior tests: **18 passed**. Expanded browser suite: **passed** at all four widths and both themes; 32 axe scans, 48 mobile final-control/page-end checks, keyboard navigation and desktop parallel-column checks all passed. No runtime errors. Protected spatial files, actual-data limitations and reviewed baselines are unchanged.
+- Updated review evidence: `C:\Users\Adamus\Documents\Codex\2026-10-24\new-chat-2\evidence\rooms-preview-refinement\experience-preview\` contains `results.json` and 128 captures. Examples: `now-1440-light.png`, `private-persona-390-light-midsection-200.png`, `flow-320-light-end-200.png`. This is automated browser evidence with HTTP test doubles; `visual_approval` remains **not_run**. No human baseline approval, device session or screen-reader session is implied.
+
 Credential manifest update: no credentials created or copied. Existing authenticated Git access is reused; dependency downloads and local disposable tooling require no new application credential.
 
 ## Stage 15 — Main integration prepared after the prerequisite repair
@@ -516,6 +549,16 @@ The full Python job failed only `test_server_room_templates_match_spatial_manife
 
 All three spatial manifests declare `original-shelves-v2`; the domain's room definitions still declare `original-v1`. A read-only comparison found the dimensions, bounds, group IDs, centers, capacities, pitch and widths otherwise agree. A four-line patch (one documentation line and three revision values) is prepared outside the repository. It has not been applied: the attached execution plan explicitly says not to touch domain code, and a narrow ownership exception has been requested from the founder. Do not skip this consistency check or merge #56 until it passes. Contract 1.1.1 is prepared on a separate branch for publication after #56 lands; the design preview remains isolated and unapproved.
 
+### Consolidated design preview and heartbeat evidence
+
+Optional friend-response feedback is off by default and uses the separate device preference `brandme:consumer:haptics:v1`, leaving the console preference contract unchanged. It observes only requester-visible decision responses; initial loads, duplicate responses, own votes, account/decision changes, hidden-tab backlogs, reduced motion and unavailable vibration APIs remain silent. It does not create notifications or claim background delivery.
+
+The consolidated frontend production build passed with 30 static pages. All 27 UI tests and TypeScript checks passed. Independent review found and corrected duplicate current-page announcements on nested routes: each navigation set now selects its most specific destination, with separate room-context styling and accurate breadcrumbs. The real menu regression covers decisions and My Data, sheet closure and focus restoration. The build and all browser checks were repeated on application snapshot `9280571` against the fresh corrected dependency installation.
+
+Against that production build, the preview runner passed four widths (320/390/768/1440), both themes, 32 axe scans, keyboard horizon navigation, desktop parallel-stream geometry, private-card account isolation and 48 mobile clearance checks at 100%/200% text. The separate DecisionView runner passed 16 browser checks covering actual polling reloads, persisted opt-in, recipient commands, account changes and reduced motion. All these browser inputs are explicit HTTP doubles; haptics uses a stub vibrator and simulated visibility. They are not live-service or physical-device acceptance.
+
+Final local evidence is under `evidence/consumer-design-preview-final/`: 128 original screenshots and `experience-preview/results.json`, `decision-haptics.json`, and an eight-image `review.html` gallery. Representative desktop and enlarged-text mobile captures were inspected; human visual approval remains `not_run`. The browser runners are registered in `test:browser` for the draft's CI. Existing baseline files and protected spatial/domain sources are unchanged. Shared gateway/feed/membership/public-profile/entitlement dependencies listed above remain open; no backend capability is fabricated by this preview.
+
 ### Explicit React type peers
 
 Fresh head `159d772` passed the live journey again, but exposed a separate console build failure before browser checks: Lucide's declarations resolved the shared hoisted React 19 types inside the React 18 console. The integration metadata repair declares optional React type peers for the two installed Lucide versions and the imported Framer Motion declarations, then regenerates the lock with pnpm 10.34.6. No source casts, runtime upgrades, integrity changes or visual-baseline changes are introduced; all 1,309 package version/integrity records are preserved.
@@ -529,6 +572,12 @@ Exact head `987afcebc72a38e7e494ffe8d9ec1369d74e3fd6` passed [Consumer UI run 40
 A fresh isolated `pnpm install --frozen-lockfile --filter @brandme/console...` reproduced the remaining console container dependency issue: importing font and token modules from the frontend required its uninstalled `next` and design-system package links. Console-owned adapters now resolve those packages from the console's declared dependencies. Both apps still use the same existing font files, options and foundation-owned token values. The dependency-free preference bootstrap string remains shared. No Docker, foundation, domain, spatial asset, dependency version or baseline change is needed for this correction.
 
 The filtered install, sequential console TypeScript check and two adapter parity tests pass. The console build passes compilation, types and page generation; Windows still rejects standalone dependency symlinks with `EPERM`, so complete Linux container verification remains outstanding. The parity tests run through the existing consumer `test:ui` command and compare complete CSS output plus every font asset and option. Fresh Linux UI checks are required after this source correction. The domain revision exception remains pending, and #56 is not merged while its required checks fail.
+
+### Draft preview CI receipt and parent synchronization
+
+At preview head `2083bae1a45696898f5304474da0ba3935e9bc27`, [Consumer UI run 40154108257](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40154108257) passed 27 UI tests, 13 gateway tests, both Linux production builds, 15 shell checks, four-width controls/preview accessibility checks and 16 haptics browser checks. The real live-domain journey and separate workspace checks also passed. The visual gate rejected 58 existing consumer captures: 47 pixel differences and 11 dimension differences, with no missing captures or console failures. The [uploaded review evidence, artifact 12584006465](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40154108257/artifacts/12584006465), requires human review; this failed visual gate is not approval to replace the unchanged reviewed baselines or merge the draft.
+
+PR #63 now incorporates its latest #56 parent `aafc231dd01b31c5715269d831a6e508fbc14d6b`, preserving the Stage 15 console repair receipt and design-preview evidence. The inherited `test:ui` command includes the two console adapter parity tests alongside the 27 preview UI tests; the combined command passed locally with **29 tests, zero failures or skips**. This synchronization changes only the parent's console adapters/test, test command and status documentation; consumer application sources, domain files and reviewed baselines are unchanged from the previous preview head. The existing 128 preview captures need no regeneration for this update. New CI must verify the inherited repair; the consumer visual gate still requires human review. Retargeting remains deferred until #56 merges.
 
 ### Approved room revision correction
 
@@ -584,3 +633,89 @@ no additional test run is claimed for that rebase.
 
 The local publication commit is ready for its own PR on merged main. No baseline
 is changed and no credential is created; production release remains outside this scope.
+
+### Design-preview synchronization with the approved parent and contract
+
+The local PR #63 branch initially incorporated approved parent `cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8` and contract publication `4ba1fae8a846a2a34104564ce35010fb4be4ad2c`. The Stage 15 approval, Stage 16 contract receipt and all preview evidence are preserved. PR #56 has since merged; preview publication and retargeting remain deferred until the contract PR #65 has actually merged.
+
+On combined snapshot `7f7d4e7`, `test:ui` passed **33/33 tests with zero failures or skips**: 27 preview cases, four console compatibility cases and two adapter parity cases. Validation used Node 24.21.0 / pnpm 10.34.6 in a new detached worktree with new junctions to the root's fresh frozen dependency installation; no existing junction was removed or replaced. The shared test compiler now resolves each application's `@/` aliases within that application, preserving the separate React runtimes. The existing React 18/Radix static-render layout-effect diagnostics remain distinct from browser hydration evidence.
+
+Consumer application sources and reviewed baselines are unchanged from preview head `9d1e29f`; domain and revision-fixture changes match the approved parent exactly. The founder's approval covers that domain correction only. Human visual-baseline approval, device and screen-reader sessions remain outstanding; this preparation adds no production feature or approval.
+
+Actual publication parent `06d8fc13f3133fea5108164266a6fee59b88db1f` (PR #65) is now incorporated locally, preserving its main-merge ancestry and final Stage 16 CI receipts. Compared with preview head `50b0b72`, this integration changes only status documentation; application and test sources are identical, so the 33-test suite is not repeated. No baseline or device approval is implied, and the preview remains unpublished pending the actual #65 merge.
+
+### Both prerequisites merged; preview review remains pending
+
+PR #56 merged as `b9f483be139f1e0a3c324cdf5f30bbb3c5bdc22b`, followed by contract PR #65 as `77280249df4e91d93b4d814b140bd5e38bba4735`. Exact contract head `06d8fc13f3133fea5108164266a6fee59b88db1f` passed [full CI run 40155977531](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531): 1,742 Python tests, all 256 consumer-domain tests and all five container build/runtime checks. [Consumer UI run 40155977548](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977548) passed 22 UI/compatibility/adapter cases, 13 gateway/security cases, all 74 unchanged reviewed pixel comparisons and the real live-domain journey.
+
+The local preview incorporates actual main `77280249`. Application and test sources remain identical to `50b0b72`, whose combined 33 UI tests were already validated; this integration changes status documentation only, so no tests or captures are repeated. Domain sources and reviewed baselines are unchanged. The preview still requires human review of its 58 rejected comparisons (47 pixel and 11 dimension differences). Flow, Editorial, brand feeds, membership/public-profile and entitlement features still await their owning backend contracts. Device and screen-reader sessions remain `not_run`; neither prerequisite merge approves the new preview visuals or supplies those missing capabilities.
+
+## Stage 17 — Round-03 handoff published to the repository (2026-10-30)
+
+**Status:** The restart report is recorded in the consumer lane's repository
+status file, on `codex/consumer-design-preview` through [draft PR #63](https://github.com/brandmeonline/Brand-Me-Labs/pull/63).
+The round-03 implementation and release gates remain incomplete. The founder's
+max-plan / full-effort instruction remains the requested execution posture.
+
+### Verified remote state and publication correction
+
+- The active plan is [Ultra plan 03](https://github.com/brandmeonline/Brand-Me-Labs/blob/main/docs/build/orchestration/ultra-plan-03-astra-consumer-ui.md),
+  already on main. The pending pipeline-state seed is not a prerequisite for this lane.
+- Main was verified at `97d54477f7667dade1a4fd7220c0b2694cffb604` (#62 merged).
+  Before this status publication, PR #63's published head was
+  `2f89dce5d171138085d994456722cfcb1868f637`, targeting main.
+- The [previous Codex restart report](https://github.com/brandmeonline/Brand-Me-Labs/pull/63#issuecomment-6524186371)
+  reported a conflict-free main merge `75f0ff0` and status commit `5709e00`.
+  GitHub could not resolve either commit during this publication. The published status
+  file ended before the reported Stage 17, so the report's old line links did not
+  contain that update. The summary was posted, but the reported commits were not
+  available in the repository.
+- This append recovers the handoff as repository content. It does not reconstruct
+  those unavailable commits or establish that main was merged into the published
+  preview branch. That synchronization and verification remain outstanding.
+- Only this lane status file changes. No application source, dependency, reviewed
+  baseline, backend/domain source or spatial asset is changed by this publication.
+
+### Earlier execution report — carried forward, not rerun here
+
+These results come from the previous execution report linked above and supplied by
+the founder. They are not fresh checks of this documentation commit:
+
+| Command | Earlier reported result |
+| --- | --- |
+| `pnpm --dir brandme-frontend test:ui` | 33 passed |
+| `pnpm --dir brandme-frontend test:gateway` | 13 passed |
+| `pnpm --dir brandme-frontend build` | Production build passed; 30 static pages generated |
+| `pnpm --dir brandme-console build` | Production build passed |
+| `git diff --check` | Passed |
+| `pnpm --dir brandme-frontend test:browser` | Could not launch: Playwright Chromium 1208 was unavailable |
+| `pnpm --dir brandme-frontend exec playwright install chromium` | CDN returned HTTP 403 on all five reported download attempts |
+
+The earlier run therefore produced no fresh screenshot or pixel-comparison result.
+No replacement baseline or human visual approval is inferred from the build and
+component passes. The prior preview's 58 rejected comparisons remain subject to
+human review; those historical failures are separate from the later browser-download
+blocker.
+
+### Design reconciliation and remaining gates
+
+The previous ChatGPT-design artifact remains an explicit input gap in the handoff;
+no screen-by-screen ADOPT / ADAPT / DISCARD reconciliation is claimed. Continue from
+the locked October 23 decisions, spec 02 screen contracts and merged UI, in that
+precedence order, until the designs are supplied.
+
+Next execution work is to synchronize the published preview with current main,
+run the required checks on the resulting head, and resolve the visual-baseline gate
+with human review. Rooms and Now/Flow must be verified against live dev gateway data;
+Flow/Editorial, invite/waitlist, public persona and other server-owned integrations
+must be assessed against current owner contracts rather than promoted from preview
+markup. Real-device and screen-reader sessions remain unverified in this handoff.
+The round-03 check-in trigger and external-release gates are not satisfied by this
+documentation publication.
+
+**Limits:** The earlier execution reported no rate-limit refresh time. No rate-limit
+interruption was observed while publishing this handoff; no future refresh time is
+asserted.
+
+**Credential manifest:** No credentials were created or copied. Publication uses the
+existing connected GitHub access.

@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire, Module } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { afterEach, test } from 'node:test'
+import { registerHapticsTests } from './verify-haptics.mjs'
 
 const require = createRequire(
   process.env.BRANDME_TEST_PACKAGE_JSON ||
@@ -35,18 +36,31 @@ for (const name of [
   'KeyboardEvent',
   'MouseEvent',
   'getComputedStyle',
+  'addEventListener',
+  'removeEventListener',
 ]) {
   Object.defineProperty(globalThis, name, {
     configurable: true,
     value:
-      name === 'getComputedStyle'
-        ? dom.window.getComputedStyle.bind(dom.window)
+      ['getComputedStyle', 'addEventListener', 'removeEventListener'].includes(name)
+        ? dom.window[name].bind(dom.window)
         : dom.window[name],
   })
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 // Compile app TSX with the same automatic JSX runtime as Next, without modifying app config.
-const compile = (module, filename) =>
+const compile = (module, filename) => {
+  // Keep each app's @/* aliases local when both React runtimes share this runner.
+  const consoleRoot = new URL('../../../brandme-console/', import.meta.url)
+  const aliasRoot = filename.startsWith(fileURLToPath(consoleRoot))
+    ? consoleRoot
+    : new URL('../../', import.meta.url)
+  const moduleRequire = module.require.bind(module)
+  module.require = (specifier) => moduleRequire(
+    specifier.startsWith('@/')
+      ? fileURLToPath(new URL(specifier.slice(2), aliasRoot))
+      : specifier,
+  )
   module._compile(
     ts.transpileModule(readFileSync(filename, 'utf8'), {
       compilerOptions: {
@@ -59,6 +73,7 @@ const compile = (module, filename) =>
     }).outputText,
     filename,
   )
+}
 require.extensions['.ts'] = compile
 require.extensions['.tsx'] = compile
 const source = (relative) =>
@@ -87,9 +102,85 @@ const {ExperiencePreferencesProvider,useExperiencePreferences}=source('../client
 const { useNavigationClearance } = source(
   '../client/use-navigation-clearance.ts',
 )
+const { primaryNavigation, secondaryNavigation, isActiveRoute } = source('../../components/shell/navigation.tsx')
+const { SocialHorizon } = source('../../features/social/horizons.tsx')
+const { Wordmark } = source('../../components/shell/wordmark.tsx')
+const { AppShell } = source('../../components/shell/app-shell.tsx')
+const { PathnameContext } = require('next/dist/shared/lib/hooks-client-context.shared-runtime')
 afterEach(() => {
   cleanup()
   document.documentElement.removeAttribute('style')
+})
+registerHapticsTests({ source, React, render, cleanup, act })
+
+test('three rooms retain secondary destinations and legacy decision/product context', () => {
+  assert.deepEqual(primaryNavigation.map(item => item.label), ['Shops', 'Social', 'Closet'])
+  const reachable = new Set([...primaryNavigation, ...secondaryNavigation].map(item => item.href))
+  for (const href of ['/today', '/style', '/circle', '/me', '/discover', '/assistant', '/rewards', '/orders', '/inbox', '/me/data', '/me/connections', '/settings']) assert.ok(reachable.has(href), href)
+  assert.ok(isActiveRoute('/circle/decisions/example', '/social'))
+  assert.ok(isActiveRoute('/products/provider:item', '/discover'))
+  assert.equal(isActiveRoute('/socially', '/social'), false)
+  render(h(Wordmark))
+  assert.equal(screen.getByRole('link', { name: 'Brand.Me home' }).getAttribute('href'), '/social/flow')
+})
+
+test('shell menu marks one closest destination while retaining room context across nested routes', async () => {
+  const originalMedia = globalThis.matchMedia
+  globalThis.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} })
+  const user = userEvent.setup()
+  const shell = (path) => h(PathnameContext.Provider, { value: path },
+    h(ExperiencePreferencesProvider, null, h(AppShell, null, h('h1', null, 'Route content'))))
+  const currentHref = (navigation) => {
+    const current = navigation.querySelectorAll('[aria-current="page"]')
+    assert.equal(current.length, 1)
+    return current[0].getAttribute('href')
+  }
+  try {
+    const view = render(shell('/circle/decisions/example'))
+    assert.equal(currentHref(screen.getByRole('navigation', { name: 'Primary', exact: true })), '/social')
+    assert.equal(currentHref(screen.getByRole('navigation', { name: 'Explore', exact: true })), '/circle')
+    assert.equal(view.container.querySelector('.bm-breadcrumb strong').textContent, 'My circle')
+    await user.click(screen.getByRole('button', { name: 'Open menu' }))
+    let menu = screen.getByRole('navigation', { name: 'Menu navigation' })
+    assert.equal(currentHref(menu), '/circle')
+    assert.equal(menu.querySelector('a[href="/social"]').getAttribute('data-active'), 'true')
+    assert.equal(menu.querySelector('a[href="/social"]').getAttribute('aria-current'), null)
+
+    // Exercise the sheet link; the pathname provider supplies the router transition.
+    const dataLink = menu.querySelector('a[href="/me/data"]')
+    dataLink.addEventListener('click', event => event.preventDefault(), { once: true })
+    await user.click(dataLink)
+    assert.equal(screen.queryByRole('dialog', { name: 'Your space' }), null)
+    view.rerender(shell('/me/data'))
+    assert.equal(view.container.querySelector('.bm-breadcrumb strong').textContent, 'My Data')
+    assert.equal(currentHref(screen.getByRole('navigation', { name: 'Explore', exact: true })), '/me/data')
+    assert.equal(document.activeElement, screen.getByRole('main'))
+    await user.click(screen.getByRole('button', { name: 'Open menu' }))
+    menu = screen.getByRole('navigation', { name: 'Menu navigation' })
+    assert.equal(currentHref(menu), '/me/data')
+    assert.equal(menu.querySelector('a[href="/me"]').getAttribute('aria-current'), null)
+    assert.equal(menu.querySelector('a[href="/me"]').getAttribute('data-active'), null)
+    await user.keyboard('{Escape}')
+    assert.equal(screen.queryByRole('dialog', { name: 'Your space' }), null)
+    assert.equal(document.activeElement, screen.getByRole('button', { name: 'Open menu' }))
+  } finally {
+    cleanup()
+    globalThis.matchMedia = originalMedia
+  }
+})
+
+test('unavailable horizons remain navigable and contain no synthetic feed cards or prices', () => {
+  for (const active of ['flow', 'editorial']) {
+    const view = render(h(SocialHorizon, { active }))
+    const navigation = screen.getByRole('navigation', { name: 'Social horizons' })
+    assert.equal(navigation.querySelectorAll('[aria-current="page"]').length, 1)
+    assert.equal(navigation.querySelector('[aria-current="page"]').getAttribute('href'), `/social/${active}`)
+    assert.match(view.container.textContent, /not available in this preview/i)
+    assert.ok(screen.getByRole('complementary', { name: 'Brands & designers' }))
+    assert.equal(view.container.querySelectorAll('article, img, .bm-price').length, 0)
+    assert.equal(screen.getByRole('link', { name: 'See decisions in Now' }).getAttribute('href'), '/social/now')
+    view.unmount()
+  }
 })
 
 test('budget entry preserves exact decimal amounts and rejects rounded inputs',()=>{

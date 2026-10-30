@@ -19,8 +19,8 @@ export default function HomePage() {
             <br />A place for your style, your favorite pieces, and the people
             whose taste you trust.
           </p>
-          <Link className="bm-button" href="/today">
-            Explore my style <ArrowUpRight size={18} aria-hidden="true" />
+          <Link className="bm-button" href="/social/flow">
+            Explore Flow <ArrowUpRight size={18} aria-hidden="true" />
           </Link>
           <span className="bm-support">
             Take a look around. No account needed.

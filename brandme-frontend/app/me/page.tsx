@@ -10,6 +10,7 @@ import {
   Shield,
 } from 'lucide-react'
 import { PageHeading } from '@/components/shell/page-heading'
+import { PersonaCard } from '@/features/persona/persona-card'
 export const metadata: Metadata = { title: 'Me' }
 const entries = [
   {
@@ -57,18 +58,7 @@ export default function MePage() {
         title="You get the final say."
         description="Your taste is a starting point, never a box to fit into."
       />
-      <div className="bm-identity-note">
-        <span className="bm-avatar bm-avatar-large" aria-hidden="true">
-          U
-        </span>
-        <div>
-          <h2 className="bm-section-title">Make yourself at home.</h2>
-          <p>
-            You’re exploring without an account. No style profile has been
-            inferred or saved.
-          </p>
-        </div>
-      </div>
+      <PersonaCard />
       <div className="bm-directory">
         {entries.map(({ href, title, description, icon: Icon }) => (
           <Link href={href} className="bm-directory-link" key={href}>
