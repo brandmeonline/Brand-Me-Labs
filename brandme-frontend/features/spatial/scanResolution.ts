@@ -3,8 +3,8 @@
  *
  * The response discriminator/fields below consume the existing Midnight-owned
  * brandme.passport.claims/v1 contract (PassportClaimsRead in the generated API
- * on main). That generated package is absent on this lane. No scan-to-anchor
- * connector exists here: the host must inject one and enforce disclosure on the
+ * package). passportClaimsReader supplies its bounded HTTP transport. No
+ * scan-to-anchor resolver exists here: the host must inject one and enforce disclosure on the
  * server. A tag identifier, successful lookup, or browser button grants no rights.
  */
 export type ScanInput =
