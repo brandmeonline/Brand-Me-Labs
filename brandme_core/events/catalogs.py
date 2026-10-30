@@ -21,7 +21,8 @@ class Catalog:
     loader: Optional[str] = None
     # Set only while a new lane's PR is unmerged; delete it when the PR merges.
     # Then, and only then, a module that does not exist is reported "absent"
-    # instead of refusing startup.
+    # instead of refusing startup. Its parent package must already exist on main:
+    # find_spec imports the parent, and a missing parent refuses (fails closed).
     until_merged: Optional[str] = None
 
 

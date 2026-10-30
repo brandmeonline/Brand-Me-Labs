@@ -66,13 +66,19 @@ subscribers filter by the `event_type` attribute.
   such as a missing dependency, or a failing loader) refuses startup with exit 2 and
   `{"status":"startup_refused","reason":"event_catalog_unavailable","lane":LANE}`.
   The import error's text is not logged. A new lane's entry may set
-  `until_merged` while its PR is open; delete it when the PR merges.
+  `until_merged` while its PR is open, provided its parent package already exists
+  on main (`find_spec` imports the parent; a missing parent refuses); delete it when
+  the PR merges. `test_every_shipped_catalog_is_required` fails while any shipped
+  entry still sets it.
 - **Pending backlog.** Rows of a type no catalog registered stay pending, so the
   first rollout of a worker image that adds a catalog publishes every such row
-  already in the database (`outbox.py:112-115`). Before pointing a new worker
-  image at a long-lived database, purge or erase those rows under the Q9 policy
-  ("Retention and erasure"). The hourly job never purges pending rows by age
-  (`retention.py:176`).
+  already in the database (`outbox.py:112-115`). No tool removes pending rows by
+  type: the hourly job purges only delivered rows and erased tombstones
+  (`retention.py:262`), and account deletion withdraws only that subject's own
+  rows. So before pointing a new worker image at a long-lived database, either
+  accept that the backlog is published (consumers must already handle replays and
+  check freezes) or dead-letter those rows with a reviewed one-off statement. Today
+  no long-lived database exists (nothing is deployed).
 - **Version rollout.** The dispatcher claims rows by `event_type` name only
   (`outbox.py:112-115`), while the registry is keyed by `(event_type,
   schema_version)`. A row at a version this worker image has not registered is

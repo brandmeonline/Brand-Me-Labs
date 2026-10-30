@@ -241,6 +241,26 @@ def test_catalog_failure_refuses_startup_with_a_fixed_code(tmp_path, module, loa
     assert "PROBE_PRIVATE_DETAIL" not in out.stdout + out.stderr and "Traceback" not in out.stderr
 
 
+# Fresh interpreter: make one REAL catalog module unimportable (sys.modules[name] = None makes
+# find_spec return None and import raise), then run the real worker entrypoint.
+MISSING_REAL = """
+import sys
+sys.modules[sys.argv[1]] = None
+from brandme_core.events import worker
+raise SystemExit(worker.main(["--check"]))
+"""
+
+
+@pytest.mark.parametrize("catalog", CATALOGS, ids=lambda c: c.lane)
+def test_every_shipped_catalog_is_required(catalog):
+    """No shipped entry may be tolerated as absent: a missing lane catalog refuses startup."""
+    assert catalog.until_merged is None, f"{catalog.lane}: delete until_merged once its PR has merged"
+    out = python(MISSING_REAL, catalog.module, env={**os.environ, **config_env()})
+    assert out.returncode == 2, out.stdout + out.stderr
+    assert out.stdout == ('{"status":"startup_refused","reason":"event_catalog_unavailable","lane":"%s"}\n'
+                          % catalog.lane)
+
+
 def test_absent_catalog_is_reported_only_while_its_module_does_not_exist(monkeypatch):
     from brandme_core.events import catalogs
 
