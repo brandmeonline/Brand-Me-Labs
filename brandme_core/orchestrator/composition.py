@@ -57,6 +57,9 @@ def compose_assistant(*, env: Mapping[str, str], commerce: Any, registry: Any, v
     if model is not None and model.environment != commerce.environment:
         raise PlannerConfigError("environment_mismatch")
     executor = McpToolExecutor(commerce=commerce, registry=registry, verifier=verifier, audit=run_log.tool_call)
+    add_sink = getattr(commerce, "add_autonomy_sink", None)
+    if add_sink is not None:  # autonomy decisions join the tool-call lines on request, task and step
+        add_sink(run_log.autonomy_decision)
     runtime = AssistantRuntime(executor, environment=commerce.environment, run_log=run_log, monotonic=monotonic)
     background = BackgroundRunner(runtime) if getattr(planner, "runs_in_background", False) else None
     adapter = model.adapter if model is not None else None

@@ -14,7 +14,7 @@ from brandme_core.mcp import (
     McpAccessTokenValidator, McpToolExecutor, protected_resource_metadata,
 )
 from brandme_core.mcp.authz import sign_executor_assertion
-from tests.fixtures.commerce.harness import MEMBER, world
+from tests.fixtures.commerce.harness import MEMBER, without_random_ids, world
 
 RESOURCE = "https://mcp.brandme.example.invalid/mcp"
 AS_ISSUER = "https://auth.brandme.example.invalid"
@@ -246,7 +246,7 @@ def test_payment_card_data_rejected_and_never_logged(h):  # BM-COM-018
     pan = "4111 1111 1111 1111"
     status, body = h.call("brandme.catalog.search", {"query": f"card {pan} cvv 123"})
     assert status == 400 and body["problem"]["code"] == "payment_credential_rejected"
-    assert pan not in json.dumps(h.audit) and "4111" not in json.dumps(h.audit)
+    assert pan not in json.dumps(h.audit) and "4111" not in without_random_ids(json.dumps(h.audit))  # ids are hex
     for tool in McpToolExecutor.list_tools()["tools"]:
         schema = json.dumps(tool["inputSchema"]).lower()
         assert not any(w in schema for w in ("card_number", "pan", "cvv", "cvc"))
