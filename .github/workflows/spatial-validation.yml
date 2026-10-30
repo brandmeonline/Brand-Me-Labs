@@ -48,6 +48,8 @@ jobs:
         run: node scripts/assets/validate.mjs
       - name: Verify synthetic evidence arithmetic (not physical fit accuracy)
         run: node scripts/assets/fit-evidence.mjs
+      - name: Verify private garment-evidence intake and output boundaries
+        run: node --test scripts/assets/tests/fit-evidence-private.test.mjs
 
   browser:
     name: Spatial browser and local pose
@@ -81,6 +83,7 @@ jobs:
           name: spatial-browser-${{ github.sha }}
           path: |
             test-results/spatial-browser.json
+            test-results/spatial-runs/**/pose-inference.json
             test-results/spatial-runs/**/*.png
             test-results/spatial-runs/**/*.webm
             test-results/spatial-runs/**/error-context.md

@@ -1,0 +1,847 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-10-30T15:28:16.497Z",
+  "testedCommit": "aa26dc4a62669caa990c1e02fc5fffdd55db49cb",
+  "baseMain": "c902317df3da58b9f20916811052111dfdf23569",
+  "environment": {
+    "platform": "win32",
+    "node": "v24.21.0",
+    "browser": "Playwright 1.56.1 / Chromium 141; desktop software WebGL; no physical camera"
+  },
+  "browser": {
+    "source": "test-results/round3-followup-browser.json",
+    "sha256": "077656992b2cf9b8f325aba46c751fba9addf27f9594f55e31353b59342d8fa6",
+    "stats": {
+      "startTime": "2026-10-30T15:21:52.923Z",
+      "duration": 276500.27300000004,
+      "expected": 95,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "cases": [
+      {
+        "title": "placement opens with instructions and native destination and slot keys remain draft edits",
+        "file": "spatial-accessibility.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "placement navigator previews one destination and Escape or Cancel restores focus without a write",
+        "file": "spatial-accessibility.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "navigator confirmation persists exactly one move and returns keyboard focus",
+        "file": "spatial-accessibility.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "pending placement cannot be cancelled or submitted twice and restores focus after the real commit",
+        "file": "spatial-accessibility.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "a completed pending move respects deliberate focus outside placement",
+        "file": "spatial-accessibility.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "occupied-slot failure keeps the saved placement and keyboard retry usable",
+        "file": "spatial-accessibility.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "shoe admission rejects geometric overlap atomically and permits separated slots, undo and retry",
+        "file": "spatial-admission.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "concurrent shoe reservations admit one transaction and unplaced remains available",
+        "file": "spatial-admission.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "calibration refuses missing, nonfinite and inconsistent measurements and bounds ease without claiming fit",
+        "file": "spatial-calibration.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "measurement preparation stays private, requires repeats and clears on exit while fit remains disabled",
+        "file": "spatial-calibration.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "native device test cannot be activated in an ordinary build",
+        "file": "spatial-calibration.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "every body dimension requires bounded units, uncertainty, timestamp, source and method provenance",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "Pod intake binds each measurement to its subject, capture and time",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "Pod use fails closed on revocation, expiry, future time and unbounded retention",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "paired Pod correction carries both method references and conservative uncertainty without fit claims",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "cross-tier calibration refuses wrong subjects, missing purpose, stale pairs and mixed real/synthetic data",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "brand output is a fixed fit-outcome projection and rejects attached body data",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "dimensional error reports sample counts, signed bias, MAE, RMSE and maxima against references",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "error reporting rejects inflated counts, unknown provenance and malformed numeric input",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "supplied physical records cannot self-certify calibrated fit or independent verification",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "manual preparation exports provenance and forged body intervals fail closed",
+        "file": "spatial-fit-evidence.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "fit learning isolates houses, categories, size systems and silhouette, and replaces repeat garments",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "fit inference withholds a starting size for ties, discomfort, restriction and tailoring needs",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "fit boundaries reject unsafe fields, malformed provenance, corrupt storage, duplicate evidence and unbounded history",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "failed device writes and deletions preserve existing evidence and never assert success",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "depth capability uses feature results and never promotes AR or exposed APIs to depth capture",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "guest fit questions persist, isolate each house and can be corrected and deleted without uploads",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "corrupt guest storage stays quarantined until explicit reset and unsafe answers do not create notes",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "storage failures retain data, recover on retry and deletions in another tab clear the reading",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "fit saves, single deletes and resets serialize across tabs under the real origin lock",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "without cross-tab locking fit history is read-only and mutation APIs fail closed",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "tier 2 stays unavailable with no uploads or camera session even when a browser reports AR support",
+        "file": "spatial-fit-ladder.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "resetting empty history invalidates a queued first save and every later reset",
+        "file": "spatial-fit-reset.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "corrupt or unreadable reset state rejects saves and an explicit reset repairs it",
+        "file": "spatial-fit-reset.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "failed reset storage never reports deletion or permits older queued drafts",
+        "file": "spatial-fit-reset.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "an empty reset across tabs clears draft answers and rejects a first save queued behind it",
+        "file": "spatial-fit-reset.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "folded placement loads the authored variant and survives refresh and each room",
+        "file": "spatial-folded.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "legacy folded coordinates migrate once and stale writes conflict without losing identity",
+        "file": "spatial-folded.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "slow add prefetches its asset, shows an uncommitted destination, then settles only after commit",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "reduced motion retains usable named camera views and remembers the chosen view",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "saved camera views restore exact poses, remain room-local and can be deleted",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "orbit position persists after idle and is restored after reload",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "theme change fades the old room before replacement and reduced motion swaps immediately",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "dragging a wardrobe image onto a semantic destination commits one move and survives reload",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "touch long press enters placement while early movement remains scrolling",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "search keeps room context dimmed while the accessible list shows matches",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "an image-only item remains a labeled photo display in the rendered room",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "multi-selection across search filters creates a persisted capsule without changing item status",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "reversing a room change during fade cannot leave the canvas hidden",
+        "file": "spatial-interactions.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "claims transport separates credentials across all pages and preserves the generated projection",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "invalid identifiers fail before any request",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "identity, viewer, scope and generated claim shape fail closed",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "pagination never returns partial claims after duplicate, cyclic, changed-scope or denied later pages",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "claim and page limits accept exactly 100 and reject any incomplete projection",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "streamed bytes and aggregate bytes are bounded even without a content-length",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "HTTP failures, malformed JSON and redirected responses expose no provider diagnostics",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "caller cancellation stops fetch and response streaming, including transports that ignore abort",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "real browser public requests omit the session cookie on every page; explicit owner requests include it",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "real browser refuses redirected API reads without following the destination",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "whole-read deadline aborts a stalled browser transport",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "photo service enforces origin, consent, test-only image and ownership before external requests",
+        "file": "spatial-photo.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "photo service keeps retry idempotency, changed-input rejection and durable attempt cap",
+        "file": "spatial-photo.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "photo controls drive upload, processing, durable closet reference and deletion through the real dev service with a provider double",
+        "file": "spatial-photo.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "a lost photo job stops polling and can be discarded without creating a new provider attempt",
+        "file": "spatial-photo.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "real pinned local model detects synthetic fixture and rejects an empty frame",
+        "file": "spatial-pose.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "actual try-on camera flow uses real local worker and stops on mode exit",
+        "file": "spatial-pose.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "scan defaults to an honest unconfigured state with no capture or upload",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "scan displays public facets and opens private details only through explicit owner requests",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "owner denial leaves private fields closed and error text does not expose provider data",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "expired owner claims never disclose their private payload",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "revoked owner claims never disclose their private payload",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "visible claims expire in place and owner disclosure closes without a navigation",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "a non-public default projection is rejected instead of rendering private data",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "changed scan input cancels pending work and ignores a late resolver response",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "photo scan sends only the supplied original fixture after explicit consent",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "scan timeout and cancellation keep the request retryable without opening data",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "resolver failure is redacted and offline clears all displayed details",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "claims parser rejects mismatched assets, malformed metadata and duplicate claims",
+        "file": "spatial-scan.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "original rooms render from the real cameras and retain usable controls",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "keyboard placement survives refresh and semantic theme remapping",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "add animation starts only after the item commit and Undo removes its record",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "reduced motion commits immediately without the flight and persists",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "idempotent retries, key binding and concurrent versions reject duplicate writes",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "500 items remain virtualized, searchable and keyboard reachable",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "no WebGL still provides full item organization",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "WebGL context loss exposes Simple View without losing items",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "preview ladder gates camera, provider uploads and calibrated fit",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "camera cleanup handles exit and a late permission result without uploads",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "expired unsaved preview is removed; saved preview deletes completely",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "active camera and worker stop when the page is backgrounded",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "failed placement does not animate or create an item, and retry can succeed",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "outfit editor saves real item references and survives refresh",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "spatial UI reflows at 320px without document overflow",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "spatial UI reflows at 390px without document overflow",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "spatial UI reflows at 768px without document overflow",
+        "file": "spatial.spec.ts",
+        "status": [
+          "expected"
+        ]
+      }
+    ]
+  },
+  "focusedPassportReader": {
+    "source": "test-results/round3-passport-reader.json",
+    "sha256": "0f3a24370206aa037c4e64c874af0b16b0c39d225fd4fd0a6d80001f4e5185af",
+    "stats": {
+      "startTime": "2026-10-30T15:19:07.255Z",
+      "duration": 12117.842999999999,
+      "expected": 11,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "cases": [
+      {
+        "title": "claims transport separates credentials across all pages and preserves the generated projection",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "invalid identifiers fail before any request",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "identity, viewer, scope and generated claim shape fail closed",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "pagination never returns partial claims after duplicate, cyclic, changed-scope or denied later pages",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "claim and page limits accept exactly 100 and reject any incomplete projection",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "streamed bytes and aggregate bytes are bounded even without a content-length",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "HTTP failures, malformed JSON and redirected responses expose no provider diagnostics",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "caller cancellation stops fetch and response streaming, including transports that ignore abort",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "real browser public requests omit the session cookie on every page; explicit owner requests include it",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "real browser refuses redirected API reads without following the destination",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      },
+      {
+        "title": "whole-read deadline aborts a stalled browser transport",
+        "file": "spatial-passport-reader.spec.ts",
+        "status": [
+          "expected"
+        ]
+      }
+    ]
+  },
+  "privateIntake": {
+    "command": "node --test scripts/assets/tests/fit-evidence-private.test.mjs",
+    "observedResult": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "durationSeconds": 17.82
+    },
+    "testSourceSha256": "fe4804c2529dd44940b632c37941ef1321516e98da6d2bb6dcb0b389f3e32136",
+    "importerSourceSha256": "737f69ffac17adf5d607958b868861f580f146061eb4409f5fe1d02e8ca9662c",
+    "evidenceKind": "Functional test execution using invented temporary records; not a physical measurement session.",
+    "reportPolicy": "Private operator report only; source measurements and original labels are excluded from console output and aggregate report.",
+    "review": "Independent read-only review found no actionable defect; Windows ACL and concurrent filesystem mutation limits are documented."
+  },
+  "typeChecks": {
+    "spatialComponents": "PASS",
+    "integratedFrontend": "PASS"
+  },
+  "pose": {
+    "source": "scripts/assets/evidence/round3-followup-pose-inference.json",
+    "sha256": "194ca2d0ea3441f37674f297bdf871b90ef01f422857674779d143c9c9d8caf8",
+    "measuredAt": "2026-10-30T15:25:06.696Z",
+    "landmarkCount": 33,
+    "blankCount": 0,
+    "medianMs": 73.89999997615814,
+    "p95Ms": 100.69999998807907,
+    "accuracy": {
+      "method": "Coarse visual estimates on the original synthetic fixture; not surveyed/physical ground truth",
+      "annotationUncertaintyPixels": 20,
+      "meanPixelError": 23.63997351246386,
+      "pckAt015Torso": 1,
+      "tolerancePixels": 64.512
+    },
+    "preview": {
+      "source": "test-results/round3-followup-runs/spatial-pose-actual-try-on-ac567-rker-and-stops-on-mode-exit/pose-preview.png",
+      "sha256": "02166b5c58e20e47fd3293b5a565e3b82b3ccb749d0679197b741e39e7068b96"
+    },
+    "limits": "Regression run on one synthetic fixture. Frontend type checking ran concurrently for part of the suite. Not a controlled performance comparison, physical camera test, body reconstruction or physical fit benchmark."
+  },
+  "cloud": {
+    "discoveredRepositoryProject": "lux-realestate-app",
+    "selectedRegion": "us-east1",
+    "vertexEnabled": false,
+    "spatialDevIdentityFound": false,
+    "providerRequests": 0,
+    "credentialsCreated": 0,
+    "localConfigurationEnabled": false
+  },
+  "physicalFit": {
+    "status": "NOT_RUN",
+    "physicalGarmentCount": 0,
+    "physicalMeasurementCount": 0,
+    "calibratedFitAvailable": false
+  },
+  "nativeDevices": {
+    "status": "NOT_RUN",
+    "devicesTested": 0
+  },
+  "limits": [
+    "The claims reader is contract-backed transport; browser requests used explicit HTTP test doubles, not a live rights backend or resolver.",
+    "The shipped scan route remains unconfigured; tag/photo resolution and producer facet mappings are still missing.",
+    "Private intake evaluates supplied records without independently verifying their origin, measurements or method.",
+    "Tier 2 reconstruction and authenticated fit storage remain unavailable.",
+    "No live photo-provider request, physical garment session, native-device session, or deployment is claimed.",
+    "The final evidence-only commit retains this implementation; GitHub CI must independently pass before merge."
+  ]
+}
