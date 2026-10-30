@@ -438,3 +438,60 @@ Image digests come from the Docker Hub tag API. The same API returns the digests
   - lane events registered (`brandme_core/domains/events.py:62-88`);
   - lane Python suites run in CI against an emulator (`.github/workflows/ci-cd.yml:154`).
 - **`CLAUDE.md`.** The `brandme-chain` row is corrected in this stage, with file:line evidence.
+
+## Stage 11 — round-03 ultra plan received and reviewed (2026-10-30)
+
+- **Assignment:** `docs/build/orchestration/ultra-plan-03-opus-midnight-rights.md`, on `main` since `718d031` (2026-10-25).
+- **Receipt:** 2026-10-30 16:47 UTC.
+- **Branch:** `claude/midnight-rights-lifecycle-yhfyyu`, fresh off `main` `ed19dc1`. The plan's base (`2b5ae889`) and the bench head (`44aaceab`) are both stale; the bench branch is fully contained in `main`.
+- **Next step:** the D-007 items, then the authenticated command backends.
+
+### Plan review against `main` `ed19dc1`
+What changed after the plan was written on 2026-10-25:
+
+1. **Build step 5 (Q9 redaction) is superseded by D-007**, which the founder approved on 2026-10-30 (`docs/build/deviations.md:52`).
+   - Foundation's `PlatformPrivacyHandler` (`brandme_core/events/erasure.py:170`) redacts `OutboxEvents` and `IdempotencyRecords` as their table owner.
+   - The joint proof is `tests/foundation/test_deletion_leaves_no_member_rows.py`.
+   - This lane's part:
+     - (a) acknowledge the split;
+     - (b) declare `transactional`/`delete_outside_txn` in the published Protocol. Today the orchestrator reaches them only through `getattr` (`brandme_core/domains/privacy/privacy.py:298-299, 444-452`), not through `DomainPrivacyHandler` in `deletion.py`;
+     - (c) surface `purge_derived` detail in receipts.
+2. **The trust-inventory retype is done** by foundation (`brandme_core/config.py:406-421`).
+   - `chain.midnight` cites `RightsAdapter`, scoped by `MIDNIGHT_NETWORK`, with the no-Preprod-evidence note.
+   - `chain.cardano` is UNCONFIGURED.
+   - This resolves founder input 3 and check-in question 5.
+3. **Items for this lane that the plan doesn't list.**
+   - Foundation's follow-ups (`docs/build/status/opus-foundation.md`, "Lane follow-ups"):
+     - `purge_derived` in receipts (same as 1c);
+     - a Preprod contract deploy procedure;
+     - seed-rotation tooling.
+   - Founder flag **F-identity**: account deletion leaves `Members`, `MemberSettings`, `MemberIdentities`, `ConsentGrants` and `Sessions`. Foundation adds a final identity step once this lane rules on ordering.
+   - The **Q9 restore trade-off**: whether to carry `DeletionJobs` with `DeletionTombstones`.
+4. **Real-domain My Data registration mostly exists already.** Persona, wardrobe, social, rewards, media and commerce register handlers (`brandme_core/domains/*/deletion.py`, `brandme_core/domains/commerce/privacy_handler.py`). What step 4 still needs is composition: one My Data service with every handler, in dev form.
+5. **The command routes are mounted but have no backend.**
+   - The routes: `POST /assets/:id/transfers`, `POST /assets/:id/reprint-quotes`, `POST /ownership/challenges` and `POST /ownership/submissions` exist behind scopes.
+   - `/me` reports `rights.transfer` as `unconfigured`/`lane_not_integrated` (`brandme-gateway/src/routes/v1/me.ts:41`).
+   - `brandme-chain/INTEGRATION.md` ("Still required") lists the missing command construction and member wallet/session flow.
+6. **Migrations.** The registry runs V001–V015 with a contiguity guard. The anchor record takes V016, and its row goes into `RESERVED` (`tests/foundation/test_migrations.py:23`) and the migrations README in the same change. That test file is foundation's, so this needs a coordination note.
+7. **The disclosure default is assigned twice:** this plan's step 7 (contract layer) and consumer-domains' item 12 (API layer).
+   - No anchor-record or disclosure-default spec exists under `docs/design/`; the locked default appears only in the round-03 plans.
+   - Default: one shared facet-class definition, owned here and consumed by consumer-domains (check-in question).
+8. **Spatial's scan UX has merged (#60).** It consumes this lane's `brandme.passport.claims/v1` (`docs/build/status/astra-spatial-ar.md:429`), so the anchor record has to keep that contract.
+9. **Preprod.** The credentials are still absent here (names-only check). Finality remains the outstanding item.
+
+### Order (defaults applied, building per the check-in rule)
+1. D-007 items.
+2. Authenticated command backends.
+3. Hardening of the operation store and reconciler.
+4. Event producers and My Data composition (dev form).
+5. Anchor record (V016), disclosure filter and invariants.
+6. Preprod prep (deploy procedure, seed rotation, credential manifest), then finality once credentials land.
+7. Final-head 7/7 local verification and Blockfrost-only audit, then the check-in packet.
+
+### Credential manifest
+No values or seeds are ever recorded here.
+
+| Name | Scope | Where stored | Provisioned |
+|---|---|---|---|
+| `MIDNIGHT_BLOCKFROST_PROJECT_ID` | Blockfrost Midnight Preprod project token (prefix `nightpreprod`) | environment secret, set by the founder | not yet |
+| `MN_PREPROD_SEEDS` | three or more Preprod test-wallet seeds holding tNIGHT and DUST; never Mainnet | environment secret, set by the founder | not yet |
