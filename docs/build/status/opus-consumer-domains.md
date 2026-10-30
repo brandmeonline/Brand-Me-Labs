@@ -1157,3 +1157,27 @@ Plan 03 supersedes plan 02. #66 carries plan 03 items 2–8 and 10; item 12 (dis
 **Shell visual check.** On `ecdee84`, which changed only this document, `consumer-ui / shell` failed with `consumer-1440x900-light.png: dimensions changed`. The same code passed on `29913cb`. The check and its baselines are frontend code, outside this lane. Re-running the job was refused twice (403, no actions permission), so the push carrying this fix gives the check a fresh run.
 
 **Credential manifest.** No credential was created in this stage.
+
+## Stage 19 — status for the Oct 29 check — 2026-10-30
+**State: (a) session alive and working.**
+
+**Why the branch did not move after Oct 25.** #66's head `5aa075b` was green on every check except Test Core, which failed 1 of 1769 tests.
+- **The failure.** `test_commerce_payments_flow.py::test_payment_identifiers_never_reach_models_events_or_wires` flagged a payload holding only UUIDs and a random `sha256:` digest.
+- **The cause.** The providers lane's `contains_card_number` read the digit run `00509399548379` inside that digest as a card number. This is the Stage 16 finding: about 0.75% of random digests trip it.
+- **Why I could not clear it.** That code belongs to providers/commerce, which this lane does not edit. Re-running the job was refused (403). A proposed patch, validated locally (378 passed with the lock venv), is in the #66 comment of 2026-10-25.
+- **Still present.** #64 merged without changing the detector, so `main` `22ff053` still carries the false positive.
+
+**Now**
+- `main` `22ff053` (#64 commerce round 3, #67 round-03 plans) is merged into this branch as `9770927`. The merge was clean and touched no lane files.
+- A clean-checkout CI mirror of `9770927` is running; GitHub CI on the pushed head runs alongside it.
+- When both are green, #66 is undrafted for auto-merge.
+
+**Next**
+- **Item 12** (disclosure facets at the API layer, Stage 18) is ready as `780397b` on top of `9770927`. It opens as its own PR once #66 merges.
+- **Check-in packet.** After that, the fresh 21-question packet: #66 merged is the plan's remaining trigger condition.
+
+**Blocked**
+- Item 9 (deleting the lane outbox worker) waits for foundation's Q8 import (#62, not merged).
+- Item 11 (dev bucket) waits for the GCP credential; the emulator is used.
+
+**Credential manifest.** No credential was created in this stage.
