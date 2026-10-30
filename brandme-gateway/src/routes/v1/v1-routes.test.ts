@@ -9,6 +9,7 @@ import type { Server } from 'node:http';
 import { createChainRouter, type V1Deps, type UpstreamClient } from './chain';
 import { createOwnershipRouter } from './ownership';
 import { createAssetsRouter } from './assets';
+import { createTransfersRouter } from './transfers';
 import { createRightsRouter } from './rights';
 import { createPrivacyRouter } from './privacy';
 import { problemHandler } from '../../middleware/problem';
@@ -24,7 +25,7 @@ const fake = (name: string): UpstreamClient => ({
   },
   async post(path, body, headers) {
     calls.push({ path: `${name}:${path}`, body, headers });
-    return { status: path === '/challenges' ? 201 : 202, body: { accepted: true } };
+    return { status: path.endsWith('/challenges') ? 201 : 202, body: { accepted: true } };
   },
 });
 
@@ -41,7 +42,8 @@ const deps: V1Deps = {
   },
   subjectOf: (req) => req.header('x-test-subject') ?? undefined,
   authTimeOf: () => new Date(),
-  upstream: { chain: fake('chain'), rights: fake('rights'), privacy: fake('privacy'),
+  scopesOf: (req) => String(req.header('x-test-scopes') ?? '').split(',').filter(Boolean),
+  upstream: { chain: fake('chain'), rights: fake('rights'), privacy: fake('privacy'), commands: fake('commands'),
     exports: { ...fake('exports'), download: async () => { throw new Error('unused'); } } },
 };
 
@@ -53,6 +55,7 @@ beforeAll(async () => {
   app.use('/v1/chain', createChainRouter(deps));
   app.use('/v1/ownership', createOwnershipRouter(deps));
   app.use('/v1/assets', createAssetsRouter(deps));
+  app.use('/v1/transfers', createTransfersRouter(deps));
   app.use('/v1/rights', createRightsRouter(deps));
   app.use('/v1/me', createPrivacyRouter(deps));
   app.use(problemHandler);
@@ -65,12 +68,15 @@ const req = (method: string, path: string, body?: unknown, headers: Record<strin
   fetch(base + path, { method, headers: { 'content-type': 'application/json', ...headers }, body: body ? JSON.stringify(body) : undefined });
 const member = (scopes: string, extra: Record<string, string> = {}) => ({ 'x-test-subject': 'member-1', 'x-test-scopes': scopes, ...extra });
 const ASSET = '6f1c2a3e-1111-4222-8333-944455556666';
+const INVITE = 'i'.repeat(43);
+const IDEM = 'idem-key-0000000001';
+const offer = { rights_scope: ['transfer'], recipient_invite: INVITE, expires_in_seconds: 3600 };
+const recent = { 'x-test-auth-age': '30', 'idempotency-key': IDEM };
 
 describe('v1 rights/privacy routers (unmounted)', () => {
   it('transfer is refused with 503 + reasons when Midnight capability is not available (no pretend success)', async () => {
     capability = { status: 'unavailable', reasons: ['no rights contract deployed/configured for this network'], badge: 'Preprod test network', network: 'preprod' };
-    const r = await req('POST', `/v1/assets/${ASSET}/transfers`, { rights_scope: ['transfer'], recipient_invite: 'invite-abc123', expires_in_seconds: 3600 },
-      member('rights:transfer', { 'idempotency-key': 'idem-123456' }));
+    const r = await req('POST', `/v1/assets/${ASSET}/transfers`, offer, member('rights:transfer', recent));
     expect(r.status).toBe(503);
     const b = await r.json();
     expect(b.reasons[0]).toMatch(/no rights contract/);
@@ -85,19 +91,51 @@ describe('v1 rights/privacy routers (unmounted)', () => {
     deps.upstream.chain.get = saved;
   });
 
-  it('enforces scopes and idempotency keys', async () => {
-    const body = { rights_scope: ['transfer'], recipient_invite: 'invite-abc123', expires_in_seconds: 3600 };
-    expect((await req('POST', `/v1/assets/${ASSET}/transfers`, body, member('rights:read'))).status).toBe(403);
-    expect((await req('POST', `/v1/assets/${ASSET}/transfers`, body, member('rights:transfer'))).status).toBe(400);
-    const ok = await req('POST', `/v1/assets/${ASSET}/transfers`, body, member('rights:transfer', { 'idempotency-key': 'idem-123456' }));
+  it('enforces scope, recent authentication and idempotency keys before the command service', async () => {
+    const path = `/v1/assets/${ASSET}/transfers`;
+    expect((await req('POST', path, offer, member('rights:read', recent))).status).toBe(403);
+    expect((await req('POST', path, offer, member('rights:transfer', { 'idempotency-key': IDEM }))).status).toBe(401);
+    expect((await req('POST', path, offer, member('rights:transfer', { 'x-test-auth-age': '30' }))).status).toBe(400);
+    expect((await req('POST', path, offer, member('rights:transfer', { ...recent, 'idempotency-key': 'short-key' }))).status).toBe(400);
+    expect((await req('POST', path, { ...offer, recipient_invite: 'invite-abc123' }, member('rights:transfer', recent))).status).toBe(400);
+    const ok = await req('POST', path, offer, member('rights:transfer,profile:write', recent));
     expect(ok.status).toBe(202);
-    expect(calls.at(-1)!.body).toMatchObject({ network: 'preprod' });
-    expect(calls.at(-1)!.headers).toMatchObject({ 'x-subject-ref': 'member-1', 'idempotency-key': 'idem-123456' });
+    const call = calls.at(-1)!;
+    expect(call.path).toBe(`commands:/rights/assets/${ASSET}/transfers`);
+    expect(call.body).toEqual({ ...offer, include_documents: [] }); // the service scopes the network itself
+    expect(call.headers).toMatchObject({ 'x-subject-ref': 'member-1', 'idempotency-key': IDEM, 'x-principal-scopes': 'rights:transfer' });
+    expect(call.headers!['x-auth-time']).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('transfer status and recipient binding go to the command service with the same checks', async () => {
+    const id = '7a1c2a3e-1111-4222-8333-944455556666';
+    expect((await req('GET', `/v1/transfers/${id}`, undefined, member('rights:read'))).status).toBe(200);
+    expect(calls.at(-1)!.path).toBe(`commands:/rights/transfers/${id}`);
+    expect((await req('GET', '/v1/transfers/NOT-A-UUID', undefined, member('rights:read'))).status).toBe(400);
+    const accept = `/v1/transfers/${id}/accept`;
+    const body = { recipient_invite: INVITE, recipient_commitment: 'c0'.repeat(32) };
+    expect((await req('POST', accept, body, member('rights:read', recent))).status).toBe(403);
+    expect((await req('POST', accept, body, member('rights:transfer', { 'idempotency-key': IDEM }))).status).toBe(401);
+    expect((await req('POST', accept, { ...body, recipient_commitment: '0'.repeat(64) }, member('rights:transfer', recent))).status).toBe(400);
+    expect((await req('POST', accept, body, member('rights:transfer', recent))).status).toBe(202);
+    expect(calls.at(-1)).toMatchObject({ path: `commands:/rights/transfers/${id}/accept`, body, headers: { 'idempotency-key': IDEM } });
+  });
+
+  it('reprint quotes go to the command service; an unconfigured service is unavailable, not simulated', async () => {
+    const path = `/v1/assets/${ASSET}/reprint-quotes`;
+    const body = { quantity: 2, manufacturer_id: 'ab'.repeat(32), territory: 'US' };
+    expect((await req('POST', path, { ...body, territory: 'us' }, member('rights:reprint'))).status).toBe(400);
+    expect((await req('POST', path, body, member('rights:reprint'))).status).toBe(202);
+    expect(calls.at(-1)).toMatchObject({ path: `commands:${path.replace('/v1', '/rights')}`, headers: { 'x-principal-scopes': 'rights:reprint' } });
+    const saved = deps.upstream.commands;
+    delete deps.upstream.commands;
+    const r = await req('POST', path, body, member('rights:reprint'));
+    deps.upstream.commands = saved;
+    expect(r.status).toBe(503);
   });
 
   it('rejects unknown fields and malformed ids', async () => {
-    expect((await req('POST', `/v1/assets/${ASSET}/transfers`, { rights_scope: ['transfer'], recipient_invite: 'invite-abc123', expires_in_seconds: 3600, email: 'x@y.z' },
-      member('rights:transfer', { 'idempotency-key': 'idem-123456' }))).status).toBe(400);
+    expect((await req('POST', `/v1/assets/${ASSET}/transfers`, { ...offer, email: 'x@y.z' }, member('rights:transfer', recent))).status).toBe(400);
     expect((await req('GET', '/v1/assets/not-a-uuid/passport')).status).toBe(400);
     expect((await req('POST', '/v1/ownership/challenges', { entitlement_id: 'zz', audience: 'resale' }, member('rights:read'))).status).toBe(400);
   });

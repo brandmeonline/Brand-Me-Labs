@@ -24,7 +24,7 @@ from brandme_core.domains.rights.projection import FinalizedObservation, Project
 from brandme_core.domains.rights.reprint import IllegalReprintTransition, ReprintService, blinded_job_commitment  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V001_identity.sql", ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql", ROOT / "brandme-data/spanner/migrations/V010_rights_projection_version.sql", ROOT / "brandme-data/spanner/migrations/V011_chain_operation_store.sql", ROOT / "brandme-data/spanner/migrations/V012_chain_reconciliation.sql"]
+MIGRATIONS = [ROOT / "brandme-data/spanner/migrations/V001_identity.sql", ROOT / "brandme-data/spanner/migrations/V008_rights.sql", ROOT / "brandme-data/spanner/migrations/V009_privacy.sql", ROOT / "brandme-data/spanner/migrations/V010_rights_projection_version.sql", ROOT / "brandme-data/spanner/migrations/V011_chain_operation_store.sql", ROOT / "brandme-data/spanner/migrations/V012_chain_reconciliation.sql", ROOT / "brandme-data/spanner/migrations/V016_rights_transfer_invites.sql"]
 
 
 def _emulator_up() -> bool:

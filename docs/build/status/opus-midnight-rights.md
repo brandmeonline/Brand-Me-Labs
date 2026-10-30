@@ -543,3 +543,72 @@ No values or seeds are ever recorded here.
 - **Full `tests/` on this stage's code:** 2107 passed, 67 skipped, 12 xfailed (the quarantined legacy suites).
   - One failure, `tests/foundation/test_migrations.py::test_only_reserved_numbers_are_used`, came from the next stage's uncommitted V016 file, which was in the working tree during the run. With that file moved aside the migrations suite passes (7 passed).
 - **CI:** the Stage 11 head's checks are green on PR #70 (Foundation check, Test Core, chain, gateway, security).
+
+## Stage 13 — authenticated rights command backend (2026-10-30)
+
+- **Assignment:** round-03 build step 2, "Remaining commands behind principal/scope/CSRF/recent-auth, exercised end-to-end."
+- **Base:** Stage 12 head `cd6224d`.
+- **Next step:** the client-proven operation journal (wallet flow), then build step 3 (operation store and reconciler hardening).
+
+### What was missing
+- The gateway relayed `POST /assets/:id/transfers`, `POST /assets/:id/reprint-quotes` and `POST /ownership/challenges` to the read API.
+- The read API is read-only by design (`brandme_core/read_api/README.md:3-5,48-49`), so every command reached no backend.
+
+### Built
+- **Command process `brandme_core/rights_commands`.** A private FastAPI process with its own credential `RIGHTS_COMMAND_SERVICE_TOKEN`.
+  - The service refuses a token equal to any of the four other rights-lane service credentials (`config.py:37-38`).
+  - It re-checks scope and recent authentication from the gateway's principal headers (`app.py:74`; window `app.py:31`).
+  - It verifies the V001–V016 ledger and the columns it uses (`app.py:104`).
+  - It never relays or logs database errors.
+- **Domain commands (`brandme_core/domains/rights/commands.py`).**
+  - `create_transfer` (`:146`):
+    - authorizes against the member's single active, transferable entitlement on the configured network and contract (`_controlled`, `:105`);
+    - an open intent holds the entitlement;
+    - the intent fixes the `offerTransfer` arguments (nonce, terms digest, expiry in seconds);
+    - stores only the invite's SHA-256 digest;
+    - emits `ownership.transfer.requested` in the same transaction as the row and the idempotency record.
+  - `accept_transfer` (`:193`):
+    - binds the recipient's locally computed commitment; a wrong invite and a missing intent are both 404;
+    - refuses the sender, expired intents and stale epochs;
+    - a frozen sender reads as `invalid_transition`, so the sender's restriction isn't disclosed (`:236`).
+  - `transfer_status` (`:255`): the sender's view carries the exact proving arguments once a recipient is bound.
+  - `reprint_quote` (`:301`): read-only; never reserves quota; price is `null`/`unavailable`.
+  - `authorize_challenge` (`:376`): stateless. `proveControl` records the challenge key on chain, which enforces single use.
+  - Every command checks the restore barrier (`assert_serving`, `:99`) and the privacy processing guard in its own transaction.
+- **V016 `rights_transfer_invites`.** Adds `contract_address`, `invite_digest`, `offer_nonce`, `terms_digest` and `recipient_subject_ref` to `TransferIntents`, plus sender/recipient indexes.
+  - Registered in the migrations README and in `RESERVED` (`tests/foundation/test_migrations.py:26`). The README requires a new migration to add its `RESERVED` row in the same change; the owner's #45, #47 and #50 did the same.
+- **Privacy for the new recipient link.**
+  - The rights handler exports received offers with a `role`.
+  - Erasing a recipient cancels an unproven offer and clears the commitment (`brandme_core/domains/rights/privacy_handler.py:92`).
+  - The deployed export service includes received offers in the same contract-valid record shape (`brandme_core/privacy_exports/service.py:270`) and checks for the V016 column at startup (`:43`).
+- **Gateway.**
+  - Transfers, reprint quotes and challenges go to the command upstream (`brandme-gateway/src/services/rights.ts:108`).
+  - Only rights scopes and `auth_time` are forwarded (`commandHeaders`, `brandme-gateway/src/routes/v1/chain.ts:96`).
+  - Transfer creation now requires recent authentication (`assets.ts:57`). Before this stage it did not.
+  - The invite must be 43–128 base64url characters, at least 256 bits (`assets.ts:28`); before, it was 8 characters minimum.
+  - A closed allowlist of command refusals is relayed as Problems with gateway-owned text (`COMMAND_REFUSALS`, `services/rights.ts:16`). Any other body is still discarded.
+  - New `GET /transfers/:id` and `POST /transfers/:id/accept` (`brandme-gateway/src/routes/v1/transfers.ts`) are **unmounted**, because the mount file is foundation's.
+- **Credential.** Manifest row `RIGHTS_COMMAND_SERVICE_TOKEN` (`docs/build/security/credential-manifest.yaml:140`), templates at the end of both rights blocks, and symmetric `distinct_from` on the four other rights-lane token rows.
+  - My config insertions shifted ten other rows' gateway-config line citations; those were corrected.
+  - The guard reports 0 errors and the same 15 warnings as before.
+
+### Not done here (stated plainly)
+- **Strict modes refuse the process.** It has no entry in the trust-path inventory (`brandme_core/config.py`, foundation's mode-guard policy), so `guard("rights_commands")` refuses sandbox and production. Foundation needs to add the entry.
+- **The `/transfers` router is unmounted.** Foundation needs to add one `router.use('/transfers', ...)` line.
+- **Public contract shapes.** `packages/contracts` still lists `createTransfer`, `acceptTransfer` and `createReprintQuote` with empty bodies, so the shapes need foundation's catalog entries.
+- **The operation journal for client-side proving is not built.** The wallet's `offerTransfer`/`acceptTransfer`/`proveControl` still need journaling before broadcast (`brandme-chain/INTEGRATION.md`, updated "Still required").
+- **`/me` still reports `rights.transfer` as `lane_not_integrated`** (`brandme-gateway/src/routes/v1/me.ts:41`, foundation's file).
+
+### Verified
+- `tests/test_rights_commands.py`: 11 passed. Covers config, boundary, idempotent offer, binding and proving arguments, expiry and stale epoch, freezes and restore, the frozen sender, recipient erasure, quotes and challenges.
+- `tests/test_rights.py`: passed (22 with the command suite).
+- **End to end.** `brandme-gateway/src/routes/v1/commands-backend.test.ts` runs signed OIDC through the mounted gateway into the real Python process on the emulator: 3 passed.
+  - It covers recent authentication, scope, the idempotent replay, the relayed `transfer_in_progress` Problem, a stranger's 404, challenge and quote.
+  - It also checks the cookie CSRF refusal before any upstream call.
+  - Logs carry no token, member id or invite.
+- **Gateway:** lint and type-check clean; full suite 174 passed (21 files).
+- **Chain durable store on V016:** 26 passed. A first run failed only because local `node_modules` predated main's zod 4 bump; re-synced from the frozen lock.
+- **Other gates:** credential manifest 0 errors, contracts no drift, workspace guard clean, docs/build links clean.
+- **Foundation, export and read-API suites with these changes:** 485 passed, 23 skipped, 0 failed.
+  - Covers `tests/foundation/` (including the `RESERVED` row), `tests/test_privacy_exports.py`, `tests/test_read_api.py` and the command suite.
+  - The full `tests/` run was still in progress at commit; its count is recorded in Stage 15.
