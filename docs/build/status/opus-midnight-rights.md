@@ -438,3 +438,289 @@ Image digests come from the Docker Hub tag API. The same API returns the digests
   - lane events registered (`brandme_core/domains/events.py:62-88`);
   - lane Python suites run in CI against an emulator (`.github/workflows/ci-cd.yml:154`).
 - **`CLAUDE.md`.** The `brandme-chain` row is corrected in this stage, with file:line evidence.
+
+## Stage 11 — round-03 ultra plan received and reviewed (2026-10-30)
+
+- **Assignment:** `docs/build/orchestration/ultra-plan-03-opus-midnight-rights.md`, on `main` since `718d031` (2026-10-25).
+- **Receipt:** 2026-10-30 16:47 UTC.
+- **Branch:** `claude/midnight-rights-lifecycle-yhfyyu`, fresh off `main` `ed19dc1`. The plan's base (`2b5ae889`) and the bench head (`44aaceab`) are both stale; the bench branch is fully contained in `main`.
+- **Next step:** the D-007 items, then the authenticated command backends.
+
+### Plan review against `main` `ed19dc1`
+What changed after the plan was written on 2026-10-25:
+
+1. **Build step 5 (Q9 redaction) is superseded by D-007**, which the founder approved on 2026-10-30 (`docs/build/deviations.md:52`).
+   - Foundation's `PlatformPrivacyHandler` (`brandme_core/events/erasure.py:170`) redacts `OutboxEvents` and `IdempotencyRecords` as their table owner.
+   - The joint proof is `tests/foundation/test_deletion_leaves_no_member_rows.py`.
+   - This lane's part:
+     - (a) acknowledge the split;
+     - (b) declare `transactional`/`delete_outside_txn` in the published Protocol. Today the orchestrator reaches them only through `getattr` (`brandme_core/domains/privacy/privacy.py:298-299, 444-452`), not through `DomainPrivacyHandler` in `deletion.py`;
+     - (c) surface `purge_derived` detail in receipts.
+2. **The trust-inventory retype is done** by foundation (`brandme_core/config.py:406-421`).
+   - `chain.midnight` cites `RightsAdapter`, scoped by `MIDNIGHT_NETWORK`, with the no-Preprod-evidence note.
+   - `chain.cardano` is UNCONFIGURED.
+   - This resolves founder input 3 and check-in question 5.
+3. **Items for this lane that the plan doesn't list.**
+   - Foundation's follow-ups (`docs/build/status/opus-foundation.md`, "Lane follow-ups"):
+     - `purge_derived` in receipts (same as 1c);
+     - a Preprod contract deploy procedure;
+     - seed-rotation tooling.
+   - Founder flag **F-identity**: account deletion leaves `Members`, `MemberSettings`, `MemberIdentities`, `ConsentGrants` and `Sessions`. Foundation adds a final identity step once this lane rules on ordering.
+   - The **Q9 restore trade-off**: whether to carry `DeletionJobs` with `DeletionTombstones`.
+4. **Real-domain My Data registration mostly exists already.** Persona, wardrobe, social, rewards, media and commerce register handlers (`brandme_core/domains/*/deletion.py`, `brandme_core/domains/commerce/privacy_handler.py`). What step 4 still needs is composition: one My Data service with every handler, in dev form.
+5. **The command routes are mounted but have no backend.**
+   - The routes: `POST /assets/:id/transfers`, `POST /assets/:id/reprint-quotes`, `POST /ownership/challenges` and `POST /ownership/submissions` exist behind scopes.
+   - `/me` reports `rights.transfer` as `unconfigured`/`lane_not_integrated` (`brandme-gateway/src/routes/v1/me.ts:41`).
+   - `brandme-chain/INTEGRATION.md` ("Still required") lists the missing command construction and member wallet/session flow.
+6. **Migrations.** The registry runs V001–V015 with a contiguity guard. The anchor record takes V016, and its row goes into `RESERVED` (`tests/foundation/test_migrations.py:23`) and the migrations README in the same change. That test file is foundation's, so this needs a coordination note.
+7. **The disclosure default is assigned twice:** this plan's step 7 (contract layer) and consumer-domains' item 12 (API layer).
+   - No anchor-record or disclosure-default spec exists under `docs/design/`; the locked default appears only in the round-03 plans.
+   - Default: one shared facet-class definition, owned here and consumed by consumer-domains (check-in question).
+8. **Spatial's scan UX has merged (#60).** It consumes this lane's `brandme.passport.claims/v1` (`docs/build/status/astra-spatial-ar.md:429`), so the anchor record has to keep that contract.
+9. **Preprod.** The credentials are still absent here (names-only check). Finality remains the outstanding item.
+
+### Order (defaults applied, building per the check-in rule)
+1. D-007 items.
+2. Authenticated command backends.
+3. Hardening of the operation store and reconciler.
+4. Event producers and My Data composition (dev form).
+5. Anchor record (V016), disclosure filter and invariants.
+6. Preprod prep (deploy procedure, seed rotation, credential manifest), then finality once credentials land.
+7. Final-head 7/7 local verification and Blockfrost-only audit, then the check-in packet.
+
+### Credential manifest
+No values or seeds are ever recorded here.
+
+| Name | Scope | Where stored | Provisioned |
+|---|---|---|---|
+| `MIDNIGHT_BLOCKFROST_PROJECT_ID` | Blockfrost Midnight Preprod project token (prefix `nightpreprod`) | environment secret, set by the founder | not yet |
+| `MN_PREPROD_SEEDS` | three or more Preprod test-wallet seeds holding tNIGHT and DUST; never Mainnet | environment secret, set by the founder | not yet |
+
+## Stage 12 — D-007 accepted; Protocol extension, receipt notes and identity ordering (2026-10-30)
+
+- **Assignment:** round-03 plan build step 5, as replaced by D-007 (`docs/build/deviations.md:52-58`), plus foundation's open founder flags F-identity and the Q9 restore trade-off (`docs/build/status/opus-foundation.md:291,296`).
+- **Base:** Stage 11 head `c55c010`.
+- **Next step:** authenticated command backends (build step 2).
+
+### D-007 (the table owner redacts undelivered payloads)
+- **(a) Acknowledged.** Foundation's `PlatformPrivacyHandler` (`brandme_core/events/erasure.py:170`) owns `OutboxEvents` and `IdempotencyRecords`. The privacy orchestrator still never names a table.
+- **(b) Declared as a stable extension.**
+  - `NonTransactionalPrivacyHandler` (`brandme_core/domains/privacy/deletion.py:146`) and contract item 7 (`deletion.py:34-43`) publish `transactional = False` plus `delete_outside_txn`. The orchestrator calls it before the transaction that records the step and tombstone, and again for every tombstone on restore, so it must be idempotent. It never calls `delete` or `reapply_tombstone` for these handlers.
+  - Not added to `DomainPrivacyHandler` itself: that Protocol is `runtime_checkable` and used in `isinstance` checks, so new required members would reject every existing handler.
+  - Registration refuses the flag without a callable method, and a non-boolean flag (`runs_outside_transaction`, `deletion.py:158`; called from `register`). Both orchestrator call sites use the helper (`privacy.py:305,457`), replacing raw `getattr`.
+- **(c) Receipts keep handler notes.**
+  - Per-category `records_detail` and `derived_detail` (`privacy.py:393`). The platform handler's broker-retention note (`BROKER_COPIES`, `erasure.py:72`) now reaches the receipt instead of only the category text.
+  - Contract item 8 (`deletion.py:44-47`): `exception` and `detail` must be short plain-language sentences, never identifiers, URLs, keys, provider error text or other members' data.
+  - Known limit: a resumed run rereads saved steps, and the single `DeletionSteps.detail` column keeps only the exception when a handler set both. No current handler finishes with both.
+  - The read API still relays only status and counts (`brandme_core/read_api/reads.py:201-202`), and the generated `DeletionOutcomeRead` has no field for notes. Member-visible notes need a contract field; that's a check-in question.
+
+### F-identity: ordering ruling (default, built)
+- **Ruling:** identity erasure runs **last**. It starts only after every other category of the job has finished both its record and derived steps.
+  - Other handlers keep any identity mapping they need while they run.
+  - A member whose deletion is pending (commerce settling, rights broadcasts awaiting reconciliation) can still sign in and read the pending receipt.
+  - Restore re-applies identity tombstones last.
+- **Built:** contract item 9 (`deletion.py:48-53`) and `runs_last` (`deletion.py:168`).
+  - A handler sets `final = True`. The orchestrator sorts final categories last (`privacy.py:292`) and holds them pending, with `records_detail` "waits until every other category is finished" (`privacy.py:298-300`). Restore sorts their tombstones last (`privacy.py:453`).
+  - Foundation's identity step can register as a final handler. This lane writes no identity code.
+- **Still foundation's to decide:** what happens at acceptance (`account_state`, revoking sessions) and how the member gets the receipt once their identity is gone.
+
+### Q9 restore trade-off: ruling (default, documented)
+- **Carry `DeletionJobs`, `DeletionSteps` and the deletion rows of `ProcessingFreezes` with `DeletionTombstones`** (`brandme_core/domains/privacy/README.md:68-74`).
+- **Finding:** the trade-off is wider than a refused category request.
+  - The permanent account barrier in `assert_processing_allowed` reads `DeletionJobs` (`deletion.py:258-264`) and the `*` freeze (`deletion.py:248-254`).
+  - A tombstone-only restore therefore re-applies the erasures and serves, but a guarded writer with a fresh basis time can then write a deleted account's data again.
+- **Not enforced in code.** Foundation's `test_restore_without_the_job_ledger_reerases_and_serves` (`tests/foundation/test_outbox_retention.py:519-545`) asserts that a tombstone-only restore serves. A guard that refuses would change foundation's test, so it's a coordination question, not a self-applied edit.
+
+### Verified (Spanner emulator 1.5.45, venv from `scripts/python/requirements.lock`)
+- **New tests** (`tests/test_privacy.py:185-326`):
+  - registry validation, including foundation's platform handler and bridge satisfying the extension;
+  - deletion and restore wholly outside the transaction;
+  - a final handler waiting for a pending category and running last on restore;
+  - the receipt carrying `BROKER_COPIES` from the real platform handler.
+- **Lane and joint suites:** 285 passed across 14 files, including the joint proof `tests/foundation/test_deletion_leaves_no_member_rows.py`, `tests/foundation/test_outbox_retention.py`, the lane privacy/rights suites, `tests/test_read_api.py` and every consumer and commerce privacy suite.
+  - That run predates the F-identity edit.
+  - After it, `test_privacy.py`, `test_privacy_recovery.py` and `test_rights.py` passed again (67 passed).
+- **Full `tests/` on this stage's code:** 2107 passed, 67 skipped, 12 xfailed (the quarantined legacy suites).
+  - One failure, `tests/foundation/test_migrations.py::test_only_reserved_numbers_are_used`, came from the next stage's uncommitted V016 file, which was in the working tree during the run. With that file moved aside the migrations suite passes (7 passed).
+- **CI:** the Stage 11 head's checks are green on PR #70 (Foundation check, Test Core, chain, gateway, security).
+
+## Stage 13 — authenticated rights command backend (2026-10-30)
+
+- **Assignment:** round-03 build step 2, "Remaining commands behind principal/scope/CSRF/recent-auth, exercised end-to-end."
+- **Base:** Stage 12 head `cd6224d`.
+- **Next step:** the client-proven operation journal (wallet flow), then build step 3 (operation store and reconciler hardening).
+
+### What was missing
+- The gateway relayed `POST /assets/:id/transfers`, `POST /assets/:id/reprint-quotes` and `POST /ownership/challenges` to the read API.
+- The read API is read-only by design (`brandme_core/read_api/README.md:3-5,48-49`), so every command reached no backend.
+
+### Built
+- **Command process `brandme_core/rights_commands`.** A private FastAPI process with its own credential `RIGHTS_COMMAND_SERVICE_TOKEN`.
+  - The service refuses a token equal to any of the four other rights-lane service credentials (`config.py:37-38`).
+  - It re-checks scope and recent authentication from the gateway's principal headers (`app.py:74`; window `app.py:31`).
+  - It verifies the V001–V016 ledger and the columns it uses (`app.py:104`).
+  - It never relays or logs database errors.
+- **Domain commands (`brandme_core/domains/rights/commands.py`).**
+  - `create_transfer` (`:146`):
+    - authorizes against the member's single active, transferable entitlement on the configured network and contract (`_controlled`, `:105`);
+    - an open intent holds the entitlement;
+    - the intent fixes the `offerTransfer` arguments (nonce, terms digest, expiry in seconds);
+    - stores only the invite's SHA-256 digest;
+    - emits `ownership.transfer.requested` in the same transaction as the row and the idempotency record.
+  - `accept_transfer` (`:193`):
+    - binds the recipient's locally computed commitment; a wrong invite and a missing intent are both 404;
+    - refuses the sender, expired intents and stale epochs;
+    - a frozen sender reads as `invalid_transition`, so the sender's restriction isn't disclosed (`:236`).
+  - `transfer_status` (`:255`): the sender's view carries the exact proving arguments once a recipient is bound.
+  - `reprint_quote` (`:301`): read-only; never reserves quota; price is `null`/`unavailable`.
+  - `authorize_challenge` (`:376`): stateless. `proveControl` records the challenge key on chain, which enforces single use.
+  - Every command checks the restore barrier (`assert_serving`, `:99`) and the privacy processing guard in its own transaction.
+- **V016 `rights_transfer_invites`.** Adds `contract_address`, `invite_digest`, `offer_nonce`, `terms_digest` and `recipient_subject_ref` to `TransferIntents`, plus sender/recipient indexes.
+  - Registered in the migrations README and in `RESERVED` (`tests/foundation/test_migrations.py:26`). The README requires a new migration to add its `RESERVED` row in the same change; the owner's #45, #47 and #50 did the same.
+- **Privacy for the new recipient link.**
+  - The rights handler exports received offers with a `role`.
+  - Erasing a recipient cancels an unproven offer and clears the commitment (`brandme_core/domains/rights/privacy_handler.py:92`).
+  - The deployed export service includes received offers in the same contract-valid record shape (`brandme_core/privacy_exports/service.py:270`) and checks for the V016 column at startup (`:43`).
+- **Gateway.**
+  - Transfers, reprint quotes and challenges go to the command upstream (`brandme-gateway/src/services/rights.ts:108`).
+  - Only rights scopes and `auth_time` are forwarded (`commandHeaders`, `brandme-gateway/src/routes/v1/chain.ts:96`).
+  - Transfer creation now requires recent authentication (`assets.ts:57`). Before this stage it did not.
+  - The invite must be 43–128 base64url characters, at least 256 bits (`assets.ts:28`); before, it was 8 characters minimum.
+  - A closed allowlist of command refusals is relayed as Problems with gateway-owned text (`COMMAND_REFUSALS`, `services/rights.ts:16`). Any other body is still discarded.
+  - New `GET /transfers/:id` and `POST /transfers/:id/accept` (`brandme-gateway/src/routes/v1/transfers.ts`) are **unmounted**, because the mount file is foundation's.
+- **Credential.** Manifest row `RIGHTS_COMMAND_SERVICE_TOKEN` (`docs/build/security/credential-manifest.yaml:140`), templates at the end of both rights blocks, and symmetric `distinct_from` on the four other rights-lane token rows.
+  - My config insertions shifted ten other rows' gateway-config line citations; those were corrected.
+  - The guard reports 0 errors and the same 15 warnings as before.
+
+### Not done here (stated plainly)
+- **Strict modes refuse the process.** It has no entry in the trust-path inventory (`brandme_core/config.py`, foundation's mode-guard policy), so `guard("rights_commands")` refuses sandbox and production. Foundation needs to add the entry.
+- **The `/transfers` router is unmounted.** Foundation needs to add one `router.use('/transfers', ...)` line.
+- **Public contract shapes.** `packages/contracts` still lists `createTransfer`, `acceptTransfer` and `createReprintQuote` with empty bodies, so the shapes need foundation's catalog entries.
+- **The operation journal for client-side proving is not built.** The wallet's `offerTransfer`/`acceptTransfer`/`proveControl` still need journaling before broadcast (`brandme-chain/INTEGRATION.md`, updated "Still required").
+- **`/me` still reports `rights.transfer` as `lane_not_integrated`** (`brandme-gateway/src/routes/v1/me.ts:41`, foundation's file).
+
+### Verified
+- `tests/test_rights_commands.py`: 11 passed. Covers config, boundary, idempotent offer, binding and proving arguments, expiry and stale epoch, freezes and restore, the frozen sender, recipient erasure, quotes and challenges.
+- `tests/test_rights.py`: passed (22 with the command suite).
+- **End to end.** `brandme-gateway/src/routes/v1/commands-backend.test.ts` runs signed OIDC through the mounted gateway into the real Python process on the emulator: 3 passed.
+  - It covers recent authentication, scope, the idempotent replay, the relayed `transfer_in_progress` Problem, a stranger's 404, challenge and quote.
+  - It also checks the cookie CSRF refusal before any upstream call.
+  - Logs carry no token, member id or invite.
+- **Gateway:** lint and type-check clean; full suite 174 passed (21 files).
+- **Chain durable store on V016:** 26 passed. A first run failed only because local `node_modules` predated main's zod 4 bump; re-synced from the frozen lock.
+- **Other gates:** credential manifest 0 errors, contracts no drift, workspace guard clean, docs/build links clean.
+- **Foundation, export and read-API suites with these changes:** 485 passed, 23 skipped, 0 failed.
+  - Covers `tests/foundation/` (including the `RESERVED` row), `tests/test_privacy_exports.py`, `tests/test_read_api.py` and the command suite.
+  - The full `tests/` run was still in progress at commit; its count is recorded in Stage 15.
+
+## Stage 14 — event producers and My Data composition in dev form (2026-10-30)
+
+- **Assignment:** round-03 build step 4, "Remaining event producers into the durable outbox (#47); real-domain My Data registration live in dev form."
+- **Base:** Stage 13 head `d58e3c8`.
+- **Next step:** the check-in packet. With this stage, commands, producers and redaction are done, which is the check-in trigger.
+
+### Producers
+At 2026-10-22, four registered lane events had no producer (`docs/build/evidence/midnight-integration-2026-10-22.md:35`). Now:
+
+| Event | Producer | Status |
+|---|---|---|
+| `chain.operation.observed` | chain durable store (`brandme-chain/src/midnight/spanner-store.ts`) | already on `main` |
+| `ownership.transfer.requested` | `create_transfer`, in the transfer intent's transaction (Stage 13) | built |
+| `reprint.attested` | chain reconciler, in the atomic projection commit (`brandme-chain/src/midnight/reconciliation-queue.ts:127,143`) | built here |
+| `license.issued` | none | **not produced; check-in question** |
+
+- **`reprint.attested`.**
+  - Emitted once, when a finalized `attestManufacture` first projects its manufactured child entitlement.
+  - The unit is linked to the app's reprint job by the consumption nullifier it attests, never by the operation owner. A unit outside the app workflow is projected but emits nothing.
+  - It commits with the projection and its completion marker, so it can't be emitted twice.
+  - It doesn't touch `ReprintJobs.units_attested`, which counts manufacturer callbacks. On-chain attestation stays a separate fact.
+- **`license.issued` is left unproduced on purpose.**
+  - The spec makes a `LicenseGrant` the rights holder's record, backed by the verified contract (`docs/design/brandme/03-architecture-data-api.md:154`).
+  - Its permissions and territory are not on chain; `grantReprintAllowance` carries only a policy digest.
+  - Producing the row from chain facts would invent them, for example reading an unknown territory as unrestricted.
+  - It needs an issuer-authenticated license command, and no issuer principal exists yet (governance is a stub).
+
+### My Data composition in dev form
+- `compose_registry` / `compose_my_data` (`brandme_core/domains/privacy/composition.py:25,41`) put every real handler in one registry:
+  - the five consumer domains;
+  - commerce;
+  - rights;
+  - foundation's platform handler.
+- Demo and development only. Not deployable until deletion has one serialized executor per subject and foundation registers the final identity step (contract item 9).
+
+### Verified
+- `tests/test_my_data_composition.py`: 2 passed.
+  - The composed registry covers all eight domains (commerce, media, persona, platform, rewards, rights, social, wardrobe), and strict modes are refused.
+  - One account deletion finishes every category with nothing pending.
+  - It clears the member's control link, deletes their sent intent, and cancels and unlinks an intent offered to them.
+- `brandme-chain` reconciliation suite: 11 passed, including the new attestation test.
+  - That suite's teardown validates every emitted outbox row against the Python event registry (`brandme-chain/tests/support/store-database.py:21-34`), so the new `reprint.attested` payload is checked across languages.
+- `brandme-chain` type-check clean.
+
+## Stage 15 — check-in packet (2026-10-30)
+
+- **Trigger met:** authenticated commands (Stage 13), producers (Stage 14) and redaction (D-007, Stage 12) are complete.
+- **Single outstanding item: Preprod finality.** `MIDNIGHT_BLOCKFROST_PROJECT_ID` and `MN_PREPROD_SEEDS` are still absent (names-only check). The day they land, the lane runs `pnpm test:midnight:preprod` and records tx IDs, block heights and hashes, and finality timestamps here. Screenshots are not evidence.
+- **Head:** this packet sits on Stage 14 `6a4a11a`, branch `claude/midnight-rights-lifecycle-yhfyyu` (PR #70).
+
+### Exit evidence against the plan
+- [x] **New PR off `main`, authenticated command backends behind auth, exercised end to end.** Signed OIDC → mounted gateway → real Python process → Spanner, for transfer creation, reprint quotes and ownership challenges, including recent auth, scope, idempotent replay, relayed refusals and the cookie CSRF refusal (Stage 13).
+  - **Caveat:** accept and status ship unmounted (foundation's mount file), and strict modes refuse the process until its trust-path entry exists.
+- [ ] **Op store/reconciler hardening.** Not started this round (question 17).
+- [~] **Producers and My Data.**
+  - Done: `ownership.transfer.requested` and `reprint.attested` are produced, and My Data is composed in dev form across all eight domains.
+  - Open: `license.issued` is deliberately unproduced (question 15).
+- [x] **Q9 redaction (undelivered path) and the joint deletion proof are green.** Foundation's handler runs through this lane's orchestrator (D-007, Stage 12).
+- [ ] **Anchor record and disclosure-filtered scan response.** Not started (questions 18–19).
+- [ ] **Preprod finality.** Blocked on credentials; this is the single outstanding item.
+- [ ] **7/7 local re-run and Blockfrost-only audit on the final head.** Deferred to the final head (question 17).
+- [x] **Privacy suite green throughout.**
+  - Stage 12: full `tests/` 2107 passed.
+  - Stage 13: full `tests/` 2118 passed, 67 skipped, 12 xfailed, 0 failed. Collected before the frozen-sender test and Stage 14's tests, which passed separately (11 command and 2 composition tests).
+  - Each stage's joint proof and privacy suites pass.
+
+### Questions (21, with recommended defaults)
+Several of the plan's questions are settled: the trust-inventory retype has landed, D-007 replaced the redaction question, and commands and producers are built. Their slots carry the decisions this round surfaced.
+
+**Direction (7)**
+1. **Preprod credentials.** Does the founder provision both secrets in the GitHub `sandbox` environment (`docs/build/security/credential-manifest.yaml:206-246`)? **Default: yes; the lane runs the day they land.**
+2. **Mainnet criteria.** Should the lane define the go/no-go criteria next stage (not a Mainnet decision)? **Default: yes.**
+3. **RFID split.** Midnight owns the anchor record and spatial owns the scan UX; confirm? **Default: yes.**
+4. **Verification scope.** Disclosure invariants first, then the rights contracts? **Default: disclosure invariants first.**
+5. **F-identity ordering.**
+   - Identity erasure runs last (`final = True`, contract item 9). Sessions survive until that step so a pending receipt stays readable. Foundation registers the identity handler and decides what happens at acceptance (`account_state`, session revocation) and how the receipt reaches a member whose identity is gone.
+   - **Default: yes, as built.**
+6. **Wallet custody.** Test seeds go only in the environment secret, the manifest holds names only, and rotation means funding new wallets and sweeping the old ones (never editing in place)? **Default: yes.**
+7. **Transfer invite design.**
+   - The sender's app generates a ≥256-bit invite, the server stores only its digest, and the recipient binds their wallet's commitment (V016).
+   - The alternative is recipient-issued receive codes, which need a new table.
+   - **Default: sender-generated, as built.**
+
+**Integration & security (7)**
+
+8. **Command principal transport.**
+   - Today: a service credential plus principal headers, with scope and `auth_time` re-checked by the backend.
+   - Alternative: a signed short-lived assertion with its own audience, as the consumer domains use.
+   - **Default: keep the service credential now; move to a signed assertion when foundation generalizes its signer.**
+9. **Trust-path entry for `rights_commands`** (foundation's edit). **Default: a sandbox-grade entry citing `brandme_core/domains/rights/commands.py`, with no Mainnet mode.**
+10. **Mount `/transfers`** (foundation's mount file, one line). **Default: mount now.**
+11. **Public contract shapes** for `createTransfer`, `acceptTransfer`, `createReprintQuote` and a transfer read (foundation's `packages/contracts`). **Default: foundation adds them; the lane supplies the request/response shapes from `commands.py`.**
+12. **Receipt notes (D-007c).** Expose `records_detail`/`derived_detail` through `DeletionOutcomeRead`? Contract item 8 now governs that text. **Default: add one optional plain-language field.**
+13. **Q9 restore guard.**
+   - Refuse to serve when a tombstone's deletion job is missing, because a tombstone-only restore loses the account barrier.
+   - This changes foundation's `test_restore_without_the_job_ledger_reerases_and_serves`.
+   - **Default: yes; foundation updates its test.**
+14. **Finality evidence format.** Tx IDs, block heights and hashes, and finality timestamps, independently verifiable through Blockfrost, no screenshots? **Default: yes.**
+
+**Scope & sequencing (7)**
+
+15. **`license.issued`.**
+    - Producing it needs an issuer-authenticated license command, because permissions and territory are the rights holder's (spec 03 `LicenseGrant`) and are not on chain.
+    - No issuer principal exists yet.
+    - **Default: keep it unproduced until issuer authority exists; never infer it from chain facts.**
+16. **Client-proven operation journal.** Build the wallet flow's journal next, so `offerTransfer`/`acceptTransfer`/`proveControl` are journaled before broadcast? **Default: yes, next stage.**
+17. **Order of the rest:** op-store hardening → client journal → anchor record → disclosure invariants → Preprod prep → final 7/7 and Blockfrost audit → finality when credentials land. **Default: yes.**
+18. **Disclosure default owner.** One shared facet-class definition, owned by this lane and consumed by consumer-domains item 12? **Default: yes.**
+19. **Anchor migration.** V017 (V016 is now transfer invites), with its `RESERVED` row in the same change, as the migrations README requires. **Default: yes.**
+20. **Exports.** Harden only? Received offers are now included in the same contract-valid shape. **Default: harden only.**
+21. **Next round.** A Mainnet-readiness round after Preprod finality, gated on the founder's go/no-go? **Default: yes.**

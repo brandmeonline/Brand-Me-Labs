@@ -39,6 +39,8 @@ def verify_schema(database):
         s.query(f"SELECT {', '.join(FIELDS)} FROM PrivacyExportJobs LIMIT 0")
         s.query("SELECT cleanup_at FROM PrivacyExportObjects LIMIT 0")
         s.query("SELECT request_hash FROM PrivacyExportRequests LIMIT 0")
+        # Transfer exports include offers made to the member (V016).
+        s.query("SELECT recipient_subject_ref FROM TransferIntents LIMIT 0")
 
 
 def recent_auth(value, now):
@@ -264,7 +266,9 @@ class ExportService:
                     table, where, use = "ChainOperations", "owner_ref = @s AND network = @n AND contract_address = @c AND environment = @e", ("s", "n", "c", "e")
                 elif category == "rights.transfers":
                     fields = ("intent_id", "network", "entitlement_id", "state", "created_at")
-                    table, where, use = "TransferIntents", "from_subject_ref = @s AND network = @n", ("s", "n")
+                    # Offers the member made and offers made to them (V016 recipient link).
+                    table, where, use = ("TransferIntents", "(from_subject_ref = @s OR recipient_subject_ref = @s) AND network = @n",
+                                         ("s", "n"))
                 elif category == "rights.reprint_jobs":
                     fields = ("job_id", "network", "entitlement_id", "state", "quantity", "created_at")
                     table, where, use = "ReprintJobs", "member_subject_ref = @s AND network = @n", ("s", "n")

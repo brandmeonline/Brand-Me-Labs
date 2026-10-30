@@ -55,9 +55,11 @@ class RightsPrivacyHandler:
             return ExportSection(category, [{"operation_id": r[0], "network": r[1], "circuit": r[2],
                                             "state": r[3], "tx_id": r[4], "created_at": r[5]} for r in rows])
         if category == "rights.transfers":
-            rows = snap.execute_sql("SELECT intent_id, entitlement_id, state, created_at FROM TransferIntents WHERE from_subject_ref = @s",
+            rows = snap.execute_sql("SELECT intent_id, entitlement_id, state, created_at, from_subject_ref = @s FROM TransferIntents "
+                                    "WHERE from_subject_ref = @s OR recipient_subject_ref = @s",
                                     params={"s": s}, param_types={"s": pt.STRING})
-            return ExportSection(category, [{"intent_id": r[0], "entitlement_id": r[1], "state": r[2], "created_at": r[3]} for r in rows])
+            return ExportSection(category, [{"intent_id": r[0], "entitlement_id": r[1], "state": r[2], "created_at": r[3],
+                                             "role": "sender" if r[4] else "recipient"} for r in rows])
         rows = snap.execute_sql("SELECT job_id, state, quantity, created_at FROM ReprintJobs WHERE member_subject_ref = @s",
                                 params={"s": s}, param_types={"s": pt.STRING})
         return ExportSection(category, [{"job_id": r[0], "state": r[1], "quantity": r[2], "created_at": r[3]} for r in rows])
@@ -83,6 +85,14 @@ class RightsPrivacyHandler:
                                    detail="Pending broadcasts must be reconciled and public projections completed before their private operation links can be removed" if pending else None)
         if category == "rights.transfers":
             n = txn.execute_update("DELETE FROM TransferIntents WHERE from_subject_ref = @s", params=p, param_types=t)
+            # A recipient's link (V016). An offer not proven yet is cancelled: nobody can
+            # accept it for a deleted member. A proven one keeps only its commitment,
+            # which the public offer already discloses.
+            n += txn.execute_update(
+                "UPDATE TransferIntents SET recipient_subject_ref = NULL, "
+                "recipient_commitment = IF(state IN ('AwaitingRecipient', 'ReadyToProve'), NULL, recipient_commitment), "
+                "state = IF(state IN ('AwaitingRecipient', 'ReadyToProve'), 'Cancelled', state), "
+                "updated_at = PENDING_COMMIT_TIMESTAMP() WHERE recipient_subject_ref = @s", params=p, param_types=t)
             return DeletionOutcome(category, n)
         if category == "rights.reprint_jobs":
             n = txn.execute_update("UPDATE ReprintJobs SET member_subject_ref = 'deleted-member' WHERE member_subject_ref = @s", params=p, param_types=t)

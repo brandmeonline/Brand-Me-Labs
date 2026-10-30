@@ -15,9 +15,11 @@ import { Router } from 'express';
 import type { Router as IRouter } from 'express';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
-import { capabilityUnavailable, chainCapability, relay, subjectOr401, type V1Deps } from './chain';
+import {
+  capabilityUnavailable, chainCapability, commandHeaders, commandsOf, relay, subjectOr401, type V1Deps,
+} from './chain';
 
-const hex32 = z.string().regex(/^[0-9a-f]{64}$/i);
+const hex32 = z.string().regex(/^[0-9a-f]{64}$/);
 
 const challengeSchema = z.object({
   entitlement_id: hex32,
@@ -41,7 +43,10 @@ export function createOwnershipRouter(deps: V1Deps): IRouter {
     const cap = await chainCapability(deps);
     if (capabilityUnavailable(res, cap)) return;
     const challenge = randomBytes(32).toString('hex');
-    const r = await deps.upstream.rights.post('/challenges', { ...body.data, challenge, ttl_seconds: 300 }, { 'x-subject-ref': subject });
+    // The command service confirms control and returns the audience digest the wallet and verifier share.
+    // Single use is enforced by the contract (proveControl records the challenge key).
+    const r = await commandsOf(deps).post('/rights/challenges', { ...body.data, challenge, ttl_seconds: 300 },
+      commandHeaders(deps, req, subject));
     if (r.status !== 201) { relay(res, r); return; }
     res.status(201).json({ ...(r.body as object), challenge, network: cap.network, badge: cap.badge, circuit: 'proveControl' });
   }));
