@@ -188,3 +188,54 @@ def test_the_ledger_has_no_way_to_pay_out(spanner_db):
     assert ("POST", "/rewards/credits") in paths
     assert not [p for _m, p in paths if any(w in p for w in ("payout", "cash", "withdraw", "transfer", "gift"))]
     assert count(spanner_db, "SELECT COUNT(*) FROM RewardEntries WHERE member_id=@m", m=me.member_id) == 0
+
+
+def reverse_all_awards(db, member_id):
+    ids = [r[0] for r in run_read(db, lambda s: list(s.execute_sql(
+        f"SELECT entry_id FROM RewardEntries WHERE member_id='{member_id}' AND kind='credit' AND state='posted'")))]
+    for entry_id in ids:
+        command(db, service_principal("repair-workflow"), lambda t, ctx, e=entry_id: ledger.reverse(t, ctx, member_id, e, "repair_voided", ["repair:test"]))
+
+
+def test_released_credit_pays_down_recovery_debt_first(spanner_db):
+    from brandme_core.domains.rewards import deletion
+
+    db = spanner_db
+    me, other = person(db), person(db)
+    for m in (me, other):
+        grant(db, m.member_id)
+        CreditService(db).convert(m, {"points": 500}, key())
+        reverse_all_awards(db, m.member_id)  # 1000 reversed: 500 taken from available, 500 owed while held in credit
+        acct = account(db, m.member_id)
+        assert (acct.available, acct.reserved, acct.recovery_due) == (0, 500, 500)
+    # Deleting the credit releases its points, which settle the debt instead of becoming spendable again.
+    run_txn(db, lambda t: deletion.delete_category(t, me.member_id, "rewards.credits"))
+    # Expiry releases the same way.
+    run_txn(db, lambda t: t.execute_update(f"UPDATE PurchaseCredits SET expires_at=TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 MINUTE) "
+                                           f"WHERE member_id='{other.member_id}'"))
+    assert CreditService(db).expire_due() >= 1
+    for m in (me, other):
+        acct = account(db, m.member_id)
+        assert (acct.available, acct.reserved, acct.recovery_due) == (0, 0, 0)
+        assert run_read(db, lambda s, m=m: ledger.consistency(s, m.member_id))["ok"]
+
+
+def test_a_credit_outlives_a_deleted_ledger_without_breaking_it(spanner_db):
+    from brandme_core.domains.rewards import deletion
+
+    db = spanner_db
+    me = person(db)
+    grant(db, me.member_id)
+    credits = CreditService(db)
+    spend, lapse = (credits.convert(me, {"points": 500}, key())["credit_id"] for _ in range(2))
+    run_txn(db, lambda t: deletion.delete_category(t, me.member_id, "rewards.ledger"))  # the points and their history go
+    grant(db, me.member_id, months=1)  # a new account, with points earned since
+    # The converted credit is still the member's: it spends and expires without touching the new account.
+    assert run_txn(db, lambda t: apply_credit(t, member_id=me.member_id, credit_id=spend, order_ref="order-1", currency="USD"))["credit_id"] == spend
+    run_txn(db, lambda t: t.execute_update(f"UPDATE PurchaseCredits SET expires_at=TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 MINUTE) "
+                                           f"WHERE member_id='{me.member_id}' AND credit_id='{lapse}'"))
+    assert credits.expire_due() >= 1
+    assert {i["credit_id"]: i["state"] for i in credits.mine(me)["items"]} == {spend: "applied", lapse: "expired"}
+    acct = account(db, me.member_id)
+    assert (acct.available, acct.reserved, acct.spent_total) == (200, 0, 0)
+    assert run_read(db, lambda s: ledger.consistency(s, me.member_id))["ok"]

@@ -8,9 +8,10 @@ launch posture: not cashable).
 * **The ledger enforces "in-app only".** Converting writes a ``reserve``
   entry, so the points are held while the credit is outstanding. Applying the
   credit to an in-app order writes ``redeem`` (spent). Expiry writes
-  ``release``, and the points come back. The ledger has no kind that pays out,
-  transfers or converts to money (V005 ``ck_re_kind``), and no route here
-  takes an amount of money, a payout destination or another member.
+  ``release``, and the points come back (paying down any recovery debt
+  first). The ledger has no kind that pays out, transfers or converts to money
+  (V005 ``ck_re_kind``), and no route here takes an amount of money, a payout
+  destination or another member.
 * **A credit belongs to one member.** It is applied only by the in-app checkout
   (``apply_credit``, for the commerce lane to call inside its order
   transaction) and only for its own currency. It cannot be transferred.
@@ -144,19 +145,30 @@ class CreditService:
         return n
 
 
+def _backed(txn, member_id: str, credit_id: str) -> bool:
+    """The credit's points are still held in the ledger. After the member deleted
+    ``rewards.ledger`` they are not: the held points went with the ledger, and the
+    credit stays theirs until it is used or expires, settling without ledger entries."""
+    return bool(query(txn, "SELECT 1 FROM RewardEntries WHERE member_id=@m AND entry_id=@e",
+                      {"m": member_id, "e": stable_id("credit-reserve", credit_id)}, {"m": STR, "e": STR}))
+
+
 def _settle(txn, c: Mapping[str, Any], state: str, applied_ref: Optional[str], actor_ref: str, *, keep_row: bool = True) -> None:
     member, points, cid = c["member_id"], c["points"], c["credit_id"]
-    acct = ledger.load_account(txn, member)
-    if state == "applied":
-        acct = replace(acct, reserved=acct.reserved - points, spent_total=acct.spent_total + points)
-        ledger.insert_entry(txn, member_id=member, entry_id=stable_id("credit-redeem", cid), kind="redeem", state="posted", points=points,
-                            reserved_delta=-points, evidence_refs=[f"purchase_credit:{cid}", f"order:{applied_ref}"], actor_ref=actor_ref)
-    else:
-        acct = replace(acct, reserved=acct.reserved - points, available=acct.available + points)
-        ledger.insert_entry(txn, member_id=member, entry_id=stable_id("credit-release", cid), kind="release", state="posted", points=points,
-                            available_delta=points, reserved_delta=-points, outcome_reason=state, evidence_refs=[f"purchase_credit:{cid}"],
-                            actor_ref=actor_ref)
-    ledger.save_account(txn, acct)
+    if _backed(txn, member, cid):
+        acct = ledger.load_account(txn, member)
+        if state == "applied":
+            acct = replace(acct, reserved=acct.reserved - points, spent_total=acct.spent_total + points)
+            ledger.insert_entry(txn, member_id=member, entry_id=stable_id("credit-redeem", cid), kind="redeem", state="posted", points=points,
+                                reserved_delta=-points, evidence_refs=[f"purchase_credit:{cid}", f"order:{applied_ref}"], actor_ref=actor_ref)
+        else:
+            # Released points pay down recovery debt first, as any credit to the account does.
+            offset = min(points, acct.recovery_due)
+            acct = replace(acct, reserved=acct.reserved - points, available=acct.available + points - offset, recovery_due=acct.recovery_due - offset)
+            ledger.insert_entry(txn, member_id=member, entry_id=stable_id("credit-release", cid), kind="release", state="posted", points=points,
+                                available_delta=points - offset, reserved_delta=-points, recovery_delta=-offset, outcome_reason=state,
+                                evidence_refs=[f"purchase_credit:{cid}"], actor_ref=actor_ref)
+        ledger.save_account(txn, acct)
     if not keep_row:
         return  # the caller deletes the credit in this transaction
     txn.update("PurchaseCredits", columns=("member_id", "credit_id", "state", "applied_ref", "settled_at", "version"),
@@ -188,9 +200,9 @@ def export_credits(snap, member_id: str) -> List[Dict[str, Any]]:
 
 
 def release_outstanding(txn, member_id: str) -> int:
-    """Privacy deletion of the credits category alone: return held points first."""
+    """Privacy deletion of the credits category alone: return held points first
+    (when the ledger is already gone, there is nothing to return)."""
     rows = query(txn, f"SELECT {', '.join(COLS)} FROM PurchaseCredits WHERE member_id=@m AND state='available'", {"m": member_id}, {"m": STR})
-    if rows and query(txn, "SELECT 1 FROM RewardAccounts WHERE member_id=@m", {"m": member_id}, {"m": STR}):
-        for r in rows:
-            _settle(txn, dict(zip(COLS, r)), "expired", None, "service:privacy", keep_row=False)
+    for r in rows:
+        _settle(txn, dict(zip(COLS, r)), "expired", None, "service:privacy", keep_row=False)
     return len(rows)

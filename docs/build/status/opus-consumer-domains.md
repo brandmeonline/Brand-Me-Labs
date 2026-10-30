@@ -1249,3 +1249,14 @@ The share purge adds no contract and changes no foundation pin. `tests/foundatio
 - **Lane test change.** `test_consumer_domains_through_my_data` used a friend's share naming the frozen member as its example of "other members' actions still succeed". With the H3 recipient check, that share is refused as `ineligible_recipients`, as a decision already is. The test now asserts the refusal, and that no notification and no grant names the frozen member. `9ebc062` failed CI on this, and on the first version of the purge, which also wrote `share.revoked` for link shares and broke the foundation check above. Both are fixed in the next commit.
 
 **Credential manifest (third review).** No credential was created.
+
+**Fourth Codex review (`5f3e2b4`): 2 findings, both real, both fixed.** Each fix has a test that fails without it, and 4 mutations are all killed.
+
+| # | Finding | Fix | Test (fails without the fix) |
+|---|---|---|---|
+| I1 (P2) | After deleting only `rewards.ledger`, an outstanding credit could not settle. Applying it or expiring it subtracted its held points from a fresh account, which tripped the ledger's negative-balance invariant. Once expired, it broke every jobs pass that reached it | A credit settles through the ledger only while its `credit-reserve` entry still exists. Once the member has deleted the ledger, the held points have gone with it. The credit stays the member's until it is used or expires, and it settles without ledger entries, so a later account is never touched | `test_a_credit_outlives_a_deleted_ledger_without_breaking_it`: the ledger is deleted and new points are earned; the credit is then applied and another expires. The new account is unchanged and its journal reconciles |
+| I2 (P2) | Releasing a credit's points (expiry, or deleting `rewards.credits`) made them spendable even when reversed awards had left recovery debt. A reversed award could then be spent again | A release pays down `recovery_due` first and records the `recovery_delta`, as awards and corrections do | `test_released_credit_pays_down_recovery_debt_first`, on both the deletion and the expiry paths: 0 available, 0 reserved, 0 owed, and the journal reconciles |
+
+**Same gaps outside this PR.** Benefit reservations from the earlier rewards PR, already on `main`, have both gaps: the release path in `benefits.py` and the redemptions deletion path. They are fixed in the follow-up PR rather than widening #66.
+
+**Credential manifest (fourth review).** No credential was created.
