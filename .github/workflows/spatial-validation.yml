@@ -81,5 +81,8 @@ jobs:
           name: spatial-browser-${{ github.sha }}
           path: |
             test-results/spatial-browser.json
-            test-results/spatial-runs/
+            test-results/spatial-runs/**/*.png
+            test-results/spatial-runs/**/*.webm
+            test-results/spatial-runs/**/error-context.md
+          # Trace archives can embed fetched model/WASM responses; keep them local.
           retention-days: 7
