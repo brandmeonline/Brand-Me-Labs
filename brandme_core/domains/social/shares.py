@@ -196,8 +196,9 @@ def purge_member_shares(txn, member_id: str) -> int:
     (``share.revoked``; the deleted member is not named, the projector needs only the share), and
     the member leaves other people's grants (``share.audience_changed``), dropping their copies."""
     m, mt = {"m": member_id}, {"m": STR}
+    # Only selected-member shares are projected; link shares have no copies to remove.
     events = [("share.revoked", sid, v + 1, NIL_SUBJECT) for sid, v in query(
-        txn, "SELECT share_id, version FROM ShareGrants WHERE member_id=@m AND revoked_at IS NULL", m, mt)]
+        txn, "SELECT share_id, version FROM ShareGrants WHERE member_id=@m AND revoked_at IS NULL AND audience='selected_members'", m, mt)]
     n = txn.execute_update("DELETE FROM ShareGrants WHERE member_id=@m", params=m, param_types=mt)  # previews cascade
     for owner, share_id, recips, version in query(
             txn, "SELECT member_id, share_id, recipient_ids, version FROM ShareGrants WHERE @m IN UNNEST(recipient_ids)", m, mt):
@@ -214,12 +215,13 @@ def revoke_for_deleted_subjects(txn, member_id: str, subject_types: Sequence[str
     outfits, persona snapshots): revoke those shares, drop their cached
     previews and recipients' unread notices, inside the deleting transaction.
     ``share.revoked`` (naming no member) removes the projected copies."""
-    rows = query(txn, "SELECT share_id, version, revoked_at FROM ShareGrants WHERE member_id=@m AND subject_type IN UNNEST(@t)",
+    rows = query(txn, "SELECT share_id, version, revoked_at, audience FROM ShareGrants WHERE member_id=@m AND subject_type IN UNNEST(@t)",
                  {"m": member_id, "t": list(subject_types)}, {"m": STR, "t": STR_ARRAY})
     ids = [r[0] for r in rows]
     if not ids:
         return 0
-    _purge_events(txn, member_id, [("share.revoked", sid, v + 1, NIL_SUBJECT) for sid, v, revoked in rows if revoked is None])
+    _purge_events(txn, member_id, [("share.revoked", sid, v + 1, NIL_SUBJECT) for sid, v, revoked, audience in rows
+                                   if revoked is None and audience == "selected_members"])
     p, t = {"m": member_id, "s": ids}, {"m": STR, "s": STR_ARRAY}
     n = txn.execute_update("UPDATE ShareGrants SET revoked_at = CURRENT_TIMESTAMP(), version = version + 1 "
                            "WHERE member_id=@m AND share_id IN UNNEST(@s) AND revoked_at IS NULL", params=p, param_types=t)

@@ -290,11 +290,16 @@ def test_consumer_domains_through_my_data(db):
     frozen(lambda: media.create_upload(gone, {"kind": "tryon_input", "content_type": "image/png", "bytes": 10}, key()))
     credit_id = rows(db, "SELECT credit_id FROM PurchaseCredits WHERE member_id=@m", m=m)[1][0][0]
     frozen(lambda: run_txn(db, lambda t: apply_credit(t, member_id=m, credit_id=credit_id, order_ref="order-dev-1", currency="USD")))
-    # Other members' actions still succeed but write nothing new for the frozen member.
+    # Other members cannot newly reach the frozen member: a share naming them is refused, as a decision
+    # is, so nothing new is written for them (a grant created now would outlive the share purge).
     notes = count(db, "SELECT COUNT(*) FROM Notifications WHERE member_id=@m", m=m)
-    ShareService(db).create(friend, {"subject_type": "wardrobe_item", "subject_id": f_item, "audience": "selected_members",
-                                     "allowed_fields": ["title"], "recipient_ids": [m], "expires_at": "2027-01-01T00:00:00+00:00"}, key())
+    grants = count(db, "SELECT COUNT(*) FROM ShareGrants WHERE @m IN UNNEST(recipient_ids)", m=m)
+    with pytest.raises(DetailedInvalidTransition) as e:
+        ShareService(db).create(friend, {"subject_type": "wardrobe_item", "subject_id": f_item, "audience": "selected_members",
+                                         "allowed_fields": ["title"], "recipient_ids": [m], "expires_at": "2027-01-01T00:00:00+00:00"}, key())
+    assert e.value.code == "ineligible_recipients"
     assert count(db, "SELECT COUNT(*) FROM Notifications WHERE member_id=@m", m=m) == notes
+    assert count(db, "SELECT COUNT(*) FROM ShareGrants WHERE @m IN UNNEST(recipient_ids)", m=m) == grants
 
     receipt = svc.run_deletion(job)
     assert {k: r["status"] for k, r in receipt["categories"].items()} == {k: "deleted" for k in inventory}
