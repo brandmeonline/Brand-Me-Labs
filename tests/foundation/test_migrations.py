@@ -1,12 +1,15 @@
-"""Migration ledger/runner against the Spanner emulator (W02 exit: empty and baseline → V001)."""
+"""Migration ledger/runner (W02 exit: empty and baseline → V001).
+
+The registry and parser tests read only the packaged files and run everywhere. Each test that
+needs the Spanner emulator carries ``requires_spanner`` itself; there is no module-level marker,
+so a missing emulator can never skip the file-only guards.
+"""
 import re
 import shutil
 
 import pytest
 
 from .conftest import REPO, requires_spanner
-
-pytestmark = requires_spanner
 
 V001_TABLES = {"Members", "MemberSettings", "MemberIdentities", "Sessions", "ConsentGrants", "OutboxEvents",
                "InboxReceipts", "IdempotencyRecords", "AuditEntries", "SchemaMigrations"}
@@ -38,6 +41,17 @@ def test_only_reserved_numbers_are_used(runner):
         assert RESERVED[m.version] in m.name, f"V{m.version:03d} must be the {RESERVED[m.version]} migration"
 
 
+def test_packaged_versions_are_contiguous_and_reserved_once(runner):
+    """A gap lets a lower number merge after a higher one is applied; the runner refuses that in sandbox."""
+    versions = [m.version for m in runner.load_migrations()]
+    assert versions == list(range(1, len(versions) + 1)), f"packaged versions are not contiguous from V001: {versions}"
+    files = sorted(p.name for p in (REPO / "brandme-data/spanner/migrations").glob("V*.sql"))
+    for number, name in RESERVED.items():
+        matching = [f for f in files if f.startswith(f"V{number:03d}_")]
+        assert matching == [f"V{number:03d}_{name}.sql"], f"V{number:03d} ({name}) must have exactly one file, found {matching}"
+
+
+@requires_spanner
 def test_empty_to_v001_and_rerun_is_noop(runner, empty_database, v001_only):
     ms, _ = v001_only
     assert runner.migrate_up(empty_database, ms, log=lambda *_: None) == [1]
@@ -46,6 +60,7 @@ def test_empty_to_v001_and_rerun_is_noop(runner, empty_database, v001_only):
     assert runner.assert_schema_supported(empty_database, 1) == 1
 
 
+@requires_spanner
 def test_legacy_baseline_schema_then_v001(runner, empty_database, v001_only):
     """The legacy schema.sql (as far as GoogleSQL accepts it) followed by V001."""
     src = (REPO / "brandme-data/spanner/schema.sql").read_text()
@@ -62,6 +77,7 @@ def test_legacy_baseline_schema_then_v001(runner, empty_database, v001_only):
     assert V001_TABLES <= _tables(empty_database)
 
 
+@requires_spanner
 def test_checksum_drift_is_refused(runner, empty_database, tmp_path):
     runner.migrate_up(empty_database, log=lambda *_: None)
     d = tmp_path / "m"
@@ -72,6 +88,7 @@ def test_checksum_drift_is_refused(runner, empty_database, tmp_path):
         runner.migrate_up(empty_database, runner.load_migrations(d), log=lambda *_: None)
 
 
+@requires_spanner
 def test_out_of_order_and_incomplete_are_refused(runner, empty_database, v001_only):
     _, d = v001_only
     (d / "V003_late.sql").write_text("CREATE TABLE LateThree (id STRING(36) NOT NULL) PRIMARY KEY (id);\n")

@@ -41,3 +41,25 @@ Other lanes propose deviations in their own status files. The parent records acc
 - **Replacement:** JWKS-verified bearer tokens (issuer, audience, asymmetric algorithms) map `(iss, sub)` to members. Server-side cookie sessions with CSRF are in place. A labelled dev identity provider (`POST /api/v1/session/dev`) works only in demo/development, returns 404 in sandbox/production, and is refused by the boot guard.
 - **Impact:** real sign-up/sign-in needs the tenant plus the code-flow callback (adapter seam: `IDENTITY_PROVIDER=oidc`).
 - **Approval:** owner action: provision the OIDC tenant/redirect domains.
+
+## D-006 Round 4 (Q8): minimal edits to two lane-owned tests
+
+- **Requirement:** "lane modules are imported, not edited" (oneshot plan 03, exclusive file ownership).
+- **Reason:** two lane tests asserted the behaviour Q8 removes, that the foundation worker leaves a lane's contracts unclaimed until the lane's own process imports them. `tests/test_persona_lane_events.py` asserted the lane types stay `pending` after the foundation worker runs, then ran the lane's private `persona/outbox_worker.py`. `tests/test_commerce_events_catalog.py` asserted the worker refuses commerce types before the commerce import. Both turn red once the foundation worker loads every catalog. The alternative was quarantining them, which would hide a working test.
+- **Replacement:** only those assertion blocks changed. The persona test now publishes through `python -m brandme_core.events.worker --once` and keeps every other assertion; the commerce test asserts the default allowlist already accepts commerce types and keeps its import-weight test byte for byte. No lane domain module was edited. `brandme_core/domains/persona/outbox_worker.py` is now unused; deleting it is the consumer-domains lane's step.
+- **Approval:** owning lanes at review.
+
+## D-007 Round 4 (Q9): the table owner redacts undelivered payloads, not the privacy lane
+
+- **Requirement:** founder Q19: foundation purges delivered rows after 7 days and the privacy lane (midnight-rights) redacts a deleted subject's undelivered `member_private` payloads.
+- **Reason:** the privacy orchestrator never knows table names (`brandme_core/domains/privacy/deletion.py:6-10`). Every table owner registers a handler, so redacting `OutboxEvents` inside privacy code would break that contract.
+- **Replacement:** foundation registers `PlatformPrivacyHandler` (`brandme_core/events/erasure.py`) for `OutboxEvents` and `IdempotencyRecords`. It uses the orchestrator's existing non-transactional hook (`transactional = False` plus `delete_outside_txn`, `privacy.py:296-299`, `:444-455`). The joint proof runs the privacy lane's `request_deletion`/`run_deletion` with that handler (`tests/foundation/test_deletion_leaves_no_member_rows.py`).
+- **Open for midnight-rights:** (a) acknowledge the split; (b) confirm `transactional`/`delete_outside_txn` as a stable extension of the published Protocol; (c) receipts drop `purge_derived` detail, so the broker-retention disclosure appears only in the category text.
+- **Approval:** founder or privacy lane.
+
+## D-008 Round 4: dependency fixes outside the foundation's listed files
+
+- **Requirement:** foundation owns `scripts/python/requirements.in` and the lock. `brandme_core/requirements.txt` is the shared library's file. `brandme-core/`, `brandme-cube/` and `brandme-agents/agentic/requirements.txt` have no owning lane.
+- **Reason:** the baselined CRITICALs could only be fixed there. anyio needs fastapi 0.134.0 and pydantic 2.7.4 in `brandme_core/requirements.txt`, because the lock includes that file with `-r`. The unused python-jose and sentence-transformers pins live in the legacy files.
+- **Replacement:** fastapi 0.134.0 / pydantic 2.7.4 (full `tests/` suite unchanged, contracts no drift). Removal of python-jose ×2 and sentence-transformers (no imports), plus the agents smoke import list. The pinned-emulator fetchers (one was added by consumer-domains) share a retrying `_fetch.py`.
+- **Approval:** parent review at merge.

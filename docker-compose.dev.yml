@@ -15,6 +15,10 @@ services:
     environment:
       BRANDME_MODE: development
       LOG_LEVEL: debug
+  consumer-domains:
+    environment:
+      BRANDME_MODE: development
+      ENVIRONMENT: development
 
   console:
     image: node:24.21.0-bookworm-slim
