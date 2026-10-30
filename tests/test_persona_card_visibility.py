@@ -25,9 +25,9 @@ from brandme_core.domains.privacy.privacy import MyDataService
 from test_persona_harness import MEMBER_SCOPES, count, insert_member, spanner_db  # noqa: F401
 from test_persona_lane_mydata import MemoryObjectStore
 
-PIECE = {"item_id", "title", "category", "house_ref", "detail"}
+PIECE = {"item_id", "detail", "title", "category", "color_family", "colors", "house_ref", "materials"}  # identity, house, maker
 STORY = PIECE | {"showcase_note", "worn_count"}
-FULL = STORY | {"price", "in_closet_since", "verified"}
+FULL = STORY | {"price", "in_closet_since", "verified", "care_state"}  # the owner's unfold: price, ownership, logistics
 
 
 def key():
@@ -77,7 +77,7 @@ def test_closet_visibility_is_owner_curated_on_a_sliding_scale(spanner_db, peopl
 
     seen = {i["item_id"]: i for i in vis.closet(friend, owner.member_id)["items"]}
     assert set(seen) == {a, b}
-    assert set(seen[a]) == FULL and seen[a]["price"] == {"minor": 18000, "currency": "USD"} and seen[a]["showcase_note"] == "Worn every summer"
+    assert set(seen[a]) == FULL and seen[a]["price"] == {"minor": 18000, "currency": "USD", "estimate": True} and seen[a]["showcase_note"] == "Worn every summer"  # a member-declared price is an estimate
     assert set(seen[b]) == STORY
     strangers = vis.closet(stranger, owner.member_id)
     assert strangers["relation"] == "members" and [i["item_id"] for i in strangers["items"]] == [b] and set(strangers["items"][0]) == STORY

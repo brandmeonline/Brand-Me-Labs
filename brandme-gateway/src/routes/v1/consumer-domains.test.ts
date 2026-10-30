@@ -233,6 +233,18 @@ describe.skipIf(!up)('mounted consumer domains on the dev gateway', () => {
     expect((await friend.agent.get(`/api/v1/members/${me.id}/closet`)).body.items)
       .toEqual([expect.objectContaining({ item_id: piece, showcase_note: 'Every winter since 2019', detail: 'story' })]);
     expect((await stranger.agent.get(`/api/v1/members/${me.id}/closet`)).body.items).toEqual([]);
+    // The stranger-scan default: identity, house, maker and story only; strangers can never be given the unfold.
+    const priced = (await me.agent.post('/api/v1/wardrobe/items').set(me.key())
+      .send({ source: 'manual', title: 'Field jacket', category: 'outerwear', materials: ['waxed cotton'], price: { amount_minor: '42000', currency: 'USD' } }))
+      .body.items[0].id as string;
+    const showTo = (body: object) => me.agent.put(`/api/v1/wardrobe/items/${priced}/visibility`).set(me.csrf).send(body);
+    expect((await showTo({ visibility: 'members', detail: 'full' })).status).toBe(422);
+    expect((await showTo({ visibility: 'members', detail: 'story', showcase_note: 'Ten winters' })).status).toBe(200);
+    const scanned = (await stranger.agent.get(`/api/v1/members/${me.id}/closet`)).body.items as Record<string, unknown>[];
+    expect(scanned.map((i) => i.item_id)).toEqual([priced]);
+    expect(Object.keys(scanned[0]).sort()).toEqual(
+      ['item_id', 'detail', 'title', 'category', 'color_family', 'colors', 'house_ref', 'materials', 'showcase_note', 'worn_count'].sort());
+    expect(JSON.stringify(scanned)).not.toContain('42000');
 
     // The persona card: composed from the profile, highlights respect each piece's visibility.
     expect((await me.agent.patch('/api/v1/me/persona').set({ ...me.csrf, 'if-match': '"0"' })

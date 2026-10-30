@@ -1279,3 +1279,45 @@ GitHub CI is fully green on both `5f3e2b4` and `f27e37c`.
 | J2 (P2) | Deleting `social.relationships` through My Data deleted the friendships but left projected selected-member shares readable until expiry. Only `block()` and `remove()` cleaned up grants | `end_share_audiences` runs in the deleting transaction. The member leaves every grant they receive. Their own grants lose every recipient, but stay as `social.shares` data. Each change bumps the version and writes `share.audience_changed`, naming the owner of the member's own grants only as `NIL_SUBJECT` | `test_deleting_relationships_removes_projected_share_copies` (Spanner + Firestore emulators): both directions' copies go, a third member keeps theirs, and the deleted member's id is not in the event |
 
 **Credential manifest (fifth review).** No credential was created.
+
+## Stage 22 — Ultra plan 03, item 12: disclosure facets at the API layer — 2026-10-25 (opens after #66)
+The locked stranger-scan default is now one classification that every lane surface showing another member's piece is built from: strangers see identity, house, maker and story; price, ownership and logistics stay hidden unless the owner unfolds them.
+
+**The facet model** (`wardrobe/disclosure.py`)
+- **Seven facets.**
+  - `identity`: title, category, colours.
+  - `house`: the catalog house.
+  - `maker`: materials.
+  - `story`: showcase note, wear count.
+  - `price`: what was paid, and whether that is an estimate.
+  - `ownership`: the year the piece entered the closet, and whether ownership is verified.
+  - `logistics`: care state (clean, at the cleaner, in repair).
+- **Every `WardrobeItems` column is classified**, as a facet, `NEVER` or `META`.
+  - `NEVER`: variant, asset instance, source and receipt references, unit index, tag serial, size, condition, care and private notes, duplicate and archive bookkeeping.
+  - Views are built only from the projection table, so an unclassified column cannot reach a response. The schema test reads the emulator's `information_schema` and fails until a new column is classified.
+- **Levels.** `piece` is identity + house + maker. `story` adds the story. `full` is the owner's unfold: all seven facets, friends only. New at `piece`: colours and materials (within the locked default). New in `full`: the price's estimate flag and the care state.
+- **Two walls.**
+  - `set_visibility` refuses an unfold for strangers.
+  - Every view also intersects with the stranger facets for anyone who is not a friend, whatever the row holds.
+
+**Surfaces**
+- **Closet and card.** `GET /members/{id}/closet` and the persona card's highlights (`GET /members/{id}/card`) both go through `shown_piece(row, houses, relation)`.
+- **Shares.** A link share reaches anyone, so the wardrobe-item and outfit-item share allowlists are asserted to be subsets of the stranger facets.
+- **Rooms, decisions, Flow.** These return only subject ids, never piece fields.
+
+**Evidence (Spanner emulator 1.5.45, Firestore emulator)**
+| Check | Result |
+|---|---|
+| `tests/test_wardrobe_disclosure.py` | **4 passed**: every column classified (against the live schema); the locked facet sets; each projection reads only its own facet's columns; strangers capped at every level, including a `full` row (second wall); share allowlists within the stranger facets. Through the mounted domain app, a piece whose every hidden column holds a distinctive value: a stranger and a friend at `story` get exactly the stranger keys and none of the values. A friend with the unfold gets price and care state, and still none of the never-shown values. Strangers cannot be given the unfold; card highlights follow the same rule |
+| `tests/test_persona_card_visibility.py`, `test_persona_lane_mydata.py`, `test_social_shares.py` | **15 passed** with the new key sets |
+| `consumer-domains.test.ts` (dev gateway → domain service → emulators) | **4 passed**. New: a priced piece shown to members at `story`; the unfold for strangers answers 422; the stranger's closet holds exactly the stranger-facet keys and not the price |
+| Gateway lint and type-check | clean |
+| Mutation checks (10) | All killed: price added to the stranger facets; the stranger cut removed; members given the unfold; size projected as identity; care state projected as story; a column left unclassified; `piece` showing the story; the view ignoring the relation; price in the share allowlist; size in the outfit-item allowlist |
+
+**Not done, and why**
+- **Unfold toward strangers.** It needs the `ck_wi_visibility` constraint changed, which means a migration. The default stays friends-only, the stricter reading; see the check-in packet.
+- **Per-facet unfold** (price only, ownership only) needs a column, so it also waits for a migration slot. One unfold reveals all three hidden facets.
+- **The scan record and its filter belong to midnight-rights**, and the scan UX to spatial. This lane's classification is offered to them as the wardrobe side of the same default.
+- **The gateway passes the domain's filtered response through.** It keeps no second allowlist, so there is no copy to drift.
+
+**Credential manifest.** No credential was created in this stage.
