@@ -179,10 +179,11 @@ uses the V013 index `OutboxByEnvironmentStatus`.
   safely (outside `[A-Za-z0-9._:@/+-]{1,128}`). It returns the lanes' refusal
   shape (`done=True` with an exception reason) and never raises, so the job's
   other categories still run. The category text tells members this. A restore
-  re-applies a refused tombstone as a no-op. The `data_categories()` callbacks
-  used by `bridge_foundation_categories` receive only a member id and cannot
-  report a refusal, so they erase only for a subject with an account deletion
-  job.
+  that carries `DeletionJobs` with the tombstones re-applies a refused tombstone
+  as a no-op. The `data_categories()` delete callbacks, which only
+  `bridge_foundation_categories` would call, raise: that path always reports
+  "deleted" and cannot report a refusal or a count, so a job composed through it
+  fails loudly. Compositions use `register_platform_privacy`.
 - **The member's own events.** An event is the subject's own when its
   `aggregate_id` or its actor (`member:<id>` or a delegation of it) is the
   subject. Undelivered ones are withdrawn in place: status `dead`,
@@ -212,14 +213,27 @@ uses the V013 index `OutboxByEnvironmentStatus`.
   tombstoned by an account deletion (a join on `DeletionJobs.scope =
   'account'`) in the last 30 days. That catches late writes by writers that are
   not freeze-guarded (the gateway's session store) and events written after the
-  platform step of a deletion. A category-only request is never swept. Restore
-  re-applies the same erasure (`reapply_tombstones_after_restore`).
+  platform step of a deletion. A category-only request is never swept.
+- **Restore.** `reapply_tombstones_after_restore` re-applies the same erasure.
+  The scope comes from `DeletionJobs`, which the tombstone does not record:
+  every category of a job gets a tombstone, refused ones included
+  (`domains/privacy/privacy.py:307-308`). A restore that carried only
+  `DeletionTombstones` has no job row, and then privacy wins: the tombstone is
+  re-applied as an erasure and the restore completes. The cost is that a refused
+  category-only request on a still-active member, restored this way, also erases
+  that member's undelivered events and replay records. Carry `DeletionJobs` (and
+  `DeletionSteps`) with the tombstones to keep refusals as no-ops.
 - **Not recalled.** A delivery already in flight when the deletion runs can
   still reach the broker. The dispatcher read the payload when it claimed the
   row, and publishes it before its `stale` finish. Copies accepted by Pub/Sub
   stay until topic and subscription retention expire (24 hours or more), even
   after the receipt says the category was deleted. Consumers must recheck
-  deletion freezes before acting (see "Recovery and privacy").
+  deletion freezes before acting (see "Recovery and privacy"). The receipt
+  itself does not say this: the orchestrator drops the `purge_derived` detail
+  (`domains/privacy/privacy.py:378-407`), and returning it as an exception would
+  block every restore (`:456-458`). The disclosure is in the category's
+  member-facing retention text; surfacing derived detail in receipts is the
+  privacy lane's change.
 - **Scale.** Erasure scans whole tables: partitioned DML for the subject's own
   rows, and a snapshot prefilter plus compare-and-set updates (100 rows per
   transaction) for unlinking. That is a few statements per 100 subject keys.

@@ -17,14 +17,14 @@ refused with a truthful outcome that changes nothing, never an error that
 would stop the job's other categories.
 
 ``register_platform_privacy`` puts them in the foundation ``data_categories()``
-catalog (so ``bridge_foundation_categories`` sees them) and, when the privacy
-lane is installed, in its default registry as a native handler. The handler is
-non-transactional: ``delete_outside_txn`` runs before the orchestrator's
-tombstone transaction, and restore re-applies it the same way
-(privacy.py:296-299, :444-455). The catalog callbacks used by the bridge only
-receive a member id and cannot report a refusal, so they erase only for a
-subject with an account deletion job and are a no-op otherwise; compositions
-use the native handler. ``brandme_core/domains/__init__.py`` calls it; the
+catalog (inventory and export) and, when the privacy lane is installed, in its
+default registry as a native handler. The handler is non-transactional:
+``delete_outside_txn`` runs before the orchestrator's tombstone transaction,
+and restore re-applies it the same way (privacy.py:296-299, :444-455). The
+catalog's delete callback, which only ``bridge_foundation_categories`` would
+call, raises: that path cannot report a refusal or a count, so a job composed
+through it fails loudly instead of claiming "deleted". Compositions use the
+native handler. ``brandme_core/domains/__init__.py`` calls it; the
 privacy lane is imported lazily, never at module level.
 """
 from __future__ import annotations
@@ -96,6 +96,15 @@ def _refusal(database: Any, ctx: Any, category: str) -> Optional[tuple[str, bool
     matchable subject. The refusal is recorded when the job's step for this
     category is already done: then this call is a restore re-applying the
     tombstone (run_deletion only calls a step that is not done, privacy.py:295).
+
+    No job row at all can only be a restore whose backup predates the job and
+    that carried the tombstone ledger without DeletionJobs (run_deletion always
+    has its job). Scope is then unknowable, because every category of a job gets
+    a tombstone, refused ones included (privacy.py:307-308). Privacy wins: the
+    tombstone is re-applied as an erasure. The cost is that a category-only
+    request on a still-active member, restored this way, also erases that
+    member's undelivered events and replay records. Carry DeletionJobs with
+    the tombstones to keep refusals as no-ops.
     """
     from google.cloud.spanner_v1 import param_types
 
@@ -104,7 +113,7 @@ def _refusal(database: Any, ctx: Any, category: str) -> Optional[tuple[str, bool
             "SELECT j.scope, j.subject_ref, (SELECT s.state FROM DeletionSteps AS s WHERE s.job_id = j.job_id "
             "AND s.category = @c AND s.step = 'delete_records') FROM DeletionJobs AS j WHERE j.job_id = @j",
             params={"j": ctx.job_id, "c": category}, param_types={"j": param_types.STRING, "c": param_types.STRING}))
-    scope, subject, step = rows[0] if rows else (None, None, None)
+    scope, subject, step = rows[0] if rows else ("account", ctx.subject_ref, None)  # no job: see docstring
     if ctx.record_keys:
         reason = RECORD_LEVEL_REFUSED  # same answer as the lanes' whole-category handlers
     elif scope != "account" or subject != ctx.subject_ref:
@@ -114,18 +123,6 @@ def _refusal(database: Any, ctx: Any, category: str) -> Optional[tuple[str, bool
     else:
         return None
     return reason, step in ("done", "exception_done")
-
-
-def _account_deleted(database: Any, member_id: str) -> bool:
-    from google.cloud.spanner_v1 import param_types
-
-    if not retention.matchable(member_id):
-        return False
-    with database.snapshot() as snap:
-        return bool(list(snap.execute_sql(
-            "SELECT 1 FROM DeletionJobs@{FORCE_INDEX=DeletionJobsBySubject} "
-            "WHERE subject_ref = @s AND scope = 'account' LIMIT 1",
-            params={"s": member_id}, param_types={"s": param_types.STRING})))
 
 
 def export_events(reader: Any, subject_ref: str) -> list[dict]:
@@ -163,14 +160,11 @@ def _export_requests(database: Any, member_id: str) -> list[dict]:
         return export_requests(snap, member_id)
 
 
-def _delete_events(database: Any, member_id: str) -> None:
-    if _account_deleted(database, member_id):
-        retention.erase_subject_events(database, [member_id])
-
-
-def _delete_requests(database: Any, member_id: str) -> None:
-    if _account_deleted(database, member_id):
-        retention.erase_subject_requests(database, [member_id])
+def _bridge_delete(database: Any, member_id: str) -> None:
+    # The bridge's callback cannot report a refusal or a count, and it always
+    # reports "deleted" (foundation_bridge.py:56-58). Fail the job loudly instead
+    # of issuing a receipt that is not true; compositions call register_platform_privacy.
+    raise RuntimeError("platform categories need the native handler (brandme_core.events.erasure.register_platform_privacy)")
 
 
 class PlatformPrivacyHandler:
@@ -236,8 +230,8 @@ PLATFORM_PRIVACY_HANDLER = PlatformPrivacyHandler()
 def register_foundation_categories() -> None:
     from brandme_core.domains.base import DataCategory, register_data_category
 
-    for key, export, delete in ((EVENT_OUTBOX, _export_events, _delete_events),
-                                (REQUEST_REPLAY, _export_requests, _delete_requests)):
+    for key, export, delete in ((EVENT_OUTBOX, _export_events, _bridge_delete),
+                                (REQUEST_REPLAY, _export_requests, _bridge_delete)):
         c = CATEGORIES[key]
         register_data_category(DataCategory(
             name=key, domain=DOMAIN, description=c["title"], supplied_by="system", visible_to=VISIBLE_TO,

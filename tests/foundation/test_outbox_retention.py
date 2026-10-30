@@ -473,9 +473,8 @@ def test_platform_handler_exports_metadata_only_and_refuses_what_it_cannot_erase
                                                          record_keys=("one",))),
         (erasure.ACCOUNT_SCOPE_REFUSED, pd.SubjectContext(
             subject_ref=m, job_id=job(db, m, "category", erasure.CATEGORIES), requested_at=now())),
-        (erasure.ACCOUNT_SCOPE_REFUSED, pd.SubjectContext(subject_ref=m, job_id=uid(), requested_at=now())),  # no job
         (erasure.UNMATCHABLE_REFUSED, odd_ctx),
-    ]
+    ]  # no job row at all is a restore that lost the job ledger: test_restore_without_the_job_ledger_reerases_and_serves
     before = (rows(db), replays(db))
     for reason, narrowed in refused:
         for key in erasure.CATEGORIES:
@@ -491,23 +490,59 @@ def test_platform_handler_exports_metadata_only_and_refuses_what_it_cannot_erase
 
 
 @requires_spanner
-def test_foundation_catalog_callbacks_erase_only_for_an_account_deletion(db):
-    """The bridge's callbacks get only a member id and cannot report a refusal: a no-op unless the account is deleted."""
+def test_foundation_catalog_delete_callbacks_fail_loudly_through_the_bridge(db):
+    """The bridge always reports "deleted" (foundation_bridge.py:56-58) but cannot report a refusal or a count.
+
+    Second Q9 review: a category-only request through it got a "deleted" receipt while nothing changed, and a
+    restore served with the member's rows back. The callbacks now raise, so such a job fails loudly.
+    """
     from brandme_core.domains import data_categories
+    from brandme_core.domains.privacy.foundation_bridge import bridge_foundation_categories
 
     m = uid()
     event = put(db, actor=f"member:{m}", payload={"member_id": m})
     replay(db, f"member:{m}", {"ok": True})
-    job(db, m, "category", erasure.CATEGORIES)
     platform = [c for c in data_categories() if c.domain == "platform"]
+    assert {c.name for c in platform} == set(erasure.CATEGORIES)
     for c in platform:
-        c.delete(db, m)
-        c.delete(db, "oidc|subject-123")  # never raises
-    assert rows(db)[event]["status"] == "pending" and len(replays(db)) == 1
-    job(db, m, "account")
-    for c in platform:
-        c.delete(db, m)
-    assert rows(db)[event]["last_error"] == "subject_erased" and replays(db) == []
+        with pytest.raises(RuntimeError, match="register_platform_privacy"):
+            c.delete(db, m)
+    reg = pd.PrivacyRegistry()
+    assert bridge_foundation_categories(reg, db, platform) == 2
+    svc = MyDataService(db, Store(), reg, environment="development")
+    with pytest.raises(RuntimeError, match="register_platform_privacy"):
+        svc.run_deletion(svc.request_deletion(m, now()))
+    assert rows(db)[event]["status"] == "pending" and len(replays(db)) == 1  # nothing changed, nothing claimed
+
+
+@requires_spanner
+def test_restore_without_the_job_ledger_reerases_and_serves(db):
+    """Second Q9 review (probe_restore): a backup restored with only DeletionTombstones never finished.
+
+    Without the job row the scope is unknowable (every category of a job gets a tombstone, refused ones too),
+    so the platform handler re-applies the tombstone as an erasure and the restore completes.
+    """
+    m = uid()
+    svc = service(db)
+    put(db, actor=f"member:{m}", payload={"member_id": m})
+    replay(db, f"member:{m}", {"ok": True})
+    receipt = svc.run_deletion(svc.request_deletion(m, now()))
+    assert {k: r["status"] for k, r in receipt["categories"].items()} == dict.fromkeys(erasure.CATEGORIES, "deleted")
+    # The restore keeps the tombstone ledger only: DeletionJobs (DeletionSteps cascades) and freezes are gone,
+    # and the member's rows are back from the backup.
+    with db.batch() as batch:
+        for table in ("DeletionJobs", "ProcessingFreezes"):
+            batch.delete(table, KeySet(all_=True))
+    back = put(db, actor=f"member:{m}", payload={"member_id": m})
+    replay(db, f"member:{m}", {"ok": True})
+    restored = svc.reapply_tombstones_after_restore("dev-backup-before-deletion", now() - DAY)
+    assert restored["tombstones_applied"] == len(erasure.CATEGORIES) and restored["rows_redeleted"] >= 2
+    svc.assert_serving()
+    row = rows(db)[back]  # withdrawn in place: empty payload, neutral actor
+    assert (row["status"], row["last_error"], row["payload"], row["actor_ref"]) == (
+        "dead", "subject_erased", {}, "service:privacy")
+    assert m not in json.dumps([dict(r, payload=r["payload"]) for r in rows(db).values()], default=str)
+    assert replays(db) == []
 
 
 def principal(member_id):
