@@ -1173,7 +1173,7 @@ Plan 03 supersedes plan 02. #66 carries plan 03 items 2–8 and 10; item 12 (dis
 - When both are green, #66 is undrafted for auto-merge.
 
 **Next**
-- **Item 12** (disclosure facets at the API layer, now Stage 21) is ready on a local branch. It opens as its own PR once #66 merges.
+- **Item 12** (disclosure facets at the API layer, now Stage 22) is ready on a local branch. It opens as its own PR once #66 merges.
 - **Check-in packet.** After that, the fresh 21-question packet: #66 merged is the plan's remaining trigger condition.
 
 **Blocked**
@@ -1200,7 +1200,7 @@ Mia's note on #66 (Oct 30): #62 merged with founder decision D-007; re-sync and 
 
 **Evidence so far.** The foundation deletion proof, migrations and lane-catalog tests, and `test_persona_lane_events.py` with the Pub/Sub emulator all pass on the merged code. A full clean-checkout CI mirror of `c488c25` is running; GitHub CI runs on the pushed head.
 
-**Follow-up PR (opens after #66 merges).** It carries item 12 (Stage 21) and item 9 (Stage 22: the lane outbox worker deleted now that Q8 is on `main`, verified over Pub/Sub). Both are on a local branch.
+**Follow-up PR (opens after #66 merges).** It carries item 12 (Stage 22) and item 9 (Stage 23: the lane outbox worker deleted now that Q8 is on `main`, verified over Pub/Sub). Both are on a local branch.
 
 **Credential manifest.** No credential was created in this stage.
 
