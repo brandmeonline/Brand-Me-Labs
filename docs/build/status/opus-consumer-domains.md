@@ -1321,3 +1321,12 @@ The locked stranger-scan default is now one classification that every lane surfa
 - **The gateway passes the domain's filtered response through.** It keeps no second allowlist, so there is no copy to drift.
 
 **Credential manifest.** No credential was created in this stage.
+
+## Stage 23 — Ultra plan 03, item 9: the lane outbox worker is deleted — 2026-10-30 (opens after #66)
+Foundation's Q8 landed with #62 (`main` `97d5447`). `brandme_core/events/catalogs.py` now imports `brandme_core.domains.persona.lane` and runs `load_domains()`, so the foundation worker publishes every consumer-domain contract itself. The lane's private entrypoint `brandme_core/domains/persona/outbox_worker.py` is deleted, as foundation's D-006 and `brandme_core/events/README.md` asked.
+
+- **Nothing else referenced it.** No code, test, manifest or workflow imports it; only foundation's README and D-006 mention it, both as redundant.
+- **Verified with Pub/Sub.** `tests/test_persona_lane_events.py` and `tests/foundation/test_outbox_lane_catalogs.py`: **19 passed**, none skipped, against the Spanner emulator and the pinned Pub/Sub emulator. Lane events written by real lane commands are published by `python -m brandme_core.events.worker --once` alone. They reach the lane subscriber and are applied exactly once, and the member id appears in no worker output.
+- **For foundation (not edited here).** `brandme_core/events/README.md` still names the deleted file as "now redundant"; that sentence can go.
+
+**Credential manifest.** No credential was created in this stage.
