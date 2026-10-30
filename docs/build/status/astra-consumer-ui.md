@@ -649,3 +649,73 @@ Actual publication parent `06d8fc13f3133fea5108164266a6fee59b88db1f` (PR #65) is
 PR #56 merged as `b9f483be139f1e0a3c324cdf5f30bbb3c5bdc22b`, followed by contract PR #65 as `77280249df4e91d93b4d814b140bd5e38bba4735`. Exact contract head `06d8fc13f3133fea5108164266a6fee59b88db1f` passed [full CI run 40155977531](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531): 1,742 Python tests, all 256 consumer-domain tests and all five container build/runtime checks. [Consumer UI run 40155977548](https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977548) passed 22 UI/compatibility/adapter cases, 13 gateway/security cases, all 74 unchanged reviewed pixel comparisons and the real live-domain journey.
 
 The local preview incorporates actual main `77280249`. Application and test sources remain identical to `50b0b72`, whose combined 33 UI tests were already validated; this integration changes status documentation only, so no tests or captures are repeated. Domain sources and reviewed baselines are unchanged. The preview still requires human review of its 58 rejected comparisons (47 pixel and 11 dimension differences). Flow, Editorial, brand feeds, membership/public-profile and entitlement features still await their owning backend contracts. Device and screen-reader sessions remain `not_run`; neither prerequisite merge approves the new preview visuals or supplies those missing capabilities.
+
+## Stage 17 — Round-03 handoff published to the repository (2026-10-30)
+
+**Status:** The restart report is recorded in the consumer lane's repository
+status file, on `codex/consumer-design-preview` through [draft PR #63](https://github.com/brandmeonline/Brand-Me-Labs/pull/63).
+The round-03 implementation and release gates remain incomplete. The founder's
+max-plan / full-effort instruction remains the requested execution posture.
+
+### Verified remote state and publication correction
+
+- The active plan is [Ultra plan 03](https://github.com/brandmeonline/Brand-Me-Labs/blob/main/docs/build/orchestration/ultra-plan-03-astra-consumer-ui.md),
+  already on main. The pending pipeline-state seed is not a prerequisite for this lane.
+- Main was verified at `97d54477f7667dade1a4fd7220c0b2694cffb604` (#62 merged).
+  Before this status publication, PR #63's published head was
+  `2f89dce5d171138085d994456722cfcb1868f637`, targeting main.
+- The [previous Codex restart report](https://github.com/brandmeonline/Brand-Me-Labs/pull/63#issuecomment-6524186371)
+  reported a conflict-free main merge `75f0ff0` and status commit `5709e00`.
+  GitHub could not resolve either commit during this publication. The published status
+  file ended before the reported Stage 17, so the report's old line links did not
+  contain that update. The summary was posted, but the reported commits were not
+  available in the repository.
+- This append recovers the handoff as repository content. It does not reconstruct
+  those unavailable commits or establish that main was merged into the published
+  preview branch. That synchronization and verification remain outstanding.
+- Only this lane status file changes. No application source, dependency, reviewed
+  baseline, backend/domain source or spatial asset is changed by this publication.
+
+### Earlier execution report — carried forward, not rerun here
+
+These results come from the previous execution report linked above and supplied by
+the founder. They are not fresh checks of this documentation commit:
+
+| Command | Earlier reported result |
+| --- | --- |
+| `pnpm --dir brandme-frontend test:ui` | 33 passed |
+| `pnpm --dir brandme-frontend test:gateway` | 13 passed |
+| `pnpm --dir brandme-frontend build` | Production build passed; 30 static pages generated |
+| `pnpm --dir brandme-console build` | Production build passed |
+| `git diff --check` | Passed |
+| `pnpm --dir brandme-frontend test:browser` | Could not launch: Playwright Chromium 1208 was unavailable |
+| `pnpm --dir brandme-frontend exec playwright install chromium` | CDN returned HTTP 403 on all five reported download attempts |
+
+The earlier run therefore produced no fresh screenshot or pixel-comparison result.
+No replacement baseline or human visual approval is inferred from the build and
+component passes. The prior preview's 58 rejected comparisons remain subject to
+human review; those historical failures are separate from the later browser-download
+blocker.
+
+### Design reconciliation and remaining gates
+
+The previous ChatGPT-design artifact remains an explicit input gap in the handoff;
+no screen-by-screen ADOPT / ADAPT / DISCARD reconciliation is claimed. Continue from
+the locked October 23 decisions, spec 02 screen contracts and merged UI, in that
+precedence order, until the designs are supplied.
+
+Next execution work is to synchronize the published preview with current main,
+run the required checks on the resulting head, and resolve the visual-baseline gate
+with human review. Rooms and Now/Flow must be verified against live dev gateway data;
+Flow/Editorial, invite/waitlist, public persona and other server-owned integrations
+must be assessed against current owner contracts rather than promoted from preview
+markup. Real-device and screen-reader sessions remain unverified in this handoff.
+The round-03 check-in trigger and external-release gates are not satisfied by this
+documentation publication.
+
+**Limits:** The earlier execution reported no rate-limit refresh time. No rate-limit
+interruption was observed while publishing this handoff; no future refresh time is
+asserted.
+
+**Credential manifest:** No credentials were created or copied. Publication uses the
+existing connected GitHub access.
