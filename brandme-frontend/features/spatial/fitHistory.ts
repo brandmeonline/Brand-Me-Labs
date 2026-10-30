@@ -1,5 +1,7 @@
 /** Tier 1 learns only from a guest's own reports. It is not a measurement or fit solver. */
 export const FIT_HISTORY_KEY = "brandme:guest:spatial:fit-history:v1";
+// Nonpersonal tombstone: even resetting an already-empty history invalidates queued drafts.
+export const FIT_HISTORY_GENERATION_KEY = "brandme:guest:spatial:fit-history:reset-generation:v1";
 export const FIT_HISTORY_LOCK = "brandme:guest:spatial:fit-history:mutation";
 export const fitCategories = ["tops", "bottoms", "one-piece", "outerwear", "footwear"] as const;
 export const sizeSystems = ["letter", "US", "UK", "EU", "house-specific"] as const;
@@ -134,6 +136,14 @@ function readFitHistorySource(storage: LocalStore): string | null {
   try { return storage.getItem(FIT_HISTORY_KEY); }
   catch { throw Error("Device storage is unavailable. Fit notes could not be read."); }
 }
+function readFitHistoryGeneration(storage: LocalStore): string | null {
+  let generation: string | null;
+  try { generation = storage.getItem(FIT_HISTORY_GENERATION_KEY); }
+  catch { throw Error("Device storage is unavailable. Fit reset state could not be read."); }
+  if (generation !== null && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(generation))
+    throw Error("Fit reset state could not be read. Delete all fit history to reset it; nothing has been overwritten.");
+  return generation;
+}
 export function readFitHistory(storage: LocalStore): FitHistory {
   return parseFitHistory(readFitHistorySource(storage));
 }
@@ -146,6 +156,7 @@ function writeHistory(storage: LocalStore, history: FitHistory) {
 }
 export async function saveFitNote(storage: LocalStore, value: unknown, coordinate = browserCoordinator): Promise<FitHistory> {
   const input = validateFitNote(value);
+  const expectedGeneration = readFitHistoryGeneration(storage);
   const expectedSource = readFitHistorySource(storage);
   parseFitHistory(expectedSource);
   return coordinate(() => {
@@ -153,7 +164,8 @@ export async function saveFitNote(storage: LocalStore, value: unknown, coordinat
     const history = parseFitHistory(currentSource);
     // A queued draft must not recreate data removed by an earlier delete/reset.
     // The lock serializes writes; this check also rejects a draft based on older history.
-    if (currentSource !== expectedSource) throw Error("Fit history changed while this note was waiting. Review the current notes before saving again.");
+    if (readFitHistoryGeneration(storage) !== expectedGeneration || currentSource !== expectedSource)
+      throw Error("Fit history changed while this note was waiting. Review the current notes before saving again.");
     const existing = history.notes.find((note) => sameGarment(note, input));
     if (!existing && history.notes.length >= MAX_NOTES) throw Error("Fit history is full. Delete an older note before saving another.");
     const note: FitNote = {
@@ -173,7 +185,12 @@ export async function deleteFitNote(storage: LocalStore, id: string, coordinate 
 }
 export async function clearFitHistory(storage: LocalStore, coordinate = browserCoordinator): Promise<FitHistory> {
   return coordinate(() => {
-    try { storage.removeItem(FIT_HISTORY_KEY); }
+    try {
+      // Rotate first: if deletion fails, old queued saves still cannot restore a draft.
+      // No body data, fit note, account identifier or timestamp is retained here.
+      storage.setItem(FIT_HISTORY_GENERATION_KEY, crypto.randomUUID());
+      storage.removeItem(FIT_HISTORY_KEY);
+    }
     catch { throw Error("Could not delete fit history on this device. Try again when storage is available."); }
     return { version: 1, notes: [] };
   });

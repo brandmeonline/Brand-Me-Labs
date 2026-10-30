@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
-  FIT_HISTORY_KEY, FIT_HISTORY_READ_ONLY, clearFitHistory, deleteFitNote, fitAdjustments, fitCategories, fitHistoryMutationsAvailable,
+  FIT_HISTORY_KEY, FIT_HISTORY_GENERATION_KEY, FIT_HISTORY_READ_ONLY, clearFitHistory, deleteFitNote, fitAdjustments, fitCategories, fitHistoryMutationsAvailable,
   fitOutcomes, fitPreferences, inferHouseFit, readFitHistory, saveFitNote, sizeSystems,
   type FitHistory, type FitNoteInput, type FitScope,
 } from "./fitHistory";
@@ -44,7 +44,7 @@ export function FitLadder() {
     loadHistory();
     setCanMutate(fitHistoryMutationsAvailable());
     const changed = (event: StorageEvent) => {
-      if (event.key === FIT_HISTORY_KEY || event.key === null) {
+      if (event.key === FIT_HISTORY_KEY || event.key === FIT_HISTORY_GENERATION_KEY || event.key === null) {
         loadHistory(); setDraft(freshDraft()); setMessage("Fit history changed in another tab."); setFormError("");
       }
     };
