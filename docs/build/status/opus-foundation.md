@@ -265,7 +265,7 @@ Assignment: `docs/build/orchestration/oneshot-plan-03-opus-foundation.md` (super
 | Trivy triage, named owner | done | the blocking gate has **no baseline entries** (`.trivyignore.yaml` is empty). Fixed: python-jose ×2, sentence-transformers, certifi, anyio (fastapi 0.134.0 / starlette 1.3.1 / pydantic 2.7.4, which also clears starlette's HIGHs), and the qs advisory via a pnpm override. The HIGH backlog has owners and a next triage date of 2026-11-25 (`docs/build/security/trivy-triage-2026-10-25.md`). |
 | Zero deployment claims | done | packet section C is an execution checklist. Every step is "not run". Each verify block fails loudly; the stubbed gcloud/kubectl/gh runs are in the opsfix commit message. |
 
-Full CI-equivalent suite (Spanner, Firestore, Pub/Sub, GCS emulators, `BRANDME_REQUIRE_EMULATORS=1`): CI `Test Core` and `Foundation check`, both full `tests/` runs, pass on `89ad5fa`. Local run on `4c4307a` (same code as `89ad5fa` plus docs): LOCAL_COUNTS.
+Full CI-equivalent suite (Spanner, Firestore, Pub/Sub, GCS emulators, `BRANDME_REQUIRE_EMULATORS=1`): CI `Test Core` and `Foundation check`, both full `tests/` runs, pass on `89ad5fa`. Local run on `4c4307a` (same code as `89ad5fa`; only docs differ): **2146 passed, 20 skipped, 17 quarantined (xfail), 0 failed**. The 20 skips are all allowlisted commerce-agents ones: AP2 SDK oracle 6, live Stripe key 5, live model 3, stripe-mock 6. The 17 quarantined tests are unowned-legacy.
 
 ### What else landed
 
