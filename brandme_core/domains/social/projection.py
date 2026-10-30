@@ -10,6 +10,9 @@ Share projector: this lane's reducers for foundation's projection framework
 * ``share.revoked`` → delete every recipient copy and tombstone the share, so a
   delayed upsert cannot bring it back. A share id is never reused, so the
   tombstone is permanent.
+* ``share.audience_changed`` (a block or an unfriend removed a recipient) →
+  re-project the grant at its new version: the framework deletes the copy of
+  every member no longer in the audience. With nobody left, every copy goes.
 * **What the shared projection never carries:** anything the framework treats
   as private (owner, member, price, size, persona axes …). A preview field that
   would be refused is left out of the projection; the full preview stays behind
@@ -43,9 +46,7 @@ def _drop_private(node: Any) -> Any:
 
 
 def share_reducers(database) -> Dict[str, Callable[[Any], Iterable[Any]]]:
-    def created(event) -> List[Any]:
-        share_id = event.payload["share_id"]
-
+    def project(share_id: str, *, emptied: bool) -> List[Any]:
         def read(s):
             rows = query(s, "SELECT g.subject_type, g.audience, g.recipient_ids, g.expires_at, g.revoked_at, g.version, p.preview "
                             "FROM ShareGrants@{FORCE_INDEX=ShareGrantsById} g LEFT JOIN SharePreviews p "
@@ -56,15 +57,24 @@ def share_reducers(database) -> Dict[str, Callable[[Any], Iterable[Any]]]:
         if not rows:
             return []  # deleted before projection: nothing to show
         kind, audience, recipients, expires_at, revoked_at, version, preview = rows[0]
-        if audience != "selected_members" or revoked_at is not None or expires_at <= now or not recipients or preview is None:
+        if audience != "selected_members" or revoked_at is not None or expires_at <= now or preview is None:
             return []
+        if not recipients:
+            # Everyone left: remove every copy at this version (recipients are never added back).
+            return [Delete(SHARE_SPEC, {"share_id": share_id}, int(version))] if emptied else []
         return [Upsert(SHARE_SPEC, {"share_id": share_id}, {"kind": kind, "preview": _drop_private(json_value(preview))}, int(version),
                        audience_member_ids=tuple(recipients), expires_at=expires_at)]
+
+    def created(event) -> List[Any]:
+        return project(event.payload["share_id"], emptied=False)
+
+    def audience_changed(event) -> List[Any]:
+        return project(event.payload["share_id"], emptied=True)
 
     def revoked(event) -> List[Any]:
         return [Delete(SHARE_SPEC, {"share_id": event.payload["share_id"]}, REVOKED_FOREVER)]
 
-    return {"share.created": created, "share.revoked": revoked}
+    return {"share.created": created, "share.revoked": revoked, "share.audience_changed": audience_changed}
 
 
 def register_share_projector(database, registry: Optional[ProjectionRegistry] = None) -> List[str]:

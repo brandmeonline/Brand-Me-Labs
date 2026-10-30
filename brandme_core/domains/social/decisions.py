@@ -577,7 +577,8 @@ class DecisionService:
                        values=[(d["member_id"], decision_id, comment_id, me, text, COMMIT_TIMESTAMP)])
             return {"decision_id": decision_id, "comment_id": comment_id, "author_id": me, "body": text, "created_at": iso(now)}
 
-        response, _ = idempotent_command(self.db, principal, "decisions.comment", idempotency_key, dict(body), tx)
+        # The target is part of the request: the same key on another decision is a conflict, never a replay.
+        response, _ = idempotent_command(self.db, principal, "decisions.comment", idempotency_key, {"decision_id": decision_id, **dict(body)}, tx)
         return response
 
     def comments(self, principal: Principal, decision_id: Any) -> Dict[str, Any]:

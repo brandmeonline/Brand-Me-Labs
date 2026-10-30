@@ -108,6 +108,24 @@ def test_rooms_are_small_private_and_among_friends(spanner_db):
     assert rooms.get(a, rid)["state"] == "archived"
 
 
+def test_blocking_still_hides_a_member_who_left_the_room(spanner_db):
+    db = spanner_db
+    owner, a, b = (person(db) for _ in range(3))
+    rel = RelationshipService(db)
+    for f in (a, b):
+        rel.accept(f, rel.request(owner, f.member_id)["relationship_id"])
+    rooms = RoomService(db)
+    rid = rooms.create(owner, {"title": "Trip", "member_ids": [a.member_id, b.member_id]}, key())["room_id"]
+    asks = rooms.post(owner, rid, {"kind": "note", "body": "Coat or cape?"}, key())["post_id"]
+    theirs = rooms.post(a, rid, {"kind": "note", "body": "Cape"}, key())["post_id"]
+    rooms.react(a, rid, asks, {"reaction": "yes"})
+    rel.block(b, a.member_id)
+    rooms.remove_member(a, rid, a.member_id)  # a leaves; the post and the reaction stay in the room
+    seen = {p["post_id"]: p for p in rooms.get(b, rid)["posts"]}
+    assert theirs not in seen and seen[asks]["reactions"]["yes"] == 0
+    assert {p["post_id"] for p in rooms.get(owner, rid)["posts"]} == {asks, theirs}  # others still see it
+
+
 def test_room_limits(spanner_db):
     db = spanner_db
     owner = person(db)

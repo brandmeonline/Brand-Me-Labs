@@ -207,6 +207,15 @@ def export_member(snap, member_id: str) -> Dict[str, Any]:
 
 def delete_category(txn, member_id: str, category: str) -> int:
     """Remove one category's rows inside the caller's read/write transaction."""
+    n = _delete_category(txn, member_id, category)
+    if category in ("persona.declared", "persona.inferred", "persona.evidence"):
+        from .card import scrub_taste
+
+        n += scrub_taste(txn, member_id)  # the card's composed taste is derived from these axes
+    return n
+
+
+def _delete_category(txn, member_id: str, category: str) -> int:
     m = {"m": member_id}
     if category == "persona.declared":
         n = txn.execute_update(
@@ -375,7 +384,8 @@ def build_privacy_handler():
         def purge_derived(self, ctx, category: str):
             # No Firestore projection, cache or object storage is owned by the
             # persona domain yet; recommendation previews are computed per request.
-            return pd.DeletionOutcome(category, 0, done=True, detail="persona keeps no derived stores")
+            # The persona card's composed taste is scrubbed inside delete() itself.
+            return pd.DeletionOutcome(category, 0, done=True, detail="persona keeps no derived stores outside Spanner")
 
         def reapply_tombstone(self, txn, tombstone) -> int:
             if tombstone.record_keys:

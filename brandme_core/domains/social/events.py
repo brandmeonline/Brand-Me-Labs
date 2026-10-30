@@ -36,6 +36,9 @@ register_event_type("share.created", "1", closed(
     {"share_id": UUID, "owner_id": UUID, "subject_type": {"type": "string", "maxLength": 24}}, ("share_id", "owner_id", "subject_type")), "member_private")
 register_event_type("share.revoked", "1", closed(
     {"share_id": UUID, "owner_id": UUID}, ("share_id", "owner_id")), "member_private")
+# A recipient left the share (block or unfriend): the projection re-reads the grant and drops their copy.
+register_event_type("share.audience_changed", "1", closed(
+    {"share_id": UUID, "owner_id": UUID}, ("share_id", "owner_id")), "member_private")
 register_event_type("moderation.report.opened", "1", closed(
     {"report_id": UUID, "target_type": {"type": "string", "enum": ["decision_response", "decision_comment", "room_post", "share", "outfit_proposal", "member"]}},
     ("report_id", "target_type")), "restricted")

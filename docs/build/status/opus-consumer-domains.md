@@ -1203,3 +1203,22 @@ Mia's note on #66 (Oct 30): #62 merged with founder decision D-007; re-sync and 
 **Follow-up PR (opens after #66 merges).** It carries item 12 (Stage 21) and item 9 (Stage 22: the lane outbox worker deleted now that Q8 is on `main`, verified over Pub/Sub). Both are on a local branch.
 
 **Credential manifest.** No credential was created in this stage.
+
+## Stage 21 — Codex review of #66 (`48c638d`): 5 findings, all real, all fixed — 2026-10-30
+#66 went back to draft while these were fixed, so it could not auto-merge with two open P1 privacy findings. Each fix has a test that fails without it.
+
+| # | Finding | Verified | Fix | Test |
+|---|---|---|---|---|
+| F1 (P2) | Influence credit could pass the 100-point daily cap: five followed verdicts on one delivered piece posted 125 points | Yes: 5 × 25 posted in one transaction | `ledger._window_used` and `_pair_awards` only summed persisted entries. They now also add the posted credits this transaction has buffered, as account loading and duplicate detection already did. This covers every rule's cap, not only influence | `test_influence_cap_counts_awards_buffered_in_the_same_settlement`: 4 posted + 1 capped = 100 |
+| F2 (P1) | A projected selected-member share stayed readable after a block or an unfriend | Yes: `block()` changed the grant without a version or event the projector handles; `remove()` touched no grant | New `leave_shares` (both block and unfriend): each party leaves the other's active selected-member grants, the grant version moves on, and `share.audience_changed` is emitted. The projector re-reads the grant and upserts the smaller audience (the framework deletes removed members' copies), or deletes every copy when nobody is left | `test_block_and_unfriend_remove_the_recipients_projected_copy` (Spanner + Firestore emulators): block removes that member's copy only; unfriending the last recipient removes all; replays bring nothing back |
+| F3 (P2) | A blocked member's posts and reactions reappeared once they left the room | Yes | Blocking is checked for everyone whose content is shown (members, authors, reactors), not only current members | `test_blocking_still_hides_a_member_who_left_the_room` |
+| F4 (P2) | The same Idempotency-Key and body on another decision replayed the first decision's comment | Yes | `decision_id` is part of the canonical request: a different target is an `IdempotencyConflict`. The other new idempotent commands already carried their target | The comment-thread test now asserts the conflict, and that nothing is written on the second decision |
+| F5 (P1) | Deleting `persona.declared`/`persona.inferred` left the card's composed taste readable until the daily backfill | Yes; `persona.evidence` deletion (which clears inferred values) had the same gap | `delete_category` scrubs the card's taste (`JSON_SET(card, '$.taste', JSON '[]')`) in the same transaction and marks the card stale for recomposition | `test_deleting_a_persona_source_scrubs_the_card_taste_at_once`, parametrized over the three categories: all fail without the fix |
+
+**Deviation: foundation's catalog pins.** `share.audience_changed` is a new consumer-domains contract (37, was 36).
+- **Requirement.** Foundation files are not edited by this lane.
+- **Reason.** `tests/foundation/test_outbox_lane_catalogs.py` pins each lane's contract count, so the new contract changes two numbers there.
+- **Replacement.** In that test, `EXPECTED_CONTRACTS["consumer-domains"]` 36 → 37 and the one-event-per-contract total 54 → 55. In `brandme_core/events/README.md`, the catalog table's count 36 → 37. Nothing else changes. Adding a contract to an existing catalog needs exactly these pins, as the README describes.
+- **Approval.** Foundation, at review.
+
+**Credential manifest.** No credential was created in this stage.

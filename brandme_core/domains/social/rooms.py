@@ -294,14 +294,17 @@ class RoomService:
         def read(s):
             room = self._as_member(s, room_id, me)
             members = self._members(s, room_id)
-            hidden = {m for m in members if m != me and blocked_between(s, me, m)}
             posts = query(s, "SELECT post_id, author_id, kind, body, subject_type, subject_id, created_at, removed_at FROM RoomPosts "
                              "WHERE room_id=@r ORDER BY created_at DESC, post_id LIMIT @l", {"r": room_id, "l": POST_LIMIT}, {"r": STR, "l": INT})
             ids = [p[0] for p in posts]
+            rows = query(s, "SELECT post_id, member_id, reaction FROM RoomReactions WHERE room_id=@r AND post_id IN UNNEST(@p)",
+                         {"r": room_id, "p": ids}, {"r": STR, "p": STR_ARRAY}) if ids else []
+            # Blocking covers everyone whose content is shown, including people who have since left the room.
+            people = set(members) | {p[1] for p in posts} | {r[1] for r in rows}
+            hidden = {m for m in people if m != me and blocked_between(s, me, m)}
             reactions: Dict[str, Dict[str, int]] = {}
             mine: Dict[str, str] = {}
-            for pid, who, reaction in query(s, "SELECT post_id, member_id, reaction FROM RoomReactions WHERE room_id=@r AND post_id IN UNNEST(@p)",
-                                            {"r": room_id, "p": ids}, {"r": STR, "p": STR_ARRAY}) if ids else []:
+            for pid, who, reaction in rows:
                 if who in hidden:
                     continue
                 reactions.setdefault(pid, {k: 0 for k in REACTIONS})[reaction] += 1

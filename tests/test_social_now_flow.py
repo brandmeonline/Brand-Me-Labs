@@ -21,6 +21,7 @@ from brandme_core.domains.persona.kernel import (
     run_txn,
     service_principal,
 )
+from brandme_core.domains import IdempotencyConflict
 from brandme_core.domains.persona.service import PersonaService
 from brandme_core.domains.rewards.benefits import BenefitService
 from brandme_core.domains.rewards.consumer import RewardsConsumer
@@ -154,6 +155,11 @@ def test_comment_thread_lives_inside_the_window(spanner_db):
     k = key()
     first = svc.add_comment(a, did, {"body": "The navy one"}, k)
     assert svc.add_comment(a, did, {"body": "The navy one"}, k)["comment_id"] == first["comment_id"]  # idempotent replay
+    other = ask(svc, owner, [a], "wardrobe_item", item, prompt="And this?")
+    svc.respond(a, other["decision_id"], {"choice": "yes"})
+    with pytest.raises(IdempotencyConflict):
+        svc.add_comment(a, other["decision_id"], {"body": "The navy one"}, k)  # same key and body, another decision
+    assert count(spanner_db, "SELECT COUNT(*) FROM DecisionComments WHERE decision_id=@d", d=other["decision_id"]) == 0
     svc.add_comment(owner, did, {"body": "Thanks"}, key())
     seen = svc.comments(owner, did)["items"]
     assert [(c["author_id"], c["body"]) for c in seen] == [(a.member_id, "The navy one"), (owner.member_id, "Thanks")]
@@ -214,6 +220,26 @@ def test_influence_credit_goes_to_the_friend_whose_verdict_was_followed(spanner_
     for ev in outbox(spanner_db, "wardrobe.item.created", buyer.member_id)[2:]:
         consumer.handle(ev)
     assert influence(yes.member_id) == 1
+
+
+def test_influence_cap_counts_awards_buffered_in_the_same_settlement(spanner_db):
+    """Five followed verdicts on one piece, one delivery: the daily cap (100) holds inside one transaction."""
+    buyer, yes = person(spanner_db), person(spanner_db)
+    friends(spanner_db, buyer, yes)
+    brand, _ = house("Atelier Cap")
+    vid = piece(spanner_db, brand, "Wool coat", ago=timedelta(hours=1))
+    svc = DecisionService(spanner_db, catalog_check=catalog_piece_exists)
+    for i in range(5):
+        d = ask(svc, buyer, [yes], "catalog_product", vid, prompt=f"This one? ({i})")
+        svc.respond(yes, d["decision_id"], {"choice": "yes"})
+        svc.close(buyer, d["decision_id"])
+    order(spanner_db, buyer.member_id, vid, 1)
+    (ev,) = outbox(spanner_db, "wardrobe.item.created", buyer.member_id)
+    RewardsConsumer(spanner_db).handle(ev)
+    with spanner_db.snapshot() as s:
+        rows = list(s.execute_sql("SELECT state, points FROM RewardEntries WHERE member_id=@m AND rule_id='decision_influence'",
+                                  params={"m": yes.member_id}, param_types={"m": param_types.STRING}))
+    assert sorted(r[0] for r in rows) == ["capped"] + ["posted"] * 4 and sum(r[1] for r in rows) == 100
 
 
 # ---------------------------------------------------------------------- Flow

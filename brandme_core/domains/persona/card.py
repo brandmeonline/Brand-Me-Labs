@@ -72,6 +72,14 @@ def mark_stale(txn, member_id: str, trigger: str) -> int:
                               "WHERE member_id=@m", params={"m": member_id, "t": trigger[:40]}, param_types={"m": STR, "t": STR})
 
 
+def scrub_taste(txn, member_id: str) -> int:
+    """Deleting a persona source empties the card's taste in the same transaction (the card stores
+    a composed copy); the next jobs pass recomposes it from what remains."""
+    return txn.execute_update("UPDATE PersonaCards SET card = JSON_SET(card, '$.taste', JSON '[]'), "
+                              "stale_since = COALESCE(stale_since, CURRENT_TIMESTAMP()), last_trigger = 'persona.deleted' "
+                              "WHERE member_id=@m AND card IS NOT NULL", params={"m": member_id}, param_types={"m": STR})
+
+
 class PersonaCardService:
     def __init__(self, database, *, persona: Any, catalog: Any = None):
         self.db = database
