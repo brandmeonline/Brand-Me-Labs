@@ -21,7 +21,7 @@ tier. It is off by default.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple
 
@@ -75,6 +75,9 @@ class HouseItem:
     price_minor: Optional[int]
     currency: Optional[str]
     available: bool
+    # Style-axis values (0-100) when the catalog supplies them. Flow's persona affinity needs them;
+    # CatalogSourceVariants carries none yet, so its pieces size on engagement with a neutral affinity.
+    axes: Mapping[str, int] = field(default_factory=dict)
 
 
 class HouseCatalog(Protocol):

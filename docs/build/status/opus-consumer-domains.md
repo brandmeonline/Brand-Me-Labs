@@ -1221,4 +1221,13 @@ Mia's note on #66 (Oct 30): #62 merged with founder decision D-007; re-sync and 
 - **Replacement.** In that test, `EXPECTED_CONTRACTS["consumer-domains"]` 36 → 37 and the one-event-per-contract total 54 → 55. In `brandme_core/events/README.md`, the catalog table's count 36 → 37. Nothing else changes. Adding a contract to an existing catalog needs exactly these pins, as the README describes.
 - **Approval.** Foundation, at review.
 
+**Second Codex review (`8933899`): 4 findings, all real, all fixed.** #66 went back to draft again while they were fixed.
+
+| # | Finding | Fix | Test (fails without the fix) |
+|---|---|---|---|
+| G1 (P2) | Deleting `rewards.badges` or `rewards.standings` left the card's composed badges or standings readable | `persona/card.scrub(txn, member, field)` covers taste, badges and standings. The rewards deletion scrubs badges or standings in the same transaction, as persona deletion does for taste | `test_deleting_a_source_category_scrubs_the_cards_copy_at_once`, five cases. Only the deleted source's field is emptied |
+| G2 (P2) | Creating a room with two invitees who had blocked each other succeeded (adding them one at a time is refused) | `_addable` checks blocking against everyone who will be in the room, other new invitees included | `test_a_blocked_pair_cannot_be_invited_together` |
+| G3 (P2) | Archiving and restoring an order-delivered piece re-ran influence settlement against the restore's time, so new verdicts on an old purchase earned points | Influence settles only on a provider-observed delivery: a new order unit, or an order update that changed `acquisition_status`. The item must also be `delivered` | `test_archiving_and_restoring_a_delivered_piece_earns_no_new_influence` |
+| G4 (P2) | Flow's persona affinity could never apply: the adapter gave every candidate empty axes | `HouseItem.axes` carries the piece's style axes when the catalog port has them, and Flow passes them to the lens. **No catalog data has axes yet**: `CatalogSourceVariants` carries none, so its pieces still size on engagement with a neutral affinity, stated rather than guessed. Flagged for the providers lane | `test_flow_affinity_uses_the_pieces_own_axes`: with axes, a matching member sees the piece larger with "close to your style", a non-matching member does not, and a piece without axes is neutral for both. Dropping the pass-through fails it |
+
 **Credential manifest.** No credential was created in this stage.

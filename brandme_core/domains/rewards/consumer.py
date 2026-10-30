@@ -140,16 +140,19 @@ class RewardsConsumer:
             return []
         if not self._eligible_member(txn, member_id, event):
             return [{"status": "member_not_eligible"}]
+        # Influence settles only on a provider-observed delivery (a new order unit, or an order update that moved its
+        # acquisition status), never on a member's own archive/restore of a piece delivered earlier.
+        delivery = event.event_type == "wardrobe.item.created" or "acquisition_status" in p["changed_fields"]
         return [ledger.credit(txn, ctx, member_id, RULES["first_owned_item"], event.event_id, event.occurred_at, [f"item:{p['item_id']}"]),
                 {"badges": badges.evaluate(txn, ctx, member_id, ("closet_curator",))},
-                *self._influence(txn, ctx, event, member_id, p["item_id"])]
+                *(self._influence(txn, ctx, event, member_id, p["item_id"]) if delivery else [])]
 
     def _influence(self, txn, ctx, event, buyer: str, item_id: str) -> List[Dict[str, Any]]:
         from brandme_core.domains.social.notifications import blocked_between
 
-        row = query(txn, "SELECT product_id, acquisition_source FROM WardrobeItems WHERE member_id=@m AND item_id=@i",
+        row = query(txn, "SELECT product_id, acquisition_source, acquisition_status FROM WardrobeItems WHERE member_id=@m AND item_id=@i",
                     {"m": buyer, "i": item_id}, {"m": STR, "i": STR})
-        if not row or row[0][1] != "order" or not row[0][0]:
+        if not row or row[0][1] != "order" or row[0][2] != "delivered" or not row[0][0]:
             return []
         product = row[0][0]
         verdicts = query(

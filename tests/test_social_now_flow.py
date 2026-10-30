@@ -4,6 +4,7 @@ and per-house loyalty standing with standing-gated house rewards."""
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -222,6 +223,39 @@ def test_influence_credit_goes_to_the_friend_whose_verdict_was_followed(spanner_
     assert influence(yes.member_id) == 1
 
 
+def test_archiving_and_restoring_a_delivered_piece_earns_no_new_influence(spanner_db):
+    """Only a provider-observed delivery settles influence; a member's restore is not a delivery."""
+    buyer, yes = person(spanner_db), person(spanner_db)
+    friends(spanner_db, buyer, yes)
+    brand, _ = house("Atelier Restore")
+    vid = piece(spanner_db, brand, "Linen trousers", ago=timedelta(hours=1))
+    svc = DecisionService(spanner_db, catalog_check=catalog_piece_exists)
+    consumer = RewardsConsumer(spanner_db)
+    d = ask(svc, buyer, [yes], "catalog_product", vid)
+    svc.respond(yes, d["decision_id"], {"choice": "yes"})
+    svc.close(buyer, d["decision_id"])
+    order(spanner_db, buyer.member_id, vid, 1)
+    (created,) = outbox(spanner_db, "wardrobe.item.created", buyer.member_id)
+    consumer.handle(created)
+
+    def influence():
+        return count(spanner_db, "SELECT COUNT(*) FROM RewardEntries WHERE member_id=@m AND rule_id='decision_influence' AND state='posted'",
+                     m=yes.member_id)
+
+    assert influence() == 1
+    # A new verdict on the piece the buyer already owns, then archive and restore it.
+    d2 = ask(svc, buyer, [yes], "catalog_product", vid, prompt="Wear it to dinner?")
+    svc.respond(yes, d2["decision_id"], {"choice": "yes"})
+    svc.close(buyer, d2["decision_id"])
+    w = WardrobeService(spanner_db)
+    item_id = created.payload["item_id"]
+    archived = w.archive_item(buyer, item_id, '"1"')
+    w.archive_item(buyer, item_id, f'"{archived["version"]}"', archive=False)
+    for ev in outbox(spanner_db, "wardrobe.item.updated", buyer.member_id):
+        consumer.handle(ev)
+    assert influence() == 1
+
+
 def test_influence_cap_counts_awards_buffered_in_the_same_settlement(spanner_db):
     """Five followed verdicts on one piece, one delivery: the daily cap (100) holds inside one transaction."""
     buyer, yes = person(spanner_db), person(spanner_db)
@@ -321,6 +355,41 @@ def test_home_flow(spanner_db):
     # Unfollowing drops the house from Flow.
     houses.unfollow(me, north_ref)
     assert [i["piece"]["product_id"] for i in flow.flow(me)["items"] if i["kind"] == "house_piece"] == [c2, c1]
+
+
+class AxesCatalog(CatalogHouses):
+    """The real catalog, with style axes for chosen pieces (CatalogSourceVariants carries none)."""
+
+    def __init__(self, axes):
+        self.axes = axes
+
+    def newest(self, snap, house_refs, *, before=None, limit=24):
+        return [dataclasses.replace(p, axes=self.axes.get(p.product_id, {})) for p in super().newest(snap, house_refs, before=before, limit=limit)]
+
+
+def test_flow_affinity_uses_the_pieces_own_axes(spanner_db):
+    db = spanner_db
+    bold, quiet = person(db), person(db)
+    brand, ref = house("Atelier Axes")
+    loud = piece(db, brand, "Printed coat", ago=timedelta(hours=1))
+    plain = piece(db, brand, "Plain tee", ago=timedelta(hours=2))
+    persona = PersonaService(db)
+    persona.patch(bold, '"0"', {"changes": [{"axis": "expression", "value": 95, "locked": False}], "client_revision": "c"})
+    persona.patch(quiet, '"0"', {"changes": [{"axis": "expression", "value": 5, "locked": False}], "client_revision": "c"})
+    catalog = AxesCatalog({loud: {"expression": 95}})
+    houses = HouseService(db, catalog=catalog)
+    for m in (bold, quiet):
+        houses.follow(m, ref, None)
+    flow = FlowService(db, catalog=catalog, persona=persona)
+
+    def sizes(member):
+        return {i["piece"]["product_id"]: (i["size"], i["size_reason"]) for i in flow.flow(member)["items"] if i["kind"] == "house_piece"}
+
+    # Same piece, same engagement: the member whose taste it matches sees it larger, and is told why.
+    assert sizes(bold)[loud] == ("standard", "Larger because close to your style")
+    assert sizes(quiet)[loud] == ("compact", "Newest from your houses")
+    # A piece without axis data gets a neutral affinity for everyone, never a guess.
+    assert sizes(bold)[plain] == sizes(quiet)[plain] == ("compact", "Newest from your houses")
 
 
 # ------------------------------------------------------------------ standing

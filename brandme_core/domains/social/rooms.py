@@ -84,8 +84,9 @@ class RoomService:
         return room
 
     def _addable(self, txn, owner: str, member_ids: List[str], existing: List[str]) -> None:
+        # Blocking is checked against everyone who will be in the room, other new invitees included.
         bad = [m for m in member_ids if m == owner or not are_friends(txn, owner, m) or not member_active(txn, m)
-               or any(blocked_between(txn, m, x) for x in existing)]
+               or any(blocked_between(txn, m, x) for x in [*existing, *member_ids] if x != m)]
         if bad:
             raise DetailedInvalidTransition("you can add your own friends only", code="not_addable", extra={"member_ids": bad})
 

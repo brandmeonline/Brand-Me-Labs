@@ -126,6 +126,22 @@ def test_blocking_still_hides_a_member_who_left_the_room(spanner_db):
     assert {p["post_id"] for p in rooms.get(owner, rid)["posts"]} == {asks, theirs}  # others still see it
 
 
+def test_a_blocked_pair_cannot_be_invited_together(spanner_db):
+    db = spanner_db
+    owner, a, b = (person(db) for _ in range(3))
+    rel = RelationshipService(db)
+    for f in (a, b):
+        rel.accept(f, rel.request(owner, f.member_id)["relationship_id"])
+    rel.block(a, b.member_id)
+    rooms = RoomService(db)
+    with pytest.raises(DetailedInvalidTransition) as e:
+        rooms.create(owner, {"title": "Dinner", "member_ids": [a.member_id, b.member_id]}, key())
+    assert e.value.code == "not_addable" and set(e.value.extra["member_ids"]) == {a.member_id, b.member_id}
+    rid = rooms.create(owner, {"title": "Dinner", "member_ids": [a.member_id]}, key())["room_id"]
+    with pytest.raises(DetailedInvalidTransition):
+        rooms.add_member(owner, rid, b.member_id)  # the same rule as adding one at a time
+
+
 def test_room_limits(spanner_db):
     db = spanner_db
     owner = person(db)

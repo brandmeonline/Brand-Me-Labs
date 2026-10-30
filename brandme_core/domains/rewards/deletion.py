@@ -112,6 +112,13 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
     raise KeyError(category)
 
 
+def _scrub_card(txn, member_id: str, field: str) -> int:
+    """The persona card keeps a composed copy of badges and standings; a deletion empties it at once."""
+    from brandme_core.domains.persona.card import scrub
+
+    return scrub(txn, member_id, field)
+
+
 def delete_category(txn, member_id: str, category: str) -> int:
     m = {"m": member_id}
     if category == "rewards.ledger":
@@ -119,7 +126,7 @@ def delete_category(txn, member_id: str, category: str) -> int:
         n += txn.execute_update("DELETE FROM RewardFacts WHERE member_id=@m", params=m, param_types=_M)
         return n + txn.execute_update("DELETE FROM RewardAccounts WHERE member_id=@m", params=m, param_types=_M)
     if category == "rewards.badges":
-        return txn.execute_update("DELETE FROM BadgeAwards WHERE member_id=@m", params=m, param_types=_M)
+        return txn.execute_update("DELETE FROM BadgeAwards WHERE member_id=@m", params=m, param_types=_M) + _scrub_card(txn, member_id, "badges")
     if category == "rewards.redemptions":
         pending: Dict[str, int] = {}
         held = query(txn, "SELECT reservation_id, benefit_id, cost_points FROM BenefitReservations WHERE member_id=@m AND state='pending'", m, _M)
@@ -145,7 +152,7 @@ def delete_category(txn, member_id: str, category: str) -> int:
     if category == "rewards.disputes":
         return txn.execute_update("DELETE FROM RewardDisputes WHERE member_id=@m", params=m, param_types=_M)
     if category == "rewards.standings":
-        return txn.execute_update("DELETE FROM HouseStandings WHERE member_id=@m", params=m, param_types=_M)
+        return txn.execute_update("DELETE FROM HouseStandings WHERE member_id=@m", params=m, param_types=_M) + _scrub_card(txn, member_id, "standings")
     if category == "rewards.surveys":
         return txn.execute_update("DELETE FROM SurveyResponses WHERE member_id=@m", params=m, param_types=_M)
     if category == "rewards.credits":

@@ -209,9 +209,9 @@ def delete_category(txn, member_id: str, category: str) -> int:
     """Remove one category's rows inside the caller's read/write transaction."""
     n = _delete_category(txn, member_id, category)
     if category in ("persona.declared", "persona.inferred", "persona.evidence"):
-        from .card import scrub_taste
+        from .card import scrub
 
-        n += scrub_taste(txn, member_id)  # the card's composed taste is derived from these axes
+        n += scrub(txn, member_id, "taste")  # the card's composed taste is derived from these axes
     return n
 
 

@@ -10,7 +10,8 @@ from datetime import datetime, timezone
 import pytest
 
 from brandme_core.domains.persona.card import PersonaCardConsumer, PersonaCardService
-from brandme_core.domains.persona.deletion import delete_category
+from brandme_core.domains.persona.deletion import delete_category as persona_delete
+from brandme_core.domains.rewards.deletion import delete_category as rewards_delete
 from brandme_core.domains.persona.kernel import NotFound, ValidationFailed, member_principal, run_txn
 from brandme_core.domains.persona.service import PersonaService
 from brandme_core.domains.social.relationships import RelationshipService
@@ -138,15 +139,24 @@ def test_persona_card_composes_respects_visibility_and_recomposes_on_triggers(sp
     assert cards.view(newcomer, newcomer.member_id)["card"]["taste"] == [{"axis": "structure", "label": "Structured", "strength": 80}]
 
 
-@pytest.mark.parametrize("category", ["persona.declared", "persona.inferred", "persona.evidence"])
-def test_deleting_a_persona_source_scrubs_the_card_taste_at_once(spanner_db, people, category):
-    """The card stores a composed copy of the taste: a completed category deletion must not leave it readable."""
+@pytest.mark.parametrize("category,field", [("persona.declared", "taste"), ("persona.inferred", "taste"), ("persona.evidence", "taste"),
+                                            ("rewards.badges", "badges"), ("rewards.standings", "standings")])
+def test_deleting_a_source_category_scrubs_the_cards_copy_at_once(spanner_db, people, category, field):
+    """The card stores composed copies of taste, badges and standings: a completed deletion must not leave them readable."""
     db = spanner_db
     owner, friend, *_ = people
     persona = PersonaService(db)
     persona.patch(owner, '"0"', {"changes": [{"axis": "expression", "value": 90, "locked": False}], "client_revision": "c"})
+    run_txn(db, lambda t: (t.insert("HouseStandings", columns=("member_id", "house_ref", "tier", "computed_at", "run_id"),
+                                    values=[(owner.member_id, "atelier-scrub", "top_5", datetime.now(timezone.utc), str(uuid.uuid4()))]),
+                           t.insert("BadgeAwards", columns=("member_id", "badge_id", "criteria_version", "evidence_refs", "awarded_at"),
+                                    values=[(owner.member_id, "closet_curator", 1, ["test"], datetime.now(timezone.utc))])))
     cards = PersonaCardService(db, persona=persona)
-    assert cards.settings(owner, {})["card"]["taste"]  # composed with the Expressive leaning
-    run_txn(db, lambda t: delete_category(t, owner.member_id, category))
-    assert cards.view(friend, owner.member_id)["card"]["taste"] == [] and cards.mine(owner)["card"]["taste"] == []
+    composed = cards.settings(owner, {"show_standings": True})["card"]
+    assert composed["taste"] and composed["badges"] and composed["standings"]
+    delete = persona_delete if category.startswith("persona.") else rewards_delete
+    run_txn(db, lambda t: delete(t, owner.member_id, category))
+    seen = cards.view(friend, owner.member_id)["card"]
+    assert seen[field] == [] and cards.mine(owner)["card"][field] == []
+    assert all(seen[f] for f in ("taste", "badges", "standings") if f != field)  # only the deleted source is scrubbed
     assert count(db, "SELECT COUNT(*) FROM PersonaCards WHERE member_id=@m AND stale_since IS NOT NULL", m=owner.member_id) == 1

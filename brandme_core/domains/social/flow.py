@@ -7,7 +7,9 @@ Home = Flow (Ultra plan 02, item 3).
   (followed, or the houses of pieces they own), newest first.
 * **Size and depth come from excitement.** Excitement is recent platform
   engagement with the piece (Now decisions about it and want-list adds in the
-  last ``ENGAGEMENT_WINDOW``) blended with the member's persona affinity.
+  last ``ENGAGEMENT_WINDOW``) blended with the member's persona affinity. The
+  affinity compares the member's axes with the piece's own axes from the
+  catalog port; a piece without axis data gets a neutral affinity, never a guess.
   Engagement under ``ENGAGEMENT_FLOOR`` counts as none, so one person's activity
   can never visibly size a piece.
 * **The persona lens** drops what the member's hard constraints exclude
@@ -157,8 +159,9 @@ class FlowService:
 
 def _candidate(p: HouseItem) -> Candidate:
     # Stock is shown on the piece, not filtered: the lens applies only the member's own constraints.
+    # The piece's own style axes, when the catalog has them, are what persona affinity compares.
     return Candidate(product_id=p.product_id, title=p.title, brand=p.house_name, category=p.category or "", color_family="neutral",
-                     price_minor=p.price_minor, currency=p.currency, available=True)
+                     axes=dict(p.axes), price_minor=p.price_minor, currency=p.currency, available=True)
 
 
 def _reason(engagement: int, affinity: Optional[float]) -> str:

@@ -72,11 +72,17 @@ def mark_stale(txn, member_id: str, trigger: str) -> int:
                               "WHERE member_id=@m", params={"m": member_id, "t": trigger[:40]}, param_types={"m": STR, "t": STR})
 
 
-def scrub_taste(txn, member_id: str) -> int:
-    """Deleting a persona source empties the card's taste in the same transaction (the card stores
-    a composed copy); the next jobs pass recomposes it from what remains."""
-    return txn.execute_update("UPDATE PersonaCards SET card = JSON_SET(card, '$.taste', JSON '[]'), "
-                              "stale_since = COALESCE(stale_since, CURRENT_TIMESTAMP()), last_trigger = 'persona.deleted' "
+# Card fields composed from another category's rows (highlights are checked against their source on every read).
+DERIVED_FIELDS = ("taste", "badges", "standings")
+
+
+def scrub(txn, member_id: str, field: str) -> int:
+    """Deleting a source category empties the card's composed copy of it in the same transaction;
+    the next jobs pass recomposes the card from what remains."""
+    if field not in DERIVED_FIELDS:
+        raise ValueError(field)
+    return txn.execute_update(f"UPDATE PersonaCards SET card = JSON_SET(card, '$.{field}', JSON '[]'), "
+                              "stale_since = COALESCE(stale_since, CURRENT_TIMESTAMP()), last_trigger = 'source.deleted' "
                               "WHERE member_id=@m AND card IS NOT NULL", params={"m": member_id}, param_types={"m": STR})
 
 
