@@ -4,6 +4,13 @@
 
 Edge API gateway for the Brand.Me platform.
 
+The mounted v1 rights and My Data reads now have a
+[runnable authenticated backend](../brandme_core/read_api/README.md). Configure
+the rights/privacy URLs and distinct `RIGHTS_SERVICE_TOKEN` and
+`PRIVACY_SERVICE_TOKEN` credentials as documented there. Privacy no longer falls
+back to the rights credential. The backend explicitly reports partial rights
+inventory coverage; export/deletion and rights commands remain unavailable.
+
 ## Features
 
 - **OAuth Authentication**: JWT-based authentication with Google OAuth

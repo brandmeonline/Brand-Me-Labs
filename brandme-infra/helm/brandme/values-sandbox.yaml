@@ -1,0 +1,106 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# First deploy target: BRANDME_MODE=sandbox (Midnight Preprod, no Mainnet).
+# Names follow docs/build/deploy/gke-verification-packet.md section C. Every
+# REPLACE_ME is a founder decision or a value that only exists after a cloud
+# step; rendering FAILS while any remains (templates/validate.yaml), so a
+# half-filled file cannot be deployed. No secret values belong here — only the
+# names of Kubernetes Secrets synced from Secret Manager.
+#
+# images.registry and images.<name>.digest are deliberately unset: the deploy
+# job passes them from the build-images job outputs (deploy by digest).
+mode: sandbox
+
+gcp:
+  # D1: lux-realestate-app (where CI pushes today) or a dedicated project.
+  projectId: REPLACE_ME_GCP_PROJECT_ID
+  region: us-east1
+
+spanner:
+  instanceId: brandme-sandbox
+  databaseId: brandme-sandbox
+
+midnight:
+  network: preprod
+  # 64 lowercase hex address of the rights contract deployed on Preprod
+  # (none exists yet: docs/build/evidence/midnight-integration-2026-10-22.md).
+  contractAddress: REPLACE_ME_PREPROD_CONTRACT_ADDRESS
+
+secretRefs:
+  rightsServiceToken: {name: brandme-sandbox-rts-rights-service-token}
+  privacyServiceToken: {name: brandme-sandbox-rts-privacy-service-token}
+  privacyExportServiceToken: {name: brandme-sandbox-rts-privacy-export-service-token}
+  chainServiceToken: {name: brandme-sandbox-rts-chain-service-token}
+  midnightBlockfrostProjectId: {name: brandme-sandbox-rts-midnight-blockfrost-project-id}
+  consumerDomainAssertionKey: {name: brandme-sandbox-dom-domain-assertion-key}
+
+gateway:
+  gcpServiceAccount: bm-sbx-fnd-gateway
+  oidc:
+    # D5: the OIDC identity provider the gateway trusts (https only).
+    issuer: REPLACE_ME_OIDC_ISSUER_HTTPS_URL
+    audience: REPLACE_ME_OIDC_AUDIENCE
+  # D6: the browser origins allowed to make cookie-authenticated requests.
+  publicOrigins:
+    - https://REPLACE_ME_PUBLIC_APP_ORIGIN
+
+chain:
+  gcpServiceAccount: bm-sbx-rts-chain
+
+# Off until the console image bakes real NEXT_PUBLIC_* gateway URLs at build
+# time (packet gap G7); today it would send browsers to http://localhost.
+console:
+  enabled: false
+
+readApi:
+  gcpServiceAccount: bm-sbx-rts-read-api
+
+exportsApi:
+  gcpServiceAccount: bm-sbx-rts-export-api
+
+exportsWorker:
+  gcpServiceAccount: bm-sbx-rts-export-wkr
+
+privacyExports:
+  # Bucket names are global: pick a suffix when creating it (packet C-9).
+  bucket: brandme-sandbox-exports-REPLACE_ME_SUFFIX
+
+# Consumer-domain service (KSA brandme-consumer-domains-api, GSA bm-sbx-dom-api).
+# Generate one P-256 key pair for the sandbox gateway: the PKCS#8 private key
+# goes only into Secret Manager brandme-sandbox-dom-domain-assertion-key
+# (gcloud secrets versions add from stdin, docs/build/runbooks/credential-rotation.md);
+# only its PUBLIC JWK (kty, crv, kid, x, y; never "d") belongs here.
+consumerDomains:
+  enabled: true
+  gcpServiceAccount: bm-sbx-dom-api
+  assertion:
+    signingKid: REPLACE_ME_CONSUMER_DOMAIN_KID
+    jwks:
+      keys:
+        - {kty: EC, crv: P-256, kid: REPLACE_ME_CONSUMER_DOMAIN_KID, x: REPLACE_ME_PUBLIC_JWK_X, "y": REPLACE_ME_PUBLIC_JWK_Y}
+  # Empty until the media bucket exists (Q14 dev-bucket run not done): media and
+  # try-on stay unmounted. Then grant it with gcp-dev-identities.sh --dom-media-bucket.
+  mediaBucket: ""
+
+eventsWorker:
+  gcpServiceAccount: bm-sbx-fnd-outbox
+  topics:
+    public: brandme-sandbox-public
+    memberPrivate: brandme-sandbox-member-private
+    restricted: brandme-sandbox-restricted
+
+# Own least-privilege identity: Spanner data read/write on the one database
+# (partitioned DML included), no Pub/Sub. Bound to
+# serviceAccount:<project>.svc.id.goog[brandme/brandme-events-retention].
+eventsRetention:
+  gcpServiceAccount: bm-sbx-fnd-retention
+
+# Runs `runner.py up` before every rollout. Main carries contiguous V001-V015
+# (D3 executed), so a fresh sandbox database applies them in order. The runner
+# still refuses, in sandbox, any migration numbered below the highest applied
+# one (runner.py:195-202, :294-295): a new migration takes the next free number.
+migrations:
+  gcpServiceAccount: bm-sbx-fnd-migrator
+
+ingress:
+  enabled: false

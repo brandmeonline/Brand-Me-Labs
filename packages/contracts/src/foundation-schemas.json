@@ -1,0 +1,139 @@
+{
+  "$comment": "Foundation-lane extensions to docs/design/brandme/contracts/domain.schema.json. They add API shapes; they never relax a spec definition. Merged into OpenAPI components.schemas.",
+  "MemberSettings": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "room_theme": {"type": ["string", "null"], "enum": ["walnut_atelier", "limestone_gallery", "garden_studio", "simple_view", null]},
+      "motion_mode": {"type": "string", "enum": ["system", "full", "reduced"]},
+      "quality_mode": {"type": "string", "enum": ["auto", "entry", "standard", "desktop", "simple"]},
+      "default_visibility": {"type": "string", "enum": ["private", "selected_members", "friends"]},
+      "notification_preferences": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "in_app": {"type": "boolean"},
+          "email": {"type": "boolean"},
+          "push": {"type": "boolean"}
+        },
+        "required": ["in_app", "email", "push"]
+      },
+      "version": {"$ref": "#/components/schemas/Revision"}
+    },
+    "required": ["room_theme", "motion_mode", "quality_mode", "default_visibility", "notification_preferences", "version"]
+  },
+  "Member": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "id": {"$ref": "#/components/schemas/Identifier"},
+      "handle": {"type": ["string", "null"], "pattern": "^[a-z0-9_]{3,30}$"},
+      "display_name": {"type": ["string", "null"], "minLength": 1, "maxLength": 80},
+      "locale": {"type": "string", "minLength": 2, "maxLength": 35},
+      "timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+      "age_eligibility_status": {"type": "string", "enum": ["unknown", "self_declared_adult", "verified_adult", "ineligible"]},
+      "account_state": {"type": "string", "enum": ["active", "suspended", "deletion_requested", "deleted"]},
+      "version": {"$ref": "#/components/schemas/Revision"},
+      "created_at": {"type": "string", "format": "date-time"},
+      "updated_at": {"type": "string", "format": "date-time"}
+    },
+    "required": ["id", "handle", "display_name", "locale", "timezone", "age_eligibility_status", "account_state", "version", "created_at", "updated_at"]
+  },
+  "CapabilitySummaryEntry": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "name": {"type": "string", "minLength": 1, "maxLength": 80},
+      "state": {"type": "string", "enum": ["available", "simulated", "unconfigured", "unsupported", "degraded"]},
+      "reason_code": {"type": "string", "minLength": 1, "maxLength": 80},
+      "simulation_label": {"type": ["string", "null"], "maxLength": 200}
+    },
+    "required": ["name", "state", "reason_code", "simulation_label"]
+  },
+  "Me": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "member": {"$ref": "#/components/schemas/Member"},
+      "settings": {"$ref": "#/components/schemas/MemberSettings"},
+      "onboarding_state": {"type": "string", "enum": ["not_started", "in_progress", "first_look_saved", "complete"]},
+      "environment": {"$ref": "#/components/schemas/Environment"},
+      "session": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "assurance_level": {"type": "string", "enum": ["simulated", "aal1", "aal2"]},
+          "identity_provider": {"type": "string", "minLength": 1, "maxLength": 80},
+          "expires_at": {"type": "string", "format": "date-time"}
+        },
+        "required": ["assurance_level", "identity_provider", "expires_at"]
+      },
+      "capabilities": {"type": "array", "items": {"$ref": "#/components/schemas/CapabilitySummaryEntry"}, "maxItems": 64}
+    },
+    "required": ["member", "settings", "onboarding_state", "environment", "session", "capabilities"]
+  },
+  "MePatch": {
+    "type": "object",
+    "additionalProperties": false,
+    "minProperties": 1,
+    "properties": {
+      "handle": {"type": "string", "pattern": "^[a-z0-9_]{3,30}$"},
+      "display_name": {"type": "string", "minLength": 1, "maxLength": 80},
+      "locale": {"type": "string", "minLength": 2, "maxLength": 35},
+      "timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+      "settings": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "room_theme": {"type": ["string", "null"], "enum": ["walnut_atelier", "limestone_gallery", "garden_studio", "simple_view", null]},
+          "motion_mode": {"type": "string", "enum": ["system", "full", "reduced"]},
+          "quality_mode": {"type": "string", "enum": ["auto", "entry", "standard", "desktop", "simple"]},
+          "default_visibility": {"type": "string", "enum": ["private", "selected_members", "friends"]}
+        }
+      }
+    }
+  },
+  "DevSessionCreate": {
+    "type": "object",
+    "additionalProperties": false,
+    "description": "demo/development only: creates a session for a fictional test identity. Refused in sandbox/production.",
+    "properties": {
+      "test_identity": {"type": "string", "pattern": "^[a-z0-9_-]{1,40}$"}
+    },
+    "required": ["test_identity"]
+  },
+  "SessionInfo": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "member_id": {"$ref": "#/components/schemas/Identifier"},
+      "csrf_token": {"type": "string", "minLength": 32, "maxLength": 128},
+      "expires_at": {"type": "string", "format": "date-time"},
+      "assurance_level": {"type": "string", "enum": ["simulated", "aal1", "aal2"]}
+    },
+    "required": ["member_id", "csrf_token", "expires_at", "assurance_level"]
+  },
+  "SystemHealth": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "status": {"type": "string", "enum": ["ok", "degraded"]},
+      "environment": {"$ref": "#/components/schemas/Environment"},
+      "checks": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {"type": "string"},
+            "status": {"type": "string", "enum": ["ok", "degraded", "unreachable"]},
+            "duration_ms": {"type": "integer", "minimum": 0}
+          },
+          "required": ["name", "status", "duration_ms"]
+        }
+      }
+    },
+    "required": ["status", "environment", "checks"]
+  }
+}

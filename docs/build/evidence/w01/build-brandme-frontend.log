@@ -1,0 +1,33 @@
+
+> brandme-frontend@0.1.0 build /home/user/Brand-Me-Labs/brandme-frontend
+> next build
+
+   ▲ Next.js 14.0.4
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/7) ...
+   Generating static pages (1/7) 
+   Generating static pages (3/7) 
+   Generating static pages (5/7) 
+ ✓ Generating static pages (7/7) 
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /_not-found                          868 B          82.7 kB
+├ ○ /governance                          141 B            82 kB
+├ ○ /scan                                141 B            82 kB
+├ ○ /shop                                175 B          88.8 kB
+└ ○ /stash                               175 B          88.8 kB
++ First Load JS shared by all            81.8 kB
+  ├ chunks/54-75e2955444fe5b72.js        26.7 kB
+  ├ chunks/70286426-6072ca8343f84785.js  53.3 kB
+  ├ chunks/main-app-76fce4430d0feac9.js  218 B
+  └ chunks/webpack-6726ee1cad4b5a13.js   1.65 kB
+
+
+○  (Static)  prerendered as static content
+

@@ -1,0 +1,342 @@
+{
+  "network": "undeployed",
+  "badge": "Local test network",
+  "tuple": {
+    "compactc": "0.31.1",
+    "runtime": "0.16.0",
+    "midnightJs": "4.1.1",
+    "proofServer": "8.1.3"
+  },
+  "sourceSha256": "919577bf769395f571f2bbde284127866fe6ba7eb31a5d86605a1ec154d8fa49",
+  "entries": [
+    {
+      "step": "deploy",
+      "at": "2026-10-23T12:08:32.832Z",
+      "contractAddress": "4d9d50d7062803e7ad9f9707ba35f5f7c5595eb8dd061049d7d2d00b9756641b",
+      "txId": "003ff9fbca3aec34c319af1bda700398b97258cc48aec05034c26d16dde872ad5b",
+      "txHash": "5160e30026a41564e75512b46619e82bfdaf02b8e776cf561c3e5f316dda35a4",
+      "blockHeight": 20,
+      "blockHash": "a6c3258c7265818a64cc93b6977c3e61bbc158a9460e10bcf77aacba66eb6d6e",
+      "status": "SucceedEntirely",
+      "ms": 145540
+    },
+    {
+      "step": "insertVerifierKey:rotateIssuerKey",
+      "at": "2026-10-23T12:08:32.832Z",
+      "circuit": "rotateIssuerKey",
+      "txId": "00a6dfe6502458301c1d776f7afac597972bb9fbd004270d970dc440a7e13ee4c2",
+      "blockHeight": 23,
+      "status": "SucceedEntirely"
+    },
+    {
+      "step": "insertVerifierKey:revokeIssuer",
+      "at": "2026-10-23T12:08:32.832Z",
+      "circuit": "revokeIssuer",
+      "txId": "001c93342a8110bfb1a51dcb52b6547f77f3eddb77ca6ae628a02e5ed4f0c230dc",
+      "blockHeight": 26,
+      "status": "SucceedEntirely"
+    },
+    {
+      "step": "insertVerifierKey:revokeEntitlement",
+      "at": "2026-10-23T12:08:32.832Z",
+      "circuit": "revokeEntitlement",
+      "txId": "00dd712809decf9391254cf43e6aa0a470657708864d102824f263acf5859029e5",
+      "blockHeight": 29,
+      "status": "SucceedEntirely"
+    },
+    {
+      "step": "insertVerifierKey:deactivateManufacturer",
+      "at": "2026-10-23T12:08:32.832Z",
+      "circuit": "deactivateManufacturer",
+      "txId": "0090a1079aacd27102a927e8baf13d2e291342408d613e3ce11b3cf35b5550ef3a",
+      "blockHeight": 32,
+      "status": "SucceedEntirely"
+    },
+    {
+      "step": "insertVerifierKey:consumeReprintAllowance",
+      "at": "2026-10-23T12:08:32.832Z",
+      "circuit": "consumeReprintAllowance",
+      "txId": "00fadd505804cb96e785b2e109685d001f5d34b2a08931ef89e90bb80a75d03f41",
+      "blockHeight": 35,
+      "status": "SucceedEntirely"
+    },
+    {
+      "step": "insertVerifierKey:attestManufacture",
+      "at": "2026-10-23T12:08:32.832Z",
+      "circuit": "attestManufacture",
+      "txId": "00962c59cc7a929dcd16ef85448bb366a294f78912c903f04ed2a2d83865155569",
+      "blockHeight": 38,
+      "status": "SucceedEntirely"
+    },
+    {
+      "step": "insertVerifierKey:grantReplacementAllowance",
+      "at": "2026-10-23T12:08:32.832Z",
+      "circuit": "grantReplacementAllowance",
+      "txId": "0093a7b3de77fd3b8420a8be20e5b49e940e29fa178f6320baf813174d865a93c4",
+      "blockHeight": 41,
+      "status": "SucceedEntirely"
+    },
+    {
+      "step": "verifier-keys-verified-on-chain",
+      "at": "2026-10-23T12:08:32.833Z",
+      "circuits": 15
+    },
+    {
+      "step": "registerIssuer",
+      "at": "2026-10-23T12:08:56.570Z",
+      "party": "operator",
+      "circuit": "registerIssuer",
+      "state": "Finalized",
+      "txId": "0006ec588562cbc1f1cc2a0e5394fa5945ae02d4605833f4d9831b09c2ffaed168",
+      "txHash": "dd3e1c7ea691fc7eb44199cb49730dee060d06503b141b95d4074aadfce76a14",
+      "blockHeight": 45,
+      "blockHash": "f63c8ec39d59c35d10ea5db9850f210d3268f70659ad8dfc5626229587f83d1e",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 45,
+      "ms": 22688
+    },
+    {
+      "step": "registerManufacturer",
+      "at": "2026-10-23T12:09:20.580Z",
+      "party": "operator",
+      "circuit": "registerManufacturer",
+      "state": "Finalized",
+      "txId": "004d51759c0c7cfdfd27e6aa8f6bffa0ebd09c10b91f8ace4381557c4730aa7753",
+      "txHash": "09fe872ed212154fe875f977072b3517cdb963ffc181cbc27b1762c1714d7b39",
+      "blockHeight": 49,
+      "blockHash": "1fcfb7567aabc5e1e3e5b95aea2988b28179d5bcd2d6a2f15b37f97732d96dba",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 49,
+      "ms": 23796
+    },
+    {
+      "step": "issueEntitlement",
+      "at": "2026-10-23T12:09:44.598Z",
+      "party": "operator",
+      "circuit": "issueEntitlement",
+      "state": "Finalized",
+      "txId": "0091831fbd6292248c429e49ff0458849c93cbd71f89e3f882865d3fd750d289b4",
+      "txHash": "53ba21867736c5dc61c86cc2cb06aef8cfca0bf54384908eee296b5a33904507",
+      "blockHeight": 53,
+      "blockHash": "70f1c2292bc1bcee8c9b7a53b3e088bdb33c7c0edcacf9820be66355ec371f3a",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 53,
+      "ms": 23767
+    },
+    {
+      "step": "proveControl",
+      "at": "2026-10-23T12:10:08.625Z",
+      "party": "alice",
+      "circuit": "proveControl",
+      "state": "Finalized",
+      "txId": "00b88278ef5d31aee9efc4a2a5e033c4497212a0658f36a55d2151a3e30d2e296c",
+      "txHash": "b05162d5ca421e2d401ea84d863e35fb4a70958071df05d42ad81f35a6a3d34e",
+      "blockHeight": 57,
+      "blockHash": "e065ed589a4e7192f7bb16b502c64032aee96e4884dbfe4e9d606c80bf4a2c7d",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 57,
+      "ms": 24027
+    },
+    {
+      "step": "proveControl-replay-same-challenge",
+      "at": "2026-10-23T12:10:08.910Z",
+      "party": "alice",
+      "circuit": "proveControl",
+      "state": "Failed",
+      "failureReason": "contract_precondition_failed",
+      "ms": 266,
+      "failureDetail": "failed before broadcast"
+    },
+    {
+      "step": "proveControl-replay-identical-tx",
+      "at": "2026-10-23T12:10:09.967Z",
+      "outcome": "rejected: node rejected: 1013: Transaction Already Imported: Any { .. }"
+    },
+    {
+      "step": "invalid-witness-proveControl",
+      "at": "2026-10-23T12:10:25.538Z",
+      "party": "bob",
+      "circuit": "proveControl",
+      "state": "Failed",
+      "failureReason": "contract_precondition_failed",
+      "ms": 498,
+      "failureDetail": "failed before broadcast"
+    },
+    {
+      "step": "account-switch-during-proving",
+      "at": "2026-10-23T12:10:28.556Z",
+      "party": "alice",
+      "circuit": "proveControl",
+      "state": "Failed",
+      "failureReason": "session_changed",
+      "ms": 3018,
+      "failureDetail": "failed before broadcast"
+    },
+    {
+      "step": "cross-network-replay",
+      "at": "2026-10-23T12:10:28.579Z",
+      "outcome": "rejected before proving",
+      "operationNetwork": "preprod"
+    },
+    {
+      "step": "offerTransfer-to-bob",
+      "at": "2026-10-23T12:10:50.010Z",
+      "party": "alice",
+      "circuit": "offerTransfer",
+      "state": "Finalized",
+      "txId": "00b7bb630741af45590e0f54452d268af3ac1abcd8830b0de29c8cc3e82ae9b5ce",
+      "txHash": "be6e6c8519780c85b09b65918de657096ee983faffff9f4186251fc31f16fc6d",
+      "blockHeight": 64,
+      "blockHash": "930caa912e0cc7e658e196cc9cc8b9c3759fdcda8c8ec4299a3105728a0e786d",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 64,
+      "ms": 21411
+    },
+    {
+      "step": "offerTransfer-to-competitor",
+      "at": "2026-10-23T12:11:14.023Z",
+      "party": "alice",
+      "circuit": "offerTransfer",
+      "state": "Finalized",
+      "txId": "004465c8099cb6d2ff7f39e76b17bc2977372b2dbdfb6cd7b0cc28c541451c6fe0",
+      "txHash": "a0cdf2db82682cbf85c459c07793c980c4d8854cb6a4b661a91f2e9b84b0178b",
+      "blockHeight": 68,
+      "blockHash": "73760912e3c33c6b390eb65da35e971dd4b20f3dcf4b5d0a084e1e7f4bfcaf68",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 68,
+      "ms": 24012
+    },
+    {
+      "step": "concurrent-accept-bob",
+      "at": "2026-10-23T12:11:38.052Z",
+      "state": "Finalized",
+      "txId": "00f924f40a9f4339738effd4b17c9ae6c439b87fc16d5130b8242121ab257b3ded",
+      "chainStatus": "SucceedEntirely",
+      "blockHeight": 72
+    },
+    {
+      "step": "concurrent-accept-competitor",
+      "at": "2026-10-23T12:11:38.052Z",
+      "state": "Reconciling",
+      "txId": "00ad0e99318805f57d7b5bbea7a11b3d56c3fa66bfacc4c1132e07da8b5557ad5a",
+      "failureDetail": "broadcast pending; do not resubmit"
+    },
+    {
+      "step": "old-owner-proveControl",
+      "at": "2026-10-23T12:11:38.340Z",
+      "party": "alice",
+      "circuit": "proveControl",
+      "state": "Failed",
+      "failureReason": "contract_precondition_failed",
+      "ms": 268,
+      "failureDetail": "failed before broadcast"
+    },
+    {
+      "step": "new-owner-proveControl",
+      "at": "2026-10-23T12:12:02.072Z",
+      "party": "bob",
+      "circuit": "proveControl",
+      "state": "Finalized",
+      "txId": "0074b2356bf542415876ddbcba3f7f40c54d3bc980514825899f36f935db8ee5a7",
+      "txHash": "d3c982ec1eeca3f3c8bbcac2f49483b5505165a98ae025e82bbe78de7ff71f79",
+      "blockHeight": 76,
+      "blockHash": "d6d6954b61959bc4ea65d6bdc10e2cbbf7f64cf55abf3ed7ef558ea47ea32c81",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 76,
+      "ms": 23732
+    },
+    {
+      "step": "grantReprintAllowance",
+      "at": "2026-10-23T12:12:26.092Z",
+      "party": "operator",
+      "circuit": "grantReprintAllowance",
+      "state": "Finalized",
+      "txId": "000de286a7e45ac7eea16a2bea392960983db0f96520162de8a4eed95ad27edb14",
+      "txHash": "52695344808fc65def39004fb76d515220459d312a0b8fc8462ea3e9df826b14",
+      "blockHeight": 80,
+      "blockHash": "fd204a1d681ee6b3469b0194d1f9f41f78ba48b9789f88df72e5c31c6f7d331a",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 80,
+      "ms": 24016
+    },
+    {
+      "step": "consume-job-1",
+      "at": "2026-10-23T12:12:50.126Z",
+      "party": "bob",
+      "circuit": "consumeReprintAllowance",
+      "state": "Finalized",
+      "txId": "007ff6133313cd4f6bce3ef4430403479341443c6c6be32994e5980c19668e6483",
+      "txHash": "e9aea4f9fdf6080b615597b589742ee5c2ae8a63cb7083cadee0b480a86c925b",
+      "blockHeight": 84,
+      "blockHash": "94eb2457218d6a6af03d5e6d422495b0ee9fd7b5bb629d3d977019aabc63ad2b",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 84,
+      "ms": 24034
+    },
+    {
+      "step": "consume-job-1-duplicate-callback",
+      "at": "2026-10-23T12:12:50.473Z",
+      "party": "bob",
+      "circuit": "consumeReprintAllowance",
+      "state": "Failed",
+      "failureReason": "contract_precondition_failed",
+      "ms": 347,
+      "failureDetail": "failed before broadcast"
+    },
+    {
+      "step": "attest-unit-0",
+      "at": "2026-10-23T12:13:14.152Z",
+      "party": "manufacturer",
+      "circuit": "attestManufacture",
+      "state": "Finalized",
+      "txId": "0034d6d60ccaac06eed789c897d21471b0bf398f294231dc381df52dbc6d912ba8",
+      "txHash": "bda3928a5ec696034eaa03cabaa016d569359a2043dc8ab0662b0504448d3460",
+      "blockHeight": 88,
+      "blockHash": "4803afe05fe9b490e3a5d2364aa6fe16eafcea3093702af1b2ce38f349b176ad",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 88,
+      "ms": 23650
+    },
+    {
+      "step": "attest-unit-0-duplicate-callback",
+      "at": "2026-10-23T12:13:14.480Z",
+      "party": "manufacturer",
+      "circuit": "attestManufacture",
+      "state": "Failed",
+      "failureReason": "contract_precondition_failed",
+      "ms": 328,
+      "failureDetail": "failed before broadcast"
+    },
+    {
+      "step": "consume-over-quota",
+      "at": "2026-10-23T12:13:14.807Z",
+      "party": "bob",
+      "circuit": "consumeReprintAllowance",
+      "state": "Failed",
+      "failureReason": "contract_precondition_failed",
+      "ms": 300,
+      "failureDetail": "failed before broadcast"
+    },
+    {
+      "step": "backup-restore",
+      "at": "2026-10-23T12:13:15.904Z",
+      "imported": 1,
+      "backupFormat": "brandme.rights.private-state-backup/v1",
+      "backupNetwork": "undeployed"
+    },
+    {
+      "step": "restored-proveControl",
+      "at": "2026-10-23T12:13:38.229Z",
+      "party": "bob-restored",
+      "circuit": "proveControl",
+      "state": "Finalized",
+      "txId": "00e13ed2eaa455bd39f01bd76087de7b17d83640f39e295fe2a7b437a2c8eb5ebe",
+      "txHash": "4582f538338165ebd245892d5f0e6decbd25c63b67067929c774d22d8d2c6a75",
+      "blockHeight": 92,
+      "blockHash": "136142eb912bfac9885f7afa2f18bad6f7c31c75f157024fd5c9ddf666c3181e",
+      "chainStatus": "SucceedEntirely",
+      "finalizedHeadHeight": 92,
+      "ms": 22325
+    }
+  ]
+}

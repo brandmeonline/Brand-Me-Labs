@@ -2,59 +2,33 @@
   "name": "brandme-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Brand.Me Platform - Integrity-first garment authentication",
+  "description": "Brand.Me — Be More U. Consumer app, domain services and trust infrastructure.",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "setup:demo": "node scripts/brandme.mjs setup --mode demo",
+    "dev:demo": "node scripts/brandme.mjs dev --mode demo",
+    "dev": "node scripts/brandme.mjs dev --mode development",
+    "check": "node scripts/brandme.mjs check",
+    "smoke": "node scripts/brandme.mjs smoke",
+    "migrate": "node scripts/brandme.mjs migrate",
+    "contracts:generate": "pnpm --filter @brandme/contracts generate && pnpm --filter @brandme/design-system generate",
+    "contracts:check": "pnpm --filter @brandme/contracts check && pnpm --filter @brandme/design-system check",
+    "test:journeys": "node scripts/brandme.mjs not-yet test:journeys W03-W11",
+    "test:providers": "node scripts/brandme.mjs not-yet test:providers W06-W07",
+    "test:midnight:local": "pnpm --filter @brandme/chain test:midnight:local",
+    "test:midnight:preprod": "pnpm --filter @brandme/chain test:midnight:preprod",
+    "assets:validate": "node scripts/assets/validate.mjs",
+    "evidence:report": "node scripts/brandme.mjs evidence",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
-    "format": "pnpm -r format",
     "type-check": "pnpm -r type-check",
-    "clean": "pnpm -r clean && rm -rf node_modules",
     "assets:generate": "node scripts/assets/generate.mjs",
-    "assets:validate": "node scripts/assets/validate.mjs",
     "assets:review": "node scripts/assets/review.mjs"
   },
-  "keywords": [
-    "brandme",
-    "blockchain",
-    "cardano",
-    "midnight",
-    "garment-authentication"
-  ],
-  "author": "Brand.Me, Inc.",
   "license": "PROPRIETARY",
   "engines": {
     "node": ">=20.0.0 <25",
     "pnpm": "10.34.6"
   },
-  "packageManager": "pnpm@10.34.6",
-  "pnpm": {
-    "packageExtensions": {
-      "@react-three/fiber@9.4.0": {
-        "peerDependencies": {
-          "@types/react": "^19.0.0"
-        },
-        "peerDependenciesMeta": {
-          "@types/react": {
-            "optional": true
-          }
-        }
-      },
-      "next@15.5.28": {
-        "peerDependencies": {
-          "@types/react": "^19.0.0",
-          "@types/react-dom": "^19.0.0"
-        },
-        "peerDependenciesMeta": {
-          "@types/react": {
-            "optional": true
-          },
-          "@types/react-dom": {
-            "optional": true
-          }
-        }
-      }
-    }
-  }
+  "packageManager": "pnpm@10.34.6"
 }

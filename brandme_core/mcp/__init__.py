@@ -1,34 +1,28 @@
 """
-Brand.Me v9 — Model Context Protocol (MCP) Integration
-======================================================
+Brand.Me — Model Context Protocol (MCP) tool surface
+====================================================
 
-Implements MCP for external agent access to Brand.Me tools.
-Makes the Style Vault searchable by external agents with ethical oversight.
+* ``tools``  — ch.05 tool table and the principal-bound ``McpToolExecutor``.
+* ``authz``  — MCP 2026-07-28 authorization: audience-bound access token
+  validation (reference), protected-resource metadata, executor assertions.
+* ``consent`` — legacy Spanner consent-graph verifier (unchanged).
 
-Key features:
-- Tool manifest for agent discovery
-- Consent verification before tool execution
-- ESG verification for transactions
-- Human-in-the-loop for sensitive operations
+Fake v9 tools (AP2 "intent mandates", ACP "checkout complete", rentals,
+resale, ESG-verified results) are retired; see ``tools.RETIRED_TOOLS``.
 """
 
-from .tools import (
-    MCPToolManifest,
-    MCPTool,
-    MCPToolExecutor,
-    ToolExecutionResult,
+from .authz import (
+    MCP_PROTOCOL_VERSION,
+    AuthError,
+    ExecutorAssertionVerifier,
+    McpAccessTokenValidator,
+    protected_resource_metadata,
 )
-
-from .consent import (
-    MCPConsentVerifier,
-    ConsentResult,
-)
+from .consent import ConsentResult, MCPConsentVerifier
+from .tools import RETIRED_TOOLS, TOOLS, UNAVAILABLE_TOOLS, McpToolExecutor, ToolOutcome
 
 __all__ = [
-    "MCPToolManifest",
-    "MCPTool",
-    "MCPToolExecutor",
-    "ToolExecutionResult",
-    "MCPConsentVerifier",
-    "ConsentResult",
+    "MCP_PROTOCOL_VERSION", "AuthError", "ExecutorAssertionVerifier", "McpAccessTokenValidator",
+    "protected_resource_metadata", "ConsentResult", "MCPConsentVerifier", "RETIRED_TOOLS", "TOOLS",
+    "UNAVAILABLE_TOOLS", "McpToolExecutor", "ToolOutcome",
 ]

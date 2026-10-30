@@ -7,6 +7,39 @@
 import pino from 'pino';
 import { config } from './index';
 
+// Identifiers and secrets that must never reach logs (spec ch.03 §9:
+// sanitized reason codes; no raw user identifiers). Covers the legacy /scan
+// route, which logs scanner_user_id and garment_tag at the top level.
+export const REDACT_PATHS = [
+  'req.headers.authorization',
+  'req.headers.cookie',
+  'req.headers["x-csrf-token"]',
+  'res.headers["set-cookie"]',
+  'req.body.password',
+  'req.body.token',
+  'scanner_user_id',
+  'garment_tag',
+  'userId',
+  'user_id',
+  'member_id',
+  'memberId',
+  'email',
+  'csrf_token',
+  '*.scanner_user_id',
+  '*.garment_tag',
+  '*.userId',
+  '*.user_id',
+  '*.member_id',
+  '*.memberId',
+  '*.email',
+  '*.csrf_token',
+  '*.password',
+  '*.token',
+  '*.secret',
+  '*.apiKey',
+  '*.wallet',
+];
+
 export const logger = pino({
   level: config.logLevel,
   transport: config.environment === 'development'
@@ -25,17 +58,7 @@ export const logger = pino({
     },
   },
   redact: {
-    paths: [
-      'req.headers.authorization',
-      'req.headers.cookie',
-      'req.body.password',
-      'req.body.token',
-      '*.password',
-      '*.token',
-      '*.secret',
-      '*.apiKey',
-      '*.wallet',
-    ],
+    paths: REDACT_PATHS,
     censor: '[REDACTED]',
   },
 });

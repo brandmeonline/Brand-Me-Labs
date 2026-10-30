@@ -1,0 +1,319 @@
+# Copyright (c) Brand.Me, Inc. All rights reserved.
+#
+# Defaults for the brandme chart. Everything that needs a real, environment-
+# specific value is EMPTY here and rendering fails until it is set (`required`
+# checks in templates/_helpers.tpl). Any value containing REPLACE_ME is also
+# refused, so values-sandbox.yaml cannot be deployed half-filled.
+#
+# This file never holds secrets. Credentials reach pods only through
+# secretKeyRef to Kubernetes Secrets named under `secretRefs`; those Secrets are
+# synced from Google Secret Manager (GKE Secret Manager add-on secret sync or
+# External Secrets Operator) — see docs/build/deploy/gke-verification-packet.md.
+
+# BRANDME_MODE and ENVIRONMENT for every process: sandbox | production.
+# demo/development require local emulators and are refused by this chart.
+mode: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+gcp:
+  # GCP project that holds Spanner, Pub/Sub, the export bucket and the
+  # workload GSAs (<id>@<projectId>.iam.gserviceaccount.com).
+  projectId: ""
+  region: us-east1
+
+spanner:
+  # Defaults to gcp.projectId when empty.
+  projectId: ""
+  instanceId: ""
+  databaseId: ""
+
+midnight:
+  # read API and exports refuse mainnet (read_api/config.py:38,
+  # privacy_exports/config.py:35-37). preview | preprod | undeployed.
+  network: preprod
+  # 64 lowercase hex characters. Required when readApi, exportsApi or
+  # exportsWorker is enabled; optional for chain (it then reports the Midnight
+  # capability as unavailable).
+  contractAddress: ""
+
+images:
+  # e.g. gcr.io/<project> (what ci-cd.yml build-images pushes today) or
+  # us-east1-docker.pkg.dev/<project>/brandme. No trailing slash.
+  registry: ""
+  pullPolicy: IfNotPresent
+  # Each image needs `digest` (sha256:<64 hex>, preferred; CI deploys by
+  # digest) or an immutable `tag`. `latest` is refused.
+  core:
+    name: brandme-core
+    digest: ""
+    tag: ""
+  gateway:
+    name: brandme-gateway
+    digest: ""
+    tag: ""
+  chain:
+    name: brandme-chain
+    digest: ""
+    tag: ""
+  console:
+    name: brandme-console
+    digest: ""
+    tag: ""
+
+# Kubernetes Secret names (and keys) for each credential. The chart only
+# references them; it never creates or contains secret values.
+secretRefs:
+  rightsServiceToken:
+    name: ""
+    key: value
+  privacyServiceToken:
+    name: ""
+    key: value
+  privacyExportServiceToken:
+    name: ""
+    key: value
+  chainServiceToken:
+    name: ""
+    key: value
+  midnightBlockfrostProjectId:
+    name: ""
+    key: value
+  # Gateway only, when consumerDomains.enabled: the PKCS#8 P-256 private key that
+  # signs consumer-domain principal assertions (CONSUMER_DOMAIN_ASSERTION_KEY;
+  # Secret Manager brandme-<mode>-dom-domain-assertion-key).
+  consumerDomainAssertionKey:
+    name: ""
+    key: value
+
+# Pod-level defaults applied to every workload.
+podDefaults:
+  # Apps do not call the Kubernetes API. Workload Identity is served by the
+  # GKE metadata server, which does not need the KSA token in the pod.
+  automountServiceAccountToken: false
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+
+gateway:
+  enabled: true
+  replicas: 2
+  # GSA account ID (bm-<env3>-fnd-gateway) or a full GSA email.
+  gcpServiceAccount: ""
+  port: 3001
+  logLevel: info
+  oidc:
+    # https issuer and audience are required in strict modes
+    # (brandme-gateway/src/middleware/mode.ts:38-47).
+    issuer: ""
+    audience: ""
+    jwksUri: ""
+    algorithms: ""
+  # https origins only in strict modes (mode.ts:47).
+  publicOrigins: []
+  corsOrigins: []
+  # TRUST_PROXY for req.ip behind a proxy (brandme-gateway/src/config/index.ts:36-66).
+  # Empty = off (no ingress). Behind a GKE external Application Load Balancer the
+  # documented value is 2 (client, GFE); confirm req.ip on the cluster first.
+  # Required when ingress.enabled, so rate limits never key on the proxy.
+  trustProxy: ""
+  resources:
+    requests: {cpu: 250m, memory: 256Mi}
+    limits: {cpu: "1", memory: 512Mi}
+  extraEnv: []
+
+chain:
+  enabled: true
+  replicas: 1
+  gcpServiceAccount: ""
+  # Chain defaults to 3001 (brandme-chain/src/config/index.ts:14); the gateway
+  # gets CHAIN_SERVICE_URL set explicitly (its own default is :3003).
+  port: 3001
+  logLevel: info
+  # The in-process read-only reconciliation worker uses Spanner leases
+  # (src/midnight/reconciliation-queue.ts), so replicas > 1 are fenced.
+  reconciliationEnabled: true
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: "1", memory: 1Gi}
+  extraEnv: []
+
+console:
+  enabled: true
+  replicas: 2
+  port: 3002
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+  extraEnv: []
+
+readApi:
+  enabled: true
+  replicas: 2
+  gcpServiceAccount: ""
+  port: 8000
+  resources:
+    requests: {cpu: 250m, memory: 256Mi}
+    limits: {cpu: "1", memory: 512Mi}
+
+exportsApi:
+  enabled: true
+  replicas: 2
+  gcpServiceAccount: ""
+  port: 8000
+  resources:
+    requests: {cpu: 250m, memory: 256Mi}
+    limits: {cpu: "1", memory: 512Mi}
+
+exportsWorker:
+  enabled: true
+  replicas: 1
+  gcpServiceAccount: ""
+  resources:
+    requests: {cpu: 250m, memory: 256Mi}
+    limits: {cpu: "1", memory: 1Gi}
+
+privacyExports:
+  # Dedicated bucket, must start with brandme-<mode>-exports-
+  # (brandme_core/privacy_exports/config.py:38-40).
+  bucket: ""
+
+# Consumer-domain HTTP service: python -m brandme_core.domains.persona.app
+# (persona, wardrobe, social, rewards; media and try-on only with mediaBucket).
+# Only the gateway calls it, with a short-lived ES256 principal assertion per
+# request (brandme-gateway/src/services/domains.ts); this service holds public
+# keys only (brandme_core/domains/persona/assertion.py). Off by default: it
+# needs the gateway's signing key pair provisioned first. While it is off the
+# gateway answers 503 on every consumer-domain route.
+consumerDomains:
+  enabled: false
+  # One replica: the assertion verifier's jti replay cache lives in process memory
+  # (brandme_core/domains/persona/assertion.py:46, :80-87), so a second pod would accept
+  # an assertion the first already consumed. Raise this only after the lane moves the
+  # replay cache to a shared store.
+  replicas: 1
+  # GSA account ID (bm-<env3>-dom-api) or a full GSA email. Its KSA is
+  # <release>-consumer-domains-api (scripts/provision/gcp-dev-identities.sh).
+  gcpServiceAccount: ""
+  port: 8010
+  assertion:
+    # The gateway signs with this fixed issuer (brandme-gateway/src/services/domains.ts:23).
+    issuer: brandme-gateway
+    # kid the gateway signs with (CONSUMER_DOMAIN_ASSERTION_KID); it must name
+    # a key in jwks. The private key itself is secretRefs.consumerDomainAssertionKey.
+    signingKid: ""
+    # Public JWKS (CONSUMER_DOMAIN_ASSERTION_JWKS): P-256 public keys only, each
+    # {kty: EC, crv: P-256, kid, x, "y"}; a private member ("d") is refused.
+    # Quote "y": YAML reads a bare y key as the boolean true.
+    # Rotate by kid overlap: add the new public key here and deploy, then
+    # switch signingKid and the Secret's value, then drop the old key.
+    jwks:
+      keys: []
+  # Optional private media bucket (BRANDME_MEDIA_BUCKET). Empty: the media and
+  # try-on routes are not mounted. When set, the service checks the bucket's
+  # policy at startup and refuses an unfit one (media/gcs_store.py:347-348).
+  mediaBucket: ""
+  resources:
+    requests: {cpu: 250m, memory: 256Mi}
+    limits: {cpu: "1", memory: 512Mi}
+
+eventsWorker:
+  enabled: true
+  replicas: 1
+  gcpServiceAccount: ""
+  # Topic IDs in gcp.projectId; each must start with brandme-<mode>- and have
+  # >= 24h retention (brandme_core/events/pubsub.py:51-53,94-103).
+  topics:
+    public: ""
+    memberPrivate: ""
+    restricted: ""
+  # Optional exact comma-separated subset of the event catalog.
+  eventTypes: ""
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
+# Hourly CronJob: python -m brandme_core.events.retention --once. Purges
+# delivered outbox rows 7 days after delivery and re-erases deleted subjects'
+# event and replay records (founder ruling Q19; events/README.md "Retention and
+# erasure"). Spanner only: no Pub/Sub topics, wallet or chain access.
+eventsRetention:
+  enabled: true
+  # Hourly at a fixed minute (UTC), off the top of the hour.
+  schedule: "17 * * * *"
+  # Own ServiceAccount, same Workload Identity pattern as eventsWorker, with its
+  # own GSA (bm-<env3>-fnd-retention). The GSA needs brandmeSpannerDataReadWrite
+  # (it includes spanner.databases.beginPartitionedDmlTransaction) and nothing else.
+  gcpServiceAccount: ""
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 86400
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
+# pre-install/pre-upgrade hook Job: brandme-data/spanner/migrations/runner.py up
+migrations:
+  enabled: true
+  gcpServiceAccount: ""
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 86400
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
+podDisruptionBudget:
+  enabled: true
+  # maxUnavailable (not minAvailable) so a single-replica workload never
+  # blocks a node drain or cluster upgrade.
+  maxUnavailable: 1
+
+networkPolicy:
+  enabled: true
+  # Deny all ingress and egress for every pod in the release namespace, then
+  # allow only the flows below.
+  namespaceDefaultDeny: true
+  dns:
+    namespaceSelector:
+      kubernetes.io/metadata.name: kube-system
+    podSelector:
+      k8s-app: kube-dns
+    # NodeLocal DNSCache and Cloud DNS for GKE answer on these link-local IPs.
+    cidrs:
+      - 169.254.20.10/32
+      - 169.254.169.254/32
+  # Workload Identity: GKE metadata server (docs.cloud.google.com
+  # kubernetes-engine/docs/how-to/network-policy, "Workload Identity").
+  metadataServer:
+    - cidr: 169.254.169.252/32
+      ports: [987, 988]
+    - cidr: 169.254.169.254/32
+      ports: [80, 8080]
+  # HTTPS egress for Google APIs (Spanner, Pub/Sub, Storage) and, for chain
+  # only, the Midnight Blockfrost endpoints. NetworkPolicy cannot filter by
+  # hostname; private ranges are excluded so 443 cannot reach in-VPC services.
+  httpsEgress:
+    cidr: 0.0.0.0/0
+    except:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      - 100.64.0.0/10
+      - 169.254.0.0/16
+  # Google Front End / health-check source ranges, allowed to reach gateway
+  # and console only when ingress.enabled.
+  loadBalancerSourceRanges:
+    - 130.211.0.0/22
+    - 35.191.0.0/16
+
+# Optional public edge. Disabled by default: do not expose the gateway before
+# OIDC, the mode guard and the rate limiter's proxy handling are verified.
+ingress:
+  enabled: false
+  # Name of a reserved GLOBAL static IP (gcloud compute addresses create ... --global).
+  staticIpName: ""
+  gatewayHost: ""
+  consoleHost: ""
+  managedCertificate: true
+  httpsRedirect: true

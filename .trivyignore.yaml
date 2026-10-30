@@ -1,0 +1,26 @@
+# Trivy baseline for the BLOCKING vulnerability gate in .github/workflows/ci-cd.yml (Security Scan job:
+# CRITICAL, fix available, repo filesystem). Only that step reads this file (--ignorefile .trivyignore.yaml);
+# the SARIF report uploaded to code scanning still lists these findings. A plain .trivyignore is not used
+# on purpose: Trivy loads that file by default, so it would also hide these alerts from the SARIF report,
+# and it cannot scope an ID to one file.
+#
+# Rules for every entry: path-scoped, an owner lane, an expiry, a reason. Trivy stops honouring an entry
+# after expired_at, so the gate turns red on that date unless the owner fixes or re-justifies it. Delete
+# the entry in the PR that fixes it.
+#
+# Baseline taken 2026-10-23 at 744d593 with aquasec/trivy:0.75.0
+# (sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa), scanning with
+# --file-patterns 'pip:requirements\.lock$' so the hashed venv lock that CI installs is included (Trivy's
+# default pip analyzer only reads files named requirements.txt). These five were the only CRITICAL, fixable
+# findings; the merge results of PR #51, #52 and #54 add none.
+#
+# Renewal triage (foundation, 2026-10-25, same image and flags, run without this file): all five are fixed
+# and deleted. certifi refreshed to 2026.10.23 in scripts/python/requirements.lock (GHSA-6q48-6c7w-9gw2);
+# the unused python-jose 3.3.0 pins removed from brandme-core/ and brandme-cube/requirements.txt
+# (CVE-2024-33663, no `jose` import in any .py file); the unused sentence-transformers 2.3.1 pin removed from
+# brandme-agents/agentic/requirements.txt (CVE-2026-68770, no import).
+# anyio (CVE-2026-63374) is fixed the same day: fastapi 0.104.1 -> 0.134.0 and pydantic 2.5.0 -> 2.7.4 in
+# brandme_core/requirements.txt let the lock take anyio 4.15.1 and starlette 1.3.1, which also clears
+# starlette's three HIGH findings (CVE-2025-62727, CVE-2026-54283, CVE-2026-48818). The baseline is empty;
+# a new entry needs the same four fields.
+vulnerabilities: []

@@ -1,10 +1,14 @@
 # Owned by the opus-foundation lane. Toolchain pins: docs/build/compatibility-lock.md
+# Registration, lockfile and conflict rules: docs/build/workspace-governance.md
+# (enforced by scripts/check-workspace.mjs; every tracked package.json must match a
+# glob below or be a STANDALONE entry in that script).
 packages:
   - 'brandme-gateway'
   - 'brandme-chain'
   - 'brandme-console'
   - 'brandme-frontend'
   - 'packages/*'
+  - 'scripts/assets'
 
 # pnpm 10 blocks dependency lifecycle scripts unless allowlisted.
 onlyBuiltDependencies:
@@ -32,3 +36,49 @@ overrides:
   # affected by GHSA high/low advisories fixed in >=1.13.6. Dedupe onto the
   # workspace's existing 1.14.6; validated by the emulator rules suite.
   "@grpc/grpc-js@1.9": "1.14.6"
+  # GHSA-27r3-jxmh-p828 (high, body-parser DoS) fixed in 1.20.9; express 4.22.x pins ~1.20.
+  "body-parser@1": "1.20.9"
+  # GHSA-w74x-v6f9-j3xg, -wjr9-j795-jxcr (moderate) and two lows fixed in 3.1.9 (ajv dependency).
+  "fast-uri@3": "3.1.9"
+  # GHSA-6pq8-jhm2-2vcw (moderate, qs.stringify arrayFormat 'comma' DoS) fixed in 6.16.1; express 4.22.x
+  # (brandme-chain, brandme-gateway) resolves ~6.16.
+  "qs@6": "6.16.1"
+
+# Inherited consumer/spatial React peer metadata; workspace settings have one authority.
+packageExtensions:
+  # Lucide's declarations import React types but omit that peer. Bind each installed
+  # icon package to its app's types instead of pnpm's shared hoisted @types/react.
+  'lucide-react@0.309.0':
+    peerDependencies:
+      '@types/react': '^18.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  'lucide-react@0.469.0':
+    peerDependencies:
+      '@types/react': '^18.0.0 || ^19.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  # motion/react re-exports these declarations, which also import React types.
+  'framer-motion@12.43.0':
+    peerDependencies:
+      '@types/react': '^18.0.0 || ^19.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  '@react-three/fiber@9.4.0':
+    peerDependencies:
+      '@types/react': '^19.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  'next@15.5.28':
+    peerDependencies:
+      '@types/react': '^18.0.0 || ^19.0.0'
+      '@types/react-dom': '^18.0.0 || ^19.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      '@types/react-dom':
+        optional: true

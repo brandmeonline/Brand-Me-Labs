@@ -1,0 +1,22 @@
+# Foundation Python toolchain (python 3.11). Compile with:
+#   uv pip compile scripts/python/requirements.in --generate-hashes -p 3.11 -o scripts/python/requirements.lock
+-r ../../brandme_core/requirements.txt
+-r ../../docs/design/brandme/contracts/requirements.txt
+pytest-timeout==2.3.1
+# CVE-2026-63374 (CRITICAL, fixed in anyio 4.14.2). fastapi 0.115.14 (brandme_core/requirements.txt) allows
+# anyio 4; this floor keeps a recompile from resolving back to the 3.x release that fastapi 0.104.1 required.
+anyio>=4.14.2
+# starlette 1.3.1 fixes CVE-2025-62727, CVE-2026-54283 and CVE-2026-48818 (HIGH) plus four MEDIUM/LOW findings;
+# fastapi 0.134.0 is the release line that allows starlette 1.x (pydantic >= 2.7).
+starlette>=1.3.1,<1.4
+datamodel-code-generator==0.34.0
+# Commerce/providers/MCP lane (commerce-agents) runtime pins, consumed by brandme_core/domains/commerce,
+# brandme_core/mcp and their tests. Listed directly (not `-r` of the lane's
+# brandme_core/domains/commerce/requirements.txt) so a lane edit cannot change this lock without a foundation
+# recompile. Keep in step with that file. PyJWT CVE-2026-103001 note: see that file.
+jwcrypto==1.6.1
+PyJWT[crypto]==2.15.1
+rfc8785==0.1.4
+sd-jwt==0.10.4
+anthropic==0.125.0
+stripe==16.0.0

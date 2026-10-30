@@ -6,11 +6,26 @@
 .env
 .env.local
 .env.*.local
+# Every dotenv file at any depth (.env.deploy, .env.prod, ...) except committed templates. Already-tracked
+# .env.development/.env.staging/.env.production stay tracked; new ones are ignored.
+.env*
+!.env.example
+!**/.env.example
+!**/.env*.example
 *.pem
 *.key
 *.cert
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+*mnemonic*
+.deployment/
 secrets/
 **/secrets/
+# Dev-only consumer-domain assertion key pair (scripts/dev/consumer-domain-keys.mjs).
+.dev-keys/
 **/.env
 **/.env.local
 
@@ -68,6 +83,8 @@ env/
 pip-log.txt
 pip-delete-this-directory.txt
 .pytest_cache/
+# Fetched emulators and their logs (scripts/python/fetch_*_emulator.py, CI test-core).
+.cache/
 .coverage
 .coverage.*
 htmlcov/
@@ -133,6 +150,8 @@ out/
 *.tsbuildinfo
 dist/
 build/
+# docs/build is the build-lane record (status, evidence, runbooks), not build output.
+!docs/build/
 
 # Terraform
 **/.terraform/
@@ -194,7 +213,8 @@ gcloud-config/
 !tsconfig.json
 !manifest.json
 !.mcp.json
-!.claude/**/*.json
+# Only the tracked project settings file; any other JSON under .claude/ (keys, local state) stays ignored.
+!.claude/settings.json
 .claude/settings.local.json
 
 # Public design contracts and fictional examples; no credentials or live records.
@@ -205,9 +225,28 @@ gcloud-config/
 !docs/design/brandme/contracts/domain.schema.json
 !docs/design/brandme/contracts/reward-rules.json
 
-# Service account keys (NEVER commit)
+# Source-controlled JSON: package schemas/generated contracts, test fixtures, vendored schemas, build-lane
+# evidence. A `*.json` blanket ignore silently dropped lane fixtures and schemas, so new files here must show
+# up in `git status`.
+!packages/**/*.json
+!tests/fixtures/**/*.json
+!brandme_core/**/schemas/**/*.json
+!brandme_core/domains/commerce/ap2_schemas/**/*.json
+!docs/build/**/*.json
+!docs/build/**/*.log
+
+# Credential-shaped JSON (NEVER commit). Kept after every negation above so no allowlisted path re-includes them.
 *-service-account.json
+*service-account*.json
 *-sa-key.json
+*-key.json
+*credentials*.json
+gha-creds-*.json
+*wallet*.json
+client_secret*.json
+*secrets*.json
+*token*.json
+!**/design-tokens.json
 
 # ========================================
 # NATS & Event Streaming

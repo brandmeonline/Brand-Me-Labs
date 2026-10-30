@@ -1,14 +1,23 @@
 name: Module Regression
 
 on:
+  # `push` is scoped to the long-lived branches on purpose. It fires on
+  # refs/heads/<branch> while `pull_request` fires on refs/pull/N/merge, so a
+  # wildcard here makes every PR branch build twice, concurrently, on the same
+  # SHA. A `concurrency:` group does NOT dedupe that — github.ref differs, so
+  # the two runs land in different groups. Mirrors chain-tests.yml:10-11.
   push:
     branches:
-      - '**'
+      - main
+      - develop
   pull_request:
     branches:
       - main
       - develop
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   regression:
@@ -22,10 +31,20 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
 
+      # No `version:` here — package.json's `packageManager` field is the
+      # single source of truth. action-setup@v4 errors out if both are set.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+
+      # Before the install: an unregistered package fails here with
+      # E_UNREGISTERED instead of a later "tsc: not found" from a package that
+      # `pnpm install --frozen-lockfile` silently skipped (PR #55). Offline
+      # checks only; the next step is pnpm's own frozen-lockfile check.
+      # Error codes and fixes: docs/build/workspace-governance.md
+      - name: Workspace guard
+        run: node scripts/check-workspace.mjs
 
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
