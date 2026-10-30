@@ -612,3 +612,47 @@ No values or seeds are ever recorded here.
 - **Foundation, export and read-API suites with these changes:** 485 passed, 23 skipped, 0 failed.
   - Covers `tests/foundation/` (including the `RESERVED` row), `tests/test_privacy_exports.py`, `tests/test_read_api.py` and the command suite.
   - The full `tests/` run was still in progress at commit; its count is recorded in Stage 15.
+
+## Stage 14 — event producers and My Data composition in dev form (2026-10-30)
+
+- **Assignment:** round-03 build step 4, "Remaining event producers into the durable outbox (#47); real-domain My Data registration live in dev form."
+- **Base:** Stage 13 head `d58e3c8`.
+- **Next step:** the check-in packet. With this stage, commands, producers and redaction are done, which is the check-in trigger.
+
+### Producers
+At 2026-10-22, four registered lane events had no producer (`docs/build/evidence/midnight-integration-2026-10-22.md:35`). Now:
+
+| Event | Producer | Status |
+|---|---|---|
+| `chain.operation.observed` | chain durable store (`brandme-chain/src/midnight/spanner-store.ts`) | already on `main` |
+| `ownership.transfer.requested` | `create_transfer`, in the transfer intent's transaction (Stage 13) | built |
+| `reprint.attested` | chain reconciler, in the atomic projection commit (`brandme-chain/src/midnight/reconciliation-queue.ts:127,143`) | built here |
+| `license.issued` | none | **not produced; check-in question** |
+
+- **`reprint.attested`.**
+  - Emitted once, when a finalized `attestManufacture` first projects its manufactured child entitlement.
+  - The unit is linked to the app's reprint job by the consumption nullifier it attests, never by the operation owner. A unit outside the app workflow is projected but emits nothing.
+  - It commits with the projection and its completion marker, so it can't be emitted twice.
+  - It doesn't touch `ReprintJobs.units_attested`, which counts manufacturer callbacks. On-chain attestation stays a separate fact.
+- **`license.issued` is left unproduced on purpose.**
+  - The spec makes a `LicenseGrant` the rights holder's record, backed by the verified contract (`docs/design/brandme/03-architecture-data-api.md:154`).
+  - Its permissions and territory are not on chain; `grantReprintAllowance` carries only a policy digest.
+  - Producing the row from chain facts would invent them, for example reading an unknown territory as unrestricted.
+  - It needs an issuer-authenticated license command, and no issuer principal exists yet (governance is a stub).
+
+### My Data composition in dev form
+- `compose_registry` / `compose_my_data` (`brandme_core/domains/privacy/composition.py:25,41`) put every real handler in one registry:
+  - the five consumer domains;
+  - commerce;
+  - rights;
+  - foundation's platform handler.
+- Demo and development only. Not deployable until deletion has one serialized executor per subject and foundation registers the final identity step (contract item 9).
+
+### Verified
+- `tests/test_my_data_composition.py`: 2 passed.
+  - The composed registry covers all eight domains (commerce, media, persona, platform, rewards, rights, social, wardrobe), and strict modes are refused.
+  - One account deletion finishes every category with nothing pending.
+  - It clears the member's control link, deletes their sent intent, and cancels and unlinks an intent offered to them.
+- `brandme-chain` reconciliation suite: 11 passed, including the new attestation test.
+  - That suite's teardown validates every emitted outbox row against the Python event registry (`brandme-chain/tests/support/store-database.py:21-34`), so the new `reprint.attested` payload is checked across languages.
+- `brandme-chain` type-check clean.

@@ -124,12 +124,39 @@ export class SpannerReconciliationQueue {
               epoch: String(p.epoch), tx_id: e.txId, block_height: String(height), block_hash: e.blockHash }),
             status: 'pending', attempts: 0, next_attempt_at: now, created_at: Spanner.COMMIT_TIMESTAMP,
           });
+          if (op.circuit === 'attestManufacture' && !old) await this.attested(tx, op, p.entitlementId, now);
           outcome = old ? 'advanced' : 'inserted';
         }
       }
       tx.update('ChainOperations', { operation_id: claim.operationId, projection_completed_at: now, projection_outcome: outcome,
         reconciliation_lease_id: null, reconciliation_lease_until: null, next_check_at: null });
       return true;
+    });
+  }
+
+  /**
+   * A manufactured unit's first projection, linked to the app's reprint job by the
+   * consumption nullifier it attests (never by the operation owner). A unit outside
+   * the app workflow emits nothing. Same transaction as the projection, so it is
+   * emitted at most once.
+   */
+  private async attested(tx: Transaction, op: ChainOperation, childEntitlementId: string, now: Date): Promise<void> {
+    const [nullifier, unit] = op.args;
+    if (nullifier?.t !== 'bytes' || unit?.t !== 'uint') throw new Error('invalid manufacture arguments');
+    const [jobs] = await tx.run({ sql: `SELECT job_id FROM ReprintJobs WHERE network = @network AND consumption_nullifier = @nullifier LIMIT 2`,
+      params: { network: op.network, nullifier: nullifier.v }, json: true });
+    if (jobs.length !== 1) return;
+    const jobId = (jobs[0] as { job_id: string }).job_id;
+    const unitIndex = Number(unit.v);
+    const id = randomUUID();
+    tx.insert('OutboxEvents', {
+      shard: parseInt(createHash('sha256').update(id).digest('hex').slice(0, 8), 16) % 16,
+      event_id: id, event_type: 'reprint.attested', schema_version: '1',
+      aggregate_type: 'reprint_job', aggregate_id: jobId, aggregate_version: unitIndex + 1, occurred_at: now,
+      environment: this.store.environment, actor_ref: 'service:chain-reconciler', correlation_id: op.operationId,
+      causation_id: null, privacy_class: 'member_private',
+      payload: JSON.stringify({ job_id: jobId, network: op.network, child_entitlement_id: childEntitlementId, unit_index: unitIndex }),
+      status: 'pending', attempts: 0, next_attempt_at: now, created_at: Spanner.COMMIT_TIMESTAMP,
     });
   }
 }

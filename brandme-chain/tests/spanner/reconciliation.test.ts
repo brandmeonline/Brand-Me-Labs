@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { Spanner } from '@google-cloud/spanner';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { operationDatabase, SpannerOperationStore } from '../../src/midnight/spanner-store.js';
@@ -74,6 +75,33 @@ it('atomically commits an entitlement, registered event and completion without o
   expect(events).toHaveLength(1); expect(JSON.stringify(events)).not.toContain(op.ownerRef);
   expect((events[0] as any).aggregate_id).toBe(entitlementAggregateId(op.network, contract, p.entitlementId));
   expect((await progress(op.operationId)).projection_outcome).toBe('inserted');
+});
+
+it('links a first attested unit to its reprint job by nullifier and emits reprint.attested once', async () => {
+  const nullifier = random32(); const jobId = randomUUID();
+  await db.table('ReprintJobs').insert([{ job_id: jobId, network: 'undeployed', allowance_id: toHex(random32()),
+    entitlement_id: toHex(random32()), manufacturer_id: toHex(random32()), member_subject_ref: randomUUID(),
+    job_commitment: toHex(random32()), quantity: 2, state: 'rights_consumed', consumption_nullifier: toHex(nullifier),
+    version: 1, created_at: new Date(), updated_at: Spanner.COMMIT_TIMESTAMP }]);
+  const attest = async (args: unknown[]) => {
+    let op = await pending('attestManufacture', args);
+    op = (await store.update(transition(op, 'Observed', { evidence: { ...op.evidence!, blockHeight: 12, blockHash: hash, status: 'SucceedEntirely' } }), op.version))!;
+    return (await store.update(transition(op, 'Finalized', { evidence: { ...op.evidence!, finalizedHeadHeight: 12 } }), op.version))!;
+  };
+  const attested = async (op: ChainOperation) => (await db.run({ sql: "SELECT aggregate_id, payload FROM OutboxEvents WHERE correlation_id = @id AND event_type = 'reprint.attested'",
+    params: { id: op.operationId }, json: true }))[0] as any[];
+  const op = await attest([nullifier, 1n, random32(), random32()]);
+  const child = { ...projection(), parentConsumption: toHex(nullifier) };
+  expect(await queue.complete((await claim())!, op, child)).toBe(true);
+  const [event] = await attested(op);
+  expect(event.aggregate_id).toBe(jobId);
+  expect(typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload)
+    .toEqual({ job_id: jobId, network: 'undeployed', child_entitlement_id: child.entitlementId, unit_index: 1 });
+  expect(JSON.stringify(event)).not.toContain(op.ownerRef);
+  // A unit outside the app workflow is projected but names no reprint job.
+  const stray = await attest([random32(), 0n, random32(), random32()]);
+  expect(await queue.complete((await claim())!, stray, { ...projection(), parentConsumption: toHex(random32()) })).toBe(true);
+  expect(await attested(stray)).toHaveLength(0);
 });
 
 it('serializes two final operations for the same entitlement without duplicate projection events', async () => {
