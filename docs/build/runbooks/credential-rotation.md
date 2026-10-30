@@ -1,6 +1,7 @@
 # Credential rotation and exposure runbook
 
-Status (2026-10-25, base `bf31c98`, after PR #51 commerce and PR #56 consumer UI merged):
+Status (2026-10-25, base `bf31c98`, after PR #51 commerce and PR #56 consumer UI merged; revised
+2026-10-30 on `375180b`, with the consumer-domains chart wiring merged):
 **nothing in this runbook has been run.** No sandbox or production deployment exists,
 and no credential has been provisioned from this repository. Every block below is
 `not run` until someone runs it and records evidence (section 7). The repository is **public**.
@@ -20,7 +21,7 @@ block in section 5.
 | Block | Name(s) | Class | Where the value lives | Consumers on this head |
 |---|---|---|---|---|
 | 5.1 | `RIGHTS_SERVICE_TOKEN`, `PRIVACY_SERVICE_TOKEN`, `PRIVACY_EXPORT_SERVICE_TOKEN`, `CHAIN_SERVICE_TOKEN` | internal-bearer | Secret Manager `brandme-<mode>-rts-<name-kebab>` → SecretSync → Kubernetes Secret (key `value`) → env | rendered chart, table in 5.1 |
-| 5.2 | `CONSUMER_DOMAIN_ASSERTION_KEY` (+ `_KID`, not secret) | signing-key | Secret Manager `brandme-<mode>-dom-domain-assertion-key` | gateway signs (`brandme-gateway/src/config/index.ts:173-174`, `src/services/domains.ts:24-46`); the consumer-domain service verifies against public `CONSUMER_DOMAIN_ASSERTION_JWKS` (`brandme_core/domains/persona/app.py:93-94,116`) |
+| 5.2 | `CONSUMER_DOMAIN_ASSERTION_KEY` (+ `_KID`, not secret) | signing-key | Secret Manager `brandme-<mode>-dom-domain-assertion-key` → SecretSync → Kubernetes Secret (key `value`) → gateway env; the kid and the public JWKS are chart values | gateway signs (`brandme-gateway/src/config/index.ts:173-174`, `src/services/domains.ts:24-46`); the consumer-domain service verifies against public `CONSUMER_DOMAIN_ASSERTION_JWKS` (`brandme_core/domains/persona/app.py:93-94,116`) |
 | 5.3 | `MIDNIGHT_BLOCKFROST_PROJECT_ID` | provider-token | Secret Manager `brandme-<mode>-rts-midnight-blockfrost-project-id`; GitHub Environment `sandbox` (designated) | `brandme-chain/src/config/index.ts:52`, Preprod runner `brandme-chain/scripts/test-midnight-preprod.mjs:6` |
 | 5.4 | `MN_PREPROD_SEEDS` | test-wallet-seeds | GitHub Environment `sandbox` (designated); never Secret Manager | Preprod runner only (`test-midnight-preprod.mjs:7-9`) |
 | 5.5 | `GCP_SA_KEY` | gcp-sa-key-legacy | GitHub repository secret | `.github/workflows/ci-cd.yml:368` (build-images only) |
@@ -49,7 +50,7 @@ the cluster: [gke-verification-packet.md](../deploy/gke-verification-packet.md) 
 | Role | Who | Does |
 |---|---|---|
 | Owner lane | the row's `lane_owner` in the manifest. `rts` (midnight-rights) owns the four service tokens and the Midnight credentials; `dom` (consumer-domains) owns the domain assertion key; `com` (commerce-agents) owns the Stripe and model keys; `fnd` (foundation) owns CI, GCP identity and developer tooling | keeps the row current; approves format changes |
-| Rotator | an operator with `secretmanager.versions.add` on that one secret, plus namespace `admin` | generates and adds the new version, pins it, rolls the workloads, records evidence |
+| Rotator | an operator with, on the secret being rotated, `roles/secretmanager.secretVersionManager` (add, disable, enable and destroy versions: the generate, rollback and retire steps) and `roles/secretmanager.secretAccessor` (the digest checks, `sm_fp` and `wait_synced`); for 5.1, `roles/secretmanager.secretAccessor` on all four `brandme-<mode>-rts-*-service-token` secrets (the distinctness check reads the other three); and the `admin` ClusterRole bound in namespace `brandme` (patch the SecretProviderClass, `rollout restart`, `exec`, `port-forward`). Whether the secret sync add-on aggregates its `secretproviderclasses` resource into `admin` is not verified; `rotation-env.sh` checks it and, if not, the rotator also needs a Role with `get` and `patch` on it. 5.3 and 5.4 also need admin on the repository's `sandbox` Environment secrets; 5.5 is the break-glass role's | generates and adds the new version, pins it, rolls the workloads, records evidence |
 | Approver | a second person (the GitHub Environment reviewer for `sandbox` and `production`) | approves the window and the evidence |
 | Break-glass | the founder, or a named delegate with project owner rights | revokes or disables during an exposure, outside the normal window |
 
@@ -98,6 +99,8 @@ PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectN
 [[ "$PROJECT_NUMBER" =~ ^[0-9]+$ ]] || { echo "PROJECT_NUMBER lookup failed" >&2; return 1 2>/dev/null || exit 1; }
 export PROJECT_NUMBER
 kubectl config current-context        # must be the sandbox cluster (packet C-7)
+[ "$(kubectl auth can-i patch secretproviderclasses.secrets-store.csi.x-k8s.io -n "$NS" 2>/dev/null || true)" = yes ] \
+  || { echo "you cannot patch SecretProviderClasses in $NS: bind a Role with get and patch on them (section 2)" >&2; return 1 2>/dev/null || exit 1; }
 
 # Digests are computed and compared here; none is ever printed.
 sm_fp()  { gcloud secrets versions access "$2" --secret "$1" --project "$PROJECT_ID" | sha256sum | cut -d' ' -f1; }
@@ -172,7 +175,8 @@ OLD=$(pinned "$ID"); [[ "$OLD" =~ ^[0-9]+$ ]] || { echo "no pinned version for $
 NEW=$(python3 -c 'import secrets; print(secrets.token_urlsafe(48), end="")' \
   | gcloud secrets versions add "$ID" --project "$PROJECT_ID" --data-file=- --format='value(name)')
 NEW=${NEW##*/}
-gcloud secrets versions access "$NEW" --secret "$ID" --project "$PROJECT_ID" | grep -Ex '[A-Za-z0-9._~+/-]{32,256}' >/dev/null
+gcloud secrets versions access "$NEW" --secret "$ID" --project "$PROJECT_ID" | grep -Ex '[A-Za-z0-9._~+/-]{32,256}' >/dev/null \
+  || { echo "version $NEW of $ID does not read back as a token; disable it and generate again" >&2; exit 1; }
 # Pairwise distinct: this new version against the other three tokens' pinned versions.
 dups=$(for t in rights-service-token privacy-service-token privacy-export-service-token chain-service-token; do
   s=brandme-$MODE-rts-$t; if [ "$s" = "$ID" ]; then sm_fp "$s" "$NEW"; else sm_fp "$s" "$(pinned "$s")"; fi
@@ -263,7 +267,7 @@ would then be: set `_NEXT` on the server and roll it; switch the gateway and rol
 the new value, clear `_NEXT` and roll the server. That removes the 401 window, and it touches
 midnight-rights code (read API, exports, chain) and foundation code (gateway config).
 
-### 5.2 `CONSUMER_DOMAIN_ASSERTION_KEY` / `_KID` (ES256, JWKS overlap)
+### 5.2 `CONSUMER_DOMAIN_ASSERTION_KEY` / `_KID` (ES256, kid overlap over two deploys)
 
 - The gateway signs a fresh assertion per request: 30 s lifetime (`brandme-gateway/src/services/domains.ts:24`),
   `kid` from `CONSUMER_DOMAIN_ASSERTION_KID`.
@@ -271,80 +275,134 @@ midnight-rights code (read API, exports, chain) and foundation code (gateway con
   `brandme_core/domains/persona/assertion.py:29`) with 30 s of clock skew (`:30`). It selects the
   public key by `kid` from `CONSUMER_DOMAIN_ASSERTION_JWKS`. That value is public P-256 JWKs only;
   a key with `d` is refused (`assertion.py:50-57`).
-- Deployments: `brandme-gateway` (signer) and `brandme-consumer-domains-api` (verifier; KSA
-  `brandme-consumer-domains-api`, GSA `bm-sbx-dom-api`). The consumer-domains lane is adding
-  the chart wiring for the key Secret, the kid and the JWKS. Until it lands, the `kid` and JWKS
-  steps below change whichever values that wiring defines; the order does not change.
-- Secret: `brandme-sandbox-dom-domain-assertion-key`, synced like the others (packet C-15).
+- Deployments: `brandme-gateway` (signer) and `brandme-consumer-domains` (verifier, one replica;
+  KSA `brandme-consumer-domains-api`, GSA `bm-sbx-dom-api`).
+- Where each part lives (`brandme-infra/helm/brandme`):
 
-**Generate and store** (on the operator's machine, in a private temp directory):
+  | Part | Source | Reaches |
+  |---|---|---|
+  | private key (PKCS#8 PEM) | Secret Manager `brandme-sandbox-dom-domain-assertion-key`, synced to the Secret of the same name (packet C-15; `values-sandbox.yaml:35`) | gateway env `CONSUMER_DOMAIN_ASSERTION_KEY` (`templates/gateway.yaml:106`) |
+  | kid | `consumerDomains.assertion.signingKid` (`values-sandbox.yaml:77`) | gateway env `CONSUMER_DOMAIN_ASSERTION_KID` (`templates/gateway.yaml:104-105`) |
+  | public keys | `consumerDomains.assertion.jwks.keys` (`values-sandbox.yaml:78-80`) | domain service env `CONSUMER_DOMAIN_ASSERTION_JWKS` (`templates/core-workloads.yaml:71-72`) |
+
+  The chart refuses a `signingKid` that names no key in the JWKS (`templates/validate.yaml:76`)
+  and any JWK with `d` (`templates/_helpers.tpl:160`).
+- The kid and the public keys are chart values, so each change ships as a **deploy**: a values
+  PR merged to `main`, then a `v*` tag (packet C-20). Never `kubectl set env`; the next deploy
+  would revert it.
+
+Why two deploys: one deploy rolls the gateway and the domain service at the same time, so
+gateway pods that sign with the new kid can be serving before the domain service pod that
+knows it. **Deploy 1** publishes the new public key next to the old one. **Deploy 2** switches
+the signer. A third, later deploy removes the old public key.
+
+**Generate and store** (operator machine). Node writes the public JWK to a file and the PKCS#8
+private key to stdout, which pipes straight into Secret Manager: the private key never touches
+disk, a shell variable or a command argument. The new version is inert until it is pinned.
 
 ```bash
 set -euo pipefail
 . ./rotation-env.sh
 ID=brandme-$MODE-dom-domain-assertion-key
 OLD=$(pinned "$ID"); [[ "$OLD" =~ ^[0-9]+$ ]] || { echo "no pinned version for $ID" >&2; exit 1; }
+OLD_KID=$(kubectl -n "$NS" exec deploy/brandme-gateway -- node -e 'process.stdout.write(process.env.CONSUMER_DOMAIN_ASSERTION_KID ?? "")')
+[[ "$OLD_KID" =~ ^[A-Za-z0-9._-]{1,64}$ ]] || { echo "could not read the gateway's current kid" >&2; exit 1; }
 KID="dom-$MODE-$(date -u +%Y%m%d%H%M)"
-umask 077; tmp=$(mktemp -d); trap 'shred -u "$tmp"/key.pem 2>/dev/null; rm -rf "$tmp"' EXIT
-openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out "$tmp/key.pem"     # PKCS#8 PEM
-grep -q '^-----BEGIN PRIVATE KEY-----$' "$tmp/key.pem"
-NEW=$(gcloud secrets versions add "$ID" --project "$PROJECT_ID" --data-file="$tmp/key.pem" --format='value(name)')
+[ "$KID" != "$OLD_KID" ] || { echo "new kid equals the current one; wait a minute" >&2; exit 1; }
+NEW=$(node -e 'const c=require("crypto"),f=require("fs");
+  const {privateKey,publicKey}=c.generateKeyPairSync("ec",{namedCurve:"P-256"});
+  const {kty,crv,x,y}=publicKey.export({format:"jwk"});
+  f.writeFileSync(process.argv[1],JSON.stringify({kty,crv,kid:process.argv[2],x,y,use:"sig",alg:"ES256"})+"\n");
+  process.stdout.write(privateKey.export({type:"pkcs8",format:"pem"}))' "public-jwk-$KID.json" "$KID" \
+  | gcloud secrets versions add "$ID" --project "$PROJECT_ID" --data-file=- --format='value(name)')
 NEW=${NEW##*/}
-# The public half only (no "d"), for the JWKS. Public keys may be printed and committed.
-node -e 'const c=require("crypto"),f=require("fs");const j=c.createPublicKey(f.readFileSync(process.argv[1])).export({format:"jwk"});
-  if(j.d)process.exit(3);process.stdout.write(JSON.stringify({...j,kid:process.argv[2],alg:"ES256",use:"sig"}))' \
-  "$tmp/key.pem" "$KID" > "public-jwk-$KID.json"
-printf 'ID=%s OLD=%s NEW=%s NEW_KID=%s\n' "$ID" "$OLD" "$NEW" "$KID" > rotation-state.env
-echo "added version $NEW for kid $KID (not pinned); public JWK in public-jwk-$KID.json"
+# The stored version is PKCS#8 P-256 and signs for the public JWK (checked in memory; prints one line).
+gcloud secrets versions access "$NEW" --secret "$ID" --project "$PROJECT_ID" \
+  | node -e 'const c=require("crypto"),f=require("fs");const pem=f.readFileSync(0,"utf8"),pub=JSON.parse(f.readFileSync(process.argv[1],"utf8"));
+    const k=c.createPrivateKey(pem),m=c.randomBytes(32);
+    if(!pem.startsWith("-----BEGIN PRIVATE KEY-----")||k.asymmetricKeyDetails.namedCurve!=="prime256v1"||"d" in pub
+      ||!c.verify("sha256",m,c.createPublicKey({key:pub,format:"jwk"}),c.sign("sha256",m,k)))process.exit(1);
+    process.stdout.write("version pairs with kid "+pub.kid+"\n")' "public-jwk-$KID.json" \
+  || { echo "version $NEW does not pair with public-jwk-$KID.json; disable it and generate again" >&2; exit 1; }
+printf 'ID=%s OLD=%s NEW=%s OLD_KID=%s NEW_KID=%s\n' "$ID" "$OLD" "$NEW" "$OLD_KID" "$KID" > rotation-state.env
+# The line to append under consumerDomains.assertion.jwks.keys in deploy 1 (public; safe to commit):
+jq -r '"        - {kty: EC, crv: P-256, kid: \(.kid), x: \(.x), \"y\": \(.y)}"' "public-jwk-$KID.json"
+echo "added version $NEW for kid $KID (not pinned)"
 ```
 
-**Publish first (verifier):** set the domain service's JWKS to the old key **plus** the new one,
-for example `jq -s '{keys: (.[0].keys + [.[1]])}' current-jwks.json "public-jwk-$KID.json"`, and
-roll `brandme-consumer-domains-api`. Verify that both kids are loaded:
+**Deploy 1: publish the new public key (verifier only).** Values PR: append the printed line under
+`consumerDomains.assertion.jwks.keys`, after the current key, and leave `signingKid` at
+`$OLD_KID`. Merge, wait for the green `main` run, and tag (packet C-20). The gateway keeps its kid and
+key; the domain service restarts with both public keys. Then check that it loads both kids:
 
 ```bash
 set -euo pipefail
 . ./rotation-env.sh; . ./rotation-state.env
-kubectl -n "$NS" exec deploy/brandme-consumer-domains-api -- python -c \
-  "import json,os; print(sorted(k['kid'] for k in json.loads(os.environ['CONSUMER_DOMAIN_ASSERTION_JWKS'])['keys']))"
+kubectl -n "$NS" rollout status deploy/brandme-consumer-domains --timeout=5m
+kids=$(kubectl -n "$NS" exec deploy/brandme-consumer-domains -- python -c \
+  "import json,os; print(' '.join(sorted(k['kid'] for k in json.loads(os.environ['CONSUMER_DOMAIN_ASSERTION_JWKS'])['keys'])))")
+for k in "$OLD_KID" "$NEW_KID"; do
+  [[ " $kids " == *" $k "* ]] || { echo "the domain service does not load kid $k" >&2; exit 1; }
+done
+echo "domain service loads $OLD_KID and $NEW_KID"
 ```
 
-**Pin and switch the signer:** set the gateway's `CONSUMER_DOMAIN_ASSERTION_KID` to `$NEW_KID`
-and pin the key in one sitting. A gateway pod that restarts between these two steps would sign
-with a key and a kid that do not match, and the domain service would refuse its requests.
+**Deploy 2: switch the signer.** Values PR: set `signingKid: <NEW_KID>`. Merge, wait for the
+green `main` run, and push the tag. While that run waits at the `sandbox` environment approval,
+pin the new key and wait for the sync, then approve:
 
 ```bash
 set -euo pipefail
 . ./rotation-env.sh; . ./rotation-state.env
 pin "$ID" "$NEW"
 wait_synced "$ID" "$NEW"
-kubectl -n "$NS" rollout restart deploy/brandme-gateway   # or the release that changes the kid value
-kubectl -n "$NS" rollout status deploy/brandme-gateway --timeout=5m
+echo "Secret holds version $NEW: approve the deploy now"
 ```
 
-**Verify:**
+The deploy rolls the gateway, because its `CONSUMER_DOMAIN_ASSERTION_KID` changes, and each new
+pod starts with the new key and the new kid together. Between `wait_synced` and that rollout, a
+gateway pod that restarts for any other reason would pair the new key with the old kid, and the
+domain service would refuse its requests until the rollout replaces it. That is why the pin
+waits for the approval gate: the window is the few minutes the deploy job needs to reach
+`helm upgrade`. If the run fails before `helm upgrade`, pin back (rollback below).
+
+**Verify** after deploy 2:
 
 ```bash
 set -euo pipefail
 . ./rotation-env.sh; . ./rotation-state.env
+kubectl -n "$NS" rollout status deploy/brandme-gateway --timeout=5m
 same "$(pod_fp brandme-gateway CONSUMER_DOMAIN_ASSERTION_KEY)" "$(sm_fp "$ID" "$NEW")" "gateway key = version $NEW"
-kubectl -n "$NS" exec deploy/brandme-gateway -- node -e 'process.stdout.write((process.env.CONSUMER_DOMAIN_ASSERTION_KID ?? "")+"\n")'
+kid=$(kubectl -n "$NS" exec deploy/brandme-gateway -- node -e 'process.stdout.write(process.env.CONSUMER_DOMAIN_ASSERTION_KID ?? "")')
+[ "$kid" = "$NEW_KID" ] || { echo "the gateway signs with kid '$kid', not $NEW_KID" >&2; exit 1; }
+echo "gateway signs with $NEW_KID"
 ```
 
 Then, with a sandbox test member's session, make one consumer-domain request through the
 gateway, `GET /api/v1/me/persona` (`brandme-gateway/src/routes/v1/persona.ts:153`). Expect
-200, and expect no assertion refusal in the `brandme-consumer-domains-api` logs.
+200, and no assertion refusal in `kubectl -n "$NS" logs deploy/brandme-consumer-domains`.
 
-**Remove the old public key:** wait at least 10 minutes. That is well beyond the 60 s maximum
-lifetime plus 30 s of skew. Then publish the JWKS with the new key only and roll
-`brandme-consumer-domains-api`. Disable the old Secret Manager version
+**Deploy 3: remove the old public key**, at least 10 minutes after deploy 2. That is well
+beyond the 60 s maximum lifetime plus 30 s of skew. Values PR: delete the `$OLD_KID` line from
+`consumerDomains.assertion.jwks.keys`; tag. Run the deploy 1 check with only `$NEW_KID`
+expected. Then disable the old Secret Manager version
 (`gcloud secrets versions disable "$OLD" --secret "$ID" --project "$PROJECT_ID"`) and destroy it
 7 days later.
 
-**Rollback:** before the old public key is removed, pin back to `$OLD`, set the old kid,
-`wait_synced`, restart the gateway, and run the verify block with the old values. After it is
-removed, publish the old public key again first, and then do the same. **Evidence:** kids
-before and after, versions OLD→NEW, the persona request status. Never record a key.
+**Rollback:**
+
+- Before deploy 2 is approved: if you pinned already, `pin "$ID" "$OLD"` and
+  `wait_synced "$ID" "$OLD"`, then reject the run. Nothing else changed.
+- After deploy 2, before deploy 3: `pin "$ID" "$OLD"`, `wait_synced "$ID" "$OLD"`, then
+  `helm -n brandme rollback brandme <deploy 1 revision> --wait --timeout 10m` (packet R-3; `helm
+  history` lists the revisions). That restores the old kid, and the gateway restarts onto the
+  old key. Set `NEW=$OLD` and `NEW_KID=$OLD_KID` in `rotation-state.env`, run the verify block, and
+  revert the deploy-2 values PR so the next tag does not switch again.
+- After deploy 3: first deploy the old public key again (deploy 1 with the old line), then as
+  above.
+
+**Evidence:** kids before and after, versions OLD→NEW, the three deploy run URLs, the persona
+request status. Never record a key.
 
 ### 5.3 `MIDNIGHT_BLOCKFROST_PROJECT_ID`
 
@@ -383,22 +441,44 @@ If the reviewer-gated Preprod run uses the GitHub Environment `sandbox` secret, 
 too with `gh secret set MIDNIGHT_BLOCKFROST_PROJECT_ID --env sandbox --repo brandmeonline/Brand-Me-Labs`.
 That command reads the value from stdin, never from an argument.
 
-**Verify:**
+**Verify** (all of it before Retire). The capability endpoint alone proves nothing about the
+new project id: it is built from configuration and local artifacts and makes no network call
+(`brandme-chain/src/routes/midnight.ts:16-18`, `src/midnight/capability.ts:30-81`), so a
+well-formed but wrong or revoked id still reads `read_only`. The live check is a GraphQL POST
+from the chain pod to the Preprod indexer URL the chain itself builds
+(`dist/src/midnight/network.js`, `preprodEndpoints`; source `brandme-chain/src/midnight/network.ts:36-51`),
+with the pod's new `MIDNIGHT_BLOCKFROST_PROJECT_ID`. It prints only the HTTP status. Blockfrost
+answers 403 to a project id it does not accept (observed 2026-10-30 with a well-formed fake
+id); 200 means it accepts this one.
 
 ```bash
 set -euo pipefail
 . ./rotation-env.sh; . ./rotation-state.env
 same "$(pod_fp brandme-chain MIDNIGHT_BLOCKFROST_PROJECT_ID)" "$(sm_fp "$ID" "$NEW")" "chain token = version $NEW"
+code=$(kubectl -n "$NS" exec deploy/brandme-chain -- node --input-type=module -e '
+  import { preprodEndpoints } from "./dist/src/midnight/network.js";
+  let out;
+  try {
+    const r = await fetch(preprodEndpoints(process.env.MIDNIGHT_BLOCKFROST_PROJECT_ID ?? "").indexerHttp, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: "{ __typename }" }),
+      redirect: "error", signal: AbortSignal.timeout(15000) });
+    out = String(r.status);
+  } catch (e) { out = "error " + (e?.cause?.code ?? e?.name ?? "unknown"); }
+  process.stdout.write(out);')
+[ "$code" = 200 ] || { echo "Preprod indexer answered '$code' to the new project id: do not revoke the old project; roll back" >&2; exit 1; }
+echo "Preprod indexer accepts the new project id (HTTP 200)"
 kubectl -n "$NS" port-forward deploy/brandme-chain 18082:3001 >/dev/null 2>&1 & pf=$!; trap 'kill "$pf" 2>/dev/null' EXIT; sleep 3
-status=$(curl -fsS http://127.0.0.1:18082/midnight/capability | jq -r .status)    # brandme-chain/src/routes/midnight.ts:16
+status=$(curl -fsS http://127.0.0.1:18082/midnight/capability | jq -r .status)    # configuration view only
 [ "$status" != unavailable ] && echo "capability: $status" || { echo "capability dropped to unavailable" >&2; exit 1; }
 ```
 
-Optionally run `pnpm --filter @brandme/chain test:midnight:preprod` behind the Environment
-reviewer. **Rollback:** `pin "$ID" "$OLD"`, then `wait_synced`, restart and verify; the old
-Blockfrost project still works until it is revoked. **Retire:** revoke the old project at
-Blockfrost only after verification, then disable `$OLD`. **Evidence:** the versions, the
-capability status, the date the old project was revoked.
+`pnpm --filter @brandme/chain test:midnight:preprod` behind the Environment reviewer is the
+end-to-end check: it submits Preprod transactions with the test wallets (5.4). Run it as well
+when the seeds are at hand; it does not replace the probe above. **Rollback:** `pin "$ID" "$OLD"`,
+then `wait_synced`, restart and verify; the old Blockfrost project still works until it is
+revoked. **Retire:** revoke the old project at Blockfrost only after the verify block above
+exits 0, then disable `$OLD`. There is no rollback after the revoke. **Evidence:** the versions,
+the probe's HTTP status, the capability status, and the date the old project was revoked.
 
 ### 5.4 `MN_PREPROD_SEEDS` (replace and sweep, never edit)
 
@@ -446,7 +526,7 @@ key.
    ```bash
    set -euo pipefail
    . ./rotation-env.sh
-   SA=REPLACE_ME_SA_FROM_C2; [[ "$SA" != REPLACE_ME* ]]
+   SA=REPLACE_ME_SA_FROM_C2; [[ "$SA" != REPLACE_ME* ]] || { echo "set SA (packet C-2)" >&2; exit 1; }
    gcloud iam service-accounts keys list --iam-account "$SA" --managed-by=user --format='table(name.basename(),validAfterTime,disabled)'
    ```
 
@@ -455,7 +535,7 @@ key.
    ```bash
    set -euo pipefail
    . ./rotation-env.sh
-   SA=REPLACE_ME_SA_FROM_C2 KEY_ID=REPLACE_ME_KEY_ID; [[ "$SA$KEY_ID" != *REPLACE_ME* ]]
+   SA=REPLACE_ME_SA_FROM_C2 KEY_ID=REPLACE_ME_KEY_ID; [[ "$SA$KEY_ID" != *REPLACE_ME* ]] || { echo "set SA and KEY_ID" >&2; exit 1; }
    gcloud iam service-accounts keys disable "$KEY_ID" --iam-account "$SA" --project "$PROJECT_ID"
    ```
 
@@ -464,7 +544,7 @@ key.
    ```bash
    set -euo pipefail
    . ./rotation-env.sh
-   SA=REPLACE_ME_SA_FROM_C2 KEY_ID=REPLACE_ME_KEY_ID; [[ "$SA$KEY_ID" != *REPLACE_ME* ]]
+   SA=REPLACE_ME_SA_FROM_C2 KEY_ID=REPLACE_ME_KEY_ID; [[ "$SA$KEY_ID" != *REPLACE_ME* ]] || { echo "set SA and KEY_ID" >&2; exit 1; }
    gcloud iam service-accounts keys delete "$KEY_ID" --iam-account "$SA" --project "$PROJECT_ID"
    gh secret delete GCP_SA_KEY --repo brandmeonline/Brand-Me-Labs
    ```
@@ -493,14 +573,17 @@ on this head, so there is no live endpoint to verify against yet. Owner: commerc
 
    ```bash
    set -euo pipefail
-   python -c 'import os; from brandme_core.domains.providers.payments.stripe_test import StripeTestConfig
-   print("webhook secrets accepted:", len(StripeTestConfig.from_env(os.environ).webhook_secrets))'
+   WANT=2   # during the overlap; 1 after the retire step
+   n=$(python -c 'import os; from brandme_core.domains.providers.payments.stripe_test import StripeTestConfig
+   print(len(StripeTestConfig.from_env(os.environ).webhook_secrets))')
+   [ "$n" = "$WANT" ] || { echo "webhook secrets accepted: $n, expected $WANT" >&2; exit 1; }
+   echo "webhook secrets accepted: $n"
    ```
 
-   Expect 2 during the overlap. Once a webhook route is mounted, also send a signed test event
-   from the Dashboard and expect it to be accepted.
-5. **Retire:** after Stripe's overlap ends, clear `STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS`, and
-   restart again (expect 1).
+   Once a webhook route is mounted, also send a signed test event from the Dashboard and
+   expect it to be accepted.
+5. **Retire:** after Stripe's overlap ends, clear `STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS`, restart
+   again, and run the verify block with `WANT=1`.
 6. **Rollback:** during the overlap, swap the two values back. **Evidence:** the date, the
    counts, the endpoint id (not the secret).
 
@@ -540,8 +623,10 @@ Use a dev-workspace key with a monthly cap (founder question Q13). Owner: commer
 
    ```bash
    set -euo pipefail
-   BRANDME_MODE=development python -c 'from brandme_core.orchestrator.model_planner import planner_from_env
-   print(type(planner_from_env()).__name__)'                            # expect ModelPlanner
+   planner=$(BRANDME_MODE=development python -c 'from brandme_core.orchestrator.model_planner import planner_from_env
+   print(type(planner_from_env()).__name__)')
+   [ "$planner" = ModelPlanner ] || { echo "planner is '$planner', not ModelPlanner: the key was not accepted" >&2; exit 1; }
+   echo "planner: ModelPlanner"
    python -m pytest tests/test_commerce_model_live.py -q -ra            # spends a few tokens; not_run without the key
    ```
 
@@ -618,6 +703,10 @@ Store the log next to the deployment evidence. Redact command output down to the
 - **Wallet tooling for 5.4.** The midnight-rights lane should name the wallet, faucet and sweep
   commands.
 - **Commerce signing key.** `COMMERCE_DOMAIN_ASSERTION_KEY` gets a block when a signer exists.
+- **Domain key switch window (5.2).** The kid is a chart value and the key is a synced Secret, so
+  deploy 2 has a short window in which a restarting gateway pod pairs the new key with the old
+  kid. Carrying the kid in the same Secret as the key (consumer-domains and foundation) would
+  remove it.
 - **Alerting.** Configure a log-based alert on
   `protoPayload.methodName="google.iam.admin.v1.CreateServiceAccountKey"`, routed to the
   break-glass owner. With `--enforce-no-sa-keys`, `scripts/provision/gcp-dev-identities.sh`

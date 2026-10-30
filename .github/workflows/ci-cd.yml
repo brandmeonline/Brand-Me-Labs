@@ -453,7 +453,10 @@ jobs:
           } > "$RUNNER_TEMP/release-args"
           mapfile -t args < "$RUNNER_TEMP/release-args"
           .cache/tools/bin/helm template brandme brandme-infra/helm/brandme "${args[@]}" > "$RUNNER_TEMP/release.yaml"
-          grep -c '^kind: Deployment$' "$RUNNER_TEMP/release.yaml"
+          # The Deployments this release renders; the rollout check below reads the optional ones from here.
+          python -c 'import sys, yaml; print("\n".join(d["metadata"]["name"] for d in yaml.safe_load_all(open(sys.argv[1])) if d and d.get("kind") == "Deployment"))' \
+            "$RUNNER_TEMP/release.yaml" > "$RUNNER_TEMP/deployments"
+          cat "$RUNNER_TEMP/deployments"
 
       - name: Authenticate to Google Cloud (Workload Identity Federation, no key)
         uses: google-github-actions/auth@v2
@@ -483,7 +486,10 @@ jobs:
       - name: Verify rollout and in-cluster checks
         run: |
           set -euo pipefail
-          for d in gateway chain read-api exports-api exports-worker events-worker; do
+          deploys=(gateway chain read-api exports-api exports-worker events-worker)
+          # consumer-domains only when the rendered release has it (consumerDomains.enabled in values-sandbox.yaml).
+          if grep -qx brandme-consumer-domains "$RUNNER_TEMP/deployments"; then deploys+=(consumer-domains); fi
+          for d in "${deploys[@]}"; do
             kubectl -n brandme rollout status "deployment/brandme-$d" --timeout=5m
           done
           kubectl -n brandme exec deploy/brandme-read-api -- python -m brandme_core.read_api --check
