@@ -15,6 +15,10 @@ on:
       - 'brandme-frontend/public/demo/**'
       - 'scripts/assets/**'
       - 'tests/e2e/spatial*'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.nvmrc'
       - '.github/workflows/spatial-validation.yml'
   workflow_dispatch:
 
@@ -34,11 +38,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22.21.0'
-      - name: Install isolated pinned lane dependencies
-        run: npx --yes pnpm@11.25.0 --dir scripts/assets install --ignore-workspace --frozen-lockfile --ignore-scripts
-      - name: Link lane dependencies for component checks
-        run: node scripts/assets/prepare-checks.mjs
+          node-version-file: '.nvmrc'
+      - uses: pnpm/action-setup@v4
+      - name: Install the pinned workspace
+        run: pnpm install --frozen-lockfile
       - name: Check component types
         run: node scripts/assets/node_modules/typescript/bin/tsc -p scripts/assets/tsconfig.json
       - name: Validate original asset rights, integrity and budgets
@@ -54,13 +57,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22.21.0'
+          node-version-file: '.nvmrc'
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install isolated pinned lane dependencies
-        run: npx --yes pnpm@11.25.0 --dir scripts/assets install --ignore-workspace --frozen-lockfile --ignore-scripts
-      - run: node scripts/assets/prepare-checks.mjs
+      - name: Install the pinned workspace
+        run: pnpm install --frozen-lockfile
       - name: Prepare hash-pinned local inference (payloads never uploaded)
         run: python scripts/assets/prepare-vision.py
       - run: node scripts/assets/node_modules/@playwright/test/cli.js install --with-deps chromium
@@ -71,3 +74,12 @@ jobs:
           SPATIAL_EVIDENCE_FILE: test-results/spatial-browser.json
           SPATIAL_RUN_DIR: test-results/spatial-runs
         run: node scripts/assets/node_modules/@playwright/test/cli.js test -c scripts/assets/playwright.config.mjs
+      - name: Preserve browser failure diagnostics (no model payloads)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-browser-${{ github.sha }}
+          path: |
+            test-results/spatial-browser.json
+            test-results/spatial-runs/
+          retention-days: 7

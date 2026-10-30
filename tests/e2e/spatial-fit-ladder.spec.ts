@@ -128,11 +128,16 @@ test("guest fit questions persist, isolate each house and can be corrected and d
   await expect(page.getByTestId("house-fit-reading")).toContainText("Your history favors M");
   await expect(page.getByTestId("house-fit-reading")).toContainText("Limited evidence: one garment");
   await fillGarment(page, "Cotton shirt", "L");
+  await expect(page.getByRole("article", { name: "Test House Cotton shirt fit note", exact: true })).toContainText("Test House · Cotton shirt · L");
+  await expect(page.getByTestId("house-fit-reading")).toContainText("Your history favors L");
   await expect(page.getByRole("heading", { name: "My saved fit notes (1)" })).toBeVisible();
   await page.getByLabel("House or brand", { exact: true }).fill("Other House");
   await expect(page.getByLabel("Size on the label", { exact: true })).toHaveValue("");
   await expect(page.getByTestId("house-fit-reading")).toContainText("No matching fit notes");
   await fillGarment(page, "Second shirt", "S");
+  // Saving takes the asynchronous origin lock; wait for the committed note before navigating.
+  await expect(page.getByRole("article", { name: "Other House Second shirt fit note", exact: true })).toContainText("Other House · Second shirt · S");
+  await expect(page.getByRole("heading", { name: "My saved fit notes (2)" })).toBeVisible();
   await page.reload();
   await page.getByRole("button", { name: /Find your fit/ }).click();
   await expect(page.getByRole("heading", { name: "My saved fit notes (2)" })).toBeVisible();
@@ -147,6 +152,7 @@ test("guest fit questions persist, isolate each house and can be corrected and d
   await expect(page.getByRole("alert")).toContainText("Enter a valid house");
   await expect(page.getByRole("heading", { name: "My saved fit notes (1)" })).toBeVisible();
   await page.getByRole("button", { name: "Delete all fit history and reset" }).click();
+  await expect(page.getByRole("heading", { name: "My saved fit notes (0)" })).toBeVisible();
   await expect(page.getByLabel("House or brand", { exact: true })).toHaveValue("");
   expect(await page.evaluate((key) => localStorage.getItem(key), FIT_HISTORY_KEY)).toBeNull();
   expect(uploads).toEqual([]);
