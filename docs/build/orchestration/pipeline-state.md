@@ -11,12 +11,13 @@ and commits the update. Lanes read their next assignment from the queue below.
   treated as rulings. Open questions queue for the founder checkpoint.
 - Main HEAD: 97d54477 (foundation PR #62 merged 2026-10-30 morning EDT;
   D-007 approved by the founder 2026-10-30).
-- Main health: RED on one gate — Test Frontend (Next.js), "Reject production and
-  critical dependency advisories". Flagged dependency identified by the
-  consumer-domains lane on #66: GHSA-6pq8-jhm2-2vcw, moderate, qs <= 6.16.0 via
-  brandme-chain > express > qs. Founder decision pending: re-run first, or
-  dependency remediation if it persists. Post-#62-merge push-run checks not yet
-  verified — re-check at the next hourly pass.
+- Main health: FULLY GREEN on 97d54477 (verified 2026-10-30 ~09:29 EDT:
+  18 success + 1 skipped, nothing failing). The Test Frontend advisory failure
+  cleared after the #62 merge; the re-run vs remediation decision is closed by
+  events. Mechanism not established (do not attribute to #62's qs override).
+  Flagged advisory for the record: GHSA-6pq8-jhm2-2vcw, moderate, qs <= 6.16.0
+  via brandme-chain > express > qs (identified by the consumer-domains lane
+  on #66).
 - Checkpoint: 5 days after this seed lands on main (seed day = day 1). The loop
   pauses for founder review at each checkpoint and resumes on the founder's go.
 - Monitor cadence: Mia checks every hour — lane status files (finish?), PR/check
@@ -36,12 +37,27 @@ and commits the update. Lanes read their next assignment from the queue below.
 - Kill switch: a PAUSED file in docs/build/orchestration/, or any founder "stop"
   message, stops all triggers immediately.
 
+## Ping-pong protocol (added 2026-10-30, founder direction)
+Every trigger must be answered, and every answer must be acknowledged, so Mia
+always knows where each lane is. Full definition: pipeline-design-20261029.md.
+- PING (lane → Mia): PR comment + status-file update (timestamp, assignment,
+  stage, head SHA, next step). Required on: trigger receipt (within 24h),
+  stage completion, check-in PR opened, limit hit (with refresh time), blocker.
+- PONG (Mia → lane): acknowledgment comment at the next hourly check after
+  seeing a ping, confirming receipt + next instruction (continue / redirect /
+  park). The pong is the proof Mia saw it.
+- Per lane below: `last ping` and `last pong`, updated on every transition.
+- Escalation: trigger with no receipt ping after 24h = flagged unresponsive
+  (never silently assumed alive or dead). Ping with no pong by the next hourly
+  check = Mia's overdue item, surfaced in the next update.
+
 ## Per-lane status (verified 2026-10-30 morning EDT)
 - **Foundation (Opus) — MERGED.** PR #62 merged (merge commit 97d54477).
   D-007 (Q9 redaction split: table owner redacts undelivered payloads, not the
   privacy lane) approved by the founder 2026-10-30. Q11 trimmed; #61 flags folded
   in; Q8 round trip 54 contracts. Next: ultra-plan-02 foundation draft (following
   queue). wip/fb2 token fold deferred to round 5 remains open.
+  Last ping: round-4 status (pre-merge). Last pong: #62 merge 2026-10-30.
 - **Consumer-domains (Opus) — PR #66, draft, head b5e8ea4 (as of 2026-10-30 07:38
   watch).** Stage 19 status; session proved alive overnight. Item 9 (lane outbox
   worker deletion) UNBLOCKED by the #62 merge (Q8 import now on main); trigger
@@ -49,17 +65,28 @@ and commits the update. Lanes read their next assignment from the queue below.
   green. Known: Test Frontend advisory failure on b5e8ea4 is the same qs advisory
   as main (not this PR's); one Test Core failure (logging redaction test) which
   the lane reports as not this PR's.
+  Last ping: Stage 20 status on #66 (merged main 97d54477). Last pong:
+  item-9-unblocked trigger 2026-10-30 (comment 6523052320).
 - **Commerce-agents (Opus) — no open PR.** Round-03 oneshot plan is on main via
   #67; needs a fresh branch to start. Money-path proof still gated on the two
   founder keys (STRIPE_TEST_SECRET_KEY, BRANDME_DEV_ANTHROPIC_API_KEY — names-only
   check 2026-10-30 morning: only GCP_SA_KEY present).
+  Last ping: none (no open PR). Last pong: round-03 plan on main via #67.
 - **Midnight-rights (Opus) — no open PR.** Round-03 ultra plan is on main via #67;
   needs a fresh branch to start.
+  Last ping: none (no open PR). Last pong: round-03 plan on main via #67.
 - **Consumer-ui (Astra) — PR #63, draft, visual-baseline gate.** No head change
   overnight; session-alive status still unproven (only status-check comments).
+  Founder confirms Codex kicked off 2026-10-30; receipt ping due within 24h of
+  the second kick-off trigger.
+  Last ping: none observed. Last pong: second kick-off trigger 2026-10-30
+  (comment 6524069655).
 - **Spatial-ar (Astra) — PR #60, draft, head 2852b786.** Only red is the
   browser/pose check, lane-owned. No head change overnight; session-alive status
-  still unproven.
+  still unproven. Founder confirms Codex kicked off 2026-10-30; receipt ping
+  due within 24h of the second kick-off trigger.
+  Last ping: none observed. Last pong: second kick-off trigger 2026-10-30
+  (comment 6524070094).
 
 ## Queue order (from #67, on main)
 1. Round-03 next plans (all six lanes) — foundation's item complete via #62;
@@ -70,7 +97,6 @@ and commits the update. Lanes read their next assignment from the queue below.
    neither approved).
 
 ## Open founder gates (park, never stall the whole loop)
-- Main Test Frontend audit: re-run vs remediation (qs GHSA-6pq8-jhm2-2vcw).
 - Two founder keys (above) — gate the money-path proof only.
 - New-lane pick; ChatGPT app designs location (consumer-ui reconciliation still
   starts with finding and diffing them).
