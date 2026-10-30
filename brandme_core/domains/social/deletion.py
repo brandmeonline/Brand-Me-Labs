@@ -151,12 +151,9 @@ def delete_category(txn, member_id: str, category: str) -> int:
         n += txn.execute_update("DELETE FROM DecisionAudience WHERE recipient_id=@m", params=m, param_types=_M)
         return n + txn.execute_update("DELETE FROM Decisions WHERE member_id=@m", params=m, param_types=_M)  # audience/responses cascade
     if category == "social.shares":
-        n = txn.execute_update("DELETE FROM ShareGrants WHERE member_id=@m", params=m, param_types=_M)  # previews cascade
-        for owner, share_id, recips in query(txn, "SELECT member_id, share_id, recipient_ids FROM ShareGrants WHERE @m IN UNNEST(recipient_ids)", m, _M):
-            txn.update("ShareGrants", columns=("member_id", "share_id", "recipient_ids"),
-                       values=[(owner, share_id, [x for x in recips if x != member_id] or None)])
-            n += 1
-        return n
+        from .shares import purge_member_shares
+
+        return purge_member_shares(txn, member_id)
     if category == "social.reports":
         # Anonymize, do not erase: moderation records stay attributable to the outcome, not the person.
         nil = {"m": member_id, "nil": NIL_MEMBER}
@@ -219,8 +216,9 @@ def build_privacy_handler():
             return record_scope_refusal(pd, ctx, category) or pd.DeletionOutcome(category, delete_category(txn, ctx.subject_ref, category))
 
         def purge_derived(self, ctx, category):
-            # Share previews live in Spanner and are deleted with the grant; no other cache exists in this lane.
-            return pd.DeletionOutcome(category, 0, done=True, detail="no derived stores outside Spanner")
+            # Share previews live in Spanner and go with the grant. Projected recipient copies (Firestore) are
+            # removed by the share.revoked / share.audience_changed events written in the deleting transaction.
+            return pd.DeletionOutcome(category, 0, done=True, detail="projected share copies removed through the outbox")
 
         def reapply_tombstone(self, txn, tombstone):
             if tombstone.record_keys:

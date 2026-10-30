@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
@@ -49,6 +50,7 @@ from brandme_core.domains.persona.kernel import (
     member_active,
     new_id,
     parse_iso,
+    processing_allowed,
     query,
     reject_non_finite,
     reject_unknown_keys,
@@ -57,6 +59,8 @@ from brandme_core.domains.persona.kernel import (
     run_read,
     server_now,
 )
+
+from brandme_core.events.retention import NIL_SUBJECT
 
 from . import events as _events  # noqa: F401
 from . import policy
@@ -169,15 +173,53 @@ def revoke_grant(txn, ctx: CommandContext, g: Dict[str, Any]) -> Dict[str, Any]:
     return g
 
 
+def _purge_events(txn, member_id: str, events: Sequence[Tuple[str, str, int, str]]) -> None:
+    """Outbox events that let the share projector drop recipients' Firestore copies when a
+    privacy deletion changes a grant: (event_type, share_id, version, owner_id). The deleting
+    transaction has no command context; the member's own row (still present) gives the environment."""
+    if not events:
+        return
+    from brandme_core.events import EventEnvelope, write_events
+
+    env = query(txn, "SELECT environment FROM Members WHERE member_id=@m", {"m": member_id}, {"m": STR})
+    if not env:
+        return
+    correlation = str(uuid.uuid4())
+    write_events(txn, [EventEnvelope(event_type=t, schema_version="1", aggregate_type="share", aggregate_id=sid, aggregate_version=v,
+                                     environment=env[0][0], actor_ref="service:privacy", correlation_id=correlation,
+                                     privacy_class="member_private", payload={"share_id": sid, "owner_id": owner})
+                       for t, sid, v, owner in events])
+
+
+def purge_member_shares(txn, member_id: str) -> int:
+    """Privacy deletion of ``social.shares``: the member's own grants go, with every projected copy
+    (``share.revoked``; the deleted member is not named, the projector needs only the share), and
+    the member leaves other people's grants (``share.audience_changed``), dropping their copies."""
+    m, mt = {"m": member_id}, {"m": STR}
+    events = [("share.revoked", sid, v + 1, NIL_SUBJECT) for sid, v in query(
+        txn, "SELECT share_id, version FROM ShareGrants WHERE member_id=@m AND revoked_at IS NULL", m, mt)]
+    n = txn.execute_update("DELETE FROM ShareGrants WHERE member_id=@m", params=m, param_types=mt)  # previews cascade
+    for owner, share_id, recips, version in query(
+            txn, "SELECT member_id, share_id, recipient_ids, version FROM ShareGrants WHERE @m IN UNNEST(recipient_ids)", m, mt):
+        txn.update("ShareGrants", columns=("member_id", "share_id", "recipient_ids", "version"),
+                   values=[(owner, share_id, [x for x in recips if x != member_id] or None, version + 1)])
+        events.append(("share.audience_changed", share_id, version + 1, owner))
+        n += 1
+    _purge_events(txn, member_id, events)
+    return n
+
+
 def revoke_for_deleted_subjects(txn, member_id: str, subject_types: Sequence[str]) -> int:
     """Privacy deletion of the data behind a member's shares (wardrobe items,
     outfits, persona snapshots): revoke those shares, drop their cached
     previews and recipients' unread notices, inside the deleting transaction.
-    No event is emitted: the deletion receipt is the record."""
-    ids = [r[0] for r in query(txn, "SELECT share_id FROM ShareGrants WHERE member_id=@m AND subject_type IN UNNEST(@t)",
-                               {"m": member_id, "t": list(subject_types)}, {"m": STR, "t": STR_ARRAY})]
+    ``share.revoked`` (naming no member) removes the projected copies."""
+    rows = query(txn, "SELECT share_id, version, revoked_at FROM ShareGrants WHERE member_id=@m AND subject_type IN UNNEST(@t)",
+                 {"m": member_id, "t": list(subject_types)}, {"m": STR, "t": STR_ARRAY})
+    ids = [r[0] for r in rows]
     if not ids:
         return 0
+    _purge_events(txn, member_id, [("share.revoked", sid, v + 1, NIL_SUBJECT) for sid, v, revoked in rows if revoked is None])
     p, t = {"m": member_id, "s": ids}, {"m": STR, "s": STR_ARRAY}
     n = txn.execute_update("UPDATE ShareGrants SET revoked_at = CURRENT_TIMESTAMP(), version = version + 1 "
                            "WHERE member_id=@m AND share_id IN UNNEST(@s) AND revoked_at IS NULL", params=p, param_types=t)
@@ -293,7 +335,10 @@ class ShareService:
             if not (now + MIN_LIFETIME <= req["expires_at"] <= now + MAX_LIFETIME):
                 raise ValidationFailed(f"expires_at must be between {_span(MIN_LIFETIME)} and {_span(MAX_LIFETIME)} from now",
                                        extra={"field": "expires_at", "server_time": iso(now)})
-            unreachable = sorted(r for r in req["recipient_ids"] if r == owner or not are_friends(txn, owner, r))
+            # A recipient whose social.shares deletion is pending is unreachable too, or the grant would re-add
+            # them after purge_member_shares has taken them out.
+            unreachable = sorted(r for r in req["recipient_ids"]
+                                 if r == owner or not are_friends(txn, owner, r) or not processing_allowed(txn, r, "social.shares"))
             if unreachable:
                 raise DetailedInvalidTransition("recipients must be friends you can reach", code="ineligible_recipients",
                                                 extra={"ineligible_recipient_ids": unreachable})

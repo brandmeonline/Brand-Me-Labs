@@ -62,6 +62,16 @@ def tier_for(rank_above: int, cohort: int, min_cohort: int = MIN_COHORT) -> str:
     return next((name for name, cut in TIERS if share < cut), "member")
 
 
+def tiers_by_rank(by_member: Mapping[str, int], min_cohort: int = MIN_COHORT) -> Dict[str, str]:
+    """Every member's tier from one sort. A count's first position in descending order is the
+    number of buyers with strictly more units, so equal counts share a rank and a tier."""
+    counts = sorted(by_member.values(), reverse=True)
+    above: Dict[int, int] = {}
+    for i, c in enumerate(counts):
+        above.setdefault(c, i)
+    return {m: tier_for(above[n], len(counts), min_cohort) for m, n in by_member.items()}
+
+
 def meets(tier: Optional[str], required: str) -> bool:
     return tier is not None and TIER_ORDER.index(tier) <= TIER_ORDER.index(required)
 
@@ -101,13 +111,7 @@ class StandingService:
         run_id = str(uuid.uuid4())
         written = 0
         for house, by_member in units.items():
-            counts = sorted(by_member.values(), reverse=True)
-            cohort = len(counts)
-            tiers = {}
-            for member_id, n in by_member.items():
-                above = sum(1 for c in counts if c > n)
-                tiers[member_id] = tier_for(above, cohort, self.min_cohort)
-            written += self._write_house(house, tiers, run_id)
+            written += self._write_house(house, tiers_by_rank(by_member, self.min_cohort), run_id)
         stale = self._drop_stale(run_id)
         return {"houses": len(units), "standings": written, "removed": stale, "run_id": run_id}
 

@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import random
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -27,7 +29,7 @@ from brandme_core.domains.persona.service import PersonaService
 from brandme_core.domains.rewards.benefits import BenefitService
 from brandme_core.domains.rewards.consumer import RewardsConsumer
 from brandme_core.domains.rewards.service import RewardsService
-from brandme_core.domains.rewards.standing import MIN_COHORT, StandingService, meets, tier_for
+from brandme_core.domains.rewards.standing import MIN_COHORT, StandingService, meets, tier_for, tiers_by_rank
 from brandme_core.domains.social.decisions import DecisionService
 from brandme_core.domains.social.flow import FlowService, excitement, size_for
 from brandme_core.domains.social.houses import CatalogHouses, HouseService, catalog_piece_exists, catalog_variant_lookup, house_ref_of
@@ -392,6 +394,33 @@ def test_flow_affinity_uses_the_pieces_own_axes(spanner_db):
     assert sizes(bold)[plain] == sizes(quiet)[plain] == ("compact", "Newest from your houses")
 
 
+def test_one_members_repeated_activity_never_sizes_a_piece(spanner_db):
+    db = spanner_db
+    me, eager, f = person(db), person(db), person(db)
+    friends(db, eager, f)
+    brand, ref = house("Atelier Echo")
+    coat = piece(db, brand, "Echo coat", ago=timedelta(hours=1))
+    catalog = CatalogHouses()
+    HouseService(db, catalog=catalog).follow(me, ref, None)
+    flow = FlowService(db, catalog=catalog, persona=PersonaService(db))
+    decisions, w = DecisionService(db, catalog_check=catalog_piece_exists), WardrobeService(db)
+
+    def size():
+        (p,) = [i for i in flow.flow(me)["items"] if i["kind"] == "house_piece"]
+        return p["size"], p["size_reason"]
+
+    def save(m):
+        w.create_items(m, {"source": "catalog", "title": "Echo coat", "category": "outerwear", "product_id": coat}, key())
+
+    for _ in range(3):
+        ask(decisions, eager, [f], "catalog_product", coat)  # one member asks three times, then saves it too
+    save(eager)
+    assert size() == ("compact", "Newest from your houses")
+    for m in (person(db), person(db)):
+        save(m)  # three different members now
+    assert size() == ("standard", "Larger because members are talking about it")
+
+
 # ------------------------------------------------------------------ standing
 
 
@@ -400,6 +429,20 @@ def test_tier_boundaries():
     assert tier_for(0, 100) == "top_1" and tier_for(1, 100) == "top_5" and tier_for(5, 100) == "top_10"
     assert tier_for(10, 100) == "top_25" and tier_for(24, 100) == "top_25" and tier_for(25, 100) == "member"
     assert meets("top_1", "top_5") and meets("top_5", "top_5") and not meets("top_10", "top_5") and not meets(None, "member")
+
+
+def test_ranking_matches_the_definition_and_scales():
+    rng = random.Random(7)
+    for size in (0, 1, MIN_COHORT - 1, MIN_COHORT, 137, 1000):
+        by_member = {f"m{i}": rng.choice((1, 1, 2, 3, 5, 8, 40)) for i in range(size)}
+        counts = list(by_member.values())
+        # The definition: buyers with strictly more units; equal counts share a tier.
+        assert tiers_by_rank(by_member) == {m: tier_for(sum(1 for c in counts if c > n), len(counts)) for m, n in by_member.items()}
+    big = {f"m{i}": rng.randint(1, 500) for i in range(200_000)}
+    started = time.perf_counter()
+    tiers = tiers_by_rank(big)
+    assert time.perf_counter() - started < 5  # one sort; rescanning the cohort per member would take hours
+    assert len(tiers) == len(big) and {"top_1", "member"} <= set(tiers.values())
 
 
 def test_house_standing_from_verified_purchases(spanner_db):

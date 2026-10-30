@@ -84,17 +84,13 @@ class FlowService:
     def _engagement(self, s, product_ids: List[str], now: datetime) -> Dict[str, int]:
         if not product_ids:
             return {}
-        since = now - ENGAGEMENT_WINDOW
-        out: Dict[str, int] = {}
-        for pid, n in query(s, "SELECT subject_id, COUNT(*) FROM Decisions@{FORCE_INDEX=DecisionsBySubject} WHERE subject_type='catalog_product' "
-                               "AND subject_id IN UNNEST(@p) AND opened_at >= @t GROUP BY subject_id", {"p": product_ids, "t": since},
-                            {"p": STR_ARRAY, "t": TS}):
-            out[pid] = out.get(pid, 0) + n
-        for pid, n in query(s, "SELECT product_id, COUNT(*) FROM WardrobeItems@{FORCE_INDEX=WardrobeItemsByProduct} WHERE product_id IN UNNEST(@p) "
-                               "AND collection='want' AND created_at >= @t GROUP BY product_id", {"p": product_ids, "t": since},
-                            {"p": STR_ARRAY, "t": TS}):
-            out[pid] = out.get(pid, 0) + n
-        return out
+        # Distinct members across both kinds of activity: repeated requests or adds by one person count once.
+        return dict(query(s, "SELECT pid, COUNT(DISTINCT m) FROM ("
+                             "SELECT subject_id AS pid, member_id AS m FROM Decisions@{FORCE_INDEX=DecisionsBySubject} "
+                             "WHERE subject_type='catalog_product' AND subject_id IN UNNEST(@p) AND opened_at >= @t "
+                             "UNION ALL SELECT product_id, member_id FROM WardrobeItems@{FORCE_INDEX=WardrobeItemsByProduct} "
+                             "WHERE product_id IN UNNEST(@p) AND collection='want' AND created_at >= @t) GROUP BY pid",
+                          {"p": product_ids, "t": now - ENGAGEMENT_WINDOW}, {"p": STR_ARRAY, "t": TS}))
 
     def _requests(self, s, me: str, now: datetime) -> List[Dict[str, Any]]:
         muted = {r[0] for r in query(s, "SELECT muted_member_id FROM MemberMutes WHERE member_id=@m", {"m": me}, {"m": STR})}

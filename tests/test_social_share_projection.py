@@ -3,6 +3,7 @@ projection framework, against the Spanner and Firestore emulators."""
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import uuid
@@ -10,14 +11,17 @@ import uuid
 import pytest
 from google.cloud.spanner_v1 import param_types
 
-from brandme_core.domains.persona.kernel import member_principal
+from brandme_core.domains.persona.kernel import member_principal, run_txn
 from brandme_core.domains.persona.service import PersonaService
 from brandme_core.domains.social.projection import SHARE_SPEC, register_share_projector
+from brandme_core.domains.social.deletion import delete_category as delete_social
 from brandme_core.domains.social.relationships import RelationshipService
 from brandme_core.domains.social.shares import ShareService
+from brandme_core.domains.wardrobe.deletion import delete_category as delete_wardrobe
 from brandme_core.domains.wardrobe.service import WardrobeService
 from brandme_core.events import EventEnvelope
 from brandme_core.events.projections import ProjectionRegistry, ProjectionStore
+from brandme_core.events.retention import NIL_SUBJECT
 from test_persona_harness import MEMBER_SCOPES, spanner_db  # noqa: F401
 from test_persona_harness import insert_member
 
@@ -144,3 +148,43 @@ def test_block_and_unfriend_remove_the_recipients_projected_copy(spanner_db, sto
     assert reg.apply(store, event(db, "share.created", sid)) == []
     reg.apply(store, changed)  # re-reads the grant as it is now: still nobody
     assert copy(a) is None and copy(b) is None
+
+
+def test_privacy_deletion_removes_projected_share_copies(spanner_db, store):
+    db = spanner_db
+    owner, friend, other = (member_principal(insert_member(db), MEMBER_SCOPES) for _ in range(3))
+    rel = RelationshipService(db)
+    for a, b in ((owner, friend), (owner, other), (friend, other)):
+        rel.accept(b, rel.request(a, b.member_id)["relationship_id"])
+    w = WardrobeService(db)
+    mine = w.create_items(owner, {"source": "manual", "title": "Silk scarf", "category": "accessory"}, key())["items"][0]["id"]
+    theirs = w.create_items(friend, {"source": "manual", "title": "Wool hat", "category": "accessory"}, key())["items"][0]["id"]
+    reg = ProjectionRegistry()
+    register_share_projector(db, reg)
+    shares = ShareService(db)
+
+    def share(who, item, recipients):
+        return shares.create(who, {"subject_type": "wardrobe_item", "subject_id": item, "audience": "selected_members", "allowed_fields": ["title"],
+                                   "recipient_ids": [r.member_id for r in recipients], "expires_at": "2027-01-01T00:00:00+00:00"}, key())["share_id"]
+
+    out, inbound = share(owner, mine, [friend]), share(friend, theirs, [owner, other])
+    for sid in (out, inbound):
+        assert reg.apply(store, event(db, "share.created", sid)) == ["applied"]
+
+    def copy(sid, who):
+        return store.get(SHARE_SPEC, {"share_id": sid}, recipient=who.member_id)
+
+    assert copy(out, friend) and copy(inbound, owner) and copy(inbound, other)
+    # The owner deletes social.shares: their own share's copies go, and they leave the friend's share.
+    run_txn(db, lambda t: delete_social(t, owner.member_id, "social.shares"))
+    (revoked,) = events(db, "share.revoked", out)
+    assert revoked.payload["owner_id"] == NIL_SUBJECT and owner.member_id not in json.dumps(revoked.to_wire())
+    assert reg.apply(store, revoked) == ["applied"]
+    assert reg.apply(store, events(db, "share.audience_changed", inbound)[-1]) == ["applied"]
+    assert copy(out, friend) is None and copy(inbound, owner) is None and copy(inbound, other)["preview"] == {"title": "Wool hat"}
+    # Deleting the data behind a share (wardrobe items) revokes it and removes its copies too.
+    again = share(friend, theirs, [other])
+    assert reg.apply(store, event(db, "share.created", again)) == ["applied"]
+    run_txn(db, lambda t: delete_wardrobe(t, friend.member_id, "wardrobe.items"))
+    assert reg.apply(store, event(db, "share.revoked", again)) == ["applied"]
+    assert copy(again, other) is None

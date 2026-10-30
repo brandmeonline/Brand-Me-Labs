@@ -8,7 +8,9 @@ import uuid
 
 import pytest
 
-from brandme_core.domains.persona.kernel import DetailedInvalidTransition, NotFound, RateLimited, ValidationFailed, member_principal
+from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
+
+from brandme_core.domains.persona.kernel import DetailedInvalidTransition, NotFound, RateLimited, ValidationFailed, member_principal, run_txn
 from brandme_core.domains.social.notifications import NotificationService
 from brandme_core.domains.social.relationships import RelationshipService
 from brandme_core.domains.social.reports import ReportService
@@ -25,6 +27,12 @@ def key():
 
 def person(db):
     return member_principal(insert_member(db), MEMBER_SCOPES)
+
+
+def freeze(db, member_id, category):
+    """A pending privacy deletion of one category, as the privacy lane records it."""
+    run_txn(db, lambda t: t.insert("ProcessingFreezes", columns=("subject_ref", "category", "reason", "deletion_job_id", "created_at"),
+                                   values=[(member_id, category, "deletion", str(uuid.uuid4()), COMMIT_TIMESTAMP)]))
 
 
 def test_rooms_are_small_private_and_among_friends(spanner_db):
@@ -141,6 +149,45 @@ def test_a_blocked_pair_cannot_be_invited_together(spanner_db):
     with pytest.raises(DetailedInvalidTransition):
         rooms.add_member(owner, rid, b.member_id)  # the same rule as adding one at a time
 
+
+def test_an_invitee_whose_room_deletion_is_pending_cannot_be_added(spanner_db):
+    db = spanner_db
+    owner, a, b = (person(db) for _ in range(3))
+    rel = RelationshipService(db)
+    for f in (a, b):
+        rel.accept(f, rel.request(owner, f.member_id)["relationship_id"])
+    freeze(db, b.member_id, "social.rooms")
+    rooms = RoomService(db)
+    with pytest.raises(DetailedInvalidTransition) as e:
+        rooms.create(owner, {"title": "Dinner", "member_ids": [a.member_id, b.member_id]}, key())
+    assert e.value.code == "not_addable" and e.value.extra["member_ids"] == [b.member_id]
+    rid = rooms.create(owner, {"title": "Dinner", "member_ids": [a.member_id]}, key())["room_id"]
+    with pytest.raises(DetailedInvalidTransition) as e:
+        rooms.add_member(owner, rid, b.member_id)
+    assert e.value.code == "not_addable"
+    assert count(db, "SELECT COUNT(*) FROM RoomMembers WHERE member_id=@m", m=b.member_id) == 0
+
+
+def test_a_former_member_can_still_withdraw_their_own_posts(spanner_db):
+    db = spanner_db
+    owner, a, b = (person(db) for _ in range(3))
+    rel = RelationshipService(db)
+    for f in (a, b):
+        rel.accept(f, rel.request(owner, f.member_id)["relationship_id"])
+    rooms = RoomService(db)
+    rid = rooms.create(owner, {"title": "Trip", "member_ids": [a.member_id, b.member_id]}, key())["room_id"]
+    mine = rooms.post(a, rid, {"kind": "note", "body": "Cape"}, key())["post_id"]
+    hers = rooms.post(b, rid, {"kind": "note", "body": "Coat"}, key())["post_id"]
+    rooms.remove_member(owner, rid, a.member_id)  # removed by the owner; the post stays readable to the room
+    assert {p["post_id"] for p in rooms.get(owner, rid)["posts"]} == {mine, hers}
+    assert rooms.withdraw(a, rid, mine) == {"room_id": rid, "post_id": mine, "removed": True}
+    assert count(db, "SELECT COUNT(*) FROM RoomPosts WHERE post_id=@p AND body IS NULL AND removed_reason='author'", p=mine) == 1
+    assert rooms.withdraw(a, rid, mine)["removed"] is True  # repeating it is harmless
+    with pytest.raises(NotFound):
+        rooms.withdraw(a, rid, hers)  # still only the author's own posts
+    with pytest.raises(NotFound):
+        rooms.withdraw(person(db), rid, hers)
+    assert count(db, "SELECT COUNT(*) FROM RoomPosts WHERE post_id=@p AND body='Coat'", p=hers) == 1
 
 def test_room_limits(spanner_db):
     db = spanner_db

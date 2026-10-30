@@ -39,6 +39,7 @@ from brandme_core.domains.persona.kernel import (
     idempotent_command,
     iso,
     member_active,
+    processing_allowed,
     query,
     reject_unknown_keys,
     require_scope,
@@ -84,8 +85,10 @@ class RoomService:
         return room
 
     def _addable(self, txn, owner: str, member_ids: List[str], existing: List[str]) -> None:
-        # Blocking is checked against everyone who will be in the room, other new invitees included.
+        # Blocking is checked against everyone who will be in the room, other new invitees included. An invitee
+        # whose social.rooms deletion is pending cannot be added: the membership would outlive the deletion.
         bad = [m for m in member_ids if m == owner or not are_friends(txn, owner, m) or not member_active(txn, m)
+               or not processing_allowed(txn, m, "social.rooms")
                or any(blocked_between(txn, m, x) for x in [*existing, *member_ids] if x != m)]
         if bad:
             raise DetailedInvalidTransition("you can add your own friends only", code="not_addable", extra={"member_ids": bad})
@@ -265,7 +268,7 @@ class RoomService:
         me = principal.member_id
 
         def tx(txn, ctx: CommandContext):
-            self._as_member(txn, room_id, me)
+            # Authorized by authorship alone: an author who left or was removed can still withdraw their posts.
             n = txn.execute_update("UPDATE RoomPosts SET body = NULL, subject_type = NULL, subject_id = NULL, kind = 'note', "
                                    "removed_at = CURRENT_TIMESTAMP(), removed_reason = 'author' "
                                    "WHERE room_id=@r AND post_id=@p AND author_id=@m AND removed_at IS NULL",

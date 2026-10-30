@@ -18,7 +18,12 @@ from brandme_core.domains.social.relationships import RelationshipService
 from brandme_core.domains.wardrobe.service import WardrobeService
 from brandme_core.domains.wardrobe.visibility import ClosetVisibilityService
 from brandme_core.events import EventEnvelope
+from brandme_core.domains.media.store import MemoryMediaStore
+from brandme_core.domains.persona.lane import register_consumer_domains
+from brandme_core.domains.privacy import deletion as pd
+from brandme_core.domains.privacy.privacy import MyDataService
 from test_persona_harness import MEMBER_SCOPES, count, insert_member, spanner_db  # noqa: F401
+from test_persona_lane_mydata import MemoryObjectStore
 
 PIECE = {"item_id", "title", "category", "house_ref", "detail"}
 STORY = PIECE | {"showcase_note", "worn_count"}
@@ -160,3 +165,33 @@ def test_deleting_a_source_category_scrubs_the_cards_copy_at_once(spanner_db, pe
     assert seen[field] == [] and cards.mine(owner)["card"][field] == []
     assert all(seen[f] for f in ("taste", "badges", "standings") if f != field)  # only the deleted source is scrubbed
     assert count(db, "SELECT COUNT(*) FROM PersonaCards WHERE member_id=@m AND stale_since IS NOT NULL", m=owner.member_id) == 1
+
+
+def test_a_card_deleted_through_my_data_is_not_recreated_behind_the_members_back(spanner_db, people):
+    db = spanner_db
+    owner, friend, *_ = people
+    persona = PersonaService(db)
+    persona.patch(owner, '"0"', {"changes": [{"axis": "expression", "value": 90, "locked": False}], "client_revision": "c"})
+    cards = PersonaCardService(db, persona=persona)
+    cards.settings(owner, {"audience": "private"})
+    reg = pd.PrivacyRegistry()
+    register_consumer_domains(reg, database=db, media_store=MemoryMediaStore())
+    svc = MyDataService(db, MemoryObjectStore(), reg, environment="development")
+    svc.run_deletion(svc.request_deletion(owner.member_id, datetime.now(timezone.utc), categories=["persona.card"]))
+    assert count(db, "SELECT COUNT(*) FROM PersonaCards WHERE member_id=@m", m=owner.member_id) == 0
+    # The jobs pass (backfill or a trigger) does not bring it back.
+    assert cards.recompose(owner.member_id, trigger="backfill") is None and cards.recompose(owner.member_id, trigger="trigger") is None
+    assert count(db, "SELECT COUNT(*) FROM PersonaCards WHERE member_id=@m", m=owner.member_id) == 0
+    # The backfill never even picks the deleted card, so deleted cards cannot crowd out new members.
+    picked = []
+    spy = PersonaCardService(db, persona=persona)
+    spy.recompose = lambda m, trigger: picked.append(m)
+    spy.recompose_due(limit=1_000_000)
+    assert owner.member_id not in picked
+    # The member's own visit does, private until they choose to share it again.
+    assert cards.mine(owner)["audience"] == "private"
+    with pytest.raises(NotFound):
+        cards.view(friend, owner.member_id)
+    # So does a settings change that names no audience.
+    svc.run_deletion(svc.request_deletion(owner.member_id, datetime.now(timezone.utc), categories=["persona.card"]))
+    assert cards.settings(owner, {"show_standings": False})["audience"] == "private"

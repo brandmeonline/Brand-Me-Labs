@@ -67,6 +67,19 @@ def _row(snap, member_id: str) -> Optional[Dict[str, Any]]:
     return d
 
 
+def _deleted_before(snap, member_id: str) -> bool:
+    """The member deleted their card through My Data (the privacy lane's tombstone)."""
+    return bool(query(snap, "SELECT 1 FROM DeletionTombstones WHERE subject_ref=@m AND category='persona.card' LIMIT 1",
+                      {"m": member_id}, {"m": STR}))
+
+
+def _new_row(snap, member_id: str) -> Dict[str, Any]:
+    """Settings for a card that does not exist yet. After an explicit deletion the card starts private:
+    only the member can share it again."""
+    audience = "private" if _deleted_before(snap, member_id) else DEFAULT_AUDIENCE
+    return {"member_id": member_id, "audience": audience, "show_standings": False, "highlight_item_ids": [], "version": 0}
+
+
 def mark_stale(txn, member_id: str, trigger: str) -> int:
     return txn.execute_update("UPDATE PersonaCards SET stale_since = COALESCE(stale_since, CURRENT_TIMESTAMP()), last_trigger=@t "
                               "WHERE member_id=@m", params={"m": member_id, "t": trigger[:40]}, param_types={"m": STR, "t": STR})
@@ -117,8 +130,11 @@ class PersonaCardService:
             now = server_now(txn)
             if not processing_allowed(txn, member_id, "persona.card", basis_time=now):
                 return None
-            row = _row(txn, member_id) or {"member_id": member_id, "audience": DEFAULT_AUDIENCE, "show_standings": False,
-                                           "highlight_item_ids": [], "version": 0}
+            row = _row(txn, member_id)
+            if row is None:
+                if trigger != "first_view" and _deleted_before(txn, member_id):
+                    return None  # a deleted card comes back only through the member's own action
+                row = _new_row(txn, member_id)
             card = self._compose(txn, member_id, row)
             txn.insert_or_update("PersonaCards", columns=("member_id", "audience", "show_standings", "highlight_item_ids", "card", "composed_at",
                                                           "stale_since", "last_trigger", "version", "updated_at"),
@@ -137,7 +153,8 @@ class PersonaCardService:
             old = [r[0] for r in query(s, "SELECT member_id FROM PersonaCards WHERE stale_since IS NULL AND (composed_at IS NULL OR composed_at < @t) "
                                           "ORDER BY composed_at LIMIT @l", {"t": now - BACKFILL_EVERY, "l": limit}, {"t": TS, "l": INT})]
             new = [r[0] for r in query(s, "SELECT p.member_id FROM PersonaProfiles p LEFT JOIN PersonaCards c ON c.member_id = p.member_id "
-                                          "WHERE c.member_id IS NULL LIMIT @l", {"l": limit}, {"l": INT})]
+                                          "WHERE c.member_id IS NULL AND NOT EXISTS (SELECT 1 FROM DeletionTombstones t "
+                                          "WHERE t.subject_ref = p.member_id AND t.category = 'persona.card') LIMIT @l", {"l": limit}, {"l": INT})]
             return stale, old, new
 
         stale, old, new = run_read(self.db, due)
@@ -169,7 +186,7 @@ class PersonaCardService:
             if not member_active(txn, me):
                 raise NotFound("member not found")
             guard_write(txn, me, "persona.card")
-            row = _row(txn, me) or {"audience": DEFAULT_AUDIENCE, "show_standings": False, "highlight_item_ids": [], "version": 0}
+            row = _row(txn, me) or _new_row(txn, me)
             audience = body.get("audience", row["audience"])
             if audience not in AUDIENCES:
                 raise ValidationFailed(f"audience must be one of {AUDIENCES}", extra={"field": "audience"})
