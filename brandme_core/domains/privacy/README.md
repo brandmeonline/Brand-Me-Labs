@@ -38,6 +38,21 @@ these library methods directly to callers or accept a caller-supplied subject.
   freezes remain permanent. Receipts describe any restriction still active at
   completion; historical receipts are not rewritten after later jobs finish.
 
+- Handlers that cannot delete inside the orchestrator's transaction declare
+  `transactional = False` plus `delete_outside_txn` (`NonTransactionalPrivacyHandler`,
+  contract item 7 in `deletion.py`). This is a stable extension of the published
+  Protocol (D-007); registration refuses the flag without the method or with a
+  non-boolean value. Foundation's platform handler (`brandme_core/events/erasure.py`)
+  and the foundation bridge use it.
+- Receipts keep the handler's plain-language notes as `records_detail` and
+  `derived_detail`, for example that published broker copies expire with topic
+  retention rather than being recalled. The read API does not relay them; its
+  generated contract has no field for them yet.
+- A handler with `final = True` (contract item 9) runs after every other category
+  of its job, and only once those have finished both steps. This is the ordering
+  for identity erasure (founder flag F-identity): the identity, sessions and
+  consent rows go last, so a member can still sign in to read a pending receipt.
+
 Stop older privacy executors before upgrading. Confirmed terminal exceptions now
 use `DeletionSteps.state = "exception_done"` (within the existing V009 column).
 The older `exception` state did not distinguish finished from unfinished work;
@@ -48,9 +63,15 @@ they were processed by an older executor.
 ## Restore and recovery
 
 1. Stop member traffic, all writers and deletion execution before restoring. This
-   library is not a distributed traffic switch. Ensure the authoritative tombstone
+   library is not a distributed traffic switch. Ensure the authoritative deletion
    ledger survives outside the backup being restored; an old backup alone cannot
-   contain deletions accepted after that backup.
+   contain deletions accepted after that backup. Carry `DeletionJobs`,
+   `DeletionSteps` and the deletion rows of `ProcessingFreezes` with
+   `DeletionTombstones`, not the tombstones alone. The permanent account barrier
+   in `assert_processing_allowed` reads `DeletionJobs` and the `*` freeze, and
+   foundation's platform handler needs the job to keep a refused category request
+   a no-op. A tombstone-only restore re-applies the erasures and serves, but it
+   loses both.
 2. Run `reapply_tombstones_after_restore(backup_ref, backup_taken_at)`. It records
    a durable `restoring` barrier before invoking handlers. Native transactional
    handlers must raise if record removal is unfinished; their count must be a

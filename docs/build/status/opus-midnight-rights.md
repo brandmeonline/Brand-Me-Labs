@@ -495,3 +495,51 @@ No values or seeds are ever recorded here.
 |---|---|---|---|
 | `MIDNIGHT_BLOCKFROST_PROJECT_ID` | Blockfrost Midnight Preprod project token (prefix `nightpreprod`) | environment secret, set by the founder | not yet |
 | `MN_PREPROD_SEEDS` | three or more Preprod test-wallet seeds holding tNIGHT and DUST; never Mainnet | environment secret, set by the founder | not yet |
+
+## Stage 12 — D-007 accepted; Protocol extension, receipt notes and identity ordering (2026-10-30)
+
+- **Assignment:** round-03 plan build step 5, as replaced by D-007 (`docs/build/deviations.md:52-58`), plus foundation's open founder flags F-identity and the Q9 restore trade-off (`docs/build/status/opus-foundation.md:291,296`).
+- **Base:** Stage 11 head `c55c010`.
+- **Next step:** authenticated command backends (build step 2).
+
+### D-007 (the table owner redacts undelivered payloads)
+- **(a) Acknowledged.** Foundation's `PlatformPrivacyHandler` (`brandme_core/events/erasure.py:170`) owns `OutboxEvents` and `IdempotencyRecords`. The privacy orchestrator still never names a table.
+- **(b) Declared as a stable extension.**
+  - `NonTransactionalPrivacyHandler` (`brandme_core/domains/privacy/deletion.py:146`) and contract item 7 (`deletion.py:34-43`) publish `transactional = False` plus `delete_outside_txn`. The orchestrator calls it before the transaction that records the step and tombstone, and again for every tombstone on restore, so it must be idempotent. It never calls `delete` or `reapply_tombstone` for these handlers.
+  - Not added to `DomainPrivacyHandler` itself: that Protocol is `runtime_checkable` and used in `isinstance` checks, so new required members would reject every existing handler.
+  - Registration refuses the flag without a callable method, and a non-boolean flag (`runs_outside_transaction`, `deletion.py:158`; called from `register`). Both orchestrator call sites use the helper (`privacy.py:305,457`), replacing raw `getattr`.
+- **(c) Receipts keep handler notes.**
+  - Per-category `records_detail` and `derived_detail` (`privacy.py:393`). The platform handler's broker-retention note (`BROKER_COPIES`, `erasure.py:72`) now reaches the receipt instead of only the category text.
+  - Contract item 8 (`deletion.py:44-47`): `exception` and `detail` must be short plain-language sentences, never identifiers, URLs, keys, provider error text or other members' data.
+  - Known limit: a resumed run rereads saved steps, and the single `DeletionSteps.detail` column keeps only the exception when a handler set both. No current handler finishes with both.
+  - The read API still relays only status and counts (`brandme_core/read_api/reads.py:201-202`), and the generated `DeletionOutcomeRead` has no field for notes. Member-visible notes need a contract field; that's a check-in question.
+
+### F-identity: ordering ruling (default, built)
+- **Ruling:** identity erasure runs **last**. It starts only after every other category of the job has finished both its record and derived steps.
+  - Other handlers keep any identity mapping they need while they run.
+  - A member whose deletion is pending (commerce settling, rights broadcasts awaiting reconciliation) can still sign in and read the pending receipt.
+  - Restore re-applies identity tombstones last.
+- **Built:** contract item 9 (`deletion.py:48-53`) and `runs_last` (`deletion.py:168`).
+  - A handler sets `final = True`. The orchestrator sorts final categories last (`privacy.py:292`) and holds them pending, with `records_detail` "waits until every other category is finished" (`privacy.py:298-300`). Restore sorts their tombstones last (`privacy.py:453`).
+  - Foundation's identity step can register as a final handler. This lane writes no identity code.
+- **Still foundation's to decide:** what happens at acceptance (`account_state`, revoking sessions) and how the member gets the receipt once their identity is gone.
+
+### Q9 restore trade-off: ruling (default, documented)
+- **Carry `DeletionJobs`, `DeletionSteps` and the deletion rows of `ProcessingFreezes` with `DeletionTombstones`** (`brandme_core/domains/privacy/README.md:68-74`).
+- **Finding:** the trade-off is wider than a refused category request.
+  - The permanent account barrier in `assert_processing_allowed` reads `DeletionJobs` (`deletion.py:258-264`) and the `*` freeze (`deletion.py:248-254`).
+  - A tombstone-only restore therefore re-applies the erasures and serves, but a guarded writer with a fresh basis time can then write a deleted account's data again.
+- **Not enforced in code.** Foundation's `test_restore_without_the_job_ledger_reerases_and_serves` (`tests/foundation/test_outbox_retention.py:519-545`) asserts that a tombstone-only restore serves. A guard that refuses would change foundation's test, so it's a coordination question, not a self-applied edit.
+
+### Verified (Spanner emulator 1.5.45, venv from `scripts/python/requirements.lock`)
+- **New tests** (`tests/test_privacy.py:185-326`):
+  - registry validation, including foundation's platform handler and bridge satisfying the extension;
+  - deletion and restore wholly outside the transaction;
+  - a final handler waiting for a pending category and running last on restore;
+  - the receipt carrying `BROKER_COPIES` from the real platform handler.
+- **Lane and joint suites:** 285 passed across 14 files, including the joint proof `tests/foundation/test_deletion_leaves_no_member_rows.py`, `tests/foundation/test_outbox_retention.py`, the lane privacy/rights suites, `tests/test_read_api.py` and every consumer and commerce privacy suite.
+  - That run predates the F-identity edit.
+  - After it, `test_privacy.py`, `test_privacy_recovery.py` and `test_rights.py` passed again (67 passed).
+- **Full `tests/` on this stage's code:** 2107 passed, 67 skipped, 12 xfailed (the quarantined legacy suites).
+  - One failure, `tests/foundation/test_migrations.py::test_only_reserved_numbers_are_used`, came from the next stage's uncommitted V016 file, which was in the working tree during the run. With that file moved aside the migrations suite passes (7 passed).
+- **CI:** the Stage 11 head's checks are green on PR #70 (Foundation check, Test Core, chain, gateway, security).
