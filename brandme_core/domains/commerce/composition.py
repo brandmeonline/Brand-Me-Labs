@@ -15,6 +15,12 @@ platform's secret store):
 * ``STRIPE_TEST_SECRET_KEY``: Stripe test-mode key (``sk_test_…`` or restricted ``rk_test_…``).
 * ``STRIPE_TEST_WEBHOOK_SECRET`` / ``STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS``: optional ``whsec_…``
   secrets (current and, during rotation, previous) to accept Stripe test webhooks.
+* ``STRIPE_TEST_CONNECT_WEBHOOK_SECRET`` / ``…_PREVIOUS``: optional ``whsec_…`` secrets of the Connect
+  webhook endpoint (events from connected accounts).
+* ``BRANDME_STRIPE_CONNECT_ACCOUNT``: optional ``acct_…`` test connected account. Set, the merchant is paid
+  by Connect **direct charges** on that account (``providers/payments/stripe_connect.py``); unset, the
+  platform test account stands in for the merchant, as before.
+* ``BRANDME_STRIPE_CONNECT_FEE_BPS``: Brand.Me's application fee in basis points (default 1000 = 10%).
 * ``BRANDME_STRIPE_EGRESS_PROXY``: optional explicit proxy for Stripe egress.
 * ``BRANDME_STRIPE_CA_BUNDLE``: optional absolute path to the CA bundle for Stripe egress.
 * ``STRIPE_LOG``: read only to refuse ``debug``/``info``, under which the SDK prints request and
@@ -37,6 +43,8 @@ from brandme_core.domains.providers.registry import ProviderRegistry, Simulation
 
 PAYMENTS_ENV = "BRANDME_COMMERCE_PAYMENTS"
 ENV_KEYS = (PAYMENTS_ENV, "STRIPE_TEST_SECRET_KEY", "STRIPE_TEST_WEBHOOK_SECRET", "STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS",
+            "STRIPE_TEST_CONNECT_WEBHOOK_SECRET", "STRIPE_TEST_CONNECT_WEBHOOK_SECRET_PREVIOUS",
+            "BRANDME_STRIPE_CONNECT_ACCOUNT", "BRANDME_STRIPE_CONNECT_FEE_BPS",
             "BRANDME_STRIPE_EGRESS_PROXY", "BRANDME_STRIPE_CA_BUNDLE", "STRIPE_LOG")
 RAILS = ("simulated", "stripe_test")
 DEV_ENVIRONMENTS = ("demo", "development")
@@ -84,7 +92,26 @@ def _stripe_processor(view: Mapping[str, str], environment: str, clock: Callable
     except ValueError as e:
         raise CompositionError("stripe_api_version_unverified" if str(e) == "stripe_api_version_unverified"
                                else "stripe_wire_refused") from None
-    return StripeTestPaymentProcessor(cfg, wire=wire, environment=environment, clock=clock, log=log)
+    connected = _connected_merchant(view, cfg.payee_ref)
+    return StripeTestPaymentProcessor(cfg, wire=wire, environment=environment, clock=clock, log=log,
+                                      connected=connected)
+
+
+def _connected_merchant(view: Mapping[str, str], payee_ref: str):
+    account = view.get("BRANDME_STRIPE_CONNECT_ACCOUNT")
+    fee = view.get("BRANDME_STRIPE_CONNECT_FEE_BPS")
+    if not account:
+        if fee:
+            raise CompositionError("stripe_connect_config_refused")  # a fee without an account is a typo, not a default
+        return None
+    from brandme_core.domains.providers.payments.stripe_connect import ConnectedMerchant
+    try:
+        bps = int(fee) if fee else 1000
+        if fee and fee.strip() != str(bps):
+            raise ValueError
+        return ConnectedMerchant(payee_ref, account, application_fee_bps=bps)
+    except ValueError:
+        raise CompositionError("stripe_connect_config_refused") from None
 
 
 def build_providers(environment: str, *, env: Mapping[str, str],

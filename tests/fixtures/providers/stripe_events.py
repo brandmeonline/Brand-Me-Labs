@@ -19,9 +19,13 @@ def webhook_secret() -> str:
 
 
 def event(event_type: str, obj: Dict[str, Any], *, created: int, livemode: bool = False,
-          event_id: Optional[str] = None) -> Dict[str, Any]:
-    return {"id": event_id or "evt_" + secrets.token_hex(12), "object": "event", "type": event_type,
-            "livemode": livemode, "created": created, "data": {"object": obj}}
+          event_id: Optional[str] = None, account: Optional[str] = None) -> Dict[str, Any]:
+    """``account``: a Connect event from that connected account (Stripe sets it on Connect endpoint events)."""
+    out = {"id": event_id or "evt_" + secrets.token_hex(12), "object": "event", "type": event_type,
+           "livemode": livemode, "created": created, "data": {"object": obj}}
+    if account is not None:
+        out["account"] = account
+    return out
 
 
 def signed(payload: Dict[str, Any], secret: str, at: int, *, extra_v1: Optional[str] = None) -> Tuple[Dict[str, str], bytes]:

@@ -1,11 +1,21 @@
 # Stripe Connect integration plan
 
-> **Status (2026-11-01): plan only. None of this is implemented.** The existing Stripe code
-> (`brandme_core/domains/providers/payments/stripe_test.py`, `stripe_wire.py`) charges a
-> single Stripe account in test mode and has no Connect support. This plan follows the Stripe
-> plugin's Connect guidance (`connect-recommend`, `stripe-best-practices`). Stripe's MCP
-> `stripe_implementation_planner` was not reachable from the session that wrote it. Check
-> every API path and field against docs.stripe.com before building.
+> **Status (2026-11-01).**
+> - **Flow 1 (brands, direct charges): built in test mode, verified only against the fixture
+>   stand-in and a loopback wire recorder. Not yet run against Stripe test mode.**
+>   Code: `brandme_core/domains/providers/payments/stripe_connect.py`, plus the connected-account
+>   routing in `stripe_test.py` / `stripe_wire.py` and the startup config in
+>   `brandme_core/domains/commerce/composition.py`. Tests: `tests/test_providers_stripe_connect.py`;
+>   the purchase suite also runs on a connected-account rail (`tests/test_commerce_payments_flow.py`,
+>   `stripe_connect`).
+> - **Flow 2 (member resale): not implemented.**
+> - Not built yet for Flow 1: a console/gateway route that serves Account Sessions to the brand's
+>   browser; handling of Accounts v2 thin events (readiness is re-read before every authorization
+>   instead); and a live-suite run with a real test connected account.
+>
+> This plan follows the Stripe plugin's Connect guidance (`connect-recommend`, `stripe-best-practices`).
+> Stripe's MCP `stripe_implementation_planner` was not reachable. Request fields were checked
+> against the pinned SDK (`stripe==16.0.0`, API `2026-09-30.endive`), not against live Stripe.
 
 Founder inputs: Connect is used for **two separate flows**: (1) brands and ateliers selling
 to members, and (2) member-to-member resale. The platform fee is **5–15%**.
@@ -185,6 +195,23 @@ Read `stripe.v2.core.accounts.retrieve(id)` before enabling payments or transfer
 - Never use v1 `charges_enabled` / `payouts_enabled`. Do not request `stripe_balance.payouts`
   explicitly; Stripe adds it automatically.
 
+### Running Flow 1 in test mode
+
+Configuration is read only by `commerce/composition.py`:
+
+| Variable | Meaning |
+|---|---|
+| `BRANDME_COMMERCE_PAYMENTS=stripe_test` | Stripe test-mode rail (demo/development only) |
+| `STRIPE_TEST_SECRET_KEY` | `sk_test_…`/`rk_test_…`; a restricted key needs Connect write permission |
+| `BRANDME_STRIPE_CONNECT_ACCOUNT` | the brand's test connected account `acct_…`; unset, the platform account stands in |
+| `BRANDME_STRIPE_CONNECT_FEE_BPS` | Brand.Me's fee in basis points (default 1000 = 10%) |
+| `STRIPE_TEST_CONNECT_WEBHOOK_SECRET[_PREVIOUS]` | the Connect webhook endpoint's `whsec_…` |
+
+The account is created with `StripeConnectAccounts.create_brand_account` and onboarded through
+`onboarding_link` (Stripe-hosted) or `component_session` (embedded). Authorizations are refused
+with `connected_account_not_ready` until `card_payments` is `active`, and with
+`connected_account_misconfigured` if the dashboard or responsibilities differ from §A.
+
 ### J. Implementation plan (mapped to this repo)
 1. **Account setup.** Add v2 account create/retrieve to `StripeWire`, keeping the existing
    allowlisted-field approach. Store a `connected_account_ref` per merchant and per selling
@@ -217,8 +244,8 @@ Read `stripe.v2.core.accounts.retrieve(id)` before enabling payments or transfer
   for individuals.
 
 ### M. Open questions
-1. **Is authentication a gate on resale payout?** If yes, use separate charges and transfers
-   as above. If no, use destination charges.
+1. ~~Is authentication a gate on resale payout?~~ **Decided 2026-11-01: yes.** Resale uses
+   separate charges and transfers, and the payout is released after authentication.
 2. **Invariant change:** the resale flow makes Brand.Me the payee and merchant of record. That
    needs a written amendment to the `merchant.py:138` rule, limited to resale.
 3. **KYC scope:** PLAN §7 says "no KYC/AML until after Phase 6". Connect onboarding is KYC.

@@ -52,24 +52,44 @@ class WireError(Exception):
 
 
 class StripeWire(Protocol):
-    def create_payment_intent(self, params: Mapping[str, Any], *, idempotency_key: str) -> Dict[str, Any]: ...
+    """Every PaymentIntent and refund call takes ``stripe_account``: ``None`` acts on the platform account,
+    an ``acct_…`` id acts on that connected account (Connect direct charges; the ``Stripe-Account`` header)."""
 
-    def capture_payment_intent(self, pi_id: str, params: Mapping[str, Any], *,
-                               idempotency_key: str) -> Dict[str, Any]: ...
+    def create_payment_intent(self, params: Mapping[str, Any], *, idempotency_key: str,
+                              stripe_account: Optional[str] = None) -> Dict[str, Any]: ...
 
-    def cancel_payment_intent(self, pi_id: str, params: Mapping[str, Any], *,
-                              idempotency_key: str) -> Dict[str, Any]: ...
+    def capture_payment_intent(self, pi_id: str, params: Mapping[str, Any], *, idempotency_key: str,
+                               stripe_account: Optional[str] = None) -> Dict[str, Any]: ...
 
-    def retrieve_payment_intent(self, pi_id: str) -> Dict[str, Any]: ...  # latest_charge expanded
+    def cancel_payment_intent(self, pi_id: str, params: Mapping[str, Any], *, idempotency_key: str,
+                              stripe_account: Optional[str] = None) -> Dict[str, Any]: ...
 
-    def search_payment_intents(self, query: str) -> List[Dict[str, Any]]: ...  # at most 10
+    def retrieve_payment_intent(self, pi_id: str, *,
+                                stripe_account: Optional[str] = None) -> Dict[str, Any]: ...  # latest_charge expanded
 
-    def list_payment_intents(self, *, created_gte: int,
-                             starting_after: Optional[str]) -> Tuple[List[Dict[str, Any]], bool]: ...  # 100 a page
+    def search_payment_intents(self, query: str, *,
+                               stripe_account: Optional[str] = None) -> List[Dict[str, Any]]: ...  # at most 10
 
-    def create_refund(self, params: Mapping[str, Any], *, idempotency_key: str) -> Dict[str, Any]: ...
+    def list_payment_intents(self, *, created_gte: int, starting_after: Optional[str],  # 100 a page
+                             stripe_account: Optional[str] = None) -> Tuple[List[Dict[str, Any]], bool]: ...
 
-    def list_refunds(self, pi_id: str) -> List[Dict[str, Any]]: ...  # every page, at most 10
+    def create_refund(self, params: Mapping[str, Any], *, idempotency_key: str,
+                      stripe_account: Optional[str] = None) -> Dict[str, Any]: ...
+
+    def list_refunds(self, pi_id: str, *,
+                     stripe_account: Optional[str] = None) -> List[Dict[str, Any]]: ...  # every page, at most 10
+
+
+class StripeConnectWire(Protocol):
+    """Connect account calls (Accounts v2). Used by ``stripe_connect``; never by the payment semantics."""
+
+    def create_account(self, params: Mapping[str, Any], *, idempotency_key: str) -> Dict[str, Any]: ...
+
+    def retrieve_account(self, account_id: str, *, include: List[str]) -> Dict[str, Any]: ...
+
+    def create_account_link(self, params: Mapping[str, Any]) -> Dict[str, Any]: ...
+
+    def create_account_session(self, params: Mapping[str, Any]) -> Dict[str, Any]: ...
 
 
 @functools.lru_cache(maxsize=1)
@@ -125,51 +145,77 @@ class SdkStripeWire:
             max_network_retries=0, http_client=hc)  # the SDK never re-sends for us
 
     # -- calls ---------------------------------------------------------------
-    def create_payment_intent(self, params, *, idempotency_key):
+    @staticmethod
+    def _opts(stripe_account: Optional[str], idempotency_key: Optional[str] = None) -> Dict[str, Any]:
+        out: Dict[str, Any] = {}
+        if idempotency_key is not None:
+            out["idempotency_key"] = idempotency_key
+        if stripe_account is not None:
+            out["stripe_account"] = stripe_account  # the Stripe-Account header: act on the connected account
+        return out
+
+    def create_payment_intent(self, params, *, idempotency_key, stripe_account=None):
         return self._call(lambda: self._c.v1.payment_intents.create(
-            params=dict(params), options={"idempotency_key": idempotency_key}))
+            params=dict(params), options=self._opts(stripe_account, idempotency_key)))
 
-    def capture_payment_intent(self, pi_id, params, *, idempotency_key):
+    def capture_payment_intent(self, pi_id, params, *, idempotency_key, stripe_account=None):
         return self._call(lambda: self._c.v1.payment_intents.capture(
-            pi_id, params=dict(params), options={"idempotency_key": idempotency_key}))
+            pi_id, params=dict(params), options=self._opts(stripe_account, idempotency_key)))
 
-    def cancel_payment_intent(self, pi_id, params, *, idempotency_key):
+    def cancel_payment_intent(self, pi_id, params, *, idempotency_key, stripe_account=None):
         return self._call(lambda: self._c.v1.payment_intents.cancel(
-            pi_id, params=dict(params), options={"idempotency_key": idempotency_key}))
+            pi_id, params=dict(params), options=self._opts(stripe_account, idempotency_key)))
 
-    def retrieve_payment_intent(self, pi_id):
-        return self._call(lambda: self._c.v1.payment_intents.retrieve(pi_id, params={"expand": ["latest_charge"]}))
+    def retrieve_payment_intent(self, pi_id, *, stripe_account=None):
+        return self._call(lambda: self._c.v1.payment_intents.retrieve(
+            pi_id, params={"expand": ["latest_charge"]}, options=self._opts(stripe_account)))
 
-    def search_payment_intents(self, query):
-        page = self._call(lambda: self._c.v1.payment_intents.search(params={"query": query, "limit": 10}),
-                          as_dict=False)
+    def search_payment_intents(self, query, *, stripe_account=None):
+        page = self._call(lambda: self._c.v1.payment_intents.search(
+            params={"query": query, "limit": 10}, options=self._opts(stripe_account)), as_dict=False)
         return [o.to_dict() for o in (page.data or [])]
 
-    def list_payment_intents(self, *, created_gte, starting_after):
+    def list_payment_intents(self, *, created_gte, starting_after, stripe_account=None):
         params: Dict[str, Any] = {"created": {"gte": int(created_gte)}, "limit": 100}
         if starting_after:
             params["starting_after"] = starting_after
-        page = self._call(lambda: self._c.v1.payment_intents.list(params=params), as_dict=False)
+        page = self._call(lambda: self._c.v1.payment_intents.list(params=params, options=self._opts(stripe_account)),
+                          as_dict=False)
         return [o.to_dict() for o in (page.data or [])], bool(page.has_more)
 
-    def create_refund(self, params, *, idempotency_key):
+    def create_refund(self, params, *, idempotency_key, stripe_account=None):
         return self._call(lambda: self._c.v1.refunds.create(
-            params=dict(params), options={"idempotency_key": idempotency_key}))
+            params=dict(params), options=self._opts(stripe_account, idempotency_key)))
 
-    def list_refunds(self, pi_id):
+    def list_refunds(self, pi_id, *, stripe_account=None):
         out: List[Dict[str, Any]] = []
         cursor: Optional[str] = None
         for _ in range(10):
             params: Dict[str, Any] = {"payment_intent": pi_id, "limit": 100}
             if cursor:
                 params["starting_after"] = cursor
-            page = self._call(lambda: self._c.v1.refunds.list(params=params), as_dict=False)
+            page = self._call(lambda: self._c.v1.refunds.list(params=params, options=self._opts(stripe_account)),
+                              as_dict=False)
             rows = [o.to_dict() for o in (page.data or [])]
             out.extend(rows)
             if not page.has_more or not rows:
                 return out
             cursor = rows[-1]["id"]
         raise WireError("unknown", code="refund_list_too_long")
+
+    # -- Connect (Accounts v2, Account Links v2, Account Sessions) ---------------
+    def create_account(self, params, *, idempotency_key):
+        return self._call(lambda: self._c.v2.core.accounts.create(
+            params=dict(params), options={"idempotency_key": idempotency_key}))
+
+    def retrieve_account(self, account_id, *, include):
+        return self._call(lambda: self._c.v2.core.accounts.retrieve(account_id, params={"include": list(include)}))
+
+    def create_account_link(self, params):
+        return self._call(lambda: self._c.v2.core.account_links.create(params=dict(params)))
+
+    def create_account_session(self, params):
+        return self._call(lambda: self._c.v1.account_sessions.create(params=dict(params)))
 
     # -- errors --------------------------------------------------------------
     def _call(self, fn, *, as_dict: bool = True):
