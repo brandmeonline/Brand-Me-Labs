@@ -91,6 +91,24 @@ def test_closet_visibility_is_owner_curated_on_a_sliding_scale(spanner_db, peopl
                      "AND STRPOS(TO_JSON_STRING(payload), 'visibility') > 0", i=a) == 2
 
 
+def test_hiding_an_axis_stops_its_disclosure_before_the_card_recomposes(spanner_db, people):
+    db = spanner_db
+    owner, friend, _stranger, _blocked = people
+    persona = PersonaService(db)
+    persona.patch(owner, '"0"', {"changes": [{"axis": "expression", "value": 90, "locked": False}, {"axis": "color", "value": 15, "locked": False}],
+                                 "client_revision": "c"})
+    cards = PersonaCardService(db, persona=persona)
+    assert [t["axis"] for t in cards.settings(owner, {})["card"]["taste"]] == ["expression", "color"]
+    assert [t["axis"] for t in cards.view(friend, owner.member_id)["card"]["taste"]] == ["expression", "color"]
+    # Hiding an axis only marks the card stale (the jobs pass recomposes it later), but the hidden
+    # axis leaves every view at once, not when the next pass happens to run.
+    persona.patch(owner, '"1"', {"changes": [], "axis_settings": {"expression": {"hidden": True}}, "client_revision": "c2"})
+    assert [t["axis"] for t in cards.view(friend, owner.member_id)["card"]["taste"]] == ["color"]
+    assert [t["axis"] for t in cards.mine(owner)["card"]["taste"]] == ["color"]
+    cards.recompose(owner.member_id, trigger="test")
+    assert [t["axis"] for t in cards.view(friend, owner.member_id)["card"]["taste"]] == ["color"]
+
+
 def test_persona_card_composes_respects_visibility_and_recomposes_on_triggers(spanner_db, people):
     db = spanner_db
     owner, friend, stranger, blocked = people

@@ -85,7 +85,7 @@ def mark_stale(txn, member_id: str, trigger: str) -> int:
                               "WHERE member_id=@m", params={"m": member_id, "t": trigger[:40]}, param_types={"m": STR, "t": STR})
 
 
-# Card fields composed from another category's rows (highlights are checked against their source on every read).
+# Card fields composed from another category's rows (highlights and taste are checked against their source on every read).
 DERIVED_FIELDS = ("taste", "badges", "standings")
 
 
@@ -232,13 +232,18 @@ class PersonaCardService:
 
         card = row["card"] or {}
 
-        def pieces(s):
+        def read(s):
             items = visible_items(s, viewer or owner, owner, card.get("highlight_item_ids", []))
             houses = self.catalog.houses_of(s, sorted({i["product_id"] for i in items if i["product_id"]})) if self.catalog and items else {}
-            return [shown_piece(i, houses) for i in items]
+            # Taste was composed from the axes as they were then. An axis the member has hidden since
+            # leaves every view at once, like a highlight whose piece went private; the stale card is
+            # recomposed later by the jobs pass.
+            hidden = {r[0] for r in query(s, "SELECT axis_key FROM PersonaAxes WHERE member_id=@m AND hidden", {"m": owner}, {"m": STR})}
+            return [shown_piece(i, houses) for i in items], hidden
 
-        highlights = pieces(snap) if snap is not None else run_read(self.db, pieces)
-        return {"taste": card.get("taste", []), "badges": card.get("badges", []), "standings": card.get("standings", []), "highlights": highlights}
+        highlights, hidden = read(snap) if snap is not None else run_read(self.db, read)
+        taste = [t for t in card.get("taste", []) if t.get("axis") not in hidden]
+        return {"taste": taste, "badges": card.get("badges", []), "standings": card.get("standings", []), "highlights": highlights}
 
     def view(self, viewer: Principal, owner_id: Any) -> Dict[str, Any]:
         require_scope(viewer, "social:read")

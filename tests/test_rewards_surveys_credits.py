@@ -97,6 +97,7 @@ def test_answer_once_daily_capped_points_and_quiz_keys_after(spanner_db):
     assert all("answer" not in q for q in mine[quiz]["questions"])  # no answer key before answering
     for bad in ({"answers": {"fit": "Relaxed"}}, {"answers": {**ANSWERS["answers"], "comfort": 6}},
                 {"answers": {**ANSWERS["answers"], "colours": ["Navy", "Navy"]}}, {"answers": {**ANSWERS["answers"], "fit": "Baggy"}},
+                {"answers": {**ANSWERS["answers"], "colours": [{}]}}, {"answers": {**ANSWERS["answers"], "colours": ["Navy", 1]}},
                 {"answers": {**ANSWERS["answers"], "comfort": 4.0}}, {"answers": {**ANSWERS["answers"], "extra": 1}}, {"score": 3}):
         with pytest.raises(ValidationFailed):
             svc.respond(me, ids[0], bad, key())

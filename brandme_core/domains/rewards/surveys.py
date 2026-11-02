@@ -113,7 +113,8 @@ def _answers(questions: List[Dict[str, Any]], body: Any) -> Dict[str, Any]:
         if q["type"] == "single":
             ok = isinstance(a, str) and a in q["options"]
         elif q["type"] == "multi":
-            ok = isinstance(a, list) and 1 <= len(a) <= len(q["options"]) and len(set(a)) == len(a) and all(x in q["options"] for x in a)
+            ok = (isinstance(a, list) and 1 <= len(a) <= len(q["options"]) and all(isinstance(x, str) and x in q["options"] for x in a)
+                  and len(set(a)) == len(a))
         else:
             ok = type(a) is int and SCALE[0] <= a <= SCALE[1]
         if not ok:
