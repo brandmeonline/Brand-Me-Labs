@@ -1,0 +1,52 @@
+# commands.log — integrations evidence collector, audit 2026-11-01, HEAD ed19dc151d103b108cf972e6d37971c55d5dcf60
+2026-11-01T15:07:21Z git rev-parse HEAD -> ed19dc151d103b108cf972e6d37971c55d5dcf60
+2026-11-01T15:07:44Z grep -rnoE 'process\.env\.[A-Z_][A-Z0-9_]*' --include=*.ts --include=*.tsx --include=*.mjs --include=*.js --include=*.cjs (excluding node_modules, .next, dist, docs/audits)
+2026-11-01T15:07:59Z grep other TS env patterns: process.env[ , destructure from process.env, env.X in config loaders, import.meta.env
+2026-11-01T15:08:17Z grep Python env consumption: os.environ[...], os.getenv, environ.get, BaseSettings, Field(env=
+2026-11-01T15:08:47Z grep Python indirect env helpers: *_ENV constants, config_env, environ aliasing, 'from os import'
+2026-11-01T15:08:47Z cat -n .env.example .env.deploy.example and service .env.example files (values redacted on print where secret-like)
+2026-11-01T15:08:48Z cat -n docker-compose.yml docker-compose.dev.yml
+2026-11-01T15:08:48Z cat -n Makefile deploy-brandme.sh init.sql .mcp.json
+2026-11-01T15:09:37Z grep Python indirect env reads: env.get("X"), env["X"], environ.get("X") with UPPER names (non-test code and tests separately)
+2026-11-01T15:09:37Z grep integration SDK imports/usages across py/ts (stripe, anthropic, openai, google genai, vertex, pubsub, storage, firestore, spanner, neo4j, redis, nats, celery, sentry, opentelemetry, prometheus, blockfrost, ogmios, lucid, midnight, cardano, nodemailer, sendgrid, twilio, jose, jwks)
+2026-11-01T15:09:37Z grep TS third-party integration imports (from '...') in non-test src of gateway/chain/console/frontend/packages
+2026-11-01T15:09:38Z cat requirements*.txt, setup.py, scripts/python/requirements.in; grep root/pkg package.json dependencies
+2026-11-01T15:10:56Z cat -n brandme_core/env.py brandme_core/boot.py
+2026-11-01T15:10:56Z cat -n brandme-infra/helm/brandme/{Chart.yaml,values.yaml,values-sandbox.yaml,ci/test-values.yaml,README.md}
+2026-11-01T15:10:56Z cat -n brandme-infra/helm/brandme/templates/*
+2026-11-01T15:10:56Z cat -n remaining helm templates, umbrella chart, terraform, brandme-infra README
+2026-11-01T15:10:56Z cat -n infrastructure/** (legacy helm, k8s ns, otel, prometheus, loki, redis)
+2026-11-01T15:10:56Z cat -n .github/workflows/ci-cd.yml
+2026-11-01T15:10:56Z cat -n other workflows + .github/scripts/smoke-image.sh
+2026-11-01T15:10:56Z cat -n agents/*.sh
+2026-11-01T15:10:56Z cat -n all Dockerfiles
+2026-11-01T15:10:56Z cat -n scripts/brandme.mjs scripts/dev/consumer-domain-keys.mjs scripts/regression/*.sh
+2026-11-01T15:10:56Z cat -n scripts/deploy.sh scripts/db-init.sh scripts/backup.sh scripts/test-infrastructure.sh
+2026-11-01T15:10:56Z scripts/validate-helm.sh and scripts/provision/gcp-dev-identities.sh: header + gcloud/kubectl/helm/terraform commands + env names
+2026-11-01T15:10:56Z scripts/check-credential-manifest.mjs head + docs/build/security/credential-manifest.yaml
+2026-11-01T15:10:56Z package.json dependency blocks for all workspaces; pnpm-lock versions for key integration packages
+2026-11-01T15:12:48Z credential-manifest.yaml: list entry names/status/consumers/templates (lines 300-end condensed)
+2026-11-01T15:12:48Z grep hardcoded URL/endpoint literals in non-test py/ts/tsx/mjs code (scheme://host)
+2026-11-01T15:12:48Z grep webhook/signature verification; GitHub Actions secrets./vars. names; NEXT_PUBLIC_ everywhere; next.config files
+2026-11-01T15:12:48Z cat -n brandme-gateway/src/index.ts, services/rights.ts, services/nats.ts, services/domains.ts (head), middleware/mode.ts
+2026-11-01T15:12:49Z cat -n gateway middleware/session.ts (1-120), identity/store.ts (70-120), routes/v1/commerce.ts jose usage, routes/scan.ts head; ls routes
+2026-11-01T15:12:49Z cat -n brandme-chain/src/index.ts, midnight/network.ts, cardano/anchor.ts (head), adapter.ts endpoint construction lines; ls chain src
+2026-11-01T15:12:49Z cat -n brandme_core media/gcs_store.py (300-360), media/providers.py (80-120), events/pubsub.py (1-120), events/worker.py (25-80), privacy_exports/config.py, read_api/config.py
+2026-11-01T15:12:49Z cat -n brandme_core orchestrator/anthropic_adapter.py (95-160), model_planner.py (45-70,270-300), providers/payments/stripe_wire.py (60-130), stripe_test.py (570-610), commerce/composition.py (25-80), providers registry; grep registry_from_environment
+2026-11-01T15:12:49Z cat -n brandme_core health.py (1-80), telemetry.py (1-60), logging.py (60-135), mcp/refs.py (15-50), mcp/authz.py (1-80), firestore/client.py (25-60,170-190), spanner/client.py (40-75), domains/persona/app.py (75-140)
+2026-11-01T15:12:49Z cat -n frontend photoService.ts (1-120), frontend lib/api.ts (25-50), frontend app/api/v1/[...path]/route.ts, console lib/api.ts, console providers/_data/gateway.ts (40-95), moderation ops-gateway.ts (20-45), console layout.tsx (25-40); ls frontend lib/server lib/client
+2026-11-01T15:12:49Z cat -n brandme-core/orchestrator/celery_app.py (15-45), compliance burn_proof.py/esg_verifier.py endpoint lines, identity main.py (20-40,80-100), agentic graph_rag.py LLM usage, branding graph_engine.py (55-95), agentic tools blockchain_tools.py (10-40); frontend lib/server files
+2026-11-01T15:14:29Z read retention.py from_env, stripe_test.py from_env, nordstrom.py env lines, composition.py build_providers, chain capability.ts resolveEndpoints, chain routes/operations.ts token check
+2026-11-01T15:14:29Z grep consumption of declared-only candidates: DATABASE_URL REDIS_URL OTEL_* OTLP_ENDPOINT ENABLE_TRACING ENABLE_* CARDANO_NETWORK MIDNIGHT_ENABLED GCP_PROJECT_ID GCP_REGION REGION AGENT_* DATABASE_POOL_* SERVICE_NAME NEXTAUTH_* OAUTH_* JWT_SECRET ALLOW_STUB_FALLBACK ZK_* KNOWLEDGE_SERVICE_URL CHAIN_SERVICE_URL COMPLIANCE_SERVICE_URL BRANDME_PUBLIC_ORIGIN BRANDME_GATEWAY_URL in non-test code
+2026-11-01T15:14:30Z read frontend lib/server/gateway-proxy.ts, lib/client/gateway.ts head, try/photo/api/route.ts head, packages/contracts/src/client.ts (15-30); grep MCP server entrypoints; brandme_core/mcp listing; commerce http_api __main__
+2026-11-01T15:14:31Z read brandme-chain/tests/network/compose.yml, chain scripts local-network.sh & test-midnight-local.sh heads, scripts/regression/modules/*.sh env names, .claude/hooks/session-start.sh, persona ingress/jobs config, brain/orchestrator hardcoded URL lines
+2026-11-01T15:14:31Z brain/orchestrator/worker/tasks hardcoded URL context; cube main env; ZK stub flags grep; pnpm-lock next-auth version; find firebase.json/vercel.json/app.yaml/cloudbuild/Procfile; brandme-data manage.py exists?
+2026-11-01T15:14:59Z final checks: gateway routes/v1/index.ts mounts; persona/outbox_worker.py env; LANE_PUBSUB_SUBSCRIPTION declarations; photoService Vertex endpoint; CLAUDE.md MIDNIGHT_ENABLED claim; brandme-chain scripts/test-midnight-preprod.mjs env
+2026-11-01T15:17:59Z last checks: NEXT_PUBLIC_BRANDME_MODE usage, frontend lib/api.ts importers, NEXT_PUBLIC_APP_NAME consumers, TelemetrySetup.configure callers, refs.configure_from_env callers, gateway /system/health body, next-auth imports in console, GCP_REGION/GKE_CLUSTER use in ci-cd
+2026-11-01T15:22:45Z read gateway routes/v1/index.ts 1-60 and 136-148 (mount list); grep orchestrator/composition.py entry and callers; grep assistant router mount
+2026-11-01T15:37:09Z python3 -I <scratchpad>/gen_matrices.py docs/audits/2026-11-01/claude-opus-02/evidence/integrations  -> config-matrix.json, integration-matrix.json
+2026-11-01T15:37:33Z wrote infrastructure-inventory.md, notes.md; validated JSON (config-matrix 216 entries; integration-matrix 40 entries)
+2026-11-01T15:37:33Z git status --short (expect only docs/audits/ untracked; repository code untouched):
+    ?? docs/audits/
+2026-11-01T15:37:33Z verification level for every claim: static-only (no helm/kubectl/terraform/docker/network calls against live systems; the two pinned emulator tarball URLs were read from scripts, not fetched)
+2026-11-01T15:37:33Z END

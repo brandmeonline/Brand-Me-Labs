@@ -1,0 +1,32 @@
+{
+  "job_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774318/job/124211331191",
+  "run_id": 41098774318,
+  "job_id": 124211331191,
+  "started_at": "2026-10-30T17:26:04Z",
+  "completed_at": "2026-10-30T17:28:12Z",
+  "conclusion": "success",
+  "ui_merge_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+  "domain_reference_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+  "branch_head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+  "merge_parents": [
+    "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "babb3604ae2f33018edf0ad45270887d4b01945b"
+  ],
+  "artifact_id": 12998005788,
+  "archive_sha256": "d33f7d1feda53dbe862c84ef60501962db984ecc8f9447a9ce1ae4c28d71d533",
+  "digest_verified": true,
+  "artifact_created_at": "2026-10-30T17:28:07Z",
+  "source_workflow": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/.github/workflows/consumer-ui.yml",
+  "source_harness": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/verify-live-domains.mjs",
+  "separate_shell_failure": {
+    "job_id": 124211331023,
+    "step": "Compare reviewed visual baselines",
+    "sanitized_error": "Error: consumer-1440x900-light.png: dimensions changed",
+    "exit_code": 1
+  },
+  "auditor_executed_application": false,
+  "runtime_harness": {
+    "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/dev-domains.py#L53-L97",
+    "scope": "Custom development principal relay and direct router mounts; in-process OutboxDispatcher to RewardsConsumer.handle. Real domain/Spanner behavior; canonical persona app, PubSub ingress and scheduler deployment unverified."
+  }
+}

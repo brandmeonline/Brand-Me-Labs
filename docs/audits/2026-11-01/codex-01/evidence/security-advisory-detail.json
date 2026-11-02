@@ -1,0 +1,142 @@
+[
+  {
+    "number": 43,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/43",
+    "rule": {
+      "id": "CVE-2026-34520",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "note",
+      "security_severity_level": "critical",
+      "description": "aiohttp: AIOHTTP: Header injection vulnerability due to improper character handling"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "aiohttp",
+      "Installed Version": "3.9.1",
+      "Severity": "LOW",
+      "Fixed Version": "3.13.4"
+    }
+  },
+  {
+    "number": 508,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/508",
+    "rule": {
+      "id": "CVE-2026-0994",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "python: protobuf: Protobuf: Denial of Service due to recursion depth bypass"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 1018,
+        "end_line": 1018,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "protobuf",
+      "Installed Version": "4.25.9",
+      "Severity": "HIGH",
+      "Fixed Version": "6.33.5, 5.29.6"
+    }
+  },
+  {
+    "number": 496,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/496",
+    "rule": {
+      "id": "CVE-2026-114134",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "Black: GitHub Action installs unvalidated required-version from pyproject.toml"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 86,
+        "end_line": 86,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "black",
+      "Installed Version": "26.10.0",
+      "Severity": "HIGH",
+      "Fixed Version": "26.10.1"
+    }
+  },
+  {
+    "number": 474,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/474",
+    "rule": {
+      "id": "GHSA-2g87-pp6c-29x5",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "aiohttp: Multiple instances of excessive or unbounded memory/CPU use"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "aiohttp",
+      "Installed Version": "3.9.1",
+      "Severity": "HIGH",
+      "Fixed Version": "3.14.4"
+    }
+  },
+  {
+    "number": 505,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/505",
+    "rule": {
+      "id": "CVE-2026-55415",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "datamodel-code-generator vulnerable to code injection via `x-python-import` / `customTypePath` in generated import statements"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "datamodel-code-generator",
+      "Installed Version": "0.34.0",
+      "Severity": "HIGH",
+      "Fixed Version": "0.64.0"
+    }
+  }
+]

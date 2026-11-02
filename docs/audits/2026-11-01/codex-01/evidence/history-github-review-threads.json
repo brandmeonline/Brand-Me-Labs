@@ -1,0 +1,400 @@
+[
+  {
+    "pr": 29,
+    "captured_at": "2026-11-01T14:40:43.9873789Z",
+    "pages": 1,
+    "thread_count": 0,
+    "unresolved_count": 0,
+    "unresolved_current_lines_count": 0,
+    "threads": []
+  },
+  {
+    "pr": 63,
+    "captured_at": "2026-11-01T14:40:44.4252685Z",
+    "pages": 1,
+    "thread_count": 0,
+    "unresolved_count": 0,
+    "unresolved_current_lines_count": 0,
+    "threads": []
+  },
+  {
+    "pr": 66,
+    "captured_at": "2026-11-01T14:40:45.2469778Z",
+    "pages": 1,
+    "thread_count": 19,
+    "unresolved_count": 0,
+    "unresolved_current_lines_count": 0,
+    "threads": [
+      {
+        "id": "PRRT_kwDOQJHa-M6x-1A2",
+        "isResolved": true,
+        "isOutdated": false,
+        "path": "brandme_core/domains/rewards/consumer.py",
+        "line": 172,
+        "startLine": 171,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4424092734",
+              "createdAt": "2026-10-30T13:25:42Z",
+              "commit": {
+                "oid": "babb3604ae2f33018edf0ad45270887d4b01945b"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6x-1A7",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/social/rooms.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4424092743",
+              "createdAt": "2026-10-30T13:25:42Z",
+              "commit": {
+                "oid": "48c638d9bc5a8a57f484a4880a12eb6d3c0aa02a"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6x-1BF",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/social/projection.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4424092753",
+              "createdAt": "2026-10-30T13:25:42Z",
+              "commit": {
+                "oid": "48c638d9bc5a8a57f484a4880a12eb6d3c0aa02a"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6x-1BL",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/social/decisions.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4424092768",
+              "createdAt": "2026-10-30T13:25:42Z",
+              "commit": {
+                "oid": "48c638d9bc5a8a57f484a4880a12eb6d3c0aa02a"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6x-1BQ",
+        "isResolved": true,
+        "isOutdated": false,
+        "path": "brandme_core/domains/persona/card.py",
+        "line": 241,
+        "startLine": 241,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4424092775",
+              "createdAt": "2026-10-30T13:25:42Z",
+              "commit": {
+                "oid": "babb3604ae2f33018edf0ad45270887d4b01945b"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yADez",
+        "isResolved": true,
+        "isOutdated": false,
+        "path": "brandme_core/domains/persona/card.py",
+        "line": 241,
+        "startLine": 241,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4424608551",
+              "createdAt": "2026-10-30T14:17:43Z",
+              "commit": {
+                "oid": "babb3604ae2f33018edf0ad45270887d4b01945b"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yADe6",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/social/flow.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4424608559",
+              "createdAt": "2026-10-30T14:17:43Z",
+              "commit": {
+                "oid": "8933899d28cd015d59be1fd33796b98f7667c43e"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yADe-",
+        "isResolved": true,
+        "isOutdated": false,
+        "path": "brandme_core/domains/social/rooms.py",
+        "line": 121,
+        "startLine": 121,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4424608569",
+              "createdAt": "2026-10-30T14:17:43Z",
+              "commit": {
+                "oid": "babb3604ae2f33018edf0ad45270887d4b01945b"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yADfC",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/rewards/consumer.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4424608575",
+              "createdAt": "2026-10-30T14:17:43Z",
+              "commit": {
+                "oid": "8933899d28cd015d59be1fd33796b98f7667c43e"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yBkE9",
+        "isResolved": true,
+        "isOutdated": false,
+        "path": "brandme_core/domains/social/projection.py",
+        "line": 77,
+        "startLine": 77,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4425251450",
+              "createdAt": "2026-10-30T15:20:40Z",
+              "commit": {
+                "oid": "babb3604ae2f33018edf0ad45270887d4b01945b"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yBkFE",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/persona/card.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4425251462",
+              "createdAt": "2026-10-30T15:20:40Z",
+              "commit": {
+                "oid": "e40ea7cd733d3f33720502fb13303e877fdc596e"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yBkFM",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/social/flow.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4425251475",
+              "createdAt": "2026-10-30T15:20:40Z",
+              "commit": {
+                "oid": "e40ea7cd733d3f33720502fb13303e877fdc596e"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yBkFS",
+        "isResolved": true,
+        "isOutdated": false,
+        "path": "brandme_core/domains/social/rooms.py",
+        "line": 92,
+        "startLine": 88,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4425251481",
+              "createdAt": "2026-10-30T15:20:40Z",
+              "commit": {
+                "oid": "babb3604ae2f33018edf0ad45270887d4b01945b"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yBkFY",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/social/rooms.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4425251491",
+              "createdAt": "2026-10-30T15:20:40Z",
+              "commit": {
+                "oid": "e40ea7cd733d3f33720502fb13303e877fdc596e"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yBkFd",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/rewards/standing.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4425251498",
+              "createdAt": "2026-10-30T15:20:40Z",
+              "commit": {
+                "oid": "e40ea7cd733d3f33720502fb13303e877fdc596e"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yDK7P",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/rewards/credits.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4425932525",
+              "createdAt": "2026-10-30T16:26:49Z",
+              "commit": {
+                "oid": "5f3e2b49f813cf3e9c961d58165ae90d7ad08888"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yDK7a",
+        "isResolved": true,
+        "isOutdated": true,
+        "path": "brandme_core/domains/rewards/credits.py",
+        "line": null,
+        "startLine": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4425932540",
+              "createdAt": "2026-10-30T16:26:49Z",
+              "commit": {
+                "oid": "5f3e2b49f813cf3e9c961d58165ae90d7ad08888"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yD-iD",
+        "isResolved": true,
+        "isOutdated": false,
+        "path": "brandme_core/domains/rewards/surveys.py",
+        "line": 240,
+        "startLine": 240,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4426273982",
+              "createdAt": "2026-10-30T17:01:19Z",
+              "commit": {
+                "oid": "babb3604ae2f33018edf0ad45270887d4b01945b"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRRT_kwDOQJHa-M6yD-iG",
+        "isResolved": true,
+        "isOutdated": false,
+        "path": "brandme_core/domains/social/projection.py",
+        "line": 66,
+        "startLine": 65,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66#discussion_r4426273986",
+              "createdAt": "2026-10-30T17:01:19Z",
+              "commit": {
+                "oid": "babb3604ae2f33018edf0ad45270887d4b01945b"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "pr": 70,
+    "captured_at": "2026-11-01T14:40:45.7480411Z",
+    "pages": 1,
+    "thread_count": 0,
+    "unresolved_count": 0,
+    "unresolved_current_lines_count": 0,
+    "threads": []
+  }
+]

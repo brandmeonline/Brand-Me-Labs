@@ -1,0 +1,201 @@
+### step: frontend-test-ui
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: pnpm test:ui
+### start_utc: 2026-11-01T15:12:28Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+
+> brandme-frontend@0.1.0 test:ui /[REDACTED-LONG-STRING]
+> node --test lib/testing/verify-ui.mjs ../[REDACTED-LONG-STRING].mjs
+
+TAP version 13
+# Subtest: console CSS adapter remains byte-for-byte equivalent and uses foundation token values
+ok 1 - console CSS adapter remains byte-for-byte equivalent and uses foundation token values
+  ---
+  duration_ms: 99.99548
+  type: 'test'
+  ...
+# Subtest: console font declarations retain every shared asset and font option
+ok 2 - console font declarations retain every shared asset and font option
+  ---
+  duration_ms: 26.425744
+  type: 'test'
+  ...
+# Subtest: budget entry preserves exact decimal amounts and rejects rounded inputs
+ok 3 - budget entry preserves exact decimal amounts and rejects rounded inputs
+  ---
+  duration_ms: 28.657224
+  type: 'test'
+  ...
+# Subtest: corrupt guest records cannot introduce invalid axes, looks or implicit learning
+ok 4 - corrupt guest records cannot introduce invalid axes, looks or implicit learning
+  ---
+  duration_ms: 1.91865
+  type: 'test'
+  ...
+# Subtest: rapid preference changes compose and survive a fresh provider mount
+ok 5 - rapid preference changes compose and survive a fresh provider mount
+  ---
+  duration_ms: 157.576214
+  type: 'test'
+  ...
+# Subtest: money retains every digit and respects 0/2/3-decimal currencies
+ok 6 - money retains every digit and respects 0/2/3-decimal currencies
+  ---
+  duration_ms: 2.554918
+  type: 'test'
+  ...
+# Subtest: invalid money never becomes an estimated or rounded price
+ok 7 - invalid money never becomes an estimated or rounded price
+  ---
+  duration_ms: 6.756185
+  type: 'test'
+  ...
+# Subtest: missing currency metadata fails closed
+ok 8 - missing currency metadata fails closed
+  ---
+  duration_ms: 0.602346
+  type: 'test'
+  ...
+# Subtest: buttons default to non-submit and cannot invoke pending actions; links retain navigation semantics
+... [28 of 228 lines omitted; full log retained only in the audit scratchpad] ...
+  ...
+# Subtest: dialog opens, contains keyboard focus, closes on Escape, and restores trigger
+ok 14 - dialog opens, contains keyboard focus, closes on Escape, and restores trigger
+  ---
+  duration_ms: 166.467478
+  type: 'test'
+  ...
+# Warning: useLayoutEffect does nothing on the server, because its effect cannot be encoded into the server renderer's output format. This will lead to a mismatch between the initial, non-hydrated UI and the intended UI. To avoid this, useLayoutEffect should only be used in components that render exclusively on the client. See https://reactjs.org/link/uselayouteffect-ssr for common fixes.
+#     at Dialog (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:79:5)
+#     at div
+#     at header
+#     at div
+#     at div
+#     at ConsoleShell (/[REDACTED-LONG-STRING].tsx:50:25)
+#     at ExperiencePreferencesProvider (/[REDACTED-LONG-STRING].tsx:34:42)
+# Warning: useLayoutEffect does nothing on the server, because its effect cannot be encoded into the server renderer's output format. This will lead to a mismatch between the initial, non-hydrated UI and the intended UI. To avoid this, useLayoutEffect should only be used in components that render exclusively on the client. See https://reactjs.org/link/uselayouteffect-ssr for common fixes.
+#     at Dialog (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:79:5)
+#     at div
+#     at header
+#     at div
+#     at div
+#     at ConsoleShell (/[REDACTED-LONG-STRING].tsx:50:25)
+#     at ExperiencePreferencesProvider (/[REDACTED-LONG-STRING].tsx:34:42)
+# Warning: useLayoutEffect does nothing on the server, because its effect cannot be encoded into the server renderer's output format. This will lead to a mismatch between the initial, non-hydrated UI and the intended UI. To avoid this, useLayoutEffect should only be used in components that render exclusively on the client. See https://reactjs.org/link/uselayouteffect-ssr for common fixes.
+#     at Dialog (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:79:5)
+#     at div
+#     at header
+#     at div
+#     at div
+#     at ConsoleShell (/[REDACTED-LONG-STRING].tsx:50:25)
+#     at ExperiencePreferencesProvider (/[REDACTED-LONG-STRING].tsx:34:42)
+# Warning: useLayoutEffect does nothing on the server, because its effect cannot be encoded into the server renderer's output format. This will lead to a mismatch between the initial, non-hydrated UI and the intended UI. To avoid this, useLayoutEffect should only be used in components that render exclusively on the client. See https://reactjs.org/link/uselayouteffect-ssr for common fixes.
+#     at Presence (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-presence@1.1.11_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-presence/dist/index.js:56:11)
+#     at Provider (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-context@1.2.2_@types+react@18.3.31_react@18.3.1/node_modules/@radix-ui/react-context/dist/index.js:73:15)
+#     at DialogPortal (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:146:11)
+#     at Provider (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-context@1.2.2_@types+react@18.3.31_react@18.3.1/node_modules/@radix-ui/react-context/dist/index.js:73:15)
+#     at Dialog (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:79:5)
+#     at div
+#     at header
+#     at div
+#     at div
+#     at ConsoleShell (/[REDACTED-LONG-STRING].tsx:50:25)
+#     at ExperiencePreferencesProvider (/[REDACTED-LONG-STRING].tsx:34:42)
+# Warning: useLayoutEffect does nothing on the server, because its effect cannot be encoded into the server renderer's output format. This will lead to a mismatch between the initial, non-hydrated UI and the intended UI. To avoid this, useLayoutEffect should only be used in components that render exclusively on the client. See https://reactjs.org/link/uselayouteffect-ssr for common fixes.
+#     at Presence (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-presence@1.1.11_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-presence/dist/index.js:56:11)
+#     at Provider (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-context@1.2.2_@types+react@18.3.31_react@18.3.1/node_modules/@radix-ui/react-context/dist/index.js:73:15)
+#     at DialogPortal (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:146:11)
+#     at Provider (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-context@1.2.2_@types+react@18.3.31_react@18.3.1/node_modules/@radix-ui/react-context/dist/index.js:73:15)
+#     at Dialog (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:79:5)
+#     at div
+#     at header
+#     at div
+#     at div
+#     at ConsoleShell (/[REDACTED-LONG-STRING].tsx:50:25)
+#     at ExperiencePreferencesProvider (/[REDACTED-LONG-STRING].tsx:34:42)
+# Warning: useLayoutEffect does nothing on the server, because its effect cannot be encoded into the server renderer's output format. This will lead to a mismatch between the initial, non-hydrated UI and the intended UI. To avoid this, useLayoutEffect should only be used in components that render exclusively on the client. See https://reactjs.org/link/uselayouteffect-ssr for common fixes.
+#     at Presence (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-presence@1.1.11_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-presence/dist/index.js:56:11)
+#     at Provider (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-context@1.2.2_@types+react@18.3.31_react@18.3.1/node_modules/@radix-ui/react-context/dist/index.js:73:15)
+#     at DialogPortal (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:146:11)
+#     at Provider (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-context@1.2.2_@types+react@18.3.31_react@18.3.1/node_modules/@radix-ui/react-context/dist/index.js:73:15)
+#     at Dialog (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:79:5)
+#     at div
+#     at header
+#     at div
+#     at div
+#     at ConsoleShell (/[REDACTED-LONG-STRING].tsx:50:25)
+#     at ExperiencePreferencesProvider (/[REDACTED-LONG-STRING].tsx:34:42)
+# Warning: useLayoutEffect does nothing on the server, because its effect cannot be encoded into the server renderer's output format. This will lead to a mismatch between the initial, non-hydrated UI and the intended UI. To avoid this, useLayoutEffect should only be used in components that render exclusively on the client. See https://reactjs.org/link/uselayouteffect-ssr for common fixes.
+#     at Presence (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-presence@1.1.11_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-presence/dist/index.js:56:11)
+#     at Provider (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-context@1.2.2_@types+react@18.3.31_react@18.3.1/node_modules/@radix-ui/react-context/dist/index.js:73:15)
+#     at DialogPortal (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:146:11)
+#     at Provider (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-context@1.2.2_@types+react@18.3.31_react@18.3.1/node_modules/@radix-ui/react-context/dist/index.js:73:15)
+#     at Dialog (/[REDACTED-LONG-STRING]/.pnpm/@radix-ui+react-dialog@1.2.0_@types+react-dom@18.3.7_@types+react@18.3.31__@[REDACTED-LONG-STRING]/@radix-ui/react-dialog/dist/index.js:79:5)
+#     at div
+#     at header
+#     at div
+#     at div
+#     at ConsoleShell (/[REDACTED-LONG-STRING].tsx:50:25)
+#     at ExperiencePreferencesProvider (/[REDACTED-LONG-STRING].tsx:34:42)
+# Subtest: drawer opens, contains keyboard focus, closes on Escape, and restores trigger
+ok 15 - drawer opens, contains keyboard focus, closes on Escape, and restores trigger
+  ---
+  duration_ms: 133.848892
+  type: 'test'
+  ...
+# Subtest: generative preview cannot become a fit label; missing fit method/limits fail closed
+ok 16 - generative preview cannot become a fit label; missing fit method/limits fail closed
+  ---
+  duration_ms: 4.033605
+  type: 'test'
+  ...
+# Subtest: toast keeps its live region mounted and does not steal focus
+ok 17 - toast keeps its live region mounted and does not steal focus
+  ---
+  duration_ms: 6.852435
+  type: 'test'
+  ...
+# Subtest: navigation clearance measures growth, clears public routes, and disconnects on unmount
+ok 18 - navigation clearance measures growth, clears public routes, and disconnects on unmount
+  ---
+  duration_ms: 7.749768
+  type: 'test'
+  ...
+# Subtest: console patch contract preserves public exports, reserved routes and header imports
+ok 19 - console patch contract preserves public exports, reserved routes and header imports
+  ---
+  duration_ms: 0.736039
+  type: 'test'
+  ...
+# Subtest: console public header preserves optional slots and owns only the page heading
+ok 20 - console public header preserves optional slots and owns only the page heading
+  ---
+  duration_ms: 26.078481
+  type: 'test'
+  ...
+# Subtest: console shell owns one focusable main and skip target around a domain header
+ok 21 - console shell owns one focusable main and skip target around a domain header
+  ---
+  duration_ms: 184.11014
+  type: 'test'
+  ...
+# Subtest: console legacy roots pass through without duplicate landmarks or prefix collisions
+ok 22 - console legacy roots pass through without duplicate landmarks or prefix collisions
+  ---
+  duration_ms: 73.925238
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2496.276691
+-----
+### exit: 0
+### end_utc: 2026-11-01T15:12:32Z
+### duration_s: 4

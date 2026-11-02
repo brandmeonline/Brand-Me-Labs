@@ -1,0 +1,40 @@
+### step: pnpm-check-no-provision
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: [REDACTED-LONG-STRING] pnpm check --no-provision
+### start_utc: 2026-11-01T15:15:51Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+
+> brandme-monorepo@1.0.0 check /[REDACTED-LONG-STRING]
+> node scripts/brandme.mjs check --no-provision
+
+! Spanner emulator — not reachable at localhost:9010
+! Spanner REST — http://127.0.0.1:9020 not answering (Spanner gRPC unreachable)
+✓ Java — openjdk version "21.0.12.1" 2026-08-18
+! Firestore emulator — not reachable at 127.0.0.1:8080
+! Pub/Sub emulator binary — PUBSUB_EMULATOR_BIN=unset is not executable
+! GCS emulator binary (fake-gcs-server) — GCS_EMULATOR_BIN=unset is not executable
+✓ workspace + toolchain governance 1.1s
+✓ spec package validator 0.2s
+✓ contract + token drift 4.7s
+✓ credential manifest 0.3s
+✓ guard self-tests 7.7s
+✓ packages type-check 3.7s
+✓ packages tests (security-rules suite skipped) 1.4s
+✓ gateway lint 2.9s
+✓ gateway type-check 3.5s
+✓ gateway tests (emulator suites skipped) 13.8s
+✓ python tests (tests/) (Spanner, Spanner REST, Firestore, Pub/Sub, GCS suites skipped) 58.9s
+    QUARANTINED: 0 tests (owner: count none)
+    ALLOWLISTED SKIPS: AP2_SDK_PYTHON (commerce-agents): 6, not_run: STRIPE_TEST_SECRET_KEY absent (commerce-agents): 5, not_run: the model (commerce-agents): 3, stripe-mock (commerce-agents): 6
+    1422 passed, 761 skipped, 3 warnings in 58.11s
+✓ docs/build links 0.3s
+! Spanner emulator not reachable at localhost:9010; emulator suites were skipped (not_run), not passed.
+! Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST); projection and security-rules suites were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_firestore_emulator.py
+! Spanner REST endpoint (SPANNER_EMULATOR_REST) not answering; the migration-ledger suite was skipped (not_run), not passed.
+! PUBSUB_EMULATOR_BIN not set or not executable; the real Pub/Sub delivery tests were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_pubsub_emulator.py
+! GCS_EMULATOR_BIN not set or not executable; the GCS media-store tests were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_gcs_emulator.py
+-----
+### exit: 0
+### end_utc: 2026-11-01T15:17:31Z
+### duration_s: 100

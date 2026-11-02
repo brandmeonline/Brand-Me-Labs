@@ -1,0 +1,7 @@
+# consumer-domains / gateway / pubsub logs (worker run) — errors only
+gateway unhandled api errors: 0
+consumer-domains non-info lines:
+pubsub emulator last lines:
+INFO: Forwarding key: Content-Type
+*** shutting down gRPC server since JVM is shutting down
+*** server shut down

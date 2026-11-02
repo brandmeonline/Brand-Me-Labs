@@ -1,0 +1,580 @@
+[
+  {
+    "name": "bench/astra-consumer-ui-20261005",
+    "commit": {
+      "sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/bench/astra-consumer-ui-20261005/protection"
+  },
+  {
+    "name": "bench/astra-spatial-ar-20261005",
+    "commit": {
+      "sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/bench/astra-spatial-ar-20261005/protection"
+  },
+  {
+    "name": "bench/opus-commerce-agents-20261005",
+    "commit": {
+      "sha": "7c61afd7c98a66836ba91d715bc4c6c913807003",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/7c61afd7c98a66836ba91d715bc4c6c913807003"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/bench/opus-commerce-agents-20261005/protection"
+  },
+  {
+    "name": "bench/opus-consumer-domains-20261005",
+    "commit": {
+      "sha": "d839267fc1f74b5e778e83f2930953e1a5400712",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/d839267fc1f74b5e778e83f2930953e1a5400712"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/bench/opus-consumer-domains-20261005/protection"
+  },
+  {
+    "name": "bench/opus-foundation-20261005",
+    "commit": {
+      "sha": "67327e45ed816bd76bc20ed1e2eb694009923530",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/67327e45ed816bd76bc20ed1e2eb694009923530"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/bench/opus-foundation-20261005/protection"
+  },
+  {
+    "name": "bench/opus-midnight-rights-20261005",
+    "commit": {
+      "sha": "44aaceab55bdcf595ce56ff2ded562d79bf1d190",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/44aaceab55bdcf595ce56ff2ded562d79bf1d190"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/bench/opus-midnight-rights-20261005/protection"
+  },
+  {
+    "name": "claude/brand-me-lux-foundations-audit-8zywr3",
+    "commit": {
+      "sha": "eed6737062da451a38114f8002159c1bed0e5cb5",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/eed6737062da451a38114f8002159c1bed0e5cb5"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/claude/brand-me-lux-foundations-audit-8zywr3/protection"
+  },
+  {
+    "name": "claude/ci-repair-workflows",
+    "commit": {
+      "sha": "512021c35a6b9d381c94fe02495ba903f411b916",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/512021c35a6b9d381c94fe02495ba903f411b916"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/claude/ci-repair-workflows/protection"
+  },
+  {
+    "name": "claude/midnight-rights-lifecycle-yhfyyu",
+    "commit": {
+      "sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/claude/midnight-rights-lifecycle-yhfyyu/protection"
+  },
+  {
+    "name": "claude/opus-commerce-agents-setup-szpmf7",
+    "commit": {
+      "sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/claude/opus-commerce-agents-setup-szpmf7/protection"
+  },
+  {
+    "name": "claude/opus-consumer-domains-1csp2g",
+    "commit": {
+      "sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/babb3604ae2f33018edf0ad45270887d4b01945b"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/claude/opus-consumer-domains-1csp2g/protection"
+  },
+  {
+    "name": "claude/opus-foundation-w00-2hgiw5",
+    "commit": {
+      "sha": "f5c906ab163084f791a7b601f3bbb71a828bb934",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/f5c906ab163084f791a7b601f3bbb71a828bb934"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/claude/opus-foundation-w00-2hgiw5/protection"
+  },
+  {
+    "name": "claude/setup-design-system-cli-6iovG",
+    "commit": {
+      "sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/8b9bd4a718ef0d2ec0826b94537d438df68b2b32"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/claude/setup-design-system-cli-6iovG/protection"
+  },
+  {
+    "name": "codex/chain-projection-worker-20261022",
+    "commit": {
+      "sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/chain-projection-worker-20261022/protection"
+  },
+  {
+    "name": "codex/console-contract-publication",
+    "commit": {
+      "sha": "06d8fc13f3133fea5108164266a6fee59b88db1f",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/06d8fc13f3133fea5108164266a6fee59b88db1f"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/console-contract-publication/protection"
+  },
+  {
+    "name": "codex/consumer-design-preview",
+    "commit": {
+      "sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/consumer-design-preview/protection"
+  },
+  {
+    "name": "codex/critical-dependency-repairs-20261022",
+    "commit": {
+      "sha": "542b52cc12ca668e64c13a072acf7374bd0a5752",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/542b52cc12ca668e64c13a072acf7374bd0a5752"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/critical-dependency-repairs-20261022/protection"
+  },
+  {
+    "name": "codex/docker-pipeline-20261022",
+    "commit": {
+      "sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/docker-pipeline-20261022/protection"
+  },
+  {
+    "name": "codex/durable-chain-reconciliation-20261022",
+    "commit": {
+      "sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/durable-chain-reconciliation-20261022/protection"
+  },
+  {
+    "name": "codex/durable-outbox-pubsub-20261022",
+    "commit": {
+      "sha": "65367789130870c8c2a0e786f2d6152357d88093",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/65367789130870c8c2a0e786f2d6152357d88093"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/durable-outbox-pubsub-20261022/protection"
+  },
+  {
+    "name": "codex/explain-execution-details-and-next-steps",
+    "commit": {
+      "sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/explain-execution-details-and-next-steps/protection"
+  },
+  {
+    "name": "codex/midnight-integration-20261022",
+    "commit": {
+      "sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/midnight-integration-20261022/protection"
+  },
+  {
+    "name": "codex/privacy-recovery-safety-20261023",
+    "commit": {
+      "sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/privacy-recovery-safety-20261023/protection"
+  },
+  {
+    "name": "codex/rights-export-worker",
+    "commit": {
+      "sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/02297b2cea98dfd54818de5a3104a1ce341acfcd"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/rights-export-worker/protection"
+  },
+  {
+    "name": "codex/rights-privacy-read-api",
+    "commit": {
+      "sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/10a468395cde98eaf7b7f0159855c7bac3a5827a"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/codex/rights-privacy-read-api/protection"
+  },
+  {
+    "name": "docs/brandme-full-experience-2026-10-05",
+    "commit": {
+      "sha": "b31373170953705f180246e254a8c2e9a41b4931",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/b31373170953705f180246e254a8c2e9a41b4931"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/docs/brandme-full-experience-2026-10-05/protection"
+  },
+  {
+    "name": "fix/property-test-vacuity-guard-flake",
+    "commit": {
+      "sha": "a699331df56c12570067223dbaad9c0a86d1567a",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/a699331df56c12570067223dbaad9c0a86d1567a"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/fix/property-test-vacuity-guard-flake/protection"
+  },
+  {
+    "name": "main",
+    "commit": {
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/ed19dc151d103b108cf972e6d37971c55d5dcf60"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/main/protection"
+  },
+  {
+    "name": "mia/next-plans-20261025",
+    "commit": {
+      "sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/057320d4bf01e86c381d6750202e6e5bb7bb741f"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/mia/next-plans-20261025/protection"
+  },
+  {
+    "name": "mia/orchestration-20261023",
+    "commit": {
+      "sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/mia/orchestration-20261023/protection"
+  },
+  {
+    "name": "mia/pipeline-seed-20261030",
+    "commit": {
+      "sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/mia/pipeline-seed-20261030/protection"
+  },
+  {
+    "name": "triage/pnpm-version-conflict-20261023",
+    "commit": {
+      "sha": "114470007e9c631010ee22930a8ddfb75d0ea700",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/114470007e9c631010ee22930a8ddfb75d0ea700"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/triage/pnpm-version-conflict-20261023/protection"
+  },
+  {
+    "name": "triage/pnpm-workspace-frontend-20261008",
+    "commit": {
+      "sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/triage/pnpm-workspace-frontend-20261008/protection"
+  },
+  {
+    "name": "w11/integration-20261008",
+    "commit": {
+      "sha": "bec80b1f25fcd4a310529888351c45c71d33dc4a",
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/commits/bec80b1f25fcd4a310529888351c45c71d33dc4a"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/branches/w11/integration-20261008/protection"
+  }
+]

@@ -1,82 +1,50 @@
-# Brand.Me Documentation (v9)
+# Brand.Me documentation index
 
-**Start here for the current full product build:**
-[Brand.Me — Be More U specification](./design/brandme/README.md) and
-[Claude kickoff prompt](./design/brandme/CLAUDE_BUILD_PROMPT.md). The package contains
-the consumer experience, visual/3D/AR contracts, architecture, Midnight lifecycle,
-commerce connectors, delivery plan, dated audit and 150 acceptance criteria.
-The older v9 documents below remain historical context, not new readiness evidence.
+Consolidated 2026-11-02. Three kinds of document live here: the frozen build contract, the live build record, and
+dated history. If two documents disagree, the order of precedence is `CLAUDE.md` (what runs), then
+`docs/build/` (what was done and measured), then the design package (what is intended). Nothing under
+`docs/archive/` describes the current tree.
 
-Welcome to the Brand.Me platform documentation. This directory contains comprehensive documentation for the v9 Agentic & Circular Economy release.
+## The build contract: `design/brandme/`
 
----
+[`design/brandme/README.md`](./design/brandme/README.md) is the product and engineering specification
+(2026-10-05): product experience, visual/motion/spatial contracts, architecture and API, Midnight ownership
+lifecycle, commerce and connectors, delivery and verification, the repository audit it was written against, and the
+machine-readable contracts (`contracts/`) with 150 acceptance criteria. It is validated by `pnpm check` and is
+edited only through the deviation process.
 
-## Documentation Structure
+## The live build record: `build/`
 
-### [Architecture](./architecture/)
-System architecture, design decisions, and technical specifications.
+| File | Role |
+|---|---|
+| [`build/implementation-status.md`](./build/implementation-status.md) | Program roll-up: baseline SHA, lanes, acceptance evidence, blockers, next action |
+| [`build/local-setup.md`](./build/local-setup.md) | Verified fresh-checkout setup and the four commands |
+| [`build/compatibility-lock.md`](./build/compatibility-lock.md) | Pinned toolchain and framework tuple |
+| [`build/deviations.md`](./build/deviations.md) | Accepted deviations from the contract (D-001…) |
+| [`build/workspace-governance.md`](./build/workspace-governance.md) | Workspace rules, guard error codes, lane ownership |
+| [`build/status/`](./build/status/) | One append-only status log per lane (foundation, consumer-domains, consumer-ui, spatial-ar, commerce-agents, midnight-rights) |
+| [`build/orchestration/pipeline-state.md`](./build/orchestration/pipeline-state.md) | The continuous-build loop's state and queue; open round-03 plans sit beside it |
+| [`build/evidence/`](./build/evidence/) | Acceptance ledger (`results.json`, read by `pnpm evidence:report`) and raw evidence |
+| [`build/deploy/gke-verification-packet.md`](./build/deploy/gke-verification-packet.md) | First-deploy facts, gaps and the founder checklist (nothing is deployed yet) |
+| [`build/security/`](./build/security/) | Secrets conventions, the credential manifest (a CI guard reads it), lane service accounts, vulnerability triage |
+| [`build/runbooks/credential-rotation.md`](./build/runbooks/credential-rotation.md) | Rotation and exposure runbook |
 
-- **[SYSTEM_ARCHITECTURE.md](./architecture/SYSTEM_ARCHITECTURE.md)** - Complete v9 architecture
-- **[AGENTIC_ARCHITECTURE.md](./architecture/AGENTIC_ARCHITECTURE.md)** - Agent system design
-- **[OVERVIEW.md](./architecture/OVERVIEW.md)** - Quick reference
+## Audits: `audits/`
 
-### [Infrastructure](./infrastructure/)
-Infrastructure setup, observability, and operational concerns.
+[`audits/2026-11-01/`](./audits/2026-11-01/) holds two independent code-level audits of the repository at
+`ed19dc15` (`codex-01` and `claude-opus-02`) and the second audit's reconciliation of the first. Their findings
+drove the 2026-11 cleanup.
 
-- **[OBSERVABILITY.md](./infrastructure/OBSERVABILITY.md)** - Metrics, tracing, logging
-- **[INFRASTRUCTURE.md](./infrastructure/INFRASTRUCTURE.md)** - Infrastructure setup
+## Service and package READMEs
 
-### [Deployment](./deployment/)
-Deployment guides and operational procedures.
+Each service directory has a short README stating what it is, its status per `CLAUDE.md`, and how it runs:
+`brandme-frontend/`, `brandme-gateway/`, `brandme-console/`, `brandme-chain/`, `brandme-core/`,
+`brandme-agents/`, `brandme-cube/`, `brandme-data/`, `brandme-infra/`, the domain packages under
+`brandme_core/domains/`, `brandme_core/events/`, `brandme_core/read_api/`, `brandme_core/privacy_exports/`,
+and the packages under `packages/`.
 
-- **[DEPLOYMENT_GUIDE.md](./deployment/DEPLOYMENT_GUIDE.md)** - Complete deployment guide
-- **[QUICK_START.md](./deployment/QUICK_START.md)** - Quick start guide
+## History: `archive/`
 
-### [Status](./status/)
-Current status and progress tracking.
-
-- **[CURRENT_STATUS.md](./status/CURRENT_STATUS.md)** - Current platform status
-
-### [Next Steps](./next_steps/)
-Execution roadmap and future phases.
-
-- **[ROADMAP.md](./next_steps/ROADMAP.md)** - Execution roadmap
-
----
-
-## Quick Links
-
-### Getting Started
-- [README.md](../README.md) - Main repository README
-- [System Architecture](./architecture/SYSTEM_ARCHITECTURE.md) - v9 architecture
-- [Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md) - How to deploy
-
-### Key Concepts
-- **Product Cube**: 7-face digital passport for physical assets
-- **DPP Lifecycle**: PRODUCED → ACTIVE → REPAIR → DISSOLVE → REPRINT
-- **MCP Tools**: 7 tools for external agent access to Style Vault
-- **ESG Verification**: Cardano oracle for ethical oversight
-- **Burn Proofs**: Midnight ZK proofs for circular economy
-
-### Core Technologies
-- Google Cloud Spanner (Native Property Graph)
-- Firestore (Real-time sync, AR glasses <100ms)
-- Model Context Protocol (External agent access)
-- Cardano (Public provenance, ESG)
-- Midnight (Private ownership, ZK burn proofs)
-
----
-
-## Finding Information
-
-**Want to understand architecture?** → [System Architecture](./architecture/SYSTEM_ARCHITECTURE.md)
-**Want to understand agents?** → [Agentic Architecture](./architecture/AGENTIC_ARCHITECTURE.md)
-**Want to deploy?** → [Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)
-**Want to check status?** → [Current Status](./status/CURRENT_STATUS.md)
-**Want to know what's next?** → [Roadmap](./next_steps/ROADMAP.md)
-**Want to see metrics?** → [Observability](./infrastructure/OBSERVABILITY.md)
-
----
-
-**Document Version**: 9.0.0
-**Last Updated**: January 2026
+[`archive/README.md`](./archive/README.md) lists every superseded document in dated sets, with the document that
+replaced it. Version labels (v6–v9), readiness percentages, PostgreSQL/Celery/Neo4j, service ports 8100–8103 and
+gateway port 3000 found there belong to earlier platforms.

@@ -1,187 +1,33 @@
-# brandme-core
+# brandme-core (legacy Python services)
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
 
-AI Brain Hub, Policy & Safety Engine, and Task Orchestrator for Brand.Me platform.
+Three FastAPI services from the original scan-and-provenance platform. They share the `brandme_core` library
+(repository root) and Spanner; there is no PostgreSQL, Redis or Celery runtime in this repository.
 
-## Overview
+| Service | Port | Status (`CLAUDE.md`) | What it does |
+|---|---|---|---|
+| `brain/` | 8000 | **REAL** | `POST /intent/resolve`: real Spanner asset lookup, then policy and orchestrator calls; `/health`, `/metrics` |
+| `policy/` | 8001 | **REAL** | `/policy/check`, `/policy/canViewFace`, `/policy/canTransferOwnership`, provenance reads and `/verify`; consent graph in Spanner; region rules from `policies/region/{default,eu-west1,us-east1}.yaml` (`policy/region_rules.py`) |
+| `orchestrator/` | 8002 | **STUB** | returns a fabricated `cardano_tx_*` hash (`orchestrator/main.py:92`); `celery_app.py`, `tasks.py` and `worker.py` are the never-wired Celery shape |
 
-This repository contains three core services:
+## Run
 
-1. **AI Brain Hub** (`/brain`) - Intent resolution and AI-driven decision making
-2. **Policy & Safety** (`/policy`) - Consent checking, policy enforcement, and safety validation
-3. **Orchestrator** (`/orchestrator`) - Task coordination and workflow management (Celery workers)
-
-## Services
-
-### 1. AI Brain Hub
-
-**Port**: 8000
-**Endpoint**: `POST /intent/resolve`
-
-Resolves user intent from scan requests and maps garment tags to garment IDs.
-
-### 2. Policy & Safety
-
-**Port**: 8001
-**Endpoint**: `POST /policy/check`
-
-Validates consent policies, checks regional restrictions, and determines visibility scope.
-
-### 3. Orchestrator
-
-**Type**: Celery Worker
-
-Coordinates workflows:
-- Inserts scan events
-- Fetches allowed facets
-- Calls blockchain TX builder
-- Logs audit trails
-
-## Development
-
-### Prerequisites
-
-- Python 3.11+
-- PostgreSQL
-- Redis (for Celery)
-- NATS Server
-
-### Setup
+`docker-compose.yml` starts `brain` and `policy` in the default profile and `orchestrator` only with
+`--profile legacy`; each runs `python -m brandme_core.config preflight --service <name>` first, and preflight
+refuses the stub services in sandbox and production. Natively, `pnpm dev:demo` from the repository root starts
+brain with the gateway and consumer app.
 
 ```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-
-# Copy environment variables
-cp .env.example .env
+cd brandme-core/brain && uvicorn main:app --port 8000     # with SPANNER_EMULATOR_HOST set, see docs/build/local-setup.md
+cd brandme-core/policy && uvicorn main:app --port 8001
 ```
 
-### Running Services
+Dependencies per service are in each `requirements.txt`; the hashed lock for the whole Python tree is
+`scripts/python/requirements.lock`. Tests live in the repository's `tests/` suite (run by `pnpm check` and CI's
+Test Core job with emulators); there is no `brandme-core/tests/`.
 
-```bash
-# AI Brain Hub
-cd brain && uvicorn main:app --reload --port 8000
+## What is not here
 
-# Policy & Safety
-cd policy && uvicorn main:app --reload --port 8001
-
-# Orchestrator (Celery worker)
-cd orchestrator && celery -A worker worker --loglevel=info
-```
-
-### Testing
-
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=src --cov-report=html
-
-# Lint
-ruff check src/
-black --check src/
-
-# Format
-black src/ tests/
-ruff check --fix src/
-```
-
-## Architecture
-
-```
-┌──────────────────────┐
-│   NATS JetStream     │
-│  scan.requested      │
-└─────────┬────────────┘
-          │
-          ▼
-┌─────────────────────┐      ┌──────────────────────┐
-│   AI Brain Hub      │─────▶│  Policy & Safety     │
-│  - Resolve intent   │      │  - Check consent     │
-│  - Lookup garment   │      │  - Validate region   │
-└─────────────────────┘      └──────────┬───────────┘
-                                        │ decision: allow
-                                        ▼
-                             ┌─────────────────────┐
-                             │   Orchestrator      │
-                             │  - Insert scan      │
-                             │  - Fetch facets     │
-                             │  - Call TX Builder  │
-                             │  - Log audit        │
-                             └─────────────────────┘
-```
-
-## Database Models
-
-Shared database models in `/shared/models/`:
-- `User`
-- `Garment`
-- `GarmentPassportFacet`
-- `ConsentPolicy`
-- `ScanEvent`
-- `ChainAnchor`
-- `AuditLog`
-
-## Configuration
-
-Environment variables:
-- `DATABASE_URL`: PostgreSQL connection string
-- `REDIS_URL`: Redis connection string (for Celery)
-- `NATS_URL`: NATS server URL
-- `REGION_DEFAULT`: Default region code
-- `LOG_LEVEL`: Logging level
-
-## Policy Storage
-
-Policies are stored in `policies/region/*.yaml`:
-
-```yaml
-# policies/region/us-east1.yaml
-region_code: us-east1
-policies:
-  - scope: public
-    facet_types:
-      - authenticity
-      - esg
-    allowed: true
-  - scope: private
-    facet_types:
-      - pricing
-      - ownership
-    allowed: false
-```
-
-## Compliance
-
-- **No PII in logs**: All logging sanitizes personally identifiable information
-- **Trace ID only**: Log correlation uses trace IDs, not user data
-- **Policy versioning**: All policy decisions include SHA256 hash of policy version
-- **Audit trail**: Every decision is logged with tamper-evident hash chain
-
-## Deployment
-
-### Docker
-
-```bash
-# Build images
-docker build -t brandme-core-brain:latest -f brain/Dockerfile .
-docker build -t brandme-core-policy:latest -f policy/Dockerfile .
-docker build -t brandme-core-orchestrator:latest -f orchestrator/Dockerfile .
-```
-
-### Kubernetes
-
-Each service has a Helm chart in `/brandme-infra/helm/`.
-
-## License
-
-Copyright (c) Brand.Me, Inc. All rights reserved.
-
-Proprietary and confidential.
+Cardano anchoring, Midnight proofs and ESG verification do not happen in these services; see `CLAUDE.md` for the
+exact break boundaries and `brandme-chain/` for the real Midnight adapter.

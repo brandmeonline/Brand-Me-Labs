@@ -24,6 +24,10 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 _PAN_RE = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
 _UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+# A hex token of 32+ characters holding at least one letter (an md5/sha1/sha256/sha512 digest) is never a
+# card number, yet about 0.75% of random sha256 digests contain a Luhn-valid run of 13-19 digits. Masked
+# before the scan, like UUIDs; same length, so spans still index ``text``.
+_HEX_DIGEST_RE = re.compile(r"(?<![0-9a-fA-F])(?=[0-9a-fA-F]*[a-fA-F])[0-9a-fA-F]{32,}(?![0-9a-fA-F])")
 _DIGITS_RE = re.compile(r"\d+")
 _GAP_RE = re.compile(r"[^\w]{1,3}")  # any short non-alphanumeric separator; "_" and letters break a number
 
@@ -42,6 +46,7 @@ def _luhn(digits: str) -> bool:
 def _card_spans(text: str) -> List[Tuple[int, int]]:
     """Character spans of card numbers in ``text``, merged and in order."""
     scan = _UUID_RE.sub(lambda m: "u" * len(m.group()), text)  # same length: spans still index ``text``
+    scan = _HEX_DIGEST_RE.sub(lambda m: "h" * len(m.group()), scan)
     spans: List[Tuple[int, int]] = []
     for m in _PAN_RE.finditer(scan):  # groups of any size, single space or hyphen between them
         d = re.sub(r"\D", "", m.group())

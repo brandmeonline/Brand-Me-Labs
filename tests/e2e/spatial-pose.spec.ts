@@ -6,7 +6,7 @@ import fs from "node:fs/promises";
 
 test("real pinned local model detects synthetic fixture and rejects an empty frame", async ({
   page,
-}) => {
+}, testInfo) => {
   test.setTimeout(90000);
   const outgoing: string[] = [];
   page.on("request", (r) => {
@@ -105,7 +105,7 @@ test("real pinned local model detects synthetic fixture and rejects an empty fra
   expect(accuracy.pckAt015Torso).toBeGreaterThanOrEqual(0.75);
   const sorted = evidence.samples.slice(1).sort((a, b) => a - b);
   await fs.writeFile(
-    "scripts/assets/evidence/pose-inference.json",
+    testInfo.outputPath("pose-inference.json"),
     JSON.stringify(
       {
         ...evidence,
@@ -124,7 +124,7 @@ test("real pinned local model detects synthetic fixture and rejects an empty fra
 
 test("actual try-on camera flow uses real local worker and stops on mode exit", async ({
   page,
-}) => {
+}, testInfo) => {
   test.setTimeout(90000);
   await page.goto("/try/overshirt");
   await page.evaluate(async () => {
@@ -159,7 +159,7 @@ test("actual try-on camera flow uses real local worker and stops on mode exit", 
     .getByRole("heading", { name: "Field Linen Overshirt" })
     .scrollIntoViewIfNeeded();
   await page.screenshot({
-    path: "scripts/assets/evidence/pose-preview.png",
+    path: testInfo.outputPath("pose-preview.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: /Item image/ }).click();

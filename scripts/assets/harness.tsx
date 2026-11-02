@@ -7,6 +7,8 @@ import AddItemPage from "../../brandme-frontend/features/closet/AddItemPage";
 import StylePage from "../../brandme-frontend/features/closet/StylePage";
 import { NativeDeviceSession } from "../../brandme-frontend/features/spatial/NativeDeviceSession";
 import TryPage from "../../brandme-frontend/features/spatial/TryPage";
+import ScanExperience from "../../brandme-frontend/features/spatial/ScanExperience";
+import type { ScanConnector } from "../../brandme-frontend/features/spatial/scanResolution";
 const path = location.pathname;
 const holdSave = new URLSearchParams(location.search).get("save-hold") === "1";
 // Only this development harness injects latency, to exercise pending UI against real guest commits.
@@ -33,7 +35,9 @@ const delayedGuest = {
   },
 };
 const screen =
-  path === "/add" ? (
+  path === "/add/scan" ? (
+    <ScanExperience connector={(window as Window & { __brandmeScanTestConnector?: ScanConnector }).__brandmeScanTestConnector} />
+  ) : path === "/add" ? (
     <AddItemPage repository={delay || holdSave ? delayedGuest : undefined} />
   ) : path === "/try/device-test" ? (
     <NativeDeviceSession enabled={process.env.BRANDME_AR_DEVICE_TEST === "1"} />

@@ -1,0 +1,43 @@
+{
+  "captured_utc": "2026-11-01T15:10:00Z (approx; GitHub MCP list_branches + list_pull_requests)",
+  "first_audit_final_snapshot_utc": "2026-11-01T14:43:35Z",
+  "method": "GitHub MCP list_branches/list_pull_requests/actions_list (read-only) compared with first audit evidence/history-final-remote-heads.txt; new tips fetched into isolated clone namespace refs/audit-delta/* without touching refs/remotes/origin/* used by the branch sub-agent",
+  "remote_main": {"sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60", "moved": false},
+  "remote_branch_count": {"first_audit_final": 35, "second_audit": 36},
+  "added": [
+    {
+      "ref": "claude/exciting-hypatia-wl48op",
+      "tip_sha": "e033950bc6c572616cfc0902d96a5c7ecaa78ea3",
+      "pr": 72,
+      "pr_state": "open, draft",
+      "pr_title": "Pin follow-redirects and gaxios overrides to clear prod audit",
+      "ahead_of_main": 1,
+      "files": ["pnpm-lock.yaml (+10/-17)", "pnpm-workspace.yaml (+11)"],
+      "purpose": "pnpm overrides follow-redirects@1 -> 1.16.2 (GHSA-mrwp-f3q8-3g9p high via brandme-console>axios) and gcp-metadata@8>gaxios -> 7.1.4 (drops rimraf/glob/minimatch path; GHSA-g3hv-75wg-m249, GHSA-3g3m-2fjr-6pw4 moderate via brandme-chain>@google-cloud/spanner)",
+      "why_it_matters": "ci-cd.yml:122 runs `pnpm audit --prod` with no severity threshold in test-frontend; new advisories published ~2026-11-01 make that job fail on ANY revision carrying the current lockfile, including main ed19dc1. Observed failure: PR #71 job 124879798452 at 45e157f5 (docs-only change) -> '3 vulnerabilities found, Severity: 2 moderate | 1 high', exit 1.",
+      "second_audit_classification": "KEEP (active fix PR); not reviewed line-by-line beyond the two-file diff",
+      "ci_outcome": "run 41319340979 (Build, Test, and Deploy) concluded success 2026-11-01T15:22:26Z at e033950b — the override fix clears the `pnpm audit --prod` gate; Consumer UI, Module Regression, Chain Service Tests and Workspace guard also success. Deploy skipped as usual. This is the only revision observed green on 2026-11-01 for the Test Frontend job."
+    }
+  ],
+  "moved": [
+    {
+      "ref": "claude/amazing-goodall-ntrljq",
+      "first_audit_id": "BR-036",
+      "first_audit_tip": "45e157f5555647f0e9add424b9634f27d606211d",
+      "second_audit_tip": "8360813e238e20f78656700340c6c05927107ae0",
+      "pr": 71,
+      "pr_state": "open, draft",
+      "new_commit": "8360813e feat(payments): Stripe Connect direct charges for brands (test mode)",
+      "diff_vs_main": "9 files, +1369/-103: brandme_core/domains/commerce/composition.py (+29), brandme_core/domains/providers/payments/stripe_connect.py (new, 281), stripe_test.py (+91), stripe_wire.py (+102), docs/build/stripe-connect-plan.md (257), tests/fixtures/providers/stripe_double.py (+217), stripe_events.py, tests/test_commerce_payments_flow.py (+42), tests/test_providers_stripe_connect.py (new, 443)",
+      "author_statement_in_commit": "Verified against the fixture stand-in and a loopback wire recorder only. Not yet run against Stripe test mode.",
+      "migrations_added": "none (V015 remains highest)",
+      "consequence_for_first_audit": "BR-036 'documentation-only' is correct for 45e157f5 but no longer describes the branch tip. The branch now contains unverified payment code; the first audit's KEEP verdict stands, but its 'adds no operating payment capability' statement must be re-read as 'adds unmounted, provider-unverified payment code' (commerce routers are still unmounted on main, F-ARCH-001).",
+      "ci_at_first_tip": "run 41317249653 concluded failure (Test Frontend: pnpm audit --prod advisories, not the docs change)",
+      "ci_at_new_tip": "run 41318692121 concluded failure (checked 2026-11-02 00:xx UTC): the only failed job is Test Frontend, job 124884112028, same `pnpm audit --prod` output ('3 vulnerabilities found, Severity: 2 moderate | 1 high', follow-redirects via brandme-console>axios; glob/minimatch via brandme-chain>@google-cloud/spanner). The Stripe Connect code itself was not the cause; its Python/gateway/chain jobs in that run were not failed jobs. Consequence: BR-036's CI red is S2-OBS-002, not a defect in #71's code (code remains unverified against Stripe test mode per its own commit message)."
+    }
+  ],
+  "no_longer_advertised": [],
+  "open_prs_now": [29, 63, 66, 70, 71, 72],
+  "releases": [],
+  "tags": []
+}

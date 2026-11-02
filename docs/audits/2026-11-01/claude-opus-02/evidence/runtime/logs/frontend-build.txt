@@ -1,0 +1,81 @@
+### step: frontend-build
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: pnpm build && du -sh .next && du -sh .next/static 2>/dev/null
+### start_utc: 2026-11-01T15:11:21Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+
+> brandme-frontend@0.1.0 build /[REDACTED-LONG-STRING]
+> next build
+
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+   ▲ Next.js 15.5.28
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 32.4s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/27) ...
+   Generating static pages (6/27) 
+   Generating static pages (13/27) 
+   Generating static pages (20/27) 
+ ✓ Generating static pages (27/27)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      177 B         106 kB
+├ ○ /_not-found                            150 B         103 kB
+├ ○ /add                                 45.4 kB         160 kB
+├ ○ /add/scan                            5.73 kB         108 kB
+├ ƒ /api/v1/[...path]                      150 B         103 kB
+├ ○ /assistant                             177 B         106 kB
+├ ○ /circle                                169 B         114 kB
+├ ƒ /circle/decisions/[decisionId]         169 B         114 kB
+├ ○ /circle/decisions/new                  170 B         114 kB
+├ ○ /closet                                136 B         123 kB
+├ ƒ /closet/items/[itemId]                 136 B         123 kB
+├ ○ /closet/settings                       136 B         123 kB
+├ ○ /dev/[example]                        5.6 kB         125 kB
+├ ○ /discover                              170 B         114 kB
+├ ○ /governance                            150 B         103 kB
+├ ○ /inbox                               1.65 kB         112 kB
+├ ○ /me                                    177 B         106 kB
+├ ƒ /me/connections                      2.01 kB         117 kB
+├ ○ /me/data                               170 B         114 kB
+├ ƒ /me/data/deletion/[jobId]              169 B         114 kB
+├ ƒ /me/data/exports/[jobId]               170 B         114 kB
+├ ○ /me/style                            6.84 kB         131 kB
+├ ○ /orders                                177 B         106 kB
+├ ƒ /products/[productId]                  170 B         114 kB
+├ ○ /rewards                             2.82 kB         127 kB
+├ ○ /scan                                  150 B         103 kB
+├ ○ /settings                            2.08 kB         105 kB
+├ ƒ /shop                                  150 B         103 kB
+├ ○ /start                                 171 B         116 kB
+├ ƒ /stash                                 150 B         103 kB
+├ ○ /style                               2.39 kB         117 kB
+├ ƒ /style/outfits/[outfitId]            2.39 kB         117 kB
+├ ○ /today                               1.76 kB         112 kB
+├ ƒ /try/[itemId]                        15.7 kB         127 kB
+├ ○ /try/device-test                     2.74 kB         114 kB
+└ ƒ /try/photo/api                         150 B         103 kB
++ First Load JS shared by all             103 kB
+  ├ chunks/6444-2519087fc72dd315.js      46.2 kB
+  ├ chunks/d19e6a4e-8ed2bcef1034cf31.js  54.2 kB
+  └ other shared chunks (total)          2.12 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+301M	.next
+3.1M	.next/static
+-----
+### exit: 0
+### end_utc: 2026-11-01T15:12:28Z
+### duration_s: 67
