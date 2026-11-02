@@ -1,6 +1,5 @@
 import {
   UserCircle,
-  Compass,
   Heart,
   Home,
   Shirt,
@@ -14,14 +13,15 @@ import {
   MessageCircle,
 } from 'lucide-react'
 export const primaryNavigation = [
-  { href: '/today', label: 'Today', icon: Home },
+  { href: '/discover', label: 'Shops', icon: ShoppingBag },
+  { href: '/social', label: 'Social', icon: Heart },
   { href: '/closet', label: 'Closet', icon: Shirt },
-  { href: '/style', label: 'Style', icon: Sparkles },
-  { href: '/circle', label: 'Circle', icon: Heart },
-  { href: '/me', label: 'Me', icon: UserCircle },
 ] as const
 export const secondaryNavigation = [
-  { href: '/discover', label: 'Discover', icon: Compass },
+  { href: '/today', label: 'Today', icon: Home },
+  { href: '/style', label: 'Style', icon: Sparkles },
+  { href: '/me', label: 'Me', icon: UserCircle },
+  { href: '/circle', label: 'My circle', icon: Heart },
   { href: '/assistant', label: 'My Assistant', icon: MessageCircle },
   { href: '/rewards', label: 'Rewards', icon: Gift },
   { href: '/orders', label: 'Orders', icon: ShoppingBag },
@@ -30,6 +30,27 @@ export const secondaryNavigation = [
   { href: '/me/connections', label: 'Connections', icon: Link2 },
   { href: '/settings', label: 'Settings', icon: SlidersHorizontal },
 ] as const
+export const allNavigation = [...primaryNavigation, ...secondaryNavigation]
+
 export function isActiveRoute(path: string, href: string): boolean {
+  if (href === '/social' && (path === '/circle' || path.startsWith('/circle/'))) return true
+  if (href === '/discover' && path.startsWith('/products/')) return true
   return path === href || path.startsWith(`${href}/`)
+}
+
+/** Prefer the closest destination; room aliases only fill a set without one. */
+export function currentNavigationItem<T extends { href: string }>(
+  path: string,
+  items: readonly T[],
+): T | undefined {
+  let closest: T | undefined
+  for (const item of items) {
+    if (
+      (path === item.href || path.startsWith(`${item.href}/`)) &&
+      (!closest || item.href.length > closest.href.length)
+    ) {
+      closest = item
+    }
+  }
+  return closest || items.find((item) => isActiveRoute(path, item.href))
 }

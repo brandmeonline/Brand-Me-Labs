@@ -122,7 +122,8 @@ def test_pseudonyms_are_stable_distinct_and_idempotent():
 
 def test_short_user_ids_are_no_longer_logged_in_full():
     """The legacy redact_user_id returned IDs of 8 characters or fewer verbatim."""
-    assert "abc" not in redact_user_id("abc")
+    # Non-hex letters: the pseudonym is "h:" plus hex, so this can never match by chance ("abc" did, ~0.25%).
+    assert "xyz" not in redact_user_id("xyz")
     assert redact_user_id("") == "unknown" and redact_user_id(None) == "unknown"
 
 

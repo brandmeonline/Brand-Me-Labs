@@ -17,6 +17,7 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Request
 
+from .card import PersonaCardService
 from .http import PrincipalResolver, execute
 from .kernel import ValidationFailed, parse_iso, reject_unknown_keys, require_strict_int
 from .onboarding import GuestMigrationService
@@ -179,5 +180,24 @@ def create_persona_router(
     async def guest_migration(request: Request):
         key = request.headers.get("idempotency-key")
         return await execute(request, resolve_principal, lambda p, b: guest.migrate(p, b, key), with_body=True)
+
+    return r
+
+
+def create_card_router(cards: PersonaCardService, resolve_principal: PrincipalResolver) -> APIRouter:
+    """The living persona card (Ultra plan 02, item 6)."""
+    r = APIRouter()
+
+    @r.get("/me/persona/card")
+    async def my_card(request: Request):
+        return await execute(request, resolve_principal, cards.mine)
+
+    @r.put("/me/persona/card")
+    async def card_settings(request: Request):
+        return await execute(request, resolve_principal, cards.settings, with_body=True)
+
+    @r.get("/members/{member_id}/card")
+    async def member_card(request: Request, member_id: str):
+        return await execute(request, resolve_principal, lambda p: cards.view(p, member_id))
 
     return r

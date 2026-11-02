@@ -171,9 +171,11 @@ def test_account_deletion_leaves_no_outbox_or_replay_row_naming_the_member(datab
     others_by_status = {s: sum(1 for _, st, _ in others.values() if st == s) for s in ("delivered", "pending")}
     assert len(named) >= 21 and own <= set(named) and all(by_status.values()), by_status
     assert all(others_by_status.values()) and closed_id in others, others_by_status
-    assert count(db, "SELECT COUNT(*) FROM IdempotencyRecords WHERE STARTS_WITH(principal_ref, @p)", p=f"member:{m}") == 7
+    # One per idempotent command in the consumer-domains seed: 7, plus 5 from #66 (credits.convert,
+    # decisions.comment, rooms.create, rooms.post, surveys.respond).
+    assert count(db, "SELECT COUNT(*) FROM IdempotencyRecords WHERE STARTS_WITH(principal_ref, @p)", p=f"member:{m}") == 12
     assert count(db, "SELECT COUNT(*) FROM IdempotencyRecords WHERE STRPOS(TO_JSON_STRING(response_body), @m) > 0 "
-                     "AND principal_ref = @p", m=m, p=f"member:{f}") == 2  # the friend's two decisions name the member
+                     "AND principal_ref = @p", m=m, p=f"member:{f}") == 3  # the friend's two decisions and room (#66) name the member
     backup_at = now()
     backup = {name: table(db, name) for name in ("OutboxEvents", "IdempotencyRecords")}
     with db.snapshot() as s:
@@ -244,7 +246,8 @@ def test_account_deletion_leaves_no_outbox_or_replay_row_naming_the_member(datab
         bodies = [json.dumps(json.loads(b)) for (b,) in s.execute_sql(
             "SELECT TO_JSON_STRING(response_body) FROM IdempotencyRecords WHERE principal_ref = @p",
             params={"p": f"member:{f}"}, param_types={"p": param_types.STRING})]
-    assert len(bodies) == 3 and sum(NIL_SUBJECT in b for b in bodies) == 2 and not any(m in b for b in bodies)
+    # Two decisions and (#66) a room that named the member now hold the nil subject; the item and room post never named them.
+    assert len(bodies) == 5 and sum(NIL_SUBJECT in b for b in bodies) == 3 and not any(m in b for b in bodies)
 
     # A late write by an unguarded writer (gateway session store) is swept.
     late = EventEnvelope(event_type="session.revoked", schema_version="1", aggregate_type="session",

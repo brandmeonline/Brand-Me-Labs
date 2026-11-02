@@ -1,0 +1,7912 @@
+{
+  "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "method": "Static names-only environment-reference extraction; regex may also include constants. No host environment read.",
+  "variables": [
+    {
+      "name": "ACCESS_LEVELS",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "ACCOUNT",
+      "paths": [
+        "tests/test_commerce_privacy_freeze.py"
+      ]
+    },
+    {
+      "name": "ACCOUNT_FIELDS",
+      "paths": [
+        "brandme_core/domains/rewards/ledger.py"
+      ]
+    },
+    {
+      "name": "ACCOUNT_ONLY",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "ACCOUNT_ORDER",
+      "paths": [
+        "brandme-console/app/(ops)/rewards-disputes/members/[memberId]/page.tsx"
+      ]
+    },
+    {
+      "name": "ACCOUNT_SCOPE_REFUSED",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "ACTIVATION_FRESHNESS",
+      "paths": [
+        "brandme_core/domains/providers/setup.py"
+      ]
+    },
+    {
+      "name": "ACTIVE",
+      "paths": [
+        "brandme-agents/compliance/src/lifecycle/state_machine.py",
+        "brandme-cube/src/models.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "ACTORS",
+      "paths": [
+        "tests/contracts/property.test.ts"
+      ]
+    },
+    {
+      "name": "ADAPT_MAX_POINTS_PER_WEEK",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "ADAPT_PERIOD",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "ADMIN_EMAIL",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "ADMIN_PASSWORD",
+      "paths": [
+        ".env.deploy.example",
+        "agents/validation-agent.sh"
+      ]
+    },
+    {
+      "name": "ADVANCED",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "AFFILIATE_DISCLOSURE",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "AGENTIC",
+      "paths": [
+        "tests/test_commerce_legacy_graph_rag.py"
+      ]
+    },
+    {
+      "name": "AGENT_CLIENT",
+      "paths": [
+        "tests/fixtures/commerce/harness.py"
+      ]
+    },
+    {
+      "name": "AGENT_CPU",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "AGENT_GRANTS",
+      "paths": [
+        "brandme_core/domains/commerce/privacy_handler.py"
+      ]
+    },
+    {
+      "name": "AGENT_LOG_LEVEL",
+      "paths": [
+        "brandme-agents/agentic/.env.example"
+      ]
+    },
+    {
+      "name": "AGENT_MEMORY",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "AGENT_ONLY",
+      "paths": [
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "AGENT_TIMEOUT",
+      "paths": [
+        "brandme-agents/agentic/.env.example"
+      ]
+    },
+    {
+      "name": "AGGREGATE_DEMAND",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "ALGORITHM",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "ALL",
+      "paths": [
+        "brandme-gateway/src/routes/v1/persona.test.ts",
+        "brandme-gateway/src/routes/v1/social.test.ts",
+        "brandme-gateway/src/routes/v1/tryon.test.ts",
+        "brandme-gateway/src/routes/v1/wardrobe.test.ts"
+      ]
+    },
+    {
+      "name": "ALLOW",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "ALLOWED_ALGORITHMS",
+      "paths": [
+        "brandme_core/mcp/authz.py"
+      ]
+    },
+    {
+      "name": "ALLOWED_EVENT_TYPES",
+      "paths": [
+        "tests/test_commerce_assistant.py"
+      ]
+    },
+    {
+      "name": "ALLOWED_PRODUCT_HOSTS",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "ALLOWED_TYPES",
+      "paths": [
+        "brandme_core/domains/media/store.py"
+      ]
+    },
+    {
+      "name": "ALLOW_CODES",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py",
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "ALL_DEPLOYMENTS",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "ALL_NAMES",
+      "paths": [
+        "tests/test_commerce_audit_coverage.py"
+      ]
+    },
+    {
+      "name": "ALL_TOOLS",
+      "paths": [
+        "brandme-agents/agentic/tools/__init__.py"
+      ]
+    },
+    {
+      "name": "ALPHA_TOKEN",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "AMOUNT_MISMATCH",
+      "paths": [
+        "brandme_core/domains/providers/payments/simulated.py"
+      ]
+    },
+    {
+      "name": "AMOUNT_RE",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "ANALYTICS_RANK",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "ANONYMIZE",
+      "paths": [
+        "brandme_core/domains/privacy/deletion.py"
+      ]
+    },
+    {
+      "name": "ANTHROPIC_API",
+      "paths": [
+        "brandme-agents/branding/src/graph_engine.py",
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "ANTHROPIC_API_KEY",
+      "paths": [
+        ".env.deploy.example",
+        "brandme-agents/agentic/.env.example"
+      ]
+    },
+    {
+      "name": "ANTHROPIC_HOST",
+      "paths": [
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "ANTHROPIC_LOG",
+      "paths": [
+        "tests/test_commerce_model_planner.py"
+      ]
+    },
+    {
+      "name": "AP2_SCHEMA_COMMIT",
+      "paths": [
+        "brandme_core/domains/commerce/ap2.py"
+      ]
+    },
+    {
+      "name": "AP2_SDK_PYTHON",
+      "paths": [
+        "tests/test_commerce_ap2.py"
+      ]
+    },
+    {
+      "name": "AP2_VERSION",
+      "paths": [
+        "brandme_core/domains/commerce/ap2.py"
+      ]
+    },
+    {
+      "name": "API_KEY",
+      "paths": [
+        ".mcp.json"
+      ]
+    },
+    {
+      "name": "API_VERSION",
+      "paths": [
+        "brandme_core/domains/rights/passport.py",
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "APPROVAL_BINDING",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "APPROVAL_CHALLENGE_TTL",
+      "paths": [
+        "brandme_core/domains/commerce/service.py"
+      ]
+    },
+    {
+      "name": "ARCHIVES",
+      "paths": [
+        "scripts/python/fetch_gcs_emulator.py"
+      ]
+    },
+    {
+      "name": "ARGUMENTS_LIMIT",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "AR_SYNC_ENABLED",
+      "paths": [
+        "brandme-cube/src/main.py"
+      ]
+    },
+    {
+      "name": "AR_SYNC_LATENCY_TARGET_MS",
+      "paths": [
+        "brandme-cube/src/main.py"
+      ]
+    },
+    {
+      "name": "ASSET",
+      "paths": [
+        "brandme-gateway/src/routes/v1/v1-routes.test.ts",
+        "tests/test_read_api.py"
+      ]
+    },
+    {
+      "name": "ASSET_SPECIFIC",
+      "paths": [
+        "brandme_core/spanner/consent_graph.py"
+      ]
+    },
+    {
+      "name": "ASSIGNMENT_ITEM_KEY",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "ASSIGNMENT_SECTION",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "ASSISTANT_CLIENT_ID",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "AS_ISSUER",
+      "paths": [
+        "tests/test_mcp.py"
+      ]
+    },
+    {
+      "name": "ATTEMPTS",
+      "paths": [
+        "scripts/python/_fetch.py"
+      ]
+    },
+    {
+      "name": "ATTRIBUTE",
+      "paths": [
+        "brandme_core/zk/proof_of_ownership.py"
+      ]
+    },
+    {
+      "name": "ATTRIBUTE_KEYS",
+      "paths": [
+        "brandme_core/domains/persona/ingress.py"
+      ]
+    },
+    {
+      "name": "AUDIENCE",
+      "paths": [
+        "brandme_core/domains/persona/assertion.py"
+      ]
+    },
+    {
+      "name": "AUDIENCES",
+      "paths": [
+        "brandme-gateway/src/routes/v1/social.ts",
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "AUTHENTICATED",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "AUTH_IDENTITY",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "AUTO_GENERATE_PASSWORDS",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "AVAILABILITY",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "AVAILABILITY_FRESHNESS",
+      "paths": [
+        "brandme_core/domains/providers/ingestion.py"
+      ]
+    },
+    {
+      "name": "AVAILABLE_STACKS",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/core.py"
+      ]
+    },
+    {
+      "name": "AXES",
+      "paths": [
+        "brandme-frontend/features/persona/types.ts"
+      ]
+    },
+    {
+      "name": "AXIS_NAMES",
+      "paths": [
+        "brandme_core/domains/persona/events.py"
+      ]
+    },
+    {
+      "name": "AXIS_NOUN",
+      "paths": [
+        "brandme_core/domains/persona/recommender.py"
+      ]
+    },
+    {
+      "name": "AXIS_SETTING_KEYS",
+      "paths": [
+        "brandme_core/domains/persona/service.py"
+      ]
+    },
+    {
+      "name": "BACKENDS",
+      "paths": [
+        "brandme-gateway/src/middleware/mode.test.ts"
+      ]
+    },
+    {
+      "name": "BACKGROUND",
+      "paths": [
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "BACKSTOP_DAYS",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "BACKUP_DIR",
+      "paths": [
+        "scripts/backup.sh"
+      ]
+    },
+    {
+      "name": "BACKUP_FILE",
+      "paths": [
+        "scripts/backup.sh"
+      ]
+    },
+    {
+      "name": "BACKUP_SIZE",
+      "paths": [
+        "scripts/backup.sh"
+      ]
+    },
+    {
+      "name": "BADGE_ID",
+      "paths": [
+        "brandme_core/domains/rewards/events.py"
+      ]
+    },
+    {
+      "name": "BAG",
+      "paths": [
+        "tests/test_commerce_payments_flow.py",
+        "tests/test_commerce_stripe_live.py"
+      ]
+    },
+    {
+      "name": "BASE",
+      "paths": [
+        "tests/test_providers_stripe.py",
+        "tests/test_providers_stripe_wire.py"
+      ]
+    },
+    {
+      "name": "BEGINNER",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "BENEFIT_COLS",
+      "paths": [
+        "brandme_core/domains/rewards/benefits.py"
+      ]
+    },
+    {
+      "name": "BINDING_ONLY_CODES",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "BLOCKCHAIN_TOOLS",
+      "paths": [
+        "brandme-agents/agentic/tools/blockchain_tools.py"
+      ]
+    },
+    {
+      "name": "BLOCKED_REGIONS",
+      "paths": [
+        "brandme-core/policy/main.py"
+      ]
+    },
+    {
+      "name": "BLOCKFROST_API_KEY",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "BLUE",
+      "paths": [
+        "deploy-brandme.sh"
+      ]
+    },
+    {
+      "name": "BM_DEPLOY_ENABLED",
+      "paths": [
+        ".github/workflows/ci-cd.yml"
+      ]
+    },
+    {
+      "name": "BM_GCP_DEPLOYER_SA",
+      "paths": [
+        "scripts/provision/gcp-dev-identities.sh"
+      ]
+    },
+    {
+      "name": "BM_GCP_PROJECT_ID",
+      "paths": [
+        "scripts/provision/gcp-dev-identities.sh"
+      ]
+    },
+    {
+      "name": "BM_GCP_PUSHER_SA",
+      "paths": [
+        "scripts/provision/gcp-dev-identities.sh"
+      ]
+    },
+    {
+      "name": "BM_GCP_PUSH_WIF_PROVIDER",
+      "paths": [
+        "scripts/provision/gcp-dev-identities.sh"
+      ]
+    },
+    {
+      "name": "BM_GCP_WIF_PROVIDER",
+      "paths": [
+        "scripts/provision/gcp-dev-identities.sh"
+      ]
+    },
+    {
+      "name": "BODY_KEYS",
+      "paths": [
+        "brandme_core/domains/persona/onboarding.py"
+      ]
+    },
+    {
+      "name": "BOOL",
+      "paths": [
+        "brandme_core/domains/persona/kernel.py"
+      ]
+    },
+    {
+      "name": "BOUNDARY_SCHEMA",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "BOX_WIDTH",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/design_system.py"
+      ]
+    },
+    {
+      "name": "BRAIN_SERVICE_URL",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example",
+        "brandme_core/config.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "BRAIN_URL",
+      "paths": [
+        "brandme-agents/agentic/orchestrator/agents.py"
+      ]
+    },
+    {
+      "name": "BRANDING_PACKAGE",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "BRANDME_AR_DEVICE_TEST",
+      "paths": [
+        "brandme-frontend/app/try/device-test/page.tsx",
+        "scripts/assets/dev.mjs",
+        "scripts/assets/harness.tsx"
+      ]
+    },
+    {
+      "name": "BRANDME_CHAIN_BUILT_RUNTIME",
+      "paths": [
+        "brandme-chain/tests/spanner/runtime.test.ts"
+      ]
+    },
+    {
+      "name": "BRANDME_CHECK_SKIP_PYTHON",
+      "paths": [
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_CONSOLE_URL",
+      "paths": [
+        "brandme-frontend/lib/testing/verify-shell.mjs",
+        "brandme-frontend/lib/testing/wait-for-apps.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_CONSUMER_URL",
+      "paths": [
+        "brandme-frontend/lib/testing/verify-controls.mjs",
+        "brandme-frontend/lib/testing/verify-domain-views.mjs",
+        "brandme-frontend/lib/testing/verify-live-domains.mjs",
+        "brandme-frontend/lib/testing/verify-shell.mjs",
+        "brandme-frontend/lib/testing/wait-for-apps.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_DEV_ANTHROPIC_API_KEY",
+      "paths": [
+        "tests/test_commerce_model_live.py"
+      ]
+    },
+    {
+      "name": "BRANDME_DEV_ASSERTION_DIR",
+      "paths": [
+        "scripts/dev/consumer-domain-keys.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_DEV_ASSERTION_KEY",
+      "paths": [
+        "brandme-frontend/lib/testing/dev-gateway.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_DOMAIN_REFERENCE",
+      "paths": [
+        "brandme-frontend/lib/testing/dev-gateway.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_EVIDENCE_DIR",
+      "paths": [
+        "brandme-frontend/lib/testing/verify-controls.mjs",
+        "brandme-frontend/lib/testing/verify-domain-views.mjs",
+        "brandme-frontend/lib/testing/verify-live-domains.mjs",
+        "brandme-frontend/lib/testing/verify-shell.mjs",
+        "brandme-frontend/lib/testing/verify-visual.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_GATEWAY_HEALTH_URL",
+      "paths": [
+        "brandme-frontend/lib/testing/wait-for-apps.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_GATEWAY_INTERNAL_URL",
+      "paths": [
+        "brandme-console/app/(ops)/moderation/_lib/ops-gateway.ts"
+      ]
+    },
+    {
+      "name": "BRANDME_GATEWAY_URL",
+      "paths": [
+        "brandme-console/app/(ops)/providers/_data/gateway.ts"
+      ]
+    },
+    {
+      "name": "BRANDME_MEDIA_BUCKET",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py",
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "BRANDME_MODE",
+      "paths": [
+        ".env.example",
+        ".github/scripts/smoke-image.sh",
+        "brandme-agents/compliance/src/main.py",
+        "brandme-agents/identity/src/main.py",
+        "brandme-agents/knowledge/src/main.py",
+        "brandme-console/app/layout.tsx",
+        "brandme-core/brain/main.py",
+        "brandme-core/orchestrator/main.py",
+        "brandme-core/orchestrator/worker.py",
+        "brandme-core/policy/main.py",
+        "brandme-cube/src/main.py",
+        "brandme-data/spanner/migrations/runner.py",
+        "brandme-frontend/app/me/connections/page.tsx",
+        "brandme-frontend/lib/testing/dev-domains.py",
+        "brandme-frontend/lib/testing/dev-gateway.mjs",
+        "brandme-frontend/lib/testing/start-dev-gateway.mjs",
+        "brandme-frontend/lib/testing/verify-live-domains.mjs",
+        "brandme-gateway/.env.example",
+        "brandme-gateway/src/middleware/mode.ts",
+        "brandme-governance/governance_console/main.py",
+        "brandme-infra/helm/brandme/values-sandbox.yaml",
+        "brandme_core/boot.py",
+        "brandme_core/config.py",
+        "brandme_core/cors_config.py",
+        "brandme_core/domains/persona/app.py",
+        "brandme_core/domains/persona/ingress.py",
+        "brandme_core/domains/persona/jobs.py",
+        "brandme_core/orchestrator/model_planner.py",
+        "docker-compose.dev.yml",
+        "docs/build/evidence/results.json",
+        "scripts/brandme.mjs",
+        "scripts/validate-helm.sh",
+        "tests/fixtures/export_storage.py",
+        "tests/fixtures/seed_read_api.py",
+        "tests/foundation/test_boot_guard.py",
+        "tests/foundation/test_outbox_retention.py"
+      ]
+    },
+    {
+      "name": "BRANDME_PHOTO_DEV_ENABLED",
+      "paths": [
+        "brandme-frontend/features/spatial/server/photoService.ts",
+        "docs/build/security/credential-manifest.yaml"
+      ]
+    },
+    {
+      "name": "BRANDME_PHOTO_DEV_PROJECT",
+      "paths": [
+        "brandme-frontend/features/spatial/server/photoService.ts"
+      ]
+    },
+    {
+      "name": "BRANDME_PHOTO_DEV_REGION",
+      "paths": [
+        "brandme-frontend/features/spatial/server/photoService.ts"
+      ]
+    },
+    {
+      "name": "BRANDME_PHOTO_RETENTION_NOTICE",
+      "paths": [
+        "brandme-frontend/features/spatial/server/photoService.ts"
+      ]
+    },
+    {
+      "name": "BRANDME_PYTHON",
+      "paths": [
+        ".github/workflows/ci-cd.yml",
+        "brandme-chain/tests/spanner/operations.test.ts",
+        "brandme-chain/tests/spanner/reconciliation.test.ts",
+        "brandme-chain/tests/spanner/runtime.test.ts",
+        "brandme-frontend/lib/testing/start-dev-gateway.mjs",
+        "brandme-gateway/src/routes/v1/consumer-domains.test.ts",
+        "brandme-gateway/src/routes/v1/export-backend.test.ts",
+        "brandme-gateway/src/routes/v1/me.test.ts",
+        "brandme-gateway/src/routes/v1/read-backend.test.ts",
+        "packages/contracts/scripts/generate.mjs",
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_REQUIRE_EMULATORS",
+      "paths": [
+        ".github/workflows/ci-cd.yml",
+        "brandme-gateway/src/routes/v1/me.test.ts",
+        "packages/firestore-rules/test/rules.test.ts",
+        "scripts/brandme.mjs",
+        "tests/conftest.py",
+        "tests/foundation/conftest.py",
+        "tests/foundation/test_projections_emulator.py"
+      ]
+    },
+    {
+      "name": "BRANDME_SPATIAL_MANIFEST_DIR",
+      "paths": [
+        "tests/test_wardrobe_placement.py"
+      ]
+    },
+    {
+      "name": "BRANDME_TEST_PACKAGE_JSON",
+      "paths": [
+        "brandme-console/lib/testing/verify-shell-adapters.mjs",
+        "brandme-frontend/lib/testing/verify-controls.mjs",
+        "brandme-frontend/lib/testing/verify-shell.mjs",
+        "brandme-frontend/lib/testing/verify-ui.mjs"
+      ]
+    },
+    {
+      "name": "BRANDME_TRYON_PROVIDER",
+      "paths": [
+        "brandme-gateway/src/routes/v1/consumer-domains.test.ts",
+        "brandme_core/config.py",
+        "brandme_core/domains/media/providers.py",
+        "tests/foundation/test_mode_guard.py"
+      ]
+    },
+    {
+      "name": "BRANDME_VERTEX_ACCESS_TOKEN",
+      "paths": [
+        "brandme-frontend/features/spatial/server/photoService.ts"
+      ]
+    },
+    {
+      "name": "BRANDME_VISUAL_CAPTURE_ONLY",
+      "paths": [
+        "brandme-frontend/lib/testing/verify-visual.mjs"
+      ]
+    },
+    {
+      "name": "BRANDS",
+      "paths": [
+        "agents/data-agent.sh"
+      ]
+    },
+    {
+      "name": "BROKER_COPIES",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "BUCKET",
+      "paths": [
+        "tests/fixtures/export_storage.py"
+      ]
+    },
+    {
+      "name": "BUCKET_NAME",
+      "paths": [
+        "agents/infrastructure-agent.sh"
+      ]
+    },
+    {
+      "name": "BURN_PROOF_REQUIRED",
+      "paths": [
+        "brandme-agents/compliance/src/lifecycle/state_machine.py"
+      ]
+    },
+    {
+      "name": "BUY",
+      "paths": [
+        "tests/test_commerce_autonomy.py"
+      ]
+    },
+    {
+      "name": "BUY_AFTER_APPROVAL",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "BUY_WITHIN_RULES",
+      "paths": [
+        "brandme_core/domains/commerce/delegation.py"
+      ]
+    },
+    {
+      "name": "BYTES_PER_ELEMENT",
+      "paths": [
+        "brandme-chain/contracts/managed/brandme_rights/contract/index.js"
+      ]
+    },
+    {
+      "name": "CACHE",
+      "paths": [
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "CALLER_METADATA_KEYS",
+      "paths": [
+        "brandme_core/domains/providers/payments/stripe_test.py"
+      ]
+    },
+    {
+      "name": "CANCELLED",
+      "paths": [
+        "tests/test_commerce_wardrobe_contract.py"
+      ]
+    },
+    {
+      "name": "CANCEL_KEY",
+      "paths": [
+        "tests/test_commerce_payments_flow.py"
+      ]
+    },
+    {
+      "name": "CAP",
+      "paths": [
+        "tests/test_commerce_budget.py"
+      ]
+    },
+    {
+      "name": "CAPABILITY",
+      "paths": [
+        "brandme-console/app/(ops)/providers/_data/actions.ts"
+      ]
+    },
+    {
+      "name": "CAPABILITY_CUSTOMIZATION",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "CAPABILITY_NAMES",
+      "paths": [
+        "brandme-gateway/src/routes/v1/providers.ts",
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "CAPABILITY_STATES",
+      "paths": [
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "CAP_BUCKETS",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "CARDANO_NETWORK",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "CAREER_TRANSITION",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "CARE_STATES",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "CARTS_QUOTES",
+      "paths": [
+        "brandme_core/domains/commerce/privacy_handler.py"
+      ]
+    },
+    {
+      "name": "CASES",
+      "paths": [
+        "tests/foundation/test_rights_event_contracts.py",
+        "tests/test_commerce_privacy_freeze.py"
+      ]
+    },
+    {
+      "name": "CATALOGS",
+      "paths": [
+        "brandme_core/events/catalogs.py",
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "CATALOG_HEALTH",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "CATALOG_PROBE",
+      "paths": [
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "CATEGORIES",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py",
+        "brandme_core/events/erasure.py",
+        "brandme_core/events/retention.py",
+        "brandme_core/privacy_exports/service.py",
+        "tests/foundation/test_outbox_retention.py"
+      ]
+    },
+    {
+      "name": "CATS",
+      "paths": [
+        "tests/test_wardrobe_privacy.py"
+      ]
+    },
+    {
+      "name": "CA_ENV",
+      "paths": [
+        "brandme_core/orchestrator/model_planner.py"
+      ]
+    },
+    {
+      "name": "CC_PATTERNS",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "CEILING",
+      "paths": [
+        "tests/test_providers_tiers.py"
+      ]
+    },
+    {
+      "name": "CELERY_BROKER_URL",
+      "paths": [
+        "brandme-core/orchestrator/celery_app.py"
+      ]
+    },
+    {
+      "name": "CELERY_RESULT_BACKEND",
+      "paths": [
+        "brandme-core/orchestrator/celery_app.py"
+      ]
+    },
+    {
+      "name": "CHAIN_CARDANO",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "CHAIN_MIDNIGHT",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "CHAIN_OPERATION_OBSERVED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "CHAIN_RECONCILIATION_ENABLED",
+      "paths": [
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts"
+      ]
+    },
+    {
+      "name": "CHAIN_SERVICE_TOKEN",
+      "paths": [
+        ".env.example",
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-gateway/.env.example",
+        "brandme_core/privacy_exports/config.py"
+      ]
+    },
+    {
+      "name": "CHAIN_SERVICE_URL",
+      "paths": [
+        ".env.example",
+        "brandme-agents/agentic/.env.example",
+        "brandme-agents/agentic/tools/blockchain_tools.py",
+        "brandme-console/lib/api.ts",
+        "brandme-core/.env.example",
+        "brandme-core/orchestrator/tasks.py",
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "CHANGES",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "CHANGE_KEYS",
+      "paths": [
+        "brandme_core/domains/persona/service.py"
+      ]
+    },
+    {
+      "name": "CHANGE_KINDS",
+      "paths": [
+        "brandme_core/domains/persona/events.py"
+      ]
+    },
+    {
+      "name": "CHART",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "CHOICES",
+      "paths": [
+        "brandme-gateway/src/routes/v1/decisions.ts",
+        "brandme_core/domains/social/decisions.py"
+      ]
+    },
+    {
+      "name": "CI_VALUES",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "CLAIM_LEASE",
+      "paths": [
+        "brandme_core/domains/rewards/benefits.py"
+      ]
+    },
+    {
+      "name": "CLAIM_LEVELS",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "CLASSIFIED",
+      "paths": [
+        "tests/test_commerce_autonomy.py"
+      ]
+    },
+    {
+      "name": "CLI",
+      "paths": [
+        "brandme-agents/agentic/cli/main.py"
+      ]
+    },
+    {
+      "name": "CLOCK_SKEW",
+      "paths": [
+        "brandme_core/domains/persona/assertion.py",
+        "brandme_core/mcp/authz.py"
+      ]
+    },
+    {
+      "name": "CLOSED",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "CLOSET_CURATOR_ITEMS",
+      "paths": [
+        "brandme_core/domains/rewards/rules.py"
+      ]
+    },
+    {
+      "name": "CLOSET_THEME",
+      "paths": [
+        "brandme_core/domains/wardrobe/guest_sections.py"
+      ]
+    },
+    {
+      "name": "CLOUDSDK_CORE_DISABLE_PROMPTS",
+      "paths": [
+        "scripts/provision/gcp-dev-identities.sh"
+      ]
+    },
+    {
+      "name": "CLUSTER_NAME",
+      "paths": [
+        "agents/infrastructure-agent.sh"
+      ]
+    },
+    {
+      "name": "CLUSTER_SIZE",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "CODE",
+      "paths": [
+        "brandme-console/app/(ops)/providers/_data/outcome.ts"
+      ]
+    },
+    {
+      "name": "CODES",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py",
+        "brandme_core/domains/providers/tiers.py",
+        "scripts/check-workspace.mjs"
+      ]
+    },
+    {
+      "name": "CODE_RE",
+      "paths": [
+        "brandme-gateway/src/middleware/problem.ts"
+      ]
+    },
+    {
+      "name": "COIN_PK",
+      "paths": [
+        "brandme-chain/tests/support/simulator.ts"
+      ]
+    },
+    {
+      "name": "COLLECTIONS",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "COLOR_FAMILIES",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "COLS",
+      "paths": [
+        "brandme_core/domains/social/reports.py"
+      ]
+    },
+    {
+      "name": "COLUMNS",
+      "paths": [
+        "tests/foundation/test_outbox_retention.py"
+      ]
+    },
+    {
+      "name": "COLUMN_NAME",
+      "paths": [
+        "brandme_core/domains/persona/backfill.py"
+      ]
+    },
+    {
+      "name": "COMMERCE_AGGREGATES",
+      "paths": [
+        "brandme_core/domains/commerce/spanner_store.py"
+      ]
+    },
+    {
+      "name": "COMMERCE_CHECKOUT",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "COMMERCE_MANDATE",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "COMMERCE_TYPES",
+      "paths": [
+        "tests/test_commerce_events_catalog.py"
+      ]
+    },
+    {
+      "name": "COMPACT_HOME",
+      "paths": [
+        "brandme-chain/scripts/verify-artifacts.mjs"
+      ]
+    },
+    {
+      "name": "COMPLIANCE_SERVICE_URL",
+      "paths": [
+        "brandme-console/lib/api.ts",
+        "brandme-core/.env.example",
+        "brandme_core/config.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "COMPLIANCE_URL",
+      "paths": [
+        "brandme-agents/agentic/orchestrator/agents.py",
+        "brandme-cube/.env.example",
+        "brandme-cube/src/main.py"
+      ]
+    },
+    {
+      "name": "COMPONENT",
+      "paths": [
+        "scripts/deploy.sh"
+      ]
+    },
+    {
+      "name": "CONDITIONAL_GAPS",
+      "paths": [
+        "tests/foundation/test_contract_models.py"
+      ]
+    },
+    {
+      "name": "CONDITIONS",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "CONFIGURATION",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/core.py",
+        ".claude/skills/ui-ux-pro-max/scripts/design_system.py"
+      ]
+    },
+    {
+      "name": "CONFIGURED",
+      "paths": [
+        "tests/foundation/test_mode_guard.py"
+      ]
+    },
+    {
+      "name": "CONFIG_NAMES",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "CONSENT",
+      "paths": [
+        "brandme-gateway/src/routes/v1/tryon.test.ts"
+      ]
+    },
+    {
+      "name": "CONSENT_COLS",
+      "paths": [
+        "brandme_core/domains/media/service.py"
+      ]
+    },
+    {
+      "name": "CONSENT_REVOKED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "CONSOLE_SHELL_CONTRACT",
+      "paths": [
+        "brandme-console/lib/console-contract.ts"
+      ]
+    },
+    {
+      "name": "CONSOLE_URL",
+      "paths": [
+        "agents/service-agent.sh"
+      ]
+    },
+    {
+      "name": "CONSTRAINT_KEYS",
+      "paths": [
+        "brandme_core/domains/persona/service.py"
+      ]
+    },
+    {
+      "name": "CONSUMER",
+      "paths": [
+        "brandme_core/domains/rewards/consumer.py"
+      ]
+    },
+    {
+      "name": "CONSUMER_COPIES",
+      "paths": [
+        "brandme_core/domains/persona/ingress.py"
+      ]
+    },
+    {
+      "name": "CONSUMER_DOMAIN_ASSERTION_ISSUER",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "CONSUMER_DOMAIN_ASSERTION_JWKS",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "CONSUMER_DOMAIN_ASSERTION_KEY",
+      "paths": [
+        "scripts/dev/consumer-domain-keys.mjs"
+      ]
+    },
+    {
+      "name": "CONSUMER_DOMAIN_ASSERTION_KID",
+      "paths": [
+        "scripts/dev/consumer-domain-keys.mjs"
+      ]
+    },
+    {
+      "name": "CONTAINER_REGISTRY",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "CONTENT_CREATION",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "CONTEXT_EXCEEDED",
+      "paths": [
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "CONTRACT",
+      "paths": [
+        "brandme-chain/tests/midnight/adapter.test.ts",
+        "tests/test_read_api.py"
+      ]
+    },
+    {
+      "name": "CONTRACT_RESTRICTED",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py"
+      ]
+    },
+    {
+      "name": "CORS_ORIGINS",
+      "paths": [
+        ".env.example",
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-gateway/.env.example",
+        "brandme_core/config.py",
+        "brandme_core/cors_config.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "COST_BASES",
+      "paths": [
+        "brandme_core/orchestrator/budget.py"
+      ]
+    },
+    {
+      "name": "COUNTER",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "CRD_SCHEMAS",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "CREATE_KEYS",
+      "paths": [
+        "brandme_core/domains/social/decisions.py",
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "CREATORS",
+      "paths": [
+        "agents/data-agent.sh"
+      ]
+    },
+    {
+      "name": "CRITERIA",
+      "paths": [
+        "brandme_core/domains/rewards/badges.py"
+      ]
+    },
+    {
+      "name": "CSV_CONFIG",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/core.py"
+      ]
+    },
+    {
+      "name": "CTA_LABEL",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "CUBES_TABLE_DDL",
+      "paths": [
+        "brandme-cube/src/database/schema.py"
+      ]
+    },
+    {
+      "name": "CUBE_SERVICE_URL",
+      "paths": [
+        "brandme_core/config.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "CURRENCY_RE",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "CUSTODY_CHAIN",
+      "paths": [
+        "brandme_core/zk/proof_of_ownership.py"
+      ]
+    },
+    {
+      "name": "CUSTOM",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/spanner/consent_graph.py"
+      ]
+    },
+    {
+      "name": "CUSTOMIZATION_RANK",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "CYCLE",
+      "paths": [
+        "brandme_core/logging.py"
+      ]
+    },
+    {
+      "name": "DAILY_LIMIT",
+      "paths": [
+        "brandme_core/domains/social/reports.py"
+      ]
+    },
+    {
+      "name": "DATABASE_MAX_OVERFLOW",
+      "paths": [
+        "brandme-data/.env.example"
+      ]
+    },
+    {
+      "name": "DATABASE_POOL_SIZE",
+      "paths": [
+        "brandme-data/.env.example"
+      ]
+    },
+    {
+      "name": "DATABASE_POOL_TIMEOUT",
+      "paths": [
+        "brandme-data/.env.example"
+      ]
+    },
+    {
+      "name": "DATABASE_URL",
+      "paths": [
+        "agents/database-agent.sh",
+        "brandme-core/.env.example",
+        "brandme-cube/.env.example",
+        "brandme-data/.env.example"
+      ]
+    },
+    {
+      "name": "DATA_DIR",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/core.py"
+      ]
+    },
+    {
+      "name": "DATA_USE_RIGHTS",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "DAY",
+      "paths": [
+        "brandme-frontend/features/spatial/podCapture.ts",
+        "tests/foundation/test_outbox_retention.py",
+        "tests/test_commerce_budget.py"
+      ]
+    },
+    {
+      "name": "DB_HOST",
+      "paths": [
+        "agents/database-agent.sh",
+        "scripts/backup.sh",
+        "scripts/db-init.sh"
+      ]
+    },
+    {
+      "name": "DB_IP",
+      "paths": [
+        "agents/infrastructure-agent.sh"
+      ]
+    },
+    {
+      "name": "DB_NAME",
+      "paths": [
+        "agents/database-agent.sh",
+        "agents/validation-agent.sh",
+        "scripts/backup.sh",
+        "scripts/db-init.sh"
+      ]
+    },
+    {
+      "name": "DB_PASSWORD",
+      "paths": [
+        "agents/database-agent.sh",
+        "scripts/backup.sh",
+        "scripts/db-init.sh"
+      ]
+    },
+    {
+      "name": "DB_PORT",
+      "paths": [
+        "scripts/backup.sh",
+        "scripts/db-init.sh"
+      ]
+    },
+    {
+      "name": "DB_TIER",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "DB_USER",
+      "paths": [
+        "agents/database-agent.sh",
+        "scripts/backup.sh",
+        "scripts/db-init.sh"
+      ]
+    },
+    {
+      "name": "DDKA",
+      "paths": [
+        "pnpm-lock.yaml"
+      ]
+    },
+    {
+      "name": "DECISIONS",
+      "paths": [
+        "brandme-console/app/(ops)/moderation/actions.ts"
+      ]
+    },
+    {
+      "name": "DECISION_REF_RE",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "DECISIVE_DISTANCE",
+      "paths": [
+        "brandme_core/domains/persona/recommender.py"
+      ]
+    },
+    {
+      "name": "DECLINE_CODES",
+      "paths": [
+        "brandme_core/domains/providers/payments/__init__.py"
+      ]
+    },
+    {
+      "name": "DEC_COLS",
+      "paths": [
+        "brandme_core/domains/social/decisions.py"
+      ]
+    },
+    {
+      "name": "DEFAULT_DIR",
+      "paths": [
+        "scripts/dev/consumer-domain-keys.mjs"
+      ]
+    },
+    {
+      "name": "DEFAULT_EFFORT",
+      "paths": [
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "DEFAULT_EXCLUDED_CATEGORIES",
+      "paths": [
+        "brandme_core/domains/commerce/delegation.py"
+      ]
+    },
+    {
+      "name": "DEFAULT_MANIFEST",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "DEFAULT_MODEL",
+      "paths": [
+        "brandme-agents/agentic/graph_rag.py",
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "DEFAULT_PORT",
+      "paths": [
+        "brandme_core/domains/persona/app.py"
+      ]
+    },
+    {
+      "name": "DEFAULT_REGION",
+      "paths": [
+        "brandme-data/.env.example",
+        "brandme-gateway/.env.example",
+        "brandme-gateway/src/middleware/requestLogger.ts"
+      ]
+    },
+    {
+      "name": "DEFAULT_ROOM",
+      "paths": [
+        "brandme_core/domains/wardrobe/rooms.py"
+      ]
+    },
+    {
+      "name": "DEFAULT_TTL_MINUTES",
+      "paths": [
+        "brandme_core/zk/proof_of_ownership.py"
+      ]
+    },
+    {
+      "name": "DEGRADED",
+      "paths": [
+        "brandme_core/health.py"
+      ]
+    },
+    {
+      "name": "DELEGATION_BOUNDARY_CHANGED",
+      "paths": [
+        "brandme_core/domains/commerce/events.py"
+      ]
+    },
+    {
+      "name": "DELEGATION_CREATED",
+      "paths": [
+        "brandme_core/domains/commerce/events.py"
+      ]
+    },
+    {
+      "name": "DELEGATION_REVOKED",
+      "paths": [
+        "brandme_core/domains/commerce/events.py"
+      ]
+    },
+    {
+      "name": "DELETE",
+      "paths": [
+        "brandme-frontend/app/try/photo/api/route.ts"
+      ]
+    },
+    {
+      "name": "DELIVERED",
+      "paths": [
+        "tests/foundation/test_deletion_leaves_no_member_rows.py"
+      ]
+    },
+    {
+      "name": "DELIVERED_RETENTION",
+      "paths": [
+        "brandme_core/events/retention.py"
+      ]
+    },
+    {
+      "name": "DELTA_KEY",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "DEMO",
+      "paths": [
+        "brandme_core/config.py",
+        "tests/test_persona_recommender.py"
+      ]
+    },
+    {
+      "name": "DENIED",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "DENY",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "DEPLOYMENTS",
+      "paths": [
+        "agents/service-agent.sh",
+        "agents/validation-agent.sh"
+      ]
+    },
+    {
+      "name": "DEP_SECTIONS",
+      "paths": [
+        "scripts/check-workspace.mjs"
+      ]
+    },
+    {
+      "name": "DESCRIPTIVE_FRESHNESS",
+      "paths": [
+        "brandme_core/domains/providers/ingestion.py"
+      ]
+    },
+    {
+      "name": "DETAIL_LIMIT",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "DETAIL_MAX",
+      "paths": [
+        "brandme-gateway/src/middleware/problem.ts"
+      ]
+    },
+    {
+      "name": "DEVELOPMENT",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "DEV_ENVIRONMENTS",
+      "paths": [
+        "brandme_core/domains/commerce/composition.py"
+      ]
+    },
+    {
+      "name": "DEV_IDENTITY_ISSUER",
+      "paths": [
+        "brandme-gateway/src/middleware/mode.ts"
+      ]
+    },
+    {
+      "name": "DEV_IDENTITY_LABEL",
+      "paths": [
+        "brandme-gateway/src/middleware/mode.ts"
+      ]
+    },
+    {
+      "name": "DEV_KEY",
+      "paths": [
+        "tests/test_commerce_legacy_graph_rag.py"
+      ]
+    },
+    {
+      "name": "DEV_KEY_ENV",
+      "paths": [
+        "brandme-agents/branding/src/graph_engine.py"
+      ]
+    },
+    {
+      "name": "DEV_MODES",
+      "paths": [
+        "brandme_core/orchestrator/model_planner.py"
+      ]
+    },
+    {
+      "name": "DIGESTS",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "DIGITAL_PRODUCT",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "DIMENSIONS",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "DISABLED_REASON",
+      "paths": [
+        "brandme-agents/agentic/graph_rag.py"
+      ]
+    },
+    {
+      "name": "DISPLAY_NAME",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "DISPUTE_CATEGORIES",
+      "paths": [
+        "brandme-gateway/src/routes/v1/rewards.ts",
+        "brandme_core/domains/rewards/service.py"
+      ]
+    },
+    {
+      "name": "DISPUTE_COLS",
+      "paths": [
+        "brandme_core/domains/rewards/service.py"
+      ]
+    },
+    {
+      "name": "DISSOLVE",
+      "paths": [
+        "brandme-agents/compliance/src/lifecycle/state_machine.py",
+        "brandme-cube/src/models.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "DISSOLVE_AUTH_REQUIRED",
+      "paths": [
+        "brandme-agents/compliance/src/lifecycle/state_machine.py"
+      ]
+    },
+    {
+      "name": "DOC",
+      "paths": [
+        "scripts/check-workspace.mjs"
+      ]
+    },
+    {
+      "name": "DOLLAR",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "DOMAIN",
+      "paths": [
+        "brandme_core/domains/media/deletion.py",
+        "brandme_core/domains/persona/deletion.py",
+        "brandme_core/domains/rewards/deletion.py",
+        "brandme_core/domains/social/deletion.py",
+        "brandme_core/domains/wardrobe/deletion.py",
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "DOMAIN_AUDIENCE",
+      "paths": [
+        "brandme-gateway/src/routes/v1/commerce.ts",
+        "brandme-gateway/src/services/domains.ts",
+        "brandme_core/mcp/authz.py"
+      ]
+    },
+    {
+      "name": "DOMAIN_ISSUER",
+      "paths": [
+        "brandme-gateway/src/services/domains.ts",
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "DOMAIN_NAME",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "DOMAIN_SCHEMA_PATH",
+      "paths": [
+        "brandme_core/events/envelope.py"
+      ]
+    },
+    {
+      "name": "DONE",
+      "paths": [
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "DUPLICATE_WEBHOOK",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "DURATION",
+      "paths": [
+        "deploy-brandme.sh"
+      ]
+    },
+    {
+      "name": "DURATION_SECONDS",
+      "paths": [
+        "brandme_core/domains/social/decisions.py"
+      ]
+    },
+    {
+      "name": "ECHO_DSN",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "EFFORTS",
+      "paths": [
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "EFFORT_ENV",
+      "paths": [
+        "brandme_core/orchestrator/model_planner.py"
+      ]
+    },
+    {
+      "name": "EMAIL_PATTERN",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "EMULATOR",
+      "paths": [
+        "tests/test_persona_harness.py"
+      ]
+    },
+    {
+      "name": "EMULATORS",
+      "paths": [
+        "brandme-gateway/src/middleware/mode.test.ts"
+      ]
+    },
+    {
+      "name": "EMULATOR_HOSTS",
+      "paths": [
+        "brandme-gateway/src/middleware/mode.ts"
+      ]
+    },
+    {
+      "name": "EMULATOR_IMAGE",
+      "paths": [
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "EMULATOR_MODULES",
+      "paths": [
+        "tests/conftest.py"
+      ]
+    },
+    {
+      "name": "ENABLE_ANALYTICS_AGENT",
+      "paths": [
+        ".env.deploy.example",
+        "brandme-agents/agentic/.env.example"
+      ]
+    },
+    {
+      "name": "ENABLE_AUTOSCALING",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "ENABLE_BACKUPS",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "ENABLE_GRAPH_RAG",
+      "paths": [
+        ".env.deploy.example",
+        "brandme-agents/agentic/.env.example"
+      ]
+    },
+    {
+      "name": "ENABLE_HUMAN_APPROVAL",
+      "paths": [
+        ".env.deploy.example",
+        "brandme-agents/agentic/.env.example"
+      ]
+    },
+    {
+      "name": "ENABLE_LOGGING",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "ENABLE_MOLECULAR_DATA",
+      "paths": [
+        "brandme-cube/src/main.py"
+      ]
+    },
+    {
+      "name": "ENABLE_MONITORING",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "ENABLE_REAL_BLOCKCHAIN",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "ENABLE_STRICT_VALIDATION",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "ENABLE_STUB_MODE",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "ENABLE_TRACING",
+      "paths": [
+        "brandme-cube/.env.example"
+      ]
+    },
+    {
+      "name": "ENDPOINTS",
+      "paths": [
+        "packages/contracts/scripts/endpoints.mjs"
+      ]
+    },
+    {
+      "name": "END_TIME",
+      "paths": [
+        "deploy-brandme.sh"
+      ]
+    },
+    {
+      "name": "ENTREPRENEURSHIP",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "ENTRY_COLS",
+      "paths": [
+        "brandme_core/domains/rewards/ledger.py"
+      ]
+    },
+    {
+      "name": "ENTRY_LIST_COLS",
+      "paths": [
+        "brandme_core/domains/rewards/service.py"
+      ]
+    },
+    {
+      "name": "ENTRY_MODULES",
+      "paths": [
+        "tests/foundation/test_boot_guard.py"
+      ]
+    },
+    {
+      "name": "ENUM",
+      "paths": [
+        "brandme_core/domains/wardrobe/events.py"
+      ]
+    },
+    {
+      "name": "ENV",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "ENVIRONMENT",
+      "paths": [
+        ".github/scripts/smoke-image.sh",
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-core/.env.example",
+        "brandme-data/.env.example",
+        "brandme_core/config.py",
+        "brandme_core/domains/media/gcs_store.py",
+        "brandme_core/domains/media/providers.py",
+        "brandme_core/domains/persona/app.py",
+        "brandme_core/domains/persona/ingress.py",
+        "brandme_core/domains/persona/jobs.py",
+        "brandme_core/events/retention.py",
+        "brandme_core/events/worker.py",
+        "brandme_core/privacy_exports/config.py",
+        "brandme_core/read_api/config.py",
+        "scripts/deploy.sh",
+        "scripts/validate-helm.sh",
+        "tests/foundation/test_mode_guard.py",
+        "tests/foundation/test_outbox_retention.py"
+      ]
+    },
+    {
+      "name": "ENVIRONMENTS",
+      "paths": [
+        "brandme_core/domains/commerce/principal.py",
+        "brandme_core/domains/persona/kernel.py",
+        "brandme_core/events/retention.py"
+      ]
+    },
+    {
+      "name": "ENV_FILE",
+      "paths": [
+        "scripts/deploy.sh"
+      ]
+    },
+    {
+      "name": "ENV_KEYS",
+      "paths": [
+        "brandme_core/domains/commerce/composition.py"
+      ]
+    },
+    {
+      "name": "ENV_LOCAL",
+      "paths": [
+        ".claude/hooks/session-start.sh"
+      ]
+    },
+    {
+      "name": "ENV_NAMES",
+      "paths": [
+        "brandme_core/domains/providers/payments/stripe_test.py"
+      ]
+    },
+    {
+      "name": "EOF",
+      "paths": [
+        "agents/validation-agent.sh"
+      ]
+    },
+    {
+      "name": "ERASE",
+      "paths": [
+        "brandme_core/domains/privacy/deletion.py"
+      ]
+    },
+    {
+      "name": "ERROR",
+      "paths": [
+        "brandme_core/firestore/agentic.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "ESCALATE",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "ESCALATED",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "ESG_IMPACT",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "ESG_ORACLE",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "EUQ",
+      "paths": [
+        "pnpm-lock.yaml"
+      ]
+    },
+    {
+      "name": "EVALUATOR_VERSION",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "EVENT_NOTES",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "EVIDENCE",
+      "paths": [
+        "brandme-gateway/src/routes/v1/persona.test.ts"
+      ]
+    },
+    {
+      "name": "EVIDENCE_KINDS",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py"
+      ]
+    },
+    {
+      "name": "EVIDENCE_SOURCE_TYPES",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "EXAMPLES",
+      "paths": [
+        "tests/foundation/test_contract_models.py"
+      ]
+    },
+    {
+      "name": "EXCLUDED_PATHS",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "EXECUTABLE",
+      "paths": [
+        "brandme-console/app/(ops)/providers/_data/gateway.ts"
+      ]
+    },
+    {
+      "name": "EXECUTABLE_STATES",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py",
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "EXECUTE",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "EXECUTIVE_PRESENCE",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "EXECUTOR_AUDIENCE",
+      "paths": [
+        "brandme_core/mcp/authz.py"
+      ]
+    },
+    {
+      "name": "EXIT_REFUSED",
+      "paths": [
+        "brandme_core/boot.py"
+      ]
+    },
+    {
+      "name": "EXPECTED_CONTRACTS",
+      "paths": [
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "EXPERT",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "EXPIRED_QUOTE",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "EXPORT_BUCKET",
+      "paths": [
+        "brandme_core/privacy_exports/config.py"
+      ]
+    },
+    {
+      "name": "EXPORT_CONTRACT_ADDRESS",
+      "paths": [
+        "brandme_core/privacy_exports/config.py"
+      ]
+    },
+    {
+      "name": "EXPORT_NETWORK",
+      "paths": [
+        "brandme_core/privacy_exports/config.py"
+      ]
+    },
+    {
+      "name": "EXPORT_PATH",
+      "paths": [
+        "brandme-gateway/src/middleware/rateLimiter.ts"
+      ]
+    },
+    {
+      "name": "EXPORT_SCHEMA",
+      "paths": [
+        "brandme_core/domains/privacy/privacy.py"
+      ]
+    },
+    {
+      "name": "EXPORT_STORAGE_EMULATOR_HOST",
+      "paths": [
+        "brandme-gateway/src/routes/v1/export-backend.test.ts",
+        "brandme_core/privacy_exports/config.py"
+      ]
+    },
+    {
+      "name": "EXT",
+      "paths": [
+        "packages/contracts/scripts/generate.mjs"
+      ]
+    },
+    {
+      "name": "FACET_SPECIFIC",
+      "paths": [
+        "brandme_core/spanner/consent_graph.py"
+      ]
+    },
+    {
+      "name": "FACE_NAMES",
+      "paths": [
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "FACTUAL_FIELDS",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "FAILED_TESTS",
+      "paths": [
+        "scripts/test-infrastructure.sh"
+      ]
+    },
+    {
+      "name": "FAKE_UUID",
+      "paths": [
+        "tests/test_commerce_model_planner.py"
+      ]
+    },
+    {
+      "name": "FAR_FUTURE",
+      "paths": [
+        "brandme-chain/tests/support/scenario.ts"
+      ]
+    },
+    {
+      "name": "FEEDBACK_SIGNALS",
+      "paths": [
+        "brandme_core/domains/persona/service.py"
+      ]
+    },
+    {
+      "name": "FIELDS",
+      "paths": [
+        "brandme_core/privacy_exports/service.py"
+      ]
+    },
+    {
+      "name": "FILE_RE",
+      "paths": [
+        "brandme-data/spanner/migrations/runner.py"
+      ]
+    },
+    {
+      "name": "FINAL_STATES",
+      "paths": [
+        "brandme-chain/src/midnight/reconciliation-queue.ts"
+      ]
+    },
+    {
+      "name": "FIRESTORE_DEFAULT",
+      "paths": [
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "FIRESTORE_EMULATOR_HOST",
+      "paths": [
+        ".env.example",
+        "brandme_core/firestore/client.py",
+        "packages/firestore-rules/test/rules.test.ts",
+        "scripts/brandme.mjs",
+        "tests/foundation/test_projections_emulator.py"
+      ]
+    },
+    {
+      "name": "FIRESTORE_PROJECT_ID",
+      "paths": [
+        ".env.example",
+        "brandme_core/config.py",
+        "brandme_core/env.py",
+        "brandme_core/firestore/client.py"
+      ]
+    },
+    {
+      "name": "FIRST_NAMES",
+      "paths": [
+        "agents/data-agent.sh"
+      ]
+    },
+    {
+      "name": "FIT_HISTORY_GENERATION_KEY",
+      "paths": [
+        "brandme-frontend/features/spatial/fitHistory.ts"
+      ]
+    },
+    {
+      "name": "FIT_HISTORY_KEY",
+      "paths": [
+        "brandme-frontend/features/spatial/fitHistory.ts"
+      ]
+    },
+    {
+      "name": "FIT_HISTORY_LOCK",
+      "paths": [
+        "brandme-frontend/features/spatial/fitHistory.ts"
+      ]
+    },
+    {
+      "name": "FIT_HISTORY_READ_ONLY",
+      "paths": [
+        "brandme-frontend/features/spatial/fitHistory.ts"
+      ]
+    },
+    {
+      "name": "FIXTURE",
+      "paths": [
+        "tests/test_media_gcs_signing.py",
+        "tests/test_persona_api.py",
+        "tests/test_persona_recommender.py",
+        "tests/test_persona_service.py"
+      ]
+    },
+    {
+      "name": "FIXTURE_DDL",
+      "paths": [
+        "tests/fixtures/privacy/persona_fixture.py"
+      ]
+    },
+    {
+      "name": "FLOAT",
+      "paths": [
+        "brandme_core/domains/persona/kernel.py"
+      ]
+    },
+    {
+      "name": "FORBIDDEN",
+      "paths": [
+        "tests/test_social_shares.py"
+      ]
+    },
+    {
+      "name": "FORBIDDEN_EXPORT_KEYS",
+      "paths": [
+        "brandme_core/domains/privacy/privacy.py"
+      ]
+    },
+    {
+      "name": "FORBIDDEN_PAYLOAD_KEYS",
+      "paths": [
+        "brandme_core/events/envelope.py"
+      ]
+    },
+    {
+      "name": "FORBIDDEN_SHARED_STEMS",
+      "paths": [
+        "brandme_core/events/projections.py"
+      ]
+    },
+    {
+      "name": "FORCE_INDEX",
+      "paths": [
+        "brandme-gateway/src/middleware/identity/store.ts",
+        "brandme_core/domains/commerce/spanner_store.py",
+        "brandme_core/domains/media/service.py",
+        "brandme_core/domains/persona/onboarding.py",
+        "brandme_core/domains/persona/service.py",
+        "brandme_core/domains/providers/setup.py",
+        "brandme_core/domains/rewards/benefits.py",
+        "brandme_core/domains/rewards/service.py",
+        "brandme_core/domains/social/decisions.py",
+        "brandme_core/domains/social/deletion.py",
+        "brandme_core/domains/social/reports.py",
+        "brandme_core/domains/social/shares.py",
+        "brandme_core/domains/wardrobe/deletion.py",
+        "brandme_core/domains/wardrobe/outfits.py",
+        "brandme_core/events/outbox.py",
+        "brandme_core/events/retention.py",
+        "brandme_core/events/worker.py"
+      ]
+    },
+    {
+      "name": "FORMATS",
+      "paths": [
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "FORMATTERS",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/design_system.py"
+      ]
+    },
+    {
+      "name": "FOXTROT_SEEDS",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "FRESHNESS",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "FRIENDS",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "FRIENDS_ONLY",
+      "paths": [
+        "brandme_core/firestore/wardrobe.py",
+        "brandme_core/spanner/consent_graph.py"
+      ]
+    },
+    {
+      "name": "FUNCTIONS",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/core.py",
+        ".claude/skills/ui-ux-pro-max/scripts/design_system.py"
+      ]
+    },
+    {
+      "name": "GARMENT_TYPES",
+      "paths": [
+        "agents/data-agent.sh"
+      ]
+    },
+    {
+      "name": "GATED_CAPABILITIES",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py",
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "GATEWAY_CPU",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "GATEWAY_FILE",
+      "paths": [
+        "scripts/dev/consumer-domain-keys.mjs"
+      ]
+    },
+    {
+      "name": "GATEWAY_MEMORY",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "GATEWAY_URL",
+      "paths": [
+        "agents/service-agent.sh",
+        "brandme-console/lib/api.ts"
+      ]
+    },
+    {
+      "name": "GCP_CREDENTIALS_PATH",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "GCP_PROJECT_ID",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "GCP_REGION",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "GCS_EMULATOR_BIN",
+      "paths": [
+        "brandme-gateway/src/routes/v1/consumer-domains.test.ts",
+        "scripts/brandme.mjs",
+        "tests/test_media_gcs_store.py"
+      ]
+    },
+    {
+      "name": "GCS_HOST",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "GENERATED_LABEL",
+      "paths": [
+        "brandme_core/domains/media/providers.py"
+      ]
+    },
+    {
+      "name": "GENERATE_TEST_DATA",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "GENERATOR",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/design_system.py"
+      ]
+    },
+    {
+      "name": "GET",
+      "paths": [
+        "brandme-frontend/app/try/photo/api/route.ts"
+      ]
+    },
+    {
+      "name": "GH_LOCATION",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "GIFT",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/spanner/provenance.py"
+      ]
+    },
+    {
+      "name": "GITHUB_ACTIONS",
+      "paths": [
+        "scripts/check-workspace.mjs"
+      ]
+    },
+    {
+      "name": "GIT_CEILING_DIRECTORIES",
+      "paths": [
+        "scripts/check-workspace.test.mjs"
+      ]
+    },
+    {
+      "name": "GLOBAL",
+      "paths": [
+        "brandme_core/spanner/consent_graph.py"
+      ]
+    },
+    {
+      "name": "GOAL_LIMIT",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "GOOD_BUCKET",
+      "paths": [
+        "tests/test_media_gcs_signing.py"
+      ]
+    },
+    {
+      "name": "GOOD_LINE",
+      "paths": [
+        "tests/test_providers_tiers.py"
+      ]
+    },
+    {
+      "name": "GOOGLE_CLOUD_SPANNER_MULTIPLEXED_SESSIONS",
+      "paths": [
+        "brandme-chain/src/midnight/spanner-store.ts",
+        "brandme-gateway/src/middleware/identity/store.ts"
+      ]
+    },
+    {
+      "name": "GOOGLE_CLOUD_SPANNER_MULTIPLEXED_SESSIONS_FOR_RW",
+      "paths": [
+        "brandme-chain/src/midnight/spanner-store.ts",
+        "brandme-gateway/src/middleware/identity/store.ts"
+      ]
+    },
+    {
+      "name": "GOVERNANCE_SERVICE_URL",
+      "paths": [
+        "brandme_core/config.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "GRAFANA_PASSWORD",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "GRANTEE_SPECIFIC",
+      "paths": [
+        "brandme_core/spanner/consent_graph.py"
+      ]
+    },
+    {
+      "name": "GRANT_COLS",
+      "paths": [
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "GRAPH_TOOLS",
+      "paths": [
+        "brandme-agents/agentic/tools/graph_tools.py"
+      ]
+    },
+    {
+      "name": "GRAPH_TRAVERSAL_ONLY_QUERY",
+      "paths": [
+        "brandme-agents/branding/src/graph_engine.py"
+      ]
+    },
+    {
+      "name": "GREEN",
+      "paths": [
+        "deploy-brandme.sh",
+        "scripts/backup.sh",
+        "scripts/db-init.sh",
+        "scripts/deploy.sh",
+        "scripts/test-infrastructure.sh"
+      ]
+    },
+    {
+      "name": "GROUP_HALF_DEPTH",
+      "paths": [
+        "brandme_core/domains/wardrobe/rooms.py"
+      ]
+    },
+    {
+      "name": "GROUP_HALF_HEIGHT",
+      "paths": [
+        "brandme_core/domains/wardrobe/rooms.py"
+      ]
+    },
+    {
+      "name": "GROUP_IDS",
+      "paths": [
+        "brandme_core/domains/wardrobe/rooms.py"
+      ]
+    },
+    {
+      "name": "GROUP_WIDTH_TOLERANCE",
+      "paths": [
+        "brandme_core/domains/wardrobe/rooms.py"
+      ]
+    },
+    {
+      "name": "GRPC",
+      "paths": [
+        "tests/test_commerce_migrations.py"
+      ]
+    },
+    {
+      "name": "GUARD",
+      "paths": [
+        "scripts/check-workspace.test.mjs"
+      ]
+    },
+    {
+      "name": "GW_ISSUER",
+      "paths": [
+        "tests/test_mcp.py"
+      ]
+    },
+    {
+      "name": "HALF_OPEN",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "HANDLED",
+      "paths": [
+        "brandme_core/domains/rewards/consumer.py"
+      ]
+    },
+    {
+      "name": "HANDLED_EVENT_TYPES",
+      "paths": [
+        "brandme_core/domains/providers/payments/stripe_test.py"
+      ]
+    },
+    {
+      "name": "HANDLER",
+      "paths": [
+        "brandme_core/domains/commerce/privacy_handler.py"
+      ]
+    },
+    {
+      "name": "HARD_MAX_SECONDS",
+      "paths": [
+        "brandme_core/orchestrator/runtime.py"
+      ]
+    },
+    {
+      "name": "HAS_WORKER",
+      "paths": [
+        "tests/test_persona_lane_events.py"
+      ]
+    },
+    {
+      "name": "HEADER",
+      "paths": [
+        "scripts/dev/consumer-domain-keys.mjs"
+      ]
+    },
+    {
+      "name": "HEALTHY",
+      "paths": [
+        "brandme_core/health.py"
+      ]
+    },
+    {
+      "name": "HELM",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "HELM_VERSION",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "HERE",
+      "paths": [
+        "docs/design/brandme/contracts/validate_spec.py"
+      ]
+    },
+    {
+      "name": "HEX",
+      "paths": [
+        "tests/foundation/test_rights_event_contracts.py"
+      ]
+    },
+    {
+      "name": "HEX32",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "HIGH",
+      "paths": [
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "HIGH_VALUE_THRESHOLD",
+      "paths": [
+        "brandme-core/policy/main.py"
+      ]
+    },
+    {
+      "name": "HLSNESA",
+      "paths": [
+        "pnpm-lock.yaml"
+      ]
+    },
+    {
+      "name": "HOLD",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py",
+        "tests/fixtures/providers/stripe_double.py"
+      ]
+    },
+    {
+      "name": "HOLD_TTL",
+      "paths": [
+        "brandme_core/domains/providers/payments/simulated.py"
+      ]
+    },
+    {
+      "name": "HOSTILE",
+      "paths": [
+        "tests/test_commerce_model_planner.py"
+      ]
+    },
+    {
+      "name": "HOSTNAME",
+      "paths": [
+        ".github/scripts/smoke-image.sh",
+        "brandme-data/spanner/migrations/runner.py"
+      ]
+    },
+    {
+      "name": "HTTPS_PROXY",
+      "paths": [
+        "brandme-chain/scripts/local-network.sh",
+        "tests/test_commerce_model_live.py"
+      ]
+    },
+    {
+      "name": "HTTP_MAX_RETRIES",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "HTTP_POOL_CONNECTIONS",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "HTTP_POOL_MAXSIZE",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "HTTP_RETRY_BACKOFF",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "HTTP_TIMEOUT",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "HYBRID_SEARCH_QUERY",
+      "paths": [
+        "brandme-agents/branding/src/graph_engine.py"
+      ]
+    },
+    {
+      "name": "IDEMPOTENCY_TTL",
+      "paths": [
+        "brandme_core/domains/base.py"
+      ]
+    },
+    {
+      "name": "IDENTITY_ARGUMENTS",
+      "paths": [
+        "brandme_core/mcp/tools.py"
+      ]
+    },
+    {
+      "name": "IDENTITY_FIELDS",
+      "paths": [
+        "brandme-gateway/src/routes/v1/commerce.ts",
+        "brandme-gateway/src/routes/v1/persona.ts"
+      ]
+    },
+    {
+      "name": "IDENTITY_PROVIDER",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example",
+        "brandme-gateway/src/middleware/mode.ts",
+        "brandme_core/config.py",
+        "tests/foundation/test_mode_guard.py"
+      ]
+    },
+    {
+      "name": "IDENTITY_SERVICE_URL",
+      "paths": [
+        "brandme_core/config.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "IDENTITY_SURVIVORS",
+      "paths": [
+        "tests/foundation/test_deletion_leaves_no_member_rows.py"
+      ]
+    },
+    {
+      "name": "IDENTITY_URL",
+      "paths": [
+        "brandme-cube/.env.example",
+        "brandme-cube/src/main.py"
+      ]
+    },
+    {
+      "name": "IDLE",
+      "paths": [
+        "brandme_core/firestore/agentic.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "IDS",
+      "paths": [
+        "tests/foundation/test_boot_guard.py"
+      ]
+    },
+    {
+      "name": "IFS",
+      "paths": [
+        ".claude/hooks/session-start.sh",
+        ".github/workflows/ci-cd.yml",
+        "agents/testing-agent.sh",
+        "scripts/provision/gcp-dev-identities.sh"
+      ]
+    },
+    {
+      "name": "IF_MATCH_RE",
+      "paths": [
+        "brandme-gateway/src/routes/v1/persona.ts"
+      ]
+    },
+    {
+      "name": "IMAGE",
+      "paths": [
+        "brandme-gateway/src/services/domains.ts"
+      ]
+    },
+    {
+      "name": "IMAGE_TAG",
+      "paths": [
+        "agents/service-agent.sh"
+      ]
+    },
+    {
+      "name": "IMPACT_PARTNER_DOCS",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "IMPLEMENTATION",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/core.py"
+      ]
+    },
+    {
+      "name": "INCONSISTENT",
+      "paths": [
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "INDIVIDUAL_SERVICE",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "INFERENCE_MODEL_VERSION",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "INFERENCE_PURPOSE",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "INFERRED",
+      "paths": [
+        "brandme_core/domains/privacy/deletion.py"
+      ]
+    },
+    {
+      "name": "INGRESS_IP",
+      "paths": [
+        "agents/service-agent.sh"
+      ]
+    },
+    {
+      "name": "INHERITANCE",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/spanner/provenance.py"
+      ]
+    },
+    {
+      "name": "INPUT_KEYS",
+      "paths": [
+        "brandme-frontend/features/spatial/fitHistory.ts"
+      ]
+    },
+    {
+      "name": "INSTANCE",
+      "paths": [
+        "tests/test_commerce_migrations.py",
+        "tests/test_persona_harness.py"
+      ]
+    },
+    {
+      "name": "INSTANCE_MAX",
+      "paths": [
+        "brandme-gateway/src/middleware/problem.ts"
+      ]
+    },
+    {
+      "name": "INT",
+      "paths": [
+        "brandme_core/domains/persona/kernel.py"
+      ]
+    },
+    {
+      "name": "INTAKE_KEYS",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "INTENTS",
+      "paths": [
+        "brandme_core/domains/persona/onboarding.py"
+      ]
+    },
+    {
+      "name": "INTERMEDIATE",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "INTERVAL_SECONDS",
+      "paths": [
+        "brandme_core/domains/persona/jobs.py"
+      ]
+    },
+    {
+      "name": "IN_FLIGHT",
+      "paths": [
+        "brandme_core/domains/commerce/records.py"
+      ]
+    },
+    {
+      "name": "ISSUER",
+      "paths": [
+        "tests/test_persona_domain_app.py",
+        "tests/test_persona_lane_jobs.py",
+        "tests/test_persona_lane_mydata.py",
+        "tests/test_rewards_api.py",
+        "tests/test_rewards_benefits.py"
+      ]
+    },
+    {
+      "name": "IS_REACT_ACT_ENVIRONMENT",
+      "paths": [
+        "brandme-frontend/lib/testing/verify-ui.mjs"
+      ]
+    },
+    {
+      "name": "ITEM",
+      "paths": [
+        "brandme-gateway/src/routes/v1/wardrobe.test.ts"
+      ]
+    },
+    {
+      "name": "ITEM_COLUMNS",
+      "paths": [
+        "brandme_core/domains/wardrobe/service.py"
+      ]
+    },
+    {
+      "name": "JOB",
+      "paths": [
+        "tests/test_read_api.py"
+      ]
+    },
+    {
+      "name": "JOB_COLS",
+      "paths": [
+        "brandme_core/domains/media/service.py"
+      ]
+    },
+    {
+      "name": "JPEG",
+      "paths": [
+        "tests/test_media_gcs_store.py"
+      ]
+    },
+    {
+      "name": "JPEG_BYTES",
+      "paths": [
+        "tests/test_media_tryon.py"
+      ]
+    },
+    {
+      "name": "JSON_LIMIT",
+      "paths": [
+        "brandme_core/read_api/reads.py"
+      ]
+    },
+    {
+      "name": "JS_PATTERNS",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "JWT_SECRET",
+      "paths": [
+        "scripts/regression/modules/brandme_gateway.sh"
+      ]
+    },
+    {
+      "name": "K8S_NAMESPACE",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "K8S_SCHEMAS",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "KEY",
+      "paths": [
+        "brandme-frontend/features/persona/onboarding.tsx",
+        "brandme-gateway/src/routes/v1/commerce.test.ts",
+        "brandme-gateway/src/routes/v1/persona.test.ts",
+        "brandme-gateway/src/routes/v1/rewards.test.ts",
+        "brandme-gateway/src/routes/v1/social.test.ts",
+        "brandme-gateway/src/routes/v1/tryon.test.ts",
+        "brandme-gateway/src/routes/v1/wardrobe.test.ts",
+        "tests/fixtures/commerce/fake_anthropic.py",
+        "tests/test_commerce_assistant_composition.py",
+        "tests/test_commerce_stripe_live.py"
+      ]
+    },
+    {
+      "name": "KEYWORDS",
+      "paths": [
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "KEY_ENV",
+      "paths": [
+        "brandme_core/mcp/refs.py",
+        "brandme_core/orchestrator/model_planner.py"
+      ]
+    },
+    {
+      "name": "KEY_LINE",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "KINDS",
+      "paths": [
+        "brandme_core/domains/rewards/benefits.py"
+      ]
+    },
+    {
+      "name": "KNOWLEDGE_SERVICE_URL",
+      "paths": [
+        "brandme-console/lib/api.ts",
+        "brandme-core/.env.example",
+        "brandme_core/config.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "KNOWLEDGE_URL",
+      "paths": [
+        "brandme-agents/agentic/orchestrator/agents.py",
+        "brandme-cube/.env.example"
+      ]
+    },
+    {
+      "name": "KNOWN_TOOLS",
+      "paths": [
+        "brandme_core/orchestrator/runtime.py"
+      ]
+    },
+    {
+      "name": "KNOWN_TOOL_NAMES",
+      "paths": [
+        "brandme_core/mcp/tools.py"
+      ]
+    },
+    {
+      "name": "KSA",
+      "paths": [
+        "scripts/provision/gcp-dev-identities.sh"
+      ]
+    },
+    {
+      "name": "KUBECONFORM",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "KUBECONFORM_VERSION",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "KUBE_VERSIONS",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "LABEL",
+      "paths": [
+        "tests/test_commerce_stripe_live.py",
+        "tests/test_providers_stripe.py",
+        "tests/test_providers_stripe_wire.py"
+      ]
+    },
+    {
+      "name": "LABEL_TEXT",
+      "paths": [
+        "brandme_core/domains/media/service.py"
+      ]
+    },
+    {
+      "name": "LANES",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "LANE_TABLES",
+      "paths": [
+        "tests/test_persona_lane_mydata.py"
+      ]
+    },
+    {
+      "name": "LANE_VERSIONS",
+      "paths": [
+        "tests/test_persona_migrations_upgrade.py"
+      ]
+    },
+    {
+      "name": "LAST_NAMES",
+      "paths": [
+        "agents/data-agent.sh"
+      ]
+    },
+    {
+      "name": "LEASE_SECONDS",
+      "paths": [
+        "brandme_core/privacy_exports/service.py"
+      ]
+    },
+    {
+      "name": "LEDGER_DDL",
+      "paths": [
+        "brandme-data/spanner/migrations/runner.py"
+      ]
+    },
+    {
+      "name": "LEGACY_COLUMNS",
+      "paths": [
+        "brandme_core/domains/persona/backfill.py"
+      ]
+    },
+    {
+      "name": "LEGACY_FAKES",
+      "paths": [
+        "tests/foundation/test_mode_guard.py"
+      ]
+    },
+    {
+      "name": "LEGACY_SENSITIVE_KEYS",
+      "paths": [
+        "brandme_core/logging.py"
+      ]
+    },
+    {
+      "name": "LEGACY_USERS_DDL",
+      "paths": [
+        "tests/test_persona_backfill.py"
+      ]
+    },
+    {
+      "name": "LEVEL_RANK",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "LICENSE_ISSUED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "LIFECYCLE",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "LIFECYCLE_RULE",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "LINES",
+      "paths": [
+        "brandme_core/mcp/tools.py"
+      ]
+    },
+    {
+      "name": "LINK_DISCLOSURE",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "LLM_MODEL",
+      "paths": [
+        "brandme-agents/branding/src/graph_engine.py"
+      ]
+    },
+    {
+      "name": "LOCAL_ENVIRONMENTS",
+      "paths": [
+        "brandme_core/domains/commerce/principal.py",
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "LOCAL_SEGMENTS",
+      "paths": [
+        "brandme-gateway/src/middleware/logPath.ts"
+      ]
+    },
+    {
+      "name": "LOCKFILE_VERSION",
+      "paths": [
+        "scripts/check-workspace.mjs"
+      ]
+    },
+    {
+      "name": "LOCK_NAMES",
+      "paths": [
+        "scripts/check-workspace.mjs"
+      ]
+    },
+    {
+      "name": "LOG_FILE",
+      "paths": [
+        "deploy-brandme.sh"
+      ]
+    },
+    {
+      "name": "LOG_LEVEL",
+      "paths": [
+        ".env.deploy.example",
+        ".env.example",
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-core/.env.example",
+        "brandme-cube/.env.example",
+        "brandme-gateway/.env.example",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "LOG_OPS",
+      "paths": [
+        "brandme_core/domains/providers/redaction.py"
+      ]
+    },
+    {
+      "name": "LOG_OUTCOMES",
+      "paths": [
+        "brandme_core/domains/providers/redaction.py"
+      ]
+    },
+    {
+      "name": "LOOKS",
+      "paths": [
+        "brandme-frontend/features/persona/onboarding.tsx"
+      ]
+    },
+    {
+      "name": "LOOPBACK",
+      "paths": [
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "LOST_BEFORE_PROCESSING",
+      "paths": [
+        "brandme_core/domains/providers/payments/simulated.py"
+      ]
+    },
+    {
+      "name": "LOW",
+      "paths": [
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "MAGIC_API_KEY",
+      "paths": [
+        ".claude/.env.local.example"
+      ]
+    },
+    {
+      "name": "MALFORMED_RESPONSE",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py"
+      ]
+    },
+    {
+      "name": "MANIFEST",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "MATCH_DISTANCE",
+      "paths": [
+        "brandme_core/domains/persona/recommender.py"
+      ]
+    },
+    {
+      "name": "MATERIALITY_RULE",
+      "paths": [
+        "brandme_core/domains/commerce/quote.py"
+      ]
+    },
+    {
+      "name": "MAX_ACK_BYTES",
+      "paths": [
+        "brandme_core/events/pubsub.py"
+      ]
+    },
+    {
+      "name": "MAX_ACTIVE_PROOFS_PER_USER",
+      "paths": [
+        "brandme_core/zk/proof_of_ownership.py"
+      ]
+    },
+    {
+      "name": "MAX_ACTIVE_SHARES",
+      "paths": [
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "MAX_AMOUNT",
+      "paths": [
+        "brandme_core/domains/providers/payments/stripe_test.py"
+      ]
+    },
+    {
+      "name": "MAX_ARGUMENT_CHARS",
+      "paths": [
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "MAX_ASSERTION_TTL",
+      "paths": [
+        "brandme_core/mcp/authz.py"
+      ]
+    },
+    {
+      "name": "MAX_AUDIENCE",
+      "paths": [
+        "brandme_core/events/projections.py"
+      ]
+    },
+    {
+      "name": "MAX_BATCH",
+      "paths": [
+        "brandme_core/domains/wardrobe/service.py"
+      ]
+    },
+    {
+      "name": "MAX_BYTES",
+      "paths": [
+        "brandme-frontend/features/spatial/fitHistory.ts",
+        "brandme-frontend/features/spatial/passportClaimsReader.ts",
+        "brandme-gateway/src/routes/v1/media.ts",
+        "brandme_core/domains/media/store.py"
+      ]
+    },
+    {
+      "name": "MAX_CALLS",
+      "paths": [
+        "brandme_core/orchestrator/runtime.py"
+      ]
+    },
+    {
+      "name": "MAX_CART_LINES",
+      "paths": [
+        "brandme_core/domains/commerce/service.py"
+      ]
+    },
+    {
+      "name": "MAX_CLAIMS",
+      "paths": [
+        "brandme-frontend/features/spatial/passportClaimsReader.ts"
+      ]
+    },
+    {
+      "name": "MAX_DEPTH",
+      "paths": [
+        "brandme_core/logging.py"
+      ]
+    },
+    {
+      "name": "MAX_EVENT_BYTES",
+      "paths": [
+        "brandme_core/domains/persona/ingress.py",
+        "brandme_core/events/pubsub.py"
+      ]
+    },
+    {
+      "name": "MAX_EVIDENCE_PER_RECOMPUTE",
+      "paths": [
+        "brandme_core/domains/persona/service.py"
+      ]
+    },
+    {
+      "name": "MAX_INPUT_BYTES",
+      "paths": [
+        "scripts/assets/fit-evidence-private.mjs"
+      ]
+    },
+    {
+      "name": "MAX_ITEMS_PER_OUTFIT",
+      "paths": [
+        "brandme_core/domains/wardrobe/outfits.py"
+      ]
+    },
+    {
+      "name": "MAX_LENGTH",
+      "paths": [
+        "brandme-gateway/src/middleware/logPath.ts"
+      ]
+    },
+    {
+      "name": "MAX_LIFETIME",
+      "paths": [
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "MAX_MINOR",
+      "paths": [
+        "brandme_core/domains/commerce/money.py"
+      ]
+    },
+    {
+      "name": "MAX_NOTES",
+      "paths": [
+        "brandme-frontend/features/spatial/fitHistory.ts"
+      ]
+    },
+    {
+      "name": "MAX_OPEN_DISPUTES",
+      "paths": [
+        "brandme_core/domains/rewards/service.py"
+      ]
+    },
+    {
+      "name": "MAX_PACKAGE",
+      "paths": [
+        "brandme_core/privacy_exports/storage.py"
+      ]
+    },
+    {
+      "name": "MAX_PAGES",
+      "paths": [
+        "brandme-frontend/features/spatial/passportClaimsReader.ts"
+      ]
+    },
+    {
+      "name": "MAX_PER_BRAND",
+      "paths": [
+        "brandme_core/domains/persona/recommender.py"
+      ]
+    },
+    {
+      "name": "MAX_PER_CATEGORY",
+      "paths": [
+        "brandme_core/domains/persona/recommender.py"
+      ]
+    },
+    {
+      "name": "MAX_PROPOSALS_PER_STEP",
+      "paths": [
+        "brandme_core/orchestrator/runtime.py"
+      ]
+    },
+    {
+      "name": "MAX_PULL_BYTES",
+      "paths": [
+        "brandme_core/domains/persona/ingress.py"
+      ]
+    },
+    {
+      "name": "MAX_RECEIPT_UNITS",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "MAX_REFUSALS",
+      "paths": [
+        "brandme_core/orchestrator/runtime.py"
+      ]
+    },
+    {
+      "name": "MAX_REQUEST",
+      "paths": [
+        "brandme-frontend/lib/server/gateway-proxy.ts"
+      ]
+    },
+    {
+      "name": "MAX_RESPONSE",
+      "paths": [
+        "brandme-frontend/lib/server/gateway-proxy.ts"
+      ]
+    },
+    {
+      "name": "MAX_RESPONSE_BYTES",
+      "paths": [
+        "brandme_core/read_api/app.py"
+      ]
+    },
+    {
+      "name": "MAX_RESULTS",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/core.py"
+      ]
+    },
+    {
+      "name": "MAX_ROWS",
+      "paths": [
+        "brandme_core/privacy_exports/service.py"
+      ]
+    },
+    {
+      "name": "MAX_SAVED",
+      "paths": [
+        "brandme_core/domains/wardrobe/guest_sections.py"
+      ]
+    },
+    {
+      "name": "MAX_SECONDS",
+      "paths": [
+        "brandme_core/orchestrator/runtime.py"
+      ]
+    },
+    {
+      "name": "MAX_SEGMENTS",
+      "paths": [
+        "brandme-gateway/src/middleware/logPath.ts"
+      ]
+    },
+    {
+      "name": "MAX_SIGNED_SECONDS",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "MAX_TOTAL_REFS",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "MAX_TTL",
+      "paths": [
+        "brandme_core/domains/persona/assertion.py"
+      ]
+    },
+    {
+      "name": "MCP_PROTOCOL_VERSION",
+      "paths": [
+        "brandme_core/mcp/authz.py"
+      ]
+    },
+    {
+      "name": "MCP_SCOPES",
+      "paths": [
+        "brandme_core/mcp/authz.py"
+      ]
+    },
+    {
+      "name": "MEDIA_COLS",
+      "paths": [
+        "brandme_core/domains/media/service.py"
+      ]
+    },
+    {
+      "name": "MEDIA_TRANSFORMS",
+      "paths": [
+        "brandme_core/domains/providers/ingestion.py"
+      ]
+    },
+    {
+      "name": "MEDIUM",
+      "paths": [
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "MEMBER",
+      "paths": [
+        "brandme-gateway/src/middleware/requestLogger.test.ts",
+        "brandme-gateway/src/routes/v1/persona.test.ts",
+        "brandme-gateway/src/routes/v1/rewards.test.ts",
+        "brandme_core/domains/privacy/deletion.py",
+        "tests/fixtures/commerce/harness.py",
+        "tests/test_read_api.py"
+      ]
+    },
+    {
+      "name": "MEMBERSHIP",
+      "paths": [
+        "brandme_core/zk/proof_of_ownership.py"
+      ]
+    },
+    {
+      "name": "MEMBER_COLLECTIONS",
+      "paths": [
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "MEMBER_COLUMNS",
+      "paths": [
+        "tests/test_persona_lane_mydata.py"
+      ]
+    },
+    {
+      "name": "MEMBER_CREATED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "MEMBER_FIELD",
+      "paths": [
+        "tests/foundation/test_outbox_retention.py"
+      ]
+    },
+    {
+      "name": "MEMBER_NIL",
+      "paths": [
+        "tests/foundation/test_outbox_retention.py"
+      ]
+    },
+    {
+      "name": "MEMBER_RULES",
+      "paths": [
+        "tests/fixtures/commerce/harness.py"
+      ]
+    },
+    {
+      "name": "MEMBER_SCOPES",
+      "paths": [
+        "tests/test_persona_harness.py"
+      ]
+    },
+    {
+      "name": "MEMBER_UPDATED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "MERCHANT",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "MERCHANT_ID",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "MFOBA",
+      "paths": [
+        "pnpm-lock.yaml"
+      ]
+    },
+    {
+      "name": "MIDNIGHT_BLOCKFROST_PROJECT_ID",
+      "paths": [
+        "brandme-chain/.env.example",
+        "brandme-chain/scripts/test-midnight-preprod.mjs",
+        "brandme-chain/src/config/index.ts",
+        "brandme-chain/tests/network/env.ts"
+      ]
+    },
+    {
+      "name": "MIDNIGHT_CONTRACT_ADDRESS",
+      "paths": [
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts"
+      ]
+    },
+    {
+      "name": "MIDNIGHT_FALLBACK_MODE",
+      "paths": [
+        "brandme-chain/tests/midnight/trust-path.test.ts"
+      ]
+    },
+    {
+      "name": "MIDNIGHT_LOCAL_INDEXER_PORT",
+      "paths": [
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts"
+      ]
+    },
+    {
+      "name": "MIDNIGHT_LOCAL_NODE_PORT",
+      "paths": [
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts"
+      ]
+    },
+    {
+      "name": "MIDNIGHT_NETWORK",
+      "paths": [
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-chain/tests/network/env.ts",
+        "brandme-chain/vitest.network.config.ts"
+      ]
+    },
+    {
+      "name": "MIGRATIONS",
+      "paths": [
+        "tests/test_commerce_migrations.py",
+        "tests/test_persona_lane_mydata.py",
+        "tests/test_privacy.py",
+        "tests/test_rights.py"
+      ]
+    },
+    {
+      "name": "MIGRATIONS_DIR",
+      "paths": [
+        "brandme-data/spanner/migrations/runner.py"
+      ]
+    },
+    {
+      "name": "MINT",
+      "paths": [
+        "brandme_core/spanner/provenance.py"
+      ]
+    },
+    {
+      "name": "MINUTES",
+      "paths": [
+        "deploy-brandme.sh"
+      ]
+    },
+    {
+      "name": "MIN_KEY_BYTES",
+      "paths": [
+        "brandme_core/mcp/refs.py"
+      ]
+    },
+    {
+      "name": "MIN_LIFETIME",
+      "paths": [
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "MISSING_REAL",
+      "paths": [
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "MN_INDEXER_PORT",
+      "paths": [
+        "brandme-chain/scripts/local-network.sh",
+        "brandme-chain/tests/network/env.ts"
+      ]
+    },
+    {
+      "name": "MN_NODE_PORT",
+      "paths": [
+        "brandme-chain/scripts/local-network.sh",
+        "brandme-chain/tests/network/env.ts"
+      ]
+    },
+    {
+      "name": "MN_PREPROD_SEEDS",
+      "paths": [
+        "brandme-chain/scripts/test-midnight-preprod.mjs",
+        "brandme-chain/tests/network/env.ts"
+      ]
+    },
+    {
+      "name": "MN_PROOF_PORT",
+      "paths": [
+        "brandme-chain/scripts/local-network.sh",
+        "brandme-chain/tests/network/env.ts"
+      ]
+    },
+    {
+      "name": "MODELS",
+      "paths": [
+        "tests/fixtures/commerce/ap2_sdk_oracle.py"
+      ]
+    },
+    {
+      "name": "MODEL_ENV",
+      "paths": [
+        "brandme_core/orchestrator/model_planner.py"
+      ]
+    },
+    {
+      "name": "MODEL_ID_RE",
+      "paths": [
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "MODEL_PROFILES",
+      "paths": [
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "MODEL_WITHHELD_TOOLS",
+      "paths": [
+        "brandme_core/orchestrator/model_planner.py"
+      ]
+    },
+    {
+      "name": "MODES",
+      "paths": [
+        "brandme_core/domains/media/service.py",
+        "brandme_core/domains/social/decisions.py",
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "MODE_CEILING",
+      "paths": [
+        "brandme_core/domains/commerce/delegation.py"
+      ]
+    },
+    {
+      "name": "MODE_SCOPES",
+      "paths": [
+        "brandme_core/domains/commerce/delegation.py"
+      ]
+    },
+    {
+      "name": "MODE_TOOLS",
+      "paths": [
+        "brandme_core/orchestrator/runtime.py"
+      ]
+    },
+    {
+      "name": "MODIFIED",
+      "paths": [
+        "brandme_core/firestore/agentic.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "MODULE_DIR",
+      "paths": [
+        "scripts/regression/run_all.sh"
+      ]
+    },
+    {
+      "name": "MOLECULAR_DATA",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "NAMES",
+      "paths": [
+        "tests/foundation/test_deletion_leaves_no_member_rows.py"
+      ]
+    },
+    {
+      "name": "NAMESPACE_RE",
+      "paths": [
+        "brandme_core/domains/persona/onboarding.py"
+      ]
+    },
+    {
+      "name": "NAME_PATTERNS",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "NATS_MAX_RECONNECT_ATTEMPTS",
+      "paths": [
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "NATS_URL",
+      "paths": [
+        ".env.example",
+        "agents/database-agent.sh",
+        "brandme-core/.env.example",
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "NEO4J_BROWSER_URL",
+      "paths": [
+        "agents/service-agent.sh"
+      ]
+    },
+    {
+      "name": "NEO4J_DATABASE",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "NEO4J_HOST",
+      "paths": [
+        "agents/database-agent.sh"
+      ]
+    },
+    {
+      "name": "NEO4J_PASSWORD",
+      "paths": [
+        ".env.deploy.example",
+        "agents/database-agent.sh",
+        "brandme-agents/agentic/.env.example",
+        "brandme-agents/agentic/graph_db.py",
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "NEO4J_POD",
+      "paths": [
+        "agents/validation-agent.sh"
+      ]
+    },
+    {
+      "name": "NEO4J_RBAC_SETUP",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "NEO4J_READONLY_PASSWORD",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "NEO4J_READONLY_USER",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "NEO4J_URI",
+      "paths": [
+        "agents/database-agent.sh",
+        "brandme-agents/agentic/.env.example",
+        "brandme-agents/agentic/graph_db.py",
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "NEO4J_USER",
+      "paths": [
+        "agents/database-agent.sh",
+        "brandme-agents/agentic/.env.example",
+        "brandme-agents/agentic/graph_db.py"
+      ]
+    },
+    {
+      "name": "NEO4J_USERNAME",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "NEO4J_WRITER_PASSWORD",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "NEO4J_WRITER_USER",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "NETWORK",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "NETWORKING",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "NEW_NAME_TYPES",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "NEXT_PUBLIC_API_URL",
+      "paths": [
+        "brandme-frontend/lib/api.ts"
+      ]
+    },
+    {
+      "name": "NEXT_PUBLIC_BRANDME_MODE",
+      "paths": [
+        "brandme-frontend/app/add/page.tsx",
+        "brandme-frontend/app/add/scan/page.tsx",
+        "brandme-frontend/app/closet/items/[itemId]/page.tsx",
+        "brandme-frontend/app/closet/page.tsx",
+        "brandme-frontend/app/closet/settings/page.tsx",
+        "brandme-frontend/app/style/outfits/[outfitId]/page.tsx",
+        "brandme-frontend/app/style/page.tsx",
+        "brandme-frontend/app/try/[itemId]/page.tsx",
+        "brandme-frontend/app/try/device-test/page.tsx",
+        "brandme-frontend/features/spatial/server/photoService.ts"
+      ]
+    },
+    {
+      "name": "NEXT_PUBLIC_CARDANO_EXPLORER_URL",
+      "paths": [
+        "brandme-console/.env.example",
+        "brandme-console/app/proof/[scanId]/page.tsx"
+      ]
+    },
+    {
+      "name": "NEXT_PUBLIC_CHAIN_SERVICE_URL",
+      "paths": [
+        "brandme-console/.env.example",
+        "brandme-console/lib/api.ts"
+      ]
+    },
+    {
+      "name": "NEXT_PUBLIC_COMPLIANCE_SERVICE_URL",
+      "paths": [
+        "brandme-console/.env.example",
+        "brandme-console/lib/api.ts"
+      ]
+    },
+    {
+      "name": "NEXT_PUBLIC_GATEWAY_URL",
+      "paths": [
+        "brandme-console/.env.example",
+        "brandme-console/lib/api.ts"
+      ]
+    },
+    {
+      "name": "NEXT_PUBLIC_KNOWLEDGE_SERVICE_URL",
+      "paths": [
+        "brandme-console/.env.example",
+        "brandme-console/lib/api.ts"
+      ]
+    },
+    {
+      "name": "NEXT_PUBLIC_SESSION_SECRET",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "NIL_MEMBER",
+      "paths": [
+        "brandme_core/domains/persona/kernel.py"
+      ]
+    },
+    {
+      "name": "NIL_SUBJECT",
+      "paths": [
+        "brandme_core/events/retention.py"
+      ]
+    },
+    {
+      "name": "NODE",
+      "paths": [
+        "scripts/check-workspace.test.mjs"
+      ]
+    },
+    {
+      "name": "NODE_ENV",
+      "paths": [
+        "brandme-frontend/app/dev/[example]/page.tsx",
+        "brandme-frontend/app/me/connections/page.tsx",
+        "brandme-frontend/app/try/device-test/page.tsx",
+        "brandme-frontend/features/spatial/LiveOverlay.tsx",
+        "brandme-frontend/features/spatial/server/photoService.ts",
+        "brandme-frontend/lib/server/gateway-proxy.ts",
+        "brandme-frontend/lib/testing/dev-domains.py",
+        "brandme-frontend/lib/testing/dev-gateway.mjs",
+        "brandme-frontend/lib/testing/start-dev-gateway.mjs",
+        "docs/build/security/credential-manifest.yaml"
+      ]
+    },
+    {
+      "name": "NODE_VERSION",
+      "paths": [
+        ".github/workflows/ci-cd.yml",
+        "scripts/check-workspace.test.mjs"
+      ]
+    },
+    {
+      "name": "NONE",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py",
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "NON_VERIFYING_EVIDENCE",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py",
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "NOPE_TOKEN",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "NORD",
+      "paths": [
+        "tests/test_providers_setup.py"
+      ]
+    },
+    {
+      "name": "NOT_ASSIGNED_CODES",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "NOT_A_SECRET",
+      "paths": [
+        "brandme-gateway/src/routes/v1/providers.ts"
+      ]
+    },
+    {
+      "name": "NOT_CONFIGURED",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py"
+      ]
+    },
+    {
+      "name": "NOT_ERASABLE_PUBLIC_LEDGER",
+      "paths": [
+        "brandme_core/domains/privacy/deletion.py"
+      ]
+    },
+    {
+      "name": "NOT_PRICED",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "NOW",
+      "paths": [
+        "tests/test_persona_api.py",
+        "tests/test_persona_backfill.py",
+        "tests/test_persona_domain_app.py",
+        "tests/test_persona_lane_events.py",
+        "tests/test_persona_model.py",
+        "tests/test_persona_privacy.py",
+        "tests/test_persona_service.py",
+        "tests/test_read_api.py",
+        "tests/test_rewards_benefits.py",
+        "tests/test_rewards_ledger.py",
+        "tests/test_social_decisions.py",
+        "tests/test_social_privacy_api.py",
+        "tests/test_social_relationships.py",
+        "tests/test_social_reports.py",
+        "tests/test_wardrobe_api.py",
+        "tests/test_wardrobe_outfits.py",
+        "tests/test_wardrobe_privacy.py",
+        "tests/test_wardrobe_service.py"
+      ]
+    },
+    {
+      "name": "NO_BOUNDARY",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "NO_TIER",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "NULLABLE_RULE",
+      "paths": [
+        "brandme_core/domains/rewards/events.py"
+      ]
+    },
+    {
+      "name": "NULLABLE_UUID",
+      "paths": [
+        "brandme_core/domains/wardrobe/events.py"
+      ]
+    },
+    {
+      "name": "NUM_GARMENTS",
+      "paths": [
+        "agents/data-agent.sh"
+      ]
+    },
+    {
+      "name": "NUM_SCANS",
+      "paths": [
+        "agents/data-agent.sh"
+      ]
+    },
+    {
+      "name": "NUM_USERS",
+      "paths": [
+        "agents/data-agent.sh"
+      ]
+    },
+    {
+      "name": "OAUTH_CLIENT_ID",
+      "paths": [
+        "scripts/regression/modules/brandme_gateway.sh"
+      ]
+    },
+    {
+      "name": "OAUTH_CLIENT_SECRET",
+      "paths": [
+        "scripts/regression/modules/brandme_gateway.sh"
+      ]
+    },
+    {
+      "name": "ODD_NAMES",
+      "paths": [
+        "tests/test_commerce_audit_coverage.py"
+      ]
+    },
+    {
+      "name": "OFFICIAL_PROGRAM_URL",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "OIDC_ALGORITHMS",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "OIDC_AUDIENCE",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example",
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "OIDC_ISSUER",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example",
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "OIDC_JWKS_URI",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example",
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "OPAQUE_REF_RE",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "OPEN",
+      "paths": [
+        "brandme-agents/branding/src/database.py"
+      ]
+    },
+    {
+      "name": "OPENAI_API_KEY",
+      "paths": [
+        ".env.deploy.example",
+        "brandme-agents/agentic/.env.example"
+      ]
+    },
+    {
+      "name": "OPERATION_IDS",
+      "paths": [
+        "packages/contracts/generated/schemas.ts",
+        "packages/contracts/scripts/generate.mjs"
+      ]
+    },
+    {
+      "name": "OPERATOR",
+      "paths": [
+        "tests/test_providers_setup.py"
+      ]
+    },
+    {
+      "name": "OPERATOR_MEMBER",
+      "paths": [
+        "tests/test_providers_setup.py"
+      ]
+    },
+    {
+      "name": "OPERATOR_SCOPE",
+      "paths": [
+        "brandme_core/domains/commerce/service.py",
+        "brandme_core/domains/persona/kernel.py"
+      ]
+    },
+    {
+      "name": "OPS",
+      "paths": [
+        "tests/test_persona_lane_mydata.py",
+        "tests/test_rewards_api.py",
+        "tests/test_rewards_benefits.py",
+        "tests/test_rewards_ledger.py",
+        "tests/test_social_reports.py"
+      ]
+    },
+    {
+      "name": "OPTIONAL_FIELDS",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "ORACLE",
+      "paths": [
+        "tests/test_commerce_ap2.py"
+      ]
+    },
+    {
+      "name": "ORCHESTRATOR_SERVICE_URL",
+      "paths": [
+        "brandme_core/config.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "ORCHESTRATOR_URL",
+      "paths": [
+        "brandme-cube/.env.example",
+        "brandme-cube/src/main.py"
+      ]
+    },
+    {
+      "name": "ORDERS",
+      "paths": [
+        "brandme_core/domains/commerce/privacy_handler.py"
+      ]
+    },
+    {
+      "name": "ORDERS_RETENTION_BASIS",
+      "paths": [
+        "brandme_core/domains/commerce/privacy_handler.py"
+      ]
+    },
+    {
+      "name": "ORDER_CONSUMER",
+      "paths": [
+        "brandme_core/domains/wardrobe/service.py"
+      ]
+    },
+    {
+      "name": "ORDER_OBSERVED",
+      "paths": [
+        "brandme_core/domains/commerce/events.py"
+      ]
+    },
+    {
+      "name": "ORDER_OBSERVED_V1",
+      "paths": [
+        "brandme_core/domains/persona/ingress.py"
+      ]
+    },
+    {
+      "name": "ORDER_PAYMENT_STATUSES",
+      "paths": [
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "ORDER_REF_RE",
+      "paths": [
+        "brandme_core/domains/providers/merchant.py"
+      ]
+    },
+    {
+      "name": "ORIGIN",
+      "paths": [
+        "brandme-gateway/src/routes/v1/me.test.ts"
+      ]
+    },
+    {
+      "name": "ORIGINS",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "paths": [
+        "brandme-core/.env.example"
+      ]
+    },
+    {
+      "name": "OTEL_SERVICE_NAME",
+      "paths": [
+        "brandme-core/.env.example"
+      ]
+    },
+    {
+      "name": "OTHER",
+      "paths": [
+        "brandme-gateway/src/routes/v1/social.test.ts",
+        "scripts/check-workspace.test.mjs",
+        "tests/test_read_api.py"
+      ]
+    },
+    {
+      "name": "OTHER_MEMBER",
+      "paths": [
+        "tests/fixtures/commerce/harness.py"
+      ]
+    },
+    {
+      "name": "OTLP_ENDPOINT",
+      "paths": [
+        "brandme-cube/.env.example"
+      ]
+    },
+    {
+      "name": "OUTBOX_COLS",
+      "paths": [
+        "tests/test_rewards_ledger.py"
+      ]
+    },
+    {
+      "name": "OUTBOX_COLUMNS",
+      "paths": [
+        "brandme_core/events/outbox.py"
+      ]
+    },
+    {
+      "name": "OUTBOX_EVENT_TYPES",
+      "paths": [
+        "brandme_core/events/worker.py"
+      ]
+    },
+    {
+      "name": "OUTBOX_PUBSUB_TOPIC_",
+      "paths": [
+        "brandme_core/events/worker.py"
+      ]
+    },
+    {
+      "name": "OUTCOMES",
+      "paths": [
+        "brandme-gateway/src/routes/v1/decisions.ts",
+        "brandme_core/domains/social/decisions.py"
+      ]
+    },
+    {
+      "name": "OUTCOME_RANK",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "OUTCOME_UNKNOWN",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py"
+      ]
+    },
+    {
+      "name": "OUTFIT_ITEM_FIELDS",
+      "paths": [
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "OVERSHIRT",
+      "paths": [
+        "tests/test_commerce_budget.py"
+      ]
+    },
+    {
+      "name": "OWN",
+      "paths": [
+        "tests/foundation/test_deletion_leaves_no_member_rows.py"
+      ]
+    },
+    {
+      "name": "OWNED",
+      "paths": [
+        "tests/test_commerce_wardrobe_contract.py"
+      ]
+    },
+    {
+      "name": "OWNERSHIP",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/zk/proof_of_ownership.py"
+      ]
+    },
+    {
+      "name": "OWNERSHIP_TRANSFER_REQUESTED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "OWNER_ONLY_KEYS",
+      "paths": [
+        "brandme-cube/src/passport_filter.py"
+      ]
+    },
+    {
+      "name": "OWN_MATCH",
+      "paths": [
+        "brandme_core/events/retention.py"
+      ]
+    },
+    {
+      "name": "PACKING_STATES",
+      "paths": [
+        "brandme_core/domains/wardrobe/outfits.py"
+      ]
+    },
+    {
+      "name": "PAGE",
+      "paths": [
+        "tests/test_commerce_operations_copy.py"
+      ]
+    },
+    {
+      "name": "PAGE_SIZE",
+      "paths": [
+        "brandme-frontend/features/spatial/passportClaimsReader.ts"
+      ]
+    },
+    {
+      "name": "PARAMS",
+      "paths": [
+        "tests/test_commerce_privacy_freeze.py"
+      ]
+    },
+    {
+      "name": "PARTIAL_FULFILLMENT",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "PARTNER",
+      "paths": [
+        "brandme_core/domains/privacy/deletion.py"
+      ]
+    },
+    {
+      "name": "PASSED_TESTS",
+      "paths": [
+        "scripts/test-infrastructure.sh"
+      ]
+    },
+    {
+      "name": "PASSWORD",
+      "paths": [
+        "brandme-chain/tests/network/rights.network.test.ts"
+      ]
+    },
+    {
+      "name": "PAST",
+      "paths": [
+        "tests/test_privacy_exports.py"
+      ]
+    },
+    {
+      "name": "PATCH_KEYS",
+      "paths": [
+        "brandme_core/domains/persona/service.py",
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "PATH",
+      "paths": [
+        "tests/foundation/test_boot_guard.py"
+      ]
+    },
+    {
+      "name": "PATTERNS",
+      "paths": [
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "PAUSED",
+      "paths": [
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "PAYMENTS_ENV",
+      "paths": [
+        "brandme_core/domains/commerce/composition.py"
+      ]
+    },
+    {
+      "name": "PAYMENT_CAPABILITIES",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "PAYMENT_OPS",
+      "paths": [
+        "brandme_core/domains/providers/payments/__init__.py",
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "PAYMENT_SETTLE_WINDOW",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "PAYMENT_STATES",
+      "paths": [
+        "brandme_core/domains/providers/payments/__init__.py",
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "PENDING",
+      "paths": [
+        "brandme-frontend/features/persona/onboarding.tsx"
+      ]
+    },
+    {
+      "name": "PERSONA_CATEGORIES",
+      "paths": [
+        "tests/test_persona_privacy.py"
+      ]
+    },
+    {
+      "name": "PERSONA_EVIDENCE_SUPPRESSED",
+      "paths": [
+        "brandme_core/domains/persona/events.py"
+      ]
+    },
+    {
+      "name": "PERSONA_GUEST_MIGRATED",
+      "paths": [
+        "brandme_core/domains/persona/events.py"
+      ]
+    },
+    {
+      "name": "PERSONA_KEYS",
+      "paths": [
+        "brandme_core/domains/persona/onboarding.py"
+      ]
+    },
+    {
+      "name": "PERSONA_SCHEMA_VERSION",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "PERSONA_SNAPSHOT_SAVED",
+      "paths": [
+        "brandme_core/domains/persona/events.py"
+      ]
+    },
+    {
+      "name": "PERSONA_UPDATED",
+      "paths": [
+        "brandme_core/domains/persona/events.py"
+      ]
+    },
+    {
+      "name": "PGPASSWORD",
+      "paths": [
+        "agents/data-agent.sh",
+        "scripts/backup.sh",
+        "scripts/db-init.sh"
+      ]
+    },
+    {
+      "name": "PHONE_PATTERNS",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "PINNED_VERSION",
+      "paths": [
+        "tests/fixtures/providers/stripe_mock.py"
+      ]
+    },
+    {
+      "name": "PKG",
+      "paths": [
+        "tests/test_commerce_legacy_graph_rag.py"
+      ]
+    },
+    {
+      "name": "PKQ",
+      "paths": [
+        "pnpm-lock.yaml"
+      ]
+    },
+    {
+      "name": "PLACEABLE_COLLECTIONS",
+      "paths": [
+        "brandme_core/domains/wardrobe/service.py"
+      ]
+    },
+    {
+      "name": "PLACEHOLDER_NOTICE",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "PLACEHOLDER_PREFIX",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "PLACEHOLDER_PRICING_TABLE",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "PLACEMENT_COLUMNS",
+      "paths": [
+        "brandme_core/domains/wardrobe/service.py"
+      ]
+    },
+    {
+      "name": "PLACEMENT_KEYS",
+      "paths": [
+        "brandme-gateway/src/routes/v1/wardrobe.ts",
+        "brandme_core/domains/wardrobe/placement.py"
+      ]
+    },
+    {
+      "name": "PLAIN_FORBIDDEN_START",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "PLANNER_ENV",
+      "paths": [
+        "brandme_core/orchestrator/model_planner.py"
+      ]
+    },
+    {
+      "name": "PLANNER_LABELS",
+      "paths": [
+        "brandme_core/orchestrator/runlog.py"
+      ]
+    },
+    {
+      "name": "PLATFORM_PRIVACY_HANDLER",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "PNG",
+      "paths": [
+        "brandme-gateway/src/routes/v1/consumer-domains.test.ts",
+        "tests/test_media_gcs_store.py",
+        "tests/test_media_tryon.py",
+        "tests/test_persona_lane_mydata.py"
+      ]
+    },
+    {
+      "name": "PNPM",
+      "paths": [
+        "scripts/check-workspace.test.mjs"
+      ]
+    },
+    {
+      "name": "POD_MODEL_VERSION",
+      "paths": [
+        "brandme-frontend/features/spatial/podCapture.ts"
+      ]
+    },
+    {
+      "name": "POINT",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/design_system.py"
+      ]
+    },
+    {
+      "name": "POINTS",
+      "paths": [
+        "brandme_core/domains/rewards/events.py"
+      ]
+    },
+    {
+      "name": "POLICY_SERVICE_URL",
+      "paths": [
+        ".env.example",
+        "brandme-agents/agentic/.env.example",
+        "brandme-agents/agentic/tools/policy_tools.py",
+        "brandme_core/config.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "POLICY_TOOLS",
+      "paths": [
+        "brandme-agents/agentic/tools/policy_tools.py"
+      ]
+    },
+    {
+      "name": "POLICY_URL",
+      "paths": [
+        "brandme-agents/agentic/orchestrator/agents.py",
+        "brandme-cube/.env.example",
+        "brandme-cube/src/main.py"
+      ]
+    },
+    {
+      "name": "PORT",
+      "paths": [
+        ".env.example",
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-gateway/.env.example",
+        "brandme_core/domains/persona/app.py",
+        "brandme_core/privacy_exports/config.py",
+        "brandme_core/read_api/config.py"
+      ]
+    },
+    {
+      "name": "PORTS",
+      "paths": [
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "POST",
+      "paths": [
+        "brandme-frontend/app/try/photo/api/route.ts"
+      ]
+    },
+    {
+      "name": "PREFIX",
+      "paths": [
+        "brandme_core/domains/commerce/http_api.py"
+      ]
+    },
+    {
+      "name": "PREPARE",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py",
+        "brandme_core/domains/commerce/delegation.py"
+      ]
+    },
+    {
+      "name": "PRICE_CHANGE",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "PRICE_LABEL",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "PRINCIPAL_MATCH",
+      "paths": [
+        "brandme_core/events/retention.py"
+      ]
+    },
+    {
+      "name": "PRIVACY",
+      "paths": [
+        "tests/test_read_api.py"
+      ]
+    },
+    {
+      "name": "PRIVACY_ACTOR",
+      "paths": [
+        "brandme_core/domains/commerce/service.py"
+      ]
+    },
+    {
+      "name": "PRIVACY_CLASSES",
+      "paths": [
+        "brandme_core/events/envelope.py"
+      ]
+    },
+    {
+      "name": "PRIVACY_DELETION_COMPLETED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "PRIVACY_DELETION_REQUESTED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "PRIVACY_EXPORT_SERVICE_TOKEN",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example",
+        "brandme_core/privacy_exports/config.py"
+      ]
+    },
+    {
+      "name": "PRIVACY_EXPORT_SERVICE_URL",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "PRIVACY_HANDLER",
+      "paths": [
+        "brandme_core/domains/media/deletion.py",
+        "brandme_core/domains/persona/deletion.py",
+        "brandme_core/domains/rewards/deletion.py",
+        "brandme_core/domains/social/deletion.py",
+        "brandme_core/domains/wardrobe/deletion.py"
+      ]
+    },
+    {
+      "name": "PRIVACY_SERVICE_TOKEN",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example",
+        "brandme_core/privacy_exports/config.py"
+      ]
+    },
+    {
+      "name": "PRIVACY_SERVICE_URL",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "PRIVATE",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/firestore/wardrobe.py",
+        "brandme_core/spanner/consent_graph.py"
+      ]
+    },
+    {
+      "name": "PRIVATE_STATE_BACKUP_INSTRUCTIONS",
+      "paths": [
+        "brandme_core/domains/privacy/privacy.py"
+      ]
+    },
+    {
+      "name": "PRIVATE_STATE_ID",
+      "paths": [
+        "brandme-chain/src/midnight/private-state.ts"
+      ]
+    },
+    {
+      "name": "PRM",
+      "paths": [
+        "tests/test_mcp.py"
+      ]
+    },
+    {
+      "name": "PROBE_MODES",
+      "paths": [
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "PROBE_RESULTS",
+      "paths": [
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "PROBE_VARIANT",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "PROBLEM_CODE",
+      "paths": [
+        "brandme-gateway/src/routes/v1/commerce.ts"
+      ]
+    },
+    {
+      "name": "PROBLEM_MEMBERS",
+      "paths": [
+        "brandme-gateway/src/middleware/problem.test.ts",
+        "brandme-gateway/src/middleware/rateLimiter.test.ts"
+      ]
+    },
+    {
+      "name": "PROCESSING",
+      "paths": [
+        "brandme_core/firestore/agentic.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "PRODUCED",
+      "paths": [
+        "brandme-agents/compliance/src/lifecycle/state_machine.py",
+        "brandme-cube/src/models.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "PRODUCTION",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "PRODUCT_DETAILS",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "PROFILE",
+      "paths": [
+        "tests/foundation/test_projections_emulator.py"
+      ]
+    },
+    {
+      "name": "PROJECT",
+      "paths": [
+        "tests/test_persona_harness.py"
+      ]
+    },
+    {
+      "name": "PROJECT_ROOT",
+      "paths": [
+        "scripts/db-init.sh",
+        "scripts/deploy.sh"
+      ]
+    },
+    {
+      "name": "PROMPT_FORMAT",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "PROMPT_VERSION",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "PROOF_OWNERSHIP",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "PROOF_SERVER_CA_BUNDLE",
+      "paths": [
+        "brandme-chain/scripts/local-network.sh"
+      ]
+    },
+    {
+      "name": "PROPERTY_TIMEOUT_MS",
+      "paths": [
+        "tests/contracts/property.test.ts"
+      ]
+    },
+    {
+      "name": "PROPOSAL_PAIR_DAILY_LIMIT",
+      "paths": [
+        "brandme_core/domains/rewards/rules.py"
+      ]
+    },
+    {
+      "name": "PROVENANCE",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme-frontend/features/spatial/fitHistory.ts"
+      ]
+    },
+    {
+      "name": "PROVIDER",
+      "paths": [
+        "brandme_core/domains/privacy/deletion.py",
+        "tests/test_media_tryon.py"
+      ]
+    },
+    {
+      "name": "PROVIDER_ADMIN_SCOPE",
+      "paths": [
+        "brandme_core/domains/commerce/http_api.py",
+        "brandme_core/domains/providers/setup.py"
+      ]
+    },
+    {
+      "name": "PROVIDER_ERROR_KINDS",
+      "paths": [
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "PROVIDER_ID",
+      "paths": [
+        "brandme-console/app/(ops)/providers/_data/actions.ts",
+        "brandme_core/domains/providers/local_atelier.py",
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "PROVIDER_ID_RE",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py",
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "PROVIDER_RETAINS",
+      "paths": [
+        "brandme_core/domains/media/deletion.py"
+      ]
+    },
+    {
+      "name": "PROXY_ENV",
+      "paths": [
+        "brandme_core/orchestrator/model_planner.py"
+      ]
+    },
+    {
+      "name": "PROXY_PID",
+      "paths": [
+        "agents/database-agent.sh"
+      ]
+    },
+    {
+      "name": "PSEUDONYM",
+      "paths": [
+        "tests/foundation/test_logging_redaction.py"
+      ]
+    },
+    {
+      "name": "PUBLIC",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/firestore/wardrobe.py",
+        "brandme_core/spanner/consent_graph.py"
+      ]
+    },
+    {
+      "name": "PUBLIC_JWKS",
+      "paths": [
+        "tests/foundation/test_mode_guard.py"
+      ]
+    },
+    {
+      "name": "PUBLIC_ORIGINS",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "PUBLISH_IMAGES",
+      "paths": [
+        ".github/workflows/ci-cd.yml"
+      ]
+    },
+    {
+      "name": "PUBSUB_EMULATOR_BIN",
+      "paths": [
+        "scripts/brandme.mjs",
+        "tests/foundation/test_outbox_delivery.py",
+        "tests/test_persona_lane_events.py"
+      ]
+    },
+    {
+      "name": "PUBSUB_EMULATOR_HOST",
+      "paths": [
+        "brandme_core/domains/persona/ingress.py",
+        "brandme_core/events/worker.py"
+      ]
+    },
+    {
+      "name": "PURCHASE",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/spanner/provenance.py"
+      ]
+    },
+    {
+      "name": "PURCHASE_APPROVAL_REQUESTED",
+      "paths": [
+        "brandme_core/domains/commerce/events.py"
+      ]
+    },
+    {
+      "name": "PURCHASE_AUTHORIZED",
+      "paths": [
+        "brandme_core/domains/commerce/events.py"
+      ]
+    },
+    {
+      "name": "PURCHASE_STATES",
+      "paths": [
+        "brandme_core/domains/commerce/records.py"
+      ]
+    },
+    {
+      "name": "PURPOSE",
+      "paths": [
+        "tests/test_providers_stripe.py",
+        "tests/test_providers_stripe_wire.py"
+      ]
+    },
+    {
+      "name": "PYTHONPATH",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "PY_PATTERNS",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "QUARANTINE",
+      "paths": [
+        "tests/conftest.py"
+      ]
+    },
+    {
+      "name": "QUATERNION_TOLERANCE",
+      "paths": [
+        "brandme_core/domains/wardrobe/placement.py"
+      ]
+    },
+    {
+      "name": "QUOTE_HASH_DOMAIN",
+      "paths": [
+        "brandme_core/domains/commerce/quote.py"
+      ]
+    },
+    {
+      "name": "QUOTE_HASH_VERSION",
+      "paths": [
+        "brandme_core/domains/commerce/quote.py"
+      ]
+    },
+    {
+      "name": "QUOTE_READY",
+      "paths": [
+        "brandme_core/domains/commerce/events.py"
+      ]
+    },
+    {
+      "name": "RAILS",
+      "paths": [
+        "brandme_core/domains/commerce/composition.py"
+      ]
+    },
+    {
+      "name": "RAIL_MODES",
+      "paths": [
+        "brandme_core/domains/providers/payments/__init__.py",
+        "packages/provider-contracts/src/index.ts",
+        "tests/test_providers_payments.py"
+      ]
+    },
+    {
+      "name": "RATE_LIMIT_MAX_REQUESTS",
+      "paths": [
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "RATE_LIMIT_WINDOW_MS",
+      "paths": [
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "RATIFICATION",
+      "paths": [
+        "brandme_core/domains/social/policy.py"
+      ]
+    },
+    {
+      "name": "READ",
+      "paths": [
+        "brandme-frontend/lib/server/gateway-proxy.ts"
+      ]
+    },
+    {
+      "name": "READ_API_CONTRACT_ADDRESS",
+      "paths": [
+        "brandme_core/read_api/config.py"
+      ]
+    },
+    {
+      "name": "READ_API_NETWORK",
+      "paths": [
+        "brandme_core/read_api/config.py"
+      ]
+    },
+    {
+      "name": "READ_EXT",
+      "paths": [
+        "packages/contracts/scripts/generate.mjs"
+      ]
+    },
+    {
+      "name": "READ_ONLY",
+      "paths": [
+        "brandme-gateway/src/middleware/rateLimiter.ts"
+      ]
+    },
+    {
+      "name": "REAL",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "REASONING_FILE",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/design_system.py"
+      ]
+    },
+    {
+      "name": "REASONS",
+      "paths": [
+        "brandme_core/domains/social/reports.py"
+      ]
+    },
+    {
+      "name": "REASON_THRESHOLD",
+      "paths": [
+        "brandme_core/domains/persona/recommender.py"
+      ]
+    },
+    {
+      "name": "REAUTH_SECONDS",
+      "paths": [
+        "brandme-gateway/src/routes/v1/privacy.ts"
+      ]
+    },
+    {
+      "name": "REAUTH_WINDOW",
+      "paths": [
+        "brandme_core/domains/privacy/privacy.py"
+      ]
+    },
+    {
+      "name": "RECEIPT_SCHEMA",
+      "paths": [
+        "brandme_core/domains/privacy/privacy.py"
+      ]
+    },
+    {
+      "name": "RECIPIENTS",
+      "paths": [
+        "brandme_core/events/projections.py"
+      ]
+    },
+    {
+      "name": "RECORD_CHAR_BUDGET",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "RECORD_LEVEL_REFUSED",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "RED",
+      "paths": [
+        "deploy-brandme.sh",
+        "scripts/backup.sh",
+        "scripts/db-init.sh",
+        "scripts/deploy.sh",
+        "scripts/test-infrastructure.sh"
+      ]
+    },
+    {
+      "name": "REDACTED",
+      "paths": [
+        "brandme_core/logging.py"
+      ]
+    },
+    {
+      "name": "REDACTED_CC",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "REDACTED_EMAIL",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "REDACTED_NAME",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "REDACTED_PHONE",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "REDACTED_SSN",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "REDACT_PATHS",
+      "paths": [
+        "brandme-gateway/src/config/logger.ts"
+      ]
+    },
+    {
+      "name": "REDIS_URL",
+      "paths": [
+        "agents/database-agent.sh",
+        "brandme-core/.env.example",
+        "brandme-cube/.env.example"
+      ]
+    },
+    {
+      "name": "REFERENCE_FIELDS",
+      "paths": [
+        "brandme_core/domains/providers/setup.py"
+      ]
+    },
+    {
+      "name": "REFUND",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "REFUSAL",
+      "paths": [
+        "brandme_core/orchestrator/model_adapter.py",
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "REFUSAL_CATEGORIES",
+      "paths": [
+        "brandme_core/orchestrator/runlog.py"
+      ]
+    },
+    {
+      "name": "REFUSAL_REAPPLIED",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "REFUSE",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "REFUSE_CODES",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "REF_RE",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "REGION_DEFAULT",
+      "paths": [
+        "brandme-agents/compliance/src/main.py",
+        "brandme-agents/knowledge/src/main.py",
+        "brandme-core/.env.example",
+        "brandme-core/brain/main.py",
+        "brandme-core/orchestrator/main.py",
+        "brandme-core/orchestrator/worker.py",
+        "brandme-core/policy/main.py",
+        "brandme-governance/governance_console/main.py",
+        "brandme_core/env.py"
+      ]
+    },
+    {
+      "name": "REGION_RE",
+      "paths": [
+        "brandme-gateway/src/middleware/requestLogger.ts"
+      ]
+    },
+    {
+      "name": "REJECTED",
+      "paths": [
+        "brandme_core/orchestrator/runlog.py"
+      ]
+    },
+    {
+      "name": "REJECTED_AUTH",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "RELEASE_REASONS",
+      "paths": [
+        "brandme_core/domains/providers/payments/__init__.py",
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "REMAINING_BACKUPS",
+      "paths": [
+        "scripts/backup.sh"
+      ]
+    },
+    {
+      "name": "REPAIR",
+      "paths": [
+        "brandme-agents/compliance/src/lifecycle/state_machine.py",
+        "brandme-cube/src/models.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "REPLAY_CACHE_MAX",
+      "paths": [
+        "brandme_core/domains/persona/assertion.py"
+      ]
+    },
+    {
+      "name": "REPLAY_NOTES",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "REPLAY_WINDOW",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "REPO",
+      "paths": [
+        "brandme-gateway/src/middleware/problem.test.ts",
+        "brandme-gateway/src/middleware/rateLimiter.test.ts",
+        "brandme-gateway/src/routes/scan.test.ts",
+        "brandme-gateway/src/routes/v1/me.test.ts",
+        "scripts/check-workspace.test.mjs",
+        "tests/fixtures/commerce/stores.py",
+        "tests/foundation/conftest.py",
+        "tests/foundation/test_boot_guard.py",
+        "tests/foundation/test_contract_models.py",
+        "tests/foundation/test_mode_guard.py",
+        "tests/foundation/test_outbox_lane_catalogs.py",
+        "tests/test_commerce_assistant_composition.py",
+        "tests/test_commerce_events_catalog.py",
+        "tests/test_commerce_legacy_graph_rag.py",
+        "tests/test_commerce_model_planner.py",
+        "tests/test_persona_harness.py",
+        "tests/test_rewards_ledger.py",
+        "tests/test_wardrobe_placement.py"
+      ]
+    },
+    {
+      "name": "REPORT_FILE",
+      "paths": [
+        "scripts/regression/run_all.sh"
+      ]
+    },
+    {
+      "name": "REPORT_REASONS",
+      "paths": [
+        "brandme-gateway/src/routes/v1/social.ts"
+      ]
+    },
+    {
+      "name": "REPO_ROOT",
+      "paths": [
+        "tests/conftest.py"
+      ]
+    },
+    {
+      "name": "REPO_SECRET_NEW",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "REPRINT",
+      "paths": [
+        "brandme-agents/compliance/src/lifecycle/state_machine.py",
+        "brandme-cube/src/models.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "REPRINT_ATTESTED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "REQUEST",
+      "paths": [
+        "tests/test_commerce_model_planner.py"
+      ]
+    },
+    {
+      "name": "REQUEST_ID_RE",
+      "paths": [
+        "brandme_core/orchestrator/anthropic_adapter.py"
+      ]
+    },
+    {
+      "name": "REQUEST_REPLAY",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "REQUIRED_FIELDS",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "REQUIRED_LEVEL",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "RESEARCH",
+      "paths": [
+        "brandme_core/domains/commerce/delegation.py"
+      ]
+    },
+    {
+      "name": "RESEARCH_TOOLS",
+      "paths": [
+        "tests/test_commerce_model_live.py"
+      ]
+    },
+    {
+      "name": "RESEND_HORIZON",
+      "paths": [
+        "brandme_core/domains/providers/merchant.py"
+      ]
+    },
+    {
+      "name": "RESERVED",
+      "paths": [
+        "tests/foundation/test_migrations.py"
+      ]
+    },
+    {
+      "name": "RESET_SCOPES",
+      "paths": [
+        "brandme_core/domains/persona/service.py"
+      ]
+    },
+    {
+      "name": "RESOURCE",
+      "paths": [
+        "tests/test_mcp.py"
+      ]
+    },
+    {
+      "name": "RESPONSE",
+      "paths": [
+        "agents/testing-agent.sh"
+      ]
+    },
+    {
+      "name": "RESPONSE_LOST",
+      "paths": [
+        "brandme_core/domains/providers/payments/simulated.py"
+      ]
+    },
+    {
+      "name": "RESP_COLS",
+      "paths": [
+        "brandme_core/domains/social/decisions.py"
+      ]
+    },
+    {
+      "name": "REST",
+      "paths": [
+        "tests/test_commerce_migrations.py"
+      ]
+    },
+    {
+      "name": "RES_COLS",
+      "paths": [
+        "brandme_core/domains/rewards/benefits.py"
+      ]
+    },
+    {
+      "name": "RETAINED",
+      "paths": [
+        "tests/test_persona_lane_mydata.py"
+      ]
+    },
+    {
+      "name": "RETAINED_CUSTOM_TIME",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "RETAINED_LEDGER",
+      "paths": [
+        "tests/foundation/test_deletion_leaves_no_member_rows.py"
+      ]
+    },
+    {
+      "name": "RETAIN_LEGAL",
+      "paths": [
+        "brandme_core/domains/privacy/deletion.py"
+      ]
+    },
+    {
+      "name": "RETENTION",
+      "paths": [
+        "brandme_core/domains/media/service.py"
+      ]
+    },
+    {
+      "name": "RETENTION_DAYS",
+      "paths": [
+        "scripts/backup.sh"
+      ]
+    },
+    {
+      "name": "RETIRED_REASON",
+      "paths": [
+        "brandme_core/mcp/tools.py"
+      ]
+    },
+    {
+      "name": "RETURN",
+      "paths": [
+        "brandme_core/spanner/provenance.py"
+      ]
+    },
+    {
+      "name": "REVISION",
+      "paths": [
+        "brandme-gateway/src/routes/v1/commerce.ts",
+        "brandme_core/domains/persona/kernel.py",
+        "brandme_core/mcp/tools.py"
+      ]
+    },
+    {
+      "name": "RIGHTS",
+      "paths": [
+        "tests/test_providers_setup.py",
+        "tests/test_read_api.py"
+      ]
+    },
+    {
+      "name": "RIGHTS_ARTIFACT_DIR",
+      "paths": [
+        "brandme-chain/src/midnight/rights-contract.ts"
+      ]
+    },
+    {
+      "name": "RIGHTS_CONTRACT_TAG",
+      "paths": [
+        "brandme-chain/src/midnight/rights-contract.ts"
+      ]
+    },
+    {
+      "name": "RIGHTS_ENTITLEMENT_PROJECTED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "RIGHTS_REPRINT",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "RIGHTS_SERVICE_TOKEN",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example",
+        "brandme_core/privacy_exports/config.py"
+      ]
+    },
+    {
+      "name": "RIGHTS_SERVICE_URL",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "ROLES",
+      "paths": [
+        "tests/test_rewards_api.py"
+      ]
+    },
+    {
+      "name": "ROOT",
+      "paths": [
+        "docs/design/brandme/contracts/validate_spec.py",
+        "scripts/brandme.mjs",
+        "scripts/dev/consumer-domain-keys.mjs",
+        "scripts/validate-helm.sh",
+        "tests/fixtures/seed_read_api.py",
+        "tests/test_commerce_audit_coverage.py",
+        "tests/test_privacy.py",
+        "tests/test_privacy_exports.py",
+        "tests/test_providers.py",
+        "tests/test_providers_tiers.py",
+        "tests/test_read_api.py",
+        "tests/test_rights.py"
+      ]
+    },
+    {
+      "name": "ROOTS",
+      "paths": [
+        "brandme-frontend/lib/server/gateway-proxy.ts"
+      ]
+    },
+    {
+      "name": "ROOT_DIR",
+      "paths": [
+        "scripts/regression/modules/brandme_agents.sh",
+        "scripts/regression/modules/brandme_chain.sh",
+        "scripts/regression/modules/brandme_console.sh",
+        "scripts/regression/modules/brandme_core.sh",
+        "scripts/regression/modules/brandme_cube.sh",
+        "scripts/regression/modules/brandme_data.sh",
+        "scripts/regression/modules/brandme_frontend.sh",
+        "scripts/regression/modules/brandme_gateway.sh",
+        "scripts/regression/modules/brandme_governance.sh",
+        "scripts/regression/modules/brandme_infra.sh",
+        "scripts/regression/modules/root_shared.sh",
+        "scripts/regression/run_all.sh"
+      ]
+    },
+    {
+      "name": "ROTATION_CLASSES",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "RULE_ID",
+      "paths": [
+        "brandme_core/domains/rewards/events.py"
+      ]
+    },
+    {
+      "name": "RULE_VERSION",
+      "paths": [
+        "brandme_core/domains/persona/recommender.py"
+      ]
+    },
+    {
+      "name": "RUN",
+      "paths": [
+        "brandme-console/app/(ops)/providers/_data/outcome.ts"
+      ]
+    },
+    {
+      "name": "RUNNER",
+      "paths": [
+        "tests/test_persona_harness.py"
+      ]
+    },
+    {
+      "name": "RUNS",
+      "paths": [
+        "tests/test_commerce_assistant_privacy.py"
+      ]
+    },
+    {
+      "name": "SAFE_KEYS",
+      "paths": [
+        "brandme_core/domains/social/notifications.py"
+      ]
+    },
+    {
+      "name": "SALT_ENV",
+      "paths": [
+        "brandme_core/logging.py"
+      ]
+    },
+    {
+      "name": "SANDBOX",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "SAVED_PRODUCTS",
+      "paths": [
+        "brandme_core/domains/wardrobe/guest_sections.py"
+      ]
+    },
+    {
+      "name": "SCHEMA",
+      "paths": [
+        "brandme_core/orchestrator/runlog.py",
+        "tests/test_persona_service.py",
+        "tests/test_providers.py",
+        "tests/test_wardrobe_placement.py",
+        "tests/test_wardrobe_service.py"
+      ]
+    },
+    {
+      "name": "SCHEMAS_DIR",
+      "paths": [
+        "scripts/db-init.sh"
+      ]
+    },
+    {
+      "name": "SCHEMA_NAMES",
+      "paths": [
+        "packages/contracts/generated/schemas.ts",
+        "packages/contracts/scripts/generate.mjs"
+      ]
+    },
+    {
+      "name": "SCOPES",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py",
+        "brandme_core/domains/media/gcs_store.py",
+        "tests/test_persona_service.py"
+      ]
+    },
+    {
+      "name": "SCRAPE_FASHION_DATA",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "SCRIPT",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    },
+    {
+      "name": "SCRIPT_DIR",
+      "paths": [
+        "scripts/db-init.sh",
+        "scripts/deploy.sh"
+      ]
+    },
+    {
+      "name": "SDK_PY",
+      "paths": [
+        "tests/test_commerce_ap2.py"
+      ]
+    },
+    {
+      "name": "SEARCH_CONFIG",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/design_system.py"
+      ]
+    },
+    {
+      "name": "SEARCH_ITEMS",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "SECRET_REF",
+      "paths": [
+        "tests/test_commerce_http.py",
+        "tests/test_providers_setup.py"
+      ]
+    },
+    {
+      "name": "SECRET_SHAPED",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "SECRET_TOKEN",
+      "paths": [
+        "brandme-gateway/src/routes/v1/providers.ts"
+      ]
+    },
+    {
+      "name": "SEEDS_DIR",
+      "paths": [
+        "scripts/db-init.sh"
+      ]
+    },
+    {
+      "name": "SENSITIVE_KEYS",
+      "paths": [
+        "brandme_core/logging.py"
+      ]
+    },
+    {
+      "name": "SERVER_NAME",
+      "paths": [
+        "brandme_core/mcp/tools.py"
+      ]
+    },
+    {
+      "name": "SERVER_VERSION",
+      "paths": [
+        "brandme_core/mcp/tools.py"
+      ]
+    },
+    {
+      "name": "SERVICES",
+      "paths": [
+        "agents/service-agent.sh",
+        "agents/testing-agent.sh"
+      ]
+    },
+    {
+      "name": "SERVICE_FILE",
+      "paths": [
+        "scripts/dev/consumer-domain-keys.mjs"
+      ]
+    },
+    {
+      "name": "SESSION_COOKIE",
+      "paths": [
+        "brandme-gateway/src/middleware/session.ts"
+      ]
+    },
+    {
+      "name": "SESSION_PATH",
+      "paths": [
+        "brandme-gateway/src/middleware/rateLimiter.ts"
+      ]
+    },
+    {
+      "name": "SESSION_REVOKED",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "SESSION_TTL_HOURS",
+      "paths": [
+        ".env.example",
+        "brandme-gateway/.env.example"
+      ]
+    },
+    {
+      "name": "SETTLE_WINDOW",
+      "paths": [
+        "brandme_core/domains/providers/merchant.py"
+      ]
+    },
+    {
+      "name": "SETUP_PROFILE",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py",
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "SETUP_UPDATE_FIELDS",
+      "paths": [
+        "brandme_core/domains/providers/setup.py"
+      ]
+    },
+    {
+      "name": "SHA256",
+      "paths": [
+        "scripts/python/fetch_firestore_emulator.py",
+        "scripts/python/fetch_pubsub_emulator.py"
+      ]
+    },
+    {
+      "name": "SHARDS",
+      "paths": [
+        "brandme-gateway/src/middleware/identity/store.ts",
+        "brandme_core/events/outbox.py"
+      ]
+    },
+    {
+      "name": "SHARED_OUTFIT",
+      "paths": [
+        "tests/foundation/test_projections_emulator.py"
+      ]
+    },
+    {
+      "name": "SHARE_GONE_STATUS",
+      "paths": [
+        "brandme_core/domains/social/policy.py",
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "SHARE_MAX_ACTIVE",
+      "paths": [
+        "brandme_core/domains/social/policy.py"
+      ]
+    },
+    {
+      "name": "SHARE_MAX_LIFETIME",
+      "paths": [
+        "brandme_core/domains/social/policy.py"
+      ]
+    },
+    {
+      "name": "SHARE_MIN_LIFETIME",
+      "paths": [
+        "brandme_core/domains/social/policy.py"
+      ]
+    },
+    {
+      "name": "SHARE_SUBJECTS",
+      "paths": [
+        "brandme-gateway/src/routes/v1/social.ts"
+      ]
+    },
+    {
+      "name": "SHELF_TABLE",
+      "paths": [
+        "tests/test_providers_tiers.py"
+      ]
+    },
+    {
+      "name": "SHIRT",
+      "paths": [
+        "tests/test_wardrobe_api.py",
+        "tests/test_wardrobe_placement.py",
+        "tests/test_wardrobe_service.py"
+      ]
+    },
+    {
+      "name": "SHOP",
+      "paths": [
+        "tests/test_providers_tiers.py"
+      ]
+    },
+    {
+      "name": "SH_PATTERNS",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "SIMILARITY_AXES",
+      "paths": [
+        "brandme_core/domains/persona/recommender.py"
+      ]
+    },
+    {
+      "name": "SIMULATED",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "SIMULATED_PAYMENT_LABEL",
+      "paths": [
+        "brandme_core/domains/providers/payments/simulated.py"
+      ]
+    },
+    {
+      "name": "SIMULATION_LABEL",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "SKIP_ALLOWLIST",
+      "paths": [
+        "tests/conftest.py"
+      ]
+    },
+    {
+      "name": "SKIP_ZK",
+      "paths": [
+        "brandme-chain/scripts/test-midnight-local.sh"
+      ]
+    },
+    {
+      "name": "SK_TEST",
+      "paths": [
+        "tests/test_commerce_payments_flow.py",
+        "tests/test_providers_payments.py",
+        "tests/test_providers_stripe.py",
+        "tests/test_providers_stripe_wire.py"
+      ]
+    },
+    {
+      "name": "SM_ID",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "SOCIAL_LAYER",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "SOURCES",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py",
+        "brandme_core/domains/wardrobe/model.py"
+      ]
+    },
+    {
+      "name": "SPANNER_ACQUIRE_TIMEOUT",
+      "paths": [
+        "brandme_core/spanner/pool.py"
+      ]
+    },
+    {
+      "name": "SPANNER_DATABASE",
+      "paths": [
+        "brandme-agents/compliance/src/main.py",
+        "brandme-agents/knowledge/src/main.py",
+        "brandme-core/brain/main.py",
+        "brandme-core/orchestrator/main.py",
+        "brandme-core/orchestrator/tasks.py",
+        "brandme-core/orchestrator/worker.py",
+        "brandme-cube/src/main.py",
+        "brandme-governance/governance_console/main.py"
+      ]
+    },
+    {
+      "name": "SPANNER_DATABASE_ID",
+      "paths": [
+        ".env.example",
+        "brandme-agents/compliance/src/main.py",
+        "brandme-agents/knowledge/src/main.py",
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-core/brain/main.py",
+        "brandme-core/orchestrator/main.py",
+        "brandme-core/orchestrator/tasks.py",
+        "brandme-core/orchestrator/worker.py",
+        "brandme-cube/src/main.py",
+        "brandme-data/spanner/migrations/runner.py",
+        "brandme-gateway/.env.example",
+        "brandme-governance/governance_console/main.py",
+        "brandme_core/config.py",
+        "brandme_core/env.py",
+        "brandme_core/spanner/client.py",
+        "brandme_core/spanner/pool.py",
+        "scripts/brandme.mjs",
+        "tests/foundation/test_outbox_retention.py"
+      ]
+    },
+    {
+      "name": "SPANNER_EMULATOR_GRPC",
+      "paths": [
+        "tests/test_commerce_migrations.py"
+      ]
+    },
+    {
+      "name": "SPANNER_EMULATOR_HOST",
+      "paths": [
+        ".env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-chain/src/midnight/spanner-store.ts",
+        "brandme-chain/tests/support/store-database.py",
+        "brandme-chain/vitest.spanner.config.ts",
+        "brandme-data/spanner/migrations/runner.py",
+        "brandme-frontend/lib/testing/dev-domains.py",
+        "brandme-frontend/lib/testing/dev-gateway.mjs",
+        "brandme-gateway/.env.example",
+        "brandme-gateway/src/middleware/identity/store.ts",
+        "brandme-gateway/src/routes/v1/consumer-domains.test.ts",
+        "brandme-gateway/src/routes/v1/export-backend.test.ts",
+        "brandme-gateway/src/routes/v1/me.test.ts",
+        "brandme-gateway/src/routes/v1/read-backend.test.ts",
+        "brandme-gateway/vitest.config.ts",
+        "brandme_core/domains/persona/app.py",
+        "brandme_core/domains/persona/ingress.py",
+        "brandme_core/domains/persona/jobs.py",
+        "brandme_core/domains/persona/kernel.py",
+        "brandme_core/events/retention.py",
+        "brandme_core/events/worker.py",
+        "brandme_core/privacy_exports/config.py",
+        "brandme_core/read_api/config.py",
+        "brandme_core/spanner/client.py",
+        "brandme_core/spanner/pool.py",
+        "scripts/brandme.mjs",
+        "tests/fixtures/commerce/stores.py",
+        "tests/fixtures/export_storage.py",
+        "tests/fixtures/seed_read_api.py",
+        "tests/foundation/conftest.py",
+        "tests/foundation/test_mode_guard.py",
+        "tests/foundation/test_outbox_retention.py",
+        "tests/test_persona_harness.py",
+        "tests/test_read_api.py"
+      ]
+    },
+    {
+      "name": "SPANNER_EMULATOR_REST",
+      "paths": [
+        "scripts/brandme.mjs",
+        "tests/test_commerce_migrations.py"
+      ]
+    },
+    {
+      "name": "SPANNER_ENABLE_BACKPRESSURE",
+      "paths": [
+        "brandme_core/spanner/pool.py"
+      ]
+    },
+    {
+      "name": "SPANNER_INSTANCE",
+      "paths": [
+        "brandme-agents/compliance/src/main.py",
+        "brandme-agents/knowledge/src/main.py",
+        "brandme-core/brain/main.py",
+        "brandme-core/orchestrator/main.py",
+        "brandme-core/orchestrator/tasks.py",
+        "brandme-core/orchestrator/worker.py",
+        "brandme-cube/src/main.py",
+        "brandme-governance/governance_console/main.py"
+      ]
+    },
+    {
+      "name": "SPANNER_INSTANCE_ID",
+      "paths": [
+        ".env.example",
+        "brandme-agents/compliance/src/main.py",
+        "brandme-agents/knowledge/src/main.py",
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-core/brain/main.py",
+        "brandme-core/orchestrator/main.py",
+        "brandme-core/orchestrator/tasks.py",
+        "brandme-core/orchestrator/worker.py",
+        "brandme-cube/src/main.py",
+        "brandme-data/spanner/migrations/runner.py",
+        "brandme-gateway/.env.example",
+        "brandme-governance/governance_console/main.py",
+        "brandme_core/config.py",
+        "brandme_core/env.py",
+        "brandme_core/spanner/client.py",
+        "brandme_core/spanner/pool.py",
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "SPANNER_MAX_SESSIONS",
+      "paths": [
+        "brandme_core/config.py",
+        "brandme_core/spanner/client.py",
+        "brandme_core/spanner/pool.py"
+      ]
+    },
+    {
+      "name": "SPANNER_MIN_SESSIONS",
+      "paths": [
+        "brandme_core/spanner/pool.py"
+      ]
+    },
+    {
+      "name": "SPANNER_PING_INTERVAL",
+      "paths": [
+        "brandme_core/spanner/pool.py"
+      ]
+    },
+    {
+      "name": "SPANNER_POOL_SIZE",
+      "paths": [
+        "brandme_core/config.py",
+        "brandme_core/spanner/client.py"
+      ]
+    },
+    {
+      "name": "SPANNER_PROJECT",
+      "paths": [
+        "brandme-agents/compliance/src/main.py",
+        "brandme-agents/knowledge/src/main.py",
+        "brandme-core/brain/main.py",
+        "brandme-core/orchestrator/main.py",
+        "brandme-core/orchestrator/tasks.py",
+        "brandme-core/orchestrator/worker.py",
+        "brandme-cube/src/main.py",
+        "brandme-governance/governance_console/main.py"
+      ]
+    },
+    {
+      "name": "SPANNER_PROJECT_ID",
+      "paths": [
+        ".env.example",
+        "brandme-agents/compliance/src/main.py",
+        "brandme-agents/identity/src/main.py",
+        "brandme-agents/knowledge/src/main.py",
+        "brandme-chain/.env.example",
+        "brandme-chain/src/config/index.ts",
+        "brandme-core/brain/main.py",
+        "brandme-core/orchestrator/main.py",
+        "brandme-core/orchestrator/tasks.py",
+        "brandme-core/orchestrator/worker.py",
+        "brandme-core/policy/main.py",
+        "brandme-cube/src/main.py",
+        "brandme-data/spanner/migrations/runner.py",
+        "brandme-gateway/.env.example",
+        "brandme-governance/governance_console/main.py",
+        "brandme_core/config.py",
+        "brandme_core/env.py",
+        "brandme_core/spanner/client.py",
+        "brandme_core/spanner/pool.py",
+        "scripts/brandme.mjs",
+        "tests/fixtures/commerce/stores.py",
+        "tests/foundation/conftest.py"
+      ]
+    },
+    {
+      "name": "SPANNER_REST_DEFAULT",
+      "paths": [
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "SPATIAL_EVIDENCE_FILE",
+      "paths": [
+        "scripts/assets/playwright.config.mjs"
+      ]
+    },
+    {
+      "name": "SPATIAL_RUN_DIR",
+      "paths": [
+        "scripts/assets/playwright.config.mjs"
+      ]
+    },
+    {
+      "name": "SPEC",
+      "paths": [
+        "packages/contracts/scripts/generate.mjs",
+        "tests/test_commerce_quote.py"
+      ]
+    },
+    {
+      "name": "SPEC_ID",
+      "paths": [
+        "packages/contracts/python/brandme_contracts/__init__.py"
+      ]
+    },
+    {
+      "name": "SQL_CONNECTION",
+      "paths": [
+        "agents/database-agent.sh"
+      ]
+    },
+    {
+      "name": "SRC",
+      "paths": [
+        "brandme-chain/tests/midnight/trust-path.test.ts",
+        "packages/design-system/scripts/generate.mjs"
+      ]
+    },
+    {
+      "name": "SRC_DECLARED",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "SRC_INFERRED",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "SRC_LOCKED",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "SRC_OVERRIDE",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "SRC_UNKNOWN",
+      "paths": [
+        "brandme_core/domains/persona/model.py"
+      ]
+    },
+    {
+      "name": "SSL_CERT_FILE",
+      "paths": [
+        "brandme-chain/scripts/local-network.sh",
+        "tests/test_commerce_model_live.py"
+      ]
+    },
+    {
+      "name": "SSL_CERT_PATH",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "SSL_KEY_PATH",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "SSL_MODE",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "SSN_PATTERN",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "STACK_CONFIG",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/core.py"
+      ]
+    },
+    {
+      "name": "STALE_SUBMITTING",
+      "paths": [
+        "brandme_core/domains/commerce/service.py"
+      ]
+    },
+    {
+      "name": "STANDALONE",
+      "paths": [
+        "scripts/check-workspace.mjs"
+      ]
+    },
+    {
+      "name": "STANDARD",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "STANDARD_DATA_USE_RIGHTS",
+      "paths": [
+        "brandme_core/domains/providers/setup.py"
+      ]
+    },
+    {
+      "name": "START_TIME",
+      "paths": [
+        "deploy-brandme.sh"
+      ]
+    },
+    {
+      "name": "STATES",
+      "paths": [
+        "brandme-chain/src/midnight/reconciliation-queue.ts",
+        "brandme-console/app/(ops)/moderation/page.tsx",
+        "brandme-console/app/(ops)/rewards-disputes/page.tsx",
+        "brandme_core/domains/media/events.py",
+        "brandme_core/domains/rights/reprint.py"
+      ]
+    },
+    {
+      "name": "STATUSES",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "STOCK_LOSS",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "STOP_CODES",
+      "paths": [
+        "brandme_core/orchestrator/model_planner.py"
+      ]
+    },
+    {
+      "name": "STOP_REASONS",
+      "paths": [
+        "brandme_core/orchestrator/runlog.py"
+      ]
+    },
+    {
+      "name": "STORAGE_EMULATOR_HOST",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py",
+        "tests/foundation/test_mode_guard.py"
+      ]
+    },
+    {
+      "name": "STORAGE_KEY",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "STORE_USER_ENTITY_QUERY",
+      "paths": [
+        "brandme-agents/branding/src/graph_engine.py"
+      ]
+    },
+    {
+      "name": "STR",
+      "paths": [
+        "brandme_core/domains/persona/kernel.py"
+      ]
+    },
+    {
+      "name": "STRIPE",
+      "paths": [
+        "tests/test_commerce_payments_flow.py"
+      ]
+    },
+    {
+      "name": "STRIPE_API_BASE",
+      "paths": [
+        "brandme_core/domains/providers/payments/stripe_test.py"
+      ]
+    },
+    {
+      "name": "STRIPE_API_VERSION",
+      "paths": [
+        "brandme_core/domains/providers/payments/stripe_test.py"
+      ]
+    },
+    {
+      "name": "STRIPE_LOG",
+      "paths": [
+        "brandme_core/domains/providers/redaction.py"
+      ]
+    },
+    {
+      "name": "STRIPE_METHOD",
+      "paths": [
+        "tests/test_commerce_payments_flow.py"
+      ]
+    },
+    {
+      "name": "STRIPE_MOCK_BIN",
+      "paths": [
+        "tests/fixtures/providers/stripe_mock.py"
+      ]
+    },
+    {
+      "name": "STRIPE_TEST_LABEL",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py",
+        "brandme_core/domains/providers/payments/stripe_test.py"
+      ]
+    },
+    {
+      "name": "STRIPE_TEST_NOTICE",
+      "paths": [
+        "brandme-console/app/(ops)/providers/_data/gateway.ts"
+      ]
+    },
+    {
+      "name": "STRIPE_TEST_OPERATOR_NOTICE",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "STRIPE_TEST_SECRET_KEY",
+      "paths": [
+        "tests/test_commerce_stripe_live.py"
+      ]
+    },
+    {
+      "name": "STRIPE_TEST_SETUP_PROFILE",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "STR_ARRAY",
+      "paths": [
+        "brandme_core/domains/persona/kernel.py"
+      ]
+    },
+    {
+      "name": "STUB_FLAGS",
+      "paths": [
+        "brandme-gateway/src/middleware/mode.ts"
+      ]
+    },
+    {
+      "name": "STYLE_COLLABORATOR_ACCEPTED",
+      "paths": [
+        "brandme_core/domains/rewards/rules.py"
+      ]
+    },
+    {
+      "name": "SUBJECTS",
+      "paths": [
+        "brandme-gateway/src/routes/v1/decisions.ts"
+      ]
+    },
+    {
+      "name": "SUBJECT_BATCH",
+      "paths": [
+        "brandme_core/events/retention.py"
+      ]
+    },
+    {
+      "name": "SUBJECT_TYPES",
+      "paths": [
+        "brandme_core/domains/social/decisions.py",
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "SUBSCRIPTION",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py",
+        "brandme_core/domains/persona/ingress.py"
+      ]
+    },
+    {
+      "name": "SUPPORT",
+      "paths": [
+        ".claude/skills/ui-ux-pro-max/scripts/design_system.py"
+      ]
+    },
+    {
+      "name": "SUPPORTED_SUBJECTS",
+      "paths": [
+        "brandme_core/domains/social/shares.py"
+      ]
+    },
+    {
+      "name": "SWEEP_WINDOW",
+      "paths": [
+        "brandme_core/events/retention.py"
+      ]
+    },
+    {
+      "name": "SYNCING",
+      "paths": [
+        "brandme_core/firestore/agentic.py",
+        "brandme_core/firestore/wardrobe.py"
+      ]
+    },
+    {
+      "name": "SYSTEM",
+      "paths": [
+        "brandme_core/domains/privacy/deletion.py"
+      ]
+    },
+    {
+      "name": "SYSTEM_PROMPT",
+      "paths": [
+        "brandme_core/orchestrator/transcript.py"
+      ]
+    },
+    {
+      "name": "TABLES",
+      "paths": [
+        "brandme_core/domains/commerce/store.py"
+      ]
+    },
+    {
+      "name": "TABLE_NAME",
+      "paths": [
+        "brandme-data/spanner/migrations/runner.py",
+        "brandme_core/domains/persona/backfill.py"
+      ]
+    },
+    {
+      "name": "TABLE_SCHEMA",
+      "paths": [
+        "brandme-data/spanner/migrations/runner.py",
+        "brandme_core/domains/persona/backfill.py",
+        "tests/foundation/test_migrations.py"
+      ]
+    },
+    {
+      "name": "TABLE_VERSION_RE",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "TARGETS",
+      "paths": [
+        "brandme_core/domains/social/reports.py"
+      ]
+    },
+    {
+      "name": "TASK_STATES",
+      "paths": [
+        "brandme_core/orchestrator/runlog.py"
+      ]
+    },
+    {
+      "name": "TAX_BPS",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py"
+      ]
+    },
+    {
+      "name": "TERMINAL_PRE_ORDER",
+      "paths": [
+        "brandme_core/domains/commerce/records.py"
+      ]
+    },
+    {
+      "name": "TERMS_HASH_DOMAIN",
+      "paths": [
+        "brandme_core/domains/commerce/quote.py"
+      ]
+    },
+    {
+      "name": "TEST_CARD",
+      "paths": [
+        "brandme_core/domains/providers/payments/__init__.py"
+      ]
+    },
+    {
+      "name": "TEST_CARD_DECLINED",
+      "paths": [
+        "brandme_core/domains/providers/payments/__init__.py"
+      ]
+    },
+    {
+      "name": "TEST_CARD_NEEDS_AUTHENTICATION",
+      "paths": [
+        "brandme_core/domains/providers/payments/__init__.py"
+      ]
+    },
+    {
+      "name": "TEST_DATA_SIZE",
+      "paths": [
+        ".env.deploy.example"
+      ]
+    },
+    {
+      "name": "TEST_INSTRUMENT",
+      "paths": [
+        "brandme_core/domains/providers/payments/stripe_test.py"
+      ]
+    },
+    {
+      "name": "TEXT_FIELDS",
+      "paths": [
+        "brandme-console/app/(ops)/providers/_data/actions.ts"
+      ]
+    },
+    {
+      "name": "THINK",
+      "paths": [
+        "tests/fixtures/commerce/fake_anthropic.py"
+      ]
+    },
+    {
+      "name": "THOUGHT_LEADERSHIP",
+      "paths": [
+        "brandme-agents/branding/src/schemas.py"
+      ]
+    },
+    {
+      "name": "THREE_D",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "THRESHOLDS",
+      "paths": [
+        "brandme-agents/compliance/src/lifecycle/esg_verifier.py"
+      ]
+    },
+    {
+      "name": "THROTTLED",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py"
+      ]
+    },
+    {
+      "name": "TIER",
+      "paths": [
+        "brandme-console/app/(ops)/providers/_data/actions.ts"
+      ]
+    },
+    {
+      "name": "TIER_ID_RE",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "TIMEOUT",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "TIMEOUT_AFTER_ACCEPT",
+      "paths": [
+        "brandme_core/domains/providers/local_atelier.py",
+        "brandme_core/domains/providers/payments/simulated.py"
+      ]
+    },
+    {
+      "name": "TIMEOUT_MS",
+      "paths": [
+        "brandme-frontend/features/spatial/passportClaimsReader.ts",
+        "brandme-gateway/src/services/domains.ts"
+      ]
+    },
+    {
+      "name": "TIMESTAMP",
+      "paths": [
+        "scripts/backup.sh"
+      ]
+    },
+    {
+      "name": "TITLE_MAX",
+      "paths": [
+        "brandme-gateway/src/middleware/problem.ts"
+      ]
+    },
+    {
+      "name": "TOKEN",
+      "paths": [
+        "brandme-gateway/src/routes/v1/social.test.ts",
+        "tests/test_privacy_exports.py"
+      ]
+    },
+    {
+      "name": "TOKEN_RE",
+      "paths": [
+        "brandme-gateway/src/routes/v1/social.ts"
+      ]
+    },
+    {
+      "name": "TOMBSTONES",
+      "paths": [
+        "brandme_core/events/projections.py"
+      ]
+    },
+    {
+      "name": "TOOLS",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "TOOL_CALL",
+      "paths": [
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "TOPIC",
+      "paths": [
+        "brandme_core/events/pubsub.py"
+      ]
+    },
+    {
+      "name": "TOTAL_TESTS",
+      "paths": [
+        "scripts/test-infrastructure.sh"
+      ]
+    },
+    {
+      "name": "TRADE",
+      "paths": [
+        "brandme-cube/src/models.py",
+        "brandme_core/spanner/provenance.py"
+      ]
+    },
+    {
+      "name": "TRANSIENT",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py"
+      ]
+    },
+    {
+      "name": "TROUSERS",
+      "paths": [
+        "tests/test_wardrobe_service.py"
+      ]
+    },
+    {
+      "name": "TRUNCATED",
+      "paths": [
+        "brandme_core/logging.py",
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "TRUSTED_EYE_DECISIONS",
+      "paths": [
+        "brandme_core/domains/rewards/rules.py"
+      ]
+    },
+    {
+      "name": "TRUSTED_EYE_RESPONSES",
+      "paths": [
+        "brandme_core/domains/rewards/rules.py"
+      ]
+    },
+    {
+      "name": "TRUST_PROXY",
+      "paths": [
+        "brandme-gateway/src/config/index.ts",
+        "brandme-gateway/src/middleware/rateLimiter.test.ts"
+      ]
+    },
+    {
+      "name": "TRUST_PROXY_NAMES",
+      "paths": [
+        "brandme-gateway/src/config/index.ts"
+      ]
+    },
+    {
+      "name": "TRYON_PHOTO",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "TTL_SECONDS",
+      "paths": [
+        "brandme-gateway/src/services/domains.ts"
+      ]
+    },
+    {
+      "name": "TX_ID",
+      "paths": [
+        "brandme_core/domains/events.py"
+      ]
+    },
+    {
+      "name": "TYPES",
+      "paths": [
+        "brandme-gateway/src/routes/v1/media.ts"
+      ]
+    },
+    {
+      "name": "UNAUTHORIZED",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py"
+      ]
+    },
+    {
+      "name": "UNCONFIGURED",
+      "paths": [
+        "brandme_core/config.py"
+      ]
+    },
+    {
+      "name": "UNCONFIGURED_PRICING_TABLE",
+      "paths": [
+        "brandme_core/domains/providers/tiers.py"
+      ]
+    },
+    {
+      "name": "UNEXPECTED",
+      "paths": [
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "UNHEALTHY",
+      "paths": [
+        "brandme_core/health.py"
+      ]
+    },
+    {
+      "name": "UNKNOWN",
+      "paths": [
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "UNKNOWN_TOOL",
+      "paths": [
+        "brandme_core/mcp/tools.py",
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "UNLINK_BATCH",
+      "paths": [
+        "brandme_core/events/retention.py"
+      ]
+    },
+    {
+      "name": "UNMATCHABLE_REFUSED",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "UNRECOGNIZED",
+      "paths": [
+        "brandme_core/orchestrator/runlog.py"
+      ]
+    },
+    {
+      "name": "UNSAFE",
+      "paths": [
+        "brandme-gateway/src/middleware/session.ts",
+        "packages/contracts/src/client.ts"
+      ]
+    },
+    {
+      "name": "UNSUPPORTED",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py"
+      ]
+    },
+    {
+      "name": "UNSUPPORTED_CAPABILITIES",
+      "paths": [
+        "brandme_core/domains/providers/nordstrom.py"
+      ]
+    },
+    {
+      "name": "UNSUPPORTED_LEVELS",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "UNTRUSTED_TEXT_LIMIT",
+      "paths": [
+        "brandme_core/domains/providers/catalog.py"
+      ]
+    },
+    {
+      "name": "UPLOAD_HEADERS",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "UPLOAD_URL_MAX",
+      "paths": [
+        "brandme_core/domains/media/gcs_store.py"
+      ]
+    },
+    {
+      "name": "UPLOAD_URL_TTL",
+      "paths": [
+        "brandme_core/domains/media/service.py"
+      ]
+    },
+    {
+      "name": "UPSTREAM_DETAIL",
+      "paths": [
+        "tests/fixtures/commerce/fake_anthropic.py"
+      ]
+    },
+    {
+      "name": "URL",
+      "paths": [
+        "scripts/python/fetch_firestore_emulator.py",
+        "scripts/python/fetch_pubsub_emulator.py"
+      ]
+    },
+    {
+      "name": "USD",
+      "paths": [
+        "tests/test_commerce_quote.py",
+        "tests/test_commerce_stripe_live.py",
+        "tests/test_providers_payments.py",
+        "tests/test_providers_stripe.py"
+      ]
+    },
+    {
+      "name": "UUID",
+      "paths": [
+        "brandme-gateway/src/middleware/requestLogger.test.ts",
+        "brandme_core/domains/events.py",
+        "brandme_core/mcp/tools.py"
+      ]
+    },
+    {
+      "name": "UUIDS12",
+      "paths": [
+        "brandme_core/domains/social/events.py"
+      ]
+    },
+    {
+      "name": "UUID_RE",
+      "paths": [
+        "brandme-console/app/(ops)/moderation/actions.ts",
+        "brandme-console/app/(ops)/rewards-disputes/actions.ts",
+        "brandme-console/app/(ops)/rewards-disputes/members/[memberId]/page.tsx",
+        "brandme-gateway/src/middleware/problem.ts",
+        "brandme-gateway/src/routes/v1/decisions.ts",
+        "brandme-gateway/src/routes/v1/persona.ts",
+        "brandme-gateway/src/routes/v1/rewards.ts",
+        "brandme-gateway/src/routes/v1/social.ts",
+        "brandme-gateway/src/routes/v1/tryon.ts",
+        "brandme_core/domains/persona/http.py"
+      ]
+    },
+    {
+      "name": "UUID_TEXT",
+      "paths": [
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "V001_TABLES",
+      "paths": [
+        "tests/foundation/test_migrations.py"
+      ]
+    },
+    {
+      "name": "VALIDATION_PASSED",
+      "paths": [
+        "agents/validation-agent.sh"
+      ]
+    },
+    {
+      "name": "VALID_TRANSITIONS",
+      "paths": [
+        "brandme-cube/src/service.py"
+      ]
+    },
+    {
+      "name": "VCT_CHECKOUT",
+      "paths": [
+        "brandme_core/domains/commerce/ap2.py"
+      ]
+    },
+    {
+      "name": "VCT_PAYMENT",
+      "paths": [
+        "brandme_core/domains/commerce/ap2.py"
+      ]
+    },
+    {
+      "name": "VECTORS",
+      "paths": [
+        "tests/test_media_gcs_signing.py"
+      ]
+    },
+    {
+      "name": "VENV_PY",
+      "paths": [
+        "scripts/brandme.mjs"
+      ]
+    },
+    {
+      "name": "VERIFYING_EVIDENCE",
+      "paths": [
+        "brandme_core/domains/providers/contracts.py",
+        "packages/provider-contracts/src/index.ts"
+      ]
+    },
+    {
+      "name": "VERSION",
+      "paths": [
+        "scripts/python/fetch_gcs_emulator.py"
+      ]
+    },
+    {
+      "name": "VISIBILITIES",
+      "paths": [
+        "brandme_core/domains/wardrobe/outfits.py"
+      ]
+    },
+    {
+      "name": "VISIBLE",
+      "paths": [
+        "brandme-cube/src/models.py"
+      ]
+    },
+    {
+      "name": "VISIBLE_TO",
+      "paths": [
+        "brandme_core/events/erasure.py"
+      ]
+    },
+    {
+      "name": "VSKQ",
+      "paths": [
+        "pnpm-lock.yaml"
+      ]
+    },
+    {
+      "name": "WALK",
+      "paths": [
+        "tests/foundation/test_outbox_lane_catalogs.py"
+      ]
+    },
+    {
+      "name": "WALNUT",
+      "paths": [
+        "tests/test_wardrobe_service.py"
+      ]
+    },
+    {
+      "name": "WEBHOOK_HEADER",
+      "paths": [
+        "brandme-gateway/src/routes/v1/commerce.ts"
+      ]
+    },
+    {
+      "name": "WEBHOOK_TOLERANCE",
+      "paths": [
+        "brandme_core/domains/providers/merchant.py"
+      ]
+    },
+    {
+      "name": "WHAT_THIS_MEANS",
+      "paths": [
+        "brandme_core/domains/rights/passport.py"
+      ]
+    },
+    {
+      "name": "WHOLE_CATEGORY_ONLY",
+      "paths": [
+        "brandme_core/domains/persona/privacy_guard.py"
+      ]
+    },
+    {
+      "name": "WIPE_ORDER",
+      "paths": [
+        "tests/fixtures/commerce/stores.py"
+      ]
+    },
+    {
+      "name": "WIRE_ERROR_KINDS",
+      "paths": [
+        "brandme_core/domains/providers/payments/stripe_wire.py"
+      ]
+    },
+    {
+      "name": "WIRE_KEYS",
+      "paths": [
+        "brandme_core/domains/persona/ingress.py"
+      ]
+    },
+    {
+      "name": "WIRE_NAME_RE",
+      "paths": [
+        "brandme_core/orchestrator/model_adapter.py"
+      ]
+    },
+    {
+      "name": "WISHLIST",
+      "paths": [
+        "brandme_core/domains/commerce/autonomy.py"
+      ]
+    },
+    {
+      "name": "WORK",
+      "paths": [
+        "scripts/validate-helm.sh"
+      ]
+    },
+    {
+      "name": "WORKER_ENV",
+      "paths": [
+        "tests/test_commerce_events_catalog.py"
+      ]
+    },
+    {
+      "name": "WORKFLOW",
+      "paths": [
+        "scripts/check-workspace.test.mjs"
+      ]
+    },
+    {
+      "name": "WORKFLOW_PATTERNS",
+      "paths": [
+        "scripts/check-credential-manifest.mjs"
+      ]
+    },
+    {
+      "name": "WRITER",
+      "paths": [
+        "tests/test_persona_lane_mydata.py",
+        "tests/test_rewards_benefits.py"
+      ]
+    },
+    {
+      "name": "YELLOW",
+      "paths": [
+        "deploy-brandme.sh",
+        "scripts/backup.sh",
+        "scripts/db-init.sh",
+        "scripts/deploy.sh",
+        "scripts/test-infrastructure.sh"
+      ]
+    },
+    {
+      "name": "YPQ",
+      "paths": [
+        "pnpm-lock.yaml"
+      ]
+    },
+    {
+      "name": "ZERO",
+      "paths": [
+        "tests/contracts/constraints.test.ts"
+      ]
+    },
+    {
+      "name": "ZERO32",
+      "paths": [
+        "brandme-chain/src/midnight/rights-contract.ts"
+      ]
+    },
+    {
+      "name": "ZK_PROOF_CACHE_TTL_MINUTES",
+      "paths": [
+        "brandme-agents/identity/src/main.py"
+      ]
+    },
+    {
+      "name": "ZK_PROOF_ENABLED",
+      "paths": [
+        "brandme-agents/identity/src/main.py"
+      ]
+    },
+    {
+      "name": "ZK_PROOF_TTL_MINUTES",
+      "paths": [
+        "brandme-agents/identity/src/main.py"
+      ]
+    },
+    {
+      "name": "ZULU_PASSWORD",
+      "paths": [
+        "scripts/check-credential-manifest.test.mjs"
+      ]
+    }
+  ]
+}

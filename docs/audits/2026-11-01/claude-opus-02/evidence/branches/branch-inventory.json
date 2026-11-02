@@ -1,0 +1,3091 @@
+[
+ {
+  "ref": "refs/remotes/origin/bench/astra-consumer-ui-20261005",
+  "branch": "bench/astra-consumer-ui-20261005",
+  "tip_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8",
+  "tip_date_iso": "2026-10-24T19:35:19-07:00",
+  "tip_author_name": "unknown",
+  "merge_base_with_main": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8",
+  "ahead": 0,
+  "behind": 90,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 56,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-25T02:49:40Z",
+    "title": "feat(ui): consumer journeys, foundation integration and versioned shell contract",
+    "base": "main",
+    "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [
+    ".github/workflows/consumer-ui.yml",
+    "docs/build/orchestration/ultra-plan-03-astra-consumer-ui.md",
+    "docs/build/status/astra-consumer-ui.md",
+    "docs/build/status/opus-commerce-agents.md",
+    "docs/build/status/opus-consumer-domains.md",
+    "docs/build/workspace-governance.md"
+   ],
+   "in_own_tree": [
+    ".github/workflows/consumer-ui.yml",
+    "docs/build/status/astra-consumer-ui.md",
+    "docs/build/status/opus-commerce-agents.md",
+    "docs/build/status/opus-consumer-domains.md",
+    "docs/build/workspace-governance.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "PRESERVE_THEN_RETIRE",
+  "confidence": "high",
+  "rationale": "0 unique commits; `git merge-base --is-ancestor` confirms tip cccfe7b is in main (PR #56 merged as b9f483b). Live consumer: `.github/workflows/consumer-ui.yml:7` lists this branch in its push trigger (plus docs/build references). Change or remove that trigger first; deleting the branch loses no git content."
+ },
+ {
+  "ref": "refs/remotes/origin/bench/astra-spatial-ar-20261005",
+  "branch": "bench/astra-spatial-ar-20261005",
+  "tip_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2",
+  "tip_date_iso": "2026-10-30T08:28:41-07:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2",
+  "ahead": 0,
+  "behind": 5,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 36,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-23T18:18:47Z",
+    "title": "feat(spatial): original closet, local pose and gated development previews",
+    "base": "docs/brandme-full-experience-2026-10-05",
+    "head_sha": "ceb6ed6f7851422cfb4d4532249c6f9e8fb9363b",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 60,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-30T14:18:36Z",
+    "title": "feat(spatial): implement guest fit ladder, Pod model and scan boundaries",
+    "base": "main",
+    "head_sha": "3eddd286784296d4257d43788ce1487c01e5751c",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 69,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-30T15:49:15Z",
+    "title": "Add passport claims transport and private garment evidence intake",
+    "base": "main",
+    "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [
+   {
+    "number": 55,
+    "state": "closed",
+    "merged": false,
+    "head": "triage/pnpm-version-conflict-20261023"
+   }
+  ],
+  "consumers": {
+   "in_origin_main": [
+    ".github/workflows/spatial-validation.yml",
+    "docs/build/orchestration/ultra-plan-03-astra-spatial-ar.md",
+    "docs/build/status/astra-spatial-ar.md",
+    "docs/build/status/opus-consumer-domains.md",
+    "docs/build/workspace-governance.md",
+    "scripts/assets/evidence/round2-summary.json"
+   ],
+   "in_own_tree": [
+    ".github/workflows/spatial-validation.yml",
+    "docs/build/orchestration/ultra-plan-03-astra-spatial-ar.md",
+    "docs/build/status/astra-spatial-ar.md",
+    "docs/build/status/opus-consumer-domains.md",
+    "docs/build/workspace-governance.md",
+    "scripts/assets/evidence/round2-summary.json"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "PRESERVE_THEN_RETIRE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip 1413178 is an ancestor of main (PR #69 merged as b86c016; earlier #60, #36). Live consumers: `.github/workflows/spatial-validation.yml:5` push trigger and `scripts/assets/evidence/round2-summary.json:5`. Retire only after the workflow trigger is updated; no git content is lost."
+ },
+ {
+  "ref": "refs/remotes/origin/bench/opus-commerce-agents-20261005",
+  "branch": "bench/opus-commerce-agents-20261005",
+  "tip_sha": "7c61afd7c98a66836ba91d715bc4c6c913807003",
+  "tip_date_iso": "2026-10-06T08:03:22-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "7c61afd7c98a66836ba91d715bc4c6c913807003",
+  "ahead": 0,
+  "behind": 344,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [],
+  "prs_using_branch_as_base": [
+   {
+    "number": 35,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-commerce-agents-setup-szpmf7"
+   }
+  ],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/orchestration/oneshot-plan-03-opus-commerce-agents.md",
+    "docs/build/status/opus-commerce-agents.md"
+   ],
+   "in_own_tree": [
+    "docs/build/status/opus-commerce-agents.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip 7c61afd is an ancestor of main; it was the base of PR #35 (merged). Only docs/build status and plan documents mention the name (historical narrative); no workflow or script consumer. Nothing in git is lost by deletion."
+ },
+ {
+  "ref": "refs/remotes/origin/bench/opus-consumer-domains-20261005",
+  "branch": "bench/opus-consumer-domains-20261005",
+  "tip_sha": "d839267fc1f74b5e778e83f2930953e1a5400712",
+  "tip_date_iso": "2026-10-07T08:35:43-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "d839267fc1f74b5e778e83f2930953e1a5400712",
+  "ahead": 0,
+  "behind": 365,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [],
+  "prs_using_branch_as_base": [
+   {
+    "number": 32,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-consumer-domains-1csp2g"
+   }
+  ],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/orchestration/ultra-plan-03-opus-consumer-domains.md",
+    "docs/build/status/opus-consumer-domains.md"
+   ],
+   "in_own_tree": [
+    "docs/build/status/opus-consumer-domains.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip d839267 is an ancestor of main; base of PR #32 (merged). References are limited to docs/build narrative; no workflow consumer. Nothing in git is lost by deletion."
+ },
+ {
+  "ref": "refs/remotes/origin/bench/opus-foundation-20261005",
+  "branch": "bench/opus-foundation-20261005",
+  "tip_sha": "67327e45ed816bd76bc20ed1e2eb694009923530",
+  "tip_date_iso": "2026-10-05T20:13:47-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "67327e45ed816bd76bc20ed1e2eb694009923530",
+  "ahead": 0,
+  "behind": 357,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [],
+  "prs_using_branch_as_base": [
+   {
+    "number": 33,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-foundation-w00-2hgiw5"
+   }
+  ],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/orchestration/oneshot-plan-03-opus-foundation.md",
+    "docs/build/status/opus-commerce-agents.md",
+    "docs/build/status/opus-consumer-domains.md",
+    "docs/build/status/opus-foundation.md",
+    "docs/build/status/opus-midnight-rights.md"
+   ],
+   "in_own_tree": [
+    "docs/build/status/opus-foundation.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip 67327e4 is an ancestor of main; base of PR #33 (merged). Mentioned only in docs/build narrative; no workflow consumer. Nothing in git is lost by deletion."
+ },
+ {
+  "ref": "refs/remotes/origin/bench/opus-midnight-rights-20261005",
+  "branch": "bench/opus-midnight-rights-20261005",
+  "tip_sha": "44aaceab55bdcf595ce56ff2ded562d79bf1d190",
+  "tip_date_iso": "2026-10-06T08:03:28-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "44aaceab55bdcf595ce56ff2ded562d79bf1d190",
+  "ahead": 0,
+  "behind": 356,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [],
+  "prs_using_branch_as_base": [
+   {
+    "number": 34,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/midnight-rights-lifecycle-yhfyyu"
+   }
+  ],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/orchestration/ultra-plan-03-opus-midnight-rights.md",
+    "docs/build/status/opus-midnight-rights.md"
+   ],
+   "in_own_tree": [
+    "docs/build/status/opus-midnight-rights.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip 44aacea is an ancestor of main; base of PR #34 (merged). Mentioned only in docs/build narrative; no workflow consumer. Nothing in git is lost by deletion."
+ },
+ {
+  "ref": "refs/remotes/origin/claude/amazing-goodall-ntrljq",
+  "branch": "claude/amazing-goodall-ntrljq",
+  "tip_sha": "8360813e238e20f78656700340c6c05927107ae0",
+  "tip_date_iso": "2026-11-01T14:56:48+00:00",
+  "tip_author_name": "Claude",
+  "merge_base_with_main": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "ahead": 2,
+  "behind": 0,
+  "cherry_plus_count": 2,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "45e157f5555647f0e9add424b9634f27d606211d",
+    "date": "2026-11-01T14:38:51+00:00",
+    "subject": "docs: add Stripe Connect integration plan (brands direct, resale separate transfers)",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 45e157f55556 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/194 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "8360813e238e20f78656700340c6c05927107ae0",
+    "date": "2026-11-01T14:56:48+00:00",
+    "subject": "feat(payments): Stripe Connect direct charges for brands (test mode)",
+    "files_changed_count": 9,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 8360813e238e origin/main -- <paths> -> 9 path(s) differ; added-line presence: 22/988 present, removed-line check: 103/111 still in main"
+   }
+  ],
+  "changed_areas": [
+   "brandme_core",
+   "docs",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 71,
+    "state": "open",
+    "merged": false,
+    "merged_at": null,
+    "title": "Stripe Connect: plan + brands flow (direct charges, test mode)",
+    "base": "main",
+    "head_sha": "8360813e238e20f78656700340c6c05927107ae0",
+    "draft": true,
+    "mergeable_state": "unstable",
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "KEEP",
+  "confidence": "high",
+  "rationale": "2 unique commits dated 2026-11-01 (Stripe Connect plan + brands flow); open draft PR #71 whose head equals the branch tip. 9/9 touched paths differ from main (3 absent in main), so the content exists only here. `git merge-tree` onto main is clean and it overlaps no other open PR."
+ },
+ {
+  "ref": "refs/remotes/origin/claude/brand-me-lux-foundations-audit-8zywr3",
+  "branch": "claude/brand-me-lux-foundations-audit-8zywr3",
+  "tip_sha": "eed6737062da451a38114f8002159c1bed0e5cb5",
+  "tip_date_iso": "2026-08-31T19:52:40+00:00",
+  "tip_author_name": "Claude",
+  "merge_base_with_main": "0f5f58a9eecaca46b367c9bd96f89654343fa5fb",
+  "ahead": 5,
+  "behind": 370,
+  "cherry_plus_count": 5,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "3523b22a0b41f498c046ffe210d73fba3c2f135b",
+    "date": "2026-08-31T19:36:56+00:00",
+    "subject": "Audit all repos; lift Lux platform foundation into brandme_foundation/",
+    "files_changed_count": 24,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 3523b22a0b41 origin/main -- <paths> -> 23 path(s) differ; added-line presence: 1/2492 present, removed-line check: 1/1 still in main"
+   },
+   {
+    "sha": "0957452d8947d054c3e4747f70c0f0d69c4c209d",
+    "date": "2026-08-31T19:45:39+00:00",
+    "subject": "docs: record that ci-cd.yml has been red on main since January",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 0957452d8947 origin/main -- <paths> -> 2 path(s) differ; added-line presence: 0/28 present, removed-line check: 0/1 still in main"
+   },
+   {
+    "sha": "8aa8354a4a2122e573fc8a03ffce7180940fdaa5",
+    "date": "2026-08-31T19:48:00+00:00",
+    "subject": "docs: add the third CI root cause (Security Scan SARIF upload)",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 8aa8354a4a21 origin/main -- <paths> -> 2 path(s) differ; added-line presence: 0/12 present, removed-line check: 0/3 still in main"
+   },
+   {
+    "sha": "18a69acea779c64b37c2a1176a1f04a8470dcee6",
+    "date": "2026-08-31T19:50:40+00:00",
+    "subject": "docs: root-cause the Security Scan intermittency as duplicate workflow runs",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 18a69acea779 origin/main -- <paths> -> 2 path(s) differ; added-line presence: 0/27 present, removed-line check: 0/5 still in main"
+   },
+   {
+    "sha": "eed6737062da451a38114f8002159c1bed0e5cb5",
+    "date": "2026-08-31T19:52:40+00:00",
+    "subject": "fix(ci): scope foundation.yml push trigger to main; correct the stated fix",
+    "files_changed_count": 3,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff eed6737062da origin/main -- <paths> -> 3 path(s) differ; added-line presence: 0/19 present, removed-line check: 0/5 still in main"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   ".github",
+   "brandme_foundation",
+   "docs",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 29,
+    "state": "open",
+    "merged": false,
+    "merged_at": null,
+    "title": "Audit all repos; lift Lux platform foundation into brandme_foundation/",
+    "base": "main",
+    "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5",
+    "draft": true,
+    "mergeable_state": "unstable",
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "INTEGRATE",
+  "confidence": "low",
+  "rationale": "5 unique commits (2026-08-31) adding `brandme_foundation/`, `docs/audit/*`, `.github/workflows/foundation.yml` and tests; 22/24 touched paths are absent in main and no blob is found elsewhere in main (check C). Open draft PR #29 (head == tip, mergeable_state unstable, 370 commits behind) but `git merge-tree` onto main is clean and it overlaps no other open PR. Not a deletion candidate while #29 is open; whether to merge is an owner decision \u2014 if #29 is closed instead, the right class becomes PRESERVE_THEN_RETIRE because this content exists nowhere else."
+ },
+ {
+  "ref": "refs/remotes/origin/claude/ci-repair-workflows",
+  "branch": "claude/ci-repair-workflows",
+  "tip_sha": "512021c35a6b9d381c94fe02495ba903f411b916",
+  "tip_date_iso": "2026-08-31T21:45:08+00:00",
+  "tip_author_name": "Claude",
+  "merge_base_with_main": "512021c35a6b9d381c94fe02495ba903f411b916",
+  "ahead": 0,
+  "behind": 369,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 30,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-07T12:36:15Z",
+    "title": "ci: repair the five workflow-config faults keeping CI red since January",
+    "base": "main",
+    "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip 512021c is an ancestor of main (PR #30 merged 2026-10-07). No branch-name consumers in main or its own tree. Nothing in git is lost by deletion."
+ },
+ {
+  "ref": "refs/remotes/origin/claude/exciting-hypatia-wl48op",
+  "branch": "claude/exciting-hypatia-wl48op",
+  "tip_sha": "e033950bc6c572616cfc0902d96a5c7ecaa78ea3",
+  "tip_date_iso": "2026-11-01T15:04:12+00:00",
+  "tip_author_name": "Claude",
+  "merge_base_with_main": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "ahead": 1,
+  "behind": 0,
+  "cherry_plus_count": 1,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "e033950bc6c572616cfc0902d96a5c7ecaa78ea3",
+    "date": "2026-11-01T15:04:12+00:00",
+    "subject": "Pin follow-redirects and gaxios overrides to clear prod audit",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "git diff <sha> origin/main -- <paths> non-empty for all 2 paths; open PR #72"
+   }
+  ],
+  "changed_areas": [
+   "(root)"
+  ],
+  "associated_prs": [
+   {
+    "number": 72,
+    "state": "open",
+    "merged": false,
+    "merged_at": null,
+    "title": "Pin follow-redirects and gaxios overrides to clear prod audit",
+    "base": "main",
+    "head_sha": "e033950bc6c572616cfc0902d96a5c7ecaa78ea3",
+    "draft": true,
+    "mergeable_state": "unstable",
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "KEEP",
+  "confidence": "high",
+  "rationale": "Not among the 35 branches at audit start (ref appeared in the clone at 15:10 UTC). 1 unique commit (e033950, 2026-11-01) behind open draft PR #72 (head == tip); both touched paths (pnpm-workspace.yaml, pnpm-lock.yaml) differ from main. merge-tree onto main clean; no overlap with other open PRs.",
+  "note": "NOT among the 35 branches at audit start; ref appeared in the clone at 15:10 UTC (refs/remotes/origin + refs/audit-delta) after GitHub listed PR #72. Reported for completeness."
+ },
+ {
+  "ref": "refs/remotes/origin/claude/midnight-rights-lifecycle-yhfyyu",
+  "branch": "claude/midnight-rights-lifecycle-yhfyyu",
+  "tip_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820",
+  "tip_date_iso": "2026-10-30T18:09:09+00:00",
+  "tip_author_name": "Claude",
+  "merge_base_with_main": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "ahead": 5,
+  "behind": 0,
+  "cherry_plus_count": 5,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "c55c010dbcc6f18a9bf12146dcea0045652dc7a9",
+    "date": "2026-10-30T16:47:49+00:00",
+    "subject": "docs(midnight-rights): receive and review the round-03 ultra plan (Stage 11)",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff c55c010dbcc6 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 1/50 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "cd6224d3dfb849c0746b78306cd342578db7d688",
+    "date": "2026-10-30T17:30:52+00:00",
+    "subject": "feat(privacy): D-007 handler extension, receipt notes and identity ordering (Stage 12)",
+    "files_changed_count": 5,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff cd6224d3dfb8 origin/main -- <paths> -> 5 path(s) differ; added-line presence: 9/237 present, removed-line check: 9/9 still in main"
+   },
+   {
+    "sha": "d58e3c8e8426e69225b8c3ea009e4a6cb58c6bf2",
+    "date": "2026-10-30T18:02:10+00:00",
+    "subject": "feat(rights): authenticated rights command backend (Stage 13)",
+    "files_changed_count": 27,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff d58e3c8e8426 origin/main -- <paths> -> 27 path(s) differ; added-line presence: 24/1403 present, removed-line check: 64/64 still in main"
+   },
+   {
+    "sha": "6a4a11a6b424256443acd39de52b544efef5f68c",
+    "date": "2026-10-30T18:02:26+00:00",
+    "subject": "feat(rights): reprint.attested producer and dev-form My Data composition (Stage 14)",
+    "files_changed_count": 5,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 6a4a11a6b424 origin/main -- <paths> -> 5 path(s) differ; added-line presence: 3/207 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820",
+    "date": "2026-10-30T18:09:09+00:00",
+    "subject": "docs(midnight-rights): check-in packet (Stage 15)",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff a05f2e03e58e origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/59 present, removed-line check: 0/0 still in main"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   "brandme-chain",
+   "brandme-data",
+   "brandme-gateway",
+   "brandme_core",
+   "docs",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 34,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-06T12:03:28Z",
+    "title": "W09/W10: real Midnight rights contract, adapter and My Data framework (opus-midnight-rights lane)",
+    "base": "bench/opus-midnight-rights-20261005",
+    "head_sha": "2d5c773f38aca9e858a827a4d145f52b8a079317",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 40,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-10T21:01:16Z",
+    "title": "test(contracts): make the honest reprint path reachable in the random property (follow-up to #39)",
+    "base": "main",
+    "head_sha": "7f02bc8e58d055582d87b2dd4a0241336e478829",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 41,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-22T21:39:04Z",
+    "title": "ci(chain): repair Chain Service Tests; record re-verification on main (Stages 8\u20139)",
+    "base": "main",
+    "head_sha": "9307f97b38bc2e00b11d97a8ad9ba132469d9868",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 54,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-23T18:11:05Z",
+    "title": "chore(chain): re-pin Midnight tuple to the current support matrix (Stage 10)",
+    "base": "main",
+    "head_sha": "ecece17711466d91f9fc67c626d3e7bf5980bd7c",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 70,
+    "state": "open",
+    "merged": false,
+    "merged_at": null,
+    "title": "midnight-rights round 03: finality, anchor record and disclosure enforcement (ultra plan 03)",
+    "base": "main",
+    "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820",
+    "draft": true,
+    "mergeable_state": "clean",
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/status/opus-midnight-rights.md"
+   ],
+   "in_own_tree": [
+    "docs/build/status/opus-midnight-rights.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "KEEP",
+  "confidence": "high",
+  "rationale": "5 unique commits (2026-10-30, Stages 11\u201315) behind open draft PR #70 (head == tip, mergeable_state clean); 13/35 touched paths absent in main. Carries `V016_rights_transfer_invites.sql`, which collides on version number with #66's `V016_consumer_design.sql` (see Cross-branch conflicts). Earlier PRs #34/#40/#41/#54 from this branch are merged."
+ },
+ {
+  "ref": "refs/remotes/origin/claude/opus-commerce-agents-setup-szpmf7",
+  "branch": "claude/opus-commerce-agents-setup-szpmf7",
+  "tip_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9",
+  "tip_date_iso": "2026-10-25T13:34:49+00:00",
+  "tip_author_name": "Claude",
+  "merge_base_with_main": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9",
+  "ahead": 0,
+  "behind": 69,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 35,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-06T12:03:23Z",
+    "title": "opus-commerce-agents: bounded commerce, providers, MCP authz, AP2 v0.2 verifier (W06/W07)",
+    "base": "bench/opus-commerce-agents-20261005",
+    "head_sha": "102098124d79cc6c47381a89f81aa87766041fd9",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 51,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-25T01:58:44Z",
+    "title": "opus-commerce-agents round 2: foundation adoption, payments/fulfillment seam with Stripe test mode, dev model planner, console",
+    "base": "main",
+    "head_sha": "2fd6b291e58118ba0dd2a5c5a5ed479d7bb4f607",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 64,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-25T14:10:40Z",
+    "title": "opus-commerce-agents round 3: audit closure, autonomy boundaries, partner tiers, shell swap, BM-COM-011 fidelity",
+    "base": "main",
+    "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/status/opus-commerce-agents.md"
+   ],
+   "in_own_tree": [
+    "docs/build/status/opus-commerce-agents.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "medium",
+  "rationale": "0 unique commits; tip 161f6eb is an ancestor of main; PRs #35, #51 and #64 from this head are all merged. Only docs/build status files mention it. Caveat: docs describe it as the lane's session-designated working branch that is restarted from main each round (docs/build/status/opus-commerce-agents.md:50), so the name may be recreated; deletion itself loses nothing."
+ },
+ {
+  "ref": "refs/remotes/origin/claude/opus-consumer-domains-1csp2g",
+  "branch": "claude/opus-consumer-domains-1csp2g",
+  "tip_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+  "tip_date_iso": "2026-10-30T17:15:06+00:00",
+  "tip_author_name": "Claude",
+  "merge_base_with_main": "97d54477f7667dade1a4fd7220c0b2694cffb604",
+  "ahead": 18,
+  "behind": 17,
+  "cherry_plus_count": 16,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "d502a0c2d6443e3a70f029739bc5c85894d0c18a",
+    "date": "2026-10-25T03:43:41+00:00",
+    "subject": "consumer domains: Now loop, Home = Flow and per-house loyalty standing (Ultra plan 02, items 2-4)",
+    "files_changed_count": 37,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff d502a0c2d644 origin/main -- <paths> -> 37 path(s) differ; added-line presence: 70/1548 present, removed-line check: 68/69 still in main"
+   },
+   {
+    "sha": "fa0a1a21b0fca25457565a21bf8eb40ba162c0a6",
+    "date": "2026-10-25T03:43:41+00:00",
+    "subject": "consumer domains: surveys and in-app credit, persona card and closet visibility, rooms, experiments, share projector (Ultra plan 02, items 5-8 and 10)",
+    "files_changed_count": 46,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff fa0a1a21b0fc origin/main -- <paths> -> 46 path(s) differ; added-line presence: 55/2569 present, removed-line check: 35/54 still in main"
+   },
+   {
+    "sha": "068001dcc83ecdee465eabc76bf984339bf278fe",
+    "date": "2026-10-25T03:43:41+00:00",
+    "subject": "consumer domains: guard member routes individually; honour the privacy freeze on credit",
+    "files_changed_count": 4,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 068001dcc83e origin/main -- <paths> -> 4 path(s) differ; added-line presence: 2/12 present, removed-line check: 0/5 still in main"
+   },
+   {
+    "sha": "29913cb970eb6d57e49d171bfd07780d144fe512",
+    "date": "2026-10-25T03:44:53+00:00",
+    "subject": "status: stages 15-16, Ultra plan 02 check-in packet (21 questions with defaults)",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 29913cb970eb origin/main -- <paths> -> 1 path(s) differ; added-line presence: 11/175 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "ecdee8418702cd5b3e20b3443a3f3b255529e08d",
+    "date": "2026-10-25T04:10:39+00:00",
+    "subject": "status: record the final-head clean-checkout evidence for stages 15-16",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff ecdee8418702 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/1 present, removed-line check: 0/1 still in main"
+   },
+   {
+    "sha": "5aa075b85f7a46096309a45b3ef2d21de4431dc3",
+    "date": "2026-10-25T04:30:56+00:00",
+    "subject": "wardrobe: keep ownership evidence off the stranger-visible closet level",
+    "files_changed_count": 3,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 5aa075b85f7a origin/main -- <paths> -> 3 path(s) differ; added-line presence: 1/17 present, removed-line check: 0/9 still in main"
+   },
+   {
+    "sha": "9770927ab66e7e43cee42494b614d0397de112ce",
+    "date": "2026-10-30T03:51:53+00:00",
+    "subject": "Merge origin/main (22ff053: #64 commerce round 3, #67 round-03 plans) into consumer-domains",
+    "files_changed_count": 46,
+    "patch_equivalent_in_main": "n/a",
+    "content_present_in_main": "n/a",
+    "method": "merge commit (first-parent file count only); content check n/a"
+   },
+   {
+    "sha": "b5e8ea4cfc573b183c1474e842554746b3e06fcf",
+    "date": "2026-10-30T03:53:12+00:00",
+    "subject": "status: Stage 19, answer to the Oct 29 status check",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff b5e8ea4cfc57 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 1/18 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "a89df832ec4ab71167c521641d6dbd2c9cdb49ea",
+    "date": "2026-10-30T12:40:53+00:00",
+    "subject": "Merge origin/main (97d5447: #62 foundation round 4) into consumer-domains",
+    "files_changed_count": 61,
+    "patch_equivalent_in_main": "n/a",
+    "content_present_in_main": "n/a",
+    "method": "merge commit (first-parent file count only); content check n/a"
+   },
+   {
+    "sha": "c488c2568eeb79387014a503ccd6ea7bb75768f2",
+    "date": "2026-10-30T12:46:23+00:00",
+    "subject": "test(foundation): count the consumer seed's #66 rows in the deletion proof",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff c488c2568eeb origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/6 present, removed-line check: 3/3 still in main"
+   },
+   {
+    "sha": "48c638d9bc5a8a57f484a4880a12eb6d3c0aa02a",
+    "date": "2026-10-30T12:49:27+00:00",
+    "subject": "status: Stage 20, main 97d5447 merged; foundation test counts deviation",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 48c638d9bc5a origin/main -- <paths> -> 1 path(s) differ; added-line presence: 1/17 present, removed-line check: 0/1 still in main"
+   },
+   {
+    "sha": "1b4edf2c4f360031d917e2891f9f9ffe36d87fd1",
+    "date": "2026-10-30T13:39:52+00:00",
+    "subject": "fix: Codex review of #66 (cap, share projection, room blocking, idempotency, card taste)",
+    "files_changed_count": 15,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 1b4edf2c4f36 origin/main -- <paths> -> 15 path(s) differ; added-line presence: 3/176 present, removed-line check: 21/30 still in main"
+   },
+   {
+    "sha": "8933899d28cd015d59be1fd33796b98f7667c43e",
+    "date": "2026-10-30T13:40:37+00:00",
+    "subject": "status: point Stages 19-20 at the follow-up's stage numbers (22, 23)",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 8933899d28cd origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/2 present, removed-line check: 0/2 still in main"
+   },
+   {
+    "sha": "e40ea7cd733d3f33720502fb13303e877fdc596e",
+    "date": "2026-10-30T14:30:46+00:00",
+    "subject": "fix: second Codex review of #66 (card copies, room admission, influence, Flow axes)",
+    "files_changed_count": 11,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff e40ea7cd733d origin/main -- <paths> -> 11 path(s) differ; added-line presence: 0/129 present, removed-line check: 1/23 still in main"
+   },
+   {
+    "sha": "9ebc062bbdc838c6b32ad48701d63a4b513a6a42",
+    "date": "2026-10-30T15:36:36+00:00",
+    "subject": "fix: third Codex review of #66 (deleted cards, share purge, invitee freeze, engagement, withdraw, ranking)",
+    "files_changed_count": 12,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 9ebc062bbdc8 origin/main -- <paths> -> 12 path(s) differ; added-line presence: 2/264 present, removed-line check: 12/39 still in main"
+   },
+   {
+    "sha": "5f3e2b49f813cf3e9c961d58165ae90d7ad08888",
+    "date": "2026-10-30T15:59:40+00:00",
+    "subject": "fix: share purge events only for projected shares; My Data test expects the recipient refusal",
+    "files_changed_count": 3,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 5f3e2b49f813 origin/main -- <paths> -> 3 path(s) differ; added-line presence: 1/16 present, removed-line check: 3/7 still in main"
+   },
+   {
+    "sha": "f27e37cb01b996fdb819210e27cd45934fb9b3a7",
+    "date": "2026-10-30T16:34:02+00:00",
+    "subject": "fix: fourth Codex review of #66 (credits after ledger deletion, recovery debt on release)",
+    "files_changed_count": 3,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff f27e37cb01b9 origin/main -- <paths> -> 3 path(s) differ; added-line presence: 0/78 present, removed-line check: 0/18 still in main"
+   },
+   {
+    "sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+    "date": "2026-10-30T17:15:06+00:00",
+    "subject": "fix: fifth Codex review of #66 (ledger freeze on survey/convert, relationship deletion ends share audiences)",
+    "files_changed_count": 7,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff babb3604ae2f origin/main -- <paths> -> 7 path(s) differ; added-line presence: 0/89 present, removed-line check: 1/2 still in main"
+   }
+  ],
+  "changed_areas": [
+   "brandme-console",
+   "brandme-data",
+   "brandme-gateway",
+   "brandme_core",
+   "docs",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 32,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-07T12:35:43Z",
+    "title": "opus-consumer-domains: persona domain (W03 backend) \u2014 stage 1",
+    "base": "bench/opus-consumer-domains-20261005",
+    "head_sha": "f394853330d71ade90d7d682f6961d8c36e752ef",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 52,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-24T02:10:43Z",
+    "title": "opus-consumer-domains: persona, wardrobe, social, rewards, try-on server, ops console, My Data and event delivery",
+    "base": "main",
+    "head_sha": "2c5cac707a48d94fcc08aa9e1f593340192233a4",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 59,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-24T04:10:31Z",
+    "title": "opus-consumer-domains: GCS media store on a local GCS emulator (Q19)",
+    "base": "main",
+    "head_sha": "b61d5720b35353929122210a0a692684bcdeeec1",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 61,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-25T03:23:01Z",
+    "title": "consumer domains: mount the lane routers behind foundation auth (Ultra plan 02, item 1)",
+    "base": "main",
+    "head_sha": "1011d74e05911fee901a38e2afa3fbdc81a420a4",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 66,
+    "state": "open",
+    "merged": false,
+    "merged_at": null,
+    "title": "consumer domains: Now, Flow, loyalty, surveys and credit, persona card, rooms, experiments, share projector (Ultra plan 02, items 2-8 and 10) + check-in",
+    "base": "main",
+    "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+    "draft": false,
+    "mergeable_state": "unstable",
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/orchestration/next-consumer-domains-pr52.md",
+    "docs/build/status/astra-consumer-ui.md",
+    "docs/build/status/opus-consumer-domains.md"
+   ],
+   "in_own_tree": [
+    "docs/build/orchestration/next-consumer-domains-pr52.md",
+    "docs/build/status/astra-consumer-ui.md",
+    "docs/build/status/opus-consumer-domains.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "KEEP",
+  "confidence": "high",
+  "rationale": "18 unique commits (16 non-merge, 2026-10-25..30) behind open PR #66 (not draft; head == tip; mergeable_state unstable); all 71 touched paths differ from main (23 absent). Carries `V016_consumer_design.sql`, which collides with #70's V016 (merge-tree conflict on migrations README and test_migrations.py). Earlier PRs #32/#52/#59/#61 from this branch are merged."
+ },
+ {
+  "ref": "refs/remotes/origin/claude/opus-foundation-w00-2hgiw5",
+  "branch": "claude/opus-foundation-w00-2hgiw5",
+  "tip_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934",
+  "tip_date_iso": "2026-10-30T05:55:30+00:00",
+  "tip_author_name": "Claude",
+  "merge_base_with_main": "f5c906ab163084f791a7b601f3bbb71a828bb934",
+  "ahead": 0,
+  "behind": 18,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 33,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-05T19:52:26Z",
+    "title": "opus-foundation: honest baseline + mode guard, contracts/workspace, persistence/auth (W00\u2013W02)",
+    "base": "bench/opus-foundation-20261005",
+    "head_sha": "4d1634af12dcd90b6d9d8813a5467ea9ea1c9efa",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 53,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-23T18:06:39Z",
+    "title": "opus-foundation round 2: Firestore projections, security rules, log redaction",
+    "base": "main",
+    "head_sha": "744d593be75bf892171631ccdb18785d7f0c6e27",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 58,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-24T01:41:27Z",
+    "title": "opus-foundation round 3: honest CI, workspace guard, GKE packet, secrets scaffolding, W00\u2013W02 gaps",
+    "base": "main",
+    "head_sha": "da3f1972ce839842262fb748bd69cd00a7a7bf34",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 62,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-30T12:38:57Z",
+    "title": "Foundation round 4: Q8 lane outbox catalogs, Q9 deletion purge, #61 flags, deploy checklist, trivy triage",
+    "base": "main",
+    "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/evidence/w00/baseline-test-report.md",
+    "docs/build/evidence/w00/trust-path-fixtures.md",
+    "docs/build/status/opus-foundation.md"
+   ],
+   "in_own_tree": [
+    "docs/build/evidence/w00/baseline-test-report.md",
+    "docs/build/evidence/w00/trust-path-fixtures.md",
+    "docs/build/status/opus-foundation.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "medium",
+  "rationale": "0 unique commits; tip f5c906a is an ancestor of main (PR #62 merged as 97d5447; earlier #33/#53/#58). Only docs/build evidence and status files mention it. Same lane-reuse caveat as the other `claude/opus-*` lane branches; deletion loses nothing in git."
+ },
+ {
+  "ref": "refs/remotes/origin/claude/setup-design-system-cli-6iovG",
+  "branch": "claude/setup-design-system-cli-6iovG",
+  "tip_sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32",
+  "tip_date_iso": "2026-06-11T00:41:00+00:00",
+  "tip_author_name": "Claude",
+  "merge_base_with_main": "8f8a2b7cfae4daabd7d08d2c65104b20a2fcdc53",
+  "ahead": 8,
+  "behind": 373,
+  "cherry_plus_count": 6,
+  "cherry_minus_count": 2,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "8dd7aad7668add1e0ded3420002f99f2396ad718",
+    "date": "2026-04-26T04:12:29+00:00",
+    "subject": "Add UI/UX Pro Max design system skill for Claude",
+    "files_changed_count": 28,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "within PR #26 head (1733fcc), exact-squashed into main 2faae4c: range patch-id equal, tree diff on 34 touched paths empty. patch-id no match vs main cache; git diff 8dd7aad7668a origin/main -- <paths> -> 0 path(s) differ; added-line presence: 2964/2964 present, removed-line check: 0/0 still in main",
+    "heuristic_per_commit": "all"
+   },
+   {
+    "sha": "1733fccc13d97ceebf8a99a98c9d74506f03b1b6",
+    "date": "2026-04-26T04:42:35+00:00",
+    "subject": "Wire 21st.dev Magic MCP via .mcp.json + SessionStart hook",
+    "files_changed_count": 6,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "within PR #26 head (1733fcc), exact-squashed into main 2faae4c: range patch-id equal, tree diff on 34 touched paths empty. patch-id no match vs main cache; git diff 1733fccc13d9 origin/main -- <paths> -> 2 path(s) differ; added-line presence: 80/81 present, removed-line check: 0/0 still in main",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "d6207ade74802b162e3dcc65095524f86d244d2f",
+    "date": "2026-06-09T16:14:05+00:00",
+    "subject": "Claude/understand repo purpose wc ga7 (#27)",
+    "files_changed_count": 4,
+    "patch_equivalent_in_main": "true",
+    "content_present_in_main": "partial",
+    "method": "patch-id match 4335e2707780 vs main cache; git diff d6207ade7480 origin/main -- <paths> -> 4 path(s) differ; added-line presence: 653/775 present, removed-line check: 0/10 still in main"
+   },
+   {
+    "sha": "e758afb4079bd3a55e328ec0a7031ae567ca0d04",
+    "date": "2026-06-09T16:14:05+00:00",
+    "subject": "Add MCP commerce mandate and cart tool handlers (#28)",
+    "files_changed_count": 38,
+    "patch_equivalent_in_main": "true",
+    "content_present_in_main": "partial",
+    "method": "patch-id match 0f5f58a9eeca vs main cache; git diff e758afb4079b origin/main -- <paths> -> 15 path(s) differ; added-line presence: 367/622 present, removed-line check: 477/1257 still in main"
+   },
+   {
+    "sha": "12f5ee727613472d0f6ec819e220b6cdffa72178",
+    "date": "2026-06-09T16:14:06+00:00",
+    "subject": "Add design-audit skill \u2014 reproducible audit + concept-generation workflow",
+    "files_changed_count": 4,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 12f5ee727613 origin/main -- <paths> -> 4 path(s) differ; added-line presence: 0/236 present, removed-line check: 2/2 still in main"
+   },
+   {
+    "sha": "425918ccb933a3d5f4213dfd9a2861ca3b9fecde",
+    "date": "2026-06-09T16:22:04+00:00",
+    "subject": "Design audit Phase A \u2014 score brandme-frontend against rubric",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 425918ccb933 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/61 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "6de84d4bc239d7b75ea947aeafbc3114bd31ca6b",
+    "date": "2026-06-09T16:30:38+00:00",
+    "subject": "Design audit Phase B blocked \u2014 log two failure modes for resume",
+    "files_changed_count": 19,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 6de84d4bc239 origin/main -- <paths> -> 19 path(s) differ; added-line presence: 0/206 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32",
+    "date": "2026-06-11T00:41:00+00:00",
+    "subject": "Design audit: definitive Phase B diagnosis \u2014 sandbox blocked by 21st.dev",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 8b9bd4a718ef origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/18 present, removed-line check: 0/12 still in main"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   ".claude",
+   ".github",
+   "brandme-agents",
+   "brandme-chain",
+   "brandme-core",
+   "brandme-cube",
+   "brandme-frontend",
+   "brandme-gateway",
+   "brandme_core",
+   "docs",
+   "scripts",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 26,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-04-27T01:29:39Z",
+    "title": "Claude/setup design system cli 6iov g",
+    "base": "main",
+    "head_sha": "1733fccc13d97ceebf8a99a98c9d74506f03b1b6",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": false
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "PRESERVE_THEN_RETIRE",
+  "confidence": "medium",
+  "rationale": "8 unique commits: two are PR #26's head (exact squash into main 2faae4c), two are patch-equivalent copies of main's #27/#28 squashes, and four (12f5ee7, 425918c, 6de84d4, 8b9bd4a; 2026-06-09..11) add `.claude/skills/design-audit/**` (23 files) whose blobs exist nowhere in main and were never in any PR. Decide whether to salvage those design-audit artifacts, then retire. No consumers reference the branch name."
+ },
+ {
+  "ref": "refs/remotes/origin/codex/chain-projection-worker-20261022",
+  "branch": "codex/chain-projection-worker-20261022",
+  "tip_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d",
+  "tip_date_iso": "2026-10-22T19:38:32-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "238f65a357c64169662738b17adbb526c999a52b",
+  "ahead": 1,
+  "behind": 293,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 1,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d",
+    "date": "2026-10-22T19:38:32-04:00",
+    "subject": "feat(chain): reconcile durable operations and project finalized entitlements",
+    "files_changed_count": 23,
+    "patch_equivalent_in_main": "true",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 74e1375 (PR #45): patch-id of (74e1375^..74e1375) == patch-id of (merge-base..tip); git diff tip 74e1375 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id match 74e137534b1b vs main cache; git diff e96356eaffaf origin/main -- <paths> -> 6 path(s) differ; added-line presence: 781/785 present, removed-line check: 2/67 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   }
+  ],
+  "changed_areas": [
+   ".github",
+   "brandme-chain",
+   "brandme-data",
+   "brandme_core",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 45,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-22T23:45:42Z",
+    "title": "feat(chain): reconcile durable operations and project finalized entitlements",
+    "base": "main",
+    "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #45 squashed into main 74e1375. Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 45,
+   "main_squash_commit": "74e137534b1b6f04e536a433977763a1775dc950",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/codex/console-contract-publication",
+  "branch": "codex/console-contract-publication",
+  "tip_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f",
+  "tip_date_iso": "2026-10-24T19:50:13-07:00",
+  "tip_author_name": "unknown",
+  "merge_base_with_main": "06d8fc13f3133fea5108164266a6fee59b88db1f",
+  "ahead": 0,
+  "behind": 88,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 65,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-25T03:04:06Z",
+    "title": "fix(console): publish shell contract 1.1.1",
+    "base": "main",
+    "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip 06d8fc1 is an ancestor of main (PR #65 merged as 7728024). No consumers reference the branch name. Nothing in git is lost by deletion."
+ },
+ {
+  "ref": "refs/remotes/origin/codex/consumer-design-preview",
+  "branch": "codex/consumer-design-preview",
+  "tip_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420",
+  "tip_date_iso": "2026-10-30T09:44:06-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "77280249df4e91d93b4d814b140bd5e38bba4735",
+  "ahead": 20,
+  "behind": 87,
+  "cherry_plus_count": 13,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "15f637918fbb737c4b5c9e6cd9fcf61038c43cf9",
+    "date": "2026-10-24T19:02:20-07:00",
+    "subject": "feat(consumer): preview three rooms and private persona card",
+    "files_changed_count": 18,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 15f637918fbb origin/main -- <paths> -> 18 path(s) differ; added-line presence: 18/356 present, removed-line check: 28/28 still in main"
+   },
+   {
+    "sha": "77b0a4a530ddd23837c932e917fdc3fd933a3d52",
+    "date": "2026-10-24T19:03:41-07:00",
+    "subject": "feat(consumer): add optional friend response heartbeat",
+    "files_changed_count": 5,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 77b0a4a530dd origin/main -- <paths> -> 5 path(s) differ; added-line presence: 2/341 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "bd7c731f063a28b729c46ff75fcee9d62a7d7d62",
+    "date": "2026-10-24T19:05:26-07:00",
+    "subject": "feat(consumer): connect friend response feedback to decisions",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff bd7c731f063a origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/2 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "fc3b15b1a8406874fe6bccb1b4be8e8177f4978f",
+    "date": "2026-10-24T19:06:14-07:00",
+    "subject": "fix(consumer): refine parallel streams and mobile review evidence",
+    "files_changed_count": 4,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff fc3b15b1a840 origin/main -- <paths> -> 4 path(s) differ; added-line presence: 1/87 present, removed-line check: 0/5 still in main"
+   },
+   {
+    "sha": "d9a5b8adb03f15cf073679292185dfe43a57a3ab",
+    "date": "2026-10-24T19:08:40-07:00",
+    "subject": "test(consumer): verify DecisionView heartbeat in browser",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff d9a5b8adb03f origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/181 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "d2009d01d37bd2a67022041e096efdce312a2183",
+    "date": "2026-10-24T19:09:23-07:00",
+    "subject": "test(consumer): run heartbeat integration with browser checks",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff d2009d01d37b origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/1 present, removed-line check: 0/1 still in main"
+   },
+   {
+    "sha": "e67c493d61ab655e2ff6e8da0dccf7b050063cce",
+    "date": "2026-10-24T19:09:23-07:00",
+    "subject": "Merge commit '159d77206315e043a205d6984c730dc450404693' into codex/consumer-design-preview",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "n/a",
+    "content_present_in_main": "n/a",
+    "method": "merge commit (first-parent file count only); content check n/a"
+   },
+   {
+    "sha": "71e9d40998a3021f4bd7c576c55ced81096eccf7",
+    "date": "2026-10-24T19:10:06-07:00",
+    "subject": "docs(consumer): record consolidated preview and browser evidence",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 71e9d40998a3 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/7 present, removed-line check: 0/3 still in main"
+   },
+   {
+    "sha": "cd37b6de59fc7d804612efd2373cda1f6eadb3bc",
+    "date": "2026-10-24T19:13:50-07:00",
+    "subject": "test(consumer): await route titles before preview audits",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff cd37b6de59fc origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/4 present, removed-line check: 0/1 still in main"
+   },
+   {
+    "sha": "990e4a940e50a0fc9a5e8b91762300a814f09765",
+    "date": "2026-10-24T19:17:42-07:00",
+    "subject": "fix(consumer): select one current destination per navigation",
+    "files_changed_count": 4,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 990e4a940e50 origin/main -- <paths> -> 4 path(s) differ; added-line presence: 11/92 present, removed-line check: 11/11 still in main"
+   },
+   {
+    "sha": "9280571ab026a02c2d49f8c3a3a372d9065bc966",
+    "date": "2026-10-24T19:17:53-07:00",
+    "subject": "Merge commit '987afcebc72a38e7e494ffe8d9ec1369d74e3fd6' into codex/consumer-design-preview",
+    "files_changed_count": 3,
+    "patch_equivalent_in_main": "n/a",
+    "content_present_in_main": "n/a",
+    "method": "merge commit (first-parent file count only); content check n/a"
+   },
+   {
+    "sha": "2083bae1a45696898f5304474da0ba3935e9bc27",
+    "date": "2026-10-24T19:20:54-07:00",
+    "subject": "docs(consumer): record final navigation and preview checks",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 2083bae1a456 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/3 present, removed-line check: 0/2 still in main"
+   },
+   {
+    "sha": "9d1e29f4f9e12edc8c17f98dc9c6ce5d98ca8bef",
+    "date": "2026-10-24T19:26:21-07:00",
+    "subject": "Merge consumer parent repair and record preview CI receipt",
+    "files_changed_count": 6,
+    "patch_equivalent_in_main": "n/a",
+    "content_present_in_main": "n/a",
+    "method": "merge commit (first-parent file count only); content check n/a"
+   },
+   {
+    "sha": "4ba1fae8a846a2a34104564ce35010fb4be4ad2c",
+    "date": "2026-10-24T19:35:41-07:00",
+    "subject": "fix(console): publish shell contract 1.1.1",
+    "files_changed_count": 3,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 4ba1fae8a846 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 135/142 present, removed-line check: 0/4 still in main"
+   },
+   {
+    "sha": "3f7e558d3a2a8f978af79d53fba6037a74aeef16",
+    "date": "2026-10-24T19:36:36-07:00",
+    "subject": "Merge approved room revision parent into design preview",
+    "files_changed_count": 5,
+    "patch_equivalent_in_main": "n/a",
+    "content_present_in_main": "n/a",
+    "method": "merge commit (first-parent file count only); content check n/a"
+   },
+   {
+    "sha": "7f7d4e71e3f9e7f9a0c3f1ddf367acf0376493a5",
+    "date": "2026-10-24T19:36:47-07:00",
+    "subject": "Merge console contract 1.1.1 into design preview",
+    "files_changed_count": 3,
+    "patch_equivalent_in_main": "n/a",
+    "content_present_in_main": "n/a",
+    "method": "merge commit (first-parent file count only); content check n/a"
+   },
+   {
+    "sha": "50b0b726faccc8b3198e2350bb8dabf8e41a40d1",
+    "date": "2026-10-24T19:37:22-07:00",
+    "subject": "docs(consumer): record combined contract preview validation",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 50b0b726facc origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/4 present, removed-line check: 0/0 still in main"
+   },
+   {
+    "sha": "c2732a3098aa5ae850d285e35183270a028b1a7b",
+    "date": "2026-10-24T19:51:17-07:00",
+    "subject": "Merge published contract history and final CI receipts into preview",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "n/a",
+    "content_present_in_main": "n/a",
+    "method": "merge commit (first-parent file count only); content check n/a"
+   },
+   {
+    "sha": "2f89dce5d171138085d994456722cfcb1868f637",
+    "date": "2026-10-24T20:04:38-07:00",
+    "subject": "Merge completed prerequisites and record preview review gates",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "n/a",
+    "content_present_in_main": "n/a",
+    "method": "merge commit (first-parent file count only); content check n/a"
+   },
+   {
+    "sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420",
+    "date": "2026-10-30T09:44:06-04:00",
+    "subject": "docs(consumer): publish round-03 restart handoff",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "none",
+    "method": "patch-id no match vs main cache; git diff 0ff12fbdbce2 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/57 present, removed-line check: 0/0 still in main"
+   }
+  ],
+  "changed_areas": [
+   "brandme-frontend",
+   "docs"
+  ],
+  "associated_prs": [
+   {
+    "number": 63,
+    "state": "open",
+    "merged": false,
+    "merged_at": null,
+    "title": "feat(consumer): preview three rooms, private style card and optional heartbeat",
+    "base": "main",
+    "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420",
+    "draft": true,
+    "mergeable_state": "unstable",
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [
+    "docs/build/status/astra-consumer-ui.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "KEEP",
+  "confidence": "high",
+  "rationale": "20 unique commits (13 non-merge, 2026-10-24..30) behind open draft PR #63 (head == tip, mergeable_state unstable); all 23 touched paths differ from main (11 absent). Its own tree's docs/build/status/astra-consumer-ui.md references the branch and PR #63. `git merge-tree` onto main is clean and it overlaps no other open PR."
+ },
+ {
+  "ref": "refs/remotes/origin/codex/critical-dependency-repairs-20261022",
+  "branch": "codex/critical-dependency-repairs-20261022",
+  "tip_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752",
+  "tip_date_iso": "2026-10-22T20:14:20-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "74e137534b1b6f04e536a433977763a1775dc950",
+  "ahead": 2,
+  "behind": 292,
+  "cherry_plus_count": 2,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "da7918e0d0c69485c4af4af7bbc93c9ee7b71a17",
+    "date": "2026-10-22T20:04:28-04:00",
+    "subject": "fix(security): patch production dependencies and gate image publishing on audits",
+    "files_changed_count": 12,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main fbadf01 (PR #46): patch-id of (fbadf01^..fbadf01) == patch-id of (merge-base..tip); git diff tip fbadf01 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff da7918e0d0c6 origin/main -- <paths> -> 10 path(s) differ; added-line presence: 615/631 present, removed-line check: 351/1000 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "542b52cc12ca668e64c13a072acf7374bd0a5752",
+    "date": "2026-10-22T20:14:20-04:00",
+    "subject": "fix(ci): resolve console codec dependencies from packaged entrypoint",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main fbadf01 (PR #46): patch-id of (fbadf01^..fbadf01) == patch-id of (merge-base..tip); git diff tip fbadf01 -- <touched paths> empty. Per-commit heuristic was 'all' (patch-id no match vs main cache; git diff 542b52cc12ca origin/main -- <paths> -> 1 path(s) differ; added-line presence: 14/14 present, removed-line check: 0/1 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "all"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   ".github",
+   "brandme-chain",
+   "brandme-console",
+   "brandme-frontend",
+   "brandme-gateway",
+   "docs"
+  ],
+  "associated_prs": [
+   {
+    "number": 46,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-23T00:20:00Z",
+    "title": "fix(security): patch production dependencies and gate image publishing on audits",
+    "base": "main",
+    "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #46 squashed into main fbadf01. Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 46,
+   "main_squash_commit": "fbadf012155663be8e174c4845e6c9c0e3b4dca6",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/codex/docker-pipeline-20261022",
+  "branch": "codex/docker-pipeline-20261022",
+  "tip_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4",
+  "tip_date_iso": "2026-10-22T18:05:27-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "b294e9e474161c04aeaf80426099f506e6823693",
+  "ahead": 7,
+  "behind": 296,
+  "cherry_plus_count": 7,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "c6f5f96276ff141318ec50b6af40a39012b3554e",
+    "date": "2026-10-22T17:50:15-04:00",
+    "subject": "fix(ci): build workspace Docker images before publishing",
+    "files_changed_count": 10,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 1ac8f97 (PR #42): patch-id of (1ac8f97^..1ac8f97) == patch-id of (merge-base..tip); git diff tip 1ac8f97 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff c6f5f96276ff origin/main -- <paths> -> 7 path(s) differ; added-line presence: 80/89 present, removed-line check: 5/127 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "9b613026e79cae05b3c2d40fc3c257420238ee90",
+    "date": "2026-10-22T17:56:36-04:00",
+    "subject": "test(ci): smoke packaged runtimes and resolve agent tooling compatibility",
+    "files_changed_count": 4,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 1ac8f97 (PR #42): patch-id of (1ac8f97^..1ac8f97) == patch-id of (merge-base..tip); git diff tip 1ac8f97 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff 9b613026e79c origin/main -- <paths> -> 3 path(s) differ; added-line presence: 49/54 present, removed-line check: 1/3 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "4b2a618702d14029e2f91c8958efe49f05c16e40",
+    "date": "2026-10-22T17:59:36-04:00",
+    "subject": "ci: run real Python emulator suites and exclude cloud credentials from images",
+    "files_changed_count": 3,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 1ac8f97 (PR #42): patch-id of (1ac8f97^..1ac8f97) == patch-id of (merge-base..tip); git diff tip 1ac8f97 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff 4b2a618702d1 origin/main -- <paths> -> 3 path(s) differ; added-line presence: 13/15 present, removed-line check: 4/12 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "368fa8d81204da42e2b6862160f5e380a7922b5e",
+    "date": "2026-10-22T18:02:04-04:00",
+    "subject": "fix(agents): connect packaged CLI to the existing workflow API",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 1ac8f97 (PR #42): patch-id of (1ac8f97^..1ac8f97) == patch-id of (merge-base..tip); git diff tip 1ac8f97 -- <touched paths> empty. Per-commit heuristic was 'all' (patch-id no match vs main cache; git diff 368fa8d81204 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 19/19 present, removed-line check: 0/7 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "all"
+   },
+   {
+    "sha": "16bdf8c231ec8583052dfb725c2645f817c08dc8",
+    "date": "2026-10-22T18:03:18-04:00",
+    "subject": "ci: publish only verified images after credential-free builds",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 1ac8f97 (PR #42): patch-id of (1ac8f97^..1ac8f97) == patch-id of (merge-base..tip); git diff tip 1ac8f97 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff 16bdf8c231ec origin/main -- <paths> -> 1 path(s) differ; added-line presence: 21/22 present, removed-line check: 5/12 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "df57d0be8cc8ca8f5f76af482dd9232fc0354dfc",
+    "date": "2026-10-22T18:04:13-04:00",
+    "subject": "fix(security): remove unneeded wheel tooling from agent runtime",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 1ac8f97 (PR #42): patch-id of (1ac8f97^..1ac8f97) == patch-id of (merge-base..tip); git diff tip 1ac8f97 -- <touched paths> empty. Per-commit heuristic was 'all' (patch-id no match vs main cache; git diff df57d0be8cc8 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 4/4 present, removed-line check: 0/3 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "all"
+   },
+   {
+    "sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4",
+    "date": "2026-10-22T18:05:27-04:00",
+    "subject": "fix(agents): keep legacy simulated workflows out of strict modes",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 1ac8f97 (PR #42): patch-id of (1ac8f97^..1ac8f97) == patch-id of (merge-base..tip); git diff tip 1ac8f97 -- <touched paths> empty. Per-commit heuristic was 'all' (patch-id no match vs main cache; git diff a5373d5c0eef origin/main -- <paths> -> 1 path(s) differ; added-line presence: 8/8 present, removed-line check: 0/0 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "all"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   ".github",
+   "brandme-agents",
+   "brandme-chain",
+   "brandme-console",
+   "brandme-core",
+   "brandme-gateway"
+  ],
+  "associated_prs": [
+   {
+    "number": 42,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-22T22:11:16Z",
+    "title": "fix(ci): build and verify all Docker images before publishing",
+    "base": "main",
+    "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #42 squashed into main 1ac8f97. Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 42,
+   "main_squash_commit": "1ac8f97da6b326cfe6f425e26abd0daac6044917",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/codex/durable-chain-reconciliation-20261022",
+  "branch": "codex/durable-chain-reconciliation-20261022",
+  "tip_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6",
+  "tip_date_iso": "2026-10-22T19:14:57-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "a2e625a104c4e69e88731ff81e6cdf7b4c2940a4",
+  "ahead": 2,
+  "behind": 294,
+  "cherry_plus_count": 2,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "6c732e9b9bd8fe782f39041741a0c56784dba5e5",
+    "date": "2026-10-22T19:12:14-04:00",
+    "subject": "feat(chain): persist operation journal and reconcile authenticated transaction evidence",
+    "files_changed_count": 31,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 238f65a (PR #44): patch-id of (238f65a^..238f65a) == patch-id of (merge-base..tip); git diff tip 238f65a -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff 6c732e9b9bd8 origin/main -- <paths> -> 23 path(s) differ; added-line presence: 933/999 present, removed-line check: 2/60 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6",
+    "date": "2026-10-22T19:14:57-04:00",
+    "subject": "test(chain): enforce complete rejection evidence and atomic outbox rollback",
+    "files_changed_count": 3,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 238f65a (PR #44): patch-id of (238f65a^..238f65a) == patch-id of (merge-base..tip); git diff tip 238f65a -- <touched paths> empty. Per-commit heuristic was 'all' (patch-id no match vs main cache; git diff e2dcbdd3a916 origin/main -- <paths> -> 2 path(s) differ; added-line presence: 28/28 present, removed-line check: 0/0 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "all"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   ".github",
+   "brandme-chain",
+   "brandme-data",
+   "brandme-gateway",
+   "brandme_core",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 44,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-22T23:21:45Z",
+    "title": "feat(chain): persist operations and reconcile authenticated transaction evidence",
+    "base": "main",
+    "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #44 squashed into main 238f65a. Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 44,
+   "main_squash_commit": "238f65a357c64169662738b17adbb526c999a52b",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/codex/durable-outbox-pubsub-20261022",
+  "branch": "codex/durable-outbox-pubsub-20261022",
+  "tip_sha": "65367789130870c8c2a0e786f2d6152357d88093",
+  "tip_date_iso": "2026-10-22T22:21:29-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "fbadf012155663be8e174c4845e6c9c0e3b4dca6",
+  "ahead": 2,
+  "behind": 291,
+  "cherry_plus_count": 2,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "d7dd90d122f5220815033a829dbff12152873b69",
+    "date": "2026-10-22T22:14:17-04:00",
+    "subject": "feat(events): deliver durable outbox events through fenced Pub/Sub worker",
+    "files_changed_count": 15,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 1a4cfd1 (PR #47): patch-id of (1a4cfd1^..1a4cfd1) == patch-id of (merge-base..tip); git diff tip 1a4cfd1 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff d7dd90d122f5 origin/main -- <paths> -> 12 path(s) differ; added-line presence: 673/704 present, removed-line check: 1/61 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "65367789130870c8c2a0e786f2d6152357d88093",
+    "date": "2026-10-22T22:21:29-04:00",
+    "subject": "fix(events): require retention and verify transport failures and schema rollout",
+    "files_changed_count": 7,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 1a4cfd1 (PR #47): patch-id of (1a4cfd1^..1a4cfd1) == patch-id of (merge-base..tip); git diff tip 1a4cfd1 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff 653677891308 origin/main -- <paths> -> 4 path(s) differ; added-line presence: 133/134 present, removed-line check: 0/11 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   ".github",
+   "brandme-chain",
+   "brandme-core",
+   "brandme-data",
+   "brandme_core",
+   "scripts",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 47,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-23T02:28:26Z",
+    "title": "feat(events): deliver durable outbox events through fenced Pub/Sub worker",
+    "base": "main",
+    "head_sha": "65367789130870c8c2a0e786f2d6152357d88093",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #47 squashed into main 1a4cfd1. Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 47,
+   "main_squash_commit": "1a4cfd1d142bb562b5c2e12c211111345a6fc23d",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/codex/explain-execution-details-and-next-steps",
+  "branch": "codex/explain-execution-details-and-next-steps",
+  "tip_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd",
+  "tip_date_iso": "2026-04-26T21:31:29-07:00",
+  "tip_author_name": "brandmeonline",
+  "merge_base_with_main": "4335e270778049ba7c3fe64599ed92ec253981af",
+  "ahead": 1,
+  "behind": 371,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 1,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd",
+    "date": "2026-04-26T21:31:29-07:00",
+    "subject": "Add MCP commerce mandate and cart tool handlers",
+    "files_changed_count": 38,
+    "patch_equivalent_in_main": "true",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 0f5f58a (PR #28): patch-id of (0f5f58a^..0f5f58a) == patch-id of (merge-base..tip); git diff tip 0f5f58a -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id match 0f5f58a9eeca vs main cache; git diff 15ae7bf3ce02 origin/main -- <paths> -> 15 path(s) differ; added-line presence: 367/622 present, removed-line check: 477/1257 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   ".github",
+   "brandme-agents",
+   "brandme-chain",
+   "brandme-core",
+   "brandme-cube",
+   "brandme-frontend",
+   "brandme-gateway",
+   "brandme_core",
+   "docs",
+   "scripts",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 28,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-04-27T04:32:35Z",
+    "title": "Add module-regression CI and restore/stabilize multiple services, tests, and tooling",
+    "base": "main",
+    "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #28 squashed into main 0f5f58a (2026-04-26). Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 28,
+   "main_squash_commit": "0f5f58a9eecaca46b367c9bd96f89654343fa5fb",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/codex/midnight-integration-20261022",
+  "branch": "codex/midnight-integration-20261022",
+  "tip_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c",
+  "tip_date_iso": "2026-10-22T18:39:39-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "1ac8f97da6b326cfe6f425e26abd0daac6044917",
+  "ahead": 3,
+  "behind": 295,
+  "cherry_plus_count": 3,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "fc6dfdc6e5bdb0244adde72cd3552719a48f3868",
+    "date": "2026-10-22T18:34:50-04:00",
+    "subject": "feat(integration): connect rights auth boundary, transactional events, and current Preprod configuration",
+    "files_changed_count": 36,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main a2e625a (PR #43): patch-id of (a2e625a^..a2e625a) == patch-id of (merge-base..tip); git diff tip a2e625a -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff fc6dfdc6e5bd origin/main -- <paths> -> 24 path(s) differ; added-line presence: 666/689 present, removed-line check: 10/149 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "6d971693c76b1718e39b82ef0e3f16f722b0b991",
+    "date": "2026-10-22T18:37:16-04:00",
+    "subject": "fix(core): package rights domain dependencies and validate event schemas in image smoke tests",
+    "files_changed_count": 4,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main a2e625a (PR #43): patch-id of (a2e625a^..a2e625a) == patch-id of (merge-base..tip); git diff tip a2e625a -- <touched paths> empty. Per-commit heuristic was 'all' (patch-id no match vs main cache; git diff 6d971693c76b origin/main -- <paths> -> 3 path(s) differ; added-line presence: 6/6 present, removed-line check: 0/0 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "all"
+   },
+   {
+    "sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c",
+    "date": "2026-10-22T18:39:39-04:00",
+    "subject": "fix(ci): run module regression with the repository Node toolchain",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main a2e625a (PR #43): patch-id of (a2e625a^..a2e625a) == patch-id of (merge-base..tip); git diff tip a2e625a -- <touched paths> empty. Per-commit heuristic was 'all' (patch-id no match vs main cache; git diff 32e63d4d87f5 origin/main -- <paths> -> 1 path(s) differ; added-line presence: 1/1 present, removed-line check: 0/1 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "all"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   ".github",
+   "brandme-chain",
+   "brandme-core",
+   "brandme-data",
+   "brandme-gateway",
+   "brandme_core",
+   "docs",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 43,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-22T22:45:29Z",
+    "title": "feat(integration): secure rights routes, wire domain events, and update Preprod",
+    "base": "main",
+    "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #43 squashed into main a2e625a. Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 43,
+   "main_squash_commit": "a2e625a104c4e69e88731ff81e6cdf7b4c2940a4",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/codex/privacy-recovery-safety-20261023",
+  "branch": "codex/privacy-recovery-safety-20261023",
+  "tip_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84",
+  "tip_date_iso": "2026-10-22T23:04:48-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "1a4cfd1d142bb562b5c2e12c211111345a6fc23d",
+  "ahead": 2,
+  "behind": 290,
+  "cherry_plus_count": 2,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "e022cfea471f9f7d55ea74180263fe84a84c284d",
+    "date": "2026-10-22T22:57:28-04:00",
+    "subject": "fix(privacy): preserve deletion freezes and fail closed during restore recovery",
+    "files_changed_count": 7,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main f4a4015 (PR #48): patch-id of (f4a4015^..f4a4015) == patch-id of (merge-base..tip); git diff tip f4a4015 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff e022cfea471f origin/main -- <paths> -> 7 path(s) differ; added-line presence: 596/604 present, removed-line check: 13/113 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84",
+    "date": "2026-10-22T23:04:48-04:00",
+    "subject": "fix(privacy): enforce durable deletion barriers after restriction removal",
+    "files_changed_count": 6,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main f4a4015 (PR #48): patch-id of (f4a4015^..f4a4015) == patch-id of (merge-base..tip); git diff tip f4a4015 -- <touched paths> empty. Per-commit heuristic was 'all' (patch-id no match vs main cache; git diff e6274ef5a19e origin/main -- <paths> -> 1 path(s) differ; added-line presence: 69/69 present, removed-line check: 0/3 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "all"
+   }
+  ],
+  "changed_areas": [
+   ".github",
+   "brandme-chain",
+   "brandme-gateway",
+   "brandme_core",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 48,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-23T03:10:59Z",
+    "title": "fix(privacy): preserve deletion freezes and resume incomplete restores safely",
+    "base": "main",
+    "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #48 squashed into main f4a4015. Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 48,
+   "main_squash_commit": "f4a4015f1820f35a11312ea020421a9d091dbd28",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/codex/rights-export-worker",
+  "branch": "codex/rights-export-worker",
+  "tip_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd",
+  "tip_date_iso": "2026-10-23T00:40:45-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "20bf3e95af466df7e3a8eb6cb14c9823921a12b7",
+  "ahead": 2,
+  "behind": 288,
+  "cherry_plus_count": 2,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "2a6c6501cf5ea89f524a79e43fba42bb226ee9ca",
+    "date": "2026-10-23T00:37:26-04:00",
+    "subject": "feat(privacy): add durable selected rights exports with private downloads",
+    "files_changed_count": 30,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 5174ec2 (PR #50): patch-id of (5174ec2^..5174ec2) == patch-id of (merge-base..tip); git diff tip 5174ec2 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id no match vs main cache; git diff 2a6c6501cf5e origin/main -- <paths> -> 9 path(s) differ; added-line presence: 4071/4076 present, removed-line check: 102/130 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   },
+   {
+    "sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd",
+    "date": "2026-10-23T00:40:45-04:00",
+    "subject": "fix(privacy): restrict ADC credential-refresh transport",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 5174ec2 (PR #50): patch-id of (5174ec2^..5174ec2) == patch-id of (merge-base..tip); git diff tip 5174ec2 -- <touched paths> empty. Per-commit heuristic was 'all' (patch-id no match vs main cache; git diff 02297b2cea98 origin/main -- <paths> -> 0 path(s) differ; added-line presence: 33/33 present, removed-line check: 0/2 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "all"
+   }
+  ],
+  "changed_areas": [
+   ".github",
+   "brandme-data",
+   "brandme-gateway",
+   "brandme_core",
+   "packages",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 50,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-23T04:47:37Z",
+    "title": "feat(privacy): add durable selected rights exports and authenticated downloads",
+    "base": "main",
+    "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #50 squashed into main 5174ec2. Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 50,
+   "main_squash_commit": "5174ec27a482e9364173be82137c7d7dbc17f375",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/codex/rights-privacy-read-api",
+  "branch": "codex/rights-privacy-read-api",
+  "tip_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a",
+  "tip_date_iso": "2026-10-22T23:49:48-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "f4a4015f1820f35a11312ea020421a9d091dbd28",
+  "ahead": 1,
+  "behind": 289,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 1,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a",
+    "date": "2026-10-22T23:49:48-04:00",
+    "subject": "feat(reads): serve authenticated rights and partial My Data reads",
+    "files_changed_count": 29,
+    "patch_equivalent_in_main": "true",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 20bf3e9 (PR #49): patch-id of (20bf3e9^..20bf3e9) == patch-id of (merge-base..tip); git diff tip 20bf3e9 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id match 20bf3e95af46 vs main cache; git diff 10a468395cde origin/main -- <paths> -> 17 path(s) differ; added-line presence: 3259/3275 present, removed-line check: 9/28 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   }
+  ],
+  "changed_areas": [
+   "(root)",
+   ".github",
+   "brandme-chain",
+   "brandme-gateway",
+   "brandme_core",
+   "packages",
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 49,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-23T03:57:06Z",
+    "title": "feat(reads): add authenticated rights and partial My Data backend",
+    "base": "main",
+    "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #49 squashed into main 20bf3e9. Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 49,
+   "main_squash_commit": "20bf3e95af466df7e3a8eb6cb14c9823921a12b7",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/docs/brandme-full-experience-2026-10-05",
+  "branch": "docs/brandme-full-experience-2026-10-05",
+  "tip_sha": "b31373170953705f180246e254a8c2e9a41b4931",
+  "tip_date_iso": "2026-10-23T14:18:46-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "b31373170953705f180246e254a8c2e9a41b4931",
+  "ahead": 0,
+  "behind": 357,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 31,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-08T22:32:19Z",
+    "title": "Define the complete Brand.Me experience for Claude implementation",
+    "base": "main",
+    "head_sha": "4511236afb00deeb3c3f45d67a3c7c9b429525be",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   }
+  ],
+  "prs_using_branch_as_base": [
+   {
+    "number": 36,
+    "state": "closed",
+    "merged": true,
+    "head": "bench/astra-spatial-ar-20261005"
+   }
+  ],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/status/astra-consumer-ui.md",
+    "docs/build/status/astra-spatial-ar.md",
+    "docs/build/status/opus-commerce-agents.md",
+    "docs/build/status/opus-consumer-domains.md",
+    "docs/build/status/opus-foundation.md",
+    "docs/build/status/opus-midnight-rights.md"
+   ],
+   "in_own_tree": [
+    "docs/build/status/astra-spatial-ar.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "medium",
+  "rationale": "0 unique commits; tip b313731 (the #36 squash) is an ancestor of main; PR #31 from it is merged and it was the base of PR #36 (merged). Named as historical 'Base' in six docs/build/status files and in a comment at `.github/workflows/workspace-guard.yml:14` (no branch filter). Nothing in git is lost by deletion; the docs references are narrative."
+ },
+ {
+  "ref": "refs/remotes/origin/fix/property-test-vacuity-guard-flake",
+  "branch": "fix/property-test-vacuity-guard-flake",
+  "tip_sha": "a699331df56c12570067223dbaad9c0a86d1567a",
+  "tip_date_iso": "2026-10-10T14:29:17-04:00",
+  "tip_author_name": "Mia",
+  "merge_base_with_main": "99fc2fa202d2f9c4c4f8d9c4a2a3c5bce6a719d3",
+  "ahead": 1,
+  "behind": 300,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 1,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "a699331df56c12570067223dbaad9c0a86d1567a",
+    "date": "2026-10-10T14:29:17-04:00",
+    "subject": "fix(tests): make property-test vacuity guard deterministic",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "true",
+    "content_present_in_main": "all",
+    "method": "branch-level exact squash into main 49623e4 (PR #39): patch-id of (49623e4^..49623e4) == patch-id of (merge-base..tip); git diff tip 49623e4 -- <touched paths> empty. Per-commit heuristic was 'partial' (patch-id match 49623e4e3746 vs main cache; git diff a699331df56c origin/main -- <paths> -> 1 path(s) differ; added-line presence: 77/77 present, removed-line check: 5/5 still in main) because of later main edits / intra-branch supersession, not lost work.",
+    "heuristic_per_commit": "partial"
+   }
+  ],
+  "changed_areas": [
+   "tests"
+  ],
+  "associated_prs": [
+   {
+    "number": 39,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-10T18:30:38Z",
+    "title": "Fix property-test vacuity guard flake (consumeReprintAllowance)",
+    "base": "main",
+    "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "PR #39 squashed into main 49623e4 (cherry reports '-', patch-equivalent). Exact squash merge into main confirmed: patch-id of the main squash commit's diff equals patch-id of (merge-base..tip), and `git diff <tip> <squash> -- <touched paths>` is empty (squash-check.txt). cherry/per-commit 'partial' readings are later main edits, not missing work. No consumers reference the branch name in main or its own tree.",
+  "squash_merge_evidence": {
+   "pr": 39,
+   "main_squash_commit": "49623e4e3746eb2913b839545428d21b5d03e12d",
+   "range_patch_id_equal": true,
+   "tree_diff_tip_vs_squash_on_touched_paths": 0,
+   "base_moved_between_merge_base_and_squash_parent": false,
+   "source": "squash-check.txt"
+  }
+ },
+ {
+  "ref": "refs/remotes/origin/main",
+  "branch": "main",
+  "tip_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "tip_date_iso": "2026-10-30T12:35:08-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "ahead": 0,
+  "behind": 0,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 12,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2025-10-26T06:31:12Z",
+    "title": "Create master sync",
+    "base": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H",
+    "head_sha": "af528b9bab5aedc691f57df722ae809f2c6eda9e",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   },
+   {
+    "number": 17,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2025-10-26T07:35:49Z",
+    "title": "Merge all",
+    "base": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H",
+    "head_sha": "08a80c53f94daf325b4d4d5917eaaa5bd5e4e6a2",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": false
+   }
+  ],
+  "prs_using_branch_as_base": [
+   {
+    "number": 1,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ"
+   },
+   {
+    "number": 2,
+    "state": "closed",
+    "merged": false,
+    "head": "codex/regenerate-worker.py-and-main.py-files"
+   },
+   {
+    "number": 3,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ"
+   },
+   {
+    "number": 4,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ"
+   },
+   {
+    "number": 5,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ"
+   },
+   {
+    "number": 6,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 7,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 8,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 9,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 10,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 11,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 13,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 14,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 15,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 16,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H"
+   },
+   {
+    "number": 18,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/integrate-product-cube-service-011CUWYES9s7CKS2iHFkKBG8"
+   },
+   {
+    "number": 19,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/spanner-firestore-refactor-1s5D7"
+   },
+   {
+    "number": 20,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/spanner-firestore-refactor-1s5D7"
+   },
+   {
+    "number": 21,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/spanner-firestore-refactor-1s5D7"
+   },
+   {
+    "number": 22,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/spanner-firestore-refactor-1s5D7"
+   },
+   {
+    "number": 23,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/integrate-product-cube-service-011CUWYES9s7CKS2iHFkKBG8"
+   },
+   {
+    "number": 24,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/spanner-firestore-refactor-1s5D7"
+   },
+   {
+    "number": 25,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/spanner-firestore-refactor-1s5D7"
+   },
+   {
+    "number": 26,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/setup-design-system-cli-6iovG"
+   },
+   {
+    "number": 27,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/understand-repo-purpose-wcGa7"
+   },
+   {
+    "number": 28,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/explain-execution-details-and-next-steps"
+   },
+   {
+    "number": 29,
+    "state": "open",
+    "merged": false,
+    "head": "claude/brand-me-lux-foundations-audit-8zywr3"
+   },
+   {
+    "number": 30,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/ci-repair-workflows"
+   },
+   {
+    "number": 31,
+    "state": "closed",
+    "merged": true,
+    "head": "docs/brandme-full-experience-2026-10-05"
+   },
+   {
+    "number": 37,
+    "state": "closed",
+    "merged": false,
+    "head": "triage/pnpm-workspace-frontend-20261008"
+   },
+   {
+    "number": 39,
+    "state": "closed",
+    "merged": true,
+    "head": "fix/property-test-vacuity-guard-flake"
+   },
+   {
+    "number": 40,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/midnight-rights-lifecycle-yhfyyu"
+   },
+   {
+    "number": 41,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/midnight-rights-lifecycle-yhfyyu"
+   },
+   {
+    "number": 42,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/docker-pipeline-20261022"
+   },
+   {
+    "number": 43,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/midnight-integration-20261022"
+   },
+   {
+    "number": 44,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/durable-chain-reconciliation-20261022"
+   },
+   {
+    "number": 45,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/chain-projection-worker-20261022"
+   },
+   {
+    "number": 46,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/critical-dependency-repairs-20261022"
+   },
+   {
+    "number": 47,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/durable-outbox-pubsub-20261022"
+   },
+   {
+    "number": 48,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/privacy-recovery-safety-20261023"
+   },
+   {
+    "number": 49,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/rights-privacy-read-api"
+   },
+   {
+    "number": 50,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/rights-export-worker"
+   },
+   {
+    "number": 51,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-commerce-agents-setup-szpmf7"
+   },
+   {
+    "number": 52,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-consumer-domains-1csp2g"
+   },
+   {
+    "number": 53,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-foundation-w00-2hgiw5"
+   },
+   {
+    "number": 54,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/midnight-rights-lifecycle-yhfyyu"
+   },
+   {
+    "number": 56,
+    "state": "closed",
+    "merged": true,
+    "head": "bench/astra-consumer-ui-20261005"
+   },
+   {
+    "number": 57,
+    "state": "closed",
+    "merged": true,
+    "head": "mia/orchestration-20261023"
+   },
+   {
+    "number": 58,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-foundation-w00-2hgiw5"
+   },
+   {
+    "number": 59,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-consumer-domains-1csp2g"
+   },
+   {
+    "number": 60,
+    "state": "closed",
+    "merged": true,
+    "head": "bench/astra-spatial-ar-20261005"
+   },
+   {
+    "number": 61,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-consumer-domains-1csp2g"
+   },
+   {
+    "number": 62,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-foundation-w00-2hgiw5"
+   },
+   {
+    "number": 63,
+    "state": "open",
+    "merged": false,
+    "head": "codex/consumer-design-preview"
+   },
+   {
+    "number": 64,
+    "state": "closed",
+    "merged": true,
+    "head": "claude/opus-commerce-agents-setup-szpmf7"
+   },
+   {
+    "number": 65,
+    "state": "closed",
+    "merged": true,
+    "head": "codex/console-contract-publication"
+   },
+   {
+    "number": 66,
+    "state": "open",
+    "merged": false,
+    "head": "claude/opus-consumer-domains-1csp2g"
+   },
+   {
+    "number": 67,
+    "state": "closed",
+    "merged": true,
+    "head": "mia/next-plans-20261025"
+   },
+   {
+    "number": 68,
+    "state": "closed",
+    "merged": true,
+    "head": "mia/pipeline-seed-20261030"
+   },
+   {
+    "number": 69,
+    "state": "closed",
+    "merged": true,
+    "head": "bench/astra-spatial-ar-20261005"
+   },
+   {
+    "number": 70,
+    "state": "open",
+    "merged": false,
+    "head": "claude/midnight-rights-lifecycle-yhfyyu"
+   },
+   {
+    "number": 71,
+    "state": "open",
+    "merged": false,
+    "head": "claude/amazing-goodall-ntrljq"
+   },
+   {
+    "number": 72,
+    "state": "open",
+    "merged": false,
+    "head": "claude/exciting-hypatia-wl48op"
+   }
+  ],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "KEEP",
+  "confidence": "high",
+  "rationale": "Canonical default branch (origin/HEAD -> refs/remotes/origin/main); tip ed19dc1 matches the audit baseline."
+ },
+ {
+  "ref": "refs/remotes/origin/mia/next-plans-20261025",
+  "branch": "mia/next-plans-20261025",
+  "tip_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f",
+  "tip_date_iso": "2026-10-25T00:18:44-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "057320d4bf01e86c381d6750202e6e5bb7bb741f",
+  "ahead": 0,
+  "behind": 78,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 67,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-30T03:47:05Z",
+    "title": "orchestration: round-03 next plans (ultra + oneshot) for all six lanes",
+    "base": "main",
+    "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/orchestration/next-plans-20261025.md"
+   ],
+   "in_own_tree": [
+    "docs/build/orchestration/next-plans-20261025.md"
+   ],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip 057320d is an ancestor of main (PR #67 merged as 22ff053). One historical docs mention (`docs/build/orchestration/next-plans-20261025.md:75`). Nothing in git is lost by deletion."
+ },
+ {
+  "ref": "refs/remotes/origin/mia/orchestration-20261023",
+  "branch": "mia/orchestration-20261023",
+  "tip_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d",
+  "tip_date_iso": "2026-10-23T14:14:01-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d",
+  "ahead": 0,
+  "behind": 276,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 57,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-23T18:41:59Z",
+    "title": "orchestration: direct-trigger protocol, merge log, next assignments, founder questions (2026-10-23)",
+    "base": "main",
+    "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip 27f3215 is an ancestor of main (PR #57 merged). No consumers. Nothing in git is lost by deletion."
+ },
+ {
+  "ref": "refs/remotes/origin/mia/pipeline-seed-20261030",
+  "branch": "mia/pipeline-seed-20261030",
+  "tip_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1",
+  "tip_date_iso": "2026-10-30T11:17:44-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1",
+  "ahead": 0,
+  "behind": 14,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [
+   {
+    "number": 68,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-10-30T16:35:08Z",
+    "title": "orchestration: seed continuous build pipeline state file",
+    "base": "main",
+    "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": true,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip 5e9eceb is an ancestor of main (PR #68 merged as ed19dc1, the current main tip). No consumers. Nothing in git is lost by deletion."
+ },
+ {
+  "ref": "refs/remotes/origin/triage/pnpm-version-conflict-20261023",
+  "branch": "triage/pnpm-version-conflict-20261023",
+  "tip_sha": "114470007e9c631010ee22930a8ddfb75d0ea700",
+  "tip_date_iso": "2026-10-23T09:29:18-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "6899d88202617808443bf7f72257643503c7c0e8",
+  "ahead": 1,
+  "behind": 363,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 1,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "114470007e9c631010ee22930a8ddfb75d0ea700",
+    "date": "2026-10-23T09:29:18-04:00",
+    "subject": "[triage] module-regression: drop pnpm version pin conflicting with packageManager",
+    "files_changed_count": 1,
+    "patch_equivalent_in_main": "true",
+    "content_present_in_main": "partial",
+    "method": "patch-id match 460814da775a vs main cache; git diff 114470007e9c origin/main -- <paths> -> 1 path(s) differ; added-line presence: 0/0 present, removed-line check: 1/2 still in main"
+   }
+  ],
+  "changed_areas": [
+   ".github"
+  ],
+  "associated_prs": [
+   {
+    "number": 55,
+    "state": "closed",
+    "merged": false,
+    "merged_at": null,
+    "title": "[triage] module-regression: drop pnpm version pin conflicting with packageManager",
+    "base": "bench/astra-spatial-ar-20261005",
+    "head_sha": "114470007e9c631010ee22930a8ddfb75d0ea700",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/workspace-governance.md"
+   ],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "1 unique commit (1144700) removing `with: version: 8` from module-regression.yml; PR #55 (base bench/astra-spatial-ar) was closed unmerged. main's `.github/workflows/module-regression.yml:39` already uses `pnpm/action-setup@v4` with no version pin, and `git cherry` reports '-' (patch-equivalent), so the intent is in main. One historical mention in docs/build/workspace-governance.md:131."
+ },
+ {
+  "ref": "refs/remotes/origin/triage/pnpm-workspace-frontend-20261008",
+  "branch": "triage/pnpm-workspace-frontend-20261008",
+  "tip_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17",
+  "tip_date_iso": "2026-10-08T18:09:15-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "f5c6dd922850a9dc7f836cb448de4839d1fee04f",
+  "ahead": 1,
+  "behind": 368,
+  "cherry_plus_count": 1,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": false,
+  "unique_commits": [
+   {
+    "sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17",
+    "date": "2026-10-08T18:09:15-04:00",
+    "subject": "[triage] add brandme-frontend to pnpm workspace and lockfile",
+    "files_changed_count": 2,
+    "patch_equivalent_in_main": "false",
+    "content_present_in_main": "partial",
+    "method": "patch-id no match vs main cache; git diff 64d5fd6ca17d origin/main -- <paths> -> 2 path(s) differ; added-line presence: 132/246 present, removed-line check: 0/0 still in main"
+   }
+  ],
+  "changed_areas": [
+   "(root)"
+  ],
+  "associated_prs": [
+   {
+    "number": 37,
+    "state": "closed",
+    "merged": false,
+    "merged_at": null,
+    "title": "[triage] fix Module Regression: add brandme-frontend to pnpm workspace",
+    "base": "main",
+    "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17",
+    "draft": false,
+    "mergeable_state": null,
+    "head_sha_is_ancestor_of_main": false,
+    "head_sha_equals_branch_tip": true
+   }
+  ],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [
+    "docs/build/workspace-governance.md"
+   ],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "1 unique commit (64d5fd6) adding brandme-frontend to pnpm-workspace.yaml and the lockfile; PR #37 closed unmerged. main's pnpm-workspace.yaml lists 'brandme-frontend' and pnpm-lock.yaml has the `brandme-frontend:` importer (line 252), so the intent landed through other commits; only the regenerated lockfile bytes differ. One historical mention in docs/build/workspace-governance.md:133."
+ },
+ {
+  "ref": "refs/remotes/origin/w11/integration-20261008",
+  "branch": "w11/integration-20261008",
+  "tip_sha": "bec80b1f25fcd4a310529888351c45c71d33dc4a",
+  "tip_date_iso": "2026-10-08T18:23:43-04:00",
+  "tip_author_name": "Adamus",
+  "merge_base_with_main": "bec80b1f25fcd4a310529888351c45c71d33dc4a",
+  "ahead": 0,
+  "behind": 319,
+  "cherry_plus_count": 0,
+  "cherry_minus_count": 0,
+  "ancestor_of_main": true,
+  "unique_commits": [],
+  "changed_areas": [],
+  "associated_prs": [],
+  "prs_using_branch_as_base": [],
+  "consumers": {
+   "in_origin_main": [],
+   "in_own_tree": [],
+   "method": "git grep -n -F -e <branch name> <rev> -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'"
+  },
+  "suggested_classification": "DELETION_CANDIDATE",
+  "confidence": "high",
+  "rationale": "0 unique commits; tip bec80b1 is an ancestor of main; no PR ever used this head or base and no consumers reference the name. Nothing in git is lost by deletion."
+ }
+]

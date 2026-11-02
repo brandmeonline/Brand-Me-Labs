@@ -1,0 +1,650 @@
+[
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/pulls?state=all&per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:30.5631482Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:32.7062966Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/rulesets?includes_parents=true&per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:33.9718723Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/releases?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:35.1737680Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/environments?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:36.8922958Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/deployments?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:37.9135498Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fastra-consumer-ui-20261005/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:30:38.9971705Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:40.2412506Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:40.9555333Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fastra-spatial-ar-20261005/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:30:42.0075373Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/1413178b7f74ecaf20589d67c4ba4dcdedbb69c2/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:42.8626295Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/1413178b7f74ecaf20589d67c4ba4dcdedbb69c2/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:43.5181980Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fopus-commerce-agents-20261005/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:30:44.1776748Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/7c61afd7c98a66836ba91d715bc4c6c913807003/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:45.3917011Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/7c61afd7c98a66836ba91d715bc4c6c913807003/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:46.8541377Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fopus-consumer-domains-20261005/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:30:47.7362884Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/d839267fc1f74b5e778e83f2930953e1a5400712/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:48.5219042Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/d839267fc1f74b5e778e83f2930953e1a5400712/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:49.1674792Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fopus-foundation-20261005/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:30:49.6874495Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/67327e45ed816bd76bc20ed1e2eb694009923530/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:50.5163988Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/67327e45ed816bd76bc20ed1e2eb694009923530/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:51.7180393Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fopus-midnight-rights-20261005/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:30:52.4469085Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/44aaceab55bdcf595ce56ff2ded562d79bf1d190/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:53.0827555Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/44aaceab55bdcf595ce56ff2ded562d79bf1d190/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:53.6110586Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fbrand-me-lux-foundations-audit-8zywr3/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:30:54.0276006Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/eed6737062da451a38114f8002159c1bed0e5cb5/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:54.6605142Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/eed6737062da451a38114f8002159c1bed0e5cb5/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:55.1531165Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fci-repair-workflows/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:30:55.5908542Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/512021c35a6b9d381c94fe02495ba903f411b916/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:56.2866698Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/512021c35a6b9d381c94fe02495ba903f411b916/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:56.8853137Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fmidnight-rights-lifecycle-yhfyyu/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:30:58.3006521Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/a05f2e03e58e55cc2b392b8abc7b19f59659f820/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:30:59.2420643Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/a05f2e03e58e55cc2b392b8abc7b19f59659f820/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:00.1176526Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fopus-commerce-agents-setup-szpmf7/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:00.8967331Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/161f6eb6498c6085c8a070d2a389e3562b1b1ba9/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:01.7182809Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/161f6eb6498c6085c8a070d2a389e3562b1b1ba9/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:02.6918071Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fopus-consumer-domains-1csp2g/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:04.0643723Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/babb3604ae2f33018edf0ad45270887d4b01945b/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:04.9381584Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/babb3604ae2f33018edf0ad45270887d4b01945b/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:05.5758244Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fopus-foundation-w00-2hgiw5/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:06.2632535Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/f5c906ab163084f791a7b601f3bbb71a828bb934/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:07.0914743Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/f5c906ab163084f791a7b601f3bbb71a828bb934/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:07.6268724Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fsetup-design-system-cli-6iovG/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:08.0597665Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/8b9bd4a718ef0d2ec0826b94537d438df68b2b32/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:08.5575056Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/8b9bd4a718ef0d2ec0826b94537d438df68b2b32/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:08.9547851Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fchain-projection-worker-20261022/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:09.3663528Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:09.8992681Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:10.3221137Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fconsole-contract-publication/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:10.7648209Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/06d8fc13f3133fea5108164266a6fee59b88db1f/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:11.3247821Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/06d8fc13f3133fea5108164266a6fee59b88db1f/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:11.7452944Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fconsumer-design-preview/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:12.1360411Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:12.7101744Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:13.1709385Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fcritical-dependency-repairs-20261022/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:13.5682403Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/542b52cc12ca668e64c13a072acf7374bd0a5752/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:14.1906588Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/542b52cc12ca668e64c13a072acf7374bd0a5752/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:14.6309504Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fdocker-pipeline-20261022/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:15.0677453Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/a5373d5c0eef5466a20e6ef4d4682a06275e20d4/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:15.6695878Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/a5373d5c0eef5466a20e6ef4d4682a06275e20d4/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:16.0884314Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fdurable-chain-reconciliation-20261022/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:16.5781903Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:17.1909268Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:17.6406900Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fdurable-outbox-pubsub-20261022/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:18.0382667Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/65367789130870c8c2a0e786f2d6152357d88093/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:18.6328179Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/65367789130870c8c2a0e786f2d6152357d88093/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:19.1502771Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fexplain-execution-details-and-next-steps/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:19.6719862Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/15ae7bf3ce02773ec431977cd23c6f5b19d811fd/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:20.3602503Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/15ae7bf3ce02773ec431977cd23c6f5b19d811fd/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:20.9667741Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fmidnight-integration-20261022/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:21.5844898Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/32e63d4d87f515f5398ab01d1eb18eba94019b5c/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:22.3016000Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/32e63d4d87f515f5398ab01d1eb18eba94019b5c/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:22.8678403Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fprivacy-recovery-safety-20261023/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:23.2750630Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/e6274ef5a19e5db77d27c19c3b7349b08fa96c84/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:23.8654673Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/e6274ef5a19e5db77d27c19c3b7349b08fa96c84/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:24.4793041Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Frights-export-worker/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:24.9656094Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/02297b2cea98dfd54818de5a3104a1ce341acfcd/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:25.6485148Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/02297b2cea98dfd54818de5a3104a1ce341acfcd/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:26.3297827Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Frights-privacy-read-api/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:26.8617798Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/10a468395cde98eaf7b7f0159855c7bac3a5827a/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:27.5707994Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/10a468395cde98eaf7b7f0159855c7bac3a5827a/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:28.0000922Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/docs%2Fbrandme-full-experience-2026-10-05/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:28.3926574Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/b31373170953705f180246e254a8c2e9a41b4931/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:29.0224582Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/b31373170953705f180246e254a8c2e9a41b4931/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:29.5596705Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/fix%2Fproperty-test-vacuity-guard-flake/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:30.0195907Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/a699331df56c12570067223dbaad9c0a86d1567a/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:30.6151186Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/a699331df56c12570067223dbaad9c0a86d1567a/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:31.0559672Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/main/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:31.4678766Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/ed19dc151d103b108cf972e6d37971c55d5dcf60/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:32.0374075Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/ed19dc151d103b108cf972e6d37971c55d5dcf60/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:32.5028039Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/mia%2Fnext-plans-20261025/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:32.9788187Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/057320d4bf01e86c381d6750202e6e5bb7bb741f/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:33.7016111Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/057320d4bf01e86c381d6750202e6e5bb7bb741f/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:34.3079172Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/mia%2Forchestration-20261023/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:34.8107539Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/27f3215a9cb3512ee6d92a5a6fb13519bd82385d/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:35.5443673Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/27f3215a9cb3512ee6d92a5a6fb13519bd82385d/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:36.0704271Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/mia%2Fpipeline-seed-20261030/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:36.5548577Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/5e9eceb67599f2465ca2d7a47b71234965f0b2f1/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:37.2503351Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/5e9eceb67599f2465ca2d7a47b71234965f0b2f1/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:37.7205770Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/triage%2Fpnpm-version-conflict-20261023/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:38.1974225Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/114470007e9c631010ee22930a8ddfb75d0ea700/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:38.7228628Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/114470007e9c631010ee22930a8ddfb75d0ea700/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:39.1637039Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/triage%2Fpnpm-workspace-frontend-20261008/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:39.6000359Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:40.1911508Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:40.7569090Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/w11%2Fintegration-20261008/protection",
+    "exit_code": 1,
+    "captured_at": "2026-11-01T14:31:41.3152657Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/bec80b1f25fcd4a310529888351c45c71d33dc4a/check-runs?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:42.0746821Z",
+    "pagination": "gh --paginate --slurp"
+  },
+  {
+    "endpoint": "repos/brandmeonline/Brand-Me-Labs/commits/bec80b1f25fcd4a310529888351c45c71d33dc4a/statuses?per_page=100",
+    "exit_code": 0,
+    "captured_at": "2026-11-01T14:31:42.7044266Z",
+    "pagination": "gh --paginate --slurp"
+  }
+]

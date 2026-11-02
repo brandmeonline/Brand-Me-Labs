@@ -1,0 +1,53 @@
+# canonical chain run 2 (2026-11-02) — gateway (tsx) + python -m brandme_core.domains.persona.app + native Spanner emulator; key material redacted
+02:23:34 HEAD ed19dc151d103b108cf972e6d37971c55d5dcf60
+02:23:34 migrations (idempotent):
+V013_outbox_delivery          applied
+V014_privacy_exports          applied
+V015_commerce_quote_terms     applied
+02:23:35 preflight:
+[brandme preflight] consumer_domains: allowed in development; simulated adapters: 0
+02:23:35 service --check:
+{"status":"ready"}
+02:23:38 consumer-domains pid=21244 port 8010 up
+{"status":"ok","media":"not_configured"}
+02:23:38 gateway key: 4 PEM lines, kid dev-2026-11-02-eb18195c
+02:23:40 gateway pid=21364 port 3001 up
+{"status":"ok","timestamp":"2026-11-02T02:23:40.460Z","service":"brandme-gateway"}
+PASS anonymous GET /wardrobe/items is refused — HTTP 401
+PASS dev session (labelled simulation) for audit-alice — HTTP 201, assurance simulated
+PASS GET /me returns the member — HTTP 200
+PASS GET /me/persona through gateway -> consumer-domain service (ES256 assertion) -> Spanner — HTTP 200, keys ['adaptation_proposals', 'axes', 'constraints', 'context_overrides', 'exists', 'profile']
+PASS POST /wardrobe/items creates a self-reported item — HTTP 201, id 2c3c7407…, claim_level self_reported
+PASS same Idempotency-Key replays the same item (no duplicate) — HTTP 201
+PASS GET /wardrobe/items lists exactly the created item — HTTP 200, count 1
+PASS GET /recommendations answers 200 with an EMPTY list (F-ARCH-003 at runtime) — HTTP 200, items 0, keys ['basis', 'excluded', 'exclusions_honored', 'items', 'next_cursor', 'profile_version']
+PASS GET /rewards answers 200 (new member) — HTTP 200, account {'available': 0, 'reserved': 0, 'lifetime_earned': 0, 'gross_earned': 0, 'reversed': 0, 'spent': 0, 'recovery_due': 0, 'version': '0'}
+PASS second dev session for audit-bob is a distinct member — HTTP 201
+PASS bob cannot read alice's item (account isolation) — HTTP 404
+PASS bob's wardrobe is empty — HTTP 200
+PASS command without X-CSRF-Token is refused — HTTP 403
+PASS command from a foreign Origin is refused — HTTP 403
+PASS DELETE /session signs out — HTTP 204
+PASS after sign-out GET /me is 401 — HTTP 401
+SUMMARY passed=16 failed=0
+02:23:44 journey exit=0
+02:23:46 stopped; 3001 closed, 8010 closed
+
+# run 1 (driver defect: PEM \n not expanded by bash source → gateway importPKCS8 failed → HTTP 500 on forwarded routes)
+PASS anonymous GET /wardrobe/items is refused — HTTP 401
+PASS dev session (labelled simulation) for audit-alice — HTTP 201, assurance simulated
+PASS GET /me returns the member — HTTP 200
+FAIL GET /me/persona through gateway -> consumer-domain service (ES256 assertion) -> Spanner — HTTP 500, keys ['code', 'detail', 'instance', 'request_id', 'retryable', 'status']
+FAIL POST /wardrobe/items creates a self-reported item — HTTP 500, id None…, claim_level None
+FAIL same Idempotency-Key replays the same item (no duplicate) — HTTP 500
+FAIL GET /wardrobe/items lists exactly the created item — HTTP 500, count 0
+FAIL GET /recommendations answers 200 with an EMPTY list (F-ARCH-003 at runtime) — HTTP 500, items None, keys ['code', 'detail', 'instance', 'request_id', 'retryable', 'status']
+FAIL GET /rewards answers 200 (new member) — HTTP 500, account None
+PASS second dev session for audit-bob is a distinct member — HTTP 201
+PASS bob cannot read alice's item (account isolation) — HTTP 404
+FAIL bob's wardrobe is empty — HTTP 500
+PASS command without X-CSRF-Token is refused — HTTP 403
+PASS command from a foreign Origin is refused — HTTP 403
+PASS DELETE /session signs out — HTTP 204
+PASS after sign-out GET /me is 401 — HTTP 401
+SUMMARY passed=9 failed=7

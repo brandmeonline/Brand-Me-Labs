@@ -1,10 +1,9 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * /api/v1 persona, recommendations and guest migration — UNMOUNTED router
- * (lane: opus-consumer-domains). Mount at integration, from index.ts:
- *
- *   router.use(personaRouter(domainClient));   // after principalMiddleware
+ * /api/v1 persona, recommendations, guest migration and the persona card
+ * (lane: opus-consumer-domains), mounted from index.ts behind
+ * principalMiddleware.
  *
  * The gateway is the identity boundary: `res.locals.principal` comes from the
  * foundation session/bearer middleware, never from the body or query. This
@@ -281,6 +280,28 @@ export function personaRouter(client: DomainClient): Router {
       idempotencyKey: idempotencyKey(req),
     })),
   );
+
+  // The living persona card (Ultra plan 02, item 6): settings are the member's own; viewing respects them.
+  r.get('/me/persona/card', requireScope('profile:read'), forwardTo(client, () => ({ method: 'GET', path: '/me/persona/card' })));
+  r.put(
+    '/me/persona/card',
+    requireScope('profile:write'),
+    forwardTo(client, (req, res) => {
+      if ((res.locals.principal as Principal).delegationId) throw problems.forbidden('Only the member decides who sees their card.');
+      const b = objectBody(req, 3);
+      const extra = Object.keys(b).filter((k) => !['audience', 'show_standings', 'highlight_item_ids'].includes(k));
+      if (extra.length) throw problems.invalid(`Unknown fields: ${extra.join(', ')}.`);
+      if (b.audience !== undefined && !['private', 'friends', 'members'].includes(b.audience as string)) throw problems.invalid('Unknown audience.');
+      if (b.show_standings !== undefined && typeof b.show_standings !== 'boolean') throw problems.invalid('show_standings must be true or false.');
+      const ids = b.highlight_item_ids;
+      if (ids !== undefined && (!Array.isArray(ids) || ids.length > 6 || !ids.every((i) => typeof i === 'string' && UUID_RE.test(i)))) {
+        throw problems.invalid('Pick at most 6 highlights by id.');
+      }
+      return { method: 'PUT', path: '/me/persona/card', body: b };
+    }),
+  );
+  r.get('/members/:memberId/card', requirePrincipal, requireScope('social:read'),
+    forwardTo(client, (req) => ({ method: 'GET', path: `/members/${uuidParam(req, 'memberId')}/card` })));
 
   return r;
 }

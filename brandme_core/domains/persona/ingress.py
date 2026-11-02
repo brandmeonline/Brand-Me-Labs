@@ -145,21 +145,29 @@ class Outcome:
 
 
 class LaneSubscriber:
-    """Routes this lane's subscribed contracts to their consumers."""
+    """Routes this lane's subscribed contracts to their consumers. A contract may
+    have several consumers (rewards and the persona card both follow
+    ``persona.updated``); each is idempotent, so a redelivery after a partial
+    failure repeats nothing."""
 
-    def __init__(self, database: Any, *, environment: str, rewards: Any = None, wardrobe: Any = None):
+    def __init__(self, database: Any, *, environment: str, rewards: Any = None, wardrobe: Any = None, cards: Any = None):
         if environment not in ("demo", "development", "sandbox", "production"):
             raise ValueError("explicit Brand.Me environment required")
+        from brandme_core.domains.persona.card import TRIGGERS, PersonaCardConsumer
         from brandme_core.domains.persona.lane import load_domains
         from brandme_core.domains.rewards.consumer import HANDLED, RewardsConsumer
+        from brandme_core.domains.social.houses import catalog_variant_lookup
         from brandme_core.domains.wardrobe.service import WardrobeService
 
         load_domains()
         self.environment = environment
         rewards = rewards or RewardsConsumer(database)
-        wardrobe = wardrobe or WardrobeService(database)
-        self.routes: Dict[str, Callable[[EventEnvelope], Mapping[str, Any]]] = {t: rewards.handle for t in HANDLED}
-        self.routes["commerce.order.observed"] = wardrobe.apply_order_observation
+        wardrobe = wardrobe or WardrobeService(database, catalog_lookup=catalog_variant_lookup(database))
+        cards = cards or PersonaCardConsumer(database)
+        self.routes: Dict[str, List[Callable[[EventEnvelope], Mapping[str, Any]]]] = {t: [rewards.handle] for t in HANDLED}
+        self.routes["commerce.order.observed"] = [wardrobe.apply_order_observation]
+        for t in TRIGGERS:
+            self.routes.setdefault(t, []).append(cards.handle)
 
     def handle_message(self, data: bytes, attributes: Mapping[str, str]) -> Outcome:
         if attributes.get("event_type") not in self.routes:
@@ -171,13 +179,15 @@ class LaneSubscriber:
             return Outcome(False, rejected.code)
         from brandme_core.domains.persona.kernel import ValidationFailed
 
+        statuses = []
         try:
-            result = self.routes[event.event_type](event)
+            for handler in self.routes[event.event_type]:
+                statuses.append(str(handler(event).get("status", "processed")))
         except ValidationFailed:
             return Outcome(False, "payload_rejected")
         except Exception:
-            return Outcome(False, "apply_failed")  # retried; the inbox makes the retry safe
-        return Outcome(True, str(result.get("status", "processed")))
+            return Outcome(False, "apply_failed")  # retried; each consumer's inbox makes the retry safe
+        return Outcome(True, statuses[0])  # the contract's primary consumer; a side consumer's failure still retries
 
 
 def emulator_base(host: str, environment: str) -> str:

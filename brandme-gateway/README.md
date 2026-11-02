@@ -2,198 +2,55 @@
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
 
-Edge API gateway for the Brand.Me platform.
+Express/TypeScript edge gateway: server-side cookie sessions with CSRF, per-address and per-member rate limits,
+and the `/api/v1` routers that front the Python services. Default port **3001** (`src/config/index.ts`). Status
+per `CLAUDE.md`: **REAL** (169 vitest tests, run in CI by `ci-cd.yml` Test Gateway).
 
-The mounted v1 rights and My Data reads now have a
-[runnable authenticated backend](../brandme_core/read_api/README.md). Configure
-the rights/privacy URLs and distinct `RIGHTS_SERVICE_TOKEN` and
-`PRIVACY_SERVICE_TOKEN` credentials as documented there. Privacy no longer falls
-back to the rights credential. The backend explicitly reports partial rights
-inventory coverage; export/deletion and rights commands remain unavailable.
+## What it serves
 
-## Features
+| Routes | Backend | Notes |
+|---|---|---|
+| `/api/v1/session/*`, `/me` | the gateway itself (Spanner sessions, CSRF, `If-Match` versions) | labelled dev identity simulation in demo/development only (`POST /api/v1/session/dev`); OIDC bearer verification when `IDENTITY_PROVIDER=oidc` |
+| consumer routers: persona, wardrobe, outfits, social, decisions, rewards, media, try-on (`src/routes/v1/index.ts`) | `brandme_core/domains/persona/app.py` (consumer-domains service, port 8010) | forwarded with ES256 principal assertions signed by `CONSUMER_DOMAIN_ASSERTION_KEY`; unconfigured upstream → 503 per route |
+| rights and My Data reads (`src/services/rights.ts`) | `brandme_core/read_api` and `brandme_core/privacy_exports` | each upstream has its own service token (32+ characters); privacy never falls back to the rights credential |
+| Midnight operations (`src/services/rights.ts`) | `brandme-chain` `/midnight` API (`CHAIN_SERVICE_URL`, default `http://localhost:3003`, with `CHAIN_SERVICE_TOKEN`) | only when configured; `brandme-chain/INTEGRATION.md` |
+| legacy `/scan` | `brandme-core/brain` (`BRAIN_SERVICE_URL`, default `http://localhost:8000`) | the legacy scan chain; see `CLAUDE.md` |
 
-- **OAuth Authentication**: JWT-based authentication with Google OAuth
-- **Rate Limiting**: Request throttling per user/IP
-- **NATS Publishing**: Event-driven architecture via NATS JetStream
-- **Request Logging**: Structured logging with Pino
-- **Security**: Helmet.js, CORS, input validation
-- **Health Checks**: Kubernetes-ready liveness/readiness probes
+Commerce routers exist under `src/routes/v1/` but are not mounted (commerce-agents lane; `CLAUDE.md`).
 
-## API Endpoints
+## Configuration
 
-### POST /scan
+Read by `loadConfig()` in `src/config/index.ts`; the schema is strict and the process refuses to boot on an
+invalid combination.
 
-Initiate a garment scan.
+- Mode and identity: `BRANDME_MODE` (`demo|development|sandbox|production`), `IDENTITY_PROVIDER` (`dev|oidc`),
+  `OIDC_ISSUER`, `OIDC_AUDIENCE`, `OIDC_JWKS_URI`, `OIDC_ALGORITHMS`, `SESSION_TTL_HOURS`.
+- Upstreams: `BRAIN_SERVICE_URL`, `CHAIN_SERVICE_URL`, `RIGHTS_SERVICE_URL`, `PRIVACY_SERVICE_URL`,
+  `PRIVACY_EXPORT_SERVICE_URL`, `CONSUMER_DOMAIN_SERVICE_URL`, and their credentials `RIGHTS_SERVICE_TOKEN`,
+  `PRIVACY_SERVICE_TOKEN`, `PRIVACY_EXPORT_SERVICE_TOKEN`, `CHAIN_SERVICE_TOKEN`, `CONSUMER_DOMAIN_ASSERTION_KEY`,
+  `CONSUMER_DOMAIN_ASSERTION_KID` (every secret-shaped name is listed in `docs/build/security/credential-manifest.yaml`).
+- Storage and events: `SPANNER_PROJECT_ID`, `SPANNER_INSTANCE_ID`, `SPANNER_DATABASE_ID`; `NATS_URL` is optional.
+- Edge: `PORT`, `CORS_ORIGINS`, `PUBLIC_ORIGINS`, `TRUST_PROXY` (hop count or IP/CIDR list, never bare `true`),
+  `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX_REQUESTS`, `RATE_LIMIT_IP_MAX_REQUESTS`, `RATE_LIMIT_MAX_KEYS`,
+  `DEFAULT_REGION`, `LOG_LEVEL`.
 
-**Authentication**: Required (Bearer token)
+Strict modes (`sandbox`, `production`) refuse the legacy shared `JWT_SECRET` and the dev identity provider
+(`docs/build/security/secrets-conventions.md`).
 
-**Request**:
-```json
-{
-  "garment_tag": "NFC_TAG_001"
-}
-```
-
-**Response** (202 Accepted):
-```json
-{
-  "scan_id": "uuid",
-  "status": "processing"
-}
-```
-
-### GET /healthz
-
-Health check endpoint.
-
-**Response** (200 OK):
-```json
-{
-  "status": "ok",
-  "timestamp": "2025-10-25T12:00:00.000Z",
-  "service": "brandme-gateway"
-}
-```
-
-## Development
-
-### Prerequisites
-
-- Node.js 18+
-- pnpm 8+
-- NATS server
-
-### Setup
+## Run
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env with your configuration
+pnpm dev:demo                          # from the repo root: brain :8000, gateway :3001, consumer :3000
+pnpm --filter @brandme/gateway dev     # gateway alone (needs the Spanner emulator and brain)
+pnpm --filter @brandme/gateway test    # vitest (CI: ci-cd.yml Test Gateway, with the Spanner emulator)
+pnpm --filter @brandme/gateway type-check
 ```
 
-### Running
+In containers the `gateway` service of `docker-compose.yml` runs the same `dev` script on port 3001; the
+`consumer-domains` service shares its network namespace.
 
-```bash
-# Development mode (with hot reload)
-pnpm dev
+## Where the rest is documented
 
-# Build
-pnpm build
-
-# Production mode
-pnpm start
-```
-
-### Testing
-
-```bash
-# Run tests
-pnpm test
-
-# Run tests with coverage
-pnpm test:coverage
-
-# Lint
-pnpm lint
-
-# Format code
-pnpm format
-
-# Type check
-pnpm type-check
-```
-
-## Docker
-
-```bash
-# Build image
-docker build -t brandme-gateway .
-
-# Run container
-docker run -p 3000:3000 --env-file .env brandme-gateway
-```
-
-## Environment Variables
-
-See `.env.example` for all available configuration options.
-
-Key variables:
-- `OAUTH_CLIENT_ID`: OAuth client ID
-- `OAUTH_CLIENT_SECRET`: OAuth client secret
-- `JWT_SECRET`: Secret for JWT verification (min 32 chars)
-- `NATS_URL`: NATS server URL
-- `DEFAULT_REGION`: Default region code
-
-## Architecture
-
-```
-┌─────────────┐
-│   Client    │
-└──────┬──────┘
-       │ HTTPS (Bearer token)
-       ▼
-┌─────────────────────────────┐
-│    brandme-gateway          │
-│  - Auth Middleware          │
-│  - Rate Limiter             │
-│  - Request Logger           │
-└──────┬──────────────────────┘
-       │ NATS JetStream
-       ▼
-┌─────────────────────────────┐
-│  NATS: scan.requested       │
-└─────────────────────────────┘
-```
-
-## Security
-
-- All requests must include valid JWT in `Authorization: Bearer <token>` header
-- Secrets are never logged (redacted via Pino)
-- Rate limiting prevents abuse
-- CORS configured for trusted origins only
-- Helmet.js provides additional security headers
-
-## Deployment
-
-### Kubernetes
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: brandme-gateway
-spec:
-  replicas: 3
-  template:
-    spec:
-      containers:
-      - name: gateway
-        image: gcr.io/brandme/gateway:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: OAUTH_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: oauth-secrets
-              key: client-id
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 3000
-        readinessProbe:
-          httpGet:
-            path: /healthz
-            port: 3000
-```
-
-## License
-
-Copyright (c) Brand.Me, Inc. All rights reserved.
-
-Proprietary and confidential.
+`CLAUDE.md` (status), `brandme_core/read_api/README.md` (rights and My Data backend),
+`docs/build/status/opus-foundation.md` (sessions, CSRF, mode guard, rate limits),
+`docs/build/status/opus-consumer-domains.md` (consumer routers), `brandme-chain/INTEGRATION.md` (Midnight).

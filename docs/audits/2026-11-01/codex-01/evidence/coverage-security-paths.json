@@ -1,0 +1,501 @@
+{
+  "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "statement": "Evidence-based reviewed/sampled path union; not an exhaustive per-line security review. Broad file enumerations and automatic secret scan coverage excluded from manual-read claims.",
+  "paths": [
+    {
+      "path": ".claude/hooks/session-start.sh",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": ".claude/settings.json",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": ".github/workflows/ci-cd.yml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": ".github/workflows/consumer-ui.yml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": ".github/workflows/module-regression.yml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": ".github/workflows/spatial-validation.yml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": ".mcp.json",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": ".trivyignore.yaml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "CLAUDE.md",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-agents/agentic/cli/main.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-agents/agentic/graph_db.py",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "brandme-agents/agentic/graph_rag.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-agents/branding/requirements.txt",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-agents/branding/src/database.py",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "brandme-agents/branding/src/graph_engine.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-chain/Dockerfile",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "brandme-chain/package.json",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-chain/src/cardano/anchor.ts",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "brandme-chain/src/config/index.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-chain/src/index.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-chain/src/midnight/adapter.ts",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "brandme-chain/src/midnight/capability.ts",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "brandme-chain/src/routes/midnight.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-console/Dockerfile",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "brandme-console/next.config.js",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "brandme-core/Dockerfile",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "brandme-core/requirements.txt",
+      "scope": "selected dependency pins/generator execution excerpt; not exhaustive",
+      "basis": "final advisory review"
+    },
+    {
+      "path": "brandme-frontend/features/spatial/server/photoService.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-frontend/next.config.js",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "brandme-gateway/Dockerfile",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "brandme-gateway/src/config/index.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-gateway/src/index.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-gateway/src/middleware/auth.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-gateway/src/middleware/identity/store.ts",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "brandme-gateway/src/middleware/mode.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-gateway/src/middleware/rateLimiter.ts",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in findings-security.json"
+    },
+    {
+      "path": "brandme-gateway/src/middleware/session.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-gateway/src/routes/health.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-gateway/src/routes/v1/index.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-gateway/src/routes/v1/me.ts",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-gateway/src/services/nats.ts",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "brandme-infra/helm/brandme/templates/_core.tpl",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-infra/helm/brandme/templates/console.yaml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-infra/helm/brandme/templates/core-workloads.yaml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-infra/helm/brandme/templates/gateway.yaml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-infra/helm/brandme/templates/networkpolicy.yaml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-infra/helm/brandme/values.yaml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme-infra/terraform/main.tf",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/boot.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/config.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2.py",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "brandme_core/domains/commerce/composition.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/media/gcs_store.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/media/providers.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/media/service.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/persona/app.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/persona/assertion.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/providers/merchant.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/providers/nordstrom.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/providers/payments/stripe_wire.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/providers/setup.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/providers/url_guard.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/domains/social/notifications.py",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "brandme_core/events/README.md",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/events/worker.py",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "brandme_core/firestore/client.py",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "brandme_core/health.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/metrics.py",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "brandme_core/orchestrator/anthropic_adapter.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/orchestrator/composition.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/orchestrator/model_planner.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/orchestrator/runtime.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/privacy_exports/app.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/privacy_exports/config.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/read_api/app.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/read_api/config.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/requirements.txt",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "brandme_core/telemetry.py",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in integrations.json"
+    },
+    {
+      "path": "docker-compose.dev.yml",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "docker-compose.yml",
+      "scope": "targeted grep excerpts only",
+      "basis": "runtime/env/lifecycle/query review searches"
+    },
+    {
+      "path": "docs/build/security/credential-manifest.yaml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "package.json",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "packages/contracts/scripts/generate.mjs",
+      "scope": "selected dependency pins/generator execution excerpt; not exhaustive",
+      "basis": "final advisory review"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "scripts/assets/prepare-vision.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "scripts/provision/gcp-dev-identities.sh",
+      "scope": "reviewed excerpt / cited trust boundary; not entire file exhaustively",
+      "basis": "material citation in findings-security.json"
+    },
+    {
+      "path": "scripts/python/requirements.in",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "scripts/python/requirements.lock",
+      "scope": "selected dependency pins/generator execution excerpt; not exhaustive",
+      "basis": "final advisory review"
+    },
+    {
+      "path": "tests/conftest.py",
+      "scope": "read or sampled via Get-Content; some output truncated, no whole-file completeness claimed",
+      "basis": "review tool calls in security-infra audit"
+    },
+    {
+      "path": "docs/design/brandme/contracts/domain.schema.json",
+      "scope": "targeted advisory prerequisite search or cited code read; not whole-file manual review",
+      "basis": "expanded security advisory triage"
+    },
+    {
+      "path": "packages/contracts/src/foundation-schemas.json",
+      "scope": "targeted advisory prerequisite search or cited code read; not whole-file manual review",
+      "basis": "expanded security advisory triage"
+    },
+    {
+      "path": "packages/contracts/generated/domain.schema.json",
+      "scope": "targeted advisory prerequisite search or cited code read; not whole-file manual review",
+      "basis": "expanded security advisory triage"
+    },
+    {
+      "path": "tests/foundation/test_contract_models.py",
+      "scope": "targeted advisory prerequisite search or cited code read; not whole-file manual review",
+      "basis": "expanded security advisory triage"
+    },
+    {
+      "path": "brandme-agents/Dockerfile",
+      "scope": "targeted advisory prerequisite search or cited code read; not whole-file manual review",
+      "basis": "expanded security advisory triage"
+    },
+    {
+      "path": "brandme-agents/agentic/requirements.txt",
+      "scope": "targeted advisory prerequisite search or cited code read; not whole-file manual review",
+      "basis": "expanded security advisory triage"
+    },
+    {
+      "path": "brandme-core/brain/main.py",
+      "scope": "targeted legacy advisory prerequisite source sample",
+      "basis": "parallel aiohttp advisory reviewer"
+    },
+    {
+      "path": "brandme-core/orchestrator/worker.py",
+      "scope": "targeted legacy advisory prerequisite source sample",
+      "basis": "parallel aiohttp advisory reviewer"
+    },
+    {
+      "path": "brandme-core/policy/main.py",
+      "scope": "targeted legacy advisory prerequisite source sample",
+      "basis": "parallel aiohttp advisory reviewer"
+    },
+    {
+      "path": "brandme-core/orchestrator/main.py",
+      "scope": "targeted legacy advisory prerequisite source sample",
+      "basis": "parallel aiohttp advisory reviewer"
+    }
+  ]
+}

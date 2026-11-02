@@ -119,20 +119,29 @@ def credit_entry_id(member_id: str, rule: Rule, cause_event_id: str) -> str:
     return stable_id("reward-credit", member_id, rule.id, str(rule.version), key)
 
 
+def _buffered_credits(txn, member_id: str, rule_id: str, start: datetime, end: datetime) -> List[Dict[str, Any]]:
+    """Posted credits this transaction has buffered but its reads cannot see yet."""
+    return [e for e in getattr(txn, "_bm_rewards_pending", {"entries": []})["entries"]
+            if e["member_id"] == member_id and e["rule_id"] == rule_id and e["kind"] == "credit" and e["state"] == "posted"
+            and start <= e["qualifying_at"] < end]
+
+
 def _window_used(txn, member_id: str, rule: Rule, at: datetime) -> int:
     start, end = cap_window(rule.cap_window, at)
-    return query(txn, "SELECT COALESCE(SUM(points), 0) FROM RewardEntries WHERE member_id=@m AND rule_id=@r AND rule_version=@v "
-                      "AND kind='credit' AND state='posted' AND qualifying_at >= @s AND qualifying_at < @e",
-                 {"m": member_id, "r": rule.id, "v": rule.version, "s": start, "e": end},
-                 {"m": STR, "r": STR, "v": INT, "s": TS, "e": TS})[0][0]
+    stored = query(txn, "SELECT COALESCE(SUM(points), 0) FROM RewardEntries WHERE member_id=@m AND rule_id=@r AND rule_version=@v "
+                        "AND kind='credit' AND state='posted' AND qualifying_at >= @s AND qualifying_at < @e",
+                   {"m": member_id, "r": rule.id, "v": rule.version, "s": start, "e": end},
+                   {"m": STR, "r": STR, "v": INT, "s": TS, "e": TS})[0][0]
+    return stored + sum(e["points"] for e in _buffered_credits(txn, member_id, rule.id, start, end) if e["rule_version"] == rule.version)
 
 
 def _pair_awards(txn, member_id: str, rule: Rule, at: datetime, pair_ref: str) -> int:
     start, end = cap_window("calendar_day", at)
-    return query(txn, "SELECT COUNT(*) FROM RewardEntries WHERE member_id=@m AND rule_id=@r AND kind='credit' AND state='posted' "
-                      "AND qualifying_at >= @s AND qualifying_at < @e AND @p IN UNNEST(evidence_refs)",
-                 {"m": member_id, "r": rule.id, "s": start, "e": end, "p": pair_ref},
-                 {"m": STR, "r": STR, "s": TS, "e": TS, "p": STR})[0][0]
+    stored = query(txn, "SELECT COUNT(*) FROM RewardEntries WHERE member_id=@m AND rule_id=@r AND kind='credit' AND state='posted' "
+                        "AND qualifying_at >= @s AND qualifying_at < @e AND @p IN UNNEST(evidence_refs)",
+                   {"m": member_id, "r": rule.id, "s": start, "e": end, "p": pair_ref},
+                   {"m": STR, "r": STR, "s": TS, "e": TS, "p": STR})[0][0]
+    return stored + sum(1 for e in _buffered_credits(txn, member_id, rule.id, start, end) if pair_ref in e["evidence_refs"])
 
 
 def credit(txn, ctx: CommandContext, member_id: str, rule: Rule, cause_event_id: str, qualifying_at: datetime,

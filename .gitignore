@@ -66,8 +66,9 @@ eggs/
 lib/
 lib64/
 
-# Frontend lib directories should NOT be ignored
+# Application lib directories are source, not Python build output.
 !brandme-frontend/lib/
+!brandme-console/lib/
 parts/
 sdist/
 var/
@@ -208,31 +209,12 @@ temp/
 # GCP & Cloud
 # ========================================
 gcloud-config/
-*.json
-!package.json
-!tsconfig.json
-!manifest.json
-!.mcp.json
-# Only the tracked project settings file; any other JSON under .claude/ (keys, local state) stays ignored.
+# No blanket *.json rule. It silently dropped tracked fixtures, schemas and evidence (deviations D-003; the
+# 2026-11-02 audit lost 52 files to it). Credential-shaped JSON is caught by the patterns below; any other JSON
+# under .claude/ (keys, local state) stays ignored.
+.claude/**/*.json
 !.claude/settings.json
 .claude/settings.local.json
-
-# Public design contracts and fictional examples; no credentials or live records.
-!docs/design/brandme/contracts/acceptance-catalog.json
-!docs/design/brandme/contracts/contract-examples.json
-!docs/design/brandme/contracts/demo-scenario.json
-!docs/design/brandme/contracts/design-tokens.json
-!docs/design/brandme/contracts/domain.schema.json
-!docs/design/brandme/contracts/reward-rules.json
-
-# Source-controlled JSON: package schemas/generated contracts, test fixtures, vendored schemas, build-lane
-# evidence. A `*.json` blanket ignore silently dropped lane fixtures and schemas, so new files here must show
-# up in `git status`.
-!packages/**/*.json
-!tests/fixtures/**/*.json
-!brandme_core/**/schemas/**/*.json
-!brandme_core/domains/commerce/ap2_schemas/**/*.json
-!docs/build/**/*.json
 !docs/build/**/*.log
 
 # Credential-shaped JSON (NEVER commit). Kept after every negation above so no allowlisted path re-includes them.
@@ -269,4 +251,8 @@ loki-data/
 
 # Regression artifacts
 scripts/regression/.last-run-report.md
-!brandme-chain/src/services/cardano-wallet.ts
+
+# docs/audits holds dated audit packs (evidence JSON, logs, screenshots); none of it is build output.
+# Last rule wins: this must stay after the *.log rule above.
+!docs/audits/
+!docs/audits/**

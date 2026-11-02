@@ -1,0 +1,23 @@
+{
+  "captured_at": "2026-11-01T14:43:35.9558852Z",
+  "initial_remote_count": 34,
+  "final_remote_count": 35,
+  "main_unchanged": true,
+  "added": [
+    {
+      "sha": "45e157f5555647f0e9add424b9634f27d606211d",
+      "ref": "refs/heads/claude/amazing-goodall-ntrljq"
+    }
+  ],
+  "moved": [],
+  "no_longer_advertised": [],
+  "fetch_command": "git fetch --no-tags --no-write-fetch-head origin refs/heads/claude/amazing-goodall-ntrljq:refs/remotes/origin/claude/amazing-goodall-ntrljq",
+  "fetch_exit": 0,
+  "original_checkout_modified": false,
+  "audit_head": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "audit_worktree_status": [],
+  "new_pr": 71,
+  "final_pr_total": 70,
+  "final_pr_open": 5,
+  "review": "Entire single230-line documentation addition read; no implementation change; provider/API/legal/financial assertions not independently verified"
+}

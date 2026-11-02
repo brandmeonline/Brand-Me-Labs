@@ -1,0 +1,4600 @@
+[
+  {
+    "ref": "bench/astra-consumer-ui-20261005",
+    "sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8",
+    "checks": [
+      {
+        "id": 121057026817,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-25T02:48:42Z",
+        "completed_at": "2026-10-25T02:48:42Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121057026817",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121056216939,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:44:25Z",
+        "completed_at": "2026-10-25T02:48:41Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121056216939",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121056216914,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:44:26Z",
+        "completed_at": "2026-10-25T02:45:17Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121056216914",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121056216900,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:44:25Z",
+        "completed_at": "2026-10-25T02:45:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121056216900",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121056216899,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:44:25Z",
+        "completed_at": "2026-10-25T02:47:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121056216899",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121056216890,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:44:25Z",
+        "completed_at": "2026-10-25T02:45:38Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121056216890",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054558647,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:58Z",
+        "completed_at": "2026-10-25T02:36:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/121054558647",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054466142,
+        "name": "live-domains",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:32Z",
+        "completed_at": "2026-10-25T02:37:46Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025378/job/121054466142",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054465987,
+        "name": "shell",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:32Z",
+        "completed_at": "2026-10-25T02:39:33Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025378/job/121054465987",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458992,
+        "name": "Test Consumer Domains (Python)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:39:56Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121054458992",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458960,
+        "name": "Helm lint, render and kubeconform",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:35:59Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025423/job/121054458960",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458922,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:35:54Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121054458922",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458916,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:44:23Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121054458916",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458901,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:36:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121054458901",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458872,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:36:16Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121054458872",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458870,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:36:35Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121054458870",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458821,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:37:36Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025337/job/121054458821",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458789,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:35:57Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025337/job/121054458789",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458762,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:35:55Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025337/job/121054458762",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458639,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:37:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025399/job/121054458639",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458628,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:35:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025365/job/121054458628",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458606,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:37:03Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025337/job/121054458606",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054458541,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:35:30Z",
+        "completed_at": "2026-10-25T02:37:33Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155025343/job/121054458541",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054447553,
+        "name": "shell",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "started_at": "2026-10-25T02:35:26Z",
+        "completed_at": "2026-10-25T02:35:30Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155021818/job/121054447553",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      },
+      {
+        "id": 121054447359,
+        "name": "live-domains",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "started_at": "2026-10-25T02:35:26Z",
+        "completed_at": "2026-10-25T02:35:29Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155021818/job/121054447359",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "bench/astra-spatial-ar-20261005",
+    "sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2",
+    "checks": [
+      {
+        "id": 124160327282,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-30T15:48:02Z",
+        "completed_at": "2026-10-30T15:48:02Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124160327282",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124157938214,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:43:37Z",
+        "completed_at": "2026-10-30T15:44:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124157938214",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124157938076,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:43:42Z",
+        "completed_at": "2026-10-30T15:44:31Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124157938076",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124157937960,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:43:38Z",
+        "completed_at": "2026-10-30T15:48:01Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124157937960",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124157937827,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:43:37Z",
+        "completed_at": "2026-10-30T15:44:23Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124157937827",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124157937792,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:43:37Z",
+        "completed_at": "2026-10-30T15:45:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124157937792",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150453450,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:32Z",
+        "completed_at": "2026-10-30T15:29:39Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/124150453450",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150220654,
+        "name": "live-domains",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:31:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124061/job/124150220654",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150220086,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:29:40Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124150220086",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150220083,
+        "name": "shell",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:33:14Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124061/job/124150220083",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150219976,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:43:34Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124150219976",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150219883,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:29:34Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124150219883",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150219748,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:42:51Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124150219748",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150219739,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:30:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124150219739",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150219428,
+        "name": "Spatial assets and types",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:29:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124025/job/124150219428",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150219346,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:30:11Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124022/job/124150219346",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150218861,
+        "name": "Spatial browser and local pose",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:34:35Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081124025/job/124150218861",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150218203,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:31:14Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081123961/job/124150218203",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150218001,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:29:07Z",
+        "completed_at": "2026-10-30T15:29:28Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081123932/job/124150218001",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150097802,
+        "name": "Spatial browser and local pose",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:28:54Z",
+        "completed_at": "2026-10-30T15:34:19Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081089710/job/124150097802",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      },
+      {
+        "id": 124150097134,
+        "name": "Spatial assets and types",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:28:53Z",
+        "completed_at": "2026-10-30T15:29:25Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41081089710/job/124150097134",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "bench/opus-commerce-agents-20261005",
+    "sha": "7c61afd7c98a66836ba91d715bc4c6c913807003",
+    "checks": [
+      {
+        "id": 112258789067,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-06T12:03:28Z",
+        "completed_at": "2026-10-06T12:03:50Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37460561359/job/112258789067",
+        "head_sha": "7c61afd7c98a66836ba91d715bc4c6c913807003"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "bench/opus-consumer-domains-20261005",
+    "sha": "d839267fc1f74b5e778e83f2930953e1a5400712",
+    "checks": [
+      {
+        "id": 112794722266,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-07T12:35:49Z",
+        "completed_at": "2026-10-07T12:35:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37622130015/job/112794722266",
+        "head_sha": "d839267fc1f74b5e778e83f2930953e1a5400712"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "bench/opus-foundation-20261005",
+    "sha": "67327e45ed816bd76bc20ed1e2eb694009923530",
+    "checks": [
+      {
+        "id": 112041881318,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-06T00:13:52Z",
+        "completed_at": "2026-10-06T00:14:21Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37392886550/job/112041881318",
+        "head_sha": "67327e45ed816bd76bc20ed1e2eb694009923530"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "bench/opus-midnight-rights-20261005",
+    "sha": "44aaceab55bdcf595ce56ff2ded562d79bf1d190",
+    "checks": [
+      {
+        "id": 112258823375,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-06T12:03:34Z",
+        "completed_at": "2026-10-06T12:05:23Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37460571741/job/112258823375",
+        "head_sha": "44aaceab55bdcf595ce56ff2ded562d79bf1d190"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "claude/brand-me-lux-foundations-audit-8zywr3",
+    "sha": "eed6737062da451a38114f8002159c1bed0e5cb5",
+    "checks": [
+      {
+        "id": 99622668924,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T19:53:22Z",
+        "completed_at": "2026-08-31T19:53:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/99622668924",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622628603,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-08-31T19:53:14Z",
+        "completed_at": "2026-08-31T19:53:13Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432954451/job/99622628603",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622628131,
+        "name": "Build Docker Images",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-08-31T19:53:14Z",
+        "completed_at": "2026-08-31T19:53:13Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432954451/job/99622628131",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622623984,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-08-31T19:53:13Z",
+        "completed_at": "2026-08-31T19:53:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432951063/job/99622623984",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622623008,
+        "name": "Build Docker Images",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-08-31T19:53:13Z",
+        "completed_at": "2026-08-31T19:53:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432951063/job/99622623008",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622494101,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-08-31T19:52:50Z",
+        "completed_at": "2026-08-31T19:53:13Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432954451/job/99622494101",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622494035,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T19:52:49Z",
+        "completed_at": "2026-08-31T19:53:11Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432954451/job/99622494035",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622493951,
+        "name": "Foundation tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T19:52:49Z",
+        "completed_at": "2026-08-31T19:53:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432954483/job/99622493951",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622493938,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T19:52:49Z",
+        "completed_at": "2026-08-31T19:53:11Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432954451/job/99622493938",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622493717,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-08-31T19:52:49Z",
+        "completed_at": "2026-08-31T19:53:02Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432954414/job/99622493717",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622493713,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T19:52:49Z",
+        "completed_at": "2026-08-31T19:53:31Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432954451/job/99622493713",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622483380,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-08-31T19:52:48Z",
+        "completed_at": "2026-08-31T19:53:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432951063/job/99622483380",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622483368,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-08-31T19:52:47Z",
+        "completed_at": "2026-08-31T19:53:05Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432951063/job/99622483368",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622483356,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T19:52:47Z",
+        "completed_at": "2026-08-31T19:53:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432951063/job/99622483356",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622483171,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T19:52:47Z",
+        "completed_at": "2026-08-31T19:53:06Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432951063/job/99622483171",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      },
+      {
+        "id": 99622483136,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-08-31T19:52:48Z",
+        "completed_at": "2026-08-31T19:52:59Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33432951060/job/99622483136",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "claude/ci-repair-workflows",
+    "sha": "512021c35a6b9d381c94fe02495ba903f411b916",
+    "checks": [
+      {
+        "id": 99655441455,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-08-31T21:46:10Z",
+        "completed_at": "2026-08-31T21:46:09Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33442968850/job/99655441455",
+        "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916"
+      },
+      {
+        "id": 99655440710,
+        "name": "Build Docker Images",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-08-31T21:46:09Z",
+        "completed_at": "2026-08-31T21:46:09Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33442968850/job/99655440710",
+        "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916"
+      },
+      {
+        "id": 99655425030,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T21:46:06Z",
+        "completed_at": "2026-08-31T21:46:08Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/99655425030",
+        "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916"
+      },
+      {
+        "id": 99655317627,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-08-31T21:45:44Z",
+        "completed_at": "2026-08-31T21:46:16Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33442968857/job/99655317627",
+        "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916"
+      },
+      {
+        "id": 99655317496,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T21:45:46Z",
+        "completed_at": "2026-08-31T21:46:19Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33442968850/job/99655317496",
+        "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916"
+      },
+      {
+        "id": 99655317431,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T21:45:44Z",
+        "completed_at": "2026-08-31T21:46:03Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33442968850/job/99655317431",
+        "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916"
+      },
+      {
+        "id": 99655317404,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T21:45:44Z",
+        "completed_at": "2026-08-31T21:46:03Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33442968850/job/99655317404",
+        "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916"
+      },
+      {
+        "id": 99655317298,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-08-31T21:45:44Z",
+        "completed_at": "2026-08-31T21:46:09Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/33442968850/job/99655317298",
+        "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "claude/midnight-rights-lifecycle-yhfyyu",
+    "sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820",
+    "checks": [
+      {
+        "id": 124241041630,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-30T18:30:17Z",
+        "completed_at": "2026-10-30T18:30:17Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124241041630",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124238362678,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:24:52Z",
+        "completed_at": "2026-10-30T18:25:46Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124238362678",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124238362625,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:24:52Z",
+        "completed_at": "2026-10-30T18:25:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124238362625",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124238362529,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:24:52Z",
+        "completed_at": "2026-10-30T18:27:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124238362529",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124238362469,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:24:52Z",
+        "completed_at": "2026-10-30T18:30:17Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124238362469",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124238362426,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:24:52Z",
+        "completed_at": "2026-10-30T18:26:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124238362426",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124230267069,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:54Z",
+        "completed_at": "2026-10-30T18:09:56Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/124230267069",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229950781,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:10:04Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124229950781",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229950572,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:24:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124229950572",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229950303,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:10:57Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124229950303",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229950161,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:23:34Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124229950161",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229950123,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:10:20Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124229950123",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229949685,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:10:33Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412729/job/124229949685",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229949030,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:09:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412502/job/124229949030",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229949019,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:11:03Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412502/job/124229949019",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229948898,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:11:33Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412614/job/124229948898",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229948881,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:10:06Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412502/job/124229948881",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229948715,
+        "name": "Helm lint, render and kubeconform",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:09:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412477/job/124229948715",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229948341,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:09:43Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412520/job/124229948341",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      },
+      {
+        "id": 124229948304,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T18:09:23Z",
+        "completed_at": "2026-10-30T18:12:51Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41104412502/job/124229948304",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "claude/opus-commerce-agents-setup-szpmf7",
+    "sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9",
+    "checks": [
+      {
+        "id": 121187177940,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-25T13:49:52Z",
+        "completed_at": "2026-10-25T13:49:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121187177940",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121186019386,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:44:56Z",
+        "completed_at": "2026-10-25T13:46:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121186019386",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121186019375,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:44:56Z",
+        "completed_at": "2026-10-25T13:47:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121186019375",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121186019361,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:44:56Z",
+        "completed_at": "2026-10-25T13:46:43Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121186019361",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121186019357,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:44:56Z",
+        "completed_at": "2026-10-25T13:49:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121186019357",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121186019344,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:44:56Z",
+        "completed_at": "2026-10-25T13:45:48Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121186019344",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183853357,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:35:32Z",
+        "completed_at": "2026-10-25T13:35:35Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/121183853357",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716524,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:36:08Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121183716524",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716472,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:36:46Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121183716472",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716455,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:44:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121183716455",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716449,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:35:19Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121183716449",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716447,
+        "name": "Test Consumer Domains (Python)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:39:03Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121183716447",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716446,
+        "name": "shell",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:59Z",
+        "completed_at": "2026-10-25T13:39:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261787/job/121183716446",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716395,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:35:38Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121183716395",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716281,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:35:40Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261803/job/121183716281",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716278,
+        "name": "live-domains",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:36:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261787/job/121183716278",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183716064,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:35:16Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261786/job/121183716064",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183715859,
+        "name": "Helm lint, render and kubeconform",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:35:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261721/job/121183715859",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      },
+      {
+        "id": 121183715725,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T13:34:58Z",
+        "completed_at": "2026-10-25T13:36:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40198261730/job/121183715725",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "claude/opus-consumer-domains-1csp2g",
+    "sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+    "checks": [
+      {
+        "id": 124223943233,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-30T17:58:42Z",
+        "completed_at": "2026-10-30T17:49:51Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124223943233",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124218322866,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:44:20Z",
+        "completed_at": "2026-10-30T17:46:30Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124218322866",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124218322787,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:44:17Z",
+        "completed_at": "2026-10-30T17:49:51Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124218322787",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124218322775,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:44:17Z",
+        "completed_at": "2026-10-30T17:45:28Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124218322775",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124218322765,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:44:17Z",
+        "completed_at": "2026-10-30T17:47:44Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124218322765",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124218322750,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:44:17Z",
+        "completed_at": "2026-10-30T17:48:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124218322750",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211628631,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:35Z",
+        "completed_at": "2026-10-30T17:26:38Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/124211628631",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331894,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:26:32Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774469/job/124211331894",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331780,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:26:42Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774469/job/124211331780",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331751,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:27:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774469/job/124211331751",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331553,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:28:45Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774469/job/124211331553",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331207,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:27:04Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124211331207",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331191,
+        "name": "live-domains",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:28:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774318/job/124211331191",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331188,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:43:03Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124211331188",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331084,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:03Z",
+        "completed_at": "2026-10-30T17:27:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124211331084",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331063,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:43:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124211331063",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331047,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:26:29Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124211331047",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211331023,
+        "name": "shell",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:29:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774318/job/124211331023",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211330854,
+        "name": "Helm lint, render and kubeconform",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:26:33Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774301/job/124211330854",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211330662,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:26:45Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774048/job/124211330662",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211330174,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:03Z",
+        "completed_at": "2026-10-30T17:26:20Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774075/job/124211330174",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      },
+      {
+        "id": 124211330095,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T17:26:04Z",
+        "completed_at": "2026-10-30T17:28:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774121/job/124211330095",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "claude/opus-foundation-w00-2hgiw5",
+    "sha": "f5c906ab163084f791a7b601f3bbb71a828bb934",
+    "checks": [
+      {
+        "id": 123922783868,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-30T06:14:59Z",
+        "completed_at": "2026-10-30T06:14:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123922783868",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123921122883,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T06:09:37Z",
+        "completed_at": "2026-10-30T06:14:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123921122883",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123921122878,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T06:09:37Z",
+        "completed_at": "2026-10-30T06:10:17Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123921122878",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123921122862,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T06:09:37Z",
+        "completed_at": "2026-10-30T06:10:57Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123921122862",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123921122860,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T06:09:36Z",
+        "completed_at": "2026-10-30T06:11:11Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123921122860",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123921122842,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T06:09:37Z",
+        "completed_at": "2026-10-30T06:10:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123921122842",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123917134795,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:56:08Z",
+        "completed_at": "2026-10-30T05:56:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/123917134795",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994790,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:41Z",
+        "completed_at": "2026-10-30T05:56:18Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123916994790",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994468,
+        "name": "live-domains",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:57:40Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123803/job/123916994468",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994420,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T06:08:03Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123916994420",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994415,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:56:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123916994415",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994407,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:56:35Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123916994407",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994396,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:58:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123772/job/123916994396",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994383,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:56:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123916994383",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994374,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:57:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123772/job/123916994374",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994373,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:56:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123772/job/123916994373",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994362,
+        "name": "shell",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:59:36Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123803/job/123916994362",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994238,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:57:06Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123808/job/123916994238",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994216,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T06:09:34Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123827/job/123916994216",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994169,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:56:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123839/job/123916994169",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994050,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:57:34Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123772/job/123916994050",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      },
+      {
+        "id": 123916994036,
+        "name": "Helm lint, render and kubeconform",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T05:55:40Z",
+        "completed_at": "2026-10-30T05:56:04Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41011123763/job/123916994036",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "claude/setup-design-system-cli-6iovG",
+    "sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32",
+    "checks": [
+      {
+        "id": 80696386332,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-06-11T00:41:28Z",
+        "completed_at": "2026-06-11T00:41:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/27315922546/job/80696386332",
+        "head_sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32"
+      },
+      {
+        "id": 80696385825,
+        "name": "Build Docker Images",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-06-11T00:41:28Z",
+        "completed_at": "2026-06-11T00:41:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/27315922546/job/80696385825",
+        "head_sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32"
+      },
+      {
+        "id": 80696340512,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-06-11T00:41:06Z",
+        "completed_at": "2026-06-11T00:41:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/27315922546/job/80696340512",
+        "head_sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32"
+      },
+      {
+        "id": 80696340493,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-06-11T00:41:06Z",
+        "completed_at": "2026-06-11T00:41:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/27315922546/job/80696340493",
+        "head_sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32"
+      },
+      {
+        "id": 80696340459,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-06-11T00:41:06Z",
+        "completed_at": "2026-06-11T00:41:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/27315922546/job/80696340459",
+        "head_sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32"
+      },
+      {
+        "id": 80696340431,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-06-11T00:41:06Z",
+        "completed_at": "2026-06-11T00:41:23Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/27315922546/job/80696340431",
+        "head_sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32"
+      },
+      {
+        "id": 80696340424,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-06-11T00:41:06Z",
+        "completed_at": "2026-06-11T00:41:17Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/27315922545/job/80696340424",
+        "head_sha": "8b9bd4a718ef0d2ec0826b94537d438df68b2b32"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/chain-projection-worker-20261022",
+    "sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d",
+    "checks": [
+      {
+        "id": 120154159183,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-22T23:44:19Z",
+        "completed_at": "2026-10-22T23:44:18Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120154159183",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152578437,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:39:53Z",
+        "completed_at": "2026-10-22T23:40:56Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120152578437",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152578424,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:39:53Z",
+        "completed_at": "2026-10-22T23:41:16Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120152578424",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152578414,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:39:53Z",
+        "completed_at": "2026-10-22T23:43:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120152578414",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152578410,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:39:53Z",
+        "completed_at": "2026-10-22T23:40:40Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120152578410",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152578359,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:39:53Z",
+        "completed_at": "2026-10-22T23:44:18Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120152578359",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152338369,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:39:10Z",
+        "completed_at": "2026-10-22T23:39:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120152338369",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152262999,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:38:59Z",
+        "completed_at": "2026-10-22T23:40:31Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873167164/job/120152262999",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152262735,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:38:59Z",
+        "completed_at": "2026-10-22T23:41:41Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166920/job/120152262735",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152262731,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:38:59Z",
+        "completed_at": "2026-10-22T23:39:18Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166920/job/120152262731",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152262700,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:38:59Z",
+        "completed_at": "2026-10-22T23:39:23Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166920/job/120152262700",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152262290,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:38:59Z",
+        "completed_at": "2026-10-22T23:40:22Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166920/job/120152262290",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152262084,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:38:59Z",
+        "completed_at": "2026-10-22T23:39:15Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120152262084",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152262083,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:38:59Z",
+        "completed_at": "2026-10-22T23:39:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120152262083",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152261947,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:38:59Z",
+        "completed_at": "2026-10-22T23:39:50Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120152261947",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      },
+      {
+        "id": 120152261725,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:38:59Z",
+        "completed_at": "2026-10-22T23:39:18Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39873166788/job/120152261725",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/console-contract-publication",
+    "sha": "06d8fc13f3133fea5108164266a6fee59b88db1f",
+    "checks": [
+      {
+        "id": 121059677420,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-25T03:03:00Z",
+        "completed_at": "2026-10-25T03:03:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121059677420",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121058879913,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:58:50Z",
+        "completed_at": "2026-10-25T03:02:59Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121058879913",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121058879910,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:58:50Z",
+        "completed_at": "2026-10-25T02:59:31Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121058879910",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121058879895,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:58:50Z",
+        "completed_at": "2026-10-25T03:00:38Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121058879895",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121058879893,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:58:50Z",
+        "completed_at": "2026-10-25T03:00:01Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121058879893",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121058879879,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:58:50Z",
+        "completed_at": "2026-10-25T03:01:45Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121058879879",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057455413,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:51:00Z",
+        "completed_at": "2026-10-25T02:51:04Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/121057455413",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357461,
+        "name": "shell",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:31Z",
+        "completed_at": "2026-10-25T02:53:13Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977548/job/121057357461",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357263,
+        "name": "live-domains",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:31Z",
+        "completed_at": "2026-10-25T02:52:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977548/job/121057357263",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357221,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:30Z",
+        "completed_at": "2026-10-25T02:51:23Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121057357221",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357211,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:31Z",
+        "completed_at": "2026-10-25T02:52:23Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121057357211",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357206,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:31Z",
+        "completed_at": "2026-10-25T02:51:09Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121057357206",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357202,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:31Z",
+        "completed_at": "2026-10-25T02:51:32Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121057357202",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357168,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:30Z",
+        "completed_at": "2026-10-25T02:58:48Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121057357168",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357153,
+        "name": "Test Consumer Domains (Python)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:30Z",
+        "completed_at": "2026-10-25T02:54:46Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121057357153",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357066,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:31Z",
+        "completed_at": "2026-10-25T02:52:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977545/job/121057357066",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057357029,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:30Z",
+        "completed_at": "2026-10-25T02:50:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977531/job/121057357029",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      },
+      {
+        "id": 121057356980,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T02:50:30Z",
+        "completed_at": "2026-10-25T02:50:44Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40155977561/job/121057356980",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/consumer-design-preview",
+    "sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420",
+    "checks": [
+      {
+        "id": 124106534207,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-30T14:04:28Z",
+        "completed_at": "2026-10-30T14:04:28Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124106534207",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124103923998,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:59:24Z",
+        "completed_at": "2026-10-30T14:04:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124103923998",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124103923969,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:59:24Z",
+        "completed_at": "2026-10-30T14:00:05Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124103923969",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124103923889,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:59:24Z",
+        "completed_at": "2026-10-30T14:00:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124103923889",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124103923824,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:59:24Z",
+        "completed_at": "2026-10-30T14:01:13Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124103923824",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124103923822,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:59:24Z",
+        "completed_at": "2026-10-30T14:00:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124103923822",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096648422,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:47Z",
+        "completed_at": "2026-10-30T13:44:50Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/124096648422",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096382670,
+        "name": "shell",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:48:31Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699801/job/124096382670",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096382553,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:58:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124096382553",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096382388,
+        "name": "live-domains",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:46:32Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699801/job/124096382388",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096382324,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:45:18Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124096382324",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096382067,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:44:44Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124096382067",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096382024,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:44:57Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124096382024",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096381930,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:45:30Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124096381930",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096381691,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:59:21Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699648/job/124096381691",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096380961,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:46:29Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699671/job/124096380961",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      },
+      {
+        "id": 124096380619,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T13:44:17Z",
+        "completed_at": "2026-10-30T13:44:36Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41065699581/job/124096380619",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/critical-dependency-repairs-20261022",
+    "sha": "542b52cc12ca668e64c13a072acf7374bd0a5752",
+    "checks": [
+      {
+        "id": 120166379774,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-23T00:19:38Z",
+        "completed_at": "2026-10-23T00:19:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120166379774",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120165025149,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:15:38Z",
+        "completed_at": "2026-10-23T00:16:21Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120165025149",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120165025007,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:15:38Z",
+        "completed_at": "2026-10-23T00:19:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120165025007",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120165024977,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:15:37Z",
+        "completed_at": "2026-10-23T00:16:38Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120165024977",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120165024975,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:15:38Z",
+        "completed_at": "2026-10-23T00:17:40Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120165024975",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120165024945,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:15:38Z",
+        "completed_at": "2026-10-23T00:17:02Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120165024945",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164723478,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:43Z",
+        "completed_at": "2026-10-23T00:14:47Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120164723478",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164652513,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:17:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923202/job/120164652513",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164652331,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:14:54Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120164652331",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164652313,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:15:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120164652313",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164652206,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:15:02Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120164652206",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164652192,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:15:35Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120164652192",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164652146,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:15:44Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923202/job/120164652146",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164652139,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:14:55Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923202/job/120164652139",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164652027,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:14:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923226/job/120164652027",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164651923,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:14:55Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923202/job/120164651923",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      },
+      {
+        "id": 120164651479,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T00:14:33Z",
+        "completed_at": "2026-10-23T00:16:04Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39876923191/job/120164651479",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/docker-pipeline-20261022",
+    "sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4",
+    "checks": [
+      {
+        "id": 120117884791,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-22T22:10:10Z",
+        "completed_at": "2026-10-22T22:10:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120117884791",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120116191178,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:06:13Z",
+        "completed_at": "2026-10-22T22:10:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120116191178",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120116191148,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:06:13Z",
+        "completed_at": "2026-10-22T22:06:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120116191148",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120116191066,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:06:14Z",
+        "completed_at": "2026-10-22T22:09:16Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120116191066",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120116191031,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:06:13Z",
+        "completed_at": "2026-10-22T22:07:34Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120116191031",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120116191018,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:06:13Z",
+        "completed_at": "2026-10-22T22:07:13Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120116191018",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120116024479,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:05:49Z",
+        "completed_at": "2026-10-22T22:05:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120116024479",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120115912329,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:05:36Z",
+        "completed_at": "2026-10-22T22:08:14Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347080/job/120115912329",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120115912012,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:05:35Z",
+        "completed_at": "2026-10-22T22:05:56Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347080/job/120115912012",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120115911799,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:05:35Z",
+        "completed_at": "2026-10-22T22:05:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347080/job/120115911799",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120115911714,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:05:35Z",
+        "completed_at": "2026-10-22T22:06:11Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120115911714",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120115911711,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:05:35Z",
+        "completed_at": "2026-10-22T22:05:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120115911711",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120115911698,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:05:35Z",
+        "completed_at": "2026-10-22T22:05:56Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120115911698",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120115911487,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:05:35Z",
+        "completed_at": "2026-10-22T22:06:01Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347055/job/120115911487",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      },
+      {
+        "id": 120115911046,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:05:35Z",
+        "completed_at": "2026-10-22T22:07:35Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39862347050/job/120115911046",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/durable-chain-reconciliation-20261022",
+    "sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6",
+    "checks": [
+      {
+        "id": 120145715294,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-22T23:20:58Z",
+        "completed_at": "2026-10-22T23:20:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120145715294",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143801522,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:48Z",
+        "completed_at": "2026-10-22T23:19:34Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120143801522",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143801476,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:48Z",
+        "completed_at": "2026-10-22T23:20:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120143801476",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143801354,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:47Z",
+        "completed_at": "2026-10-22T23:17:09Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120143801354",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143801224,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:47Z",
+        "completed_at": "2026-10-22T23:16:15Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120143801224",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143801222,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:47Z",
+        "completed_at": "2026-10-22T23:16:51Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120143801222",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143647091,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:20Z",
+        "completed_at": "2026-10-22T23:15:24Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120143647091",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143541944,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:06Z",
+        "completed_at": "2026-10-22T23:15:28Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532924/job/120143541944",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143541921,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:06Z",
+        "completed_at": "2026-10-22T23:18:19Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532924/job/120143541921",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143541867,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:06Z",
+        "completed_at": "2026-10-22T23:15:30Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532924/job/120143541867",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143541434,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:05Z",
+        "completed_at": "2026-10-22T23:15:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532924/job/120143541434",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143541343,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:06Z",
+        "completed_at": "2026-10-22T23:16:34Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532900/job/120143541343",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143541326,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:06Z",
+        "completed_at": "2026-10-22T23:15:30Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120143541326",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143541198,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:06Z",
+        "completed_at": "2026-10-22T23:15:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120143541198",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143541091,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:06Z",
+        "completed_at": "2026-10-22T23:15:43Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120143541091",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      },
+      {
+        "id": 120143540804,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T23:15:06Z",
+        "completed_at": "2026-10-22T23:15:45Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39870532878/job/120143540804",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/durable-outbox-pubsub-20261022",
+    "sha": "65367789130870c8c2a0e786f2d6152357d88093",
+    "checks": [
+      {
+        "id": 120206030648,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-23T02:27:08Z",
+        "completed_at": "2026-10-23T02:27:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120206030648",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204675629,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:22:37Z",
+        "completed_at": "2026-10-23T02:24:43Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204675629",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204675614,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:22:37Z",
+        "completed_at": "2026-10-23T02:23:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204675614",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204675602,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:22:37Z",
+        "completed_at": "2026-10-23T02:23:36Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204675602",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204675551,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:22:37Z",
+        "completed_at": "2026-10-23T02:25:54Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204675551",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204675549,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:22:37Z",
+        "completed_at": "2026-10-23T02:27:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204675549",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204495942,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:59Z",
+        "completed_at": "2026-10-23T02:22:01Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120204495942",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204423194,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:46Z",
+        "completed_at": "2026-10-23T02:22:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204423194",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204423186,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:45Z",
+        "completed_at": "2026-10-23T02:22:35Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204423186",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204423157,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:46Z",
+        "completed_at": "2026-10-23T02:22:31Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204423157",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204423147,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:45Z",
+        "completed_at": "2026-10-23T02:22:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204423147",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204423102,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:45Z",
+        "completed_at": "2026-10-23T02:23:21Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144880/job/120204423102",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204422971,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:45Z",
+        "completed_at": "2026-10-23T02:22:08Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144785/job/120204422971",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204422881,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:45Z",
+        "completed_at": "2026-10-23T02:22:04Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144801/job/120204422881",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204422855,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:45Z",
+        "completed_at": "2026-10-23T02:22:08Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144785/job/120204422855",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204422798,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:45Z",
+        "completed_at": "2026-10-23T02:24:57Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144785/job/120204422798",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      },
+      {
+        "id": 120204422728,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T02:21:45Z",
+        "completed_at": "2026-10-23T02:23:15Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39889144785/job/120204422728",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/explain-execution-details-and-next-steps",
+    "sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd",
+    "checks": [
+      {
+        "id": 73129819304,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-04-27T04:32:05Z",
+        "completed_at": "2026-04-27T04:32:04Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642853/job/73129819304",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129818905,
+        "name": "Build Docker Images",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-04-27T04:32:04Z",
+        "completed_at": "2026-04-27T04:32:04Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642853/job/73129818905",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129813441,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-04-27T04:31:59Z",
+        "completed_at": "2026-04-27T04:32:02Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/73129813441",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129788068,
+        "name": "Integration Tests (Cardano Testnet)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-04-27T04:31:36Z",
+        "completed_at": "2026-04-27T04:31:36Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642844/job/73129788068",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129787973,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-04-27T04:31:38Z",
+        "completed_at": "2026-04-27T04:32:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642853/job/73129787973",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129787919,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-04-27T04:31:37Z",
+        "completed_at": "2026-04-27T04:32:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642853/job/73129787919",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129787913,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-04-27T04:31:37Z",
+        "completed_at": "2026-04-27T04:32:01Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642853/job/73129787913",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129787907,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-04-27T04:31:37Z",
+        "completed_at": "2026-04-27T04:32:04Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642853/job/73129787907",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129787901,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-04-27T04:31:38Z",
+        "completed_at": "2026-04-27T04:31:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642844/job/73129787901",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129787900,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-04-27T04:31:37Z",
+        "completed_at": "2026-04-27T04:31:47Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642844/job/73129787900",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129787897,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-04-27T04:31:37Z",
+        "completed_at": "2026-04-27T04:31:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642844/job/73129787897",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129787896,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-04-27T04:31:37Z",
+        "completed_at": "2026-04-27T04:31:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642849/job/73129787896",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      },
+      {
+        "id": 73129786709,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-04-27T04:31:36Z",
+        "completed_at": "2026-04-27T04:31:41Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/24976642432/job/73129786709",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/midnight-integration-20261022",
+    "sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c",
+    "checks": [
+      {
+        "id": 120131856902,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-22T22:44:13Z",
+        "completed_at": "2026-10-22T22:44:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120131856902",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130489499,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:40:45Z",
+        "completed_at": "2026-10-22T22:42:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120130489499",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130489346,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:40:45Z",
+        "completed_at": "2026-10-22T22:41:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120130489346",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130489305,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:40:44Z",
+        "completed_at": "2026-10-22T22:43:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120130489305",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130489298,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:40:44Z",
+        "completed_at": "2026-10-22T22:42:14Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120130489298",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130489278,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:40:44Z",
+        "completed_at": "2026-10-22T22:44:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120130489278",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130196354,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:39:59Z",
+        "completed_at": "2026-10-22T22:40:01Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120130196354",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130113471,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:39:48Z",
+        "completed_at": "2026-10-22T22:40:42Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120130113471",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130113328,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:39:48Z",
+        "completed_at": "2026-10-22T22:40:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120130113328",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130113265,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:39:48Z",
+        "completed_at": "2026-10-22T22:40:20Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120130113265",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130113069,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:39:48Z",
+        "completed_at": "2026-10-22T22:40:09Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563043/job/120130113069",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130112976,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:39:48Z",
+        "completed_at": "2026-10-22T22:42:56Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563043/job/120130112976",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130112964,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:39:48Z",
+        "completed_at": "2026-10-22T22:41:36Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563084/job/120130112964",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130112870,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:39:48Z",
+        "completed_at": "2026-10-22T22:40:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563063/job/120130112870",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      },
+      {
+        "id": 120130112605,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T22:39:48Z",
+        "completed_at": "2026-10-22T22:40:05Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39866563043/job/120130112605",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/privacy-recovery-safety-20261023",
+    "sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84",
+    "checks": [
+      {
+        "id": 120218475642,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-23T03:09:40Z",
+        "completed_at": "2026-10-23T03:09:40Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120218475642",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217370354,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:54Z",
+        "completed_at": "2026-10-23T03:07:48Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217370354",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217370244,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:54Z",
+        "completed_at": "2026-10-23T03:08:46Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217370244",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217370229,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:53Z",
+        "completed_at": "2026-10-23T03:06:25Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217370229",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217370224,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:54Z",
+        "completed_at": "2026-10-23T03:09:39Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217370224",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217370191,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:53Z",
+        "completed_at": "2026-10-23T03:06:55Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217370191",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217162843,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:10Z",
+        "completed_at": "2026-10-23T03:05:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120217162843",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217102554,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:01Z",
+        "completed_at": "2026-10-23T03:05:21Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217102554",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217102363,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:00Z",
+        "completed_at": "2026-10-23T03:05:51Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217102363",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217102333,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:00Z",
+        "completed_at": "2026-10-23T03:05:19Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217102333",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217102313,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:00Z",
+        "completed_at": "2026-10-23T03:06:44Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074731/job/120217102313",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217102261,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:00Z",
+        "completed_at": "2026-10-23T03:05:36Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217102261",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217102086,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:00Z",
+        "completed_at": "2026-10-23T03:05:43Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074744/job/120217102086",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217102016,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:00Z",
+        "completed_at": "2026-10-23T03:05:17Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074745/job/120217102016",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217101958,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:00Z",
+        "completed_at": "2026-10-23T03:06:28Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074745/job/120217101958",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217101872,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:00Z",
+        "completed_at": "2026-10-23T03:05:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074745/job/120217101872",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      },
+      {
+        "id": 120217101801,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:05:00Z",
+        "completed_at": "2026-10-23T03:07:44Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39893074745/job/120217101801",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/rights-export-worker",
+    "sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd",
+    "checks": [
+      {
+        "id": 120245885628,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-23T04:46:49Z",
+        "completed_at": "2026-10-23T04:46:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120245885628",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244720131,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:42:41Z",
+        "completed_at": "2026-10-23T04:44:17Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244720131",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244720097,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:42:41Z",
+        "completed_at": "2026-10-23T04:43:50Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244720097",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244720087,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:42:41Z",
+        "completed_at": "2026-10-23T04:45:44Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244720087",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244720084,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:42:42Z",
+        "completed_at": "2026-10-23T04:46:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244720084",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244720082,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:42:42Z",
+        "completed_at": "2026-10-23T04:43:35Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244720082",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244286334,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:41:06Z",
+        "completed_at": "2026-10-23T04:41:08Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120244286334",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244215883,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:54Z",
+        "completed_at": "2026-10-23T04:42:39Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244215883",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244215829,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:53Z",
+        "completed_at": "2026-10-23T04:41:28Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244215829",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244215804,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:53Z",
+        "completed_at": "2026-10-23T04:41:11Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244215804",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244215803,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:53Z",
+        "completed_at": "2026-10-23T04:41:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244215803",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244215658,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:53Z",
+        "completed_at": "2026-10-23T04:41:16Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604403/job/120244215658",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244215289,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:53Z",
+        "completed_at": "2026-10-23T04:41:08Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604289/job/120244215289",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244215147,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:53Z",
+        "completed_at": "2026-10-23T04:42:02Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604289/job/120244215147",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244215142,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:52Z",
+        "completed_at": "2026-10-23T04:44:01Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604289/job/120244215142",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244215009,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:53Z",
+        "completed_at": "2026-10-23T04:42:25Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604287/job/120244215009",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      },
+      {
+        "id": 120244214993,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T04:40:53Z",
+        "completed_at": "2026-10-23T04:41:15Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39901604289/job/120244214993",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "codex/rights-privacy-read-api",
+    "sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a",
+    "checks": [
+      {
+        "id": 120231472867,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-23T03:55:37Z",
+        "completed_at": "2026-10-23T03:55:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120231472867",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230351049,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:51:32Z",
+        "completed_at": "2026-10-23T03:53:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230351049",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230351022,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:51:32Z",
+        "completed_at": "2026-10-23T03:55:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230351022",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230351017,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:51:32Z",
+        "completed_at": "2026-10-23T03:52:09Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230351017",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230350976,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:51:32Z",
+        "completed_at": "2026-10-23T03:52:37Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230350976",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230350951,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:51:32Z",
+        "completed_at": "2026-10-23T03:55:13Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230350951",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230083290,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:30Z",
+        "completed_at": "2026-10-23T03:50:33Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120230083290",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230027690,
+        "name": "Unit Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:21Z",
+        "completed_at": "2026-10-23T03:52:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122988/job/120230027690",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230027318,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:20Z",
+        "completed_at": "2026-10-23T03:50:41Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122988/job/120230027318",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230027194,
+        "name": "Build Test",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:21Z",
+        "completed_at": "2026-10-23T03:50:40Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122988/job/120230027194",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230026966,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:20Z",
+        "completed_at": "2026-10-23T03:50:40Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230026966",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230026955,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:20Z",
+        "completed_at": "2026-10-23T03:51:30Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230026955",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230026944,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:21Z",
+        "completed_at": "2026-10-23T03:50:56Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230026944",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230026939,
+        "name": "Durable Operation Store",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:21Z",
+        "completed_at": "2026-10-23T03:51:39Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122988/job/120230026939",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230026846,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:20Z",
+        "completed_at": "2026-10-23T03:50:39Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230026846",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230026663,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:20Z",
+        "completed_at": "2026-10-23T03:51:50Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122977/job/120230026663",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      },
+      {
+        "id": 120230026639,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T03:50:21Z",
+        "completed_at": "2026-10-23T03:51:18Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39897122946/job/120230026639",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "docs/brandme-full-experience-2026-10-05",
+    "sha": "b31373170953705f180246e254a8c2e9a41b4931",
+    "checks": [
+      {
+        "id": 120581108504,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:18:52Z",
+        "completed_at": "2026-10-23T18:19:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40002261739/job/120581108504",
+        "head_sha": "b31373170953705f180246e254a8c2e9a41b4931"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "fix/property-test-vacuity-guard-flake",
+    "sha": "a699331df56c12570067223dbaad9c0a86d1567a",
+    "checks": [
+      {
+        "id": 114283249404,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-10T18:31:11Z",
+        "completed_at": "2026-10-10T18:31:11Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/38076062809/job/114283249404",
+        "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a"
+      },
+      {
+        "id": 114283249180,
+        "name": "Build Docker Images",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-10T18:31:11Z",
+        "completed_at": "2026-10-10T18:31:11Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/38076062809/job/114283249180",
+        "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a"
+      },
+      {
+        "id": 114283197064,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-10T18:30:56Z",
+        "completed_at": "2026-10-10T18:30:59Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/114283197064",
+        "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a"
+      },
+      {
+        "id": 114283134903,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-10T18:30:40Z",
+        "completed_at": "2026-10-10T18:31:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/38076062809/job/114283134903",
+        "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a"
+      },
+      {
+        "id": 114283134867,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-10T18:30:40Z",
+        "completed_at": "2026-10-10T18:31:01Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/38076062809/job/114283134867",
+        "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a"
+      },
+      {
+        "id": 114283134855,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-10T18:30:40Z",
+        "completed_at": "2026-10-10T18:31:06Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/38076062809/job/114283134855",
+        "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a"
+      },
+      {
+        "id": 114283134827,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-10T18:30:39Z",
+        "completed_at": "2026-10-10T18:32:30Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/38076062841/job/114283134827",
+        "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a"
+      },
+      {
+        "id": 114283134693,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-10T18:30:39Z",
+        "completed_at": "2026-10-10T18:30:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/38076062809/job/114283134693",
+        "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "checks": [
+      {
+        "id": 124196439542,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-30T16:56:53Z",
+        "completed_at": "2026-10-30T16:56:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124196439542",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124193024274,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:50:12Z",
+        "completed_at": "2026-10-30T16:51:15Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024274",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124193024251,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:50:12Z",
+        "completed_at": "2026-10-30T16:51:05Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024251",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124193024221,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:50:12Z",
+        "completed_at": "2026-10-30T16:52:12Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024221",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124193024218,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:50:12Z",
+        "completed_at": "2026-10-30T16:51:24Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024218",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124193024151,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:50:12Z",
+        "completed_at": "2026-10-30T16:56:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024151",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124185344188,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:35:14Z",
+        "completed_at": "2026-10-30T16:35:43Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185344188",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124185344132,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:35:14Z",
+        "completed_at": "2026-10-30T16:50:09Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185344132",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124185344116,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:35:14Z",
+        "completed_at": "2026-10-30T16:35:51Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185344116",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124185343966,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:35:14Z",
+        "completed_at": "2026-10-30T16:36:29Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185343966",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124185343876,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:35:14Z",
+        "completed_at": "2026-10-30T16:36:02Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185343876",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124185343778,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:35:14Z",
+        "completed_at": "2026-10-30T16:48:30Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185343778",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124185343677,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:35:14Z",
+        "completed_at": "2026-10-30T16:35:35Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237460/job/124185343677",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      },
+      {
+        "id": 124185343319,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T16:35:13Z",
+        "completed_at": "2026-10-30T16:36:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237407/job/124185343319",
+        "head_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "mia/next-plans-20261025",
+    "sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f",
+    "checks": [
+      {
+        "id": 121076069981,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-25T04:32:26Z",
+        "completed_at": "2026-10-25T04:32:26Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121076069981",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121075242440,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:27:58Z",
+        "completed_at": "2026-10-25T04:32:25Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121075242440",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121075242439,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:27:57Z",
+        "completed_at": "2026-10-25T04:29:39Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121075242439",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121075242361,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:27:58Z",
+        "completed_at": "2026-10-25T04:28:39Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121075242361",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121075242339,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:27:57Z",
+        "completed_at": "2026-10-25T04:29:24Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121075242339",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121075242331,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:27:57Z",
+        "completed_at": "2026-10-25T04:29:23Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121075242331",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073763554,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:19:38Z",
+        "completed_at": "2026-10-25T04:19:41Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/121073763554",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073631193,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:18:56Z",
+        "completed_at": "2026-10-25T04:20:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428425/job/121073631193",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073630970,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:18:56Z",
+        "completed_at": "2026-10-25T04:19:48Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121073630970",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073630910,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:18:56Z",
+        "completed_at": "2026-10-25T04:27:55Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121073630910",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073630880,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:18:56Z",
+        "completed_at": "2026-10-25T04:20:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121073630880",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073630876,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:18:56Z",
+        "completed_at": "2026-10-25T04:20:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121073630876",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073630874,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:18:57Z",
+        "completed_at": "2026-10-25T04:19:20Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121073630874",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073630863,
+        "name": "Test Consumer Domains (Python)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:18:56Z",
+        "completed_at": "2026-10-25T04:23:10Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121073630863",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073630786,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:18:56Z",
+        "completed_at": "2026-10-25T04:19:43Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428307/job/121073630786",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      },
+      {
+        "id": 121073630585,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-25T04:18:56Z",
+        "completed_at": "2026-10-25T04:19:08Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40161428309/job/121073630585",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "mia/orchestration-20261023",
+    "sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d",
+    "checks": [
+      {
+        "id": 120582259307,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-23T18:21:17Z",
+        "completed_at": "2026-10-23T18:21:17Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120582259307",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120579784054,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:16:03Z",
+        "completed_at": "2026-10-23T18:17:41Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120579784054",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120579784051,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:16:04Z",
+        "completed_at": "2026-10-23T18:16:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120579784051",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120579784050,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:16:04Z",
+        "completed_at": "2026-10-23T18:17:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120579784050",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120579783998,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:16:04Z",
+        "completed_at": "2026-10-23T18:17:20Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120579783998",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120579783935,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:16:04Z",
+        "completed_at": "2026-10-23T18:21:16Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120579783935",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120578994444,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:14:21Z",
+        "completed_at": "2026-10-23T18:14:24Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/120578994444",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120578888742,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:14:09Z",
+        "completed_at": "2026-10-23T18:15:00Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120578888742",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120578888622,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:14:09Z",
+        "completed_at": "2026-10-23T18:14:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120578888622",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120578888620,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:14:10Z",
+        "completed_at": "2026-10-23T18:14:29Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120578888620",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120578888462,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:14:09Z",
+        "completed_at": "2026-10-23T18:16:01Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120578888462",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120578888245,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:14:09Z",
+        "completed_at": "2026-10-23T18:16:13Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625143/job/120578888245",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      },
+      {
+        "id": 120578888165,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-23T18:14:09Z",
+        "completed_at": "2026-10-23T18:14:47Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40001625098/job/120578888165",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "mia/pipeline-seed-20261030",
+    "sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1",
+    "checks": [
+      {
+        "id": 124154508064,
+        "name": "Deploy to GKE (sandbox)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-30T15:37:05Z",
+        "completed_at": "2026-10-30T15:37:05Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124154508064",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124151617411,
+        "name": "Build Docker Images (chain)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:31:44Z",
+        "completed_at": "2026-10-30T15:37:05Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124151617411",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124151617198,
+        "name": "Build Docker Images (agents)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:31:43Z",
+        "completed_at": "2026-10-30T15:33:07Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124151617198",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124151617022,
+        "name": "Build Docker Images (gateway)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:31:43Z",
+        "completed_at": "2026-10-30T15:32:56Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124151617022",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124151616952,
+        "name": "Build Docker Images (core)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:31:43Z",
+        "completed_at": "2026-10-30T15:32:27Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124151616952",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124151616922,
+        "name": "Build Docker Images (console)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:31:43Z",
+        "completed_at": "2026-10-30T15:33:24Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124151616922",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124144424722,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:18:26Z",
+        "completed_at": "2026-10-30T15:19:25Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/124144424722",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124144118093,
+        "name": "Foundation check",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:17:54Z",
+        "completed_at": "2026-10-30T15:31:29Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124144118093",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124144117522,
+        "name": "Test Frontend (Next.js)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:17:54Z",
+        "completed_at": "2026-10-30T15:18:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124144117522",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124144117504,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:17:55Z",
+        "completed_at": "2026-10-30T15:18:23Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124144117504",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124144117501,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:17:54Z",
+        "completed_at": "2026-10-30T15:18:52Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124144117501",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124144117301,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:17:54Z",
+        "completed_at": "2026-10-30T15:19:46Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124144117301",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124144117145,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:17:54Z",
+        "completed_at": "2026-10-30T15:31:41Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387061/job/124144117145",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124144115632,
+        "name": "Workspace guard",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:17:54Z",
+        "completed_at": "2026-10-30T15:18:13Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387021/job/124144115632",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      },
+      {
+        "id": 124144115551,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-30T15:17:54Z",
+        "completed_at": "2026-10-30T15:19:58Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41079387022/job/124144115551",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "triage/pnpm-version-conflict-20261023",
+    "sha": "114470007e9c631010ee22930a8ddfb75d0ea700",
+    "checks": [
+      {
+        "id": 120440746876,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-23T13:29:24Z",
+        "completed_at": "2026-10-23T13:29:47Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/39961614514/job/120440746876",
+        "head_sha": "114470007e9c631010ee22930a8ddfb75d0ea700"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "triage/pnpm-workspace-frontend-20261008",
+    "sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17",
+    "checks": [
+      {
+        "id": 113565899535,
+        "name": "Deploy to GKE",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-08T22:09:50Z",
+        "completed_at": "2026-10-08T22:09:50Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37851648152/job/113565899535",
+        "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17"
+      },
+      {
+        "id": 113565895451,
+        "name": "Build Docker Images",
+        "status": "completed",
+        "conclusion": "skipped",
+        "started_at": "2026-10-08T22:09:50Z",
+        "completed_at": "2026-10-08T22:09:49Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37851648152/job/113565895451",
+        "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17"
+      },
+      {
+        "id": 113565831557,
+        "name": "Trivy",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-08T22:09:39Z",
+        "completed_at": "2026-10-08T22:09:42Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/runs/113565831557",
+        "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17"
+      },
+      {
+        "id": 113565727151,
+        "name": "Security Scan",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-08T22:09:23Z",
+        "completed_at": "2026-10-08T22:09:51Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37851648152/job/113565727151",
+        "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17"
+      },
+      {
+        "id": 113565727079,
+        "name": "Test Chain (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-08T22:09:23Z",
+        "completed_at": "2026-10-08T22:09:42Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37851648152/job/113565727079",
+        "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17"
+      },
+      {
+        "id": 113565727044,
+        "name": "Test Core (Python/FastAPI)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-08T22:09:23Z",
+        "completed_at": "2026-10-08T22:09:47Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37851648152/job/113565727044",
+        "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17"
+      },
+      {
+        "id": 113565726758,
+        "name": "Test Gateway (Node/TypeScript)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-08T22:09:23Z",
+        "completed_at": "2026-10-08T22:09:44Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37851648152/job/113565726758",
+        "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17"
+      },
+      {
+        "id": 113565726346,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-08T22:09:23Z",
+        "completed_at": "2026-10-08T22:09:53Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37851648092/job/113565726346",
+        "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17"
+      }
+    ],
+    "statuses": []
+  },
+  {
+    "ref": "w11/integration-20261008",
+    "sha": "bec80b1f25fcd4a310529888351c45c71d33dc4a",
+    "checks": [
+      {
+        "id": 113571034945,
+        "name": "regression",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-08T22:23:49Z",
+        "completed_at": "2026-10-08T22:25:28Z",
+        "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/37853193176/job/113571034945",
+        "head_sha": "bec80b1f25fcd4a310529888351c45c71d33dc4a"
+      }
+    ],
+    "statuses": []
+  }
+]

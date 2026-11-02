@@ -66,6 +66,13 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "on_edit": "'Not me' hides that product; interest informs ranking only while learning is on",
         "tables": ("RecommendationFeedback",),
     },
+    "persona.card": {
+        "title": "Your persona card: who may see it, your highlights, and the card as last composed",
+        "supplied_by": "member",
+        "retention": "Until account deletion; recomposed when your profile, badges, closet or standings change",
+        "on_edit": "Changing who sees it or your highlights recomposes it at once",
+        "tables": ("PersonaCards",),
+    },
 }
 
 _M = {"m": STR}
@@ -180,6 +187,10 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
                 _M,
             )
         ]
+    if category == "persona.card":
+        from .card import export_card
+
+        return export_card(snap, member_id)
     raise KeyError(category)
 
 
@@ -196,6 +207,15 @@ def export_member(snap, member_id: str) -> Dict[str, Any]:
 
 def delete_category(txn, member_id: str, category: str) -> int:
     """Remove one category's rows inside the caller's read/write transaction."""
+    n = _delete_category(txn, member_id, category)
+    if category in ("persona.declared", "persona.inferred", "persona.evidence"):
+        from .card import scrub
+
+        n += scrub(txn, member_id, "taste")  # the card's composed taste is derived from these axes
+    return n
+
+
+def _delete_category(txn, member_id: str, category: str) -> int:
     m = {"m": member_id}
     if category == "persona.declared":
         n = txn.execute_update(
@@ -251,6 +271,8 @@ def delete_category(txn, member_id: str, category: str) -> int:
         return n + txn.execute_update("DELETE FROM PersonaSnapshots WHERE member_id=@m", params=m, param_types=_M)
     if category == "persona.feedback":
         return txn.execute_update("DELETE FROM RecommendationFeedback WHERE member_id=@m", params=m, param_types=_M)
+    if category == "persona.card":
+        return txn.execute_update("DELETE FROM PersonaCards WHERE member_id=@m", params=m, param_types=_M)
     raise KeyError(category)
 
 
@@ -362,7 +384,8 @@ def build_privacy_handler():
         def purge_derived(self, ctx, category: str):
             # No Firestore projection, cache or object storage is owned by the
             # persona domain yet; recommendation previews are computed per request.
-            return pd.DeletionOutcome(category, 0, done=True, detail="persona keeps no derived stores")
+            # The persona card's composed taste is scrubbed inside delete() itself.
+            return pd.DeletionOutcome(category, 0, done=True, detail="persona keeps no derived stores outside Spanner")
 
         def reapply_tombstone(self, txn, tombstone) -> int:
             if tombstone.record_keys:

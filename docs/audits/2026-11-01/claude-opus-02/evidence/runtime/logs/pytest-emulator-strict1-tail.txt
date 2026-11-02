@@ -1,0 +1,41 @@
+# pytest tail: QUARANTINED/ALLOWLISTED blocks, short test summary, final line
+QUARANTINED: 17 tests (owner: count unowned-legacy: 17)
+  xfail[google.api_core.exceptions.NotFound] unowned-legacy: 12 - no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+  xfail[TypeError] unowned-legacy: 5 - WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix
+ALLOWLISTED SKIPS: AP2_SDK_PYTHON (commerce-agents): 6, not_run: STRIPE_TEST_SECRET_KEY absent (commerce-agents): 5, not_run: the model (commerce-agents): 3, stripe-mock (commerce-agents): 6
+=========================== short test summary info ============================
+SKIPPED [2] tests/test_commerce_ap2.py:252: AP2_SDK_PYTHON not set: official SDK oracle not available
+SKIPPED [2] tests/test_commerce_ap2.py:263: AP2_SDK_PYTHON not set: official SDK oracle not available
+SKIPPED [2] tests/test_commerce_ap2.py:281: AP2_SDK_PYTHON not set: official SDK oracle not available
+SKIPPED [1] tests/test_commerce_model_live.py:67: not_run: the model run needs BRANDME_DEV_ANTHROPIC_API_KEY, which is absent
+SKIPPED [1] tests/test_commerce_model_live.py:87: not_run: the model run needs BRANDME_DEV_ANTHROPIC_API_KEY, which is absent
+SKIPPED [1] tests/test_commerce_model_live.py:109: not_run: the model run needs BRANDME_DEV_ANTHROPIC_API_KEY, which is absent
+SKIPPED [1] tests/test_commerce_stripe_live.py:118: not_run: STRIPE_TEST_SECRET_KEY absent (live Stripe test mode)
+SKIPPED [1] tests/test_commerce_stripe_live.py:154: not_run: STRIPE_TEST_SECRET_KEY absent (live Stripe test mode)
+SKIPPED [1] tests/test_commerce_stripe_live.py:174: not_run: STRIPE_TEST_SECRET_KEY absent (live Stripe test mode)
+SKIPPED [1] tests/test_commerce_stripe_live.py:185: not_run: STRIPE_TEST_SECRET_KEY absent (live Stripe test mode)
+SKIPPED [1] tests/test_commerce_stripe_live.py:197: not_run: STRIPE_TEST_SECRET_KEY absent (live Stripe test mode)
+SKIPPED [1] tests/test_providers_stripe_wire.py:55: stripe-mock v0.206.0 not found (STRIPE_MOCK_BIN); wire-shape tests not run
+SKIPPED [1] tests/test_providers_stripe_wire.py:65: stripe-mock v0.206.0 not found (STRIPE_MOCK_BIN); wire-shape tests not run
+SKIPPED [1] tests/test_providers_stripe_wire.py:85: stripe-mock v0.206.0 not found (STRIPE_MOCK_BIN); wire-shape tests not run
+SKIPPED [1] tests/test_providers_stripe_wire.py:106: stripe-mock v0.206.0 not found (STRIPE_MOCK_BIN); wire-shape tests not run
+SKIPPED [1] tests/test_providers_stripe_wire.py:150: stripe-mock v0.206.0 not found (STRIPE_MOCK_BIN); wire-shape tests not run
+SKIPPED [1] tests/test_providers_stripe_wire.py:193: stripe-mock v0.206.0 not found (STRIPE_MOCK_BIN); wire-shape tests not run
+XFAIL tests/test_consent_graph.py::test_check_consent_owner_access - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_consent_graph.py::test_check_consent_public_default - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_consent_graph.py::test_grant_and_check_consent - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_consent_graph.py::test_check_friendship_not_friends - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_consent_graph.py::test_add_friend - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_consent_graph.py::test_revoke_global_consent - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_provenance.py::test_get_current_owner - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_provenance.py::test_get_full_provenance - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_provenance.py::test_verify_provenance_chain - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_provenance.py::test_record_transfer - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_provenance.py::test_mint_asset - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_provenance.py::test_get_creator - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix
+XFAIL tests/test_wardrobe.py::test_add_cube_to_wardrobe - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix
+XFAIL tests/test_wardrobe.py::test_update_face - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix
+XFAIL tests/test_wardrobe.py::test_transfer_cube - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix
+XFAIL tests/test_wardrobe.py::test_get_all_cubes - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix
+XFAIL tests/test_wardrobe.py::test_visibility_update - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix
+2146 passed, 20 skipped, 17 xfailed, 4 warnings in 1011.05s (0:16:51)

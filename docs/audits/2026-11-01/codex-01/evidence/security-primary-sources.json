@@ -1,0 +1,92 @@
+[
+  {
+    "name": "OIDC",
+    "url": "https://openid.net/specs/openid-connect-core-1_0.html",
+    "checked": "2026-11-01",
+    "scope": "Core 1.0 errata 2, 2023-12-15; issuer/audience verification and browser authorization flow"
+  },
+  {
+    "name": "Spanner/GKE",
+    "url": "https://docs.cloud.google.com/spanner/docs/connect-gke-cluster?hl=en",
+    "checked": "2026-11-01",
+    "scope": "Workload identity and database IAM are separate from connection identifiers"
+  },
+  {
+    "name": "GKE identity",
+    "url": "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/workload-identity",
+    "checked": "2026-11-01",
+    "scope": "Enable workload federation, bind each runtime identity to resource permissions"
+  },
+  {
+    "name": "Pub/Sub",
+    "url": "https://docs.cloud.google.com/pubsub/docs/create-topic",
+    "checked": "2026-11-01",
+    "scope": "Create topics, subscriptions and retention; publishing alone is not consumption"
+  },
+  {
+    "name": "GCS privacy",
+    "url": "https://docs.cloud.google.com/storage/docs/public-access-prevention",
+    "checked": "2026-11-01",
+    "scope": "Public-access prevention for private storage"
+  },
+  {
+    "name": "Stripe keys",
+    "url": "https://docs.stripe.com/keys",
+    "checked": "2026-11-01",
+    "scope": "Sandbox key selection and separate webhook signing secret"
+  },
+  {
+    "name": "Stripe events",
+    "url": "https://docs.stripe.com/webhooks",
+    "checked": "2026-11-01",
+    "scope": "Register accessible HTTPS endpoint; authenticate received events"
+  },
+  {
+    "name": "Midnight networks",
+    "url": "https://docs.midnight.network/relnotes/network",
+    "checked": "2026-11-01",
+    "scope": "Preprod uses Blockfrost token; retired October 2026 hostnames must not be reused"
+  },
+  {
+    "name": "Midnight deployment",
+    "url": "https://docs.midnight.network/guides/deploy-and-operate",
+    "checked": "2026-11-01",
+    "scope": "Test network contract, wallet and local proof server; witness privacy boundary"
+  },
+  {
+    "name": "Anthropic",
+    "url": "https://platform.claude.com/docs/en/api/overview",
+    "checked": "2026-11-01",
+    "scope": "API account/authentication and explicit rate/spend constraints"
+  },
+  {
+    "name": "OWASP",
+    "url": "https://wstg.owasp.org/v4.2/",
+    "checked": "2026-11-01",
+    "scope": "WSTG v4.2 static review checklist; not a completed dynamic penetration test"
+  },
+  {
+    "name": "Vertex try-on",
+    "url": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/image/generate-virtual-try-on-images",
+    "checked": "2026-11-01",
+    "scope": "Select authorized project/model region and account permission before synthetic experiment"
+  },
+  {
+    "name": "Nordstrom publisher",
+    "url": "https://www.nordstrom.com/browse/affiliate-program",
+    "checked": "2026-11-01",
+    "scope": "Official publisher application links to Impact; no checkout API entitlement implied"
+  },
+  {
+    "name": "Firestore rules",
+    "url": "https://firebase.google.com/docs/firestore/security/get-started",
+    "checked": "2026-11-01",
+    "scope": "Deploy and test database access rules for authenticated client access"
+  },
+  {
+    "name": "GCS signed URLs",
+    "url": "https://docs.cloud.google.com/storage/docs/access-control/signing-urls-with-helpers",
+    "checked": "2026-11-01",
+    "scope": "IAM signing and object permissions required for signed storage URLs"
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "run_id": 41091237404,
+  "method": "Fetched log bodies in memory; retained only selected test-count/summary grammar lines, redacted credential-shaped strings before output. No raw logs saved.",
+  "jobs": [
+    {
+      "job_id": 124185343778,
+      "log_retrieved": true,
+      "summary_lines": [
+        "2026-10-30T16:48:15.8947758Z QUARANTINED: 17 tests (owner: count unowned-legacy: 17)",
+        "2026-10-30T16:48:15.8977826Z XFAIL tests/test_consent_graph.py::test_check_consent_owner_access - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.8981025Z XFAIL tests/test_consent_graph.py::test_check_consent_public_default - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.8983903Z XFAIL tests/test_consent_graph.py::test_grant_and_check_consent - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.8986731Z XFAIL tests/test_consent_graph.py::test_check_friendship_not_friends - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.8989519Z XFAIL tests/test_consent_graph.py::test_add_friend - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.8992430Z XFAIL tests/test_consent_graph.py::test_revoke_global_consent - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.8995283Z XFAIL tests/test_provenance.py::test_get_current_owner - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.8998272Z XFAIL tests/test_provenance.py::test_get_full_provenance - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9001334Z XFAIL tests/test_provenance.py::test_verify_provenance_chain - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9004113Z XFAIL tests/test_provenance.py::test_record_transfer - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9006825Z XFAIL tests/test_provenance.py::test_mint_asset - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9009569Z XFAIL tests/test_provenance.py::test_get_creator - QUARANTINED [unowned-legacy] no fixture creates the legacy Users/Assets/Owns/ConsentPolicies/ProvenanceChain schema (brandme-data/spanner/schema.sql) in brandme-db; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9012487Z XFAIL tests/test_wardrobe.py::test_add_cube_to_wardrobe - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9015313Z XFAIL tests/test_wardrobe.py::test_update_face - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9018321Z XFAIL tests/test_wardrobe.py::test_transfer_cube - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9021155Z XFAIL tests/test_wardrobe.py::test_get_all_cubes - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9023019Z XFAIL tests/test_wardrobe.py::test_visibility_update - QUARANTINED [unowned-legacy] WardrobeManager.add_cube puts firestore.SERVER_TIMESTAMP inside the state_history array (brandme_core/firestore/wardrobe.py:280), which Firestore rejects; founder decision: delete or fix",
+        "2026-10-30T16:48:15.9024179Z 2146 passed, 20 skipped, 17 xfailed, 4 warnings in 755.87s (0:12:35)"
+      ],
+      "raw_log_saved": false
+    },
+    {
+      "job_id": 124185343966,
+      "log_retrieved": true,
+      "summary_lines": [
+        "2026-10-30T16:36:25.2655729Z  Test Files  20 passed (20)"
+      ],
+      "raw_log_saved": false
+    },
+    {
+      "job_id": 124185344132,
+      "log_retrieved": true,
+      "summary_lines": [
+        "2026-10-30T16:49:54.1532853Z     QUARANTINED: 17 tests (owner: count unowned-legacy: 17)",
+        "2026-10-30T16:49:54.1537979Z     2146 passed, 20 skipped, 17 xfailed, 3 warnings in 782.44s (0:13:02)"
+      ],
+      "raw_log_saved": false
+    },
+    {
+      "job_id": 124185344116,
+      "log_retrieved": true,
+      "summary_lines": [],
+      "raw_log_saved": false
+    }
+  ]
+}

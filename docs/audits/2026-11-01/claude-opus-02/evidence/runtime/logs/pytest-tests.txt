@@ -1,0 +1,201 @@
+### step: pytest-tests
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: /[REDACTED-LONG-STRING] -m pytest tests -q --timeout=300 -ra -p no:cacheprovider
+### start_utc: 2026-11-01T15:10:45Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+...s.s.s.s.s...sss.s..ss.s.s.s.s.s.sssssss.............................. [  3%]
+........ss.............................................................. [  6%]
+.......................................s.ss.s.s.s.s.s.s.s.s.s.s.s.s.s.s. [  9%]
+s.............................s.s....ss.s.s..s.s.s.s.s.s.s.s.s.s.s.s.... [ 13%]
+.....ss.s.s.s.s.s.s.s.s...s.s.s.s.s.s.s.s.s.s.s..s...................... [ 16%]
+...sssssssss............................................................ [ 19%]
+.............................s.s.s.s.s.s....ssss....ssss.s.s.s.s.s.s.s.s [ 23%]
+.s.s...s...................s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s..ss..ss.s [ 26%]
+.s.s.s.s.s.s.s.s.s..ss.s..ss..ss.s.s.s.s...sss...sss.s.s.s.s.s.s.s.s..s. [ 29%]
+s....ssss....ssss.s.s.s.s.s.s.s.s.....s.s.s.s.s.s.s.s.s..s.s.s.s.s.s.s.s [ 32%]
+.s.s.s.s.s.sssssssss...............ssssssssssssss..............sssssssss [ 36%]
+sssss..ss.s......s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s..ss.. [ 39%]
+.....sssssss..ss.s.s.s.s.s.s.s..s.s.s.s........................sssss.... [ 42%]
+...ssssss............................................................... [ 46%]
+.............sssssssssssssssssssssssssssssssssss.ss...s..ss.ssssssss.... [ 49%]
+............ss.ss.........ssssssssssssssssssssssssssssssssssssssssssssss [ 52%]
+sssssssssssssssssssssssssssssss.ssssssssssssssssssssssssssssssssssssssss [ 56%]
+ssss.................................................................... [ 59%]
+.....s.s.s.s.......sssssss..s.s.s.....sssss.s.s.s.s.s.s.s.s.s.s.s.s..... [ 62%]
+......................................................ssssss....s....... [ 65%]
+........s.s.s.s.s.s.s.s.s..ss..ss.s..ss.s.s.s.s.s.s.s.s....ssss.s.s.s.s. [ 69%]
+s.s.s.s.s.........s.s.s.s.s..............s.....s..s.................s... [ 72%]
+...........ssssssssssssssssssssssssssssssssssss.sssss.sssssssssss..sssss [ 75%]
+ssssssssssssssssss..ssssssssss.s.ssssssssssssssssssssssssssss........... [ 79%]
+sssss..........................sssssssssssss............................ [ 82%]
+.......................................ss............................... [ 85%]
+........................................................................ [ 89%]
+.....ssss............................................................... [ 92%]
+...........................................................sssssss...... [ 95%]
+...........sssssssssss............s..s.ssssssssssssss..............ss.ss [ 98%]
+ssssssssssssssss.......                                                  [100%]
+=============================== warnings summary ===============================
+../venv/lib/python3.[REDACTED-LONG-STRING].py:273
+  /[REDACTED-LONG-STRING].[REDACTED-LONG-STRING].py:273: FutureWarning: You are using a Python version (3.11.18) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2027-10-24). Please upgrade to the latest Python version, or at least Python 3.12, to continue receiving updates for google.api_core past that date.
+    warnings.warn(message, FutureWarning)
+
+../venv/lib/python3.11/site-packages/fastapi/testclient.py:1
+  /[REDACTED-LONG-STRING].11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+../venv/lib/python3.11/site-packages/starlette/testclient.py:53
+  /[REDACTED-LONG-STRING].11/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+====== quarantine (not run as passing; see tests/conftest.py QUARANTINE) =======
+QUARANTINED: 0 tests (owner: count none)
+ALLOWLISTED SKIPS: AP2_SDK_PYTHON (commerce-agents): 6, not_run: STRIPE_TEST_SECRET_KEY absent (commerce-agents): 5, not_run: the model (commerce-agents): 3, stripe-mock (commerce-agents): 6
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_commerce_ap2.py:63: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/test_commerce_ap2.py:73: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/test_commerce_ap2.py:96: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/test_commerce_ap2.py:109: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/test_commerce_ap2.py:118: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+... [436 of 636 lines omitted; full log retained only in the audit scratchpad] ...
+SKIPPED [1] tests/test_rewards_benefits.py:215: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_benefits.py:249: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_benefits.py:272: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:136: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:168: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:179: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:201: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:218: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:232: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:260: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:281: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:296: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:337: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:352: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rewards_ledger.py:390: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_rights.py:71: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:81: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:106: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:114: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:129: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:150: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:161: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:190: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:223: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:249: Spanner emulator not running
+SKIPPED [1] tests/test_rights.py:263: Spanner emulator not running
+SKIPPED [1] tests/test_social_decisions.py:68: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:96: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:121: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:148: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:178: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:198: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:220: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:238: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:284: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:310: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_decisions.py:339: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_privacy_api.py:43: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_privacy_api.py:114: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_privacy_api.py:157: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_relationships.py:35: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_relationships.py:61: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_relationships.py:77: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_relationships.py:94: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_relationships.py:146: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_relationships.py:159: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_reports.py:54: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_reports.py:75: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_reports.py:98: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_reports.py:128: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_shares.py:66: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_shares.py:92: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_shares.py:114: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_shares.py:153: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_shares.py:198: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_shares.py:215: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_social_shares.py:231: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe.py:9: emulator not reachable (FIRESTORE_EMULATOR_HOST=localhost:8080); legacy suite not run
+SKIPPED [1] tests/test_wardrobe.py:27: emulator not reachable (FIRESTORE_EMULATOR_HOST=localhost:8080); legacy suite not run
+SKIPPED [1] tests/test_wardrobe.py:56: emulator not reachable (FIRESTORE_EMULATOR_HOST=localhost:8080); legacy suite not run
+SKIPPED [1] tests/test_wardrobe.py:85: emulator not reachable (FIRESTORE_EMULATOR_HOST=localhost:8080); legacy suite not run
+SKIPPED [1] tests/test_wardrobe.py:118: emulator not reachable (FIRESTORE_EMULATOR_HOST=localhost:8080); legacy suite not run
+SKIPPED [1] tests/test_wardrobe.py:141: emulator not reachable (FIRESTORE_EMULATOR_HOST=localhost:8080); legacy suite not run
+SKIPPED [1] tests/test_wardrobe_api.py:48: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_api.py:70: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_outfits.py:40: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_outfits.py:71: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_outfits.py:81: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_outfits.py:106: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_outfits.py:115: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_privacy.py:28: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_privacy.py:49: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:69: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:87: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:108: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:132: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:156: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:172: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:191: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:215: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:236: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:267: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] tests/test_wardrobe_service.py:302: Spanner emulator not reachable at localhost:9010; Spanner-backed tests NOT RUN
+SKIPPED [1] [REDACTED-LONG-STRING].py:148: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] [REDACTED-LONG-STRING].py:289: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_migrations.py:54: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_migrations.py:63: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_migrations.py:80: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_migrations.py:91: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:67: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:77: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:91: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:107: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:119: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:131: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:143: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:241: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:256: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:306: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:351: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:382: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_delivery.py:396: PUBSUB_EMULATOR_BIN required; CI fetches and runs the pinned Google emulator
+SKIPPED [1] tests/foundation/test_outbox_emulator.py:45: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_emulator.py:65: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_emulator.py:80: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_emulator.py:112: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_emulator.py:129: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_lane_catalogs.py:288: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:170: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:205: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:247: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:262: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:284: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:302: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:317: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:336: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:368: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:424: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:455: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:492: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:518: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:553: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:596: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:687: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_outbox_retention.py:693: Spanner emulator not reachable (SPANNER_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_projections_emulator.py:47: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_projections_emulator.py:61: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_projections_emulator.py:75: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_projections_emulator.py:82: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_projections_emulator.py:96: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_projections_emulator.py:112: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+SKIPPED [9] tests/foundation/test_projections_emulator.py:118: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_projections_emulator.py:129: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_projections_emulator.py:142: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+SKIPPED [1] tests/foundation/test_projections_emulator.py:157: Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST)
+1422 passed, 761 skipped, 3 warnings in 70.94s (0:01:10)
+-----
+### exit: 0
+### end_utc: 2026-11-01T15:11:58Z
+### duration_s: 73

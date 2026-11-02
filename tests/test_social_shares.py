@@ -195,6 +195,25 @@ def test_expiry_removed_subject_and_unfriending(spanner_db, closet):
     assert e.value.code == "ineligible_recipients"
 
 
+def test_a_recipient_whose_share_deletion_is_pending_cannot_be_added(spanner_db, closet):
+    from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
+
+    owner, _, _, outfit_id, _ = closet
+    rel = RelationshipService(spanner_db)
+    a, b = person(spanner_db), person(spanner_db)
+    for f in (a, b):
+        rel.accept(f, rel.request(owner, f.member_id)["relationship_id"])
+    run_txn(spanner_db, lambda t: t.insert("ProcessingFreezes", columns=("subject_ref", "category", "reason", "deletion_job_id", "created_at"),
+                                           values=[(b.member_id, "social.shares", "deletion", str(uuid.uuid4()), COMMIT_TIMESTAMP)]))
+    body = {"subject_type": "outfit_version", "subject_id": outfit_id, "audience": "selected_members", "allowed_fields": ["title"],
+            "expires_at": later(days=1)}
+    with pytest.raises(DetailedInvalidTransition) as e:
+        ShareService(spanner_db).create(owner, {**body, "recipient_ids": [a.member_id, b.member_id]}, key())
+    assert e.value.code == "ineligible_recipients" and e.value.extra["ineligible_recipient_ids"] == [b.member_id]
+    assert count(spanner_db, "SELECT COUNT(*) FROM ShareGrants WHERE member_id=@m", m=owner.member_id) == 0
+    assert ShareService(spanner_db).create(owner, {**body, "recipient_ids": [a.member_id]}, key())["recipient_ids"] == [a.member_id]
+
+
 def test_persona_snapshot_share_has_declared_axes_only(spanner_db):
     owner = person(spanner_db)
     persona = PersonaService(spanner_db, clock=FixedClock(datetime(2026, 10, 5, 12, tzinfo=timezone.utc)))

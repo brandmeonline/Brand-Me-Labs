@@ -1,10 +1,9 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * /api/v1 wardrobe items and closet layout/placements — UNMOUNTED router
- * (lane: opus-consumer-domains). Mount at integration after principalMiddleware:
- *
- *   router.use(wardrobeRouter(domainClient));
+ * /api/v1 wardrobe items, closet layout/placements, per-piece visibility and
+ * another member's visible closet (lane: opus-consumer-domains), mounted from
+ * index.ts behind principalMiddleware.
  *
  * Shape/scope/If-Match/Idempotency-Key checks here; every invariant (finite
  * normalized quaternions, asset-bounded positions, slot uniqueness, ownership)
@@ -24,6 +23,7 @@ import {
   uuidParam,
   type DomainClient,
 } from './persona';
+import type { Principal } from '../../types';
 
 const PLACEMENT_KEYS = new Set([
   'room_template_id',
@@ -144,5 +144,25 @@ export function wardrobeRouter(client: DomainClient): Router {
       return { method: 'POST', path: '/closet/placements/batch', body, idempotencyKey: idempotencyKey(req) };
     }),
   );
+  // Who sees a piece, and how much: the member's own choice (Ultra plan 02, item 6).
+  r.put(
+    '/wardrobe/items/:itemId/visibility',
+    requireScope('wardrobe:write'),
+    forwardTo(client, (req, res) => {
+      if ((res.locals.principal as Principal).delegationId) throw problems.forbidden('Only the member decides who sees their closet.');
+      const b = objectBody(req, 3);
+      const extra = Object.keys(b).filter((k) => !['visibility', 'detail', 'showcase_note'].includes(k));
+      if (extra.length) throw problems.invalid(`Unknown fields: ${extra.join(', ')}.`);
+      if (!['private', 'friends', 'members'].includes(b.visibility as string)) throw problems.invalid('visibility must be private, friends or members.');
+      if (b.detail !== undefined && !['piece', 'story', 'full'].includes(b.detail as string)) throw problems.invalid('detail must be piece, story or full.');
+      if (b.showcase_note !== undefined && (typeof b.showcase_note !== 'string' || b.showcase_note.trim().length < 1 || b.showcase_note.length > 280)) {
+        throw problems.invalid('showcase_note must be 1-280 characters.');
+      }
+      return { method: 'PUT', path: `/wardrobe/items/${uuidParam(req, 'itemId')}/visibility`, body: b };
+    }),
+  );
+  // Guarded per route, not by prefix: other /members paths are not this lane's.
+  r.get('/members/:memberId/closet', requirePrincipal, requireScope('wardrobe:read'),
+    forwardTo(client, (req) => ({ method: 'GET', path: `/members/${uuidParam(req, 'memberId')}/closet` })));
   return r;
 }

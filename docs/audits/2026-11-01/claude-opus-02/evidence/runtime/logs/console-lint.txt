@@ -1,0 +1,24 @@
+### step: console-lint
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: pnpm lint
+### start_utc: 2026-11-01T15:13:42Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+
+> @brandme/console@1.0.0 lint /[REDACTED-LONG-STRING]
+> next lint
+
+`next lint` is deprecated and will be removed in Next.js 16.
+For new projects, use create-next-app to choose your preferred linter.
+For existing projects, migrate to the ESLint CLI:
+npx @next/codemod@canary next-lint-to-eslint-cli .
+
+? How would you like to configure ESLint? https://nextjs.org/docs/app/api-reference/config/eslint
+[?25l❯  Strict (recommended)
+   Base
+   Cancel ⚠ If you set up ESLint yourself, we recommend adding the Next.js ESLint plugin. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+ ELIFECYCLE  Command failed with exit code 1.
+-----
+### exit: 1
+### end_utc: 2026-11-01T15:13:44Z
+### duration_s: 2

@@ -233,6 +233,18 @@ def _order_event(member_id, order_id, version, lines, status="accepted"):
     )
 
 
+def test_order_observation_clamps_catalog_titles_to_the_wardrobe_limit(me, spanner_db):
+    """A catalog title may be 500 characters (V006); WardrobeItems.title allows 200 (V003), so the order
+    reducer clamps it instead of failing the whole observation on commit."""
+    long_title = "Linen overshirt " * 40  # 640 characters
+    lookup = {"var-long": {"product_id": SHIRT, "title": long_title, "category": "top"}}
+    svc = WardrobeService(spanner_db, clock=FixedClock(NOW), catalog_lookup=lookup.get)
+    event = _order_event(me.member_id, str(uuid.uuid4()), 1,
+                         [{"variant_id": "var-long", "source_variant_ref": "SKU-9", "ordered": 1, "delivered": 1, "returned": 0}])
+    assert svc.apply_order_observation(event)["created"] == 1
+    assert [i["title"] for i in svc.list_items(me, limit=10)["items"]] == [long_title[:200]]
+
+
 def test_partial_order_then_return_changes_only_those_units(svc, me, spanner_db):
     """BM-WARD-008."""
     order = str(uuid.uuid4())

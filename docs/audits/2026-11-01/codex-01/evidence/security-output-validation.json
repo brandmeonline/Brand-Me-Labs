@@ -1,0 +1,85 @@
+[
+  {
+    "file": "evidence/integrations.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/findings-security.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/coverage-security.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/coverage-security-paths.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-secret-candidates.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-config-names.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-ci-runs.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-ci-jobs.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-ci-log-summaries.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-github-config-metadata.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-primary-sources.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-github-advisory-metadata.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-advisory-detail.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-advisory-detail-expanded.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "file": "evidence/security-advisory-triage.json",
+    "json_valid": true,
+    "replacement_characters": 0
+  },
+  {
+    "relative_links_missing_at_validation": [],
+    "high_critical_metadata_alerts_expected": 19,
+    "triaged_combinations": 19,
+    "unmatched_high_critical_ids": [],
+    "checked": "2026-11-01",
+    "note": "All HIGH/Critical metadata combinations received bounded primary/static applicability review; no complete fresh image SBOM scan or runtime exploit verification"
+  }
+]

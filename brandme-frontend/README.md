@@ -1,87 +1,43 @@
-# Brand.Me Frontend
+# brandme-frontend
 
-Next.js 14 frontend for the Brand.Me platform - bringing integrity and provenance to fashion through blockchain-anchored garment passports.
+**Copyright (c) Brand.Me, Inc. All rights reserved.**
 
-## Stack
+Next.js 15.5.28 consumer app (port **3000**; the spec targets 16.3, see `docs/build/deviations.md` D-009).
+Status per `CLAUDE.md`: **PARTIAL**: the consumer shell and guest journeys shipped with PR #56; the wardrobe is
+still guest-local and there is no browser OIDC sign-in (audit work packages WP-04 and WP-08).
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript 5.3
-- **Styling**: Tailwind CSS
-- **Components**: shadcn/ui + lucide-react
-- **Design**: Editorial high-contrast dark theme
+Routes under `app/`: `add`, `assistant`, `circle`, `closet`, `discover`, `governance`, `inbox`, `me`, `orders`,
+`products`, `rewards`, `scan`, `settings`, `shop`, `start`, `stash`, `style`, `today`, `try`, plus `api/` and
+`dev/`. Spatial features (closets, fit ladder, passport claims) live in `features/spatial/`; visual baselines for
+the shell job in `lib/testing/`.
 
-## Routes
+## Run
 
-- `/shop` - Discovery feed of verified garments
-- `/stash` - User's saved collection
-- `/scan` - Garment passport view after NFC scan
-- `/governance` - Admin console for reviewing escalated scans
-
-## Key Components
-
-### IntegrityBadge
-Displays blockchain verification status with truncated transaction hashes from Cardano (public) and Midnight (private) chains.
-
-### GarmentCard
-Fashion story card with 3:4 aspect ratio, hover effects, and verification badge.
-
-### FacetList
-Renders garment facets (ESG, ORIGIN, MATERIALS) with custom preview layouts.
-
-### Header
-Global navigation with integrity signaling badge.
-
-## Architecture
-
-### Request ID Tracing
-All backend calls propagate `X-Request-Id` header for distributed tracing across microservices.
-
-```typescript
-import { BrandMeClient } from '@/lib/api'
-
-const client = new BrandMeClient()
-const passport = await client.get('/garment/GRMT_001/passport')
-```
-
-### Mock Data
-Development mode uses realistic mock responses matching backend API contracts:
-- `lib/demoData.ts` - Mock backend responses
-- `lib/api.ts` - Request ID handling utilities
-
-## Development
+Use pnpm only (`docs/build/workspace-governance.md` rule 5; `npm install` is refused by the workspace guard).
 
 ```bash
-npm install
-npm run dev
+pnpm dev:demo                               # from the repo root: brain :8000, gateway :3001, consumer :3000
+pnpm --filter brandme-frontend dev          # app alone
+pnpm --filter brandme-frontend build        # production build with lint and type checks (CI: Test Frontend)
+pnpm --filter brandme-frontend test:ui      # component tests
+pnpm --filter brandme-frontend test:browser # browser checks (CI: consumer-ui.yml)
+pnpm --filter brandme-frontend test:gateway # browser → gateway → domain → Spanner journey (CI: live-domains)
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+In containers the `consumer` service of `docker-compose.yml` runs `next dev -p 3000`.
 
-## Environment Variables
+## Configuration
 
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+`NEXT_PUBLIC_BRANDME_MODE` / `BRANDME_MODE` select demo or development behaviour. Browser calls reach the gateway
+through the server-side proxy in `lib/server/gateway-proxy.ts`, which targets `BRANDME_GATEWAY_URL`
+(`http://gateway:3001` in compose). `lib/api.ts` still defaults its base URL from `NEXT_PUBLIC_API_URL` (fallback
+`http://localhost:8000`, the legacy brain) and is not the path the shipped journeys use. Test
+harness variables (`BRANDME_CONSUMER_URL`, `BRANDME_CONSOLE_URL`, `BRANDME_EVIDENCE_DIR`, `BRANDME_VISUAL_CAPTURE_ONLY`,
+`BRANDME_PYTHON`, `BRANDME_TEST_PACKAGE_JSON`) are set by the workflows. `BRANDME_VERTEX_ACCESS_TOKEN` (spatial
+lane, GCP access token) is recorded in `docs/build/security/credential-manifest.yaml`.
 
-## Backend Integration
+## Where the rest is documented
 
-In production, frontend calls:
-- Brain service: `/intent/resolve` for scan flow
-- Orchestrator: `/scan/commit` for passport retrieval
-- Identity: `/identity/{user_id}/profile` for user data
-- Governance: `/governance/escalations` for admin console
-
-## Design Philosophy
-
-**Editorial, not e-commerce**: High-contrast monochrome palette with accent colors for trust signals (green for verified, yellow for pending, red for denied).
-
-**Integrity-first**: Every touchpoint reinforces blockchain verification - from the global header badge to individual garment cards.
-
-**Provenance storytelling**: Garment passports tell the full story of origin, materials, and sustainability through structured facets.
-
-## Security & Privacy
-
-- PII redaction in all user-facing displays
-- Request ID propagation for audit trail
-- Escalation handling for sensitive content
-- Human governance review for edge cases
+`docs/build/status/astra-consumer-ui.md` (shell contract, journeys, evidence gates),
+`docs/build/status/astra-spatial-ar.md` (spatial), `docs/design/brandme/01-product-experience.md` and
+`02-visual-motion-spatial.md` (the contract), `.github/workflows/consumer-ui.yml` (checks).

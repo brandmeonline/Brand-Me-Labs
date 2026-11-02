@@ -1,0 +1,272 @@
+[
+  {
+    "id": "F-SEC-001",
+    "title": "Developer MCP starts a mutable package and puts its API key in argv",
+    "category": "supply chain / credential handling",
+    "severity": "Medium (conditional)",
+    "severity_rationale": "Tool launch executes third-party code with developer process access and exposes key to local process inspection. No compromise/exposure observed.",
+    "confidence": "high static/metadata evidence; no exploit execution",
+    "status": "confirmed static defect or control gap",
+    "affected_environment": "declared development/CI/deployment as specified; deployed state unknown",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": ".mcp.json",
+        "line": 8,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.mcp.json#L8"
+      },
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": ".claude/hooks/session-start.sh",
+        "line": 21,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.claude/hooks/session-start.sh#L21"
+      }
+    ],
+    "preconditions": "Developer enables the repository MCP tool with MAGIC_API_KEY; package or local process-inspection boundary is compromised.",
+    "expected_behavior": "Reviewed pinned executable; minimum credentials delivered privately.",
+    "observed_behavior": "npx -y uses @latest; key is passed as command argument. SessionStart forwards every local env assignment to session environment.",
+    "impact": "Developer token and any unnecessarily forwarded environment may become accessible to unreviewed package or local observers.",
+    "validation": "source/metadata review only; no repository execution",
+    "recommended_fix": "Pin reviewed immutable package version/integrity; use supported environment/private key delivery; allowlist env names and validate shell identifier. Do not execute hook during audit.",
+    "dependencies": "Approved developer tool/package and secret channel",
+    "effort_range": "0.5–1.5 engineering days",
+    "acceptance_test": "Inspect spawned argv with synthetic key; no value present. Unexpected env key rejected. Reviewed package resolved identically."
+  },
+  {
+    "id": "F-SEC-002",
+    "title": "Readiness marks gateway and consumer-domain processes healthy without database checks",
+    "category": "reliability",
+    "severity": "Medium",
+    "severity_rationale": "A broken schema/IAM/database can receive traffic and appear deployed successfully.",
+    "confidence": "high static/metadata evidence; no exploit execution",
+    "status": "confirmed static defect or control gap",
+    "affected_environment": "declared development/CI/deployment as specified; deployed state unknown",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/health.ts",
+        "line": 16,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/health.ts#L16"
+      },
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-infra/helm/brandme/templates/gateway.yaml",
+        "line": 115,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-infra/helm/brandme/templates/gateway.yaml#L115"
+      },
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 79,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L79"
+      }
+    ],
+    "preconditions": "Deploy chart with inaccessible Spanner or unapplied consumer schema.",
+    "expected_behavior": "Readiness verifies required dependencies/schema; liveness remains process-only.",
+    "observed_behavior": "Gateway /healthz always 200; Helm uses it for readiness. Consumer /health returns static ok and __check only config.",
+    "impact": "Rollout success and HTTP 200 can coexist with failure of sign-in/profile/domain operations.",
+    "validation": "source/metadata review only; no repository execution",
+    "recommended_fix": "Add bounded dependency/schema readiness; wire probe separately; use selected business synthetic check in deploy. Avoid restarting processes solely for downstream outage.",
+    "dependencies": "Spanner and selected domain schema; F-ARCH-002 workers",
+    "effort_range": "1–2 days",
+    "acceptance_test": "Block DB or omit required migration: readiness false, liveness true; restore makes readiness recover."
+  },
+  {
+    "id": "F-SEC-003",
+    "title": "No branch protection or rulesets observed on current repository branches",
+    "category": "release governance",
+    "severity": "High",
+    "severity_rationale": "A repository writer can bypass review/CI on source that main CI publishes using cloud credentials.",
+    "confidence": "high static/metadata evidence; no exploit execution",
+    "status": "confirmed static defect or control gap",
+    "affected_environment": "declared development/CI/deployment as specified; deployed state unknown",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": ".github/workflows/ci-cd.yml",
+        "line": 310,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.github/workflows/ci-cd.yml#L310"
+      },
+      {
+        "path": "evidence/history-github-protection.json",
+        "url": "evidence/history-github-protection.json"
+      },
+      {
+        "path": "evidence/history-github-rulesets.json",
+        "url": "evidence/history-github-rulesets.json"
+      }
+    ],
+    "preconditions": "A repository write-capable identity makes an unsafe direct push; configured controls do not require approval/checks.",
+    "expected_behavior": "Default/release refs require trusted review, required checks, and controlled changes to workflow/deployment files.",
+    "observed_behavior": "Paginated GitHub snapshot: 34 branches protected=false; explicit protection endpoints return Branch not protected; rulesets listing succeeds empty.",
+    "impact": "Accidental or compromised direct source/workflow change may reach image publishing without enforced review.",
+    "validation": "source/metadata review only; no repository execution",
+    "recommended_fix": "Propose default/release rulesets and CODEOWNERS for CI/IAM/contracts; require actual check names after validating scope. Protect release tags and environment approvals as appropriate. No permission change authorized in audit.",
+    "dependencies": "Owner approval; branch/CI inventory",
+    "effort_range": "0.5–1 day after decision",
+    "acceptance_test": "Unauthorized direct push and failing-check merge denied; authorized reviewed change succeeds. Recheck metadata."
+  },
+  {
+    "id": "F-SEC-004",
+    "title": "Image publishing still depends on a long-lived Google service-account key",
+    "category": "CI identity",
+    "severity": "Medium",
+    "severity_rationale": "A static cloud credential persists when deployment already supports short-lived identity. Key scope and age are unknown.",
+    "confidence": "high static/metadata evidence; no exploit execution",
+    "status": "confirmed static defect or control gap",
+    "affected_environment": "declared development/CI/deployment as specified; deployed state unknown",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": ".github/workflows/ci-cd.yml",
+        "line": 368,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.github/workflows/ci-cd.yml#L368"
+      },
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "scripts/provision/gcp-dev-identities.sh",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/scripts/provision/gcp-dev-identities.sh#L1"
+      }
+    ],
+    "preconditions": "Main/tag publish job is authorized and has GCP_SA_KEY available.",
+    "expected_behavior": "Scoped federated pusher identity limited to this repository/ref and registry.",
+    "observed_behavior": "build-images authenticates via credentials_json; deploy separately uses WIF. Pinned-main publish jobs succeeded.",
+    "impact": "Key theft has a potentially longer useful lifetime and unknown IAM blast radius.",
+    "validation": "source/metadata review only; no repository execution",
+    "recommended_fix": "Switch publishing to separate WIF pusher and restrictive subject/repository/ref conditions; verify one authorized push, then separately authorize revocation/secret removal.",
+    "dependencies": "Selected publishing project; IAM review; credentials owner",
+    "effort_range": "1–2 days",
+    "acceptance_test": "No stored JSON key required; unauthorized PR/ref cannot obtain pusher credentials; immutable digest published."
+  },
+  {
+    "id": "F-SEC-005",
+    "title": "Historical Terraform is not a valid canonical provisioning plan",
+    "category": "infrastructure drift",
+    "severity": "Low (noncanonical path)",
+    "severity_rationale": "Applying the old recipe fails and does not supply the canonical data services.",
+    "confidence": "high static/metadata evidence; no exploit execution",
+    "status": "confirmed static defect or control gap",
+    "affected_environment": "declared development/CI/deployment as specified; deployed state unknown",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-infra/terraform/main.tf",
+        "line": 192,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-infra/terraform/main.tf#L192"
+      }
+    ],
+    "preconditions": "An operator uses brandme-infra/terraform as full-system provisioning.",
+    "expected_behavior": "Valid declared variables and resources matching current runtime.",
+    "observed_behavior": "var.db_password referenced but only project_id/region/environment variables declared; plan describes Cloud SQL while canonical runtime needs Spanner/PubSub/exports/media resources.",
+    "impact": "Wasted provisioning effort and misleading setup expectations. No apply was attempted.",
+    "validation": "source/metadata review only; no repository execution",
+    "recommended_fix": "Mark historical recipe explicitly and reconcile to chosen topology; preserve any still-used infrastructure before retirement. Validate a new plan in isolated provider context.",
+    "dependencies": "Cloud project/region decision and resource inventory",
+    "effort_range": "1–3 days depending retained legacy resources",
+    "acceptance_test": "terraform validate passes for retained plan; plan contains required resources and no unexpected legacy SQL."
+  },
+  {
+    "id": "F-SEC-006",
+    "title": "Gateway budgets multiply across replicas and reset on restart",
+    "category": "abuse controls",
+    "severity": "Medium (conditional)",
+    "severity_rationale": "Per-process limiter is weaker than a shared account/IP budget in a replicated deployment.",
+    "confidence": "high static/metadata evidence; no exploit execution",
+    "status": "confirmed static defect or control gap",
+    "affected_environment": "declared development/CI/deployment as specified; deployed state unknown",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/middleware/rateLimiter.ts",
+        "line": 56,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/middleware/rateLimiter.ts#L56"
+      },
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-infra/helm/brandme/values.yaml",
+        "line": 102,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-infra/helm/brandme/values.yaml#L102"
+      }
+    ],
+    "preconditions": "More than one gateway process serves the caller, or pods restart.",
+    "expected_behavior": "Documented per-member/address limit holds across routing/restarts.",
+    "observed_behavior": "Limiter uses process Map; chart gateway replicas defaults to 2. Code acknowledges N-times budget.",
+    "impact": "Requests spread across replicas can exceed intended quota; additional downstream protection remains required.",
+    "validation": "source/metadata review only; no repository execution",
+    "recommended_fix": "Use shared atomic rate limiting or enforce fixed limit at trusted edge; preserve export exemptions and proxy IP verification.",
+    "dependencies": "Chosen edge/shared store, trusted-proxy verification",
+    "effort_range": "1–3 days",
+    "acceptance_test": "Round-robin requests across two pods hit one shared budget; spoofed forwarded IP cannot reset identity."
+  },
+  {
+    "id": "F-SEC-007",
+    "title": "Gateway exits immediately on termination",
+    "category": "reliability",
+    "severity": "Medium",
+    "severity_rationale": "A rolling update can terminate accepted in-flight writes/responses without drain.",
+    "confidence": "high static/metadata evidence; no exploit execution",
+    "status": "confirmed static defect or control gap",
+    "affected_environment": "declared development/CI/deployment as specified; deployed state unknown",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/index.ts",
+        "line": 106,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/index.ts#L106"
+      }
+    ],
+    "preconditions": "SIGTERM during request/DB activity.",
+    "expected_behavior": "Stop accepting, drain in-flight work, close clients within grace deadline.",
+    "observed_behavior": "Server handle is not retained for close; SIGTERM/SIGINT call process.exit(0).",
+    "impact": "Client sees ambiguous outcome; retries depend on idempotency and can worsen interruptions.",
+    "validation": "source/metadata review only; no repository execution",
+    "recommended_fix": "Retain HTTP server; drain requests then close Spanner/NATS; bounded timeout with truthful exit status.",
+    "dependencies": "Request timeout/idempotency contracts",
+    "effort_range": "0.5–1.5 days",
+    "acceptance_test": "Send synthetic slow request, terminate, verify drain/retry outcome and no accepted mutation lost; no live provider effect."
+  },
+  {
+    "id": "F-SEC-008",
+    "title": "Dependency gate allows unresolved high alerts; severity metadata needs triage",
+    "category": "dependency / CI assurance",
+    "severity": "Medium pending reachability triage",
+    "severity_rationale": "Published affected dependencies exist in the hashed toolchain/runtime lock, while gate blocks only fixable CRITICAL. Current application exploitability is not established.",
+    "confidence": "high for versions/gate/alert snapshot; limited for runtime reachability",
+    "status": "confirmed gate limitation and affected dependency pins; exploitability unverified",
+    "affected_environment": "CI and default core image shared lock; default agents image installs legacy agentic requirements; separate legacy core manifests",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": ".github/workflows/ci-cd.yml",
+        "line": 545,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.github/workflows/ci-cd.yml#L545"
+      },
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "scripts/python/requirements.lock",
+        "line": 1018,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/scripts/python/requirements.lock#L1018"
+      },
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "packages/contracts/scripts/generate.mjs",
+        "line": 158,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/packages/contracts/scripts/generate.mjs#L158"
+      },
+      {
+        "path": "evidence/security-advisory-triage.json",
+        "url": "evidence/security-advisory-triage.json"
+      }
+    ],
+    "preconditions": "Vulnerable library API must receive hostile input; distinguish observed build invocation, packages installed in runtime images, and dormant legacy declarations. Static absence of calls does not prove indirect/transitive/deployed unreachability.",
+    "expected_behavior": "Reviewed high/runtime advisories block release or have owned dated reachability-based exceptions; evidence uses current authoritative severity.",
+    "observed_behavior": "78 open GitHub Trivy alerts visible; raw rule metadata labels18 High and1 Critical. All19 combinations received primary-source and prerequisite triage. Upstream/current-instance severities differ from several metadata labels, including the claimed Critical being upstream Low. No application exploit path demonstrated. Current gate only blocks fixable CRITICAL.",
+    "impact": "Green security CI is narrower than a clean dependency posture; affected runtime/build pins may remain untriaged.",
+    "validation": "Official GitHub alert metadata at exact main; all19 HIGH/Critical-metadata package/advisory combinations matched to upstream advisory sources and static prerequisites.59 Low/Medium metadata alerts not individually triaged; no fresh full image/SBOM scan, exploit or package execution.",
+    "recommended_fix": "Separate runtime/dev/legacy dependency inventory; recompile hashed lock with compatible reviewed fixes; regenerate contracts; run isolated regression and fresh scanner; gate high runtime risks with owned expiring exceptions. Resolve scanner severity drift rather than reporting raw metadata counts as confirmed vulnerabilities.",
+    "dependencies": "Runtime reachability assessment, library compatibility and generated contract drift review",
+    "effort_range": "1–3 days for triage/lock PR; broader compatibility fixes separately scoped",
+    "acceptance_test": "Fresh scan of exact lock and image; no unreviewed high runtime finding; selected negative fixtures prove fixed behavior; all exemptions owned with expiry and precise scope."
+  }
+]
