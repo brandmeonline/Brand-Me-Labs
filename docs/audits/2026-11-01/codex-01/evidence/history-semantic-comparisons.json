@@ -1,0 +1,2559 @@
+[
+  {
+    "id": "BR-001",
+    "ref": "bench/astra-consumer-ui-20261005",
+    "prs": [
+      {
+        "number": 56,
+        "title": "feat(ui): consumer journeys, foundation integration and versioned shell contract",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-25T02:49:40Z",
+        "closed_at": "2026-10-25T02:49:41Z",
+        "created_at": "2026-10-23T15:57:55Z",
+        "updated_at": "2026-10-25T02:49:41Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/56",
+        "head_ref": "bench/astra-consumer-ui-20261005",
+        "head_sha": "cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "7c4c1cd2af9ae2c52a1238bb6cdfb712a2ad7384",
+        "merge_commit_sha": "b9f483be139f1e0a3c324cdf5f30bbb3c5bdc22b"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 56,
+        "merge_sha": "b9f483be139f1e0a3c324cdf5f30bbb3c5bdc22b",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "04e171e49457d9f639587cab1281cd87d2f3fe17 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-002",
+    "ref": "bench/astra-spatial-ar-20261005",
+    "prs": [
+      {
+        "number": 69,
+        "title": "Add passport claims transport and private garment evidence intake",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-30T15:49:15Z",
+        "closed_at": "2026-10-30T15:49:15Z",
+        "created_at": "2026-10-30T15:29:01Z",
+        "updated_at": "2026-10-30T15:49:44Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/69",
+        "head_ref": "bench/astra-spatial-ar-20261005",
+        "head_sha": "1413178b7f74ecaf20589d67c4ba4dcdedbb69c2",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "c902317df3da58b9f20916811052111dfdf23569",
+        "merge_commit_sha": "b86c016b865ec90bb247754352f6b9afd3b121cf"
+      },
+      {
+        "number": 60,
+        "title": "feat(spatial): implement guest fit ladder, Pod model and scan boundaries",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-30T14:18:36Z",
+        "closed_at": "2026-10-30T14:18:36Z",
+        "created_at": "2026-10-25T01:35:05Z",
+        "updated_at": "2026-10-30T14:19:05Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/60",
+        "head_ref": "bench/astra-spatial-ar-20261005",
+        "head_sha": "3eddd286784296d4257d43788ce1487c01e5751c",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "97d54477f7667dade1a4fd7220c0b2694cffb604",
+        "merge_commit_sha": "c902317df3da58b9f20916811052111dfdf23569"
+      },
+      {
+        "number": 36,
+        "title": "feat(spatial): original closet, local pose and gated development previews",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-23T18:18:47Z",
+        "closed_at": "2026-10-23T18:18:47Z",
+        "created_at": "2026-10-08T21:08:25Z",
+        "updated_at": "2026-10-23T18:18:47Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/36",
+        "head_ref": "bench/astra-spatial-ar-20261005",
+        "head_sha": "ceb6ed6f7851422cfb4d4532249c6f9e8fb9363b",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "docs/brandme-full-experience-2026-10-05",
+        "base_sha": "4511236afb00deeb3c3f45d67a3c7c9b429525be",
+        "merge_commit_sha": "b31373170953705f180246e254a8c2e9a41b4931"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 69,
+        "merge_sha": "b86c016b865ec90bb247754352f6b9afd3b121cf",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "6e16bcb0161d052a280882b5a0b9e84e65991bcb 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": false
+      },
+      {
+        "pr": 60,
+        "merge_sha": "c902317df3da58b9f20916811052111dfdf23569",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "e79026e92ab0791015944bc3e11118a261f2d001 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-003",
+    "ref": "bench/opus-commerce-agents-20261005",
+    "prs": [],
+    "squash_comparisons": [],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-004",
+    "ref": "bench/opus-consumer-domains-20261005",
+    "prs": [],
+    "squash_comparisons": [],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-005",
+    "ref": "bench/opus-foundation-20261005",
+    "prs": [],
+    "squash_comparisons": [],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-006",
+    "ref": "bench/opus-midnight-rights-20261005",
+    "prs": [],
+    "squash_comparisons": [],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-007",
+    "ref": "claude/brand-me-lux-foundations-audit-8zywr3",
+    "prs": [
+      {
+        "number": 29,
+        "title": "Audit all repos; lift Lux platform foundation into brandme_foundation/",
+        "state": "open",
+        "draft": true,
+        "merged_at": null,
+        "closed_at": null,
+        "created_at": "2026-08-31T19:37:36Z",
+        "updated_at": "2026-08-31T19:52:56Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/29",
+        "head_ref": "claude/brand-me-lux-foundations-audit-8zywr3",
+        "head_sha": "eed6737062da451a38114f8002159c1bed0e5cb5",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "0f5f58a9eecaca46b367c9bd96f89654343fa5fb",
+        "merge_commit_sha": "f3f21073a1b64d23d3277295a05cb7d96c532b9b"
+      }
+    ],
+    "squash_comparisons": [],
+    "added_paths_current_main": [
+      {
+        "path": ".github/workflows/foundation.yml",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/__init__.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/errors.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/gates/__init__.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/hooks/__init__.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/hooks/broker.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/hooks/events.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/hooks/topics.yaml",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/observability.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/requirements.txt",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/runtime/__init__.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/runtime/config.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/runtime/health.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/runtime/http.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/tenancy/__init__.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_foundation/tenancy/models.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "docs/audit/BRANDME_AUDIT.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "docs/audit/LUX_LIFT_AND_SHIFT.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/foundation/__init__.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "tests/foundation/test_broker.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/foundation/test_observability.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/foundation/test_runtime_config.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/foundation/test_tenancy.py",
+        "present_on_main": false,
+        "identical_blob": false
+      }
+    ]
+  },
+  {
+    "id": "BR-008",
+    "ref": "claude/ci-repair-workflows",
+    "prs": [
+      {
+        "number": 30,
+        "title": "ci: repair the five workflow-config faults keeping CI red since January",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-07T12:36:15Z",
+        "closed_at": "2026-10-07T12:36:15Z",
+        "created_at": "2026-08-31T21:45:37Z",
+        "updated_at": "2026-10-07T12:37:38Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/30",
+        "head_ref": "claude/ci-repair-workflows",
+        "head_sha": "512021c35a6b9d381c94fe02495ba903f411b916",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "0f5f58a9eecaca46b367c9bd96f89654343fa5fb",
+        "merge_commit_sha": "f5c6dd922850a9dc7f836cb448de4839d1fee04f"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 30,
+        "merge_sha": "f5c6dd922850a9dc7f836cb448de4839d1fee04f",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "33f5a73e11c382f3c13cb47eb565d3cee02f6ef9 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-009",
+    "ref": "claude/midnight-rights-lifecycle-yhfyyu",
+    "prs": [
+      {
+        "number": 70,
+        "title": "midnight-rights round 03: finality, anchor record and disclosure enforcement (ultra plan 03)",
+        "state": "open",
+        "draft": true,
+        "merged_at": null,
+        "closed_at": null,
+        "created_at": "2026-10-30T16:48:11Z",
+        "updated_at": "2026-10-30T18:09:30Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/70",
+        "head_ref": "claude/midnight-rights-lifecycle-yhfyyu",
+        "head_sha": "a05f2e03e58e55cc2b392b8abc7b19f59659f820",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "merge_commit_sha": "a0a34920986e30a12f23e10158ab6ad574e562ad"
+      },
+      {
+        "number": 54,
+        "title": "chore(chain): re-pin Midnight tuple to the current support matrix (Stage 10)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-23T18:11:05Z",
+        "closed_at": "2026-10-23T18:11:05Z",
+        "created_at": "2026-10-23T12:03:21Z",
+        "updated_at": "2026-10-23T18:11:50Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/54",
+        "head_ref": "claude/midnight-rights-lifecycle-yhfyyu",
+        "head_sha": "ecece17711466d91f9fc67c626d3e7bf5980bd7c",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "5174ec27a482e9364173be82137c7d7dbc17f375",
+        "merge_commit_sha": "0c3d7ea2878d66a35d68451df4edb60d79f1ed92"
+      },
+      {
+        "number": 41,
+        "title": "ci(chain): repair Chain Service Tests; record re-verification on main (Stages 8–9)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-22T21:39:04Z",
+        "closed_at": "2026-10-22T21:39:04Z",
+        "created_at": "2026-10-10T21:20:17Z",
+        "updated_at": "2026-10-23T04:54:12Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/41",
+        "head_ref": "claude/midnight-rights-lifecycle-yhfyyu",
+        "head_sha": "9307f97b38bc2e00b11d97a8ad9ba132469d9868",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "6044818c14930b1caa7f02fa3e558a5c8816dc0a",
+        "merge_commit_sha": "b294e9e474161c04aeaf80426099f506e6823693"
+      },
+      {
+        "number": 40,
+        "title": "test(contracts): make the honest reprint path reachable in the random property (follow-up to #39)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-10T21:01:16Z",
+        "closed_at": "2026-10-10T21:01:16Z",
+        "created_at": "2026-10-10T18:45:42Z",
+        "updated_at": "2026-10-10T21:04:54Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/40",
+        "head_ref": "claude/midnight-rights-lifecycle-yhfyyu",
+        "head_sha": "7f02bc8e58d055582d87b2dd4a0241336e478829",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "49623e4e3746eb2913b839545428d21b5d03e12d",
+        "merge_commit_sha": "6044818c14930b1caa7f02fa3e558a5c8816dc0a"
+      },
+      {
+        "number": 34,
+        "title": "W09/W10: real Midnight rights contract, adapter and My Data framework (opus-midnight-rights lane)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-06T12:03:28Z",
+        "closed_at": "2026-10-06T12:03:28Z",
+        "created_at": "2026-10-05T18:10:34Z",
+        "updated_at": "2026-10-06T12:04:50Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/34",
+        "head_ref": "claude/midnight-rights-lifecycle-yhfyyu",
+        "head_sha": "2d5c773f38aca9e858a827a4d145f52b8a079317",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "bench/opus-midnight-rights-20261005",
+        "base_sha": "ede63f6128827819776cac94920b2276d0f5961c",
+        "merge_commit_sha": "44aaceab55bdcf595ce56ff2ded562d79bf1d190"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 54,
+        "merge_sha": "0c3d7ea2878d66a35d68451df4edb60d79f1ed92",
+        "branch_aggregate_patch": [
+          "3f486bb4559b10044aeb45f91ecc65b03f825fa6 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "c042308a7a3a87af9b603e5cb7a29f84d6804d40 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      },
+      {
+        "pr": 41,
+        "merge_sha": "b294e9e474161c04aeaf80426099f506e6823693",
+        "branch_aggregate_patch": [
+          "3f486bb4559b10044aeb45f91ecc65b03f825fa6 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "d8007a95fcf3ae5e5c317fd9a565aef833a64989 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      },
+      {
+        "pr": 40,
+        "merge_sha": "6044818c14930b1caa7f02fa3e558a5c8816dc0a",
+        "branch_aggregate_patch": [
+          "3f486bb4559b10044aeb45f91ecc65b03f825fa6 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "36108832cc5d27ab7cf2250a38ab77643c70c83a 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "brandme-data/spanner/migrations/V016_rights_transfer_invites.sql",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/commands-backend.test.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/transfers.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/privacy/composition.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/rights/commands.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/rights_commands/README.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/rights_commands/__init__.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/rights_commands/__main__.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/rights_commands/app.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/rights_commands/config.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/fixtures/seed_rights_commands.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/test_my_data_composition.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/test_rights_commands.py",
+        "present_on_main": false,
+        "identical_blob": false
+      }
+    ]
+  },
+  {
+    "id": "BR-010",
+    "ref": "claude/opus-commerce-agents-setup-szpmf7",
+    "prs": [
+      {
+        "number": 64,
+        "title": "opus-commerce-agents round 3: audit closure, autonomy boundaries, partner tiers, shell swap, BM-COM-011 fidelity",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-25T14:10:40Z",
+        "closed_at": "2026-10-25T14:10:40Z",
+        "created_at": "2026-10-25T02:23:40Z",
+        "updated_at": "2026-10-25T14:10:40Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/64",
+        "head_ref": "claude/opus-commerce-agents-setup-szpmf7",
+        "head_sha": "161f6eb6498c6085c8a070d2a389e3562b1b1ba9",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "2b5ae8893f883c674907cf3f9a449cab4a1d6cd5",
+        "merge_commit_sha": "bd8215a9b16f02102a1899c79d12992a78486cb7"
+      },
+      {
+        "number": 51,
+        "title": "opus-commerce-agents round 2: foundation adoption, payments/fulfillment seam with Stripe test mode, dev model planner, console",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-25T01:58:44Z",
+        "closed_at": "2026-10-25T01:58:44Z",
+        "created_at": "2026-10-23T11:46:21Z",
+        "updated_at": "2026-10-25T01:59:38Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/51",
+        "head_ref": "claude/opus-commerce-agents-setup-szpmf7",
+        "head_sha": "2fd6b291e58118ba0dd2a5c5a5ed479d7bb4f607",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "d5b993f202092c8bcb522a99d08ad849a5f0f03d",
+        "merge_commit_sha": "7c4c1cd2af9ae2c52a1238bb6cdfb712a2ad7384"
+      },
+      {
+        "number": 35,
+        "title": "opus-commerce-agents: bounded commerce, providers, MCP authz, AP2 v0.2 verifier (W06/W07)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-06T12:03:23Z",
+        "closed_at": "2026-10-06T12:03:23Z",
+        "created_at": "2026-10-05T18:20:17Z",
+        "updated_at": "2026-10-06T12:04:29Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/35",
+        "head_ref": "claude/opus-commerce-agents-setup-szpmf7",
+        "head_sha": "102098124d79cc6c47381a89f81aa87766041fd9",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "bench/opus-commerce-agents-20261005",
+        "base_sha": "305a24beacd5882011edfa23405455e1723b2312",
+        "merge_commit_sha": "7c61afd7c98a66836ba91d715bc4c6c913807003"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 64,
+        "merge_sha": "bd8215a9b16f02102a1899c79d12992a78486cb7",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "1b308259abc512ed4e87b3f7006d7690f61e3059 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": false
+      },
+      {
+        "pr": 51,
+        "merge_sha": "7c4c1cd2af9ae2c52a1238bb6cdfb712a2ad7384",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "b7b765f19595cf0fbb341d31a1547f934d8dafb8 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-011",
+    "ref": "claude/opus-consumer-domains-1csp2g",
+    "prs": [
+      {
+        "number": 66,
+        "title": "consumer domains: Now, Flow, loyalty, surveys and credit, persona card, rooms, experiments, share projector (Ultra plan 02, items 2-8 and 10) + check-in",
+        "state": "open",
+        "draft": false,
+        "merged_at": null,
+        "closed_at": null,
+        "created_at": "2026-10-25T03:46:27Z",
+        "updated_at": "2026-10-30T18:21:09Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/66",
+        "head_ref": "claude/opus-consumer-domains-1csp2g",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "97d54477f7667dade1a4fd7220c0b2694cffb604",
+        "merge_commit_sha": "d657103ee21674ef14d6182572a78d75d0241b29"
+      },
+      {
+        "number": 61,
+        "title": "consumer domains: mount the lane routers behind foundation auth (Ultra plan 02, item 1)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-25T03:23:01Z",
+        "closed_at": "2026-10-25T03:23:01Z",
+        "created_at": "2026-10-25T01:38:13Z",
+        "updated_at": "2026-10-25T03:23:01Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/61",
+        "head_ref": "claude/opus-consumer-domains-1csp2g",
+        "head_sha": "1011d74e05911fee901a38e2afa3fbdc81a420a4",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "d5b993f202092c8bcb522a99d08ad849a5f0f03d",
+        "merge_commit_sha": "2b5ae8893f883c674907cf3f9a449cab4a1d6cd5"
+      },
+      {
+        "number": 59,
+        "title": "opus-consumer-domains: GCS media store on a local GCS emulator (Q19)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-24T04:10:31Z",
+        "closed_at": "2026-10-24T04:10:31Z",
+        "created_at": "2026-10-24T03:05:00Z",
+        "updated_at": "2026-10-24T04:10:31Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/59",
+        "head_ref": "claude/opus-consumer-domains-1csp2g",
+        "head_sha": "b61d5720b35353929122210a0a692684bcdeeec1",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "3d4cc0b85c82119eaab0c912d45f3a8167dfab95",
+        "merge_commit_sha": "d5b993f202092c8bcb522a99d08ad849a5f0f03d"
+      },
+      {
+        "number": 52,
+        "title": "opus-consumer-domains: persona, wardrobe, social, rewards, try-on server, ops console, My Data and event delivery",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-24T02:10:43Z",
+        "closed_at": "2026-10-24T02:10:43Z",
+        "created_at": "2026-10-23T12:00:33Z",
+        "updated_at": "2026-10-24T02:10:44Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/52",
+        "head_ref": "claude/opus-consumer-domains-1csp2g",
+        "head_sha": "2c5cac707a48d94fcc08aa9e1f593340192233a4",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "47cdba7d8f8ab980e674ec45194d09694d7b18b2",
+        "merge_commit_sha": "3d4cc0b85c82119eaab0c912d45f3a8167dfab95"
+      },
+      {
+        "number": 32,
+        "title": "opus-consumer-domains: persona domain (W03 backend) — stage 1",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-07T12:35:43Z",
+        "closed_at": "2026-10-07T12:35:43Z",
+        "created_at": "2026-10-05T18:00:54Z",
+        "updated_at": "2026-10-07T12:36:54Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/32",
+        "head_ref": "claude/opus-consumer-domains-1csp2g",
+        "head_sha": "f394853330d71ade90d7d682f6961d8c36e752ef",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "bench/opus-consumer-domains-20261005",
+        "base_sha": "5d919ab6fdc99d2cb2d3f295b9d8473dff4619e1",
+        "merge_commit_sha": "d839267fc1f74b5e778e83f2930953e1a5400712"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 61,
+        "merge_sha": "2b5ae8893f883c674907cf3f9a449cab4a1d6cd5",
+        "branch_aggregate_patch": [
+          "77b07680a60cc6c0dc00bf2166011de5b9ce42a9 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "4919fd25bb35142624950202dedc9aec2f818dc7 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      },
+      {
+        "pr": 59,
+        "merge_sha": "d5b993f202092c8bcb522a99d08ad849a5f0f03d",
+        "branch_aggregate_patch": [
+          "77b07680a60cc6c0dc00bf2166011de5b9ce42a9 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "b55cf54096117ec3e410f0b4f2d981660b8f0109 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      },
+      {
+        "pr": 52,
+        "merge_sha": "3d4cc0b85c82119eaab0c912d45f3a8167dfab95",
+        "branch_aggregate_patch": [
+          "77b07680a60cc6c0dc00bf2166011de5b9ce42a9 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "1bf12cdfd4ef01da78ce902528aa0f338dcdfd4c 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "brandme-data/spanner/migrations/V016_consumer_design.sql",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/flow.test.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/flow.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/members.test.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/rooms.test.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/rooms.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/persona/card.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/persona/experiments.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/rewards/credits.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/rewards/standing.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/rewards/surveys.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/social/flow.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/social/houses.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/social/projection.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/social/rooms.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/domains/wardrobe/visibility.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/fixtures/persona/consumer_dev.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/test_persona_card_visibility.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/test_persona_experiments.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/test_rewards_surveys_credits.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/test_social_now_flow.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/test_social_rooms.py",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/test_social_share_projection.py",
+        "present_on_main": false,
+        "identical_blob": false
+      }
+    ]
+  },
+  {
+    "id": "BR-012",
+    "ref": "claude/opus-foundation-w00-2hgiw5",
+    "prs": [
+      {
+        "number": 62,
+        "title": "Foundation round 4: Q8 lane outbox catalogs, Q9 deletion purge, #61 flags, deploy checklist, trivy triage",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-30T12:38:57Z",
+        "closed_at": "2026-10-30T12:38:57Z",
+        "created_at": "2026-10-25T01:38:54Z",
+        "updated_at": "2026-10-30T12:38:58Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/62",
+        "head_ref": "claude/opus-foundation-w00-2hgiw5",
+        "head_sha": "f5c906ab163084f791a7b601f3bbb71a828bb934",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "22ff053ac73e002394f011a668fe23493998591c",
+        "merge_commit_sha": "97d54477f7667dade1a4fd7220c0b2694cffb604"
+      },
+      {
+        "number": 58,
+        "title": "opus-foundation round 3: honest CI, workspace guard, GKE packet, secrets scaffolding, W00–W02 gaps",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-24T01:41:27Z",
+        "closed_at": "2026-10-24T01:41:27Z",
+        "created_at": "2026-10-24T00:10:09Z",
+        "updated_at": "2026-10-24T01:41:27Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/58",
+        "head_ref": "claude/opus-foundation-w00-2hgiw5",
+        "head_sha": "da3f1972ce839842262fb748bd69cd00a7a7bf34",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "48686d26e6387fa264a0dd447c1267cacf9fc151",
+        "merge_commit_sha": "47cdba7d8f8ab980e674ec45194d09694d7b18b2"
+      },
+      {
+        "number": 53,
+        "title": "opus-foundation round 2: Firestore projections, security rules, log redaction",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-23T18:06:39Z",
+        "closed_at": "2026-10-23T18:06:39Z",
+        "created_at": "2026-10-23T12:03:06Z",
+        "updated_at": "2026-10-23T18:08:15Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/53",
+        "head_ref": "claude/opus-foundation-w00-2hgiw5",
+        "head_sha": "744d593be75bf892171631ccdb18785d7f0c6e27",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "5174ec27a482e9364173be82137c7d7dbc17f375",
+        "merge_commit_sha": "1f0d7387e6877c5727136fcf35f043951de4f3ac"
+      },
+      {
+        "number": 33,
+        "title": "opus-foundation: honest baseline + mode guard, contracts/workspace, persistence/auth (W00–W02)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-05T19:52:26Z",
+        "closed_at": "2026-10-05T19:52:26Z",
+        "created_at": "2026-10-05T18:07:28Z",
+        "updated_at": "2026-10-05T19:53:07Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/33",
+        "head_ref": "claude/opus-foundation-w00-2hgiw5",
+        "head_sha": "4d1634af12dcd90b6d9d8813a5467ea9ea1c9efa",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "bench/opus-foundation-20261005",
+        "base_sha": "e4f134289087f8a06f5f8de07326ded189cc4b8c",
+        "merge_commit_sha": "25dff5c8e90c0b3a5b83210aad928c4f1b9f20ae"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 62,
+        "merge_sha": "97d54477f7667dade1a4fd7220c0b2694cffb604",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "8c18cec800b8e96b20b12110fa21939e95240c1b 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": false
+      },
+      {
+        "pr": 58,
+        "merge_sha": "47cdba7d8f8ab980e674ec45194d09694d7b18b2",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "e32622b945fe1095fa1af118344766662f0ff4e4 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      },
+      {
+        "pr": 53,
+        "merge_sha": "1f0d7387e6877c5727136fcf35f043951de4f3ac",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "e0e64c9cf48245760d84c8afc9d21b80b7f79ba2 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-013",
+    "ref": "claude/setup-design-system-cli-6iovG",
+    "prs": [
+      {
+        "number": 26,
+        "title": "Claude/setup design system cli 6iov g",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-04-27T01:29:39Z",
+        "closed_at": "2026-04-27T01:29:39Z",
+        "created_at": "2026-04-27T01:29:24Z",
+        "updated_at": "2026-04-27T01:33:05Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/26",
+        "head_ref": "claude/setup-design-system-cli-6iovG",
+        "head_sha": "1733fccc13d97ceebf8a99a98c9d74506f03b1b6",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "8f8a2b7cfae4daabd7d08d2c65104b20a2fcdc53",
+        "merge_commit_sha": "2faae4c11a933beb52543bd77b010c76924ea3d6"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 26,
+        "merge_sha": "2faae4c11a933beb52543bd77b010c76924ea3d6",
+        "branch_aggregate_patch": [
+          "22cfa52629158912752e91562b944b4690b4aba0 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "f226b2e894252f6619f37bed24c12fc04f22e66d 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": ".claude/.env.local.example",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/hooks/session-start.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/settings.json",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/design-audit/SKILL.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/NEEDS_MAGIC_MCP.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/README.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/audit-2026-06-09.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/FacetList/aesop.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/FacetList/are-na.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/FacetList/family-co.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/GarmentCard/aesop.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/GarmentCard/family-co.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/GarmentCard/linear.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/Header/aesop.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/Header/linear.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/Header/the-row.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/IntegrityBadge/aesop.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/IntegrityBadge/linear.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/IntegrityBadge/vacheron-watch-archive.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/layout/aesop.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/layout/family-co.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/layout/linear.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/scan-page/aesop.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/scan-page/family-co.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/output/concepts/scan-page/vacheron-watch-archive.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/design-audit/references.md",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/SKILL.md",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/charts.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/colors.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/icons.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/landing.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/products.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/react-performance.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/astro.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/flutter.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/html-tailwind.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/jetpack-compose.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/nextjs.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/nuxt-ui.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/nuxtjs.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/react-native.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/react.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/shadcn.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/svelte.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/swiftui.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/stacks/vue.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/styles.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/typography.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/ui-reasoning.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/ux-guidelines.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/data/web-interface.csv",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/scripts/core.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/scripts/design_system.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".claude/skills/ui-ux-pro-max/scripts/search.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": ".github/workflows/module-regression.yml",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": ".mcp.json",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "CLAUDE.md",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "PLAN.md",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-chain/src/services/cardano-wallet.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/.eslintrc.cjs",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-gateway/src/middleware/rateLimiter.test.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/middleware/rateLimiter.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "docs/next_steps/REGRESSION_EXECUTION_PLAN.md",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "pytest.ini",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/README.md",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/lib.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_agents.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_chain.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_console.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_core.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_cube.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_data.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_frontend.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_gateway.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_governance.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_infra.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/root_shared.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/run_all.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-014",
+    "ref": "codex/chain-projection-worker-20261022",
+    "prs": [
+      {
+        "number": 45,
+        "title": "feat(chain): reconcile durable operations and project finalized entitlements",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-22T23:45:42Z",
+        "closed_at": "2026-10-22T23:45:42Z",
+        "created_at": "2026-10-22T23:38:53Z",
+        "updated_at": "2026-10-22T23:51:16Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/45",
+        "head_ref": "codex/chain-projection-worker-20261022",
+        "head_sha": "e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "238f65a357c64169662738b17adbb526c999a52b",
+        "merge_commit_sha": "74e137534b1b6f04e536a433977763a1775dc950"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 45,
+        "merge_sha": "74e137534b1b6f04e536a433977763a1775dc950",
+        "branch_aggregate_patch": [
+          "abaafaf695703c9891d8055b87c38f4247e5c4e6 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "abaafaf695703c9891d8055b87c38f4247e5c4e6 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "brandme-chain/src/midnight/indexer-query.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/src/midnight/projection.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/src/midnight/reconciliation-queue.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/src/midnight/reconciliation-worker.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/tests/midnight/projection.test.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/tests/spanner/reconciliation.test.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/tests/spanner/runtime.test.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-data/spanner/migrations/V012_chain_reconciliation.sql",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-015",
+    "ref": "codex/console-contract-publication",
+    "prs": [
+      {
+        "number": 65,
+        "title": "fix(console): publish shell contract 1.1.1",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-25T03:04:06Z",
+        "closed_at": "2026-10-25T03:04:06Z",
+        "created_at": "2026-10-25T02:50:25Z",
+        "updated_at": "2026-10-25T03:04:06Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/65",
+        "head_ref": "codex/console-contract-publication",
+        "head_sha": "06d8fc13f3133fea5108164266a6fee59b88db1f",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "b9f483be139f1e0a3c324cdf5f30bbb3c5bdc22b",
+        "merge_commit_sha": "77280249df4e91d93b4d814b140bd5e38bba4735"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 65,
+        "merge_sha": "77280249df4e91d93b4d814b140bd5e38bba4735",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "2bdda8e5ae99dc012b555200694a81ef07707b56 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-016",
+    "ref": "codex/consumer-design-preview",
+    "prs": [
+      {
+        "number": 63,
+        "title": "feat(consumer): preview three rooms, private style card and optional heartbeat",
+        "state": "open",
+        "draft": true,
+        "merged_at": null,
+        "closed_at": null,
+        "created_at": "2026-10-25T02:10:19Z",
+        "updated_at": "2026-10-30T15:17:57Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/63",
+        "head_ref": "codex/consumer-design-preview",
+        "head_sha": "0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "77280249df4e91d93b4d814b140bd5e38bba4735",
+        "merge_commit_sha": "4379d35d6fd814dbc40afd490cd50df090d25b1a"
+      }
+    ],
+    "squash_comparisons": [],
+    "added_paths_current_main": [
+      {
+        "path": "brandme-frontend/app/social/editorial/page.tsx",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/app/social/flow/page.tsx",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/app/social/now/page.tsx",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/app/social/page.tsx",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/features/persona/persona-card.tsx",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/features/social/horizons.tsx",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/features/social/use-decision-heartbeat.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/lib/client/haptic-preferences.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/lib/testing/verify-decision-haptics.mjs",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/lib/testing/verify-experience.mjs",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-frontend/lib/testing/verify-haptics.mjs",
+        "present_on_main": false,
+        "identical_blob": false
+      }
+    ]
+  },
+  {
+    "id": "BR-017",
+    "ref": "codex/critical-dependency-repairs-20261022",
+    "prs": [
+      {
+        "number": 46,
+        "title": "fix(security): patch production dependencies and gate image publishing on audits",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-23T00:20:00Z",
+        "closed_at": "2026-10-23T00:20:00Z",
+        "created_at": "2026-10-23T00:04:51Z",
+        "updated_at": "2026-10-23T00:26:44Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/46",
+        "head_ref": "codex/critical-dependency-repairs-20261022",
+        "head_sha": "542b52cc12ca668e64c13a072acf7374bd0a5752",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "74e137534b1b6f04e536a433977763a1775dc950",
+        "merge_commit_sha": "fbadf012155663be8e174c4845e6c9c0e3b4dca6"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 46,
+        "merge_sha": "fbadf012155663be8e174c4845e6c9c0e3b4dca6",
+        "branch_aggregate_patch": [
+          "75c64fc9829bebdcb2eb00b4f30f81b9bbdb20e6 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "75c64fc9829bebdcb2eb00b4f30f81b9bbdb20e6 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "docs/build/dependency-audit-2026-10-23.md",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-018",
+    "ref": "codex/docker-pipeline-20261022",
+    "prs": [
+      {
+        "number": 42,
+        "title": "fix(ci): build and verify all Docker images before publishing",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-22T22:11:16Z",
+        "closed_at": "2026-10-22T22:11:16Z",
+        "created_at": "2026-10-22T21:50:28Z",
+        "updated_at": "2026-10-22T22:19:56Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/42",
+        "head_ref": "codex/docker-pipeline-20261022",
+        "head_sha": "a5373d5c0eef5466a20e6ef4d4682a06275e20d4",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "b294e9e474161c04aeaf80426099f506e6823693",
+        "merge_commit_sha": "1ac8f97da6b326cfe6f425e26abd0daac6044917"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 42,
+        "merge_sha": "1ac8f97da6b326cfe6f425e26abd0daac6044917",
+        "branch_aggregate_patch": [
+          "1d0f2a8e40a3fcd5f9d7e99b1792c87ad15a944a 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "1d0f2a8e40a3fcd5f9d7e99b1792c87ad15a944a 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": ".dockerignore",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": ".github/scripts/smoke-image.sh",
+        "present_on_main": true,
+        "identical_blob": false
+      }
+    ]
+  },
+  {
+    "id": "BR-019",
+    "ref": "codex/durable-chain-reconciliation-20261022",
+    "prs": [
+      {
+        "number": 44,
+        "title": "feat(chain): persist operations and reconcile authenticated transaction evidence",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-22T23:21:45Z",
+        "closed_at": "2026-10-22T23:21:45Z",
+        "created_at": "2026-10-22T23:12:15Z",
+        "updated_at": "2026-10-23T00:06:56Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/44",
+        "head_ref": "codex/durable-chain-reconciliation-20261022",
+        "head_sha": "e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "a2e625a104c4e69e88731ff81e6cdf7b4c2940a4",
+        "merge_commit_sha": "238f65a357c64169662738b17adbb526c999a52b"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 44,
+        "merge_sha": "238f65a357c64169662738b17adbb526c999a52b",
+        "branch_aggregate_patch": [
+          "79161dd7deda2a85699a875e5559810a14f7c26e 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "79161dd7deda2a85699a875e5559810a14f7c26e 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "brandme-chain/INTEGRATION.md",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-chain/src/midnight/reconciler.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-chain/src/midnight/spanner-store.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-chain/src/routes/operations.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/tests/midnight/reconciliation.test.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-chain/tests/spanner/operations.test.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-chain/tests/support/store-database.py",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-chain/vitest.spanner.config.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-data/spanner/migrations/V011_chain_operation_store.sql",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-020",
+    "ref": "codex/durable-outbox-pubsub-20261022",
+    "prs": [
+      {
+        "number": 47,
+        "title": "feat(events): deliver durable outbox events through fenced Pub/Sub worker",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-23T02:28:26Z",
+        "closed_at": "2026-10-23T02:28:26Z",
+        "created_at": "2026-10-23T02:14:41Z",
+        "updated_at": "2026-10-23T02:35:48Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/47",
+        "head_ref": "codex/durable-outbox-pubsub-20261022",
+        "head_sha": "65367789130870c8c2a0e786f2d6152357d88093",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "fbadf012155663be8e174c4845e6c9c0e3b4dca6",
+        "merge_commit_sha": "1a4cfd1d142bb562b5c2e12c211111345a6fc23d"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 47,
+        "merge_sha": "1a4cfd1d142bb562b5c2e12c211111345a6fc23d",
+        "branch_aggregate_patch": [
+          "9e7e74e9a406222b99b6cfb7043418696d36725b 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "9e7e74e9a406222b99b6cfb7043418696d36725b 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "brandme-data/spanner/migrations/V013_outbox_delivery.sql",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/events/README.md",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/events/pubsub.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/events/worker.py",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "scripts/python/fetch_pubsub_emulator.py",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/foundation/test_outbox_delivery.py",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-021",
+    "ref": "codex/explain-execution-details-and-next-steps",
+    "prs": [
+      {
+        "number": 28,
+        "title": "Add module-regression CI and restore/stabilize multiple services, tests, and tooling",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-04-27T04:32:35Z",
+        "closed_at": "2026-04-27T04:32:35Z",
+        "created_at": "2026-04-27T04:31:32Z",
+        "updated_at": "2026-04-27T04:37:33Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/28",
+        "head_ref": "codex/explain-execution-details-and-next-steps",
+        "head_sha": "15ae7bf3ce02773ec431977cd23c6f5b19d811fd",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "4335e270778049ba7c3fe64599ed92ec253981af",
+        "merge_commit_sha": "0f5f58a9eecaca46b367c9bd96f89654343fa5fb"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 28,
+        "merge_sha": "0f5f58a9eecaca46b367c9bd96f89654343fa5fb",
+        "branch_aggregate_patch": [
+          "e45d90a55ea95c96ce46786bc4fd74bd7c4e73e0 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "e45d90a55ea95c96ce46786bc4fd74bd7c4e73e0 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": ".github/workflows/module-regression.yml",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-chain/src/services/cardano-wallet.ts",
+        "present_on_main": false,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/.eslintrc.cjs",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-gateway/src/middleware/rateLimiter.test.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "docs/next_steps/REGRESSION_EXECUTION_PLAN.md",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "pytest.ini",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/README.md",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/lib.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_agents.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_chain.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_console.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_core.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_cube.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_data.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_frontend.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_gateway.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_governance.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/brandme_infra.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/modules/root_shared.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "scripts/regression/run_all.sh",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-022",
+    "ref": "codex/midnight-integration-20261022",
+    "prs": [
+      {
+        "number": 43,
+        "title": "feat(integration): secure rights routes, wire domain events, and update Preprod",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-22T22:45:29Z",
+        "closed_at": "2026-10-22T22:45:29Z",
+        "created_at": "2026-10-22T22:34:52Z",
+        "updated_at": "2026-10-23T00:06:55Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/43",
+        "head_ref": "codex/midnight-integration-20261022",
+        "head_sha": "32e63d4d87f515f5398ab01d1eb18eba94019b5c",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "1ac8f97da6b326cfe6f425e26abd0daac6044917",
+        "merge_commit_sha": "a2e625a104c4e69e88731ff81e6cdf7b4c2940a4"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 43,
+        "merge_sha": "a2e625a104c4e69e88731ff81e6cdf7b4c2940a4",
+        "branch_aggregate_patch": [
+          "52d596868875cac29f1d59e61d8c74d75a34c2ee 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "52d596868875cac29f1d59e61d8c74d75a34c2ee 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "brandme-chain/scripts/test-midnight-preprod.mjs",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/src/midnight/redaction.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/tests/midnight/network-env.test.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-chain/tests/midnight/network.test.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-data/spanner/migrations/V010_rights_projection_version.sql",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/integration.test.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/services/rights.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "docs/build/evidence/midnight-integration-2026-10-22.md",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "tests/foundation/test_rights_event_contracts.py",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-023",
+    "ref": "codex/privacy-recovery-safety-20261023",
+    "prs": [
+      {
+        "number": 48,
+        "title": "fix(privacy): preserve deletion freezes and resume incomplete restores safely",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-23T03:10:59Z",
+        "closed_at": "2026-10-23T03:10:59Z",
+        "created_at": "2026-10-23T02:57:59Z",
+        "updated_at": "2026-10-23T03:17:53Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/48",
+        "head_ref": "codex/privacy-recovery-safety-20261023",
+        "head_sha": "e6274ef5a19e5db77d27c19c3b7349b08fa96c84",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "1a4cfd1d142bb562b5c2e12c211111345a6fc23d",
+        "merge_commit_sha": "f4a4015f1820f35a11312ea020421a9d091dbd28"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 48,
+        "merge_sha": "f4a4015f1820f35a11312ea020421a9d091dbd28",
+        "branch_aggregate_patch": [
+          "4b290fdfee4e9626339de5ccc10cb668d1f5d9fc 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "4b290fdfee4e9626339de5ccc10cb668d1f5d9fc 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "tests/test_privacy_recovery.py",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-024",
+    "ref": "codex/rights-export-worker",
+    "prs": [
+      {
+        "number": 50,
+        "title": "feat(privacy): add durable selected rights exports and authenticated downloads",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-23T04:47:37Z",
+        "closed_at": "2026-10-23T04:47:37Z",
+        "created_at": "2026-10-23T04:37:52Z",
+        "updated_at": "2026-10-23T04:54:11Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/50",
+        "head_ref": "codex/rights-export-worker",
+        "head_sha": "02297b2cea98dfd54818de5a3104a1ce341acfcd",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "20bf3e95af466df7e3a8eb6cb14c9823921a12b7",
+        "merge_commit_sha": "5174ec27a482e9364173be82137c7d7dbc17f375"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 50,
+        "merge_sha": "5174ec27a482e9364173be82137c7d7dbc17f375",
+        "branch_aggregate_patch": [
+          "78a7ca920b08566eee5127d46a54a4f9ea51bc83 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "78a7ca920b08566eee5127d46a54a4f9ea51bc83 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "brandme-data/spanner/migrations/V014_privacy_exports.sql",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/export-backend.test.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/privacy_exports/README.md",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/privacy_exports/__init__.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/privacy_exports/__main__.py",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/privacy_exports/app.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/privacy_exports/config.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/privacy_exports/service.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/privacy_exports/storage.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "tests/fixtures/export_storage.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "tests/test_privacy_exports.py",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-025",
+    "ref": "codex/rights-privacy-read-api",
+    "prs": [
+      {
+        "number": 49,
+        "title": "feat(reads): add authenticated rights and partial My Data backend",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-23T03:57:06Z",
+        "closed_at": "2026-10-23T03:57:06Z",
+        "created_at": "2026-10-23T03:50:15Z",
+        "updated_at": "2026-10-23T04:04:49Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/49",
+        "head_ref": "codex/rights-privacy-read-api",
+        "head_sha": "10a468395cde98eaf7b7f0159855c7bac3a5827a",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "f4a4015f1820f35a11312ea020421a9d091dbd28",
+        "merge_commit_sha": "20bf3e95af466df7e3a8eb6cb14c9823921a12b7"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 49,
+        "merge_sha": "20bf3e95af466df7e3a8eb6cb14c9823921a12b7",
+        "branch_aggregate_patch": [
+          "a293e6ece035a94ac5073a447cd1449e96d69e8d 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "a293e6ece035a94ac5073a447cd1449e96d69e8d 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": [
+      {
+        "path": "brandme-gateway/src/routes/v1/read-backend.test.ts",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme-gateway/src/routes/v1/read-query.ts",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/read_api/README.md",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/read_api/__init__.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/read_api/__main__.py",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "brandme_core/read_api/app.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/read_api/config.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "brandme_core/read_api/reads.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "packages/contracts/src/read-schemas.json",
+        "present_on_main": true,
+        "identical_blob": false
+      },
+      {
+        "path": "tests/fixtures/seed_read_api.py",
+        "present_on_main": true,
+        "identical_blob": true
+      },
+      {
+        "path": "tests/test_read_api.py",
+        "present_on_main": true,
+        "identical_blob": true
+      }
+    ]
+  },
+  {
+    "id": "BR-026",
+    "ref": "docs/brandme-full-experience-2026-10-05",
+    "prs": [
+      {
+        "number": 31,
+        "title": "Define the complete Brand.Me experience for Claude implementation",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-08T22:32:19Z",
+        "closed_at": "2026-10-08T22:32:19Z",
+        "created_at": "2026-10-05T17:14:02Z",
+        "updated_at": "2026-10-08T22:32:19Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/31",
+        "head_ref": "docs/brandme-full-experience-2026-10-05",
+        "head_sha": "4511236afb00deeb3c3f45d67a3c7c9b429525be",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "0f5f58a9eecaca46b367c9bd96f89654343fa5fb",
+        "merge_commit_sha": "4511236afb00deeb3c3f45d67a3c7c9b429525be"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 31,
+        "merge_sha": "4511236afb00deeb3c3f45d67a3c7c9b429525be",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "5988769acc9a2ad8d5b20f429a64345152b0078d 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-027",
+    "ref": "fix/property-test-vacuity-guard-flake",
+    "prs": [
+      {
+        "number": 39,
+        "title": "Fix property-test vacuity guard flake (consumeReprintAllowance)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-10T18:30:38Z",
+        "closed_at": "2026-10-10T18:30:38Z",
+        "created_at": "2026-10-10T18:30:34Z",
+        "updated_at": "2026-10-10T18:32:31Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/39",
+        "head_ref": "fix/property-test-vacuity-guard-flake",
+        "head_sha": "a699331df56c12570067223dbaad9c0a86d1567a",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "99fc2fa202d2f9c4c4f8d9c4a2a3c5bce6a719d3",
+        "merge_commit_sha": "49623e4e3746eb2913b839545428d21b5d03e12d"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 39,
+        "merge_sha": "49623e4e3746eb2913b839545428d21b5d03e12d",
+        "branch_aggregate_patch": [
+          "17489e06fb25ed7959b7540142fcf3868587613e 0000000000000000000000000000000000000000"
+        ],
+        "merge_patch": [
+          "17489e06fb25ed7959b7540142fcf3868587613e 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": true
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-028",
+    "ref": "main",
+    "prs": [
+      {
+        "number": 17,
+        "title": "Merge all",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2025-10-26T07:35:49Z",
+        "closed_at": "2025-10-26T07:35:49Z",
+        "created_at": "2025-10-26T07:35:37Z",
+        "updated_at": "2025-10-26T07:35:49Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/17",
+        "head_ref": "main",
+        "head_sha": "08a80c53f94daf325b4d4d5917eaaa5bd5e4e6a2",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H",
+        "base_sha": "39d42bfdf0b26554213022d9ecaef392ed3c3460",
+        "merge_commit_sha": "81cea7f38547e59196b98992800a91bbcfa4eeca"
+      },
+      {
+        "number": 12,
+        "title": "Create master sync",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2025-10-26T06:31:12Z",
+        "closed_at": "2025-10-26T06:31:12Z",
+        "created_at": "2025-10-26T06:30:56Z",
+        "updated_at": "2025-10-26T06:31:12Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/12",
+        "head_ref": "main",
+        "head_sha": "af528b9bab5aedc691f57df722ae809f2c6eda9e",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H",
+        "base_sha": "5a03714924c8d3721c100fb5370beee1d846115c",
+        "merge_commit_sha": "3d2ef636212d0f34d78cf2827a407477d735fed3"
+      }
+    ],
+    "squash_comparisons": [],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-029",
+    "ref": "mia/next-plans-20261025",
+    "prs": [
+      {
+        "number": 67,
+        "title": "orchestration: round-03 next plans (ultra + oneshot) for all six lanes",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-30T03:47:05Z",
+        "closed_at": "2026-10-30T03:47:05Z",
+        "created_at": "2026-10-25T04:18:51Z",
+        "updated_at": "2026-10-30T03:47:05Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/67",
+        "head_ref": "mia/next-plans-20261025",
+        "head_sha": "057320d4bf01e86c381d6750202e6e5bb7bb741f",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "2b5ae8893f883c674907cf3f9a449cab4a1d6cd5",
+        "merge_commit_sha": "22ff053ac73e002394f011a668fe23493998591c"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 67,
+        "merge_sha": "22ff053ac73e002394f011a668fe23493998591c",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "7759731b177fb06632fd91b7f336f17ac9b8507f 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-030",
+    "ref": "mia/orchestration-20261023",
+    "prs": [
+      {
+        "number": 57,
+        "title": "orchestration: direct-trigger protocol, merge log, next assignments, founder questions (2026-10-23)",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-23T18:41:59Z",
+        "closed_at": "2026-10-23T18:41:59Z",
+        "created_at": "2026-10-23T18:14:03Z",
+        "updated_at": "2026-10-23T18:41:59Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/57",
+        "head_ref": "mia/orchestration-20261023",
+        "head_sha": "27f3215a9cb3512ee6d92a5a6fb13519bd82385d",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "0c3d7ea2878d66a35d68451df4edb60d79f1ed92",
+        "merge_commit_sha": "48686d26e6387fa264a0dd447c1267cacf9fc151"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 57,
+        "merge_sha": "48686d26e6387fa264a0dd447c1267cacf9fc151",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "5d8bafa87d20d6e41371a4d108b29adabaf27aa9 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": true,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-031",
+    "ref": "mia/pipeline-seed-20261030",
+    "prs": [
+      {
+        "number": 68,
+        "title": "orchestration: seed continuous build pipeline state file",
+        "state": "closed",
+        "draft": false,
+        "merged_at": "2026-10-30T16:35:08Z",
+        "closed_at": "2026-10-30T16:35:08Z",
+        "created_at": "2026-10-30T12:40:04Z",
+        "updated_at": "2026-10-30T16:35:09Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/68",
+        "head_ref": "mia/pipeline-seed-20261030",
+        "head_sha": "5e9eceb67599f2465ca2d7a47b71234965f0b2f1",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "97d54477f7667dade1a4fd7220c0b2694cffb604",
+        "merge_commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+      }
+    ],
+    "squash_comparisons": [
+      {
+        "pr": 68,
+        "merge_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "branch_aggregate_patch": [],
+        "merge_patch": [
+          "3f76ba92abac2a35c89b1e59aff2076d9f846e46 0000000000000000000000000000000000000000"
+        ],
+        "identical_tree_at_merge": false,
+        "aggregate_equivalent": false
+      }
+    ],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-032",
+    "ref": "triage/pnpm-version-conflict-20261023",
+    "prs": [
+      {
+        "number": 55,
+        "title": "[triage] module-regression: drop pnpm version pin conflicting with packageManager",
+        "state": "closed",
+        "draft": false,
+        "merged_at": null,
+        "closed_at": "2026-10-23T15:19:27Z",
+        "created_at": "2026-10-23T13:29:43Z",
+        "updated_at": "2026-10-23T15:19:27Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/55",
+        "head_ref": "triage/pnpm-version-conflict-20261023",
+        "head_sha": "114470007e9c631010ee22930a8ddfb75d0ea700",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "bench/astra-spatial-ar-20261005",
+        "base_sha": "6899d88202617808443bf7f72257643503c7c0e8",
+        "merge_commit_sha": "6958a85aac8b973d13def15292175e6c2d8c5795"
+      }
+    ],
+    "squash_comparisons": [],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-033",
+    "ref": "triage/pnpm-workspace-frontend-20261008",
+    "prs": [
+      {
+        "number": 37,
+        "title": "[triage] fix Module Regression: add brandme-frontend to pnpm workspace",
+        "state": "closed",
+        "draft": false,
+        "merged_at": null,
+        "closed_at": "2026-10-08T22:32:27Z",
+        "created_at": "2026-10-08T22:09:17Z",
+        "updated_at": "2026-10-08T22:32:27Z",
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/37",
+        "head_ref": "triage/pnpm-workspace-frontend-20261008",
+        "head_sha": "64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17",
+        "head_repo": "brandmeonline/Brand-Me-Labs",
+        "base_ref": "main",
+        "base_sha": "f5c6dd922850a9dc7f836cb448de4839d1fee04f",
+        "merge_commit_sha": "bca06c7b74d988a5e1a5c54932ac9aced38f6c0e"
+      }
+    ],
+    "squash_comparisons": [],
+    "added_paths_current_main": []
+  },
+  {
+    "id": "BR-034",
+    "ref": "w11/integration-20261008",
+    "prs": [],
+    "squash_comparisons": [],
+    "added_paths_current_main": []
+  }
+]

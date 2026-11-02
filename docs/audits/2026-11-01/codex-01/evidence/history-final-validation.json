@@ -1,0 +1,224 @@
+{
+  "captured_at": "2026-11-01T14:40:28.5701642Z",
+  "baseline": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "worktree_status": [],
+  "git_version": "git version 2.54.0.windows.1",
+  "gh_version": "gh version 2.97.0 (2026-07-31)",
+  "remote_branches": 35,
+  "local_branches": 1,
+  "branch_records": 36,
+  "unique_branch_ids": 36,
+  "original_main_behind": 370,
+  "original_to_remote_changed_files": 1128,
+  "runtime_tests": "NOT RUN",
+  "source_link_checks": [
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.github/workflows/consumer-ui.yml#L7",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.github/workflows/spatial-validation.yml#L5",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/events/worker.py#L90",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/privacy/deletion.py#L191",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/app.py#L99",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/app.py#L53",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/tests/contracts/property.test.ts#L218",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/babb3604ae2f33018edf0ad45270887d4b01945b/brandme_core/domains/persona/app.py#L45",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/babb3604ae2f33018edf0ad45270887d4b01945b/brandme_core/domains/rewards/credits.py#L179",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme-gateway/src/routes/v1/transfers.ts#L4",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme_core/rights_commands/__main__.py#L30",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme_core/rights_commands/README.md#L48",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420/brandme-frontend/features/social/horizons.tsx#L27",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/babb3604ae2f33018edf0ad45270887d4b01945b/brandme-data/spanner/migrations/V016_consumer_design.sql#L1",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme-data/spanner/migrations/V016_rights_transfer_invites.sql#L1",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-data/spanner/migrations/runner.py#L99",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/tests/foundation/test_migrations.py#L44",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/build/orchestration/pipeline-state.md#L88",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/pnpm-workspace.yaml#L9",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.github/workflows/module-regression.yml#L36",
+      "commit_path_exists": true,
+      "line_exists": true
+    },
+    {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/45e157f5555647f0e9add424b9634f27d606211d/docs/build/stripe-connect-plan.md#L1",
+      "commit_path_exists": true,
+      "line_exists": true
+    }
+  ],
+  "json_parse": [
+    {
+      "file": "history-git-branches-raw.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-api-log.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-branch-ci.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-branches.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-deployments.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-environments.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-pr-details.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-protection.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-prs.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-releases.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-rulesets.json",
+      "parsed": true
+    },
+    {
+      "file": "history-pr-002-files.json",
+      "parsed": true
+    },
+    {
+      "file": "history-semantic-comparisons.json",
+      "parsed": true
+    },
+    {
+      "file": "branches.json",
+      "parsed": true
+    },
+    {
+      "file": "findings-branches.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-review-threads.json",
+      "parsed": true
+    },
+    {
+      "file": "history-new-branch-prs.json",
+      "parsed": true
+    },
+    {
+      "file": "history-new-branch-checks.json",
+      "parsed": true
+    },
+    {
+      "file": "history-new-branch-metadata.json",
+      "parsed": true
+    },
+    {
+      "file": "history-new-branch-reviews.json",
+      "parsed": true
+    },
+    {
+      "file": "history-final-ref-delta.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-prs-final.json",
+      "parsed": true
+    },
+    {
+      "file": "history-github-branch-ci-final.json",
+      "parsed": true
+    }
+  ],
+  "limitations": [
+    "No application/test/install execution",
+    "No line-by-line verification of every consequential branch delta",
+    "No complete external branch-consumer inventory",
+    "No proposed preservation archive was created",
+    "Review thread metadata observed; substantive correctness of every historical resolution not independently verified"
+  ],
+  "no_source_or_remote_branch_mutations": true,
+  "final_new_audit_remote_tracking_ref": "refs/remotes/origin/claude/amazing-goodall-ntrljq"
+}

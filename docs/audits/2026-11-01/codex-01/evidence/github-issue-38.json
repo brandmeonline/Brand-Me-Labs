@@ -1,0 +1,8 @@
+{
+  "body": "## Failure\n\nRegression suite fails on main (99fc2fa2):\n\n```\nAssertionError: consumeReprintAllowance never succeeded\n```\n\n**Test:** `tests/contracts/property.test.ts`\n\n## Context\n\nThe test expects `consumeReprintAllowance` to succeed under certain conditions, but it never succeeds. This is in the midnight-rights lane's W09/W10 ownership (rights/entitlement logic).\n\n## Action needed\n\n1. Check if the `consumeReprintAllowance` implementation matches the test's expectations\n2. Verify the test setup is correct (allowance state, preconditions)\n3. Fix whichever side is wrong (implementation or test)\n\n## Related\n\n- Main HEAD: 99fc2fa2\n- Docker builds are mostly green (gateway succeeded); this test failure is the main blocker for the pipeline.",
+  "closedAt": "2026-10-10T18:30:39Z",
+  "number": 38,
+  "state": "CLOSED",
+  "title": "[midnight-rights] consumeReprintAllowance test failure on main",
+  "url": "https://github.com/brandmeonline/Brand-Me-Labs/issues/38"
+}

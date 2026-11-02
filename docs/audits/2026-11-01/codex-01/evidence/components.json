@@ -1,0 +1,1472 @@
+[
+  {
+    "id": "CMP-001",
+    "name": "Consumer application",
+    "paths": [
+      "brandme-frontend"
+    ],
+    "runtime": "Next.js/React",
+    "entry_point": "App Router / routes",
+    "inbound_consumers": "Browser",
+    "outbound_dependencies": "Gateway BFF, client guest storage, Three/WebXR/media",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Primary consumer experience",
+    "overlap": "Legacy placeholder components coexist; root owns UI review",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "pnpm-workspace.yaml",
+        "line": 6,
+        "end_line": 12,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/pnpm-workspace.yaml#L6-L12"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docker-compose.yml",
+        "line": 218,
+        "end_line": 228,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docker-compose.yml#L218-L228"
+      }
+    ],
+    "responsibility": "Primary consumer experience"
+  },
+  {
+    "id": "CMP-002",
+    "name": "Operator console",
+    "paths": [
+      "brandme-console"
+    ],
+    "runtime": "Next.js/React",
+    "entry_point": "App Router operator routes",
+    "inbound_consumers": "Operators",
+    "outbound_dependencies": "Gateway/provider/rights reads",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Operator visibility and setup workflows",
+    "overlap": "Must not inherit legacy unauthenticated governance approval",
+    "recommendation": "retain/repair",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/03-architecture-data-api.md",
+        "line": 58,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/03-architecture-data-api.md#L58"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 13,
+        "end_line": 14,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L13-L14"
+      }
+    ],
+    "responsibility": "Operator visibility and setup workflows"
+  },
+  {
+    "id": "CMP-003",
+    "name": "Public gateway",
+    "paths": [
+      "brandme-gateway"
+    ],
+    "runtime": "Node/Express",
+    "entry_point": "src/index.ts createApp/start",
+    "inbound_consumers": "Browser/BFF/agents",
+    "outbound_dependencies": "IdentityStore/Spanner; signed domain transport; chain/read/export services",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Canonical public API and identity boundary",
+    "overlap": "brandme_gateway alternate path and unmounted commerce routers",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/index.ts",
+        "line": 30,
+        "end_line": 98,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/index.ts#L30-L98"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 131,
+        "end_line": 145,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L131-L145"
+      }
+    ],
+    "responsibility": "Canonical public API and identity boundary"
+  },
+  {
+    "id": "CMP-004",
+    "name": "Consumer domain HTTP composition",
+    "paths": [
+      "brandme_core/domains/persona/app.py"
+    ],
+    "runtime": "Python/FastAPI",
+    "entry_point": "python -m brandme_core.domains.persona.app",
+    "inbound_consumers": "Gateway DomainClient",
+    "outbound_dependencies": "Spanner; media object store",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Durable consumer domain service",
+    "overlap": "Design originally said brain modules; this is now a separate service",
+    "recommendation": "retain/repair",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 46,
+        "end_line": 84,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L46-L84"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docker-compose.yml",
+        "line": 188,
+        "end_line": 211,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docker-compose.yml#L188-L211"
+      }
+    ],
+    "responsibility": "Durable consumer domain service"
+  },
+  {
+    "id": "CMP-005",
+    "name": "Persona domain",
+    "paths": [
+      "brandme_core/domains/persona"
+    ],
+    "runtime": "Python",
+    "entry_point": "PersonaService and create_persona_router",
+    "inbound_consumers": "Consumer app, guest migration, tests",
+    "outbound_dependencies": "Spanner, domain kernel, recommender",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Editable axes, evidence, snapshots and explanations",
+    "overlap": "README says reserved but implementation is substantial",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/service.py",
+        "line": 128,
+        "end_line": 141,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/service.py#L128-L141"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/service.py",
+        "line": 510,
+        "end_line": 614,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/service.py#L510-L614"
+      }
+    ],
+    "responsibility": "Editable axes, evidence, snapshots and explanations"
+  },
+  {
+    "id": "CMP-006",
+    "name": "Wardrobe and outfits",
+    "paths": [
+      "brandme_core/domains/wardrobe"
+    ],
+    "runtime": "Python",
+    "entry_point": "WardrobeService / OutfitService",
+    "inbound_consumers": "Consumer app; commerce event subscriber",
+    "outbound_dependencies": "Spanner, persona kernel, social policy",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Durable item/placement/version ownership",
+    "overlap": "Legacy Firestore wardrobe is a separate authority; do not dual-write blindly",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 70,
+        "end_line": 74,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L70-L74"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/wardrobe/service.py",
+        "line": 833,
+        "end_line": 916,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/wardrobe/service.py#L833-L916"
+      }
+    ],
+    "responsibility": "Durable item/placement/version ownership"
+  },
+  {
+    "id": "CMP-007",
+    "name": "Social domains",
+    "paths": [
+      "brandme_core/domains/social"
+    ],
+    "runtime": "Python",
+    "entry_point": "create_social_router; Relationship/Decision/Share services",
+    "inbound_consumers": "Consumer app; jobs",
+    "outbound_dependencies": "Spanner, policy/notification tables, domain events",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Trusted circles, scoped shares and bounded decisions",
+    "overlap": "Branch #66 adds houses/rooms/flow; do not assume merged",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 73,
+        "end_line": 74,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L73-L74"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/social/decisions.py",
+        "line": 463,
+        "end_line": 486,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/social/decisions.py#L463-L486"
+      }
+    ],
+    "responsibility": "Trusted circles, scoped shares and bounded decisions"
+  },
+  {
+    "id": "CMP-008",
+    "name": "Rewards",
+    "paths": [
+      "brandme_core/domains/rewards"
+    ],
+    "runtime": "Python",
+    "entry_point": "create_rewards_router, RewardsConsumer",
+    "inbound_consumers": "Consumer app; LaneSubscriber",
+    "outbound_dependencies": "Spanner ledger, events; optional benefit fulfillers",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Transactional points, badges, reservations and disputes",
+    "overlap": "No partner benefit fulfilment and no deployed ingress/jobs",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/rewards/consumer.py",
+        "line": 43,
+        "end_line": 71,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/rewards/consumer.py#L43-L71"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/jobs.py",
+        "line": 61,
+        "end_line": 64,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/jobs.py#L61-L64"
+      }
+    ],
+    "responsibility": "Transactional points, badges, reservations and disputes"
+  },
+  {
+    "id": "CMP-009",
+    "name": "Media and try-on",
+    "paths": [
+      "brandme_core/domains/media"
+    ],
+    "runtime": "Python",
+    "entry_point": "Conditional create_media_router; MediaService",
+    "inbound_consumers": "Consumer app and jobs",
+    "outbound_dependencies": "GCS/store; provider registry",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Private bounded image pipeline",
+    "overlap": "Only simulated photo provider; overlay is not calibrated fit",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 21,
+        "end_line": 28,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L21-L28"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 76,
+        "end_line": 77,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L76-L77"
+      }
+    ],
+    "responsibility": "Private bounded image pipeline"
+  },
+  {
+    "id": "CMP-010",
+    "name": "Consumer scheduled jobs",
+    "paths": [
+      "brandme_core/domains/persona/jobs.py"
+    ],
+    "runtime": "Python worker",
+    "entry_point": "python -m ...persona.jobs [--once]",
+    "inbound_consumers": "No declared compose/Helm caller found",
+    "outbound_dependencies": "Spanner, media store/providers",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Decision close, benefit expiry, media dispatch/collect/purge",
+    "overlap": "Separate from outbox publisher",
+    "recommendation": "connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/jobs.py",
+        "line": 42,
+        "end_line": 65,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/jobs.py#L42-L65"
+      }
+    ],
+    "responsibility": "Decision close, benefit expiry, media dispatch/collect/purge"
+  },
+  {
+    "id": "CMP-011",
+    "name": "Consumer event ingress",
+    "paths": [
+      "brandme_core/domains/persona/ingress.py"
+    ],
+    "runtime": "Python Pub/Sub pull",
+    "entry_point": "python -m ...persona.ingress",
+    "inbound_consumers": "No declared compose/Helm caller found",
+    "outbound_dependencies": "Pub/Sub subscription, RewardsConsumer, WardrobeService",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Award rewards and project observed orders into wardrobe",
+    "overlap": "Publisher success does not mean this ran",
+    "recommendation": "connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/ingress.py",
+        "line": 147,
+        "end_line": 180,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/ingress.py#L147-L180"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/ingress.py",
+        "line": 282,
+        "end_line": 318,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/ingress.py#L282-L318"
+      }
+    ],
+    "responsibility": "Award rewards and project observed orders into wardrobe"
+  },
+  {
+    "id": "CMP-012",
+    "name": "Foundation domain framework",
+    "paths": [
+      "brandme_core/domains/base.py",
+      "brandme_core/domains/events.py"
+    ],
+    "runtime": "Python library",
+    "entry_point": "Principal, authorize, run_command, run_idempotent_command",
+    "inbound_consumers": "Consumer domains and other services",
+    "outbound_dependencies": "Spanner/outbox",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Shared transaction and permission semantics",
+    "overlap": "Consumer kernel adds retries; commerce intentionally scopes its own idempotency",
+    "recommendation": "retain",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/kernel.py",
+        "line": 38,
+        "end_line": 55,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/kernel.py#L38-L55"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/kernel.py",
+        "line": 440,
+        "end_line": 468,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/kernel.py#L440-L468"
+      }
+    ],
+    "responsibility": "Shared transaction and permission semantics"
+  },
+  {
+    "id": "CMP-013",
+    "name": "Commerce domain",
+    "paths": [
+      "brandme_core/domains/commerce"
+    ],
+    "runtime": "Python library/FastAPI factory",
+    "entry_point": "CommerceService; create_commerce_app factory",
+    "inbound_consumers": "Only test composition currently found",
+    "outbound_dependencies": "SpannerStore, providers, approvals/budgets/events",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Fresh quote/authority/idempotency/reconciliation logic is valuable",
+    "overlap": "No mounted public runtime; no real strict-mode merchant registry",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/http_api.py",
+        "line": 638,
+        "end_line": 670,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/http_api.py#L638-L670"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/composition.py",
+        "line": 102,
+        "end_line": 133,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/composition.py#L102-L133"
+      }
+    ],
+    "responsibility": "Fresh quote/authority/idempotency/reconciliation logic is valuable"
+  },
+  {
+    "id": "CMP-014",
+    "name": "Provider adapters",
+    "paths": [
+      "brandme_core/domains/providers"
+    ],
+    "runtime": "Python library",
+    "entry_point": "ProviderRegistry/build_providers; setup/tiers/ingestion",
+    "inbound_consumers": "Commerce domain tests/factories",
+    "outbound_dependencies": "Impact feed interface, local merchant, Stripe test transport",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Honest capability tiers and provider separation",
+    "overlap": "Catalog/affiliate entitlement is distinct from checkout rights",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/composition.py",
+        "line": 90,
+        "end_line": 133,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/composition.py#L90-L133"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/providers/nordstrom.py",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/providers/nordstrom.py#L1"
+      }
+    ],
+    "responsibility": "Honest capability tiers and provider separation"
+  },
+  {
+    "id": "CMP-015",
+    "name": "Assistant runtime",
+    "paths": [
+      "brandme_core/orchestrator"
+    ],
+    "runtime": "Python",
+    "entry_point": "AssistantRuntime + compose_assistant",
+    "inbound_consumers": "CommerceHttpApi/test harness",
+    "outbound_dependencies": "McpToolExecutor, planner, optional dev Anthropic adapter",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Bounded research and approval stop",
+    "overlap": "Tasks/budgets/audit in dev form require durability; separate from legacy orchestrator service",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/README.md",
+        "line": 27,
+        "end_line": 52,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/README.md#L27-L52"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/orchestrator/composition.py",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/orchestrator/composition.py#L1"
+      }
+    ],
+    "responsibility": "Bounded research and approval stop"
+  },
+  {
+    "id": "CMP-016",
+    "name": "MCP tool executor",
+    "paths": [
+      "brandme_core/mcp"
+    ],
+    "runtime": "Python library",
+    "entry_point": "McpToolExecutor.invoke/call",
+    "inbound_consumers": "Assistant runtime/tests",
+    "outbound_dependencies": "Commerce service, principal/delegation assertions, audit sink",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Single permission/audit route for tool execution",
+    "overlap": "Not evidence of a mounted external MCP server",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/mcp/tools.py",
+        "line": 220,
+        "end_line": 265,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/mcp/tools.py#L220-L265"
+      }
+    ],
+    "responsibility": "Single permission/audit route for tool execution"
+  },
+  {
+    "id": "CMP-017",
+    "name": "Outbox, inbox and projection framework",
+    "paths": [
+      "brandme_core/events"
+    ],
+    "runtime": "Python worker/library",
+    "entry_point": "python -m brandme_core.events.worker",
+    "inbound_consumers": "Helm events-worker; domain writers",
+    "outbound_dependencies": "Spanner outbox/inbox; Pub/Sub privacy-separated topics",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Durability and dedupe worth retaining",
+    "overlap": "Lane wrapper outbox_worker now redundant because catalogs load all lanes",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/events/worker.py",
+        "line": 71,
+        "end_line": 109,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/events/worker.py#L71-L109"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/events/catalogs.py",
+        "line": 29,
+        "end_line": 35,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/events/catalogs.py#L29-L35"
+      }
+    ],
+    "responsibility": "Durability and dedupe worth retaining"
+  },
+  {
+    "id": "CMP-018",
+    "name": "Redundant lane outbox wrapper",
+    "paths": [
+      "brandme_core/domains/persona/outbox_worker.py"
+    ],
+    "runtime": "Python wrapper",
+    "entry_point": "python -m ...persona.outbox_worker",
+    "inbound_consumers": "No current startup consumer found",
+    "outbound_dependencies": "Foundation events.worker",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Historical compatibility convenience only",
+    "overlap": "Foundation now loads same domain catalog; do not delete in audit",
+    "recommendation": "removal candidate after reference recheck",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/outbox_worker.py",
+        "line": 1,
+        "end_line": 30,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/outbox_worker.py#L1-L30"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/events/catalogs.py",
+        "line": 29,
+        "end_line": 35,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/events/catalogs.py#L29-L35"
+      }
+    ],
+    "responsibility": "Historical compatibility convenience only"
+  },
+  {
+    "id": "CMP-019",
+    "name": "Read API",
+    "paths": [
+      "brandme_core/read_api"
+    ],
+    "runtime": "Python/FastAPI",
+    "entry_point": "python -m brandme_core.read_api",
+    "inbound_consumers": "Gateway rights and privacy client",
+    "outbound_dependencies": "Spanner rights/privacy reads",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Scoped snapshots, bounded reads, restore fence",
+    "overlap": "Rights-only privacy catalog; mutation routes 503",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/app.py",
+        "line": 57,
+        "end_line": 127,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/app.py#L57-L127"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/reads.py",
+        "line": 83,
+        "end_line": 86,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/reads.py#L83-L86"
+      }
+    ],
+    "responsibility": "Scoped snapshots, bounded reads, restore fence"
+  },
+  {
+    "id": "CMP-020",
+    "name": "Export API and worker",
+    "paths": [
+      "brandme_core/privacy_exports"
+    ],
+    "runtime": "Python/FastAPI + worker",
+    "entry_point": "python -m brandme_core.privacy_exports [--worker]",
+    "inbound_consumers": "Gateway; Helm exports API/worker",
+    "outbound_dependencies": "Spanner durable export queue, private GCS",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Bounded selected-rights export and cleanup",
+    "overlap": "Does not call all-domain handlers; explicit full_account=false",
+    "recommendation": "retain/extend",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/privacy_exports/service.py",
+        "line": 23,
+        "end_line": 24,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/service.py#L23-L24"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/privacy_exports/service.py",
+        "line": 250,
+        "end_line": 295,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/service.py#L250-L295"
+      }
+    ],
+    "responsibility": "Bounded selected-rights export and cleanup"
+  },
+  {
+    "id": "CMP-021",
+    "name": "Privacy domain and erasure handlers",
+    "paths": [
+      "brandme_core/domains/privacy",
+      "brandme_core/domains/*/deletion.py"
+    ],
+    "runtime": "Python library",
+    "entry_point": "PrivacyService, PrivacyRegistry, per-domain handlers",
+    "inbound_consumers": "Tests and registered libraries; current public mutation unmounted",
+    "outbound_dependencies": "Spanner tombstones/freezes; derived stores",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Strong existing deletion/restore framework",
+    "overlap": "Do not substitute rights-only export for all-domain coverage",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/privacy/privacy.py",
+        "line": 240,
+        "end_line": 276,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/privacy/privacy.py#L240-L276"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/lane.py",
+        "line": 46,
+        "end_line": 61,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/lane.py#L46-L61"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/app.py",
+        "line": 122,
+        "end_line": 125,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/app.py#L122-L125"
+      }
+    ],
+    "responsibility": "Strong existing deletion/restore framework"
+  },
+  {
+    "id": "CMP-022",
+    "name": "Rights projection and reprint ledger",
+    "paths": [
+      "brandme_core/domains/rights"
+    ],
+    "runtime": "Python library",
+    "entry_point": "apply_observation/read_claims/ReprintLedger",
+    "inbound_consumers": "Read API/tests/chain observation interface",
+    "outbound_dependencies": "Spanner entitlements and reprint/claims",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Named authority and no false finality",
+    "overlap": "Rights commands composition exists only on #70",
+    "recommendation": "retain/connect",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/rights/projection.py",
+        "line": 50,
+        "end_line": 70,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/rights/projection.py#L50-L70"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/rights/reprint.py",
+        "line": 88,
+        "end_line": 168,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/rights/reprint.py#L88-L168"
+      }
+    ],
+    "responsibility": "Named authority and no false finality"
+  },
+  {
+    "id": "CMP-023",
+    "name": "Midnight chain service and Compact contract",
+    "paths": [
+      "brandme-chain"
+    ],
+    "runtime": "Node/Express + Compact",
+    "entry_point": "src/index.ts; /midnight and operations",
+    "inbound_consumers": "Gateway rights client; chain operators",
+    "outbound_dependencies": "Midnight node/indexer/prover/wallet; Spanner operation/reconciliation store",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Real contract and adapter work worth preserving",
+    "overlap": "Legacy chain implementation replaced; Cardano is separate unavailable adapter",
+    "recommendation": "retain/verify",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/index.ts",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/index.ts#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/midnight/adapter.ts",
+        "line": 204,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/midnight/adapter.ts#L204"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/contracts/src/brandme_rights.compact",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/contracts/src/brandme_rights.compact#L1"
+      }
+    ],
+    "responsibility": "Real contract and adapter work worth preserving"
+  },
+  {
+    "id": "CMP-024",
+    "name": "Legacy brain",
+    "paths": [
+      "brandme-core/brain"
+    ],
+    "runtime": "Python/FastAPI",
+    "entry_point": "main.py /intent/resolve, /health",
+    "inbound_consumers": "Legacy scan flow; gateway smoke",
+    "outbound_dependencies": "Spanner legacy Assets, policy, orchestrator",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Historical garment trust workflow and health baseline",
+    "overlap": "Not the new consumer-domain composition; strict guard refuses fabricated trust path",
+    "recommendation": "retain as legacy/repair before promotion",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/brain/main.py",
+        "line": 11,
+        "end_line": 16,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/brain/main.py#L11-L16"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/brain/main.py",
+        "line": 253,
+        "end_line": 278,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/brain/main.py#L253-L278"
+      }
+    ],
+    "responsibility": "Historical garment trust workflow and health baseline"
+  },
+  {
+    "id": "CMP-025",
+    "name": "Legacy policy and runtime region files",
+    "paths": [
+      "brandme-core/policy",
+      "brandme-core/policies"
+    ],
+    "runtime": "Python/FastAPI/YAML",
+    "entry_point": "main.py /policy/check; region_rules",
+    "inbound_consumers": "Brain/cube/agents",
+    "outbound_dependencies": "Spanner consent graph/provenance; region_rules YAML loader exists but no runtime endpoint caller found",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Reusable consent and provenance logic",
+    "overlap": "F-ARCH-007: YAML engine dormant; do not present configuration files as enforced policy",
+    "recommendation": "retain consent/provenance; connect or archive regional policy after replacement review",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/policy/main.py",
+        "line": 88,
+        "end_line": 99,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/policy/main.py#L88-L99"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/policy/region_rules.py",
+        "line": 29,
+        "end_line": 40,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/policy/region_rules.py#L29-L40"
+      }
+    ],
+    "responsibility": "Reusable consent and provenance logic"
+  },
+  {
+    "id": "CMP-026",
+    "name": "Legacy orchestrator/Celery",
+    "paths": [
+      "brandme-core/orchestrator"
+    ],
+    "runtime": "Python/FastAPI/Celery modules",
+    "entry_point": "main.py /execute/transfer_ownership; tasks/worker",
+    "inbound_consumers": "Legacy cube/orchestrator clients",
+    "outbound_dependencies": "Spanner; simulated chain hash; Celery configuration",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Historical scaffolding, not authenticated ownership product",
+    "overlap": "Separate from new brandme_core/orchestrator assistant",
+    "recommendation": "repair or archive after replacement verified",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/orchestrator/main.py",
+        "line": 77,
+        "end_line": 93,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/orchestrator/main.py#L77-L93"
+      }
+    ],
+    "responsibility": "Historical scaffolding, not authenticated ownership product"
+  },
+  {
+    "id": "CMP-027",
+    "name": "Product cube legacy service",
+    "paths": [
+      "brandme-cube"
+    ],
+    "runtime": "Python/FastAPI",
+    "entry_point": "src/main.py mounts cubes/faces",
+    "inbound_consumers": "Legacy clients/API",
+    "outbound_dependencies": "Policy/identity/orchestrator/compliance; database CRUD",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Facet vocabulary and policy filtering may be reusable",
+    "overlap": "New rights passport reads overlap; do not merge authorities",
+    "recommendation": "retain/filter; retire old lifecycle after replacement",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-cube/src/main.py",
+        "line": 191,
+        "end_line": 192,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-cube/src/main.py#L191-L192"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-cube/src/passport_filter.py",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-cube/src/passport_filter.py#L1"
+      }
+    ],
+    "responsibility": "Facet vocabulary and policy filtering may be reusable"
+  },
+  {
+    "id": "CMP-028",
+    "name": "Legacy agent services and CLI",
+    "paths": [
+      "brandme-agents"
+    ],
+    "runtime": "Python/FastAPI/CLI",
+    "entry_point": "identity/knowledge/compliance main; agentic cli/main.py",
+    "inbound_consumers": "Legacy stack and deploy scripts",
+    "outbound_dependencies": "Spanner consent/ZK, model/graph tooling",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Selected domain and operator logic reusable",
+    "overlap": "Many stubs and duplicate authorities; not canonical consumer identity",
+    "recommendation": "sampled; retain until consumer trace complete",
+    "confidence": "medium",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-agents/identity/src/main.py",
+        "line": 111,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-agents/identity/src/main.py#L111"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-agents/knowledge/src/main.py",
+        "line": 58,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-agents/knowledge/src/main.py#L58"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-agents/agentic/cli/main.py",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-agents/agentic/cli/main.py#L1"
+      }
+    ],
+    "responsibility": "Selected domain and operator logic reusable"
+  },
+  {
+    "id": "CMP-029",
+    "name": "Legacy governance",
+    "paths": [
+      "brandme-governance"
+    ],
+    "runtime": "Python/FastAPI",
+    "entry_point": "governance_console/main.py",
+    "inbound_consumers": "Legacy operators",
+    "outbound_dependencies": "Spanner escalation decisions; proposed orchestrator replay",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Escalation model only",
+    "overlap": "Approver is request data; strict guard intentionally refuses",
+    "recommendation": "repair or archive after secure replacement",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-governance/governance_console/main.py",
+        "line": 10,
+        "end_line": 16,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-governance/governance_console/main.py#L10-L16"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-governance/governance_console/main.py",
+        "line": 119,
+        "end_line": 165,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-governance/governance_console/main.py#L119-L165"
+      }
+    ],
+    "responsibility": "Escalation model only"
+  },
+  {
+    "id": "CMP-030",
+    "name": "Legacy storage and observability library",
+    "paths": [
+      "brandme_core/spanner",
+      "brandme_core/firestore",
+      "brandme_core/zk",
+      "brandme_core/logging.py",
+      "brandme_core/metrics.py",
+      "brandme_core/telemetry.py"
+    ],
+    "runtime": "Python shared library",
+    "entry_point": "Imports by old/new services",
+    "inbound_consumers": "Brain/policy/identity/compliance and tests",
+    "outbound_dependencies": "Spanner, Firestore, proof interfaces, telemetry",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Pools, redaction, consent/provenance remain valuable",
+    "overlap": "Legacy Firestore wardrobe must not become second canonical wardrobe",
+    "recommendation": "retain; consolidate only with consumer evidence",
+    "confidence": "medium",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/policy/main.py",
+        "line": 23,
+        "end_line": 25,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/policy/main.py#L23-L25"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-agents/identity/src/main.py",
+        "line": 20,
+        "end_line": 24,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-agents/identity/src/main.py#L20-L24"
+      }
+    ],
+    "responsibility": "Pools, redaction, consent/provenance remain valuable"
+  },
+  {
+    "id": "CMP-031",
+    "name": "Schemas, migrations and seeds",
+    "paths": [
+      "brandme-data"
+    ],
+    "runtime": "SQL/Python",
+    "entry_point": "migrations/runner.py; V001–V015",
+    "inbound_consumers": "Compose migration service; Helm migration hook; tests",
+    "outbound_dependencies": "Spanner DDL/checksum ledger",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Authoritative persistence evolution",
+    "overlap": "Historical schema.sql and schemas differ from current migrations; V016 branches collide",
+    "recommendation": "retain",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-data/spanner/migrations/runner.py",
+        "line": 91,
+        "end_line": 105,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-data/spanner/migrations/runner.py#L91-L105"
+      }
+    ],
+    "responsibility": "Authoritative persistence evolution"
+  },
+  {
+    "id": "CMP-032",
+    "name": "Generated API contracts",
+    "paths": [
+      "packages/contracts"
+    ],
+    "runtime": "TypeScript/Python/JSON Schema",
+    "entry_point": "scripts/generate.mjs; src/client.ts; generated OpenAPI",
+    "inbound_consumers": "Gateway/UI/domain validation",
+    "outbound_dependencies": "Design schemas and foundation/read schema extensions",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Shared vocabulary and drift checks",
+    "overlap": "Reserved contracts are not mounted behavior; generated pydantic conditionals need jsonschema",
+    "recommendation": "retain/repair coverage",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "packages/contracts/README.md",
+        "line": 1,
+        "end_line": 16,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/packages/contracts/README.md#L1-L16"
+      }
+    ],
+    "responsibility": "Shared vocabulary and drift checks"
+  },
+  {
+    "id": "CMP-033",
+    "name": "Design system and provider contracts",
+    "paths": [
+      "packages/design-system",
+      "packages/provider-contracts"
+    ],
+    "runtime": "TypeScript/generated CSS",
+    "entry_point": "Package exports/generators",
+    "inbound_consumers": "Frontend/console/providers",
+    "outbound_dependencies": "Design tokens/provider capability model",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Shared design and capability semantics",
+    "overlap": "Avoid parallel UI-local meanings for verified/simulated",
+    "recommendation": "retain",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "pnpm-workspace.yaml",
+        "line": 6,
+        "end_line": 12,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/pnpm-workspace.yaml#L6-L12"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/03-architecture-data-api.md",
+        "line": 47,
+        "end_line": 49,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/03-architecture-data-api.md#L47-L49"
+      }
+    ],
+    "responsibility": "Shared design and capability semantics"
+  },
+  {
+    "id": "CMP-034",
+    "name": "Firestore projection rules",
+    "paths": [
+      "packages/firestore-rules"
+    ],
+    "runtime": "Rules/TypeScript tests",
+    "entry_point": "firestore.rules",
+    "inbound_consumers": "Projection consumers/test harness",
+    "outbound_dependencies": "Firestore identity claims",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Replaceable private real-time projection boundary",
+    "overlap": "Rules file alone is not deployment or projection consumer",
+    "recommendation": "retain/verify runtime usage",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "packages/firestore-rules/firestore.rules",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/packages/firestore-rules/firestore.rules#L1"
+      }
+    ],
+    "responsibility": "Replaceable private real-time projection boundary"
+  },
+  {
+    "id": "CMP-035",
+    "name": "Infrastructure and deployment",
+    "paths": [
+      "brandme-infra",
+      ".github/workflows",
+      "docker-compose.yml",
+      "docker-compose.dev.yml"
+    ],
+    "runtime": "Helm/Terraform/YAML/shell",
+    "entry_point": "CI; Helm chart; compose",
+    "inbound_consumers": "Operators/CI",
+    "outbound_dependencies": "GCP/GKE/Spanner/PubSub/GCS/identity",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Useful strict-mode manifests and separation",
+    "overlap": "GKE currently declared despite design Cloud Run preference; see infra report",
+    "recommendation": "retain current Helm; historical Terraform requires reconciliation",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-infra/helm/brandme/README.md",
+        "line": 18,
+        "end_line": 35,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-infra/helm/brandme/README.md#L18-L35"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docker-compose.yml",
+        "line": 24,
+        "end_line": 27,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docker-compose.yml#L24-L27"
+      }
+    ],
+    "responsibility": "Useful strict-mode manifests and separation"
+  },
+  {
+    "id": "CMP-036",
+    "name": "Operational and data scripts",
+    "paths": [
+      "scripts",
+      "agents",
+      "deploy-brandme.sh",
+      "Makefile"
+    ],
+    "runtime": "Node/Python/shell",
+    "entry_point": "Named CLI/package scripts",
+    "inbound_consumers": "CI/deploy-brandme.sh/operators",
+    "outbound_dependencies": "Build tools, assets, emulators, cloud APIs",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Automation/runbook investment",
+    "overlap": "Do not label agents/ unused; deployment scripts consume it",
+    "recommendation": "retain; execution reviewed separately",
+    "confidence": "medium",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "deploy-brandme.sh",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/deploy-brandme.sh#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "CLAUDE.md",
+        "line": 109,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/CLAUDE.md#L109"
+      }
+    ],
+    "responsibility": "Automation/runbook investment"
+  },
+  {
+    "id": "CMP-037",
+    "name": "Tests and committed evidence",
+    "paths": [
+      "tests",
+      "brandme-frontend/lib/testing",
+      "brandme-chain/evidence",
+      "docs/build/evidence"
+    ],
+    "runtime": "Python/Vitest/Playwright/data",
+    "entry_point": "CI and local test commands",
+    "inbound_consumers": "CI/auditors",
+    "outbound_dependencies": "Emulators, mocked providers, browser",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Regression fixtures and prior evidence",
+    "overlap": "Green tests do not prove all routes/deployments or device behavior",
+    "recommendation": "retain; distinguish fixture/result from current execution",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/contracts/acceptance-catalog.json",
+        "line": 1,
+        "end_line": 13,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/contracts/acceptance-catalog.json#L1-L13"
+      }
+    ],
+    "responsibility": "Regression fixtures and prior evidence"
+  },
+  {
+    "id": "CMP-038",
+    "name": "Procedural assets and local fonts",
+    "paths": [
+      "scripts/assets",
+      "brandme-frontend/public/demo",
+      "brandme-frontend/lib/fonts"
+    ],
+    "runtime": "GLB/USDZ/PNG/WebP/WOFF2 + generators",
+    "entry_point": "Room/garment manifests and public URLs",
+    "inbound_consumers": "Spatial frontend",
+    "outbound_dependencies": "Three.js loaders; proprietary originals; font OFL files",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Real reusable demo assets with provenance/fidelity metadata",
+    "overlap": "Not retailer-authentic garments or calibrated physical fit",
+    "recommendation": "retain; verify manifests and loading on target devices",
+    "confidence": "high",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/public/demo/rights.json",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/public/demo/rights.json#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/public/demo/garments/tee/manifest.json",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/public/demo/garments/tee/manifest.json#L1"
+      }
+    ],
+    "responsibility": "Real reusable demo assets with provenance/fidelity metadata"
+  },
+  {
+    "id": "CMP-039",
+    "name": "Alternate underscore gateway",
+    "paths": [
+      "brandme_gateway"
+    ],
+    "runtime": "TypeScript orphan candidate",
+    "entry_point": "src/middleware/auth.ts and rateLimiter.ts",
+    "inbound_consumers": "No canonical gateway import found; not declared workspace package",
+    "outbound_dependencies": "Legacy config paths",
+    "runtime_evidence": "Static inspection only in this sub-audit; see SECURITY_RELIABILITY.md for exact-SHA CI evidence.",
+    "product_value": "Potential historical alternate implementation only",
+    "overlap": "Canonical imports live under brandme-gateway; old CLAUDE kill-list itself is stale",
+    "recommendation": "removal candidate after external-consumer check",
+    "confidence": "medium",
+    "ownership": "Operational owner not established by this audit; lane labels in comments are not an assigned on-call owner.",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/index.ts",
+        "line": 21,
+        "end_line": 25,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/index.ts#L21-L25"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "pnpm-workspace.yaml",
+        "line": 6,
+        "end_line": 12,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/pnpm-workspace.yaml#L6-L12"
+      }
+    ],
+    "responsibility": "Potential historical alternate implementation only"
+  }
+]

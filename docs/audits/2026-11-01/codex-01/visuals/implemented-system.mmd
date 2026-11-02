@@ -1,0 +1,16 @@
+flowchart TD
+ UI[Next.js consumer] --> Guest[Guest IndexedDB and localStorage]
+ UI --> Proxy[Same-origin bounded proxy]
+ Proxy --> GW[Gateway identity and CSRF]
+ GW --> Domain[Mounted consumer domain routes]
+ Domain --> DB[Spanner]
+ DB --> Outbox[Durable outbox]
+ Outbox --> Pubsub[PubSub publisher configured separately]
+ Pubsub -. business consumer composition missing .-> Jobs[Reward deadline and media consumers]
+ GW --> Rights[Rights read/export/chain services]
+ Rights --> Midnight[Read-only chain reconciliation; member signer separate]
+ Commerce[Commerce/catalog/assistant implementations] -. mount missing .-> GW
+ Candidate[Catalog and wardrobe candidates] -. injection missing .-> Domain
+ Auth[Production browser login] -. composition missing .-> Proxy
+ classDef gap fill:#fff0e8,stroke:#bd5b37
+ class Commerce,Candidate,Auth gap

@@ -1,0 +1,15 @@
+Runtime preflight, 2026-11-01. Commands executed in the task workspace; no application code executed.
+git --version: exit 0; git version 2.54.0.windows.1
+gh --version: exit 0; gh version 2.97.0 (2026-07-31)
+node --version: exit 0; v22.21.0
+npm --version: exit 0; 10.9.4
+docker version --format '{{json .}}': exit 1.
+Docker client 28.0.4, API 1.48, context desktop-linux, Windows/amd64.
+Docker server: unavailable. Connection failed because //./pipe/dockerDesktopLinuxEngine does not exist.
+Inference: Docker runtime isolation is not currently available through the selected Docker context. This does not prove that all possible isolation mechanisms are unavailable.
+Bundled workspace dependencies available: bundle 26.1029.11837; Node.js and Python executables plus document/image tooling. These are tools, not a sandbox.
+GitHub connector tool discovery succeeded; no target-specific GitHub API calls made.
+
+Additional runtime probe (2026-11-01): wsl --list --quiet returned docker-desktop and Ubuntu. wsl -d Ubuntu --exec /bin/sh -c 'id; command -v bwrap; command -v unshare; command -v node; command -v python3; command -v pnpm; command -v chromium; command -v docker; command -v podman' returned uid=0(root), /usr/bin/unshare, /usr/bin/python3 and the Windows Docker CLI path; the other queried binaries were not found. Combined command exit 1 (last command absent). No repository code was executed. A WSL namespace/chroot sandbox was not established. This is a limitation of this audit execution environment, not an application failure.
+
+Chronology note: the sentence about no target-specific GitHub calls describes the initial preflight only. Subsequent authorized target-specific read-only metadata/CI/artifact/advisory calls are recorded in the evidence ledger.

@@ -1,0 +1,348 @@
+[
+  {
+    "filename": "originals/consumer-1440x900-light.png",
+    "journey_id": "J-001",
+    "route": "/today",
+    "role": "guest or synthetic fixture member; see harness",
+    "classification": "COMMITTED UI BASELINE — NOT A FRESH OBSERVED SCREENSHOT",
+    "environment": "shell baseline; gateway not connected in image",
+    "repository_storage_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "application_runtime_sha": null,
+    "capture_time": null,
+    "last_file_change_commit": "00f863b4c43e0f110e2226daaaebcc963abb9c94",
+    "last_file_change_time_not_capture_time": "2026-10-23T13:46:25-04:00",
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "source": "filename or fixture harness; not independently measured at capture"
+    },
+    "image_pixels": {
+      "width": 1440,
+      "height": 1864
+    },
+    "data_mode": "shell baseline; gateway not connected in image",
+    "action": "Auditor inspected existing committed image only",
+    "observed_result": "Committed baseline shows unavailable member data and an explicitly fictional editorial example.",
+    "source_path": "brandme-frontend/lib/testing/baselines/consumer-1440x900-light.png",
+    "sensitive_content_review": "Reviewed visually; synthetic fixture text/fictional garments; no secrets or private customer records observed",
+    "image_sha256": "98227ec724e09e9820e5309c79f74ad59b6b408a99d45845d3e2c730d6adc27f"
+  },
+  {
+    "filename": "originals/consumer-390x844-light.png",
+    "journey_id": "J-001",
+    "route": "/today",
+    "role": "guest or synthetic fixture member; see harness",
+    "classification": "COMMITTED UI BASELINE — NOT A FRESH OBSERVED SCREENSHOT",
+    "environment": "shell baseline; gateway not connected in image",
+    "repository_storage_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "application_runtime_sha": null,
+    "capture_time": null,
+    "last_file_change_commit": "00f863b4c43e0f110e2226daaaebcc963abb9c94",
+    "last_file_change_time_not_capture_time": "2026-10-23T13:46:25-04:00",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "source": "filename or fixture harness; not independently measured at capture"
+    },
+    "image_pixels": {
+      "width": 390,
+      "height": 1998
+    },
+    "data_mode": "shell baseline; gateway not connected in image",
+    "action": "Auditor inspected existing committed image only",
+    "observed_result": "Mobile shell and error/retry states; not fresh device evidence.",
+    "source_path": "brandme-frontend/lib/testing/baselines/consumer-390x844-light.png",
+    "sensitive_content_review": "Reviewed visually; synthetic fixture text/fictional garments; no secrets or private customer records observed",
+    "image_sha256": "67464e1e002cb8bb6009f2a34305131626eb837e692c781bb1098c07d6d0de63"
+  },
+  {
+    "filename": "originals/my-data-1440-light.png",
+    "journey_id": "J-012",
+    "route": "/me/data",
+    "role": "guest or synthetic fixture member; see harness",
+    "classification": "COMMITTED UI BASELINE — NOT A FRESH OBSERVED SCREENSHOT",
+    "environment": "explicit HTTP test doubles",
+    "repository_storage_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "application_runtime_sha": null,
+    "capture_time": null,
+    "last_file_change_commit": "00f863b4c43e0f110e2226daaaebcc963abb9c94",
+    "last_file_change_time_not_capture_time": "2026-10-23T13:46:25-04:00",
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "source": "filename or fixture harness; not independently measured at capture"
+    },
+    "image_pixels": {
+      "width": 1440,
+      "height": 1433
+    },
+    "data_mode": "explicit HTTP test doubles",
+    "action": "Auditor inspected existing committed image only",
+    "observed_result": "Partial rights inventory and deletion unavailable. Displayed data is an HTTP test double.",
+    "source_path": "brandme-frontend/lib/testing/baselines/my-data-1440-light.png",
+    "sensitive_content_review": "Reviewed visually; synthetic fixture text/fictional garments; no secrets or private customer records observed",
+    "image_sha256": "15aa7e905229c934a8df91e238597d49c7caf9e90a7cf3c799553e1b8381a244"
+  },
+  {
+    "filename": "originals/catalog-390-light.png",
+    "journey_id": "J-009",
+    "route": "/discover",
+    "role": "guest or synthetic fixture member; see harness",
+    "classification": "COMMITTED UI BASELINE — NOT A FRESH OBSERVED SCREENSHOT",
+    "environment": "explicit HTTP test doubles",
+    "repository_storage_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "application_runtime_sha": null,
+    "capture_time": null,
+    "last_file_change_commit": "00f863b4c43e0f110e2226daaaebcc963abb9c94",
+    "last_file_change_time_not_capture_time": "2026-10-23T13:46:25-04:00",
+    "viewport": {
+      "width": 390,
+      "height": 900,
+      "source": "filename or fixture harness; not independently measured at capture"
+    },
+    "image_pixels": {
+      "width": 390,
+      "height": 1314
+    },
+    "data_mode": "explicit HTTP test doubles",
+    "action": "Auditor inspected existing committed image only",
+    "observed_result": "Simulated catalog variant with malicious HTML rendered as text. Main gateway lacks catalog mount.",
+    "source_path": "brandme-frontend/lib/testing/baselines/catalog-390-light.png",
+    "sensitive_content_review": "Reviewed visually; synthetic fixture text/fictional garments; no secrets or private customer records observed",
+    "image_sha256": "ebe489ffdd84925dd93b55afcce0a79d54a0ba0ab5044fccf542491fabab3196"
+  },
+  {
+    "filename": "ci-originals/live-me-connections.png",
+    "journey_id": "J-003",
+    "route": "/me/connections",
+    "role": "synthetic development member",
+    "classification": "OBSERVED SCREENSHOT — CI artifact; not a fresh audit execution",
+    "environment": "GitHub Actions ubuntu-24.04; development identity; real HTTP; Spanner emulator 1.5.28",
+    "branch": "claude/opus-consumer-domains-1csp2g",
+    "branch_head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+    "application_ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+    "application_domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+    "capture_time": null,
+    "capture_time_bound": {
+      "job_started_at": "2026-10-30T17:26:04Z",
+      "artifact_created_at": "2026-10-30T17:28:07Z",
+      "note": "exact per-image capture time unavailable"
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/verify-live-domains.mjs"
+    },
+    "image_pixels": {
+      "width": 390,
+      "height": 1567
+    },
+    "data_mode": "Synthetic UI test members; persistent emulator rows; no real identity/merchant/wallet",
+    "action": "CI harness navigated after scripted interactions; auditor retrieved and visually inspected original",
+    "observed_result": "Simulated identity and connected development domains; rights and try-on unavailable.",
+    "source_job": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774318/job/124211331191",
+    "artifact_id": 12998005788,
+    "archive_sha256": "d33f7d1feda53dbe862c84ef60501962db984ecc8f9447a9ce1ae4c28d71d533",
+    "image_sha256": "5d94dc312f866c95c1a7d548fa6725dfd7548f869adc8e6178ff19d62df6fa55",
+    "sensitive_content_review": "Visually inspected synthetic fixture data. No secret or private customer record observed.",
+    "runtime_harness": {
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/dev-domains.py#L53-L97",
+      "scope": "Custom development principal relay and direct router mounts; in-process OutboxDispatcher to RewardsConsumer.handle. Real domain/Spanner behavior; canonical persona app, PubSub ingress and scheduler deployment unverified."
+    }
+  },
+  {
+    "filename": "ci-originals/live-me-style.png",
+    "journey_id": "J-004",
+    "route": "/me/style",
+    "role": "synthetic development member",
+    "classification": "OBSERVED SCREENSHOT — CI artifact; not a fresh audit execution",
+    "environment": "GitHub Actions ubuntu-24.04; development identity; real HTTP; Spanner emulator 1.5.28",
+    "branch": "claude/opus-consumer-domains-1csp2g",
+    "branch_head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+    "application_ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+    "application_domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+    "capture_time": null,
+    "capture_time_bound": {
+      "job_started_at": "2026-10-30T17:26:04Z",
+      "artifact_created_at": "2026-10-30T17:28:07Z",
+      "note": "exact per-image capture time unavailable"
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/verify-live-domains.mjs"
+    },
+    "image_pixels": {
+      "width": 390,
+      "height": 2982
+    },
+    "data_mode": "Synthetic UI test members; persistent emulator rows; no real identity/merchant/wallet",
+    "action": "CI harness navigated after scripted interactions; auditor retrieved and visually inspected original",
+    "observed_result": "Twelve axes render; the harness verifies saved changes survive reload and remain account scoped.",
+    "source_job": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774318/job/124211331191",
+    "artifact_id": 12998005788,
+    "archive_sha256": "d33f7d1feda53dbe862c84ef60501962db984ecc8f9447a9ce1ae4c28d71d533",
+    "image_sha256": "5b23afeabfeb00ba246da158f4a2a5f6fdd030ca30e1f0823168da207369a899",
+    "sensitive_content_review": "Visually inspected synthetic fixture data. No secret or private customer record observed.",
+    "runtime_harness": {
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/dev-domains.py#L53-L97",
+      "scope": "Custom development principal relay and direct router mounts; in-process OutboxDispatcher to RewardsConsumer.handle. Real domain/Spanner behavior; canonical persona app, PubSub ingress and scheduler deployment unverified."
+    }
+  },
+  {
+    "filename": "ci-originals/live-today.png",
+    "journey_id": "J-006",
+    "route": "/today",
+    "role": "synthetic development member",
+    "classification": "OBSERVED SCREENSHOT — CI artifact; not a fresh audit execution",
+    "environment": "GitHub Actions ubuntu-24.04; development identity; real HTTP; Spanner emulator 1.5.28",
+    "branch": "claude/opus-consumer-domains-1csp2g",
+    "branch_head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+    "application_ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+    "application_domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+    "capture_time": null,
+    "capture_time_bound": {
+      "job_started_at": "2026-10-30T17:26:04Z",
+      "artifact_created_at": "2026-10-30T17:28:07Z",
+      "note": "exact per-image capture time unavailable"
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/verify-live-domains.mjs"
+    },
+    "image_pixels": {
+      "width": 390,
+      "height": 1851
+    },
+    "data_mode": "Synthetic UI test members; persistent emulator rows; no real identity/merchant/wallet",
+    "action": "CI harness navigated after scripted interactions; auditor retrieved and visually inspected original",
+    "observed_result": "HTTP helper creates the linen jacket. This does not test the spatial /add UI; recommendations remain empty.",
+    "source_job": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774318/job/124211331191",
+    "artifact_id": 12998005788,
+    "archive_sha256": "d33f7d1feda53dbe862c84ef60501962db984ecc8f9447a9ce1ae4c28d71d533",
+    "image_sha256": "9863b55b7f47c9e2898ca044b856671b041646101db42d389b6855a001088c0a",
+    "sensitive_content_review": "Visually inspected synthetic fixture data. No secret or private customer record observed.",
+    "runtime_harness": {
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/dev-domains.py#L53-L97",
+      "scope": "Custom development principal relay and direct router mounts; in-process OutboxDispatcher to RewardsConsumer.handle. Real domain/Spanner behavior; canonical persona app, PubSub ingress and scheduler deployment unverified."
+    }
+  },
+  {
+    "filename": "ci-originals/live-circle.png",
+    "journey_id": "J-007",
+    "route": "/circle",
+    "role": "synthetic development member",
+    "classification": "OBSERVED SCREENSHOT — CI artifact; not a fresh audit execution",
+    "environment": "GitHub Actions ubuntu-24.04; development identity; real HTTP; Spanner emulator 1.5.28",
+    "branch": "claude/opus-consumer-domains-1csp2g",
+    "branch_head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+    "application_ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+    "application_domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+    "capture_time": null,
+    "capture_time_bound": {
+      "job_started_at": "2026-10-30T17:26:04Z",
+      "artifact_created_at": "2026-10-30T17:28:07Z",
+      "note": "exact per-image capture time unavailable"
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/verify-live-domains.mjs"
+    },
+    "image_pixels": {
+      "width": 390,
+      "height": 1097
+    },
+    "data_mode": "Synthetic UI test members; persistent emulator rows; no real identity/merchant/wallet",
+    "action": "CI harness navigated after scripted interactions; auditor retrieved and visually inspected original",
+    "observed_result": "Harness checks decision response, creator close and block. This image shows the resulting Circle state.",
+    "source_job": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774318/job/124211331191",
+    "artifact_id": 12998005788,
+    "archive_sha256": "d33f7d1feda53dbe862c84ef60501962db984ecc8f9447a9ce1ae4c28d71d533",
+    "image_sha256": "ff01ec0363772cacc709a6f2057b89c0c0273e86ded86731dbd376a9826a3b8c",
+    "sensitive_content_review": "Visually inspected synthetic fixture data. No secret or private customer record observed.",
+    "runtime_harness": {
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/dev-domains.py#L53-L97",
+      "scope": "Custom development principal relay and direct router mounts; in-process OutboxDispatcher to RewardsConsumer.handle. Real domain/Spanner behavior; canonical persona app, PubSub ingress and scheduler deployment unverified."
+    }
+  },
+  {
+    "filename": "ci-originals/live-rewards.png",
+    "journey_id": "J-008",
+    "route": "/rewards",
+    "role": "synthetic development member",
+    "classification": "OBSERVED SCREENSHOT — CI artifact; not a fresh audit execution",
+    "environment": "GitHub Actions ubuntu-24.04; development identity; real HTTP; Spanner emulator 1.5.28",
+    "branch": "claude/opus-consumer-domains-1csp2g",
+    "branch_head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+    "application_ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+    "application_domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+    "capture_time": null,
+    "capture_time_bound": {
+      "job_started_at": "2026-10-30T17:26:04Z",
+      "artifact_created_at": "2026-10-30T17:28:07Z",
+      "note": "exact per-image capture time unavailable"
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/verify-live-domains.mjs"
+    },
+    "image_pixels": {
+      "width": 390,
+      "height": 2679
+    },
+    "data_mode": "Synthetic UI test members; persistent emulator rows; no real identity/merchant/wallet",
+    "action": "CI harness navigated after scripted interactions; auditor retrieved and visually inspected original",
+    "observed_result": "125 synthetic points after actual emulator outbox/inbox settlement. No monetary or checkout effect.",
+    "source_job": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774318/job/124211331191",
+    "artifact_id": 12998005788,
+    "archive_sha256": "d33f7d1feda53dbe862c84ef60501962db984ecc8f9447a9ce1ae4c28d71d533",
+    "image_sha256": "1dfd94ef80d843af9161be54f7992fa428baf5ecf97626398bf064a5546d3e79",
+    "sensitive_content_review": "Visually inspected synthetic fixture data. No secret or private customer record observed.",
+    "runtime_harness": {
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/dev-domains.py#L53-L97",
+      "scope": "Custom development principal relay and direct router mounts; in-process OutboxDispatcher to RewardsConsumer.handle. Real domain/Spanner behavior; canonical persona app, PubSub ingress and scheduler deployment unverified."
+    }
+  },
+  {
+    "filename": "ci-originals/live-inbox.png",
+    "journey_id": "J-007",
+    "route": "/inbox",
+    "role": "synthetic development member",
+    "classification": "OBSERVED SCREENSHOT — CI artifact; not a fresh audit execution",
+    "environment": "GitHub Actions ubuntu-24.04; development identity; real HTTP; Spanner emulator 1.5.28",
+    "branch": "claude/opus-consumer-domains-1csp2g",
+    "branch_head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b",
+    "application_ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+    "application_domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+    "capture_time": null,
+    "capture_time_bound": {
+      "job_started_at": "2026-10-30T17:26:04Z",
+      "artifact_created_at": "2026-10-30T17:28:07Z",
+      "note": "exact per-image capture time unavailable"
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/verify-live-domains.mjs"
+    },
+    "image_pixels": {
+      "width": 390,
+      "height": 988
+    },
+    "data_mode": "Synthetic UI test members; persistent emulator rows; no real identity/merchant/wallet",
+    "action": "CI harness navigated after scripted interactions; auditor retrieved and visually inspected original",
+    "observed_result": "Notifications originate in domain events; explicit mark-as-read persists. No external message was sent by audit.",
+    "source_job": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41098774318/job/124211331191",
+    "artifact_id": 12998005788,
+    "archive_sha256": "d33f7d1feda53dbe862c84ef60501962db984ecc8f9447a9ce1ae4c28d71d533",
+    "image_sha256": "ff2b3904a02a42a424097eef59c7ed778af09eb85bc313572714442986e65d21",
+    "sensitive_content_review": "Visually inspected synthetic fixture data. No secret or private customer record observed.",
+    "runtime_harness": {
+      "source": "https://github.com/brandmeonline/Brand-Me-Labs/blob/d657103ee21674ef14d6182572a78d75d0241b29/brandme-frontend/lib/testing/dev-domains.py#L53-L97",
+      "scope": "Custom development principal relay and direct router mounts; in-process OutboxDispatcher to RewardsConsumer.handle. Real domain/Spanner behavior; canonical persona app, PubSub ingress and scheduler deployment unverified."
+    }
+  }
+]

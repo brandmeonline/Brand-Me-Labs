@@ -1,0 +1,1007 @@
+[
+  {
+    "path": "brandme-frontend/lib/fonts/cormorant-garamond-latin-500-normal.woff2",
+    "bytes": 23320,
+    "sha256": "1b135d5e2ca2c168aa9e666d9ec3540bdc69f881e33307ad243b3894dac8c166",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/fonts/manrope-latin-400-normal.woff2",
+    "bytes": 14108,
+    "sha256": "849290ef12a2eeb9af5c11924120d11aa4ae8b435ed3347d7fc8bc240c293ca3",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/fonts/manrope-latin-500-normal.woff2",
+    "bytes": 14044,
+    "sha256": "19874318747181a650eda439c37955220b849d9c4797c9e0718ee67d4bf929bc",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/fonts/manrope-latin-600-normal.woff2",
+    "bytes": 14172,
+    "sha256": "f7ac6258da20ab7541939b59851155753d1d24f1b30cbcb949077a3faa3d1593",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/fonts/manrope-latin-700-normal.woff2",
+    "bytes": 14212,
+    "sha256": "d2a12c85a831e4b5db341767d0347fa3d1361d22a1fcb3e361a16b6c90080f71",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/catalog-1440-dark.png",
+    "bytes": 153753,
+    "sha256": "9d5822b6a44e76b91747570f44cb29755623df40a33bd6290e75f5f963e18702",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/catalog-1440-light.png",
+    "bytes": 151055,
+    "sha256": "2d4fc2cffb7942be8aeb92ebc37f0bba4ff1d2d33bd9879c438d21fa9e56833d",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/catalog-390-dark.png",
+    "bytes": 64798,
+    "sha256": "d2bb5329930533028436b0e4b7b33cdeb07b722c4025726a703825c3b1f94e55",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/catalog-390-light.png",
+    "bytes": 63301,
+    "sha256": "ebe489ffdd84925dd93b55afcce0a79d54a0ba0ab5044fccf542491fabab3196",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/console-1440x900-dark.png",
+    "bytes": 116782,
+    "sha256": "9be81bb3c3bf23bcb7a1e1b7c2499db2bd287da9b675cdd7613e44549783655c",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/console-1440x900-light.png",
+    "bytes": 115207,
+    "sha256": "cb760fd95e329786d5bf65a7e70120d684bd74937af2051a47cad744bc1c48e4",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/console-320x844-dark.png",
+    "bytes": 106934,
+    "sha256": "3930284724c0359e9d487e8d8eb51d711b0ed1996daa8d32e4e5d732a3523933",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/console-320x844-light.png",
+    "bytes": 104589,
+    "sha256": "597083730bc4168360c86d8d3cabb188679dd08a113b62f02755541be2afeaf6",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/console-390x844-dark.png",
+    "bytes": 108036,
+    "sha256": "2f23ba09e7ae8a5ace341318a96ac373da1cab5430aa2b515a0236b94461d746",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/console-390x844-light.png",
+    "bytes": 105970,
+    "sha256": "d73338f35bed6b90b2a04a47b8a561ba750ec9bb625ea1fc5f54dc2ba236565f",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/console-768x1024-dark.png",
+    "bytes": 93068,
+    "sha256": "c976e86ad5954fbca81797b20e69b66aa6ba50a6c21928047312f61a394ed748",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/console-768x1024-light.png",
+    "bytes": 91288,
+    "sha256": "e845b0bf81d18d651220a75178e78cdd2c4696f0a6867e1653b171666274e03d",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-1440x900-dark.png",
+    "bytes": 271095,
+    "sha256": "98f18e7f33dcc6900c7ca8623c30db5501916edc5f2a54480c7bd652563aed19",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-1440x900-light.png",
+    "bytes": 275942,
+    "sha256": "98227ec724e09e9820e5309c79f74ad59b6b408a99d45845d3e2c730d6adc27f",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-320x844-dark.png",
+    "bytes": 128775,
+    "sha256": "0400599cdf319233f4d9614e6e6684e67cc1fe30cf3a7425d3e60698f0c5763c",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-320x844-light.png",
+    "bytes": 129180,
+    "sha256": "e2f14835a3f6d34a076ecfce32a1ea0b60963ddacb6ddf68946de10d41bc3447",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-390x844-dark.png",
+    "bytes": 139507,
+    "sha256": "345d90395c463bf6c10ef71abae386230eb395ec0afe3493a318b85e7434d295",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-390x844-light.png",
+    "bytes": 140490,
+    "sha256": "67464e1e002cb8bb6009f2a34305131626eb837e692c781bb1098c07d6d0de63",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-768x1024-dark.png",
+    "bytes": 170828,
+    "sha256": "44069c6df05437a3ae51a7c36fdb6afaac86fc956411ea20f432b48a0699e057",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-768x1024-light.png",
+    "bytes": 174089,
+    "sha256": "88cae803f62716edfd6658ac981ca652eac8f6bf64a303b994f48100c522f118",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-me-320-100.png",
+    "bytes": 37786,
+    "sha256": "fd6ad9afb9d15b5259efbb639aa72eee94ea198964888f5ef0d2e0c651857ce3",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-me-320-200.png",
+    "bytes": 43770,
+    "sha256": "5740060259a688fe0d4938f79380c92c9f215249c79461bb2d99797fb44a501f",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-me-390-100.png",
+    "bytes": 41495,
+    "sha256": "f14653c18035e0d0f091096235fcf8e59136cdcc59bc10835201c16cd5b3cdc5",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-me-390-200.png",
+    "bytes": 49758,
+    "sha256": "e7dddef4b45e59e83dd3643335d0e66db868ed925ad2450a6a830644985a2543",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-me-768-100.png",
+    "bytes": 64856,
+    "sha256": "ad69dfb597fb0c710e33f9fb3f44334345edc81d55cbdd36a96348c6630367db",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-me-768-200.png",
+    "bytes": 75693,
+    "sha256": "192ec95fc3cea4e2931828c027186462a3f5c2a4570aeea5dfa617733764136e",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-settings-320-100.png",
+    "bytes": 49613,
+    "sha256": "826983263299608763db73a99d7a756d59c4cbe5371e3f045d3765656dfa8080",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-settings-320-200.png",
+    "bytes": 55058,
+    "sha256": "32b8e1e274097de7d161b362b32d6356b28b0c3028c31c450610542238d58f9e",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-settings-390-100.png",
+    "bytes": 49886,
+    "sha256": "3a88bc3df48b2029b16000d8b65384a178a6c3176c18c2c62e4b85786847cb8c",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-settings-390-200.png",
+    "bytes": 61976,
+    "sha256": "88c01db0ae2aaec7ec06d61c3882e9dc05d8ca99a6d6a251d938e83f1d69168e",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-settings-768-100.png",
+    "bytes": 60591,
+    "sha256": "8414043921df17200a1fbd2815a8da6ef4e201b8bb6c5d8d8441fc4be76b6e52",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-settings-768-200.png",
+    "bytes": 89922,
+    "sha256": "bcae13ea8b6a86388bb35bc815b690ab9077854ca80fa88dae32b1e4ba3444a6",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-today-320-100.png",
+    "bytes": 44647,
+    "sha256": "5d6a7f19193b6bbd08cd589a2b0af69738c8a8bc4b629395d9c5c1e6fc867df3",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-today-320-200.png",
+    "bytes": 40855,
+    "sha256": "81ad02fe0a0a25449dccfbf578738cb7fdbc3ac8c1c1868b3d38240e30da57f8",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-today-390-100.png",
+    "bytes": 48299,
+    "sha256": "5c580120a54b62c78378365382f0a8e8123ea1661d4a77f3def5d34f1478b4d7",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-today-390-200.png",
+    "bytes": 48200,
+    "sha256": "617065e82e9583a043193ad0a36313b49ad080308323e0854ede2117d4a3c294",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-today-768-100.png",
+    "bytes": 141410,
+    "sha256": "b6898ffe7187d9247f493156158ba300344671c3533681f9ccbf8714c2979c0d",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-bottom-today-768-200.png",
+    "bytes": 111157,
+    "sha256": "1df7cb5c19fcf04d0a4d9ea7a839bc3f0ff40d5a25c1b3fce7626c4b49a8066b",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-large-text-me.png",
+    "bytes": 136052,
+    "sha256": "fda0ed1daa2d5524b867d141e201c51ed11a78492c7cfe359a6ccfb974480fef",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-large-text-settings.png",
+    "bytes": 120674,
+    "sha256": "f49f97c1d6ba4f4045745739c7c3f29560fc92acd9a9ead59e0cfa5a8dcc5b2c",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-large-text-today.png",
+    "bytes": 305389,
+    "sha256": "c701cf783b10b955fcdf4aa5e0735d03d7509355e67243b7e1d739c84b3c64ff",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/consumer-reduced-motion.png",
+    "bytes": 51883,
+    "sha256": "fedfaef8fc24dc71835a95c653f48b4cbe1bb775d6f846662494aef74074021f",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/controls-1440-dark.png",
+    "bytes": 297723,
+    "sha256": "7d71d92094b699a69af7da59ab48cd3b0fc9f53e62aa649837c0a444847240f4",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/controls-1440-light.png",
+    "bytes": 292043,
+    "sha256": "8af7c6f167c9d05dd22b0bfb5af7621a89b53a32a63af342ea88d41c5d7540f2",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/controls-320-dark.png",
+    "bytes": 212791,
+    "sha256": "91e1ca7162808edb92788cba7442ef2653983f60d5432fa4f58355621e1ce1c8",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/controls-320-light.png",
+    "bytes": 207234,
+    "sha256": "d96384654b234897c52ae3bf946d229d854cbff01ee0806def054c82638cb331",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/controls-390-dark.png",
+    "bytes": 211114,
+    "sha256": "f3b4002dd2d15faf125176f560dd2b8ac708864c74a2e3b22a9c81471bb34440",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/controls-390-light.png",
+    "bytes": 205879,
+    "sha256": "8aa9b8390d0a22b08779b45288b3a0c88ac41cee130224d88bfee17023bd9e1c",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/controls-768-dark.png",
+    "bytes": 209130,
+    "sha256": "05169b977de266f61c70a997ae91a513ea6b8c20325ccdf447fabc73867cbef8",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/controls-768-light.png",
+    "bytes": 204319,
+    "sha256": "e703148d1d8c17fa4814388e35f2e183417ff9706ee14418c85067ee880f9d77",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/deletion-1440-dark.png",
+    "bytes": 128382,
+    "sha256": "2cc768ceba734c4132b4054e1260027fbb7dc82240b0eb99bf944c03f616b880",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/deletion-1440-light.png",
+    "bytes": 125580,
+    "sha256": "83dd09b01be4a34d3bcfde96767203849db5f44fd7e59c7a0e4580db9449228b",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/deletion-390-dark.png",
+    "bytes": 41864,
+    "sha256": "50976de29cf6ed3ed1e2547ff2527107627a008a91121079f9397f42c8dd22fc",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/deletion-390-light.png",
+    "bytes": 39722,
+    "sha256": "86e4c4f5aee457c16de11f4dc37cf63681332a24145d1b2c4ae9cf7f6872391a",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/export-1440-dark.png",
+    "bytes": 126748,
+    "sha256": "e0df27c51f3b6d486bcecc8090b9583cf708068972b55a656f850be693f3d652",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/export-1440-light.png",
+    "bytes": 124357,
+    "sha256": "3af7e3e1150d7fe9c438aa94b2392902d5a07765ea7b4c0fecb52d2529be5c65",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/export-390-dark.png",
+    "bytes": 42612,
+    "sha256": "20a05bf3f402e5b2f92c5d2fbdb8920d6ae0621abebadb021f068e0269b6daa6",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/export-390-light.png",
+    "bytes": 41748,
+    "sha256": "0db6b6b18a725f54e15c3472e98830f28316a21301eea5fee5f3df4ae21c8777",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/inbox-1440-dark.png",
+    "bytes": 126156,
+    "sha256": "b1aa1681f64bed7bca00f81930b5a13d8f648d8238bb1b37cd6c1b9d08a2bd6b",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/inbox-1440-light.png",
+    "bytes": 123831,
+    "sha256": "8a74940def69a4a10561bfee5561debee1db8d8e1a19e1da628ff359be778201",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/inbox-390-dark.png",
+    "bytes": 43568,
+    "sha256": "74dba1bb075d4f4ac58f0b14ffda1407899ac810208a838fdf77c26fb76d354e",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/inbox-390-light.png",
+    "bytes": 42290,
+    "sha256": "78603167e6b0b6490e620d178317d26342b681e8fa4ab8ed9797ae450dd1afac",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/my-data-1440-dark.png",
+    "bytes": 178933,
+    "sha256": "ff4725a6d0f07d1a3a0b6cb69a81b6c6bb1946b84dee0cfc82544ce4364076fc",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/my-data-1440-light.png",
+    "bytes": 175091,
+    "sha256": "15aa7e905229c934a8df91e238597d49c7caf9e90a7cf3c799553e1b8381a244",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/my-data-390-dark.png",
+    "bytes": 88105,
+    "sha256": "198a58fd6d148942b547ebbbdadc04061e82e82660eb223848cfcb98b12e9e03",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/my-data-390-light.png",
+    "bytes": 85606,
+    "sha256": "affdb6887bbb59ae33ac66516c47f1a56c14576c746784f45b14235cf9c7023d",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/product-1440-dark.png",
+    "bytes": 132848,
+    "sha256": "bfecd862153b5f95fa65def2288f075a5fce2a75b05530a5a206fbdc15910a3b",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/product-1440-light.png",
+    "bytes": 130163,
+    "sha256": "0fba1f1f728c7e3e943c2596f864d695a6d50e61b3fe10d4ae14baff8848d654",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/product-390-dark.png",
+    "bytes": 48813,
+    "sha256": "76c3ec260a9ce4b33a70af3ae2f695495b27ebd9d7ceefe7c82d02f45a8a569e",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/product-390-light.png",
+    "bytes": 47050,
+    "sha256": "9cad4af72c3be20b6372f0024404704629c78a0633258c02fd5b879e7da113c4",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/rewards-1440-dark.png",
+    "bytes": 158003,
+    "sha256": "d21e476dd5d5923bc7a30cf966d3b6522a7b48df9db7cbaaf9543e0621fb7d13",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/rewards-1440-light.png",
+    "bytes": 154697,
+    "sha256": "86cafd4cd3049c111f0931ef74b3d7eb8f27ee825868d73b9f72a56186e5f0cc",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/rewards-390-dark.png",
+    "bytes": 71434,
+    "sha256": "290e5a9cd5233e0d3bc99a13396c423cdbb0c3affad58842e1e2f3324ec837d7",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/lib/testing/baselines/rewards-390-light.png",
+    "bytes": 69038,
+    "sha256": "c7c25df382b6cae8c265eb0df0e4c5f4894c1e1ee3a975fb0936ced7b3b4d735",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/bag/lod0.glb",
+    "bytes": 174836,
+    "sha256": "d541f0360916e642e242ea85f7bf3c1a494cf965426c21c52d8f970d3ee70b05",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 174836,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/bag/lod1.glb",
+    "bytes": 153332,
+    "sha256": "12c016dae5a5b7cd261cf7594dd9748577a8a834aee9ec65ae7ecb38c7ac79e5",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 153332,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/bag/poster.webp",
+    "bytes": 27596,
+    "sha256": "8ff7ca50fd201947ca5990ab2822cb982428041625e85cdb4bf01c18f698fc51",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/bag/preview.usdz",
+    "bytes": 543596,
+    "sha256": "bdf527b1608fe56b5d65c5b8f93f3711cd0e9ad8e46bdd1de1e6a3afae188e50",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/dress/folded.glb",
+    "bytes": 564212,
+    "sha256": "dd926539330a40dd3c6a9fc270349312fcd3eddb578083fd9e7b8191cf49f729",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 564212,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/dress/folded.webp",
+    "bytes": 18188,
+    "sha256": "b27f023b254c05591f88ffa8e446b3ed34739083ee1f30e7a8598d152a7a1cdf",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/dress/lod0.glb",
+    "bytes": 155556,
+    "sha256": "78a20ec8e709289f3583acd7635f1b792fd281dc528bf77a2be5e31dde6179ad",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 155556,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/dress/lod1.glb",
+    "bytes": 112548,
+    "sha256": "9a5ac9104d84c459841c69b4afc413ce69f8711e9d01f289d1df9897d2ee9cdf",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 112548,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/dress/poster.webp",
+    "bytes": 16826,
+    "sha256": "78522f9fa329026567024687681bdbc3fe406b20eb11aa24daefec13177f4c42",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/dress/preview.usdz",
+    "bytes": 474173,
+    "sha256": "e5c1bc8968ff3eb57afd6115b212dd50c13faf8ba7b04569f5f426f2c2debac3",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/jacket/folded.glb",
+    "bytes": 599916,
+    "sha256": "9ff296e06a31c34b007e2c8fc6656863a9e20c0a9a6672f035e8e5e8a7e28e65",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 599916,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/jacket/folded.webp",
+    "bytes": 18026,
+    "sha256": "85864a8de745106d9cf873f8000d9c648ab77ae473ca701ba5a8bf8c04c335ab",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/jacket/lod0.glb",
+    "bytes": 353472,
+    "sha256": "1b8cc2e64db681bd47f47f0c95e988cec3144ebae9e18e5a6c9601f6040eed37",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 353472,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/jacket/lod1.glb",
+    "bytes": 256704,
+    "sha256": "0d21ae353572baa013fe7cf01033068581bd40073d501d9ba6622390e388ff41",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 256704,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/jacket/poster.webp",
+    "bytes": 25704,
+    "sha256": "ad7818dbbfeb5c9b60bd2db212c35915822524d72cf44e4311818cd68203cee1",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/jacket/preview.usdz",
+    "bytes": 1102639,
+    "sha256": "66688df9a482fd01c0104ab35e2888880a82b1e54724f555ca96b84beebb2c04",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/knit/folded.glb",
+    "bytes": 711640,
+    "sha256": "b5196a358d2d4d4ccb2a7686106da2b09af2aaf34cee374b0d4332718eabc932",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 711640,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/knit/folded.webp",
+    "bytes": 22316,
+    "sha256": "c8a5cac4ed1c83e5554d7dccdf2806c4ba60babfb941af8dab046e68d1cae464",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/knit/lod0.glb",
+    "bytes": 372952,
+    "sha256": "c5e671f783f9b8a61d228dbe04afcdbb323051d38256edec3278658e3433795d",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 372952,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/knit/lod1.glb",
+    "bytes": 265428,
+    "sha256": "5f233ca98828e9e93a752e548f29da71aa6639967d0e035d5aede5618547d130",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 265428,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/knit/poster.webp",
+    "bytes": 24720,
+    "sha256": "bfc27048096361b9a2826f432b099ccd5e97af7973f751cd7157f72a07f501ff",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/knit/preview.usdz",
+    "bytes": 1155865,
+    "sha256": "cf539a456463a97e75b60820b1615e60fd52dc0e9a50d1246d1bd59dc871cfe8",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/overshirt/folded.glb",
+    "bytes": 599916,
+    "sha256": "7c5f65c0bfb89e705ea8f071fe31e3d5f060a077d724e224f6a6dd12ea3f1409",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 599916,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/overshirt/folded.webp",
+    "bytes": 13640,
+    "sha256": "817ae3d8163789abbb13ed58457ad0dcd20d4b10408dc40485399fe0557379c0",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/overshirt/lod0.glb",
+    "bytes": 353472,
+    "sha256": "b5e3b113ec9d0b57cb3c9ccd124c4a72095cc29fdfa64c0a9013e1d57e666b67",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 353472,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/overshirt/lod1.glb",
+    "bytes": 256704,
+    "sha256": "67db0d5d11a03fd526856ecec147d9e1f62fa515271e00d3ff1bce53f0ccdfc2",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 256704,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/overshirt/poster.webp",
+    "bytes": 24340,
+    "sha256": "cbdafe04a182b1a7d32e71adf7dcb3982f9e30bd7054dedaf9ffdc1531e1cae4",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/overshirt/preview.usdz",
+    "bytes": 1102680,
+    "sha256": "cd08b9c79c0658b470e5cceab00546b154092503ba88346030307933ee0ffe15",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/sneaker/lod0.glb",
+    "bytes": 323308,
+    "sha256": "33cacbaf36d9e6e4d3241c9720ac06888742de88e29335fc24806e514d04a328",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 323308,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/sneaker/lod1.glb",
+    "bytes": 172768,
+    "sha256": "ddc1976f9352be81510d8fbd55f6d644c66ee6792d9596b364391cbec1996e37",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 172768,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/sneaker/poster.webp",
+    "bytes": 10096,
+    "sha256": "7f3ecc435a29346fb800a81c48112565488bf560f47241b1cb77720e47088bf6",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/sneaker/preview.usdz",
+    "bytes": 988538,
+    "sha256": "871faf493cc33e630f77da5cd60c9f05282b32d3cd79066fe584613dc8769f48",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/tee/folded.glb",
+    "bytes": 377572,
+    "sha256": "a23327e7fd700355bd01f43d0beab39900a4bb11ea2d8978879025459ce402c5",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 377572,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/tee/folded.webp",
+    "bytes": 11652,
+    "sha256": "837db8c8589f5fe50f0800feab7595324ed20f148238f81e90ce319375ae009d",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/tee/lod0.glb",
+    "bytes": 169380,
+    "sha256": "a22298f5f044f3d53ae26a6f1954c841b08487f98f1903c75ccb6b042bf210f6",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 169380,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/tee/lod1.glb",
+    "bytes": 104856,
+    "sha256": "bf9bb27e0b5add601086a52dcaaccba04af558ad8f85eea85444dcd1ca22b4bb",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 104856,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/tee/poster.webp",
+    "bytes": 17198,
+    "sha256": "fff7c6394d7a3cc31389b96c373d66634b10d022c9d59ac2d883ec11e0a3ddcf",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/tee/preview.usdz",
+    "bytes": 508328,
+    "sha256": "9689e52765eedf49a0fe3983a8d891d2e15b9af2470462c7c61b145df9d56796",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/trousers/folded.glb",
+    "bytes": 451316,
+    "sha256": "7e90616ba20e6cdd939ecc6cdbe093f5465d13c7d2d69c3674ac8dea6987c7a0",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 451316,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/trousers/folded.webp",
+    "bytes": 14354,
+    "sha256": "5e18faa83f9182af2612d92de50b9d495cd1f2c3de4f6b106184a21aa6a0c6db",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/trousers/lod0.glb",
+    "bytes": 278332,
+    "sha256": "525c1cb98335de4971fe2f8562f5e166cb5a110f278538c11006465c492657fd",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 278332,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/trousers/lod1.glb",
+    "bytes": 203064,
+    "sha256": "37af0b5ffd2270d3aeb3280fb25aa26624c724a008511f5dde67edbb37e8ada5",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 203064,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/trousers/poster.webp",
+    "bytes": 15966,
+    "sha256": "29c2512dec79c856690c644d57cae40dfb0826b6b36a803d662856f04201d907",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/garments/trousers/preview.usdz",
+    "bytes": 840388,
+    "sha256": "db189df23411a6eda0dca580bc3d85d9a83fd51ccbeb1dab93db4db6f5d37ae9",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/overlays/jacket.png",
+    "bytes": 360263,
+    "sha256": "99b3978fee50ff18794ccf96451f5380418d44544bf16fa6c50a795b724ca9f1",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/overlays/knit.png",
+    "bytes": 386538,
+    "sha256": "3e35cf04cc4a4067e041c23b7d9408abc40866dbb94aec08754297b97a97416f",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/overlays/overshirt.png",
+    "bytes": 371994,
+    "sha256": "f599ddb8513d5c65a373dbfe67e6fea8d07c9b3ca859c3c5e1d7b933ba720914",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/overlays/tee.png",
+    "bytes": 315371,
+    "sha256": "bc2281cbf9a359f1521fffe737ee96506e53c06b1f8a1b96d7047ef83bb455b5",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/photo-only/poster.webp",
+    "bytes": 24340,
+    "sha256": "cbdafe04a182b1a7d32e71adf7dcb3982f9e30bd7054dedaf9ffdc1531e1cae4",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/garden_studio/poster.webp",
+    "bytes": 65514,
+    "sha256": "4abaddfed87cfb87cf2f8fbe68232edfb819edc3bfe24af573929dd933f04169",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/garden_studio/room.glb",
+    "bytes": 711416,
+    "sha256": "37f0409ed249100634c608374ee1f0544e7f73e565ee477071c6238bb11332a5",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 711416,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/limestone_gallery/poster.webp",
+    "bytes": 85444,
+    "sha256": "b5cf724bb518b44e64c499407914e3bac97828557b72057419047f5a5986f319",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/limestone_gallery/room.glb",
+    "bytes": 873044,
+    "sha256": "b52e498e5faa7c30548085ae92a9b0724d9a4ac7a7f17afbf9c9c38d3253f7fd",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 873044,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/starter_modular/poster.webp",
+    "bytes": 46128,
+    "sha256": "c9e68a77002ab1806b327ac24c70d4286cf9398577f9bc6036debf271fba78b9",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/starter_modular/room.glb",
+    "bytes": 435192,
+    "sha256": "ba558bcfaca4e94413600df108253d64bf623ff79c5630dcb04402a0d788caee",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 435192,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/starter_wooden/poster.webp",
+    "bytes": 56432,
+    "sha256": "ed05c1441e2fb7fa71699b1f219b9c4309ef9694dda69841822e257e7f4a2119",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/starter_wooden/room.glb",
+    "bytes": 415628,
+    "sha256": "ba3663a4a5031a46941ef7655d95ec635e7b9aba6cab5dc222e4ab0c6c95aecb",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 415628,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/walnut_atelier/poster.webp",
+    "bytes": 87954,
+    "sha256": "a17b125bd459d949d89f856378b1f1199ea789150e0826e01f784e95f1c91b1a",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/rooms/walnut_atelier/room.glb",
+    "bytes": 1687688,
+    "sha256": "9c8e0559c59bff06cb5db49206c80c668c2890a101f73934d82da0297c2227c3",
+    "glb_header_valid": true,
+    "glb_version": 2,
+    "declared_bytes": 1687688,
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "brandme-frontend/public/demo/test-person/synthetic-adult.png",
+    "bytes": 1914350,
+    "sha256": "bb8204dbccc47f16a42f88e82fc2a77231703e08391654b633dba255f81a7408",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/keyboard-placement-390.png",
+    "bytes": 199205,
+    "sha256": "444c1351a6bc85545304bc23987dae003746e78eb2ebbff3cbf0e22024e225ca",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/pose-preview.png",
+    "bytes": 320239,
+    "sha256": "02166b5c58e20e47fd3293b5a565e3b82b3ccb749d0679197b741e39e7068b96",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/round2-fit-390.png",
+    "bytes": 186099,
+    "sha256": "63896204ac3401b3a03f33f9ab558c46f4940bbae30e5e4ab713af6d9b279376",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/round2-scan-1440.png",
+    "bytes": 42839,
+    "sha256": "c76444e86566a6c010bdb16566a1b87174f7c254faadbf3fb2b51fc070e4df36",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/round3-built-fit.png",
+    "bytes": 346889,
+    "sha256": "7dcb4510d6f805b2180ab9cf247ce08997f19f8f144a7f1f00c4d05080db79fe",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/round3-pose-preview.png",
+    "bytes": 320239,
+    "sha256": "02166b5c58e20e47fd3293b5a565e3b82b3ccb749d0679197b741e39e7068b96",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/runs/spatial-folded-folded-plac-10d8e-vives-refresh-and-each-room/folded-garden_studio.png",
+    "bytes": 308891,
+    "sha256": "81ad5d1c2a66c8c7920963b23d53fa268b8006e8f4b12463b85d63497f6817e9",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/runs/spatial-folded-folded-plac-10d8e-vives-refresh-and-each-room/folded-limestone_gallery.png",
+    "bytes": 465216,
+    "sha256": "6b9d9ee2fa88578f92c975da750bae79cc137904c41a2b42e5b00e7ef359a607",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/runs/spatial-folded-folded-plac-10d8e-vives-refresh-and-each-room/folded-walnut_atelier.png",
+    "bytes": 330520,
+    "sha256": "3ca42bbb6c5ae4c1990e882925d75ea950c51d2fd9092782379928df278f188f",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/runs/spatial-original-rooms-ren-4b26d--and-retain-usable-controls/garden_studio-1440.png",
+    "bytes": 357278,
+    "sha256": "288dcadb38d3c027e933f3fcf7330e58172f1176069bfff655354b1fb4bc3be6",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/runs/spatial-original-rooms-ren-4b26d--and-retain-usable-controls/limestone_gallery-1440.png",
+    "bytes": 509722,
+    "sha256": "6c622589f88988ce386d44d48ea568eba6b9c4e97fe02b36f90293bf51b6068c",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/runs/spatial-original-rooms-ren-4b26d--and-retain-usable-controls/walnut_atelier-1440.png",
+    "bytes": 403360,
+    "sha256": "fa90d3b8f71fbc298f660a640b3b7cb9354570fb8fa5c3bbf551b69131e1c6f6",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/runs/spatial-spatial-UI-reflows-30e6d-x-without-document-overflow/closet-320.png",
+    "bytes": 172289,
+    "sha256": "744a26b910a2a752ff23ce90e8f9767719acba43db26af1c863e65f09bba4e96",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/runs/spatial-spatial-UI-reflows-3637c-x-without-document-overflow/closet-768.png",
+    "bytes": 304673,
+    "sha256": "315df6459d8af3d20024b2c4ebc09eb72b64d821d7ec2dc0cac6f14e70961e0e",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  },
+  {
+    "path": "scripts/assets/evidence/runs/spatial-spatial-UI-reflows-f65d7-x-without-document-overflow/closet-390.png",
+    "bytes": 186795,
+    "sha256": "60a2ab2fd054f5250f82fd28f1ccacf1cae3b165197472679cfa644a41b87865",
+    "verification": "size/hash and GLB container header only; no rendering or licensing verification"
+  }
+]

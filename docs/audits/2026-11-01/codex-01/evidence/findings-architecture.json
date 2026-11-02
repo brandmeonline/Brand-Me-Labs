@@ -1,0 +1,508 @@
+[
+  {
+    "id": "F-ARCH-001",
+    "title": "Commerce, assistant and provider runtime not mounted",
+    "category": "architecture/connectivity",
+    "severity": "high",
+    "security_severity": "not rated as a standalone vulnerability",
+    "product_importance": "launch-critical for affected capability",
+    "severity_rationale": "Users cannot reach the built shopping/approval/payment/provider domain via the canonical gateway.",
+    "confidence": "high",
+    "affected_capabilities": [
+      "CAP-009",
+      "CAP-010",
+      "CAP-011"
+    ],
+    "affected_journeys": "See USER_FLOWS.md for shared journey IDs",
+    "environment": "main source; deployment unknown",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 131,
+        "end_line": 149,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L131-L149"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/commerce.ts",
+        "line": 204,
+        "end_line": 269,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/commerce.ts#L204-L269"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/http_api.py",
+        "line": 638,
+        "end_line": 670,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/http_api.py#L638-L670"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/composition.py",
+        "line": 102,
+        "end_line": 133,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/composition.py#L102-L133"
+      }
+    ],
+    "preconditions": "Use the canonical main application/runtime composition; no test-only injection",
+    "expected_behavior": "Users cannot reach the built shopping/approval/payment/provider domain via the canonical gateway.",
+    "observed_behavior": "Gateway does not import/mount commerce, assistant or provider factories. Searches find create_commerce_app and build_providers runtime composition only in tests. Strict commerce registry contains no merchant.",
+    "user_business_impact": "Users cannot reach the built shopping/approval/payment/provider domain via the canonical gateway.",
+    "reproduction_validation": "Static read plus repository-wide symbol/config-reference search; no repository code executed by this sub-audit",
+    "recommended_fix": "Create explicit service entrypoint, select persistent store/audit/queue, mount principal-bound gateway routes and raw-body webhook route before JSON parsing, complete missing contract extensions; preserve existing domain checks.",
+    "dependencies": [
+      "Spanner V007/V015",
+      "service assertion configuration",
+      "contracts owner",
+      "provider entitlement decision"
+    ],
+    "proposed_owner_skill": "Backend/platform integration with domain owner review",
+    "effort_range": "5–10 engineering days for safe demo integration; real merchant readiness separate",
+    "effort_assumptions": "Engineering estimate, excluding partner access, deployed-data migration and security review",
+    "acceptance_test": "Isolated synthetic member → delegation/cart → fresh quote → trusted approval → simulated order → duplicate webhook → one persisted order. Restart service and reconcile without duplicate purchase; strict unavailable merchant must fail honestly."
+  },
+  {
+    "id": "F-ARCH-002",
+    "title": "Event effects and timed consumer work have no deployment wiring",
+    "category": "architecture/connectivity",
+    "severity": "high",
+    "security_severity": "not rated as a standalone vulnerability",
+    "product_importance": "launch-critical for affected capability",
+    "severity_rationale": "Social decisions, earned rewards, benefit expiry and order-to-wardrobe updates must complete after the HTTP request.",
+    "confidence": "high",
+    "affected_capabilities": [
+      "CAP-007",
+      "CAP-008",
+      "CAP-012",
+      "CAP-018"
+    ],
+    "affected_journeys": "See USER_FLOWS.md for shared journey IDs",
+    "environment": "main source; deployment unknown",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/jobs.py",
+        "line": 42,
+        "end_line": 65,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/jobs.py#L42-L65"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/ingress.py",
+        "line": 147,
+        "end_line": 180,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/ingress.py#L147-L180"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/events/worker.py",
+        "line": 3,
+        "end_line": 5,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/events/worker.py#L3-L5"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-infra/helm/brandme/README.md",
+        "line": 28,
+        "end_line": 35,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-infra/helm/brandme/README.md#L28-L35"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docker-compose.yml",
+        "line": 24,
+        "end_line": 27,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docker-compose.yml#L24-L27"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "scripts/brandme.mjs",
+        "line": 169,
+        "end_line": 190,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/scripts/brandme.mjs#L169-L190"
+      }
+    ],
+    "preconditions": "Use the canonical main application/runtime composition; no test-only injection",
+    "expected_behavior": "Social decisions, earned rewards, benefit expiry and order-to-wardrobe updates must complete after the HTTP request.",
+    "observed_behavior": "jobs.py and ingress.py have CLI main functions, but configuration search finds no compose/Helm/CI process invoking them. Outbox publisher is a distinct process and broker delivery is not the business effect. The pnpm dev launcher starts only brain, gateway and frontend at scripts/brandme.mjs:184-186, omitting even the consumer HTTP service; docker-compose does include the consumer service after separate key generation.",
+    "user_business_impact": "Social decisions, earned rewards, benefit expiry and order-to-wardrobe updates must complete after the HTTP request.",
+    "reproduction_validation": "Static read plus repository-wide symbol/config-reference search; no repository code executed by this sub-audit",
+    "recommended_fix": "Add supervised jobs and authenticated least-privilege Pub/Sub consumer workloads, subscription/DLQ configuration, bounded retries, health/lag alerts and mode guards; supply fulfillment adapter only where actually available.",
+    "dependencies": [
+      "subscription and DLQ/IAM",
+      "worker deployment and logs",
+      "consumer mode/security review"
+    ],
+    "proposed_owner_skill": "Backend/platform integration with domain owner review",
+    "effort_range": "3–6 engineering days",
+    "effort_assumptions": "Engineering estimate, excluding partner access, deployed-data migration and security review",
+    "acceptance_test": "Create due decision, close without another user action, consume event twice and award once; restart/pull after failure; expire reservation and release once; confirm observed delivered order appears in wardrobe once."
+  },
+  {
+    "id": "F-ARCH-003",
+    "title": "Mounted persona recommendations have empty candidate and wardrobe sources",
+    "category": "architecture/connectivity",
+    "severity": "high",
+    "security_severity": "not rated as a standalone vulnerability",
+    "product_importance": "launch-critical for affected capability",
+    "severity_rationale": "The core Looking Glass promise requires useful recommendations tied to real owned/catalog items.",
+    "confidence": "high",
+    "affected_capabilities": [
+      "CAP-003"
+    ],
+    "affected_journeys": "See USER_FLOWS.md for shared journey IDs",
+    "environment": "main source; deployment unknown",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 68,
+        "end_line": 75,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L68-L75"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/service.py",
+        "line": 96,
+        "end_line": 101,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/service.py#L96-L101"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/service.py",
+        "line": 128,
+        "end_line": 141,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/service.py#L128-L141"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/service.py",
+        "line": 1132,
+        "end_line": 1159,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/service.py#L1132-L1159"
+      }
+    ],
+    "preconditions": "Use the canonical main application/runtime composition; no test-only injection",
+    "expected_behavior": "The core Looking Glass promise requires useful recommendations tied to real owned/catalog items.",
+    "observed_behavior": "Application creates PersonaService(database) with no source injection. Defaults provide zero candidates and zero wardrobe refs; recommendations and preview use these defaults.",
+    "user_business_impact": "The core Looking Glass promise requires useful recommendations tied to real owned/catalog items.",
+    "reproduction_validation": "Static read plus repository-wide symbol/config-reference search; no repository code executed by this sub-audit",
+    "recommended_fix": "Compose a privacy-authorized catalog CandidateSource, WardrobeService.wardrobe_refs and consent revocation source; retain deterministic ranker and explanation fields.",
+    "dependencies": [
+      "catalog normalized data contract",
+      "wardrobe source mapping",
+      "consent revocation source"
+    ],
+    "proposed_owner_skill": "Backend/platform integration with domain owner review",
+    "effort_range": "2–4 engineering days",
+    "effort_assumptions": "Engineering estimate, excluding partner access, deployed-data migration and security review",
+    "acceptance_test": "With seeded licensed synthetic catalog and owned garments, authenticated recommendation returns relevant candidates/reasons; changing an axis, exclusion, ownership or consent changes results; no other member data appears."
+  },
+  {
+    "id": "F-ARCH-004",
+    "title": "Public privacy capability is selected-rights only; complete account erasure is disconnected",
+    "category": "architecture/connectivity",
+    "severity": "high",
+    "security_severity": "not rated as a standalone vulnerability",
+    "product_importance": "launch-critical for affected capability",
+    "severity_rationale": "Members need an accurate account-wide view/export/deletion across their fashion identity and derived data.",
+    "confidence": "high",
+    "affected_capabilities": [
+      "CAP-015",
+      "CAP-016"
+    ],
+    "affected_journeys": "See USER_FLOWS.md for shared journey IDs",
+    "environment": "main source; deployment unknown",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/reads.py",
+        "line": 83,
+        "end_line": 86,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/reads.py#L83-L86"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/reads.py",
+        "line": 180,
+        "end_line": 186,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/reads.py#L180-L186"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/app.py",
+        "line": 122,
+        "end_line": 125,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/app.py#L122-L125"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/privacy_exports/service.py",
+        "line": 23,
+        "end_line": 24,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/service.py#L23-L24"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/privacy_exports/service.py",
+        "line": 285,
+        "end_line": 290,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/service.py#L285-L290"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/lane.py",
+        "line": 46,
+        "end_line": 61,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/lane.py#L46-L61"
+      }
+    ],
+    "preconditions": "Use the canonical main application/runtime composition; no test-only injection",
+    "expected_behavior": "Members need an accurate account-wide view/export/deletion across their fashion identity and derived data.",
+    "observed_behavior": "ReadService registry contains rights handler only; selected export fixed to five rights categories; privacy mutation routes return 503. Consumer handlers exist but have no runtime registry composition caller outside tests. Responses are honestly limited; this is an unmet product capability, not a claim of deceptive export.",
+    "user_business_impact": "Members need an accurate account-wide view/export/deletion across their fashion identity and derived data.",
+    "reproduction_validation": "Static read plus repository-wide symbol/config-reference search; no repository code executed by this sub-audit",
+    "recommended_fix": "Review #70 privacy composition, then compose all native handlers plus media purge/providers and replay-safe deletion worker. Extend durable export only after bounded projection and privacy checks. Preserve explicit partial-coverage UI until accepted.",
+    "dependencies": [
+      "branch #70 review",
+      "migration collision resolution",
+      "media object/provider erasure",
+      "identity/session deletion authority"
+    ],
+    "proposed_owner_skill": "Backend/platform integration with domain owner review",
+    "effort_range": "5–10 engineering days",
+    "effort_assumptions": "Engineering estimate, excluding partner access, deployed-data migration and security review",
+    "acceptance_test": "Create data in every domain, reauthenticate, export exact scope, request deletion, process all steps, restart/retry and restore tombstones; verify zero unexpected member rows or derived files while documented lawful/chain exceptions remain explicit."
+  },
+  {
+    "id": "F-ARCH-005",
+    "title": "Repository maps materially understate and overstate the current product",
+    "category": "architecture/connectivity",
+    "severity": "medium",
+    "security_severity": "not rated as a standalone vulnerability",
+    "product_importance": "launch-critical for affected capability",
+    "severity_rationale": "Engineers and auditors need a reliable entry map to avoid deleting useful work or promoting stubs.",
+    "confidence": "high",
+    "affected_capabilities": [
+      "CAP-002",
+      "CAP-004",
+      "CAP-010",
+      "CAP-018"
+    ],
+    "affected_journeys": "See USER_FLOWS.md for shared journey IDs",
+    "environment": "main source; deployment unknown",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "CLAUDE.md",
+        "line": 28,
+        "end_line": 60,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/CLAUDE.md#L28-L60"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/README.md",
+        "line": 1,
+        "end_line": 5,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/README.md#L1-L5"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/providers/README.md",
+        "line": 1,
+        "end_line": 5,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/providers/README.md#L1-L5"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docker-compose.yml",
+        "line": 24,
+        "end_line": 27,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docker-compose.yml#L24-L27"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 68,
+        "end_line": 77,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L68-L77"
+      }
+    ],
+    "preconditions": "Use the canonical main application/runtime composition; no test-only injection",
+    "expected_behavior": "Engineers and auditors need a reliable entry map to avoid deleting useful work or promoting stubs.",
+    "observed_behavior": "CLAUDE still says only consent/provenance real and frontend unconnected while compose runs frontend/consumer domains and substantial services exist. Domain READMEs still say reserved/no logic. Other older readiness marketing is equally unsupported.",
+    "user_business_impact": "Engineers and auditors need a reliable entry map to avoid deleting useful work or promoting stubs.",
+    "reproduction_validation": "Static read plus repository-wide symbol/config-reference search; no repository code executed by this sub-audit",
+    "recommended_fix": "Replace stale per-service claims with source-generated route/component map at named SHA; keep product contract separate from implemented/wired/tested/deployed axes and remove unsupported readiness percentages.",
+    "dependencies": [
+      "canonical runtime decision",
+      "maintained verification evidence"
+    ],
+    "proposed_owner_skill": "Backend/platform integration with domain owner review",
+    "effort_range": "1–2 engineering days",
+    "effort_assumptions": "Engineering estimate, excluding partner access, deployed-data migration and security review",
+    "acceptance_test": "Review map against actual gateway mounts, compose/Helm workload set and capability inventory; every claim has named SHA and verification level; links checked."
+  },
+  {
+    "id": "F-ARCH-006",
+    "title": "Spatial wardrobe UI has only a guest device repository",
+    "category": "architecture/connectivity",
+    "severity": "high",
+    "security_severity": "not rated as a standalone vulnerability",
+    "product_importance": "launch-critical for affected capability",
+    "severity_rationale": "A member needs authenticated wardrobe persistence across refresh, account changes and devices.",
+    "confidence": "high",
+    "affected_capabilities": [
+      "CAP-004",
+      "CAP-005",
+      "CAP-006"
+    ],
+    "affected_journeys": "See USER_FLOWS.md for shared journey IDs",
+    "environment": "main source; deployment unknown",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/closet/SpatialModeGate.tsx",
+        "line": 12,
+        "end_line": 23,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/closet/SpatialModeGate.tsx#L12-L23"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/closet/useCloset.ts",
+        "line": 10,
+        "end_line": 12,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/closet/useCloset.ts#L10-L12"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/closet/repository.ts",
+        "line": 265,
+        "end_line": 286,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/closet/repository.ts#L265-L286"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 70,
+        "end_line": 74,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L70-L74"
+      }
+    ],
+    "preconditions": "Use the canonical main application/runtime composition; no test-only injection",
+    "expected_behavior": "A member needs authenticated wardrobe persistence across refresh, account changes and devices.",
+    "observed_behavior": "The only ClosetRepository implementation found is createGuestClosetRepository backed by IndexedDB. useCloset defaults to it; SpatialModeGate intentionally blocks sandbox/production with connection-not-ready copy. The durable server wardrobe exists but is not supplied to this UI.",
+    "user_business_impact": "A member needs authenticated wardrobe persistence across refresh, account changes and devices.",
+    "reproduction_validation": "Static read plus repository-wide symbol/config-reference search; no repository code executed by this sub-audit",
+    "recommended_fix": "Implement an authenticated repository using the existing gateway wardrobe/layout/outfit contracts, account-scoped cache and version/conflict semantics; retain the guest adapter as explicitly separate mode. Remove the strict-mode gate only after complete persistence/authorization evidence.",
+    "dependencies": [
+      "identity browser session composition",
+      "wardrobe contract mapping",
+      "cross-device and accessibility tests"
+    ],
+    "proposed_owner_skill": "Backend/platform integration with domain owner review",
+    "effort_range": "4–8 engineering days",
+    "effort_assumptions": "Engineering estimate, excluding partner access, deployed-data migration and security review",
+    "acceptance_test": "Sign in as synthetic A, save/place an item, refresh and open another browser session; see same server item. Switch to B and verify no A data. Exercise conflict, offline rollback, permission denial and guest migration without duplication."
+  },
+  {
+    "id": "F-ARCH-007",
+    "title": "Legacy region YAML engine is not invoked by the policy endpoint",
+    "category": "architecture/connectivity",
+    "severity": "medium",
+    "security_severity": "not rated as a standalone vulnerability",
+    "product_importance": "medium for legacy capability; not prerequisite to the recommended consumer milestone",
+    "severity_rationale": "Changing repository region YAML must not be mistaken for changing enforced policy behavior.",
+    "confidence": "high",
+    "affected_capabilities": [
+      "CAP-019"
+    ],
+    "affected_journeys": "See USER_FLOWS.md for shared journey IDs",
+    "environment": "main source; deployment unknown",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/policy/main.py",
+        "line": 30,
+        "end_line": 31,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/policy/main.py#L30-L31"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/policy/main.py",
+        "line": 101,
+        "end_line": 116,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/policy/main.py#L101-L116"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/policy/main.py",
+        "line": 139,
+        "end_line": 157,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/policy/main.py#L139-L157"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/policy/region_rules.py",
+        "line": 33,
+        "end_line": 69,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/policy/region_rules.py#L33-L69"
+      }
+    ],
+    "preconditions": "Use the canonical main application/runtime composition; no test-only injection",
+    "expected_behavior": "Changing repository region YAML must not be mistaken for changing enforced policy behavior.",
+    "observed_behavior": "Policy endpoint consults two hardcoded blocked-region literals and the consent graph. Repository-wide reference search finds no caller/import of RegionRulesEngine/region_rules outside that module. Its YAML loader is dormant. The shared guard blocks legacy strict-mode startup, limiting exposure; no live vulnerability is claimed.",
+    "user_business_impact": "Changing repository region YAML must not be mistaken for changing enforced policy behavior.",
+    "reproduction_validation": "Static read plus repository-wide symbol/config-reference search; no repository code executed by this sub-audit",
+    "recommended_fix": "If retaining legacy policy, inject and fail-close the reviewed region policy engine, validate YAML and expose loaded policy version; otherwise archive its documented promise after the new domain policy replacement is proven.",
+    "dependencies": [
+      "decision to retain legacy policy",
+      "actual owner-approved policy rules"
+    ],
+    "proposed_owner_skill": "Backend/platform integration with domain owner review",
+    "effort_range": "1–3 engineering days",
+    "effort_assumptions": "Engineering estimate, excluding partner access, deployed-data migration and security review",
+    "acceptance_test": "A synthetic allowed/denied/escalation fixture changes endpoint behavior according to reviewed region configuration; malformed/missing required policy refuses startup. Verify no unsupported legal compliance claim."
+  }
+]

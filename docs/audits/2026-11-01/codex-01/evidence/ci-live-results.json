@@ -1,0 +1,15 @@
+{
+  "source": "real development HTTP and Spanner emulator",
+  "checks": [
+    "All consumer domain routes are mounted and reject anonymous reads",
+    "Two independent development sessions resolve distinct persisted members",
+    "Guest migration persists explicit choices and replays without a second profile revision",
+    "All twelve axes render; edited preference survives reload and remains isolated from another account",
+    "Today renders a wardrobe item persisted by the real intake endpoint, preserving its self-reported claim",
+    "Five-minute server deadline, independent recipient response and creator close persist through the gateway",
+    "Actual outbox/inbox settlement awards setup and first-item points once; Pass earns the same response rule",
+    "Inbox displays real domain notifications and persists an explicit mark-as-read command",
+    "Block removes the other account’s access to the decision",
+    "Sign-out revokes the real session"
+  ]
+}

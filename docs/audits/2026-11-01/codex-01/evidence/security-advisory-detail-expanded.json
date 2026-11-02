@@ -1,0 +1,436 @@
+[
+  {
+    "number": 504,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/504",
+    "rule": {
+      "id": "CVE-2026-55391",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "datamodel-code-generator vulnerable to SSRF protection bypass via DNS rebinding"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "datamodel-code-generator",
+      "Severity": "HIGH",
+      "Fixed Version": "0.63.0",
+      "Installed Version": "0.34.0"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-55391"
+    ]
+  },
+  {
+    "number": 503,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/503",
+    "rule": {
+      "id": "CVE-2026-55389",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "datamodel-code-generator vulnerable to arbitrary local file read via JSON-Schema `$ref` (`file://` and `../` traversal), bypassing `--no-allow-remote-refs`"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "datamodel-code-generator",
+      "Severity": "HIGH",
+      "Fixed Version": "0.62.0",
+      "Installed Version": "0.34.0"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-55389"
+    ]
+  },
+  {
+    "number": 502,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/502",
+    "rule": {
+      "id": "CVE-2026-54691",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "datamodel-code-generator vulnerable to SSRF via --url: no host/IP validation, follows redirects"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "datamodel-code-generator",
+      "Severity": "HIGH",
+      "Fixed Version": "0.61.0",
+      "Installed Version": "0.34.0"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-54691"
+    ]
+  },
+  {
+    "number": 501,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/501",
+    "rule": {
+      "id": "CVE-2026-54690",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "datamodel-code-generator vulnerable to SSRF via JSON-Schema `$ref` to HTTP URL (silent by default)"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "datamodel-code-generator",
+      "Severity": "HIGH",
+      "Fixed Version": "0.61.0",
+      "Installed Version": "0.34.0"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-54690"
+    ]
+  },
+  {
+    "number": 500,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/500",
+    "rule": {
+      "id": "CVE-2026-54654",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "`datamodel-code-generator` vulnerable to code injection via unescaped carriage return in `--extra-template-data` `comment` field"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "datamodel-code-generator",
+      "Severity": "HIGH",
+      "Fixed Version": "0.60.2",
+      "Installed Version": "0.34.0"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-54654"
+    ]
+  },
+  {
+    "number": 499,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/499",
+    "rule": {
+      "id": "CVE-2026-54653",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "`datamodel-code-generator` vulnerable to code injection in via attacker-controlled `default_factory` schema field"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "datamodel-code-generator",
+      "Severity": "HIGH",
+      "Fixed Version": "0.60.2",
+      "Installed Version": "0.34.0"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-54653"
+    ]
+  },
+  {
+    "number": 498,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/498",
+    "rule": {
+      "id": "CVE-2026-54621",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "`datamodel-code-generator` vulnerable to code injection via unescaped carriage return in GraphQL Union description"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "datamodel-code-generator",
+      "Severity": "HIGH",
+      "Fixed Version": "0.60.1",
+      "Installed Version": "0.34.0"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-54621"
+    ]
+  },
+  {
+    "number": 75,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/75",
+    "rule": {
+      "id": "CVE-2026-45134",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "langsmith-sdk-python: langsmith-sdk-js: LangSmith Client SDKs: Information disclosure via untrusted prompt deserialization"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "brandme-agents/agentic/requirements.txt",
+        "start_line": 7,
+        "end_line": 7,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "langchain",
+      "Severity": "HIGH",
+      "Fixed Version": "0.3.30",
+      "Installed Version": "0.1.0"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-45134"
+    ]
+  },
+  {
+    "number": 473,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/473",
+    "rule": {
+      "id": "CVE-2026-111066",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "aiohttp: aiohttp: Denial of Service via file descriptor exhaustion in multipart request processing"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "aiohttp",
+      "Severity": "HIGH",
+      "Fixed Version": "3.14.4",
+      "Installed Version": "3.9.1"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-111066"
+    ]
+  },
+  {
+    "number": 472,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/472",
+    "rule": {
+      "id": "CVE-2026-111064",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "aiohttp: aiohttp: Denial of Service via missing initial request timeout"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "aiohttp",
+      "Severity": "HIGH",
+      "Fixed Version": "3.14.4",
+      "Installed Version": "3.9.1"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-111064"
+    ]
+  },
+  {
+    "number": 79,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/79",
+    "rule": {
+      "id": "CVE-2026-69244",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "aiohttp: AIOHTTP: Denial of Service via malformed HTTP responses"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "aiohttp",
+      "Severity": "HIGH",
+      "Fixed Version": "3.14.3",
+      "Installed Version": "3.9.1"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-69244"
+    ]
+  },
+  {
+    "number": 36,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/36",
+    "rule": {
+      "id": "CVE-2026-34516",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "warning",
+      "security_severity_level": "high",
+      "description": "aiohttp: AIOHTTP: Denial of Service via excessive multipart headers"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "aiohttp",
+      "Severity": "MEDIUM",
+      "Fixed Version": "3.13.4",
+      "Installed Version": "3.9.1"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2026-34516"
+    ]
+  },
+  {
+    "number": 14,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/14",
+    "rule": {
+      "id": "CVE-2025-69223",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "aiohttp: AIOHTTP's HTTP Parser auto_decompress feature is vulnerable to zip bomb"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "aiohttp",
+      "Severity": "HIGH",
+      "Fixed Version": "3.13.3",
+      "Installed Version": "3.9.1"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2025-69223"
+    ]
+  },
+  {
+    "number": 4,
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/security/code-scanning/4",
+    "rule": {
+      "id": "CVE-2024-30251",
+      "name": "LanguageSpecificPackageVulnerability",
+      "severity": "error",
+      "security_severity_level": "high",
+      "description": "aiohttp: DoS when trying to parse malformed POST requests"
+    },
+    "instance": {
+      "ref": "refs/heads/main",
+      "commit_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    "package_facts": {
+      "Package": "aiohttp",
+      "Severity": "HIGH",
+      "Fixed Version": "3.9.4",
+      "Installed Version": "3.9.1"
+    },
+    "references": [
+      "https://avd.aquasec.com/nvd/cve-2024-30251"
+    ]
+  }
+]

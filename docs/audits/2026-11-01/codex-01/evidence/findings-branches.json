@@ -1,0 +1,181 @@
+[
+  {
+    "id": "F-BR-001",
+    "title": "Consumer and rights branches independently reserve migration V016",
+    "category": "cross-branch integration",
+    "severity": "High delivery blocker",
+    "severity_rationale": "Combining the two required active lanes without resolving their migration reservation causes the packaged migration loader to reject the duplicate version before schema planning.",
+    "security_severity": "Not assessed as a vulnerability",
+    "product_importance": "High for combined consumer/rights product",
+    "implementation_sequence": 1,
+    "confidence": "High; confirmed static conflict",
+    "status": "confirmed",
+    "affected_branch_ids": [
+      "BR-011",
+      "BR-009"
+    ],
+    "affected_capabilities": [
+      "Consumer design domains",
+      "Rights transfer command backend"
+    ],
+    "environments": [
+      "Proposed integrated checkout; no shared environment execution"
+    ],
+    "evidence": [
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/babb3604ae2f33018edf0ad45270887d4b01945b/brandme-data/spanner/migrations/V016_consumer_design.sql#L1",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme-data/spanner/migrations/V016_rights_transfer_invites.sql#L1",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-data/spanner/migrations/runner.py#L91",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/tests/foundation/test_migrations.py#L44",
+      "history-source-excerpts.md"
+    ],
+    "preconditions": "Both branch migration files are included in the same packaged migration directory.",
+    "expected": "A unique contiguous migration sequence supports both consumer and rights schema changes.",
+    "observed": "Both filenames begin V016; load_migrations stores versions by integer and raises MigrationError on duplicates at line99. Branch tests separately reserve incompatible names for16.",
+    "impact": "A naive combined integration cannot initialize or validate the schema. Renaming an already-applied migration would introduce checksum/ledger drift.",
+    "reproduction_validation": "Read both immutable branch files and main loader/test. No repository execution or actual merge performed.",
+    "recommended_fix": "Before integration, inspect any authorized deployed ledger, allocate V016/V017 by agreed merge order, and update registry, runtime schema checks, fixtures/docs and upgrades. If a migration has already been applied, preserve its checksum/version and design a forward migration.",
+    "dependencies": [
+      "Foundation migration ownership",
+      "PR66/PR70 merge order",
+      "Environment migration ledger observation if any database has applied either branch"
+    ],
+    "effort_range": "0.5–2 engineer days if neither branch migration has reached shared data; larger if an applied ledger must be reconciled.",
+    "owner_skill": "Database/schema and foundation engineer",
+    "acceptance_test": "Packaged migrations have one reserved file per version; empty and V015 upgrade paths include both features; checksum/rerun/rollback compatibility checks pass; no shared migration is run as part of this audit."
+  },
+  {
+    "id": "F-BR-002",
+    "title": "Rights commands remain blocked at public routing and strict startup",
+    "category": "branch-only integration gap",
+    "severity": "Medium",
+    "severity_rationale": "The useful draft implementation cannot complete recipient binding through the normal mounted gateway or start in strict mode, even with service credentials.",
+    "security_severity": "Not a vulnerability; existing fail-closed behavior is intentional",
+    "product_importance": "High for rights transfer milestone",
+    "implementation_sequence": 3,
+    "confidence": "High static evidence; no runtime verification",
+    "status": "confirmed_missing",
+    "affected_branch_ids": [
+      "BR-009"
+    ],
+    "affected_capabilities": [
+      "Recipient transfer acceptance/status",
+      "Rights command service",
+      "My Data rights composition"
+    ],
+    "environments": [
+      "PR70 branch; local/development potential; strict modes refused"
+    ],
+    "evidence": [
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme-gateway/src/routes/v1/transfers.ts#L4",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme-gateway/src/routes/v1/index.ts#L135",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme_core/rights_commands/__main__.py#L30",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme_core/rights_commands/README.md#L48",
+      "history-source-excerpts.md",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/a05f2e03e58e55cc2b392b8abc7b19f59659f820/brandme_core/config.py#L665"
+    ],
+    "preconditions": "Attempt the new /api/v1/transfers routes using the normal gateway composition, or launch rights_commands under sandbox/production without completing the audited service inventory.",
+    "expected": "Reviewed transfer routes are mounted behind principal/CSRF/scope/recent-auth checks; the intended service has an audited trust-path entry and explicit deployment.",
+    "observed": "createTransfersRouter is absent from index.ts; rights_commands has no shared trust-path registration and its executable calls guard('rights_commands'). Branch documentation accurately acknowledges both gaps.",
+    "impact": "Adding the command service URL/token alone cannot deliver the advertised transfer journey; bypassing the guard would defeat an intentional safety boundary.",
+    "reproduction_validation": "Read route composition and process entry; exact git-grep absence checks recorded, exit1. No server launched.",
+    "recommended_fix": "Integrate coherent branch after migration conflict resolution; foundation owns mounting, trust-path audit, packaged/runtime/deploy binding and tests. Preserve strict refusal until audited. Complete the separately authorized wallet/journal/finality path rather than treating recipient binding as final transfer.",
+    "dependencies": [
+      "F-BR-001",
+      "Foundation route/mode ownership",
+      "Private service deployment/IAM/networking",
+      "Wallet proof/journal/finality integration"
+    ],
+    "effort_range": "1–3 engineer days for route/mode/deployment handoff and isolated tests; excludes wallet/finality integration and provider provisioning.",
+    "owner_skill": "Gateway/backend, foundation security and platform engineers",
+    "acceptance_test": "Authenticated creation→recipient binding→sender status works through mounted gateway; anonymous/wrong-user/expired/replayed requests fail; strict startup succeeds only with audited configuration; no live wallet transaction is implied by these checks."
+  },
+  {
+    "id": "F-BR-003",
+    "title": "Canonical pipeline record contradicts published preview ancestry",
+    "category": "operational evidence integrity",
+    "severity": "Medium",
+    "severity_rationale": "Review and merge decisions can be based on a claimed foundation synchronization that the published branch does not contain.",
+    "security_severity": "Not assessed as a vulnerability",
+    "product_importance": "High for reliable integration decisions",
+    "implementation_sequence": 1,
+    "confidence": "High for ancestry contradiction and captured PR/check state",
+    "status": "confirmed",
+    "affected_branch_ids": [
+      "BR-028",
+      "BR-016",
+      "BR-011",
+      "BR-009"
+    ],
+    "affected_capabilities": [
+      "Cross-lane orchestration",
+      "Release review gates"
+    ],
+    "environments": [
+      "Repository documentation and GitHub review state"
+    ],
+    "evidence": [
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/build/orchestration/pipeline-state.md#L88",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420/docs/build/status/astra-consumer-ui.md#L660",
+      "history-git-branches-raw.json",
+      "history-github-pr-details.json",
+      "history-github-branch-ci.json",
+      "history-source-excerpts.md"
+    ],
+    "preconditions": "Treat pipeline-state.md's claimed sync/check state as authoritative without rechecking published refs.",
+    "expected": "Each status claim resolves to a published commit and identifies its tested revision; historical snapshots and corrections remain distinguishable.",
+    "observed": "Pipeline says PR63 re-synced to97d54477 through75f0ff0; actual merge-base is77280249 and ancestry check excludes97d54477. Preview Stage17 says the claimed commits were unavailable. The dated pipeline snapshot also predates PR70 and later failing PR66 shell.",
+    "impact": "A stale branch may be treated as synchronized or reviewed; green checks from an earlier head may be carried forward incorrectly.",
+    "reproduction_validation": "git merge-base ed19dc151d103b108cf972e6d37971c55d5dcf60 0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420 returns 77280249df4e91d93b4d814b140bd5e38bba4735; git merge-base --is-ancestor 97d54477f7667dade1a4fd7220c0b2694cffb604 0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420 exits 1. Read both immutable status files and captured API metadata.",
+    "recommended_fix": "Propose a single checkpoint correction generated from current exact refs, PR/check URLs and their tested SHAs; keep unavailable reported commits explicitly unverified; record who must decide unresolved approvals without treating comments as approvals.",
+    "dependencies": [
+      "Fresh read-only GitHub/remote ref snapshot",
+      "Lane-owner review of remaining gates"
+    ],
+    "effort_range": "0.25–1 engineer day for checkpoint correction and evidence validation; no implementation changes.",
+    "owner_skill": "Release/integration owner",
+    "acceptance_test": "Every claimed SHA resolves; branch ancestry agrees with claims; CI links show the exact head or explicitly documented merge snapshot; current open PRs and unresolved gates match metadata."
+  },
+  {
+    "id": "F-BR-004",
+    "title": "In-app credit has a tested redemption function but no checkout caller",
+    "category": "branch-only product wiring",
+    "severity": "Medium",
+    "severity_rationale": "PR66 can expose points conversion yet no application purchase flow invokes the settlement seam, leaving the intended benefit incomplete.",
+    "security_severity": "Not assessed as a vulnerability",
+    "product_importance": "Medium; required before offering spendable purchase credit",
+    "implementation_sequence": 4,
+    "confidence": "High static call-site search; dynamic external consumers remain unverified",
+    "status": "confirmed_missing",
+    "affected_branch_ids": [
+      "BR-011"
+    ],
+    "affected_capabilities": [
+      "Points-to-credit conversion",
+      "Applying credit to an in-app order"
+    ],
+    "environments": [
+      "PR66 branch"
+    ],
+    "evidence": [
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/babb3604ae2f33018edf0ad45270887d4b01945b/brandme_core/domains/rewards/credits.py#L15",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/babb3604ae2f33018edf0ad45270887d4b01945b/brandme_core/domains/rewards/credits.py#L179",
+      "https://github.com/brandmeonline/Brand-Me-Labs/blob/babb3604ae2f33018edf0ad45270887d4b01945b/brandme_core/domains/persona/app.py#L94",
+      "history-source-excerpts.md"
+    ],
+    "preconditions": "A member converts points and then expects the commerce checkout to apply that credit.",
+    "expected": "Checkout invokes credit settlement inside the appropriate order transaction, applying ownership/currency/expiry/retry checks with consistent totals.",
+    "observed": "apply_credit is defined for commerce but branch-wide search returns only its definition/docs and tests; no application call site is present. CreditService conversion is mounted in the consumer service.",
+    "impact": "A backend test can redeem a credit while an actual shopper cannot yet complete that benefit through checkout. Introducing a separate settlement without atomic order handling risks inconsistent totals.",
+    "reproduction_validation": "Exhaustive symbol search at babb3604ae2f33018edf0ad45270887d4b01945b excluding documentation/lockfile; inspected function, conversion route composition, and callers. No execution or external checkout testing.",
+    "recommended_fix": "Agree the commerce credit contract and connect application order settlement in one atomic/idempotent boundary; explicitly gate conversion availability if the business intends users to spend immediately.",
+    "dependencies": [
+      "PR66 integration",
+      "Commerce order transaction contract",
+      "Approved business credit rate/limits",
+      "F-BR-001"
+    ],
+    "effort_range": "1–3 engineer days for a narrow checkout integration and isolated contract/transaction tests; provider payment integration excluded.",
+    "owner_skill": "Commerce/rewards backend engineer",
+    "acceptance_test": "Synthetic member converts points then purchases with credit through the real application API; totals/retry behavior persist after refresh; wrong-user/currency, expired/used credit, deletion freeze and order failure cannot spend or strand value."
+  }
+]
