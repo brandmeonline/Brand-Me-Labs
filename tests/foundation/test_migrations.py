@@ -24,7 +24,8 @@ RESERVED = {1: "identity", 2: "persona", 3: "wardrobe", 4: "social", 5: "rewards
             7: "commerce", 8: "rights", 9: "privacy", 10: "rights_projection_version", 11: "chain_operation_store",
             12: "chain_reconciliation", 13: "outbox_delivery", 14: "privacy_exports",
             15: "commerce_quote_terms",
-            16: "consumer_design"}  # consumer-domains design-alignment stage (Ultra plan 02)
+            16: "consumer_design",  # consumer-domains design-alignment stage (Ultra plan 02)
+            17: "rights_transfer_invites"}  # midnight-rights round 03 (PR #70; renumbered from V016)
 
 
 @pytest.fixture

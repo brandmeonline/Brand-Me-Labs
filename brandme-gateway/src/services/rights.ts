@@ -8,7 +8,38 @@ import type { ExportClient, UpstreamClient, V1Deps } from '../routes/v1/chain';
 
 const principal = (req: Request): Principal | undefined => req.res?.locals.principal;
 
-function client(base: string | undefined, token: string | undefined, doFetch: typeof fetch, authenticated: boolean, timeoutMs = 5000): UpstreamClient {
+/**
+ * Refusals the rights command service reports with a fixed public code
+ * (brandme_core/domains/rights/commands.py). Only these codes are relayed, with
+ * gateway-owned text; any other error body is still discarded.
+ */
+const COMMAND_REFUSALS: Readonly<Record<string, string>> = {
+  invalid_request: 'The request is not valid.',
+  idempotency_key_required: 'An Idempotency-Key header is required.',
+  idempotency_key_reused: 'This Idempotency-Key was already used for a different request.',
+  operation_in_progress: 'The same request is still being processed.',
+  not_transferable: 'This right cannot be transferred.',
+  ambiguous_entitlement: 'More than one active right is linked to this item.',
+  transfer_in_progress: 'Another transfer of this right is still open.',
+  recipient_is_sender: 'You cannot accept your own transfer.',
+  invalid_transition: 'This transfer can no longer be accepted.',
+  transfer_expired: 'This transfer has expired.',
+  stale_intent: 'The right changed after this transfer was offered.',
+  processing_frozen: 'Processing is paused by a pending deletion or restriction.',
+};
+
+async function refusalCode(response: Response, known: Readonly<Record<string, string>>): Promise<string | undefined> {
+  try {
+    const text = (await response.text()).slice(0, 4096);
+    const code = (JSON.parse(text) as { error?: unknown }).error;
+    return typeof code === 'string' && Object.hasOwn(known, code) ? code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function client(base: string | undefined, token: string | undefined, doFetch: typeof fetch, authenticated: boolean, timeoutMs = 5000,
+  refusals?: Readonly<Record<string, string>>): UpstreamClient {
   const send = async (method: string, path: string, body?: unknown, headers: Record<string, string> = {}) => {
     if (!base || (authenticated && !token)) throw problems.unavailable('This service is not configured.');
     try {
@@ -24,10 +55,12 @@ function client(base: string | undefined, token: string | undefined, doFetch: ty
         throw new Error('upstream failure');
       }
       if (response.status >= 400) {
-        await response.body?.cancel();
+        const code = refusals ? await refusalCode(response, refusals) : undefined;
+        if (!refusals) await response.body?.cancel();
         // Status is useful; arbitrary provider error bodies are not safe to
         // expose. Keep the gateway's public Problem contract on every route.
         if (response.status === 404) throw problems.notFound();
+        if (code) throw new ApiProblem(response.status, code, 'Request rejected', refusals![code]!);
         if (response.status === 401 || response.status === 403) throw problems.unavailable('The service could not authorize this request.');
         throw new ApiProblem(response.status, 'upstream_request_rejected', 'Request rejected', 'The service could not complete this request.');
       }
@@ -58,6 +91,7 @@ export function rightsDependencies(cfg: GatewayConfig, doFetch: typeof fetch = f
   return {
     subjectOf: (req) => principal(req)?.memberId,
     authTimeOf: (req) => principal(req)?.authenticatedAt,
+    scopesOf: (req) => principal(req)?.scopes ?? [],
     requireScope: (scope) => (req, _res, next) => {
       const p = principal(req);
       next(!p ? problems.unauthenticated() : !p.scopes.includes(scope) ? problems.forbidden() : undefined);
@@ -71,6 +105,7 @@ export function rightsDependencies(cfg: GatewayConfig, doFetch: typeof fetch = f
       operations: client(`${cfg.chainUrl.replace(/\/$/, '')}/midnight`, cfg.chainServiceToken, doFetch, true, 15000),
       chain: client(cfg.chainUrl, undefined, doFetch, false),
       rights: client(cfg.rightsServiceUrl, cfg.rightsServiceToken, doFetch, true),
+      commands: client(cfg.rightsCommandServiceUrl, cfg.rightsCommandServiceToken, doFetch, true, 10000, COMMAND_REFUSALS),
       privacy: client(cfg.privacyServiceUrl, cfg.privacyServiceToken, doFetch, true),
       exports: exportClient(cfg.privacyExportServiceUrl, cfg.privacyExportServiceToken, doFetch),
     },

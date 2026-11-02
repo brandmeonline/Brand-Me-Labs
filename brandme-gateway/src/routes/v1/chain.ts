@@ -8,7 +8,7 @@
  * the gateway's middleware/config internals.
  */
 
-import { handle } from '../../middleware/problem';
+import { handle, problems } from '../../middleware/problem';
 
 import { z } from 'zod';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
@@ -33,10 +33,13 @@ export interface V1Deps {
   subjectOf(req: Request): string | undefined;
   /** Returns the auth_time of the current session (for re-auth evidence passed upstream). */
   authTimeOf(req: Request): Date | undefined;
+  /** The verified principal's scopes; only the rights scopes are forwarded upstream. */
+  scopesOf?(req: Request): readonly string[];
   upstream: {
     operations?: UpstreamClient; // authenticated chain operation journal
     chain: UpstreamClient;     // brandme-chain service
-    rights: UpstreamClient;    // rights domain service (brandme_core.domains.rights)
+    rights: UpstreamClient;    // read-only rights service (brandme_core.read_api)
+    commands?: UpstreamClient; // rights command service (brandme_core.rights_commands)
     privacy: UpstreamClient;   // My Data service (brandme_core.domains.privacy)
     exports?: ExportClient;   // independently deployed, selected-category export API
   };
@@ -82,6 +85,30 @@ export function subjectOr401(deps: V1Deps, req: Request, res: Response): string 
 
 export function relay(res: Response, r: UpstreamResponse): void {
   res.set('Cache-Control', 'no-store').status(r.status).json(r.body);
+}
+
+/** The scopes the command service accepts (brandme_core/rights_commands/app.py SCOPES). */
+const COMMAND_SCOPES = new Set(['rights:read', 'rights:transfer', 'rights:reprint', 'privacy:manage']);
+/** Same key format the command service accepts. */
+const IDEMPOTENCY_KEY = /^[A-Za-z0-9._~:-]{16,128}$/;
+
+/** The resolved principal for the command service, which re-checks scope and recent authentication. */
+export function commandHeaders(deps: V1Deps, req: Request, subject: string, extra: Record<string, string> = {}): Record<string, string> {
+  const scopes = (deps.scopesOf?.(req) ?? []).filter((s) => COMMAND_SCOPES.has(s));
+  const authTime = deps.authTimeOf(req);
+  return { 'x-subject-ref': subject, 'x-principal-scopes': scopes.join(' '),
+    ...(authTime ? { 'x-auth-time': authTime.toISOString() } : {}), ...extra };
+}
+
+export function commandsOf(deps: V1Deps): UpstreamClient {
+  if (!deps.upstream.commands) throw problems.unavailable('Rights commands are not configured.');
+  return deps.upstream.commands;
+}
+
+export function idempotencyKeyOr400(req: Request, res: Response): string | undefined {
+  const key = req.header('idempotency-key');
+  if (!key || !IDEMPOTENCY_KEY.test(key)) { res.status(400).json({ error: 'idempotency_key_required' }); return undefined; }
+  return key;
 }
 
 export function createChainRouter(deps: V1Deps): IRouter {

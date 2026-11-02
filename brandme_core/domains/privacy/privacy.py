@@ -38,6 +38,8 @@ from .deletion import (
     Tombstone,
     new_id,
     registry as default_registry,
+    runs_last,
+    runs_outside_transaction,
 )
 
 EXPORT_SCHEMA = "brandme.my-data-export/v1"
@@ -286,17 +288,21 @@ class MyDataService:
         ctx = SubjectContext(subject_ref=job["subject_ref"], job_id=job_id, requested_at=job["requested_at"])
         self._set_job_state(job_id, "running")
         results: dict[str, dict[str, Any]] = {}
-        for key in job["categories"]:
+        # Final handlers (contract item 9) go last; the sort keeps the job's order otherwise.
+        for key in sorted(job["categories"], key=lambda k: runs_last(self.reg.handler_for(k))):
             cat = self.reg.category(key)
             handler = self.reg.handler_for(key)
             with self.db.snapshot() as snap:
                 saved_records = self._step(snap, job_id, key, "delete_records")
             out_records = saved_records
-            if not saved_records.done:
+            if not saved_records.done and runs_last(handler) and any(
+                    r["status"] in ("pending_records", "pending_derived") for r in results.values()):
+                out_records = replace(saved_records, detail="waits until every other category is finished")
+            elif not saved_records.done:
                 # Outside-transaction adapters must be idempotent; keep the freeze
                 # until both their record and derived cleanup have finished.
-                pre = None if getattr(handler, "transactional", True) else _checked_outcome(
-                    handler.delete_outside_txn(self.db, ctx, key), key)
+                pre = _checked_outcome(handler.delete_outside_txn(self.db, ctx, key), key) \
+                    if runs_outside_transaction(handler) else None
 
                 def txn_fn(txn: Any) -> DeletionOutcome:
                     saved = self._step(txn, job_id, key, "delete_records")
@@ -381,6 +387,12 @@ class MyDataService:
             "rows_affected": (rec.rows_affected if rec else None),
             "derived_purged": derived.rows_affected,
         }
+        # Handler notes (contract item 8), e.g. broker copies that expire rather
+        # than being recalled. A resumed run rereads saved steps, which keep only
+        # the exception when a handler set both. The read API does not relay them.
+        for name, outcome in (("records_detail", rec), ("derived_detail", derived)):
+            if outcome is not None and outcome.detail:
+                r[name] = outcome.detail
         if rec and not rec.done:
             r["status"] = "pending_records"
             r["reason"] = "records are still being removed"
@@ -438,10 +450,11 @@ class MyDataService:
                 tombs = [Tombstone(subject_ref=r[0], category=r[1], tombstone_id=r[2], deletion_job_id=r[3],
                                    record_keys=tuple(r[4] or ()), created_at=r[5])
                          for r in snap.execute_sql("SELECT subject_ref, category, tombstone_id, deletion_job_id, record_keys, created_at FROM DeletionTombstones")]
+            tombs.sort(key=lambda t: runs_last(self.reg.handler_for(t.category)))  # contract item 9
             for tombstone in tombs:
                 handler = self.reg.handler_for(tombstone.category)
                 ctx = SubjectContext(tombstone.subject_ref, tombstone.deletion_job_id, tombstone.created_at, tombstone.record_keys)
-                if getattr(handler, "transactional", True):
+                if not runs_outside_transaction(handler):
                     def reapply(txn: Any) -> int:
                         count = handler.reapply_tombstone(txn, tombstone)
                         if type(count) is not int or count < 0:

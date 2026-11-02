@@ -22,8 +22,8 @@ os.environ.setdefault("SPANNER_EMULATOR_HOST", "localhost:9010")
 spanner = pytest.importorskip("google.cloud.spanner")
 
 from brandme_core.domains.privacy.deletion import (  # noqa: E402
-    DataCategory, DeletionOutcome, ExportSection, OnDelete, PrivacyRegistry, PrivacyRegistryError, ProcessingFrozenError,
-    Supplier,
+    DataCategory, DeletionOutcome, ExportSection, NonTransactionalPrivacyHandler, OnDelete, PrivacyRegistry,
+    PrivacyRegistryError, ProcessingFrozenError, Supplier, runs_outside_transaction,
 )
 from brandme_core.domains.privacy.privacy import (  # noqa: E402
     ForbiddenExportContent, MyDataService, ReauthRequired, RestoreNotServing,
@@ -180,6 +180,150 @@ def test_registry_rejects_undeclared_or_unjustified_categories():
 
     with pytest.raises(PrivacyRegistryError, match="prefixed"):
         reg.register(WrongPrefix())
+
+
+class OutsideFixture:
+    """Contract item 7: deletes outside the orchestrator's transaction (D-007)."""
+
+    domain = "outside"
+    transactional = False
+
+    def __init__(self):
+        self.calls: list[tuple[str, str]] = []
+
+    def categories(self):
+        return [DataCategory("outside.rows", "outside", "Rows kept outside", Supplier.SYSTEM, ("member",),
+                             "Until deleted", "Not editable", OnDelete.ERASE)]
+
+    def export(self, snap, ctx, cat):
+        return ExportSection(cat, [])
+
+    def delete(self, txn, ctx, cat):
+        raise AssertionError("the orchestrator never calls delete for this handler")
+
+    def delete_outside_txn(self, database, ctx, cat):
+        self.calls.append((ctx.subject_ref, ctx.job_id))
+        return DeletionOutcome(cat, 2, detail="2 rows removed")
+
+    def purge_derived(self, ctx, cat):
+        return DeletionOutcome(cat, 0, detail="published copies expire within a day")
+
+    def reapply_tombstone(self, txn, tombstone):
+        raise AssertionError("restore re-applies through delete_outside_txn")
+
+
+def test_registry_holds_non_transactional_handlers_to_the_extension():
+    from types import SimpleNamespace
+    from brandme_core.domains.privacy.foundation_bridge import FoundationCategoryHandler
+    from brandme_core.events.erasure import PLATFORM_PRIVACY_HANDLER
+
+    class Undeclared(OutsideFixture):
+        delete_outside_txn = None
+
+    class NotBoolean(OutsideFixture):
+        transactional = 0
+
+    class NotBooleanFinal(OutsideFixture):
+        final = "yes"
+
+    reg = PrivacyRegistry()
+    with pytest.raises(PrivacyRegistryError, match="without delete_outside_txn"):
+        reg.register(Undeclared())
+    with pytest.raises(PrivacyRegistryError, match="non-boolean transactional"):
+        reg.register(NotBoolean())
+    with pytest.raises(PrivacyRegistryError, match="non-boolean final"):
+        reg.register(NotBooleanFinal())
+    assert reg.categories() == []
+    reg.register(OutsideFixture())
+    bridged = FoundationCategoryHandler(SimpleNamespace(name="rows", domain="bridged", delete=lambda db, member: None))
+    for handler in (OutsideFixture(), bridged, PLATFORM_PRIVACY_HANDLER):
+        assert isinstance(handler, NonTransactionalPrivacyHandler) and runs_outside_transaction(handler)
+    assert not runs_outside_transaction(PersonaFixtureHandler(ProjectionStore()))
+
+
+def test_non_transactional_handler_deletes_and_restores_outside_the_transaction(setup):
+    svc, _, _, reg, _ = setup
+    outside = OutsideFixture()
+    reg.register(outside)
+    job = svc.request_deletion("outside-member", now(), ["outside.rows"])
+    receipt = svc.run_deletion(job)
+    assert receipt["categories"]["outside.rows"] == {
+        "title": "Rows kept outside", "rows_affected": 2, "derived_purged": 0, "status": "deleted",
+        "records_detail": "2 rows removed", "derived_detail": "published copies expire within a day"}
+    assert svc.run_deletion(job) == receipt and outside.calls == [("outside-member", job)]
+    svc.reapply_tombstones_after_restore("gs://backups/older", now() - timedelta(days=1))
+    assert outside.calls == [("outside-member", job)] * 2
+
+
+class FinalFixture:
+    """Contract item 9: sorts first by key but must run last (founder flag F-identity)."""
+
+    domain = "accounts"
+    final = True
+
+    def __init__(self, order):
+        self.order = order
+
+    def categories(self):
+        return [DataCategory("accounts.identity", "accounts", "Sign-in identity", Supplier.MEMBER, ("member",),
+                             "Until the account is deleted", "Editable in settings", OnDelete.ERASE)]
+
+    def export(self, snap, ctx, cat):
+        return ExportSection(cat, [])
+
+    def delete(self, txn, ctx, cat):
+        self.order.append("accounts")
+        return DeletionOutcome(cat, 1)
+
+    def purge_derived(self, ctx, cat):
+        return DeletionOutcome(cat, 0)
+
+    def reapply_tombstone(self, txn, tombstone):
+        self.order.append("accounts")
+        return len(list(txn.execute_sql("SELECT 1")))  # the client cannot commit an unused transaction
+
+
+def test_final_handler_runs_after_every_other_category_finishes(setup, monkeypatch):
+    svc, persona, _, reg, _ = setup
+    order: list[str] = []
+    reg.register(FinalFixture(order))
+    for name in ("delete", "reapply_tombstone"):
+        def logged(*args, _original=getattr(persona, name)):
+            order.append("persona")
+            return _original(*args)
+        monkeypatch.setattr(persona, name, logged)
+    purge = persona.purge_derived
+    monkeypatch.setattr(persona, "purge_derived", lambda ctx, key: DeletionOutcome(key, 0, done=False))
+    job = svc.request_deletion("final-member", now())
+    waiting = svc.run_deletion(job)["categories"]["accounts.identity"]
+    assert waiting["status"] == "pending_records" and waiting["records_detail"].startswith("waits")
+    assert "persona" in order and "accounts" not in order
+    monkeypatch.setattr(persona, "purge_derived", purge)
+    assert svc.run_deletion(job)["categories"]["accounts.identity"]["status"] == "deleted"
+    assert order[-1] == "accounts" and order.count("accounts") == 1
+    order.clear()
+    svc.reapply_tombstones_after_restore("gs://backups/older", now() - timedelta(days=1))
+    assert "persona" in order and order[-1] == "accounts" and order.count("accounts") == 1
+
+
+def test_receipt_discloses_broker_copies_from_the_platform_handler(setup):
+    """D-007 (c): the broker-retention note reaches the receipt, not only the category text."""
+    from brandme_core.domains.events import OWNERSHIP_TRANSFER_REQUESTED
+    from brandme_core.events import EventEnvelope, write_events
+    from brandme_core.events.erasure import BROKER_COPIES, EVENT_OUTBOX, register_platform_privacy
+
+    svc, _, _, reg, db = setup
+    assert register_platform_privacy(reg) is not None
+    member = str(uuid.uuid4())
+    event = EventEnvelope(
+        event_type=OWNERSHIP_TRANSFER_REQUESTED.event_type, schema_version="1", aggregate_type="transfer_intent",
+        aggregate_id=str(uuid.uuid4()), aggregate_version=1, environment="development", actor_ref=f"member:{member}",
+        correlation_id=member, privacy_class="member_private",
+        payload={"intent_id": str(uuid.uuid4()), "network": "undeployed", "entitlement_id": "ab" * 32})
+    db.run_in_transaction(lambda txn: write_events(txn, [event]))
+    outbox = svc.run_deletion(svc.request_deletion(member, now()))["categories"][EVENT_OUTBOX]
+    assert outbox["status"] == "deleted" and outbox["derived_detail"] == BROKER_COPIES
+    assert outbox["records_detail"].startswith("1 undelivered withdrawn")
 
 
 def test_inventory_describes_supplier_visibility_retention(setup):

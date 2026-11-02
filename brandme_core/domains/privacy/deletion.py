@@ -31,6 +31,26 @@ Contract for implementers
    the same read/write transaction as its write. That is what prevents a
    queued job (e.g. persona inference) that started before a deletion from
    recreating deleted data.
+7. Stable extension (D-007): a handler that cannot delete inside the
+   orchestrator's transaction (Partitioned DML, its own transactions) sets
+   ``transactional = False`` and implements ``delete_outside_txn(database,
+   ctx, category)``; see ``NonTransactionalPrivacyHandler``. The orchestrator
+   then never calls ``delete`` or ``reapply_tombstone``. It calls
+   ``delete_outside_txn`` before the transaction that records the step and
+   the tombstone, and again for every tombstone after a restore, so the method
+   must be idempotent and safe to repeat after a lost commit. The processing
+   freeze (item 6) stays until its record and derived cleanup are both done.
+   Registration refuses the flag without the method.
+8. ``DeletionOutcome.exception`` and ``detail`` are stored in the deletion
+   receipt as written. Make them short plain-language sentences for the
+   member: never identifiers, URLs, keys, provider error text or other
+   members' data.
+9. A handler whose rows must outlive every other category's cleanup (the
+   member's identity, sessions and consent: founder flag F-identity) sets
+   ``final = True``. Its categories run after every other category of the
+   job, and only once those have finished both steps; until then they stay
+   pending, so the member can still sign in and read a pending receipt.
+   Restore re-applies their tombstones last.
 """
 
 from __future__ import annotations
@@ -122,8 +142,35 @@ class DomainPrivacyHandler(Protocol):
     def reapply_tombstone(self, txn: Any, tombstone: Tombstone) -> int: ...
 
 
+@runtime_checkable
+class NonTransactionalPrivacyHandler(DomainPrivacyHandler, Protocol):
+    """Contract item 7. ``transactional`` is declared ``False``."""
+
+    transactional: bool
+
+    def delete_outside_txn(self, database: Any, ctx: SubjectContext, category: str) -> DeletionOutcome: ...
+
+
 class PrivacyRegistryError(Exception):
     pass
+
+
+def runs_outside_transaction(handler: Any) -> bool:
+    """Whether the orchestrator must call ``delete_outside_txn`` (contract item 7)."""
+    flag = getattr(handler, "transactional", True)
+    if type(flag) is not bool:
+        raise PrivacyRegistryError(f"domain {handler.domain} declares a non-boolean transactional flag")
+    if not flag and not callable(getattr(handler, "delete_outside_txn", None)):
+        raise PrivacyRegistryError(f"domain {handler.domain} sets transactional = False without delete_outside_txn")
+    return not flag
+
+
+def runs_last(handler: Any) -> bool:
+    """Whether the handler waits for every other category of the job (contract item 9)."""
+    flag = getattr(handler, "final", False)
+    if type(flag) is not bool:
+        raise PrivacyRegistryError(f"domain {handler.domain} declares a non-boolean final flag")
+    return flag
 
 
 class PrivacyRegistry:
@@ -137,6 +184,8 @@ class PrivacyRegistry:
     def register(self, handler: DomainPrivacyHandler) -> None:
         if not isinstance(handler, DomainPrivacyHandler):
             raise PrivacyRegistryError(f"{handler!r} does not implement DomainPrivacyHandler")
+        runs_outside_transaction(handler)
+        runs_last(handler)
         cats = list(handler.categories())
         if not cats:
             raise PrivacyRegistryError(f"domain {handler.domain} declares no data categories")
