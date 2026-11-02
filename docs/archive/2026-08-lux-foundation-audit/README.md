@@ -13,5 +13,6 @@ What happened since: the CI gate was made real (`pnpm check`, emulator-backed `t
 migration runner exists (`brandme-data/spanner/migrations/runner.py`), and the foundation work landed in
 `brandme_core/` through the opus-foundation lane (PRs #33, #53, #58, #62). The `brandme_foundation/` package that
 PR #29 added (1,646 lines, 62 tests) was never imported by any service and was not merged; it stays reachable at
-the commit above, tagged `archive/lux-foundation-lift-2026-08-31` in the 2026-11 cleanup. PR #29 was closed on
+the commit above, preserved as the ref `archive/lux-foundation-lift-2026-08-31` in the 2026-11 cleanup (a branch until
+the owner converts it to a tag; see the hand-off in `docs/build/implementation-status.md`). PR #29 was closed on
 2026-11-02 as preserved-then-retired.
