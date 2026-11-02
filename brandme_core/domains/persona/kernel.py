@@ -398,19 +398,30 @@ def _rolled_back(exc: Exception) -> bool:
     one-writer-at-a-time policy and reports FAILED_PRECONDITION ("...committed
     or rolledback", "Invalid transaction ID") or NOT_FOUND; those broader
     messages are retryable only when SPANNER_EMULATOR_HOST is set.
+
+    The emulator also serialises writers by aborting a transaction that
+    starts while another is active ("The emulator only supports one
+    transaction at a time"). The Spanner client retries that ABORTED itself,
+    but only inside ``run_in_transaction``'s 30 s budget
+    (``DEFAULT_RETRY_TIMEOUT_SECS``); with ten or more writers racing, one of
+    them can spend the whole budget waiting and surface the ABORTED. That
+    message never comes from real Spanner, so it is re-run here only when
+    SPANNER_EMULATOR_HOST is set.
     """
-    from google.api_core.exceptions import FailedPrecondition, NotFound as GNotFound
+    from google.api_core.exceptions import Aborted, FailedPrecondition, NotFound as GNotFound
 
     msg = str(exc)
     if isinstance(exc, GNotFound) and "Transaction not found" in msg:
         return True
     if os.environ.get("SPANNER_EMULATOR_HOST") and isinstance(exc, (FailedPrecondition, GNotFound)):
         return any(s in msg for s in ("committed or rolledback", "Invalid transaction ID", "Transaction not found"))
+    if os.environ.get("SPANNER_EMULATOR_HOST") and isinstance(exc, Aborted):
+        return "only supports one transaction at a time" in msg
     return False
 
 
 def _retrying(call: Callable[[], T], max_attempts: int = 40, budget_seconds: float = 60.0) -> T:
-    from google.api_core.exceptions import FailedPrecondition, NotFound as GNotFound
+    from google.api_core.exceptions import Aborted, FailedPrecondition, NotFound as GNotFound
 
     deadline = time.monotonic() + budget_seconds
     attempt = 0
@@ -418,7 +429,7 @@ def _retrying(call: Callable[[], T], max_attempts: int = 40, budget_seconds: flo
         attempt += 1
         try:
             return call()
-        except (GNotFound, FailedPrecondition) as exc:
+        except (GNotFound, FailedPrecondition, Aborted) as exc:
             if not _rolled_back(exc) or attempt >= max_attempts or time.monotonic() > deadline:
                 raise
             time.sleep(min(0.5, 0.01 * (2 ** min(attempt, 6))) * (0.5 + random.random()))

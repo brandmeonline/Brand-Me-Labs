@@ -40,8 +40,9 @@ midnight-wallet*
 # ========================================
 
 # Node.js
-node_modules/
-**/node_modules/
+# No trailing slash: a symlink named node_modules (a worktree convenience) must be ignored too, not just the directory.
+node_modules
+**/node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
