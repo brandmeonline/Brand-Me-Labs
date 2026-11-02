@@ -1325,8 +1325,81 @@ The locked stranger-scan default is now one classification that every lane surfa
 ## Stage 23 — Ultra plan 03, item 9: the lane outbox worker is deleted — 2026-10-30 (opens after #66)
 Foundation's Q8 landed with #62 (`main` `97d5447`). `brandme_core/events/catalogs.py` now imports `brandme_core.domains.persona.lane` and runs `load_domains()`, so the foundation worker publishes every consumer-domain contract itself. The lane's private entrypoint `brandme_core/domains/persona/outbox_worker.py` is deleted, as foundation's D-006 and `brandme_core/events/README.md` asked.
 
-- **Nothing else referenced it.** No code, test, manifest or workflow imports it; only foundation's README and D-006 mention it, both as redundant.
+- **Nothing else referenced it.** No code, test, manifest or workflow imports it; only foundation's README and D-006 mention it, both as redundant. The lane's own `persona/README.md`, written on `main` since, listed it among the workers; that line now points at foundation's worker. The dated audit records under `docs/audits/2026-11-01/` are left as they are.
 - **Verified with Pub/Sub.** `tests/test_persona_lane_events.py` and `tests/foundation/test_outbox_lane_catalogs.py`: **19 passed**, none skipped, against the Spanner emulator and the pinned Pub/Sub emulator. Lane events written by real lane commands are published by `python -m brandme_core.events.worker --once` alone. They reach the lane subscriber and are applied exactly once, and the member id appears in no worker output.
 - **For foundation (not edited here).** `brandme_core/events/README.md` still names the deleted file as "now redundant"; that sentence can go.
 
 **Credential manifest.** No credential was created in this stage.
+
+## Stage 24 — #66 merged; benefit reservations get the credit fixes — 2026-11-02
+**#66 landed.** It merged into `main` through the integration PR #78 (`30e70ab`, 2026-11-02).
+- Codex's sixth review, on `babb360`, found no issues. The five rounds before it raised 21 findings, all real and all fixed.
+- The integration added `2940a82`, three Codex findings on the integrated tree, fixed in this lane's code by the integrator:
+  - the card's cached taste is filtered against axes hidden since it was composed;
+  - non-string multi-select survey answers are refused rather than returning a 500;
+  - catalog titles are clamped to `WardrobeItems.title`.
+- The lane adopts all three as its own. Item 12's card change is merged on top of the first (the hidden-axis filter and the relation-scoped highlights both apply).
+
+**Benefit reservations: the gaps of #66's fourth and fifth reviews, outside #66's diff.** Each fix has a test that fails without it, and 7 mutations are all killed.
+
+| Gap | Fix | Test (fails without the fix) |
+|---|---|---|
+| After a ledger-only deletion, settling a reservation drove a fresh account negative (`reserved=-40`) | `ledger.holds(txn, member, reserve_entry_id)`: a reservation or credit settles through the ledger only while its reserve entry exists. Otherwise inventory, state and the event still settle, with no ledger entries | `test_a_reservation_outlives_a_deleted_ledger_without_breaking_it`: the ledger is deleted and new points are earned; one reservation is fulfilled and one refunded. The new account and its journal are unchanged |
+| A refund (failed fulfillment, expiry, or deleting `rewards.redemptions`) made held points spendable alongside recovery debt from reversed awards | `ledger.release_hold(acct, points)` pays down `recovery_due` first and returns the entry's deltas. Benefits, credits and the redemptions deletion now share it | `test_refunded_points_pay_down_recovery_debt_first`, on the settlement and deletion paths: 0 / 0 / 0, and the journal reconciles |
+| Reserving wrote the ledger's reserve entry behind a `rewards.redemptions` guard only | It also guards `rewards.ledger`, as conversion does since round 5 | `test_reserving_is_refused_while_the_ledger_is_frozen` |
+
+Credits now use the same two helpers. Their round-4 tests still pass, and the shared offset was mutation-checked through both.
+
+**Credential manifest.** No credential was created in this stage.
+
+## Check-in packet — Ultra plan 03 — 2026-11-02
+**Trigger reached:**
+- Now, Flow and loyalty are live against the dev gateway (`consumer-domains.test.ts`).
+- #66 is merged (`30e70ab`).
+- The five experiments are defined and resolve to off.
+
+The plan's own 21 questions were built on their defaults. The questions below are new: decisions the round surfaced. No step was irreversible or prod-scoped.
+
+**(a) Exit evidence (Ultra plan 03)**
+- [x] #66 merged to `main` (via #78, `30e70ab`).
+- [x] **Now loop live on dev.** Timed windows, in-window rewards, and influence credit on provider-observed deliveries, with tests (Stage 15, and Stage 21 for its fixes).
+- [x] **Flow live on dev.** Freshness sets position and excitement sets size; Home = Flow (`test_home_flow`; the dev-gateway e2e).
+- [x] **Standing per house.** Houses see tiers and suppressed counts only, asserted by test (Stage 15).
+- [x] **Surveys and credit.** Surveys and quizzes are daily-capped and feed points; credit is in-app only, enforced at the ledger (Stage 16, and Stages 21 and 24 for its fixes).
+- [x] Persona card recomposing; per-piece visibility live (Stage 16).
+- [x] Small-group rooms live (Stage 16).
+- [x] Five experiment definitions written and flag-wired; none runs without founder approval (Stage 16).
+- [x] Share projector registered (Stage 16). The lane outbox worker is deleted, verified over Pub/Sub (Stage 23, this PR).
+- [x] Disclosure facets enforced at the API layer, tested (Stage 22, this PR).
+- [ ] **Dev-bucket run.** Emulator only. No GCP credential has landed, and no credential was created this round.
+
+**(b) Questions (default in bold; I build on the default until told otherwise)**
+
+*Direction*
+1. **Credit after a ledger-only deletion.** The member keeps converted credit until it is used or expires, and it settles without ledger entries. The alternative is voiding it, which loses value the member already converted. **Keep it.**
+2. **Surveys during a ledger freeze.** A response is refused (`processing_frozen`) rather than accepted unpaid, so the member can answer once the deletion finishes. **Refuse.**
+3. **Recreating a deleted card.** A persona card deleted through My Data comes back only on the member's own action, and starts `private`. **Keep.**
+4. **Friends' unfold.** Friends see price, ownership and logistics only when the owner sets the piece to `full`; at `story` friends see what strangers see. **Keep.**
+5. **Flow affinity source.** Affinity stays neutral until the providers lane supplies style axes on catalog pieces. The alternative is deriving axes from members' own declared axes on owned copies. **Wait for catalog axes; do not infer.**
+6. **First experiment to run.** All five stay off. **Once you approve its definition, decision-thread persistence goes first: it is the lowest-risk definition, and the other four wait.**
+7. **Room limits.** 12 people, 20 open rooms per owner, 100 posts a day. **Keep until usage says otherwise.**
+
+*Integration & security*
+
+8. **Foundation deviations in #66.** These are the deletion-test counts (7/2/3 → 12/3/5) and the catalog pins (36 → 37, 54 → 55). **The merge of #66 counts as their ratification, recorded here.**
+9. **Stale foundation line.** `brandme_core/events/README.md:62` still names the deleted `outbox_worker.py` as redundant. **Foundation drops the sentence in its next PR; the lane does not edit it.**
+10. **Deletion-time events.** Foundation's `test_deletion_leaves_no_member_rows.py` (line 230) expects no event written by the deletion. A member with a selected-member share or friendship makes the deletion write `share.revoked` or `share.audience_changed`. **Foundation adds such a member to its seed and to the expected set when it next touches the test.**
+11. **The `shell` visual flake.** `consumer-1440x900-light.png` changed dimensions once, on a PR that touches no frontend. **Consumer-ui stabilizes that baseline.**
+12. **CI re-runs.** The lane's integration cannot re-run Actions jobs (403). **Keep least privilege: a person re-runs a job once on request. No actions:write for the lane.**
+13. **Dev bucket (prod-scope flag).** Item 11 needs a GCP dev bucket and service account. **A dev-only bucket and a least-privilege service account (object admin on that bucket only), stored as a GitHub secret and logged in the manifest. Emulator until then.**
+14. **Firestore share rules.** Projected share copies are guarded by recipient identity and expiry; removal relies on projector events (revoke, audience change, deletion). **Keep. Add a rules-side check only if delivery latency proves too long.**
+
+*Scope & sequencing*
+
+15. **This PR.** It carries items 12 and 9 plus the benefit-reservation gaps. **One PR; Codex reviews it until clean.**
+16. **Integrator's fixes in lane code** (`2940a82`). **The lane adopts them; no rework.** Item 12 is merged on top of them.
+17. **Plan closure.** Ultra plan 03 closes with this PR, with item 11 the only exit item still open. **Close it; item 11 runs the day the credential lands.**
+18. **Next round.** The editorial layer and brand/designer feeds (the plan's Q20). **Yes, as Ultra plan 04 once you approve its draft.**
+19. **Catalog read API.** Flow, standing and the decision check still read `CatalogSourceVariants` directly, by brand, without an index. **The providers lane publishes a read API or a brand index; this lane switches over.**
+20. **House operator principal.** No house role exists, so the house view has no route. **No route until foundation defines a principal bound to one `house_ref`.**
+21. **Codex cadence.** Codex reviews each fix push only on request. **Request `@codex review` after every fix push until a review is clean; undraft only on clean.**

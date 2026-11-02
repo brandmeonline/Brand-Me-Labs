@@ -156,6 +156,7 @@ class BenefitService:
             if not member_active(txn, member):
                 raise NotFound("member not found")
             guard_write(txn, member, "rewards.redemptions")
+            guard_write(txn, member, "rewards.ledger")  # reserving writes the ledger's reserve entry
             now = server_now(txn)
             b = _benefit(txn, benefit_id)
             if b is None or not b["active"]:
@@ -226,22 +227,29 @@ class BenefitService:
 
     def _settle(self, txn, ctx: CommandContext, r: Dict[str, Any], succeeded: bool, reason: str) -> Dict[str, Any]:
         member, cost, rid = r["member_id"], r["cost_points"], r["reservation_id"]
-        acct = ledger.load_account(txn, member)
         b = _benefit(txn, r["benefit_id"])
+        # After the member deleted rewards.ledger the held points went with it: the reservation still
+        # settles (inventory, state, event) but writes no ledger entries.
+        held = ledger.holds(txn, member, stable_id("reward-reserve", rid))
+        acct = ledger.load_account(txn, member) if held else None
         if succeeded:
-            acct = replace(acct, reserved=acct.reserved - cost, spent_total=acct.spent_total + cost)
-            ledger.insert_entry(txn, member_id=member, entry_id=stable_id("reward-redeem", rid), kind="redeem", state="posted", points=cost,
-                                reserved_delta=-cost, reservation_id=rid, evidence_refs=[f"benefit:{r['benefit_id']}"], actor_ref=ctx.principal.actor_ref)
+            if held:
+                acct = replace(acct, reserved=acct.reserved - cost, spent_total=acct.spent_total + cost)
+                ledger.insert_entry(txn, member_id=member, entry_id=stable_id("reward-redeem", rid), kind="redeem", state="posted", points=cost,
+                                    reserved_delta=-cost, reservation_id=rid, evidence_refs=[f"benefit:{r['benefit_id']}"],
+                                    actor_ref=ctx.principal.actor_ref)
             inv = (b["inventory_reserved"] - 1, b["inventory_fulfilled"] + 1)
             state, why, event = "fulfilled", None, "benefit.fulfilled"
         else:
-            acct = replace(acct, reserved=acct.reserved - cost, available=acct.available + cost)
-            ledger.insert_entry(txn, member_id=member, entry_id=stable_id("reward-release", rid), kind="release", state="posted", points=cost,
-                                available_delta=cost, reserved_delta=-cost, reservation_id=rid, outcome_reason=reason[:48],
-                                evidence_refs=[f"benefit:{r['benefit_id']}"], actor_ref=ctx.principal.actor_ref)
+            if held:
+                acct, available_delta, recovery_delta = ledger.release_hold(acct, cost)
+                ledger.insert_entry(txn, member_id=member, entry_id=stable_id("reward-release", rid), kind="release", state="posted", points=cost,
+                                    available_delta=available_delta, reserved_delta=-cost, recovery_delta=recovery_delta, reservation_id=rid,
+                                    outcome_reason=reason[:48], evidence_refs=[f"benefit:{r['benefit_id']}"], actor_ref=ctx.principal.actor_ref)
             inv = (b["inventory_reserved"] - 1, b["inventory_fulfilled"])
             state, why, event = "refunded", reason[:48], "benefit.refunded"
-        ledger.save_account(txn, acct)
+        if held:
+            ledger.save_account(txn, acct)
         txn.update("Benefits", columns=("benefit_id", "inventory_reserved", "inventory_fulfilled", "version", "updated_at"),
                    values=[(b["benefit_id"], inv[0], inv[1], b["version"] + 1, COMMIT_TIMESTAMP)])
         txn.update("BenefitReservations", columns=("member_id", "reservation_id", "state", "release_reason", "version", "settled_at"),

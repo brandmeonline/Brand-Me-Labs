@@ -146,28 +146,20 @@ class CreditService:
         return n
 
 
-def _backed(txn, member_id: str, credit_id: str) -> bool:
-    """The credit's points are still held in the ledger. After the member deleted
-    ``rewards.ledger`` they are not: the held points went with the ledger, and the
-    credit stays theirs until it is used or expires, settling without ledger entries."""
-    return bool(query(txn, "SELECT 1 FROM RewardEntries WHERE member_id=@m AND entry_id=@e",
-                      {"m": member_id, "e": stable_id("credit-reserve", credit_id)}, {"m": STR, "e": STR}))
-
-
 def _settle(txn, c: Mapping[str, Any], state: str, applied_ref: Optional[str], actor_ref: str, *, keep_row: bool = True) -> None:
     member, points, cid = c["member_id"], c["points"], c["credit_id"]
-    if _backed(txn, member, cid):
+    # After the member deleted rewards.ledger the held points went with it; the credit stays theirs
+    # until it is used or expires, and settles without ledger entries.
+    if ledger.holds(txn, member, stable_id("credit-reserve", cid)):
         acct = ledger.load_account(txn, member)
         if state == "applied":
             acct = replace(acct, reserved=acct.reserved - points, spent_total=acct.spent_total + points)
             ledger.insert_entry(txn, member_id=member, entry_id=stable_id("credit-redeem", cid), kind="redeem", state="posted", points=points,
                                 reserved_delta=-points, evidence_refs=[f"purchase_credit:{cid}", f"order:{applied_ref}"], actor_ref=actor_ref)
         else:
-            # Released points pay down recovery debt first, as any credit to the account does.
-            offset = min(points, acct.recovery_due)
-            acct = replace(acct, reserved=acct.reserved - points, available=acct.available + points - offset, recovery_due=acct.recovery_due - offset)
+            acct, available_delta, recovery_delta = ledger.release_hold(acct, points)
             ledger.insert_entry(txn, member_id=member, entry_id=stable_id("credit-release", cid), kind="release", state="posted", points=points,
-                                available_delta=points - offset, reserved_delta=-points, recovery_delta=-offset, outcome_reason=state,
+                                available_delta=available_delta, reserved_delta=-points, recovery_delta=recovery_delta, outcome_reason=state,
                                 evidence_refs=[f"purchase_credit:{cid}"], actor_ref=actor_ref)
         ledger.save_account(txn, acct)
     if not keep_row:
