@@ -89,7 +89,7 @@ app.include_router(create_social_router(RelationshipService(database), DecisionS
                                       NotificationService(database), resolve_principal, ReportService(database)))
 app.include_router(create_rewards_router(RewardsService(database), BenefitService(database), resolve_principal))
 stop = threading.Event()
-dispatcher = OutboxDispatcher(database, RewardsConsumer(database).handle)
+dispatcher = OutboxDispatcher(database, RewardsConsumer(database).handle, environment="development")
 def settle_rewards():
     while not stop.wait(0.5):
         dispatcher.run_once()
