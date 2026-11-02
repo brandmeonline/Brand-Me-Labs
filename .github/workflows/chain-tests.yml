@@ -8,7 +8,7 @@ name: Chain Service Tests
 
 on:
   push:
-    branches: ['main', 'develop']
+    branches: ['main']
     paths:
       - 'brandme-chain/**'
       - 'tests/contracts/**'
@@ -20,7 +20,7 @@ on:
       - '.nvmrc'
       - '.github/workflows/chain-tests.yml'
   pull_request:
-    branches: ['main', 'develop']
+    branches: ['main']
     paths:
       - 'brandme-chain/**'
       - 'tests/contracts/**'

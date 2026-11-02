@@ -17,13 +17,11 @@ on:
   push:
     branches:
       - main
-      - develop
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
-      - develop
 
 # Least privilege by default. security-events:write is what
 # codeql-action/upload-sarif needs; without it the Security Scan job fails
