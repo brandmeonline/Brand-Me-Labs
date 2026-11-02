@@ -74,7 +74,7 @@ rec("bob's rewards before any worker runs", s == 200 and before == 0, f"availabl
 # ---- canonical worker processes ----
 env = dict(os.environ); PY = env["PY"]; WT = env["WT"]
 env.update({"ENVIRONMENT": "development", "BRANDME_MODE": "development", "LANE_PUBSUB_SUBSCRIPTION": env["LANE_SUB"],
-            "OUTBOX_PUBSUB_TOPIC_PUBLIC": env["TOPIC_PUBLIC"], "OUTBOX_PUBSUB_TOPIC_MEMBER_PRIVATE": env["TOPIC_MEMBER_PRIVATE"],
+            "OUTBOX_PUBSUB_TOPIC_PUBLIC": env["TOPIC_PUBLIC"], "OUTBOX_PUBSUB_TOPIC_MEMBER_PRIVATE": env["TOPIC_MEMBERS"],
             "OUTBOX_PUBSUB_TOPIC_RESTRICTED": env["TOPIC_RESTRICTED"], "PYTHONPATH": WT})
 def run(mod, *args):
     r = subprocess.run([PY, "-m", mod, *args], env=env, cwd=WT, capture_output=True, text=True, timeout=180)
