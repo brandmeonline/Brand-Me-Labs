@@ -229,7 +229,7 @@ figure {
   background: color-mix(in srgb, var(--bm-accent) 6%, var(--bm-canvas));
   color: var(--bm-ink);
 }
-.bm-nav-link[aria-current='page'] {
+.bm-nav-link[data-active='true'] {
   color: var(--bm-accent);
   background: color-mix(in srgb, var(--bm-accent) 9%, var(--bm-canvas));
 }
@@ -1076,7 +1076,7 @@ figure {
   transition: none !important;
 }
 @media (forced-colors: active) {
-  .bm-nav-link[aria-current='page'],
+  .bm-nav-link[data-active='true'],
   .bm-button,
   .bm-segmented input:checked + span {
     outline: 1px solid CanvasText;
@@ -1107,6 +1107,43 @@ figure {
   gap: 8px;
   margin-bottom: 24px;
 }
+.bm-horizon-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  border-bottom: 1px solid var(--bm-line);
+  margin-bottom: 32px;
+}
+.bm-horizon-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  border-bottom: 2px solid transparent;
+  padding: 8px 4px;
+}
+.bm-horizon-nav a[aria-current='page'] {
+  border-color: currentColor;
+  color: var(--bm-accent);
+}
+.bm-social-stream-container { container: social-room / inline-size; }
+.bm-social-streams { display: grid; gap: 40px; }
+.bm-social-streams > section { min-width: 0; }
+.bm-horizon-unavailable { max-width: 42rem; padding-block: 16px 32px; }
+.bm-horizon-unavailable p { margin-block: 12px 20px; }
+.bm-brand-stream { border-top: 1px solid var(--bm-line); padding-top: 24px; }
+.bm-brand-stream p { margin-block: 12px; }
+@container social-room (min-width: 46rem) {
+  .bm-social-streams { grid-template-columns: minmax(0, 1fr) 15rem; gap: 32px; }
+  .bm-brand-stream { align-self: start; border-top: 0; border-left: 1px solid var(--bm-line); padding: 0 0 0 24px; }
+}
+.bm-persona-card { margin-block: 32px 48px; }
+.bm-persona-card header { border-bottom: 1px solid var(--bm-line); padding-bottom: 24px; }
+.bm-persona-card header p { margin-block: 12px; }
+.bm-persona-axes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 24px; margin-block: 24px; }
+.bm-persona-axes dt { font-weight: 700; margin-bottom: 8px; }
+.bm-persona-axes dd { margin: 4px 0; }
+.bm-card-list { padding-left: 20px; margin-block: 16px; }
+.bm-card-list li { margin-block: 12px; overflow-wrap: anywhere; }
 .bm-sheet-snaps button {
   border: 1px solid var(--bm-line);
   border-radius: var(--bm-radius-control);
