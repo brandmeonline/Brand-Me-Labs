@@ -1,4 +1,4 @@
-"""Authenticated rights command service against the Spanner emulator (real migrations through V016).
+"""Authenticated rights command service against the Spanner emulator (real migrations through V017).
 
 Covers the service boundary (credential, principal headers, scope, recent
 authentication, idempotency keys), the transfer intent lifecycle (create,
@@ -284,5 +284,5 @@ def test_challenge_binds_entitlement_epoch_and_audience_without_storing_anything
     assert rows(db, "SELECT COUNT(*) FROM OutboxEvents") == [[0]]
 
 
-def test_schema_check_requires_v016(database):
+def test_schema_check_requires_v017(database):
     verify_schema(database)

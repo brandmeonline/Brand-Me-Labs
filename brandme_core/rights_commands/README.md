@@ -48,7 +48,7 @@ which enforces single use. The returned `audience_digest` is the circuit's
 
 ## Deploy explicitly
 
-Apply and verify the repository migrations through V016 before startup; the
+Apply and verify the repository migrations through V017 before startup; the
 service checks the migration ledger and the columns it uses, and never applies
 migrations. Configure through the deployment and secret manager:
 

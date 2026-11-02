@@ -724,3 +724,12 @@ Several of the plan's questions are settled: the trust-inventory retype has land
 19. **Anchor migration.** V017 (V016 is now transfer invites), with its `RESERVED` row in the same change, as the migrations README requires. **Default: yes.**
 20. **Exports.** Harden only? Received offers are now included in the same contract-valid shape. **Default: harden only.**
 21. **Next round.** A Mainnet-readiness round after Preprod finality, gated on the founder's go/no-go? **Default: yes.**
+
+## Stage 16 — integration onto `main` by the repository cleanup (2026-11-02; not a lane stage)
+
+Round 03 (Stages 11–15, PR #70, head `a05f2e0`) was integrated through a fresh branch so the lane's own branch stays untouched. Two things changed in the integration and nothing else:
+
+- **Migration renumbered V016 → V017.** PR #66 (consumer-domains) merged first with `V016_consumer_design.sql`, so this lane's `V016_rights_transfer_invites.sql` is now `V017_rights_transfer_invites.sql`; `RESERVED` lists 16 `consumer_design` and 17 `rights_transfer_invites`; the next free number is **V018** (the anchor record of question 19 takes V018, not V017). The file's header comments, the migrations README, `brandme_core/rights_commands/README.md`, `brandme_core/privacy_exports/service.py` and the two test modules name V017. Checksums are unaffected (no applied database carries V016 of this lane; nothing is deployed).
+- **The five "Needs foundation" items are still open** and are recorded in `docs/build/implementation-status.md` as the lane's next action, with this packet's defaults: trust-path entry for `rights_commands` (Q9), the `/transfers` mount (Q10), contract shapes (Q11), the `/me` capability for `rights.transfer`, and the Q9 restore guard (Q13). Until they land, accept and status ship unmounted and strict modes refuse the `rights_commands` process, exactly as Stage 15 states.
+
+Verified on the integration branch with the Spanner emulator: `tests/foundation/test_migrations.py`, `tests/test_rights_commands.py`, `tests/test_rights.py` and `tests/test_persona_lane_mydata.py` (31 passed, so V016 `consumer_design` and V017 apply together and the consumer lane's My Data scan still covers its own V016); CI runs the full gate on the merge with current `main`.

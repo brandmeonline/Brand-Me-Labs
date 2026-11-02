@@ -85,7 +85,7 @@ class RightsPrivacyHandler:
                                    detail="Pending broadcasts must be reconciled and public projections completed before their private operation links can be removed" if pending else None)
         if category == "rights.transfers":
             n = txn.execute_update("DELETE FROM TransferIntents WHERE from_subject_ref = @s", params=p, param_types=t)
-            # A recipient's link (V016). An offer not proven yet is cancelled: nobody can
+            # A recipient's link (V017). An offer not proven yet is cancelled: nobody can
             # accept it for a deleted member. A proven one keeps only its commitment,
             # which the public offer already discloses.
             n += txn.execute_update(

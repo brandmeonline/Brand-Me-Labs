@@ -1,4 +1,4 @@
--- V016: transfer invites and fixed offer terms (lane: opus-midnight-rights).
+-- V017: transfer invites and fixed offer terms (lane: opus-midnight-rights).
 --
 -- The sender's app generates a high-entropy invite and gives it to the recipient
 -- privately; only its SHA-256 digest is stored, never the invite. The offer terms
@@ -7,7 +7,7 @@
 -- expiry, termsDigest) (brandme-chain/contracts/src/brandme_rights.compact:309).
 -- The recipient's wallet computes its commitment locally; no witness is stored.
 --
--- Rows written before V016 have NULL in every new column. The command service
+-- Rows written before V017 have NULL in every new column. The command service
 -- never binds a recipient to such an intent; it can only expire.
 ALTER TABLE TransferIntents ADD COLUMN contract_address STRING(128);
 ALTER TABLE TransferIntents ADD COLUMN invite_digest STRING(64);
