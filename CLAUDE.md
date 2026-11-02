@@ -30,8 +30,9 @@
 > contract is the design package linked above; the live program roll-up is
 > [`docs/build/implementation-status.md`](./docs/build/implementation-status.md).
 >
-> Last verified: 2026-11-02 by code-level audit (`docs/audits/2026-11-01/`); rows carry their own
-> dates where they were re-verified after the 2026-04-27 baseline.
+> Last verified: 2026-11-02 by code-level audit (`docs/audits/2026-11-01/`) and re-verified at the close of the
+> 2026-11 cleanup (`docs/build/implementation-status.md`, the merge list there); rows carry their own dates where
+> they were re-verified after the 2026-04-27 baseline. Contribution rules: `CONTRIBUTING.md`.
 
 ## What this is
 
@@ -54,7 +55,7 @@ is mocked.
 | `brandme-cube` | 8007 | Py | **STUB / UNVERIFIED** | Routes import; policy gates real; `brandme-cube/tests/test_api.py` holds only `test_placeholder()` and `tests/test_service.py` one mocked unit test. Startup untested (`docs/archive/2025-10-cube-integration/PRODUCT_CUBE_SUMMARY.md`). Behind `profiles: [legacy]`. |
 | `brandme-governance` | 8006 | Py | **STUB** | Escalation listing plus a decision endpoint (`brandme-governance/governance_console/main.py:119`) that records an **unauthenticated** `reviewer_user_id` as the approver; it therefore refuses strict modes at import (`brandme_core/boot.py`, verified 2026-10-24). |
 | `brandme-gateway` | 3001 | TS | **REAL** | helmet/CORS wired in `brandme-gateway/src/index.ts`; config-driven per-address and per-member rate limits with problem+json 429 (`brandme-gateway/src/middleware/rateLimiter.ts`, in-process only); OIDC/JWKS in strict modes (`middleware/mode.ts`). Default port `src/config/index.ts:73`. |
-| `brandme-frontend` | 3000 | TS | **PARTIAL** | Next.js consumer shell with guest journeys (`brandme-frontend/app/`: add, closet, discover, me, scan, style, today, …; PR #56). Runs as the `consumer` service (`docker-compose.yml:218-228`) and via `pnpm dev:demo`. Wardrobe is guest-local and there is no browser OIDC sign-in (audit WP-04/WP-08; `docs/audits/2026-11-01/claude-opus-02/evidence/journeys/wiring-trace.md`). Re-verified 2026-11-02. |
+| `brandme-frontend` | 3000 | TS | **PARTIAL** | Next.js consumer app: guest journeys (`brandme-frontend/app/`: add, closet, discover, me, scan, style, today, …; PR #56) and the Shops / Social / Closet shell with Now, Flow, Editorial, the private style card and the opt-in heartbeat (PR #63 via #79). Runs as the `consumer` service (`docker-compose.yml:218-228`) and via `pnpm dev:demo`. The same-SHA `live-domains` job (`.github/workflows/consumer-ui.yml`, PR #82) drives the browser through the gateway to the real domain services on the Spanner emulator: ten journeys pass, including guest migration, wardrobe intake, decisions and reward settlement. No browser OIDC sign-in (development identity simulation only; D-005, audit WP-08). Re-verified 2026-11-02. |
 | `brandme-console` | 3002 | TS | **PARTIAL** | Runs only under `docker-compose.dev.yml:23-36` (operator console on 3002); its `/api/v1/ops/*` and provider calls hit routers the gateway does not mount (`brandme-gateway/src/routes/v1/index.ts:131-149`), so every ops screen ends unconnected. Not in `docker-compose.yml`. |
 | `brandme-chain` | 3001 | TS | **PARTIAL** | Verified 2026-10-23. Real Midnight adapter (`brandme-chain/src/midnight/adapter.ts:204`) over a compiled Compact contract (`brandme-chain/contracts/src/brandme_rights.compact`, 15 circuits), served under `/midnight` (`brandme-chain/src/index.ts:36,54`); the gateway calls it when configured (`brandme-gateway/src/services/rights.ts:70-72`). Real proofs observed on a local network only (`brandme-chain/evidence/`); Preprod writes not yet observed; no Mainnet writes. Fallback flags are rejected (`brandme-chain/src/config/index.ts:33-34`); Cardano anchoring is unavailable by default (`brandme-chain/src/cardano/anchor.ts:64`). Not in `docker-compose.yml`. |
 | `brandme-agents/identity` | 8005 | Py | **PARTIAL** | Init real; `ZKProofManager` framework present; actual proofs use stubs / `allow_stub_fallback`. |
@@ -62,7 +63,8 @@ is mocked.
 | `brandme-agents/compliance` | 8004 | Py | **STUB** | No `MIDNIGHT_ENABLED` variable exists in code or compose (the old `docker-compose.yml:304` citation is stale; the file is 242 lines); ESG scores fall back to a hash stub (`brandme-agents/compliance/src/lifecycle/esg_verifier.py:163-169`) with threshold `0.5`; no real oracle. |
 | `brandme-agents/agentic` | — | Py | **CLI only** | Not a service — `brandme-agents/agentic/cli/main.py` is a CLI tool. |
 | `brandme-agents/branding` | — | — | **NOT WIRED** | Not in `docker-compose.yml`. |
-| `brandme_core/domains` (consumer-domains) | 8010 | Py | **REAL (local evidence)** | FastAPI app `brandme_core/domains/persona/app.py` behind the gateway's consumer routers (`brandme-gateway/src/routes/v1/index.ts:142-143`) with ES256 principal assertions; compose service `consumer-domains` (`docker-compose.yml:195-217`). Gateway→domain→Spanner journey 16/16 and the outbox→Pub/Sub→ingress→jobs chain 18/18 on emulators (audit SC-59, SC-61, 2026-11-02). Not deployed; Helm `consumerDomains.enabled: false` by default (S2-OBS-004). |
+| `brandme_core/domains` (consumer-domains) | 8010 | Py | **REAL (local evidence)** | FastAPI app `brandme_core/domains/persona/app.py` behind the gateway's ten consumer routers (persona, wardrobe, outfits, social, decisions, flow, rooms, rewards, media, try-on; `brandme-gateway/src/routes/v1/index.ts:146-150`) with ES256 principal assertions; compose service `consumer-domains` (`docker-compose.yml:195-217`). Ultra plan 02 items 2–8 and 10 (Now loop, Flow, standing, surveys and credit, persona card and closet visibility, rooms, experiments, share projector; V016 `consumer_design`) landed via #78. Gateway→domain→Spanner journey 16/16 and the outbox→Pub/Sub→ingress→jobs chain 18/18 on emulators (audit SC-59, SC-61); browser journeys 10/10 in the same-SHA `live-domains` job (PR #82). Not deployed; Helm `consumerDomains.enabled: false` by default (S2-OBS-004). |
+| `brandme_core/rights_commands` | 8000 (`PORT`) | Py | **PARTIAL (unmounted)** | Authenticated rights command process (`python -m brandme_core.rights_commands`; transfer intents, invite binding, reprint quotes, challenge authorization; `brandme_core/rights_commands/app.py`), landed via #81 with migration V017. Its boot guard asks for `rights_commands` (`brandme_core/rights_commands/__main__.py:30`), which the audited-process inventory `AUDITED_PROCESSES` in `brandme_core/config.py:556` does not list, so strict modes refuse it; the gateway's `/transfers` routes (`brandme-gateway/src/routes/v1/transfers.ts`) are not mounted by `routes/v1/index.ts`. Exercised only on the Spanner emulator (`tests/test_rights_commands.py`). Not in `docker-compose.yml`. The five foundation items are in `docs/build/implementation-status.md`. |
 | `brandme_core/*` (shared lib) | — | Py | **REAL** | `spanner/`, `firestore/`, `mcp/`, `zk/` — used by all working services. |
 
 ## What runs end-to-end today
@@ -84,8 +86,9 @@ The consumer-domain path is separate from that legacy scan chain and was execute
 emulators on 2026-11-02 (`docs/audits/2026-11-01/claude-opus-02/evidence/runtime/emulator-run.md`):
 HTTP client → `brandme-gateway` → `brandme_core/domains/persona/app.py` → Spanner, and
 `brandme_core/events/worker.py` → Pub/Sub emulator → `persona/ingress.py` → `persona/jobs.py`
-(a friend-decision reward settled exactly once). Still unexecuted: the browser UI on top of
-it, deadline expiry via `jobs`, and Pub/Sub retry under fault.
+(a friend-decision reward settled exactly once). The browser on top of it runs in CI at the same
+SHA as the domain sources (`consumer-ui.yml` `live-domains`, PR #82: ten journeys, development
+identity, Spanner emulator). Still unexecuted: deadline expiry via `jobs`, and Pub/Sub retry under fault.
 
 ## What delivers product value today
 
@@ -99,6 +102,8 @@ A small but real set:
 - Token-bucket rate limiting wired into `brandme-gateway/`
   (`brandme-gateway/src/middleware/rateLimiter.ts`); the orphan copy in
   `brandme_gateway/` was removed on 2026-11-02.
+- Spanner migrations V001–V017, contiguous, with a reservation registry (`tests/foundation/test_migrations.py`
+  `RESERVED`); next free number V018 (`brandme-data/spanner/migrations/README.md`).
 - Tests: CI `test-core` runs **all of `tests/`** (`.github/workflows/ci-cd.yml`).
   Verified 2026-10-24: `tests/test_consent_graph.py`, `tests/test_provenance.py`
   and `tests/test_wardrobe.py` do **not** pass (no fixture applies the legacy
@@ -141,6 +146,8 @@ Dockerfiles that `ci-cd.yml` builds.
 - `docs/archive/`: superseded documents in dated sets, each listed with the document that replaced it.
   The v6/v7/v8/v9 labels, the 85–95% readiness figures, PostgreSQL/Celery/Neo4j, service ports
   8100–8103 and gateway port 3000 that appear there describe earlier platforms, not this tree.
+- `CONTRIBUTING.md`, `.github/PULL_REQUEST_TEMPLATE.md` and `docs/build/security/branch-protection.md`:
+  the rules every change follows and the owner-applied protection rulesets (added 2026-11-02).
 
 ## Local dev quick reference
 
