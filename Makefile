@@ -3,7 +3,7 @@
 # Brand.Me Labs - Monorepo Makefile
 # ==================================
 
-.PHONY: help install dev-up dev-down db-migrate db-seed test test-core test-gateway test-chain lint format build-all push-all clean
+.PHONY: help install dev-up dev-down db-migrate db-seed test test-core test-gateway test-chain lint format build-all clean
 
 # Interpreter for the Python suite: BRANDME_PYTHON if set, else the project venv built from
 # scripts/python/requirements.lock (same rule as scripts/brandme.mjs).
@@ -34,11 +34,8 @@ help:
 	@echo "  make format       - Format all code"
 	@echo "  make type-check   - Run type checkers"
 	@echo ""
-	@echo "Build & Deploy:"
-	@echo "  make build-all    - Build all Docker images"
-	@echo "  make push-all     - Push all Docker images to registry"
-	@echo "  make deploy-dev   - Deploy to development environment"
-	@echo "  make deploy-prod  - Deploy to production environment"
+	@echo "Build:"
+	@echo "  make build-all    - Build the five CI images from the repository root, as ci-cd.yml does (publishing is CI-only)"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean        - Clean build artifacts"
@@ -57,7 +54,7 @@ install-gateway:
 
 install-core:
 	@echo "Installing brandme-core dependencies..."
-	cd brandme-core && pip install -r requirements.txt && pip install -r requirements-dev.txt
+	cd brandme-core && pip install -r requirements.txt
 
 install-agents:
 	@echo "Installing brandme-agents dependencies..."
@@ -207,79 +204,22 @@ type-check-chain:
 build-all: build-gateway build-core build-agents build-chain build-console
 	@echo "✓ All images built"
 
+# Root-context builds, the same five images as the ci-cd.yml build-images matrix. Images are tagged :local;
+# the registry, project and tags are CI's business (workload identity is the planned path, packet C-checklist).
 build-gateway:
-	@echo "Building brandme-gateway..."
-	docker build -t gcr.io/brandme/gateway:latest ./brandme-gateway
+	docker build -f brandme-gateway/Dockerfile --build-arg NODE_VERSION=$$(cat .nvmrc) -t brandme-gateway:local .
 
 build-core:
-	@echo "Building brandme-core..."
-	docker build -t gcr.io/brandme/core-brain:latest ./brandme-core/brain
-	docker build -t gcr.io/brandme/core-policy:latest ./brandme-core/policy
-	docker build -t gcr.io/brandme/core-orchestrator:latest ./brandme-core/orchestrator
+	docker build -f brandme-core/Dockerfile --build-arg NODE_VERSION=$$(cat .nvmrc) -t brandme-core:local .
 
 build-agents:
-	@echo "Building brandme-agents..."
-	docker build -t gcr.io/brandme/agent-identity:latest ./brandme-agents/identity
-	docker build -t gcr.io/brandme/agent-knowledge:latest ./brandme-agents/knowledge
-	docker build -t gcr.io/brandme/agent-compliance:latest ./brandme-agents/compliance
+	docker build -f brandme-agents/Dockerfile --build-arg NODE_VERSION=$$(cat .nvmrc) -t brandme-agents:local .
 
 build-chain:
-	@echo "Building brandme-chain..."
-	docker build -t gcr.io/brandme/chain:latest ./brandme-chain
+	docker build -f brandme-chain/Dockerfile --build-arg NODE_VERSION=$$(cat .nvmrc) -t brandme-chain:local .
 
 build-console:
-	@echo "Building brandme-console..."
-	docker build -t gcr.io/brandme/console:latest ./brandme-console
-
-push-all: push-gateway push-core push-agents push-chain push-console
-	@echo "✓ All images pushed"
-
-push-gateway:
-	docker push gcr.io/brandme/gateway:latest
-
-push-core:
-	docker push gcr.io/brandme/core-brain:latest
-	docker push gcr.io/brandme/core-policy:latest
-	docker push gcr.io/brandme/core-orchestrator:latest
-
-push-agents:
-	docker push gcr.io/brandme/agent-identity:latest
-	docker push gcr.io/brandme/agent-knowledge:latest
-	docker push gcr.io/brandme/agent-compliance:latest
-
-push-chain:
-	docker push gcr.io/brandme/chain:latest
-
-push-console:
-	docker push gcr.io/brandme/console:latest
-
-# ========================================
-# Deployment
-# ========================================
-
-deploy-dev:
-	@echo "Deploying to development environment..."
-	cd brandme-infra/helm && \
-	helm upgrade --install brandme ./brandme-umbrella \
-		--values values-dev.yaml \
-		--namespace brandme-dev \
-		--create-namespace
-	@echo "✓ Deployed to development"
-
-deploy-prod:
-	@echo "⚠️  WARNING: Deploying to PRODUCTION!"
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	echo ""; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		cd brandme-infra/helm && \
-		helm upgrade --install brandme ./brandme-umbrella \
-			--values values-prod.yaml \
-			--namespace brandme \
-			--create-namespace; \
-		echo "✓ Deployed to production"; \
-	else \
-		echo "Aborted"; \
-	fi
+	docker build -f brandme-console/Dockerfile --build-arg NODE_VERSION=$$(cat .nvmrc) -t brandme-console:local .
 
 # ========================================
 # Cleanup
@@ -302,31 +242,3 @@ clean-all: clean
 	rm -rf venv/
 	rm -rf .venv/
 	@echo "✓ Deep clean completed"
-
-# ========================================
-# Infrastructure
-# ========================================
-
-infra-init:
-	@echo "Initializing Terraform..."
-	cd brandme-infra/terraform && terraform init
-	@echo "✓ Terraform initialized"
-
-infra-plan:
-	@echo "Planning infrastructure changes..."
-	cd brandme-infra/terraform && terraform plan
-
-infra-apply:
-	@echo "Applying infrastructure changes..."
-	cd brandme-infra/terraform && terraform apply
-
-infra-destroy:
-	@echo "⚠️  WARNING: This will destroy ALL infrastructure!"
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	echo ""; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		cd brandme-infra/terraform && terraform destroy; \
-		echo "✓ Infrastructure destroyed"; \
-	else \
-		echo "Aborted"; \
-	fi

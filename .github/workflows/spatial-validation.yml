@@ -2,7 +2,22 @@ name: Spatial validation
 
 on:
   push:
-    branches: ['bench/astra-spatial-ar-20261005']
+    branches: [main]
+    paths:
+      - 'brandme-frontend/features/spatial/**'
+      - 'brandme-frontend/features/closet/**'
+      - 'brandme-frontend/app/add/**'
+      - 'brandme-frontend/app/closet/**'
+      - 'brandme-frontend/app/style/**'
+      - 'brandme-frontend/app/try/**'
+      - 'brandme-frontend/public/demo/**'
+      - 'scripts/assets/**'
+      - 'tests/e2e/spatial*'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.nvmrc'
+      - '.github/workflows/spatial-validation.yml'
   pull_request:
     branches: [main]
     paths:

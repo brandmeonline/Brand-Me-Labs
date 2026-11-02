@@ -23,8 +23,8 @@ In containers the `spanner-migrate` service of `docker-compose.yml` runs the sam
 
 - `spanner/schema.sql`: PostgreSQL-syntax schema that GoogleSQL rejects; the runner ignores it
   (`docs/build/evidence/w00/baseline-test-report.md`).
-- `schemas/001_users.sql` … `007_audit_log.sql`, `schemas/cube_service.sql`, `seeds/*.sql`, and the root
-  `init.sql`: PostgreSQL-era definitions kept for reference. `scripts/db-init.sh` and the legacy cube database
-  module still name them; neither is part of `pnpm check` or the compose default profile.
+- `schemas/001_users.sql` … `007_audit_log.sql`, `schemas/cube_service.sql` and `seeds/*.sql`: PostgreSQL-era
+  definitions kept for reference. Nothing applies them; the regression harness only checks that `schemas/` exists,
+  and the legacy cube database module names them in a comment.
 
 Seeding for development happens through the domain commands and `pnpm smoke`, not through these SQL files.
