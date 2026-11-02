@@ -1,0 +1,201 @@
+### step: packages-test
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: pnpm --filter './packages/*' test
+### start_utc: 2026-11-01T15:15:47Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+Scope: 4 of 10 workspace projects
+packages/contracts test$ node --test test/*.test.ts
+packages/design-system test$ node --test test/*.test.ts
+packages/firestore-rules test$ node --test --test-reporter=spec test/*.test.ts
+packages/contracts test: TAP version 13
+packages/design-system test: TAP version 13
+packages/design-system test: # Subtest: generated tokens equal the design contract exactly
+packages/design-system test: ok 1 - generated tokens equal the design contract exactly
+packages/design-system test:   ---
+packages/design-system test:   duration_ms: 2.176362
+packages/design-system test:   type: 'test'
+packages/design-system test:   ...
+packages/design-system test: # Subtest: every colour token is emitted for light and dark
+packages/design-system test: ok 2 - every colour token is emitted for light and dark
+packages/design-system test:   ---
+packages/design-system test:   duration_ms: 0.483351
+packages/design-system test:   type: 'test'
+packages/design-system test:   ...
+packages/design-system test: # Subtest: light: ink on canvas ≥ 4.5
+packages/design-system test: ok 3 - light: ink on canvas ≥ 4.5
+packages/design-system test:   ---
+packages/design-system test:   duration_ms: 0.356121
+packages/design-system test:   type: 'test'
+packages/design-system test:   ...
+packages/design-system test: # Subtest: light: ink on surface ≥ 4.5
+packages/design-system test: ok 4 - light: ink on surface ≥ 4.5
+packages/design-system test:   ---
+packages/design-system test:   duration_ms: 0.104876
+packages/design-system test:   type: 'test'
+packages/design-system test:   ...
+packages/design-system test: # Subtest: light: muted on canvas ≥ 4.5
+packages/design-system test: ok 5 - light: muted on canvas ≥ 4.5
+packages/design-system test:   ---
+packages/design-system test:   duration_ms: 0.170671
+packages/design-system test:   type: 'test'
+packages/design-system test:   ...
+packages/design-system test: # Subtest: light: muted on surface ≥ 4.5
+packages/design-system test: ok 6 - light: muted on surface ≥ 4.5
+packages/design-system test:   ---
+packages/design-system test:   duration_ms: 0.079976
+packages/design-system test:   type: 'test'
+packages/design-system test:   ...
+packages/design-system test: # Subtest: light: accent on canvas ≥ 4.5
+packages/design-system test: ok 7 - light: accent on canvas ≥ 4.5
+packages/design-system test:   ---
+packages/design-system test:   duration_ms: 1.058726
+packages/design-system test:   type: 'test'
+packages/design-system test:   ...
+packages/design-system test: # Subtest: light: accent on surface ≥ 4.5
+packages/design-system test: ok 8 - light: accent on surface ≥ 4.5
+packages/design-system test:   ---
+packages/design-system test:   duration_ms: 0.11557
+packages/design-system test:   type: 'test'
+packages/design-system test:   ...
+... [110 of 310 lines omitted; full log retained only in the audit scratchpad] ...
+packages/contracts test:   duration_ms: 31.423655
+packages/contracts test:   type: 'test'
+packages/contracts test:   ...
+packages/contracts test: 1..5
+packages/contracts test: # tests 5
+packages/contracts test: # suites 0
+packages/contracts test: # pass 5
+packages/contracts test: # fail 0
+packages/contracts test: # cancelled 0
+packages/contracts test: # skipped 0
+packages/contracts test: # todo 0
+packages/contracts test: # duration_ms 383.615095
+packages/firestore-rules test: ℹ tests 0
+packages/firestore-rules test: ℹ suites 1
+packages/firestore-rules test: ℹ pass 0
+packages/firestore-rules test: ℹ fail 0
+packages/firestore-rules test: ℹ cancelled 0
+packages/firestore-rules test: ℹ skipped 0
+packages/firestore-rules test: ℹ todo 0
+packages/firestore-rules test: ℹ duration_ms 389.85485
+packages/contracts test: Done
+packages/firestore-rules test: Done
+packages/provider-contracts test$ node --test test/*.test.ts
+packages/provider-contracts test: TAP version 13
+packages/provider-contracts test: # Subtest: production refuses simulated and sandbox adapters
+packages/provider-contracts test: ok 1 - production refuses simulated and sandbox adapters
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 1.326996
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: sandbox refuses simulated adapters
+packages/provider-contracts test: ok 2 - sandbox refuses simulated adapters
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.196592
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: demo requires a visible label on simulated adapters
+packages/provider-contracts test: ok 3 - demo requires a visible label on simulated adapters
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.14014
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: adapter built for another environment is refused
+packages/provider-contracts test: ok 4 - adapter built for another environment is refused
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.124264
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: capability list matches chapter 05 (24 names)
+packages/provider-contracts test: ok 5 - capability list matches chapter 05 (24 names)
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.404318
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: unlisted capability reads as unsupported, never available
+packages/provider-contracts test: ok 6 - unlisted capability reads as unsupported, never available
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.432915
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: a transmitted request is never retryable
+packages/provider-contracts test: ok 7 - a transmitted request is never retryable
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.486492
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: production refuses both payment rail modes
+packages/provider-contracts test: ok 8 - production refuses both payment rail modes
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 1.351351
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: sandbox refuses the simulated rail and allows Stripe test mode
+packages/provider-contracts test: ok 9 - sandbox refuses the simulated rail and allows Stripe test mode
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.321413
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: a blank or over-long rail label is refused
+packages/provider-contracts test: ok 10 - a blank or over-long rail label is refused
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.358689
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: a rail built for another environment is refused
+packages/provider-contracts test: ok 11 - a rail built for another environment is refused
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.179675
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: order payment statuses are the seven the order record allows
+packages/provider-contracts test: ok 12 - order payment statuses are the seven the order record allows
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.253232
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: only a passing test with verifying evidence can verify
+packages/provider-contracts test: ok 13 - only a passing test with verifying evidence can verify
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 1.087858
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: a host or link check never verifies
+packages/provider-contracts test: ok 14 - a host or link check never verifies
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 4.3059
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: a blocked test carries no evidence
+packages/provider-contracts test: ok 15 - a blocked test carries no evidence
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.213102
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: vocabularies are closed and disjoint
+packages/provider-contracts test: ok 16 - vocabularies are closed and disjoint
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.665153
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: # Subtest: a verifiable adapter and its persisted run type-check
+packages/provider-contracts test: ok 17 - a verifiable adapter and its persisted run type-check
+packages/provider-contracts test:   ---
+packages/provider-contracts test:   duration_ms: 0.2065
+packages/provider-contracts test:   type: 'test'
+packages/provider-contracts test:   ...
+packages/provider-contracts test: 1..17
+packages/provider-contracts test: # tests 17
+packages/provider-contracts test: # suites 0
+packages/provider-contracts test: # pass 17
+packages/provider-contracts test: # fail 0
+packages/provider-contracts test: # cancelled 0
+packages/provider-contracts test: # skipped 0
+packages/provider-contracts test: # todo 0
+packages/provider-contracts test: # duration_ms 207.338583
+packages/provider-contracts test: Done
+-----
+### exit: 0
+### end_utc: 2026-11-01T15:15:49Z
+### duration_s: 2

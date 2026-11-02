@@ -1,0 +1,81 @@
+# pnpm smoke attempt 2 (2026-11-02) — real pnpm first on PATH; sanitized (ANSI stripped)
+✓ spanner emulator — already running
+/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/google/api_core/_python_version_support.py:273: FutureWarning: You are using a Python version (3.11.18) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2027-10-24). Please upgrade to the latest Python version, or at least Python 3.12, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+schema up to date
+V001_identity                 applied
+V002_persona                  applied
+V003_wardrobe                 applied
+V004_social                   applied
+V005_rewards                  applied
+V006_providers                applied
+V007_commerce                 applied
+V008_rights                   applied
+V009_privacy                  applied
+V010_rights_projection_version applied
+V011_chain_operation_store    applied
+V012_chain_reconciliation     applied
+V013_outbox_delivery          applied
+V014_privacy_exports          applied
+V015_commerce_quote_terms     applied
+✓ migrations to V001
+[brandme preflight] brain: allowed in development; simulated adapters: 1
+  - chain.cardano: Simulated — no blockchain transaction was made
+[brain] /tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/google/api_core/_python_version_support.py:273: FutureWarning: You are using a Python version (3.11.18) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2027-10-24). Please upgrade to the latest Python version, or at least Python 3.12, to continue receiving updates for google.api_core past that date.
+[brain]   warnings.warn(message, FutureWarning)
+[brain] [brain] {"service": "env", "event": "env_config_loaded", "region": "us-east1", "log_level": "INFO", "database": "spanner", "spanner_project": "test-project", "spanner_instance": "brandme-instance"}
+[brain] [brain] {"service": "cors_config", "event": "cors_config_loaded", "origins_count": 2, "environment": "development"}
+[brain] [brain] INFO:     Started server process [1651]
+[brain] INFO:     Waiting for application startup.
+[brain] {"service": "spanner.pool", "event": "pool_manager_init", "min_sessions": 10, "max_sessions": 100, "ping_interval": 300, "emulator": true}
+[brain] [brain] {"service": "spanner.pool", "event": "pool_manager_initialized", "is_healthy": true}
+[brain] [brain] {"service": "brain_service", "event": "brain_service_started", "database": "spanner"}
+[brain] [brain] INFO:     Application startup complete.
+[brain] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[brain] [brain] INFO:     127.0.0.1:54152 - "GET /health HTTP/1.1" 200 OK
+[brain] [gateway] [2026-11-02 02:17:57.236 +0000] WARN: NATS_URL not set: legacy /scan publishing is unavailable
+[gateway] [gateway] [2026-11-02 02:17:57.436 +0000] INFO: Brand.Me Gateway listening
+[gateway]     port: 3001
+[gateway]     mode: "development"
+[gateway]     identityProvider: "dev"
+[gateway] [2026-11-02 02:17:57.602 +0000] INFO: Incoming request
+[gateway]     requestId: "0025e60c-df4e-4b4c-bbac-12e43f936466"
+[gateway]     method: "GET"
+[gateway]     path: "/api/v1/system/health"
+[gateway]     regionCode: "us-east1"
+[gateway] [gateway] (node:1679) MetadataLookupWarning: received unexpected error = All promises were rejected code = 502
+[gateway] (Use `node --trace-warnings ...` to show where the warning was created)
+[gateway] ✓ gateway → brain → Spanner health — [{"name":"gateway.spanner","status":"ok","duration_ms":3200},{"name":"brain.health","status":"ok","duration_ms":37}]
+✓ dev session (labelled simulation) — member 07f634a2-74d0-4da4-b903-ac48e09b5ae2
+✓ PATCH /me with If-Match + CSRF — etag "2"
+[brain] INFO:     Shutting down
+[brain] [brain] INFO:     Waiting for application shutdown.
+[brain] [brain] {"service": "spanner.pool", "event": "pool_manager_closed"}
+[brain] [brain] {"service": "brain_service", "event": "brain_service_stopped"}
+[brain] [brain] INFO:     Application shutdown complete.
+[brain] INFO:     Finished server process [1651]
+[brain] [gateway] [2026-11-02 02:18:00.806 +0000] INFO: Request completed
+[gateway]     requestId: "0025e60c-df4e-4b4c-bbac-12e43f936466"
+[gateway]     method: "GET"
+[gateway]     path: "/api/v1/system/health"
+[gateway]     statusCode: 200
+[gateway]     duration: 3204
+[gateway]     regionCode: "us-east1"
+[gateway] [gateway] [2026-11-02 02:18:00.817 +0000] INFO: Incoming request
+[gateway]     requestId: "94f6a74b-2e0a-43d3-942e-b85618d55a11"
+[gateway]     method: "POST"
+[gateway]     path: "/api/v1/session/dev"
+[gateway]     regionCode: "us-east1"
+[gateway] [2026-11-02 02:18:00.875 +0000] INFO: Request completed
+[gateway]     requestId: "94f6a74b-2e0a-43d3-942e-b85618d55a11"
+[gateway]     method: "POST"
+[gateway]     path: "/api/v1/session/dev"
+[gateway]     statusCode: 201
+[gateway]     duration: 58
+[gateway]     regionCode: "us-east1"
+[gateway] [2026-11-02 02:18:00.879 +0000] INFO: Incoming request
+[gateway]     requestId: "c07e927f-fe51-408f-a180-8d99fc8872e3"
+[gateway]     method: "PATCH"
+[gateway]     path: "/api/v1/me"
+[gateway]     regionCode: "us-east1"
+[gateway] [2026-11-02 02:18:00.929 +0000] INFO: Request completed

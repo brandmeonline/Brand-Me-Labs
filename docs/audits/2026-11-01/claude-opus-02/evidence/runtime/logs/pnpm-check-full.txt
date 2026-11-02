@@ -1,0 +1,24 @@
+# pnpm check (full Foundation gate, provisioning on, BRANDME_REQUIRE_EMULATORS=1) — 2026-11-02, sanitized
+start 02:19:31 HEAD ed19dc151d103b108cf972e6d37971c55d5dcf60
+exit=0 end 02:38:22
+✓ Spanner emulator — reachable at 127.0.0.1:9010
+✓ Spanner REST — http://127.0.0.1:9020
+✓ Java — openjdk version "21.0.12.1" 2026-08-18
+✓ Firestore emulator — reachable at 127.0.0.1:8080
+✓ Pub/Sub emulator binary — /tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/emu/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
+✓ GCS emulator binary (fake-gcs-server) — /tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/emu/gcs-emulator/fake-gcs-server
+✓ workspace + toolchain governance 1.5s
+✓ spec package validator 0.2s
+✓ contract + token drift 7.2s
+✓ credential manifest 0.5s
+✓ guard self-tests 7.9s
+✓ packages type-check 5.3s
+✓ packages tests 2.0s
+✓ gateway lint 4.4s
+✓ gateway type-check 4.7s
+✓ gateway tests 27.2s
+✓ python tests (tests/) 1070.1s
+    QUARANTINED: 17 tests (owner: count unowned-legacy: 17)
+    ALLOWLISTED SKIPS: AP2_SDK_PYTHON (commerce-agents): 6, not_run: STRIPE_TEST_SECRET_KEY absent (commerce-agents): 5, not_run: the model (commerce-agents): 3, stripe-mock (commerce-agents): 6
+    2146 passed, 20 skipped, 17 xfailed, 4 warnings in 1068.13s (0:17:48)
+✓ docs/build links 0.1s

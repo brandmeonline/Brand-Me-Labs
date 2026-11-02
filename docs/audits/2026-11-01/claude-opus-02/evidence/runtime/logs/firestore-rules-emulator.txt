@@ -1,0 +1,16 @@
+# @brandme/firestore-rules test with pinned Firestore emulator (2026-11-02)
+  ✔ a member reads only their own private views (399.188825ms)
+  ✔ clients cannot write any projection, including their own (107.414086ms)
+  ✔ shared views: each recipient reads only their own copy, no listing, expiry enforced (259.265204ms)
+  ✔ revocation: once the server deletes the copies, the audience loses access (92.301007ms)
+  ✔ tombstones and unlisted collections are closed (46.800121ms)
+  ✔ rules file compiled in the emulator (sanity) (0.435163ms)
+✔ firestore.rules (3273.546452ms)
+ℹ tests 6
+ℹ suites 1
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4316.855294

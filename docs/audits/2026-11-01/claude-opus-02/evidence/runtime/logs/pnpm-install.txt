@@ -1,0 +1,49 @@
+### step: pnpm-install
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: pnpm install --frozen-lockfile
+### start_utc: 2026-11-01T15:10:05Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+Scope: all 10 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +1198
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 1198, reused 0, downloaded 27, added 4
+Progress: resolved 1198, reused 0, downloaded 165, added 90
+Progress: resolved 1198, reused 0, downloaded 216, added 119
+Progress: resolved 1198, reused 0, downloaded 294, added 279
+Progress: resolved 1198, reused 0, downloaded 461, added 423
+Progress: resolved 1198, reused 0, downloaded 690, added 626
+Progress: resolved 1198, reused 0, downloaded 764, added 688
+Progress: resolved 1198, reused 0, downloaded 780, added 694
+Progress: resolved 1198, reused 0, downloaded 892, added 739
+Progress: resolved 1198, reused 0, downloaded 957, added 766
+Progress: resolved 1198, reused 0, downloaded 987, added 779
+Progress: resolved 1198, reused 0, downloaded 998, added 781
+Progress: resolved 1198, reused 0, downloaded 1017, added 787
+Progress: resolved 1198, reused 0, downloaded 1107, added 826
+Progress: resolved 1198, reused 0, downloaded 1170, added 1062
+Progress: resolved 1198, reused 0, downloaded 1170, added 1198, done
+.../node_modules/protobufjs postinstall$ node scripts/postinstall
+.../esbuild@0.28.2/node_modules/esbuild postinstall$ node install.js
+.../esbuild@0.25.12/node_modules/esbuild postinstall$ node install.js
+.../node_modules/protobufjs postinstall: Done
+.../node_modules/unrs-resolver postinstall$ node postinstall.js
+.../esbuild@0.28.2/node_modules/esbuild postinstall: Done
+.../esbuild@0.25.12/node_modules/esbuild postinstall: Done
+.../node_modules/unrs-resolver postinstall: Done
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @firebase/util@1.15.3, classic-level@3.0.0,         │
+│   cpu-features@0.0.10, msgpackr-extract@3.0.4, ssh2@1.17.0.                  │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+Done in 17.1s using pnpm v10.34.6
+-----
+### exit: 0
+### end_utc: 2026-11-01T15:10:23Z
+### duration_s: 18

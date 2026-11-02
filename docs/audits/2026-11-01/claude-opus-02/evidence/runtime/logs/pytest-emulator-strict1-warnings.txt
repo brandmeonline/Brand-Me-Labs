@@ -1,0 +1,61 @@
+# warnings summary (4)
+=============================== warnings summary ===============================
+../venv-py311/lib/python3.11/site-packages/google/api_core/_python_version_support.py:273
+  /tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/google/api_core/_python_version_support.py:273: FutureWarning: You are using a Python version (3.11.18) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2027-10-24). Please upgrade to the latest Python version, or at least Python 3.12, to continue receiving updates for google.api_core past that date.
+    warnings.warn(message, FutureWarning)
+
+../venv-py311/lib/python3.11/site-packages/fastapi/testclient.py:1
+  /tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+../venv-py311/lib/python3.11/site-packages/starlette/testclient.py:53
+  /tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/test_commerce_purchase.py::test_two_agents_cannot_overspend_shared_budget[spanner]
+  /tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/_pytest/threadexception.py:73: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-23079 (run)
+  
+  Traceback (most recent call last):
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/google/api_core/grpc_helpers.py", line 149, in error_remapped_callable
+      return _StreamingResponseIterator(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/google/api_core/grpc_helpers.py", line 71, in __init__
+      self._stored_first_result = next(self._wrapped)
+                                  ^^^^^^^^^^^^^^^^^^^
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/grpc/_channel.py", line 547, in __next__
+      return self._next()
+             ^^^^^^^^^^^^
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/grpc/_channel.py", line 965, in _next
+      raise self
+  grpc._channel._MultiThreadedRendezvous: <_MultiThreadedRendezvous of RPC that terminated with:
+  	status = StatusCode.ABORTED
+  	details = "Transaction 1793547672848104 aborted due to active transaction 1793547672848103. The emulator only supports one transaction at a time."
+  	debug_error_string = "ABORTED:Transaction 1793547672848104 aborted due to active transaction 1793547672848103. The emulator only supports one transaction at a time."
+  >
+  
+  The above exception was the direct cause of the following exception:
+  
+  Traceback (most recent call last):
+    File "/usr/lib/python3.11/threading.py", line 1045, in _bootstrap_inner
+      self.run()
+    File "/usr/lib/python3.11/threading.py", line 982, in run
+      self._target(*self._args, **self._kwargs)
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/wt-main/tests/test_commerce_purchase.py", line 266, in run
+      results.append(w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id,
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/wt-main/brandme_core/domains/commerce/service.py", line 938, in execute_purchase
+      return self._settled(lambda: self.store.run(_tx), decided,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/wt-main/brandme_core/domains/commerce/service.py", line 333, in _settled
+      result = run()
+               ^^^^^
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/wt-main/brandme_core/domains/commerce/service.py", line 938, in <lambda>
+      return self._settled(lambda: self.store.run(_tx), decided,
+                                   ^^^^^^^^^^^^^^^^^^^
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/wt-main/brandme_core/domains/commerce/spanner_store.py", line 631, in run
+      return self.database.run_in_transaction(attempt)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/google/cloud/spanner_v1/database.py", line 789, in run_in_transaction
+      return session.run_in_transaction(func, *args, **kw)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/venv-py311/lib/python3.11/site-packages/google/cloud/spanner_v1/session.py", line 390, in run_in_transaction

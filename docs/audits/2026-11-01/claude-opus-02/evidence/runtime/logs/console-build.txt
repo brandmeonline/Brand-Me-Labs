@@ -1,0 +1,48 @@
+### step: console-build
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: pnpm build && du -sh .next
+### start_utc: 2026-11-01T15:18:51Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+
+> @brandme/console@1.0.0 build /[REDACTED-LONG-STRING]
+> next build
+
+   ▲ Next.js 15.5.28
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 12.2s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/2) ...
+ ✓ Generating static pages (2/2)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                  Size  First Load JS
+┌ ƒ /                                       134 B         102 kB
+├ ƒ /_not-found                             994 B         103 kB
+├ ƒ /commerce/operations                    164 B         106 kB
+├ ƒ /dashboard                              134 B         102 kB
+├ ƒ /dashboard/scans                      2.29 kB         133 kB
+├ ƒ /moderation                             270 B         103 kB
+├ ƒ /proof/[scanId]                       3.17 kB         131 kB
+├ ƒ /providers                              168 B         106 kB
+├ ƒ /providers/[id]                         168 B         106 kB
+├ ƒ /providers/[id]/health                  168 B         106 kB
+├ ƒ /providers/[id]/setup                   168 B         106 kB
+├ ƒ /rewards-disputes                       270 B         103 kB
+└ ƒ /rewards-disputes/members/[memberId]    270 B         103 kB
++ First Load JS shared by all              102 kB
+  ├ chunks/690-7d478c88a3ed2a61.js        46.2 kB
+  ├ chunks/b8745b9c-06d07d438dacc783.js   54.2 kB
+  └ other shared chunks (total)           1.88 kB
+
+
+ƒ  (Dynamic)  server-rendered on demand
+
+180M	.next
+-----
+### exit: 0
+### end_utc: 2026-11-01T15:19:46Z
+### duration_s: 55

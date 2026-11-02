@@ -1,0 +1,3123 @@
+[
+  {
+    "name": "BRANDME_MODE",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:141",
+      "brandme_core/config.py:130",
+      "brandme_core/orchestrator/model_planner.py:280",
+      "brandme_core/domains/persona/app.py:89",
+      "brandme_core/domains/persona/ingress.py:269",
+      "brandme_core/domains/persona/jobs.py:70",
+      "brandme-data/spanner/migrations/runner.py:294",
+      "brandme-console/app/layout.tsx:33",
+      "brandme-frontend/app/me/connections/page.tsx:4",
+      "brandme-frontend/lib/server/gateway-proxy.ts:23",
+      "brandme-frontend/lib/server/gateway-proxy.ts:63"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:43",
+      "docker-compose.yml:161",
+      "docker-compose.dev.yml:10",
+      "docker-compose.dev.yml:13",
+      "docker-compose.dev.yml:16",
+      "docker-compose.dev.yml:20",
+      ".env.example:10",
+      "brandme-gateway/.env.example:14",
+      "brandme-infra/helm/brandme/templates/_helpers.tpl:192",
+      ".github/workflows/chain-tests.yml:88",
+      ".github/workflows/consumer-ui.yml:23",
+      ".github/workflows/consumer-ui.yml:68",
+      ".github/scripts/smoke-image.sh:8",
+      "scripts/brandme.mjs:62"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Required; no default anywhere (config.py:134, config/index.ts:72). Single mode source; ENVIRONMENT must equal it (config.py:154-159)."
+  },
+  {
+    "name": "ENVIRONMENT",
+    "consumers": [
+      "brandme-chain/src/config/index.ts:47",
+      "brandme_core/config.py:154",
+      "brandme_core/config.py:627",
+      "brandme_core/domains/media/gcs_store.py:333",
+      "brandme_core/domains/media/providers.py:98",
+      "brandme_core/domains/persona/app.py:88",
+      "brandme_core/domains/persona/ingress.py:268",
+      "brandme_core/domains/persona/jobs.py:69",
+      "brandme_core/events/retention.py:337",
+      "brandme_core/events/worker.py:41",
+      "brandme_core/privacy_exports/config.py:24",
+      "brandme_core/read_api/config.py:26"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:203",
+      "docker-compose.dev.yml:21",
+      "brandme-chain/.env.example:3",
+      "brandme-core/.env.example:16",
+      "brandme-data/.env.example:15",
+      "brandme-infra/helm/brandme/templates/_helpers.tpl:194",
+      "infrastructure/helm/brandme/values.yaml:58",
+      "infrastructure/otel-collector/otel-collector-config.yml:39"
+    ],
+    "default_in_code": "yes (value is non-secret: chain zod default 'development' at brandme-chain/src/config/index.ts:15; Python processes have no default)",
+    "status": "consumed+declared",
+    "notes": "Two semantics: brandme-chain uses ENVIRONMENT as its only mode (default development); Python processes accept it only as an echo of BRANDME_MODE. brandme-gateway/.env.example:11 says the gateway ignores it."
+  },
+  {
+    "name": "NODE_ENV",
+    "consumers": [
+      "brandme-frontend/app/dev/[example]/page.tsx:15",
+      "brandme-frontend/app/me/connections/page.tsx:4",
+      "brandme-frontend/app/try/device-test/page.tsx:6",
+      "brandme-frontend/features/spatial/LiveOverlay.tsx:27",
+      "brandme-frontend/features/spatial/server/photoService.ts:34",
+      "brandme-frontend/lib/server/gateway-proxy.ts:63"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-gateway/Dockerfile:10",
+      "brandme-chain/Dockerfile:19",
+      "brandme-console/Dockerfile:11"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Framework variable; set to production in the three Node images."
+  },
+  {
+    "name": "PORT",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:142",
+      "brandme-chain/src/config/index.ts:46",
+      "brandme_core/domains/persona/app.py:97",
+      "brandme_core/privacy_exports/config.py:45",
+      "brandme_core/read_api/config.py:40"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:162",
+      "docker-compose.yml:204",
+      ".env.example:16",
+      "brandme-gateway/.env.example:16",
+      "brandme-chain/.env.example:2",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:53",
+      "brandme-infra/helm/brandme/templates/chain.yaml:53",
+      "brandme-infra/helm/brandme/templates/console.yaml:53",
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:18",
+      "brandme-console/Dockerfile:11",
+      "brandme-core/Dockerfile:52",
+      "brandme-agents/Dockerfile:49"
+    ],
+    "default_in_code": "yes (value is non-secret: gateway 3001, chain 3001, read/export API 8000, consumer-domains 8010)",
+    "status": "consumed+declared",
+    "notes": "Gateway and chain both default to 3001; gateway's CHAIN_SERVICE_URL default is :3003 (see CHAIN_SERVICE_URL)."
+  },
+  {
+    "name": "IDENTITY_PROVIDER",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:143",
+      "brandme_core/config.py:449"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:171",
+      ".env.example:33",
+      "brandme-gateway/.env.example:21",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:59"
+    ],
+    "default_in_code": "yes (value is non-secret: 'dev')",
+    "status": "consumed+declared",
+    "notes": "'dev' is a labelled simulated sign-in refused in sandbox/production (middleware/mode.ts:53)."
+  },
+  {
+    "name": "OIDC_ISSUER",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:144",
+      "brandme-gateway/src/middleware/mode.ts:54",
+      "brandme-gateway/src/middleware/session.ts:71",
+      "brandme_core/config.py:459"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "docker-compose.yml:172",
+      ".env.example:34",
+      "brandme-gateway/.env.example:22",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:61",
+      "brandme-infra/helm/brandme/values.yaml:110",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:41"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Must be https in strict modes (mode.ts:56). values-sandbox.yaml holds REPLACE_ME; no issuer has been chosen."
+  },
+  {
+    "name": "OIDC_AUDIENCE",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:145",
+      "brandme-gateway/src/middleware/mode.ts:55",
+      "brandme_core/config.py:460"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "docker-compose.yml:173",
+      ".env.example:35",
+      "brandme-gateway/.env.example:23",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:63",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:42"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "REPLACE_ME in sandbox values."
+  },
+  {
+    "name": "OIDC_JWKS_URI",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:146",
+      "brandme-gateway/src/middleware/mode.ts:58",
+      "brandme-gateway/src/middleware/session.ts:71",
+      "brandme_core/config.py:461"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      ".env.example:36",
+      "brandme-gateway/.env.example:24",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:66",
+      "brandme-infra/helm/brandme/values.yaml:112"
+    ],
+    "default_in_code": "yes (value is non-secret: derived `${OIDC_ISSUER}/.well-known/jwks.json` at session.ts:71 when unset)",
+    "status": "consumed+declared",
+    "notes": "Must be https in strict modes."
+  },
+  {
+    "name": "OIDC_ALGORITHMS",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:147",
+      "brandme-gateway/src/middleware/mode.ts:59"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.example:37",
+      "brandme-gateway/.env.example:26",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:70"
+    ],
+    "default_in_code": "yes (value is non-secret: 'RS256,ES256')",
+    "status": "consumed+declared",
+    "notes": "Asymmetric only in strict modes (mode.ts:60)."
+  },
+  {
+    "name": "SESSION_TTL_HOURS",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:148"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.example:38",
+      "brandme-gateway/.env.example:27"
+    ],
+    "default_in_code": "yes (value is non-secret: 168)",
+    "status": "consumed+declared",
+    "notes": "Not set by Helm; chart relies on the default."
+  },
+  {
+    "name": "BRAIN_SERVICE_URL",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:149",
+      "brandme-gateway/src/routes/v1/index.ts:74",
+      "brandme_core/config.py:57",
+      "brandme_core/env.py:69"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:52",
+      "docker-compose.yml:163",
+      ".env.example:17",
+      "brandme-gateway/.env.example:31",
+      "scripts/brandme.mjs:68"
+    ],
+    "default_in_code": "yes (value is non-secret: gateway 'http://localhost:8000'; Python 'http://brain:8000')",
+    "status": "consumed+declared",
+    "notes": "NOT set in brandme-infra/helm/brandme/templates/gateway.yaml, and brain is not in the chart: /api/v1/system/health (routes/v1/index.ts:73-78) would call http://localhost:8000 in GKE and answer 503 degraded."
+  },
+  {
+    "name": "CHAIN_SERVICE_URL",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:150",
+      "brandme-gateway/src/config/index.ts:178",
+      "brandme-gateway/src/services/rights.ts:71-72",
+      "brandme-core/orchestrator/tasks.py:279",
+      "brandme-agents/agentic/tools/blockchain_tools.py:17"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.example:51",
+      "brandme-gateway/.env.example:33",
+      "brandme-core/.env.example:27",
+      "brandme-agents/agentic/.env.example:16",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:83"
+    ],
+    "default_in_code": "yes (value is non-secret: gateway 'http://localhost:3003'; tasks.py 'http://chain:3001'; blockchain_tools 'http://localhost:3001')",
+    "status": "consumed+declared",
+    "notes": "Gateway default port 3003 does not match the chain service's default 3001 (documented at .env.example:49-50). .env.example:51 is commented out on purpose because Python os.getenv treats set-but-empty differently (.env.example:44-46)."
+  },
+  {
+    "name": "RIGHTS_SERVICE_URL",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:151",
+      "brandme-gateway/src/middleware/mode.ts:34",
+      "brandme-gateway/src/services/rights.ts:73"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.example:52",
+      "brandme-gateway/.env.example:34",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:88"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Unset: rights routes answer 503 'This service is not configured.' (services/rights.ts:13). Helm sets it to the read-api Service URL + /rights."
+  },
+  {
+    "name": "PRIVACY_SERVICE_URL",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:152",
+      "brandme-gateway/src/middleware/mode.ts:35",
+      "brandme-gateway/src/services/rights.ts:74"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.example:53",
+      "brandme-gateway/.env.example:35",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:90"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Unset: 503 per route."
+  },
+  {
+    "name": "PRIVACY_EXPORT_SERVICE_URL",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:153",
+      "brandme-gateway/src/middleware/mode.ts:36",
+      "brandme-gateway/src/services/rights.ts:75"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.example:54",
+      "brandme-gateway/.env.example:37",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:96"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Unset: 'Exports are not configured.' (rights.ts:84)."
+  },
+  {
+    "name": "RIGHTS_SERVICE_TOKEN",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:154",
+      "brandme_core/read_api/config.py:34",
+      "brandme_core/privacy_exports/config.py:43"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".env.example:55",
+      "brandme-gateway/.env.example:43",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:92",
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:25",
+      "brandme-infra/helm/brandme/values.yaml:68",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:30"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "32-256 chars; Helm injects via secretKeyRef only. Read API requires it distinct from PRIVACY_SERVICE_TOKEN (read_api/config.py:35)."
+  },
+  {
+    "name": "PRIVACY_SERVICE_TOKEN",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:155",
+      "brandme_core/read_api/config.py:34",
+      "brandme_core/privacy_exports/config.py:43"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".env.example:56",
+      "brandme-gateway/.env.example:44",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:93",
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:25",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:31"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "PRIVACY_EXPORT_SERVICE_TOKEN",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:156",
+      "brandme_core/privacy_exports/config.py:41"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".env.example:57",
+      "brandme-gateway/.env.example:45",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:98",
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:36",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:32"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Export worker also needs it although it serves no HTTP (privacy_exports/config.py:41-44)."
+  },
+  {
+    "name": "CHAIN_SERVICE_TOKEN",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:157",
+      "brandme-chain/src/config/index.ts:42",
+      "brandme-chain/src/routes/operations.ts:34-35",
+      "brandme_core/privacy_exports/config.py:43"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".env.example:58",
+      "brandme-gateway/.env.example:46",
+      "brandme-chain/.env.example:19",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:85",
+      "brandme-infra/helm/brandme/templates/chain.yaml:66",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:33"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Chain requires it whenever SPANNER_* ids are set (chain config/index.ts:57-60); compared with timingSafeEqual (operations.ts:35)."
+  },
+  {
+    "name": "SPANNER_PROJECT_ID",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:158",
+      "brandme-chain/src/config/index.ts:43",
+      "brandme_core/config.py:40",
+      "brandme_core/env.py:56",
+      "brandme_core/spanner/client.py:163",
+      "brandme_core/spanner/pool.py:262",
+      "brandme-core/brain/main.py:34",
+      "brandme-core/policy/main.py:71",
+      "brandme-core/orchestrator/main.py:34",
+      "brandme-core/orchestrator/tasks.py:33",
+      "brandme-core/orchestrator/worker.py:38",
+      "brandme-agents/compliance/src/main.py:33",
+      "brandme-agents/knowledge/src/main.py:28",
+      "brandme-agents/identity/src/main.py:92",
+      "brandme-governance/governance_console/main.py:35",
+      "brandme-cube/src/main.py:57",
+      "brandme-data/spanner/migrations/runner.py:123",
+      "brandme_core/events/worker.py:50",
+      "brandme_core/events/retention.py:343",
+      "brandme_core/privacy_exports/config.py:32",
+      "brandme_core/read_api/config.py:31",
+      "brandme_core/domains/persona/app.py:93",
+      "brandme_core/domains/persona/ingress.py:276",
+      "brandme_core/domains/persona/jobs.py:75",
+      "scripts/brandme.mjs:64"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "docker-compose.yml:46",
+      "docker-compose.yml:166",
+      ".env.example:24",
+      "brandme-gateway/.env.example:51",
+      "brandme-chain/.env.example:16",
+      "brandme-infra/helm/brandme/templates/_helpers.tpl:200",
+      "tests/conftest.py:33"
+    ],
+    "default_in_code": "yes (value is non-secret: 'test-project' in gateway/config.py/compliance/knowledge/cube; 'brandme-project' in spanner/client.py:163, pool.py:262, identity main.py:92, policy main.py:71)",
+    "status": "consumed+declared",
+    "notes": "Inconsistent code defaults ('test-project' vs 'brandme-project'). Foundation processes (read API, exports, workers, persona) refuse to start without an explicit value."
+  },
+  {
+    "name": "SPANNER_INSTANCE_ID",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:159",
+      "brandme-chain/src/config/index.ts:44",
+      "brandme_core/config.py:41",
+      "brandme_core/spanner/client.py:164",
+      "brandme_core/spanner/pool.py:263",
+      "brandme-data/spanner/migrations/runner.py:124",
+      "brandme_core/events/worker.py:50",
+      "brandme_core/read_api/config.py:31",
+      "brandme_core/privacy_exports/config.py:32",
+      "brandme_core/domains/persona/app.py:93",
+      "scripts/brandme.mjs:65"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "docker-compose.yml:47",
+      "docker-compose.yml:167",
+      ".env.example:25",
+      "brandme-gateway/.env.example:52",
+      "brandme-chain/.env.example:17",
+      "brandme-infra/helm/brandme/templates/_helpers.tpl:202",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:20",
+      "tests/conftest.py:34"
+    ],
+    "default_in_code": "yes (value is non-secret: 'brandme-instance')",
+    "status": "consumed+declared",
+    "notes": "Sandbox value 'brandme-sandbox'."
+  },
+  {
+    "name": "SPANNER_DATABASE_ID",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:160",
+      "brandme-chain/src/config/index.ts:45",
+      "brandme_core/config.py:42",
+      "brandme_core/spanner/client.py:165",
+      "brandme_core/spanner/pool.py:264",
+      "brandme-data/spanner/migrations/runner.py:125",
+      "brandme_core/events/worker.py:50",
+      "brandme_core/read_api/config.py:31",
+      "brandme_core/privacy_exports/config.py:32",
+      "brandme_core/domains/persona/app.py:93",
+      "scripts/brandme.mjs:66"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "docker-compose.yml:48",
+      "docker-compose.yml:168",
+      ".env.example:26",
+      "brandme-gateway/.env.example:53",
+      "brandme-chain/.env.example:18",
+      "brandme-infra/helm/brandme/templates/_helpers.tpl:204",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:21",
+      "tests/conftest.py:35"
+    ],
+    "default_in_code": "yes (value is non-secret: 'brandme-db')",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "SPANNER_EMULATOR_HOST",
+    "consumers": [
+      "brandme-gateway/src/middleware/identity/store.ts:91",
+      "brandme-gateway/src/middleware/mode.ts:28",
+      "brandme-chain/src/config/index.ts:61",
+      "brandme-chain/src/midnight/spanner-store.ts:194",
+      "brandme_core/spanner/client.py:54",
+      "brandme_core/spanner/pool.py:90",
+      "brandme_core/config.py:595",
+      "brandme_core/domains/persona/app.py:91",
+      "brandme_core/domains/persona/ingress.py:272",
+      "brandme_core/domains/persona/jobs.py:73",
+      "brandme_core/domains/persona/kernel.py:407",
+      "brandme_core/events/worker.py:43",
+      "brandme_core/events/retention.py:339",
+      "brandme_core/privacy_exports/config.py:26",
+      "brandme_core/read_api/config.py:28",
+      "brandme-data/spanner/migrations/runner.py:132",
+      "scripts/brandme.mjs:63"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:45",
+      "docker-compose.yml:165",
+      ".env.example:23",
+      "brandme-gateway/.env.example:50",
+      ".github/workflows/ci-cd.yml:64",
+      ".github/workflows/ci-cd.yml:142",
+      ".github/workflows/ci-cd.yml:223",
+      ".github/workflows/chain-tests.yml:87",
+      ".github/workflows/consumer-ui.yml:69",
+      "tests/conftest.py:32"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Required in demo/development and refused in sandbox/production by every foundation loader and the gateway mode guard; chain refuses it only when ENVIRONMENT=production (chain config/index.ts:61)."
+  },
+  {
+    "name": "GOOGLE_CLOUD_SPANNER_MULTIPLEXED_SESSIONS",
+    "consumers": [
+      "brandme-gateway/src/middleware/identity/store.ts:96",
+      "brandme-chain/src/midnight/spanner-store.ts:195"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: code sets 'false' when SPANNER_EMULATOR_HOST is set)",
+    "status": "consumed-undeclared",
+    "notes": "Written, not read, by application code (emulator workaround, store.ts:92-98). Read by @google-cloud/spanner 9.0.0."
+  },
+  {
+    "name": "GOOGLE_CLOUD_SPANNER_MULTIPLEXED_SESSIONS_FOR_RW",
+    "consumers": [
+      "brandme-gateway/src/middleware/identity/store.ts:97",
+      "brandme-chain/src/midnight/spanner-store.ts:196"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 'false' under the emulator)",
+    "status": "consumed-undeclared",
+    "notes": "Same as above."
+  },
+  {
+    "name": "NATS_URL",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:161",
+      "brandme-gateway/src/index.ts:89",
+      "brandme-gateway/src/services/nats.ts:19-22"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:174",
+      ".env.example:61",
+      "brandme-gateway/.env.example:56",
+      "brandme-core/.env.example:10",
+      "infrastructure/helm/brandme/values.yaml:60-61",
+      "brandme-infra/helm/brandme-umbrella/values.yaml:31",
+      "agents/database-agent.sh:132"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Optional; unset: legacy /scan answers 503 (routes/scan.ts:46-48). Not set by the current Helm chart. Python NATS client (brandme_core/health.py:22) has no URL reader."
+  },
+  {
+    "name": "NATS_MAX_RECONNECT_ATTEMPTS",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:162",
+      "brandme-gateway/src/services/nats.ts:24"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-gateway/.env.example:57"
+    ],
+    "default_in_code": "yes (value is non-secret: 10)",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "DEFAULT_REGION",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:163",
+      "brandme-gateway/src/middleware/requestLogger.ts:34"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-gateway/.env.example:59",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:57",
+      "brandme-data/.env.example:18"
+    ],
+    "default_in_code": "yes (value is non-secret: 'us-east1')",
+    "status": "consumed+declared",
+    "notes": "Same concept as the Python services' REGION_DEFAULT (different name)."
+  },
+  {
+    "name": "REGION_DEFAULT",
+    "consumers": [
+      "brandme-core/brain/main.py:33",
+      "brandme-core/policy/main.py:30",
+      "brandme-core/orchestrator/main.py:33",
+      "brandme-core/orchestrator/worker.py:37",
+      "brandme-agents/compliance/src/main.py:32",
+      "brandme-agents/knowledge/src/main.py:27",
+      "brandme-governance/governance_console/main.py:34",
+      "brandme_core/env.py:64"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:51",
+      "brandme-core/.env.example:13"
+    ],
+    "default_in_code": "yes (value is non-secret: 'us-east1')",
+    "status": "consumed+declared",
+    "notes": "Name differs from the gateway's DEFAULT_REGION; brandme-data/.env.example:18 declares DEFAULT_REGION for Python code that reads REGION_DEFAULT."
+  },
+  {
+    "name": "CORS_ORIGINS",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:164",
+      "brandme-gateway/src/middleware/mode.ts:65",
+      "brandme-chain/src/config/index.ts:48",
+      "brandme_core/config.py:72",
+      "brandme_core/env.py:66"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:169",
+      ".env.example:19",
+      "brandme-gateway/.env.example:60",
+      "brandme-chain/.env.example:4",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:75",
+      "scripts/brandme.mjs:70"
+    ],
+    "default_in_code": "yes (value is non-secret: gateway 'http://localhost:3000,http://localhost:3002'; chain 'http://localhost:3000'; brandme_core/config.py 'http://localhost:*,http://localhost:3000'; env.py '*')",
+    "status": "consumed+declared",
+    "notes": "brandme_core/env.py:66 defaults to '*' and parse_cors_origins returns ['*'] (env.py:155-157) for the legacy Python services."
+  },
+  {
+    "name": "PUBLIC_ORIGINS",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:165",
+      "brandme-gateway/src/middleware/mode.ts:64",
+      "brandme-gateway/src/middleware/session.ts:118"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:170",
+      ".env.example:20",
+      "brandme-gateway/.env.example:63",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:73",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:44-45",
+      "scripts/brandme.mjs:71"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://localhost:3000,http://localhost:3002')",
+    "status": "consumed+declared",
+    "notes": "https only in strict modes; sandbox value is REPLACE_ME."
+  },
+  {
+    "name": "RATE_LIMIT_WINDOW_MS",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:166"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-gateway/.env.example:66"
+    ],
+    "default_in_code": "yes (value is non-secret: 900000)",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "RATE_LIMIT_MAX_REQUESTS",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:167"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-gateway/.env.example:67"
+    ],
+    "default_in_code": "yes (value is non-secret: 100)",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "RATE_LIMIT_IP_MAX_REQUESTS",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:168"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 1500)",
+    "status": "consumed-undeclared",
+    "notes": "Pre-auth per-address limit; no template or chart value exposes it."
+  },
+  {
+    "name": "RATE_LIMIT_MAX_KEYS",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:169"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 10000)",
+    "status": "consumed-undeclared",
+    "notes": "Listed in docs/build/security/credential-manifest.yaml but declared in no template."
+  },
+  {
+    "name": "TRUST_PROXY",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:170",
+      "brandme-gateway/src/index.ts:35"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/gateway.yaml:78",
+      "brandme-infra/helm/brandme/values.yaml:121",
+      "brandme-infra/helm/brandme/ci/test-values.yaml:47"
+    ],
+    "default_in_code": "yes (value is non-secret: off)",
+    "status": "consumed+declared",
+    "notes": "'true' refused (config/index.ts:53-56). Required by the chart when ingress.enabled (validate.yaml:15-17). Not in any .env.example."
+  },
+  {
+    "name": "LOG_LEVEL",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:171",
+      "brandme-chain/src/config/index.ts:49",
+      "brandme_core/env.py:65"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.dev.yml:17",
+      ".env.example:63",
+      "brandme-gateway/.env.example:70",
+      "brandme-chain/.env.example:5",
+      "brandme-core/.env.example:19",
+      "brandme-cube/.env.example:15",
+      ".env.deploy.example:130",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:55",
+      "brandme-infra/helm/brandme/templates/chain.yaml:55",
+      "infrastructure/helm/brandme/values.yaml:62"
+    ],
+    "default_in_code": "yes (value is non-secret: 'info' / 'INFO')",
+    "status": "consumed+declared",
+    "notes": "Node services accept lowercase pino levels only (zod enum); .env.deploy.example uses 'INFO'."
+  },
+  {
+    "name": "CONSUMER_DOMAIN_SERVICE_URL",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:172",
+      "brandme-gateway/src/services/domains.ts:38"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:176",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:102"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Unset: every consumer-domain route answers 503 (domains.ts:43)."
+  },
+  {
+    "name": "CONSUMER_DOMAIN_ASSERTION_KEY",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:173",
+      "brandme-gateway/src/services/domains.ts:43-44"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      "docker-compose.yml:177-180",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:106",
+      "brandme-infra/helm/brandme/values.yaml:86",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:35",
+      "scripts/dev/consumer-domain-keys.mjs:53-54"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "PKCS#8 P-256 private key; compose loads it from an env_file outside the repo (BRANDME_DEV_ASSERTION_DIR); Helm via secretKeyRef. Gateway-only."
+  },
+  {
+    "name": "CONSUMER_DOMAIN_ASSERTION_KID",
+    "consumers": [
+      "brandme-gateway/src/config/index.ts:174",
+      "brandme-gateway/src/services/domains.ts:39"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "docker-compose.yml:177-180",
+      "brandme-infra/helm/brandme/templates/gateway.yaml:104",
+      "brandme-infra/helm/brandme/values.yaml:206",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:77",
+      "scripts/dev/consumer-domain-keys.mjs:53"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Must name a key in CONSUMER_DOMAIN_ASSERTION_JWKS (validate.yaml:75-77)."
+  },
+  {
+    "name": "CONSUMER_DOMAIN_ASSERTION_ISSUER",
+    "consumers": [
+      "brandme_core/config.py:507",
+      "brandme_core/domains/persona/app.py:93"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "docker-compose.yml:206",
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:69",
+      "brandme-infra/helm/brandme/values.yaml:203"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Must equal the gateway's fixed issuer 'brandme-gateway' (services/domains.ts:23; validate.yaml:62-64)."
+  },
+  {
+    "name": "CONSUMER_DOMAIN_ASSERTION_JWKS",
+    "consumers": [
+      "brandme_core/config.py:508",
+      "brandme_core/domains/persona/app.py:94",
+      "brandme_core/domains/persona/app.py:116"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "docker-compose.yml:207-211",
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:71",
+      "brandme-infra/helm/brandme/values.yaml:212-213",
+      "scripts/dev/consumer-domain-keys.mjs:55"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Public P-256 keys only; a private member ('d') is refused at render (helpers.tpl:159-161) and at boot (config.py:501-502)."
+  },
+  {
+    "name": "JWT_SECRET",
+    "consumers": [
+      "brandme-gateway/src/middleware/mode.ts:62"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      "brandme-infra/helm/brandme-umbrella/values.yaml:85",
+      "scripts/regression/modules/brandme_gateway.sh:8"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Read only to REFUSE boot in strict modes; never used for verification. Declared by the legacy umbrella chart and injected (test value) by the regression module. Legacy name."
+  },
+  {
+    "name": "ENABLE_STUB_MODE",
+    "consumers": [
+      "brandme_core/config.py:68",
+      "brandme_core/config.py:227",
+      "brandme-gateway/src/middleware/mode.ts:27"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: unset/false)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy stub switch. Truthy values are refused in sandbox/production (config.py:235-243, mode.ts:63); brandme-chain throws at import when =true (config/index.ts:33-37). No template declares it; nothing in the current tree reads it to enable a stub (brandme_core/zk has no reader)."
+  },
+  {
+    "name": "MIDNIGHT_FALLBACK_MODE",
+    "consumers": [
+      "brandme_core/config.py:228",
+      "brandme-chain/src/config/index.ts:33-37",
+      "brandme-gateway/src/middleware/mode.ts:27"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: unset/false)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy stub switch. Truthy values are refused in sandbox/production (config.py:235-243, mode.ts:63); brandme-chain throws at import when =true (config/index.ts:33-37). No template declares it; nothing in the current tree reads it to enable a stub (brandme_core/zk has no reader)."
+  },
+  {
+    "name": "CARDANO_FALLBACK_MODE",
+    "consumers": [
+      "brandme_core/config.py:229",
+      "brandme-chain/src/config/index.ts:33-37",
+      "brandme-gateway/src/middleware/mode.ts:27"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: unset/false)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy stub switch. Truthy values are refused in sandbox/production (config.py:235-243, mode.ts:63); brandme-chain throws at import when =true (config/index.ts:33-37). No template declares it; nothing in the current tree reads it to enable a stub (brandme_core/zk has no reader)."
+  },
+  {
+    "name": "ZK_ALLOW_STUB_FALLBACK",
+    "consumers": [
+      "brandme_core/config.py:230",
+      "brandme-gateway/src/middleware/mode.ts:27"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: unset/false)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy stub switch. Truthy values are refused in sandbox/production (config.py:235-243, mode.ts:63); brandme-chain throws at import when =true (config/index.ts:33-37). No template declares it; nothing in the current tree reads it to enable a stub (brandme_core/zk has no reader)."
+  },
+  {
+    "name": "ALLOW_STUB_FALLBACK",
+    "consumers": [
+      "brandme_core/config.py:231",
+      "brandme-gateway/src/middleware/mode.ts:27"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: unset/false)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy stub switch. Truthy values are refused in sandbox/production (config.py:235-243, mode.ts:63); brandme-chain throws at import when =true (config/index.ts:33-37). No template declares it; nothing in the current tree reads it to enable a stub (brandme_core/zk has no reader)."
+  },
+  {
+    "name": "ENABLE_STRICT_VALIDATION",
+    "consumers": [
+      "brandme_core/config.py:69"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: false)",
+    "status": "consumed-undeclared",
+    "notes": "No other reference found."
+  },
+  {
+    "name": "SPANNER_POOL_SIZE",
+    "consumers": [
+      "brandme_core/config.py:43",
+      "brandme_core/spanner/client.py:166",
+      "brandme_core/spanner/pool.py:265"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 10)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy Spanner pool tuning; no template."
+  },
+  {
+    "name": "SPANNER_MAX_SESSIONS",
+    "consumers": [
+      "brandme_core/config.py:44",
+      "brandme_core/spanner/client.py:167",
+      "brandme_core/spanner/pool.py:266"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 100)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy Spanner pool tuning; no template."
+  },
+  {
+    "name": "SPANNER_MIN_SESSIONS",
+    "consumers": [
+      "brandme_core/spanner/pool.py:265"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 10)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy pool tuning; no template."
+  },
+  {
+    "name": "SPANNER_PING_INTERVAL",
+    "consumers": [
+      "brandme_core/spanner/pool.py:267"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 300)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy pool tuning; no template."
+  },
+  {
+    "name": "SPANNER_ACQUIRE_TIMEOUT",
+    "consumers": [
+      "brandme_core/spanner/pool.py:268"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 30.0)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy pool tuning; no template."
+  },
+  {
+    "name": "SPANNER_ENABLE_BACKPRESSURE",
+    "consumers": [
+      "brandme_core/spanner/pool.py:269"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: true)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy pool tuning; no template."
+  },
+  {
+    "name": "FIRESTORE_PROJECT_ID",
+    "consumers": [
+      "brandme_core/config.py:47",
+      "brandme_core/env.py:61",
+      "brandme_core/firestore/client.py:181"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "docker-compose.yml:50",
+      ".env.example:28",
+      "tests/conftest.py:37"
+    ],
+    "default_in_code": "yes (value is non-secret: 'test-project' at config.py:47, 'brandme-dev' at env.py:61, 'brandme-project' at firestore/client.py:181)",
+    "status": "consumed+declared",
+    "notes": "Three different code defaults for the same identifier. Not in Helm (no Firestore workload in the chart)."
+  },
+  {
+    "name": "FIRESTORE_EMULATOR_HOST",
+    "consumers": [
+      "brandme_core/firestore/client.py:38",
+      "brandme-gateway/src/middleware/mode.ts:28",
+      "packages/firestore-rules/test/rules.test.ts:10"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:49",
+      ".env.example:27",
+      ".github/workflows/ci-cd.yml:174",
+      ".github/workflows/ci-cd.yml:194",
+      ".github/workflows/ci-cd.yml:225",
+      "tests/conftest.py:36"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Refused by the gateway mode guard in strict modes. The firestore client itself only logs which mode it is in; the google SDK reads the variable."
+  },
+  {
+    "name": "HTTP_TIMEOUT",
+    "consumers": [
+      "brandme_core/config.py:50"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 30)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy ServiceConfig tuning; no template."
+  },
+  {
+    "name": "HTTP_MAX_RETRIES",
+    "consumers": [
+      "brandme_core/config.py:51"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 3)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy ServiceConfig tuning; no template."
+  },
+  {
+    "name": "HTTP_RETRY_BACKOFF",
+    "consumers": [
+      "brandme_core/config.py:52"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 0.5)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy ServiceConfig tuning; no template."
+  },
+  {
+    "name": "HTTP_POOL_CONNECTIONS",
+    "consumers": [
+      "brandme_core/config.py:53"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 10)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy ServiceConfig tuning; no template."
+  },
+  {
+    "name": "HTTP_POOL_MAXSIZE",
+    "consumers": [
+      "brandme_core/config.py:54"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 20)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy ServiceConfig tuning; no template."
+  },
+  {
+    "name": "POLICY_SERVICE_URL",
+    "consumers": [
+      "brandme_core/config.py:58",
+      "brandme_core/env.py:70",
+      "brandme-agents/agentic/tools/policy_tools.py:17"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:53",
+      "docker-compose.yml:164",
+      ".env.example:18",
+      "brandme-agents/agentic/.env.example:17"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://policy:8001' in brandme_core; 'http://localhost:8103' in agentic policy_tools)",
+    "status": "consumed+declared",
+    "notes": "Agentic tool default port 8103 matches no service (policy is 8001). docker-compose.yml:164 passes it to the gateway, whose config does not read it."
+  },
+  {
+    "name": "ORCHESTRATOR_SERVICE_URL",
+    "consumers": [
+      "brandme_core/config.py:59",
+      "brandme_core/env.py:71"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:54"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://orchestrator:8002')",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "KNOWLEDGE_SERVICE_URL",
+    "consumers": [
+      "brandme_core/config.py:60",
+      "brandme_core/env.py:72",
+      "brandme-core/orchestrator/tasks.py:198-200"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:55",
+      "brandme-core/.env.example:26"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://knowledge:8003' in brandme_core; 'http://knowledge:8101' in tasks.py:200)",
+    "status": "consumed+declared",
+    "notes": "brandme-core/.env.example:26 sets http://localhost:8001 (the policy port). tasks.py default 8101 matches the legacy agents Dockerfile port, not compose."
+  },
+  {
+    "name": "COMPLIANCE_SERVICE_URL",
+    "consumers": [
+      "brandme_core/config.py:61",
+      "brandme_core/env.py:73",
+      "brandme-core/orchestrator/tasks.py:378-380",
+      "brandme-core/orchestrator/tasks.py:517-519"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:56",
+      "brandme-core/.env.example:28"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://compliance:8004' in brandme_core; 'http://compliance:8102' in tasks.py)",
+    "status": "consumed+declared",
+    "notes": "brandme-core/.env.example:28 sets http://localhost:8002 (the orchestrator port)."
+  },
+  {
+    "name": "IDENTITY_SERVICE_URL",
+    "consumers": [
+      "brandme_core/config.py:62",
+      "brandme_core/env.py:74"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:57"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://identity:8005')",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "GOVERNANCE_SERVICE_URL",
+    "consumers": [
+      "brandme_core/config.py:63",
+      "brandme_core/env.py:75"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:58"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://governance:8006' at config.py:63; 'http://governance_console:8006' at env.py:75)",
+    "status": "consumed+declared",
+    "notes": "Two different default hostnames for the same service."
+  },
+  {
+    "name": "CUBE_SERVICE_URL",
+    "consumers": [
+      "brandme_core/config.py:64",
+      "brandme_core/env.py:76"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:59"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://cube:8007')",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "PYTHONPATH",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:44",
+      "brandme-core/Dockerfile:12",
+      "brandme-core/Dockerfile:90",
+      "scripts/brandme.mjs:67"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "Interpreter setting (consumed by Python, not by repository code)."
+  },
+  {
+    "name": "HOSTNAME",
+    "consumers": [
+      "brandme-data/spanner/migrations/runner.py:297"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-console/Dockerfile:11",
+      "brandme-infra/helm/brandme/templates/console.yaml:55",
+      ".github/scripts/smoke-image.sh:124"
+    ],
+    "default_in_code": "yes (value is non-secret: 'runner' in runner.py)",
+    "status": "consumed+declared",
+    "notes": "Two unrelated uses: migration ledger applied_by, and Next.js standalone bind address (0.0.0.0)."
+  },
+  {
+    "name": "BRANDME_MEDIA_BUCKET",
+    "consumers": [
+      "brandme_core/domains/media/gcs_store.py:330"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:74",
+      "brandme-infra/helm/brandme/values.yaml:217",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:83"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Unset: media and try-on routers are not mounted (persona/app.py:76-77); /health reports media 'not_configured'. Sandbox value empty; compose deliberately omits it (docker-compose.yml:193-194)."
+  },
+  {
+    "name": "STORAGE_EMULATOR_HOST",
+    "consumers": [
+      "brandme_core/domains/media/gcs_store.py:334",
+      "brandme_core/config.py:595"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "fake-gcs-server endpoint for demo/development; refused in strict modes (gcs_store.py:336-338). Set only by tests at runtime."
+  },
+  {
+    "name": "BRANDME_TRYON_PROVIDER",
+    "consumers": [
+      "brandme_core/domains/media/providers.py:94",
+      "brandme_core/config.py:527"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Only 'simulated' is known, demo/development only; any other value refuses startup. No template sets it (core-workloads.yaml:65 says so on purpose)."
+  },
+  {
+    "name": "READ_API_NETWORK",
+    "consumers": [
+      "brandme_core/read_api/config.py:37",
+      "brandme_core/config.py:427"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:20"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "undeployed|preview|preprod only; mainnet refused."
+  },
+  {
+    "name": "READ_API_CONTRACT_ADDRESS",
+    "consumers": [
+      "brandme_core/read_api/config.py:37"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:22"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "64 lowercase hex; no Preprod contract exists yet (values-sandbox.yaml:25-27)."
+  },
+  {
+    "name": "EXPORT_NETWORK",
+    "consumers": [
+      "brandme_core/privacy_exports/config.py:35",
+      "brandme_core/config.py:439"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:30"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "EXPORT_CONTRACT_ADDRESS",
+    "consumers": [
+      "brandme_core/privacy_exports/config.py:35"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:32"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "EXPORT_BUCKET",
+    "consumers": [
+      "brandme_core/privacy_exports/config.py:38"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:34",
+      "brandme-infra/helm/brandme/values.yaml:181",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:66"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Must start with brandme-<mode>-exports- (config.py:39). Sandbox suffix is REPLACE_ME; bucket existence not checked here."
+  },
+  {
+    "name": "EXPORT_STORAGE_EMULATOR_HOST",
+    "consumers": [
+      "brandme_core/privacy_exports/config.py:27"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Required in demo/development, refused in strict modes (config.py:28-31). Set only by tests."
+  },
+  {
+    "name": "OUTBOX_PUBSUB_TOPIC_PUBLIC",
+    "consumers": [
+      "brandme_core/events/worker.py:53"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:50",
+      "brandme-infra/helm/brandme/values.yaml:229",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:88"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Full topic path projects/<p>/topics/<t>; topic id must start with brandme-<env>- (events/pubsub.py:51-53). Worker checks the topic exists and has >=24h retention; never creates it (pubsub.py:94-103)."
+  },
+  {
+    "name": "OUTBOX_PUBSUB_TOPIC_MEMBER_PRIVATE",
+    "consumers": [
+      "brandme_core/events/worker.py:53"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:52",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:89"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "OUTBOX_PUBSUB_TOPIC_RESTRICTED",
+    "consumers": [
+      "brandme_core/events/worker.py:53"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:54",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:90"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "OUTBOX_EVENT_TYPES",
+    "consumers": [
+      "brandme_core/events/worker.py:55"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-infra/helm/brandme/templates/core-workloads.yaml:57",
+      "brandme-infra/helm/brandme/values.yaml:233"
+    ],
+    "default_in_code": "yes (value is non-secret: every known event type)",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "PUBSUB_EMULATOR_HOST",
+    "consumers": [
+      "brandme_core/events/worker.py:43-47",
+      "brandme_core/domains/persona/ingress.py:272-279",
+      "brandme-gateway/src/middleware/mode.ts:28"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Required by the events worker and the persona ingress in demo/development (worker.py:45-46), refused in strict modes. Not in compose (no Pub/Sub emulator service); tests start one from PUBSUB_EMULATOR_BIN."
+  },
+  {
+    "name": "LANE_PUBSUB_SUBSCRIPTION",
+    "consumers": [
+      "brandme_core/domains/persona/ingress.py:276",
+      "brandme_core/domains/persona/ingress.py:291"
+    ],
+    "kind": "resource_id",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "The consumer-domains Pub/Sub subscriber (persona/ingress.py) has no compose service, Helm workload or CI job; its subscription name is declared nowhere."
+  },
+  {
+    "name": "BRANDME_LOG_PSEUDONYM_KEY",
+    "consumers": [
+      "brandme_core/logging.py:68",
+      "brandme_core/logging.py:123"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "yes (redacted)",
+    "status": "consumed-undeclared",
+    "notes": "Falls back to a random per-process salt when shorter than 16 chars (logging.py:124-126), so pseudonyms are not stable across restarts/pods. Manifest status 'planned'."
+  },
+  {
+    "name": "BRANDME_LOG_REF_KEY",
+    "consumers": [
+      "brandme_core/mcp/refs.py:26",
+      "brandme_core/mcp/refs.py:48",
+      "brandme_core/orchestrator/composition.py:51"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "yes (redacted)",
+    "status": "consumed-undeclared",
+    "notes": "Only configured through compose_assistant, which has no caller outside brandme_core/orchestrator (grep). Manifest 'planned'."
+  },
+  {
+    "name": "BRANDME_DEV_ANTHROPIC_API_KEY",
+    "consumers": [
+      "brandme_core/orchestrator/model_planner.py:53",
+      "brandme_core/orchestrator/model_planner.py:277",
+      "brandme-agents/branding/src/graph_engine.py:62",
+      "brandme-agents/branding/src/graph_engine.py:78"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Dev-only Anthropic key; model planner refuses it outside demo/development (model_planner.py:284-285). No template, compose or chart declares it."
+  },
+  {
+    "name": "BRANDME_ASSISTANT_PLANNER",
+    "consumers": [
+      "brandme_core/orchestrator/model_planner.py:54"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: planner default deterministic)",
+    "status": "consumed-undeclared",
+    "notes": "Assistant planner setting (''|deterministic|anthropic); the assistant is not mounted by any service (compose_assistant has no caller)."
+  },
+  {
+    "name": "BRANDME_ASSISTANT_MODEL",
+    "consumers": [
+      "brandme_core/orchestrator/model_planner.py:55"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: planner default deterministic)",
+    "status": "consumed-undeclared",
+    "notes": "Assistant planner setting (must be in MODEL_PROFILES); the assistant is not mounted by any service (compose_assistant has no caller)."
+  },
+  {
+    "name": "BRANDME_ASSISTANT_EFFORT",
+    "consumers": [
+      "brandme_core/orchestrator/model_planner.py:56"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: planner default deterministic)",
+    "status": "consumed-undeclared",
+    "notes": "Assistant planner setting (); the assistant is not mounted by any service (compose_assistant has no caller)."
+  },
+  {
+    "name": "BRANDME_ASSISTANT_EGRESS_PROXY",
+    "consumers": [
+      "brandme_core/orchestrator/model_planner.py:57"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: planner default deterministic)",
+    "status": "consumed-undeclared",
+    "notes": "Assistant planner setting (validated proxy URL); the assistant is not mounted by any service (compose_assistant has no caller)."
+  },
+  {
+    "name": "BRANDME_ASSISTANT_CA_BUNDLE",
+    "consumers": [
+      "brandme_core/orchestrator/model_planner.py:58"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: planner default deterministic)",
+    "status": "consumed-undeclared",
+    "notes": "Assistant planner setting (); the assistant is not mounted by any service (compose_assistant has no caller)."
+  },
+  {
+    "name": "BRANDME_COMMERCE_PAYMENTS",
+    "consumers": [
+      "brandme_core/domains/commerce/composition.py:38",
+      "brandme_core/domains/commerce/composition.py:105-108"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 'simulated')",
+    "status": "consumed-undeclared",
+    "notes": "'simulated'|'stripe_test', demo/development only; presence outside those modes refuses startup (composition.py:105-106). The commerce domain has no deployed entry point."
+  },
+  {
+    "name": "STRIPE_TEST_SECRET_KEY",
+    "consumers": [
+      "brandme_core/domains/providers/payments/stripe_test.py:54",
+      "brandme_core/domains/providers/payments/stripe_test.py:162",
+      "brandme_core/domains/commerce/composition.py:39"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Must match ^(sk|rk)_test_ (stripe_test.py:56); live keys refused. Test-mode only. Also read by tests/test_commerce_stripe_live.py:27."
+  },
+  {
+    "name": "STRIPE_TEST_WEBHOOK_SECRET",
+    "consumers": [
+      "brandme_core/domains/providers/payments/stripe_test.py:160",
+      "brandme_core/domains/commerce/composition.py:39"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "whsec_ format; verify_webhook returns NOT_CONFIGURED without it (stripe_test.py:584-585)."
+  },
+  {
+    "name": "STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS",
+    "consumers": [
+      "brandme_core/domains/providers/payments/stripe_test.py:161",
+      "brandme_core/domains/commerce/composition.py:39"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Rotation overlap."
+  },
+  {
+    "name": "BRANDME_STRIPE_EGRESS_PROXY",
+    "consumers": [
+      "brandme_core/domains/providers/payments/stripe_test.py:163",
+      "brandme_core/domains/commerce/composition.py:40"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": ""
+  },
+  {
+    "name": "BRANDME_STRIPE_CA_BUNDLE",
+    "consumers": [
+      "brandme_core/domains/providers/payments/stripe_test.py:164",
+      "brandme_core/domains/commerce/composition.py:40"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Absolute path only (stripe_test.py:151)."
+  },
+  {
+    "name": "STRIPE_LOG",
+    "consumers": [
+      "brandme_core/domains/commerce/composition.py:68",
+      "brandme_core/domains/providers/redaction.py:138-139"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Read only to refuse 'debug'/'info' (SDK would log request bodies)."
+  },
+  {
+    "name": "NORDSTROM_IMPACT_ACCOUNT_REF / NORDSTROM_IMPACT_CREDENTIAL_SECRET / NORDSTROM_IMPACT_CAMPAIGN_REF / NORDSTROM_IMPACT_CATALOG_REF",
+    "consumers": [
+      "brandme_core/domains/providers/nordstrom.py:45-48",
+      "brandme_core/domains/providers/nordstrom.py:83-94",
+      "brandme_core/domains/providers/nordstrom.py:142-146"
+    ],
+    "kind": "resource_id",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Operator setup field names in the provider descriptor, not environment reads (no os.environ access in nordstrom.py). CREDENTIAL_SECRET is documented as a Secret Manager resource NAME. Status 'planned' in the manifest; no HTTP integration code."
+  },
+  {
+    "name": "CHAIN_RECONCILIATION_ENABLED",
+    "consumers": [
+      "brandme-chain/src/config/index.ts:41",
+      "brandme-chain/src/index.ts:46"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [
+      "brandme-chain/.env.example:24",
+      "brandme-infra/helm/brandme/templates/chain.yaml:57",
+      "brandme-infra/helm/brandme/values.yaml:137"
+    ],
+    "default_in_code": "yes (value is non-secret: enabled when store, contract and non-mainnet endpoints exist)",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "MIDNIGHT_NETWORK",
+    "consumers": [
+      "brandme-chain/src/config/index.ts:50",
+      "brandme-chain/src/midnight/capability.ts:31",
+      "brandme_core/config.py:409",
+      "brandme-chain/tests/network/env.ts:18",
+      "brandme-chain/scripts/test-midnight-preprod.mjs:17"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-chain/.env.example:8",
+      "brandme-infra/helm/brandme/templates/chain.yaml:59",
+      "brandme-infra/helm/brandme/values.yaml:35",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:24"
+    ],
+    "default_in_code": "yes (value is non-secret: 'preprod')",
+    "status": "consumed+declared",
+    "notes": "undeployed|preview|preprod|mainnet in code; Helm refuses mainnet. Default 'preprod' without a Blockfrost token resolves to no endpoints (capability.ts:33-38)."
+  },
+  {
+    "name": "MIDNIGHT_CONTRACT_ADDRESS",
+    "consumers": [
+      "brandme-chain/src/config/index.ts:51",
+      "brandme-chain/src/index.ts:42-50",
+      "brandme-chain/src/midnight/capability.ts:57"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "brandme-chain/.env.example:9",
+      "brandme-infra/helm/brandme/templates/chain.yaml:62",
+      "brandme-infra/helm/brandme/values.yaml:39",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:27"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Unset: capability 'unavailable', no reconciler/worker. values-sandbox.yaml:27 is REPLACE_ME (no Preprod deployment exists)."
+  },
+  {
+    "name": "MIDNIGHT_BLOCKFROST_PROJECT_ID",
+    "consumers": [
+      "brandme-chain/src/config/index.ts:52",
+      "brandme-chain/src/midnight/capability.ts:36-37",
+      "brandme-chain/src/midnight/network.ts:36-45",
+      "brandme-chain/scripts/test-midnight-preprod.mjs:6",
+      "brandme-chain/tests/network/env.ts:39"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      "brandme-chain/.env.example:10",
+      "brandme-infra/helm/brandme/templates/chain.yaml:67-69",
+      "brandme-infra/helm/brandme/values.yaml:80",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:34"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "A credential despite the _PROJECT_ID suffix (manifest note). Attached as ?project_id= query parameter to Blockfrost node/indexer URLs (network.ts:40-45); redaction code exists (network tests, redaction.ts). Helm injects it only when midnight.network=preprod."
+  },
+  {
+    "name": "MIDNIGHT_LOCAL_NODE_PORT",
+    "consumers": [
+      "brandme-chain/src/config/index.ts:53",
+      "brandme-chain/src/midnight/capability.ts:40-41"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-chain/.env.example:11"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "undeployed network only (127.0.0.1)."
+  },
+  {
+    "name": "MIDNIGHT_LOCAL_INDEXER_PORT",
+    "consumers": [
+      "brandme-chain/src/config/index.ts:54",
+      "brandme-chain/src/midnight/capability.ts:40-41"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-chain/.env.example:12"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "MN_PREPROD_SEEDS",
+    "consumers": [
+      "brandme-chain/scripts/test-midnight-preprod.mjs:7",
+      "brandme-chain/tests/network/env.ts:12",
+      "brandme-chain/tests/network/env.ts:35"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Test wallet seeds (3+ distinct 64-hex) for the Preprod verification runner only; no service reads them. Manifest designates a GitHub Environment secret, but no workflow references it."
+  },
+  {
+    "name": "MN_NODE_PORT / MN_INDEXER_PORT / MN_PROOF_PORT",
+    "consumers": [
+      "brandme-chain/tests/network/env.ts:21",
+      "brandme-chain/tests/network/env.ts:40"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-chain/scripts/local-network.sh:26"
+    ],
+    "default_in_code": "yes (value is non-secret: MN_PROOF_PORT 6300)",
+    "status": "consumed+declared",
+    "notes": "Test-only; printed by `scripts/local-network.sh env`."
+  },
+  {
+    "name": "COMPACT_HOME",
+    "consumers": [
+      "brandme-chain/scripts/verify-artifacts.mjs:25",
+      "brandme-chain/scripts/test-midnight-local.sh:16"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: .compact/<version>)",
+    "status": "consumed-undeclared",
+    "notes": "Developer toolchain path."
+  },
+  {
+    "name": "SKIP_ZK",
+    "consumers": [
+      "brandme-chain/scripts/test-midnight-local.sh:12"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 0)",
+    "status": "consumed-undeclared",
+    "notes": "Local compile without proving keys."
+  },
+  {
+    "name": "PROOF_SERVER_CA_BUNDLE",
+    "consumers": [
+      "brandme-chain/scripts/local-network.sh:17-18"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Local proof-server container behind a TLS-intercepting proxy."
+  },
+  {
+    "name": "CELERY_BROKER_URL",
+    "consumers": [
+      "brandme-core/orchestrator/celery_app.py:30"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 'redis://redis:6379/0')",
+    "status": "consumed-undeclared",
+    "notes": "No Redis service in any compose file; no Celery process is started anywhere."
+  },
+  {
+    "name": "CELERY_RESULT_BACKEND",
+    "consumers": [
+      "brandme-core/orchestrator/celery_app.py:31"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 'redis://redis:6379/1')",
+    "status": "consumed-undeclared",
+    "notes": "Same."
+  },
+  {
+    "name": "POLICY_URL",
+    "consumers": [
+      "brandme-cube/src/main.py:99",
+      "brandme-agents/agentic/orchestrator/agents.py:16"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-cube/.env.example:8",
+      "infrastructure/helm/brandme/templates/cube-service.yaml:33"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://policy:8001')",
+    "status": "consumed+declared",
+    "notes": "Cube/agentic use *_URL; brandme_core uses *_SERVICE_URL for the same services (inconsistent naming)."
+  },
+  {
+    "name": "ORCHESTRATOR_URL",
+    "consumers": [
+      "brandme-cube/src/main.py:109"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-cube/.env.example:9",
+      "infrastructure/helm/brandme/templates/cube-service.yaml:35"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://orchestrator:8002')",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "COMPLIANCE_URL",
+    "consumers": [
+      "brandme-cube/src/main.py:104",
+      "brandme-agents/agentic/orchestrator/agents.py:17"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-cube/.env.example:10",
+      "infrastructure/helm/brandme/templates/cube-service.yaml:37"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://compliance:8004')",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "IDENTITY_URL",
+    "consumers": [
+      "brandme-cube/src/main.py:114"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-cube/.env.example:11",
+      "infrastructure/helm/brandme/templates/cube-service.yaml:39"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://identity:8005')",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "KNOWLEDGE_URL",
+    "consumers": [
+      "brandme-agents/agentic/orchestrator/agents.py:18"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-cube/.env.example:12"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://knowledge:8003')",
+    "status": "consumed+declared",
+    "notes": "Declared for cube, which does not read it; read by the agentic CLI."
+  },
+  {
+    "name": "BRAIN_URL",
+    "consumers": [
+      "brandme-agents/agentic/orchestrator/agents.py:15"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 'http://brain:8000')",
+    "status": "consumed-undeclared",
+    "notes": "Agentic CLI only."
+  },
+  {
+    "name": "ENABLE_MOLECULAR_DATA",
+    "consumers": [
+      "brandme-cube/src/main.py:62"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: true)",
+    "status": "consumed-undeclared",
+    "notes": "Cube (legacy, untested)."
+  },
+  {
+    "name": "AR_SYNC_ENABLED",
+    "consumers": [
+      "brandme-cube/src/main.py:63"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: true)",
+    "status": "consumed-undeclared",
+    "notes": ""
+  },
+  {
+    "name": "AR_SYNC_LATENCY_TARGET_MS",
+    "consumers": [
+      "brandme-cube/src/main.py:64"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 100)",
+    "status": "consumed-undeclared",
+    "notes": ""
+  },
+  {
+    "name": "ZK_PROOF_ENABLED",
+    "consumers": [
+      "brandme-agents/identity/src/main.py:30"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: true)",
+    "status": "consumed-undeclared",
+    "notes": "Identity service (legacy profile); proofs are simulated per brandme_core/config.py:279-282."
+  },
+  {
+    "name": "ZK_PROOF_CACHE_TTL_MINUTES",
+    "consumers": [
+      "brandme-agents/identity/src/main.py:31"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 60)",
+    "status": "consumed-undeclared",
+    "notes": ""
+  },
+  {
+    "name": "NEO4J_URI",
+    "consumers": [
+      "brandme-agents/agentic/graph_db.py:313",
+      "brandme-agents/branding/src/database.py:71"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-agents/agentic/.env.example:7",
+      "agents/database-agent.sh:129"
+    ],
+    "default_in_code": "yes (value is non-secret: 'bolt://localhost:7687' / 'neo4j://localhost:7687')",
+    "status": "consumed+declared",
+    "notes": "No Neo4j service in compose or the current chart."
+  },
+  {
+    "name": "NEO4J_USER",
+    "consumers": [
+      "brandme-agents/agentic/graph_db.py:314"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-agents/agentic/.env.example:8",
+      "agents/database-agent.sh:130"
+    ],
+    "default_in_code": "yes (value is non-secret: 'neo4j')",
+    "status": "consumed+declared",
+    "notes": "Branding reads NEO4J_USERNAME instead (inconsistent)."
+  },
+  {
+    "name": "NEO4J_USERNAME",
+    "consumers": [
+      "brandme-agents/branding/src/database.py:72"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 'neo4j')",
+    "status": "consumed-undeclared",
+    "notes": ""
+  },
+  {
+    "name": "NEO4J_PASSWORD",
+    "consumers": [
+      "brandme-agents/agentic/graph_db.py:315",
+      "brandme-agents/branding/src/database.py:73"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      "brandme-agents/agentic/.env.example:9",
+      ".env.deploy.example:93",
+      "agents/database-agent.sh:64",
+      "agents/database-agent.sh:131"
+    ],
+    "default_in_code": "yes (redacted)",
+    "status": "consumed+declared",
+    "notes": "Code default is the literal string 'password' (graph_db.py:315, database.py:73): a default credential in source. agents/database-agent.sh writes the generated value to .deployment/database.env in plaintext."
+  },
+  {
+    "name": "NEO4J_DATABASE",
+    "consumers": [
+      "brandme-agents/branding/src/database.py:74"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 'neo4j')",
+    "status": "consumed-undeclared",
+    "notes": ""
+  },
+  {
+    "name": "NEO4J_READONLY_USER / NEO4J_READONLY_PASSWORD / NEO4J_WRITER_USER / NEO4J_WRITER_PASSWORD",
+    "consumers": [
+      "brandme-agents/branding/src/database.py:81-90"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "yes (redacted)",
+    "status": "consumed-undeclared",
+    "notes": "Branding engine is not wired into any service (graph_engine.py:60)."
+  },
+  {
+    "name": "BRANDME_GATEWAY_URL",
+    "consumers": [
+      "brandme-frontend/lib/server/gateway-proxy.ts:17-18",
+      "brandme-console/app/(ops)/providers/_data/gateway.ts:53",
+      "brandme-console/app/(ops)/providers/_data/gateway.ts:82"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:222",
+      "docker-compose.dev.yml:31",
+      ".github/workflows/consumer-ui.yml:72"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Server-side only. Unset: consumer /api/v1 proxy answers 503 gateway_unconfigured (gateway-proxy.ts:77-78); console answers not_connected. NOT set by the Helm console Deployment (console.yaml:51-61). http:// accepted only for loopback in demo/development (gateway-proxy.ts:19-23)."
+  },
+  {
+    "name": "BRANDME_GATEWAY_INTERNAL_URL",
+    "consumers": [
+      "brandme-console/app/(ops)/moderation/_lib/ops-gateway.ts:32"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Second name for the console's gateway base (moderation routes) alongside BRANDME_GATEWAY_URL (provider routes). Declared nowhere."
+  },
+  {
+    "name": "BRANDME_PUBLIC_ORIGIN",
+    "consumers": [
+      "brandme-frontend/lib/server/gateway-proxy.ts:68"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".github/workflows/consumer-ui.yml:73"
+    ],
+    "default_in_code": "yes (value is non-secret: the request's own origin)",
+    "status": "consumed+declared",
+    "notes": "Declared in CI only; not in compose."
+  },
+  {
+    "name": "NEXT_PUBLIC_BRANDME_MODE",
+    "consumers": [
+      "brandme-frontend/app/add/page.tsx:5",
+      "brandme-frontend/app/add/scan/page.tsx:8",
+      "brandme-frontend/app/closet/page.tsx:5",
+      "brandme-frontend/app/closet/items/[itemId]/page.tsx:10",
+      "brandme-frontend/app/closet/settings/page.tsx:5",
+      "brandme-frontend/app/style/page.tsx:5",
+      "brandme-frontend/app/style/outfits/[outfitId]/page.tsx:10",
+      "brandme-frontend/app/try/[itemId]/page.tsx:10",
+      "brandme-frontend/app/try/device-test/page.tsx:7",
+      "brandme-frontend/features/spatial/server/photoService.ts:36"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Build-time browser value gating the spatial pages (SpatialModeGate). Declared in no .env.example, compose service, Dockerfile or workflow; the consumer app has no Dockerfile. Not secret-shaped."
+  },
+  {
+    "name": "NEXT_PUBLIC_API_URL",
+    "consumers": [
+      "brandme-frontend/lib/api.ts:36"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 'http://localhost:8000')",
+    "status": "consumed-undeclared",
+    "notes": "Default is the brain port, bypassing the gateway. lib/api.ts has no importers in brandme-frontend (grep), so this client is dead code."
+  },
+  {
+    "name": "NEXT_PUBLIC_GATEWAY_URL",
+    "consumers": [
+      "brandme-console/lib/api.ts:11"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "brandme-console/.env.example:13"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://localhost:3000')",
+    "status": "consumed+declared",
+    "notes": "Default is the consumer app's port, not the gateway (3001) (console/.env.example:11-12). Baked at build; CI and the console Dockerfile pass no value (helm console.yaml:5-7), so a built image keeps the localhost default."
+  },
+  {
+    "name": "NEXT_PUBLIC_COMPLIANCE_SERVICE_URL",
+    "consumers": [
+      "brandme-console/lib/api.ts:12"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "brandme-console/.env.example:16"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://localhost:8102')",
+    "status": "consumed+declared",
+    "notes": "Legacy agents port 8102 (compose uses 8004)."
+  },
+  {
+    "name": "NEXT_PUBLIC_KNOWLEDGE_SERVICE_URL",
+    "consumers": [
+      "brandme-console/lib/api.ts:13"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "brandme-console/.env.example:17"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://localhost:8101')",
+    "status": "consumed+declared",
+    "notes": "Legacy port 8101 (compose uses 8003)."
+  },
+  {
+    "name": "NEXT_PUBLIC_CHAIN_SERVICE_URL",
+    "consumers": [
+      "brandme-console/lib/api.ts:14"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "brandme-console/.env.example:18"
+    ],
+    "default_in_code": "yes (value is non-secret: 'http://localhost:3001')",
+    "status": "consumed+declared",
+    "notes": "Browser-direct call to the chain service bypasses the gateway's CHAIN_SERVICE_TOKEN boundary."
+  },
+  {
+    "name": "NEXT_PUBLIC_CARDANO_EXPLORER_URL",
+    "consumers": [
+      "brandme-console/app/proof/[scanId]/page.tsx:159"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      "brandme-console/.env.example:21"
+    ],
+    "default_in_code": "unknown",
+    "status": "consumed+declared",
+    "notes": "Explorer link base (preprod.cardanoscan.io in the template)."
+  },
+  {
+    "name": "NEXT_PUBLIC_APP_NAME / NEXT_PUBLIC_APP_VERSION",
+    "consumers": [],
+    "kind": "public_identifier",
+    "declared_in": [
+      "brandme-console/next.config.js:20-21"
+    ],
+    "default_in_code": "yes (value is non-secret: 'Brand.Me Console' / '1.0.0')",
+    "status": "declared-unconsumed",
+    "notes": "Set via next.config env; no component reads them (grep)."
+  },
+  {
+    "name": "NEXT_TELEMETRY_DISABLED",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-console/Dockerfile:4",
+      "brandme-console/Dockerfile:11",
+      "brandme-infra/helm/brandme/templates/console.yaml:57",
+      ".github/workflows/ci-cd.yml:111",
+      ".github/workflows/consumer-ui.yml:22"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "Framework variable (Next.js reads it); not read by repository code."
+  },
+  {
+    "name": "BRANDME_AR_DEVICE_TEST",
+    "consumers": [
+      "brandme-frontend/app/try/device-test/page.tsx:8",
+      "scripts/assets/dev.mjs:11-12",
+      "scripts/assets/harness.tsx:43"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Dev-only AR device test page gate."
+  },
+  {
+    "name": "BRANDME_PHOTO_DEV_ENABLED",
+    "consumers": [
+      "brandme-frontend/features/spatial/server/photoService.ts:33"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: off)",
+    "status": "consumed-undeclared",
+    "notes": "Enables the dev-only Vertex AI Virtual Try-On route (app/try/photo/api/route.ts); also requires NODE_ENV!=production and NEXT_PUBLIC_BRANDME_MODE not production/sandbox."
+  },
+  {
+    "name": "BRANDME_PHOTO_DEV_PROJECT",
+    "consumers": [
+      "brandme-frontend/features/spatial/server/photoService.ts:38"
+    ],
+    "kind": "resource_id",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "GCP project for the Vertex call (photoService.ts:146)."
+  },
+  {
+    "name": "BRANDME_PHOTO_DEV_REGION",
+    "consumers": [
+      "brandme-frontend/features/spatial/server/photoService.ts:39"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 'us-central1')",
+    "status": "consumed-undeclared",
+    "notes": ""
+  },
+  {
+    "name": "BRANDME_VERTEX_ACCESS_TOKEN",
+    "consumers": [
+      "brandme-frontend/features/spatial/server/photoService.ts:40"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Short-lived server access token for Vertex AI, held by the Next.js server process only (file header says never import into a client bundle). Manifest 'planned'."
+  },
+  {
+    "name": "BRANDME_PHOTO_RETENTION_NOTICE",
+    "consumers": [
+      "brandme-frontend/features/spatial/server/photoService.ts:41"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Required disclosure text; provider disabled without it (photoService.ts:53-58)."
+  },
+  {
+    "name": "BRANDME_PYTHON",
+    "consumers": [
+      "Makefile:10",
+      "scripts/brandme.mjs:39",
+      "scripts/brandme.mjs:139",
+      "packages/contracts/scripts/generate.mjs:152",
+      "brandme-frontend/lib/testing/start-dev-gateway.mjs:11",
+      "brandme-gateway/src/routes/v1/me.test.ts:39",
+      "brandme-chain/tests/spanner/runtime.test.ts:13"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:226",
+      ".github/workflows/consumer-ui.yml:70",
+      ".github/workflows/deploy-validate.yml:67",
+      "scripts/validate-helm.sh:20-22"
+    ],
+    "default_in_code": "yes (value is non-secret: .venv/bin/python)",
+    "status": "consumed+declared",
+    "notes": "Interpreter selection for the hashed lock."
+  },
+  {
+    "name": "BRANDME_REQUIRE_EMULATORS",
+    "consumers": [
+      "scripts/brandme.mjs:446",
+      "tests/conftest.py:129",
+      "tests/foundation/conftest.py:40",
+      "brandme-gateway/src/routes/v1/me.test.ts:35",
+      "packages/firestore-rules/test/rules.test.ts:19"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:65",
+      ".github/workflows/ci-cd.yml:175",
+      ".github/workflows/ci-cd.yml:195",
+      ".github/workflows/ci-cd.yml:227"
+    ],
+    "default_in_code": "yes (value is non-secret: unset)",
+    "status": "consumed+declared",
+    "notes": "Test gate: turns skipped emulator suites into failures."
+  },
+  {
+    "name": "BRANDME_CHECK_SKIP_PYTHON",
+    "consumers": [
+      "scripts/brandme.mjs:447"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: unset)",
+    "status": "consumed-undeclared",
+    "notes": "Local speed flag."
+  },
+  {
+    "name": "SPANNER_EMULATOR_REST",
+    "consumers": [
+      "scripts/brandme.mjs:380",
+      "tests/test_commerce_migrations.py:19"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:144",
+      ".github/workflows/ci-cd.yml:224"
+    ],
+    "default_in_code": "yes (value is non-secret: http://127.0.0.1:9020 for the default emulator)",
+    "status": "consumed+declared",
+    "notes": "Test-only."
+  },
+  {
+    "name": "SPANNER_EMULATOR_GRPC",
+    "consumers": [
+      "tests/test_commerce_migrations.py:20"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: 127.0.0.1:9010)",
+    "status": "consumed-undeclared",
+    "notes": "Test-only."
+  },
+  {
+    "name": "PUBSUB_EMULATOR_BIN",
+    "consumers": [
+      "scripts/brandme.mjs:407",
+      "tests/foundation/test_outbox_delivery.py:268",
+      "tests/test_persona_lane_events.py:138"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:172"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Test-only; pinned download via scripts/python/fetch_pubsub_emulator.py."
+  },
+  {
+    "name": "GCS_EMULATOR_BIN",
+    "consumers": [
+      "scripts/brandme.mjs:408",
+      "tests/test_media_gcs_store.py:50",
+      "brandme-gateway/src/routes/v1/consumer-domains.test.ts:46"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:173"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Test-only (fake-gcs-server)."
+  },
+  {
+    "name": "STRIPE_MOCK_BIN",
+    "consumers": [
+      "tests/fixtures/providers/stripe_mock.py:36"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Test-only."
+  },
+  {
+    "name": "AP2_SDK_PYTHON",
+    "consumers": [
+      "tests/test_commerce_ap2.py:242"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Test-only."
+  },
+  {
+    "name": "BRANDME_SPATIAL_MANIFEST_DIR",
+    "consumers": [
+      "tests/test_wardrobe_placement.py:149"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: brandme-frontend/public/demo)",
+    "status": "consumed-undeclared",
+    "notes": "Test-only."
+  },
+  {
+    "name": "ANTHROPIC_AUTH_TOKEN",
+    "consumers": [
+      "tests/test_commerce_model_planner.py:541"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Test asserts the planner does NOT read it; no runtime reader."
+  },
+  {
+    "name": "BRANDME_DEV_ASSERTION_DIR",
+    "consumers": [
+      "scripts/dev/consumer-domain-keys.mjs:35"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "docker-compose.yml:179",
+      "docker-compose.yml:209"
+    ],
+    "default_in_code": "yes (value is non-secret: ~/.config/brandme/dev-keys)",
+    "status": "consumed+declared",
+    "notes": "Dev key-pair location outside the repo."
+  },
+  {
+    "name": "BRANDME_DEV_ASSERTION_KEY",
+    "consumers": [
+      "brandme-frontend/lib/testing/dev-domains.py:16",
+      "brandme-frontend/lib/testing/dev-gateway.mjs:8"
+    ],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Test harness only (consumer-ui live-domains job generates it)."
+  },
+  {
+    "name": "BRANDME_DOMAIN_REFERENCE",
+    "consumers": [
+      "brandme-frontend/lib/testing/dev-domains.py:15",
+      "brandme-frontend/lib/testing/dev-gateway.mjs:7"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".github/workflows/consumer-ui.yml:71"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Test-only pinned checkout path."
+  },
+  {
+    "name": "BRANDME_CONSUMER_URL / BRANDME_CONSOLE_URL / BRANDME_GATEWAY_HEALTH_URL / BRANDME_EVIDENCE_DIR / BRANDME_TEST_PACKAGE_JSON / BRANDME_VISUAL_CAPTURE_ONLY",
+    "consumers": [
+      "brandme-frontend/lib/testing/wait-for-apps.mjs:1",
+      "brandme-frontend/lib/testing/verify-shell.mjs:12-20",
+      "brandme-frontend/lib/testing/verify-visual.mjs:9-14",
+      "brandme-console/lib/testing/verify-shell-adapters.mjs:11"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".github/workflows/consumer-ui.yml:24-26",
+      ".github/workflows/consumer-ui.yml:74-76"
+    ],
+    "default_in_code": "yes (value is non-secret: localhost URLs)",
+    "status": "consumed+declared",
+    "notes": "Browser-test harness only."
+  },
+  {
+    "name": "SPATIAL_EVIDENCE_FILE / SPATIAL_RUN_DIR",
+    "consumers": [
+      "scripts/assets/playwright.config.mjs:21",
+      "scripts/assets/playwright.config.mjs:26"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".github/workflows/spatial-validation.yml:76-77"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Test-only."
+  },
+  {
+    "name": "REGRESSION_TIMEOUT",
+    "consumers": [
+      "scripts/regression/lib.sh:4"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".github/workflows/module-regression.yml:59"
+    ],
+    "default_in_code": "yes (value is non-secret: 600)",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "BRANDME_TOOLS_DIR",
+    "consumers": [
+      "scripts/validate-helm.sh:28"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: .cache/tools)",
+    "status": "consumed-undeclared",
+    "notes": ""
+  },
+  {
+    "name": "GITHUB_ACTIONS",
+    "consumers": [
+      "scripts/check-workspace.mjs:630"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Provided by GitHub Actions runtime."
+  },
+  {
+    "name": "MAGIC_API_KEY",
+    "consumers": [
+      ".mcp.json:9"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".claude/.env.local.example:8"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Developer tooling (21st.dev Magic MCP). Passed as a command-line argument to an unpinned `@21st-dev/magic@latest` (.mcp.json:8-9), visible in process listings; exported by .claude/hooks/session-start.sh from a gitignored file."
+  },
+  {
+    "name": "GCP_SA_KEY",
+    "consumers": [
+      ".github/workflows/ci-cd.yml:368"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:368"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Repository secret: long-lived service-account JSON key used by google-github-actions/auth credentials_json to push images to gcr.io/lux-realestate-app. Manifest rotation_class gcp-sa-key-legacy, 'retire'. Existence in GitHub unverifiable."
+  },
+  {
+    "name": "BM_DEPLOY_ENABLED",
+    "consumers": [
+      ".github/workflows/ci-cd.yml:404"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:404"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Repository variable gating the deploy job (`vars.`); existence unknown."
+  },
+  {
+    "name": "BM_GCP_PROJECT_ID",
+    "consumers": [
+      ".github/workflows/ci-cd.yml:438",
+      ".github/workflows/ci-cd.yml:466",
+      ".github/workflows/ci-cd.yml:473"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:438"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Repository variable; same concept as GCP_PROJECT_ID (env, hardcoded lux-realestate-app at :43) and SPANNER_PROJECT_ID."
+  },
+  {
+    "name": "BM_GCP_WIF_PROVIDER",
+    "consumers": [
+      ".github/workflows/ci-cd.yml:464"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      "scripts/provision/gcp-dev-identities.sh:465"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Workload Identity Federation provider resource name (keyless deploy auth)."
+  },
+  {
+    "name": "BM_GCP_DEPLOYER_SA",
+    "consumers": [
+      ".github/workflows/ci-cd.yml:465"
+    ],
+    "kind": "resource_id",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Deployer GSA email; gcp-dev-identities.sh creates bm-<env3>-fnd-deployer but does not print this variable name."
+  },
+  {
+    "name": "BM_GKE_CLUSTER",
+    "consumers": [
+      ".github/workflows/ci-cd.yml:471"
+    ],
+    "kind": "resource_id",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Repository variable. Workflow env GKE_CLUSTER=brandme-cluster (:45) is a second, unused name for the same concept."
+  },
+  {
+    "name": "BM_GCP_REGION",
+    "consumers": [
+      ".github/workflows/ci-cd.yml:472"
+    ],
+    "kind": "resource_id",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "consumed-undeclared",
+    "notes": "Workflow env GCP_REGION=us-east1 (:44) is unused; the deploy job uses this variable instead."
+  },
+  {
+    "name": "BM_GCP_PUSH_WIF_PROVIDER",
+    "consumers": [],
+    "kind": "resource_id",
+    "declared_in": [
+      "scripts/provision/gcp-dev-identities.sh:468"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "Printed by the provisioning script for a separate image-push identity; no workflow uses it (build-images still uses GCP_SA_KEY)."
+  },
+  {
+    "name": "GCP_PROJECT_ID",
+    "consumers": [
+      "deploy-brandme.sh:65",
+      "agents/infrastructure-agent.sh:16",
+      "agents/service-agent.sh:37",
+      ".github/workflows/ci-cd.yml:336",
+      ".github/workflows/ci-cd.yml:448"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:43",
+      ".env.deploy.example:37"
+    ],
+    "default_in_code": "yes (value is non-secret: 'lux-realestate-app' hardcoded in ci-cd.yml:43; 'brandme-prod' in .env.deploy.example:37)",
+    "status": "consumed+declared",
+    "notes": "Not read by any application code (Spanner uses SPANNER_PROJECT_ID). Three different project ids appear across the tree: lux-realestate-app (CI), brandme-prod (.env.deploy.example, umbrella values, infrastructure/helm), brandme (Makefile gcr.io/brandme)."
+  },
+  {
+    "name": "GCP_REGION",
+    "consumers": [
+      "deploy-brandme.sh:66",
+      "agents/infrastructure-agent.sh:33",
+      "agents/service-agent.sh:75"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:44",
+      ".env.deploy.example:40"
+    ],
+    "default_in_code": "yes (value is non-secret: 'us-east1' in CI; 'us-central1' in .env.deploy.example)",
+    "status": "consumed+declared",
+    "notes": "Workflow env value is never referenced in ci-cd.yml; legacy scripts only."
+  },
+  {
+    "name": "GKE_CLUSTER",
+    "consumers": [],
+    "kind": "resource_id",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:45"
+    ],
+    "default_in_code": "yes (value is non-secret: 'brandme-cluster')",
+    "status": "declared-unconsumed",
+    "notes": "Workflow env never referenced; deploy uses vars.BM_GKE_CLUSTER."
+  },
+  {
+    "name": "REGISTRY",
+    "consumers": [
+      ".github/workflows/ci-cd.yml:336",
+      ".github/workflows/ci-cd.yml:448"
+    ],
+    "kind": "resource_id",
+    "declared_in": [
+      ".github/workflows/ci-cd.yml:46"
+    ],
+    "default_in_code": "yes (value is non-secret: 'gcr.io')",
+    "status": "consumed+declared",
+    "notes": ""
+  },
+  {
+    "name": "ANTHROPIC_API_KEY",
+    "consumers": [
+      "deploy-brandme.sh:62",
+      "agents/service-agent.sh:55"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".env.deploy.example:15",
+      "brandme-agents/agentic/.env.example:12"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Consumed only by legacy deploy scripts (required, written into a Kubernetes Secret). No application code reads it: the planner uses BRANDME_DEV_ANTHROPIC_API_KEY; GraphRAG is disabled because langchain-anthropic 0.1.1 would read ambient ANTHROPIC_* (graph_rag.py:21-31)."
+  },
+  {
+    "name": "OPENAI_API_KEY",
+    "consumers": [
+      "deploy-brandme.sh:63",
+      "agents/service-agent.sh:56"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".env.deploy.example:19",
+      "brandme-agents/agentic/.env.example:13"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "No explicit application reader. langchain-openai (OpenAIEmbeddings, graph_rag.py:62) would read it implicitly, but that path is disabled."
+  },
+  {
+    "name": "BLOCKFROST_API_KEY",
+    "consumers": [
+      "deploy-brandme.sh:64",
+      "agents/service-agent.sh:57"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".env.deploy.example:27"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Legacy Cardano Blockfrost key; no application code reads it. The chain service uses MIDNIGHT_BLOCKFROST_PROJECT_ID (Midnight Blockfrost), a different credential."
+  },
+  {
+    "name": "CARDANO_NETWORK",
+    "consumers": [
+      "agents/service-agent.sh:95"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.deploy.example:30"
+    ],
+    "default_in_code": "yes (value is non-secret: 'preprod')",
+    "status": "consumed+declared",
+    "notes": "Only copied into a generated values-prod.yaml for the non-functional umbrella chart. No code reads it."
+  },
+  {
+    "name": "GCP_CREDENTIALS_PATH",
+    "consumers": [
+      "deploy-brandme.sh:67",
+      "deploy-brandme.sh:78",
+      "agents/infrastructure-agent.sh:15"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".env.deploy.example:44"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Path to a service-account JSON key for `gcloud auth activate-service-account`; legacy key-based auth (current deploy uses WIF)."
+  },
+  {
+    "name": "DOMAIN_NAME / SSL_MODE",
+    "consumers": [
+      "deploy-brandme.sh:104",
+      "agents/service-agent.sh:107-108"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.deploy.example:52",
+      ".env.deploy.example:57"
+    ],
+    "default_in_code": "yes (value is non-secret: '' / 'auto')",
+    "status": "consumed+declared",
+    "notes": "Legacy; written into an unused values file."
+  },
+  {
+    "name": "SSL_CERT_PATH / SSL_KEY_PATH",
+    "consumers": [],
+    "kind": "secret",
+    "declared_in": [
+      ".env.deploy.example:60-61"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "Legacy; nothing reads them."
+  },
+  {
+    "name": "CLUSTER_SIZE",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.deploy.example:71"
+    ],
+    "default_in_code": "yes (value is non-secret: 'small')",
+    "status": "declared-unconsumed",
+    "notes": "Legacy; infrastructure-agent.sh hardcodes 3 nodes instead (:35-36)."
+  },
+  {
+    "name": "DB_TIER",
+    "consumers": [
+      "agents/infrastructure-agent.sh:37",
+      "agents/validation-agent.sh:116"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.deploy.example:74"
+    ],
+    "default_in_code": "yes (value is non-secret: 'db-g1-small')",
+    "status": "consumed+declared",
+    "notes": "Written to terraform.tfvars as db_tier, which brandme-infra/terraform/main.tf does not declare."
+  },
+  {
+    "name": "ENABLE_AUTOSCALING",
+    "consumers": [
+      "agents/infrastructure-agent.sh:38",
+      "agents/service-agent.sh:111"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [
+      ".env.deploy.example:77"
+    ],
+    "default_in_code": "yes (value is non-secret: true)",
+    "status": "consumed+declared",
+    "notes": "Legacy; tfvars variable not declared in main.tf."
+  },
+  {
+    "name": "ENABLE_MONITORING / ENABLE_LOGGING / ENABLE_BACKUPS",
+    "consumers": [],
+    "kind": "feature_flag",
+    "declared_in": [
+      ".env.deploy.example:78-80"
+    ],
+    "default_in_code": "yes (value is non-secret: true)",
+    "status": "declared-unconsumed",
+    "notes": "Nothing reads them."
+  },
+  {
+    "name": "ADMIN_EMAIL",
+    "consumers": [
+      "agents/validation-agent.sh:77"
+    ],
+    "kind": "public_identifier",
+    "declared_in": [
+      ".env.deploy.example:87"
+    ],
+    "default_in_code": "yes (value is non-secret: admin@brandme.com)",
+    "status": "consumed+declared",
+    "notes": "Legacy; written into credentials.txt."
+  },
+  {
+    "name": "AUTO_GENERATE_PASSWORDS",
+    "consumers": [
+      "agents/validation-agent.sh:67"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [
+      ".env.deploy.example:90"
+    ],
+    "default_in_code": "yes (value is non-secret: true)",
+    "status": "consumed+declared",
+    "notes": "Legacy."
+  },
+  {
+    "name": "ADMIN_PASSWORD",
+    "consumers": [
+      "agents/validation-agent.sh:68",
+      "agents/validation-agent.sh:78"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      ".env.deploy.example:95"
+    ],
+    "default_in_code": "no",
+    "status": "consumed+declared",
+    "notes": "Generated and written in plaintext to .deployment/credentials.txt (validation-agent.sh:71-97); no application reads it."
+  },
+  {
+    "name": "GRAFANA_PASSWORD",
+    "consumers": [],
+    "kind": "secret",
+    "declared_in": [
+      ".env.deploy.example:94"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "Nothing reads it; no Grafana is deployed by any functional path."
+  },
+  {
+    "name": "GENERATE_TEST_DATA / TEST_DATA_SIZE",
+    "consumers": [
+      "agents/database-agent.sh:46",
+      "agents/data-agent.sh:14",
+      "agents/data-agent.sh:23"
+    ],
+    "kind": "feature_flag",
+    "declared_in": [
+      ".env.deploy.example:102",
+      ".env.deploy.example:108"
+    ],
+    "default_in_code": "yes (value is non-secret: true / small)",
+    "status": "consumed+declared",
+    "notes": "Legacy; generated data is never actually loaded (data-agent.sh:146-151 runs a SELECT)."
+  },
+  {
+    "name": "SCRAPE_FASHION_DATA",
+    "consumers": [],
+    "kind": "feature_flag",
+    "declared_in": [
+      ".env.deploy.example:111"
+    ],
+    "default_in_code": "yes (value is non-secret: true)",
+    "status": "declared-unconsumed",
+    "notes": "Nothing reads it."
+  },
+  {
+    "name": "CONTAINER_REGISTRY / K8S_NAMESPACE / GATEWAY_CPU / GATEWAY_MEMORY / AGENT_CPU / AGENT_MEMORY",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      ".env.deploy.example:118-127"
+    ],
+    "default_in_code": "yes (value is non-secret)",
+    "status": "declared-unconsumed",
+    "notes": "Nothing reads them; service-agent.sh hardcodes gcr.io/$GCP_PROJECT_ID and namespace brandme."
+  },
+  {
+    "name": "ENABLE_ANALYTICS_AGENT / ENABLE_REAL_BLOCKCHAIN / ENABLE_GRAPH_RAG / ENABLE_HUMAN_APPROVAL",
+    "consumers": [],
+    "kind": "feature_flag",
+    "declared_in": [
+      ".env.deploy.example:137-140",
+      "brandme-agents/agentic/.env.example:24-26"
+    ],
+    "default_in_code": "yes (value is non-secret)",
+    "status": "declared-unconsumed",
+    "notes": "No code reads any of them (grep)."
+  },
+  {
+    "name": "AGENT_LOG_LEVEL / AGENT_TIMEOUT",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-agents/agentic/.env.example:20-21"
+    ],
+    "default_in_code": "yes (value is non-secret: INFO / 120)",
+    "status": "declared-unconsumed",
+    "notes": "No code reads them."
+  },
+  {
+    "name": "DATABASE_URL",
+    "consumers": [],
+    "kind": "secret",
+    "declared_in": [
+      "brandme-core/.env.example:4",
+      "brandme-cube/.env.example:2",
+      "brandme-data/.env.example:7",
+      "infrastructure/helm/brandme/templates/cube-service.yaml:28-32",
+      "agents/database-agent.sh:43",
+      "agents/database-agent.sh:48"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "PostgreSQL DSN with embedded credentials in templates (postgres:postgres / brandme:password). No code reads it (asyncpg/sqlalchemy are listed in requirements but never imported, grep). The legacy cube Helm template injects it from Secret brandme-secrets although cube reads Spanner."
+  },
+  {
+    "name": "DATABASE_POOL_SIZE / DATABASE_MAX_OVERFLOW / DATABASE_POOL_TIMEOUT",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-data/.env.example:10-12"
+    ],
+    "default_in_code": "yes (value is non-secret)",
+    "status": "declared-unconsumed",
+    "notes": "No code reads them."
+  },
+  {
+    "name": "REDIS_URL",
+    "consumers": [],
+    "kind": "secret",
+    "declared_in": [
+      "brandme-core/.env.example:7",
+      "brandme-cube/.env.example:5",
+      "agents/database-agent.sh:133"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "No code reads it (Celery reads CELERY_BROKER_URL; brandme_core/health.py takes a client object). redis==5.0.1 is a declared dependency of brandme-core/brandme-cube only."
+  },
+  {
+    "name": "REDIS_PASSWORD",
+    "consumers": [],
+    "kind": "secret",
+    "declared_in": [
+      "infrastructure/redis/redis.conf:10"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "Referenced as ${REDIS_PASSWORD} in an orphan Redis config that nothing mounts."
+  },
+  {
+    "name": "OTEL_EXPORTER_OTLP_ENDPOINT / OTEL_SERVICE_NAME",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-core/.env.example:22-23"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "brandme_core/telemetry.py takes otlp_endpoint as a parameter and TelemetrySetup.configure has no callers (grep); the OTel SDK would read OTEL_EXPORTER_OTLP_ENDPOINT implicitly only if a provider were configured."
+  },
+  {
+    "name": "OTLP_ENDPOINT / ENABLE_TRACING",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-cube/.env.example:18-19"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "No code reads them (brandme-cube/src/main.py:203 notes the telemetry import always failed and was removed)."
+  },
+  {
+    "name": "REGION",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "infrastructure/otel-collector/otel-collector-config.yml:68"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "${env:REGION} in an orphan collector config; no collector is deployed."
+  },
+  {
+    "name": "SERVICE_NAME",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-core/Dockerfile:51",
+      "brandme-core/Dockerfile:59",
+      "brandme-core/Dockerfile:67",
+      "brandme-core/Dockerfile:75",
+      "brandme-agents/Dockerfile:48",
+      "brandme-agents/Dockerfile:56",
+      "brandme-agents/Dockerfile:64",
+      "brandme-agents/Dockerfile:73",
+      "brandme-governance/Dockerfile:47"
+    ],
+    "default_in_code": "yes (value is non-secret)",
+    "status": "declared-unconsumed",
+    "notes": "Set in legacy Dockerfile stages; no code reads it."
+  },
+  {
+    "name": "C_FORCE_ROOT",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-core/Dockerfile:76"
+    ],
+    "default_in_code": "yes (value is non-secret: true)",
+    "status": "declared-unconsumed",
+    "notes": "Celery beat stage only (Celery reads it); the stage runs as a non-root user anyway."
+  },
+  {
+    "name": "OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET / OAUTH_ISSUER",
+    "consumers": [],
+    "kind": "secret",
+    "declared_in": [
+      "brandme-infra/helm/brandme-umbrella/values.yaml:75-84",
+      "scripts/regression/modules/brandme_gateway.sh:8"
+    ],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "Legacy OAuth client settings; the gateway no longer reads them (brandme-gateway/.env.example:10-11). Umbrella chart maps them from Secret oauth-secrets."
+  },
+  {
+    "name": "NEXTAUTH_SECRET / NEXTAUTH_URL",
+    "consumers": [],
+    "kind": "secret",
+    "declared_in": [],
+    "default_in_code": "no",
+    "status": "declared-unconsumed",
+    "notes": "next-auth@4.24.15 is a console dependency (brandme-console/package.json, pnpm-lock.yaml:5021) but no file imports it (grep); the console README names NEXTAUTH_SECRET per the manifest (legacy-unread)."
+  },
+  {
+    "name": "DB_HOST / DB_PORT / DB_NAME / DB_USER / DB_PASSWORD",
+    "consumers": [
+      "scripts/db-init.sh:23-27",
+      "scripts/backup.sh:19-23",
+      "agents/database-agent.sh:28",
+      "agents/service-agent.sh:58",
+      "agents/validation-agent.sh:86-88",
+      "agents/data-agent.sh:146"
+    ],
+    "kind": "secret",
+    "declared_in": [
+      "agents/database-agent.sh:124-128"
+    ],
+    "default_in_code": "yes (redacted: db-init.sh and backup.sh default DB_PASSWORD to a well-known literal)",
+    "status": "consumed+declared",
+    "notes": "Legacy Postgres tooling; no Postgres exists in current stack definitions."
+  },
+  {
+    "name": "BACKUP_DIR / RETENTION_DAYS / BACKUP_BUCKET",
+    "consumers": [
+      "scripts/backup.sh:18",
+      "scripts/backup.sh:24",
+      "scripts/backup.sh:66"
+    ],
+    "kind": "runtime_setting",
+    "declared_in": [],
+    "default_in_code": "yes (value is non-secret: /var/backups/brandme, 30)",
+    "status": "consumed-undeclared",
+    "notes": "Legacy; upload step is a TODO (backup.sh:68-69)."
+  },
+  {
+    "name": "CFG_PRESET / RUST_LOG / APP__APPLICATION__NETWORK_ID / APP__INFRA__SECRET / APP__INFRA__NODE__URL / APP__INFRA__SPO_NODE__URL / APP__INFRA__SPO_NODE__BLOCKFROST_ID",
+    "consumers": [],
+    "kind": "runtime_setting",
+    "declared_in": [
+      "brandme-chain/tests/network/compose.yml:9",
+      "brandme-chain/tests/network/compose.yml:20-25"
+    ],
+    "default_in_code": "yes (redacted)",
+    "status": "declared-unconsumed",
+    "notes": "Configuration of third-party Midnight node/indexer images for the local test network only (`pnpm test:midnight:network`); not read by repository code. APP__INFRA__SECRET holds a local-only indexer secret value in the committed compose file (manifest: status active, mode local)."
+  }
+]

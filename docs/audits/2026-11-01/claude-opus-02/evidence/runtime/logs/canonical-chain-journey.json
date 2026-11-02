@@ -1,0 +1,88 @@
+{
+  "started": null,
+  "gateway": "http://127.0.0.1:3001/api/v1",
+  "steps": [
+    {
+      "name": "anonymous GET /wardrobe/items is refused",
+      "result": "passed",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "dev session (labelled simulation) for audit-alice",
+      "result": "passed",
+      "detail": "HTTP 201, assurance simulated"
+    },
+    {
+      "name": "GET /me returns the member",
+      "result": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "GET /me/persona through gateway -> consumer-domain service (ES256 assertion) -> Spanner",
+      "result": "passed",
+      "detail": "HTTP 200, keys ['adaptation_proposals', 'axes', 'constraints', 'context_overrides', 'exists', 'profile']"
+    },
+    {
+      "name": "POST /wardrobe/items creates a self-reported item",
+      "result": "passed",
+      "detail": "HTTP 201, id 2c3c7407\u2026, claim_level self_reported"
+    },
+    {
+      "name": "same Idempotency-Key replays the same item (no duplicate)",
+      "result": "passed",
+      "detail": "HTTP 201"
+    },
+    {
+      "name": "GET /wardrobe/items lists exactly the created item",
+      "result": "passed",
+      "detail": "HTTP 200, count 1"
+    },
+    {
+      "name": "GET /recommendations answers 200 with an EMPTY list (F-ARCH-003 at runtime)",
+      "result": "passed",
+      "detail": "HTTP 200, items 0, keys ['basis', 'excluded', 'exclusions_honored', 'items', 'next_cursor', 'profile_version']"
+    },
+    {
+      "name": "GET /rewards answers 200 (new member)",
+      "result": "passed",
+      "detail": "HTTP 200, account {'available': 0, 'reserved': 0, 'lifetime_earned': 0, 'gross_earned': 0, 'reversed': 0, 'spent': 0, 'recovery_due': 0, 'version': '0'}"
+    },
+    {
+      "name": "second dev session for audit-bob is a distinct member",
+      "result": "passed",
+      "detail": "HTTP 201"
+    },
+    {
+      "name": "bob cannot read alice's item (account isolation)",
+      "result": "passed",
+      "detail": "HTTP 404"
+    },
+    {
+      "name": "bob's wardrobe is empty",
+      "result": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "command without X-CSRF-Token is refused",
+      "result": "passed",
+      "detail": "HTTP 403"
+    },
+    {
+      "name": "command from a foreign Origin is refused",
+      "result": "passed",
+      "detail": "HTTP 403"
+    },
+    {
+      "name": "DELETE /session signs out",
+      "result": "passed",
+      "detail": "HTTP 204"
+    },
+    {
+      "name": "after sign-out GET /me is 401",
+      "result": "passed",
+      "detail": "HTTP 401"
+    }
+  ],
+  "passed": 16,
+  "failed": 0
+}
