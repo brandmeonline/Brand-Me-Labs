@@ -1,0 +1,30 @@
+# hand-composed worker chain (2026-11-02): Pub/Sub emulator + persona.app + gateway + events.worker/persona.ingress/persona.jobs; key material never printed
+02:38:35 HEAD ed19dc151d103b108cf972e6d37971c55d5dcf60
+02:38:36 pubsub pid=21421 port 8085 up
+topic projects/test-project/topics/brandme-development-public-audit7116 -> 200
+topic projects/test-project/topics/brandme-development-member-private-audit7116 -> 200
+topic projects/test-project/topics/brandme-development-restricted-audit7116 -> 200
+subscription -> 200
+02:38:38 consumer-domains pid=21485 8010 up
+02:38:40 gateway pid=21496 3001 up
+PASS two dev sessions — alice 624d4e70… bob 05476e0a…
+PASS alice adds a wardrobe item — HTTP 201
+PASS alice invites bob — HTTP 201, keys ['relationship_id', 'state']
+PASS bob accepts — HTTP 200, state accepted
+PASS alice creates a five-minute decision — HTTP 201, state open
+PASS decision is open with a 300 s server deadline — HTTP 200, span 300.0
+PASS bob responds 'pass' — HTTP 200
+PASS alice closes early; result pass=1 — HTTP 200, state closed, result {'yes': 0, 'pass': 1, 'alternative': 0, 'label': '0 yes, 1 pass', 'zero_replies': False}
+PASS bob's rewards before any worker runs — available 0
+PASS events.worker --check (schema, config, topics) — exit 0: {"status": "ready", "environment": "development", "transport": "pubsub_emulator", "event_contracts": 54, "catalogs": {"commerce-agents": "loaded", "consumer-domains": "loaded", "foundation": "loaded"}}
+PASS events.worker --once publishes pending outbox rows to Pub/Sub — exit 0: {"status": "dispatch", "delivered": 13, "failed": 0, "dead": 0, "stale": 0}
+PASS persona.ingress --once consumes lane events (x6) — {"not_subscribed": 7, "processed": 3, "status": "applied"} | {"not_subscribed": 1, "status": "applied"} | {"status": "applied"}
+PASS persona.jobs --once (close_due / expire_due) runs — exit 0: {"decisions": {"closed": 0, "skipped": 0}, "fulfillment": "not_configured", "media": "not_configured", "reservations": {"released": 0}, "status": "ran"}
+PASS bob's reward settled through worker -> Pub/Sub -> ingress (friend_decision_response = 10 points) — available 10, account {'available': 10, 'reserved': 0, 'lifetime_earned': 10, 'gross_earned': 10, 'reversed': 0, 'spent': 0, 'recovery_due': 0, 'version': '1'}
+PASS alice's rewards readable after settlement (no rule credits the asker) — available 25
+PASS bob has in-app notifications from the decision flow — unread 2
+PASS alice blocks bob — HTTP 200
+PASS after the block bob can no longer read the decision — HTTP 404
+SUMMARY passed=18 failed=0
+02:38:56 journey2 exit=0
+02:38:58 stopped; 3001 closed 8010 closed 8085 closed

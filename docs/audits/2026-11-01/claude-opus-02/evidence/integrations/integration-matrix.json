@@ -1,0 +1,1260 @@
+[
+  {
+    "id": "S2-INT-001",
+    "name": "OIDC identity provider (bearer JWT via JWKS)",
+    "kind": "identity",
+    "sdk_or_api": "jose@5.10.0 (pnpm-lock.yaml:11415; brandme-gateway/package.json)",
+    "consuming_code": [
+      "brandme-gateway/src/middleware/session.ts:19",
+      "brandme-gateway/src/middleware/session.ts:66-110",
+      "brandme-gateway/src/middleware/mode.ts:53-61",
+      "brandme_core/config.py:448-483"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "IDENTITY_PROVIDER",
+      "OIDC_ISSUER",
+      "OIDC_AUDIENCE",
+      "OIDC_JWKS_URI",
+      "OIDC_ALGORITHMS"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-gateway/src/middleware/session.ts:71 — `${OIDC_ISSUER}/.well-known/jwks.json` (derived, no fixed host)"
+    ],
+    "provisioning_evidence": [
+      "brandme-infra/helm/brandme/templates/gateway.yaml:59-72",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:39-42 (REPLACE_ME)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Unconfigured bearer: 401 (session.ts:80). Strict mode without https issuer/audience: gateway refuses to boot (mode.ts:53-56). No issuer/tenant has been chosen (values-sandbox REPLACE_ME).",
+    "verification_level": "static-only",
+    "notes": "Issuer, audience, asymmetric alg allowlist, clockTolerance 30s; (iss, sub) mapped to a member via Spanner (session.ts:93). createRemoteJWKSet cooldown 30s / cache 10 min."
+  },
+  {
+    "id": "S2-INT-002",
+    "name": "Dev identity provider (labelled simulation)",
+    "kind": "identity",
+    "sdk_or_api": "in-repo (brandme-gateway/src/routes/v1/index.ts POST /session/dev)",
+    "consuming_code": [
+      "brandme-gateway/src/routes/v1/index.ts:85-110",
+      "brandme-gateway/src/middleware/mode.ts:24-25",
+      "brandme_core/config.py:450-458"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "IDENTITY_PROVIDER",
+      "BRANDME_MODE"
+    ],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Refused (404) in sandbox/production (index.ts:85); gateway refuses to boot in strict modes with IDENTITY_PROVIDER!=oidc (mode.ts:53).",
+    "verification_level": "static-only",
+    "notes": "Responses carry X-Brandme-Simulation label. Default provider in demo/development (config/index.ts:77)."
+  },
+  {
+    "id": "S2-INT-003",
+    "name": "Gateway -> consumer-domains principal assertion (ES256, internal)",
+    "kind": "identity",
+    "sdk_or_api": "jose@5.10.0 (sign); PyJWT 2.15.1 (verify; scripts/python/requirements.lock:1140)",
+    "consuming_code": [
+      "brandme-gateway/src/services/domains.ts:28-35",
+      "brandme-gateway/src/services/domains.ts:43-46",
+      "brandme_core/domains/persona/assertion.py",
+      "brandme_core/domains/persona/app.py:116-121"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "CONSUMER_DOMAIN_SERVICE_URL",
+      "CONSUMER_DOMAIN_ASSERTION_KEY",
+      "CONSUMER_DOMAIN_ASSERTION_KID",
+      "CONSUMER_DOMAIN_ASSERTION_ISSUER",
+      "CONSUMER_DOMAIN_ASSERTION_JWKS",
+      "BRANDME_DEV_ASSERTION_DIR"
+    ],
+    "hardcoded_endpoints": [
+      "docker-compose.yml:176 — http://127.0.0.1:8010 (shared network namespace)",
+      "brandme-infra/helm/brandme/templates/_helpers.tpl:316-320 — http://<svc>.<ns>.svc.cluster.local:<port>"
+    ],
+    "provisioning_evidence": [
+      "scripts/dev/consumer-domain-keys.mjs (dev pair)",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:68-80 (public JWK REPLACE_ME)",
+      "scripts/provision/gcp-dev-identities.sh:369-375 (Secret Manager container brandme-<mode>-dom-domain-assertion-key)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Gateway: 503 'This service is not configured.' without URL/kid/key (domains.ts:43). Service: refuses to start without issuer and JWKS (app.py:93-96), exit 2.",
+    "verification_level": "static-only",
+    "notes": "30 s TTL, single-use jti cached in process memory, so the chart pins consumer-domains to 1 replica (values.yaml:192-195)."
+  },
+  {
+    "id": "S2-INT-004",
+    "name": "Google Cloud Spanner",
+    "kind": "database",
+    "sdk_or_api": "google-cloud-spanner==3.40.1 (requirements.lock:518); @google-cloud/spanner@9.0.0 (pnpm-lock.yaml:1348)",
+    "consuming_code": [
+      "brandme-gateway/src/middleware/identity/store.ts:13",
+      "brandme-gateway/src/middleware/identity/store.ts:99",
+      "brandme-chain/src/midnight/spanner-store.ts:3",
+      "brandme-chain/src/midnight/reconciliation-queue.ts:3",
+      "brandme_core/spanner/client.py:72",
+      "brandme_core/spanner/pool.py",
+      "brandme_core/domains/persona/app.py:115",
+      "brandme_core/events/worker.py:72-80",
+      "brandme-data/spanner/migrations/runner.py:123-133"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "SPANNER_PROJECT_ID",
+      "SPANNER_INSTANCE_ID",
+      "SPANNER_DATABASE_ID",
+      "SPANNER_EMULATOR_HOST",
+      "GOOGLE_CLOUD_SPANNER_MULTIPLEXED_SESSIONS",
+      "GOOGLE_CLOUD_SPANNER_MULTIPLEXED_SESSIONS_FOR_RW",
+      "SPANNER_POOL_SIZE",
+      "SPANNER_MAX_SESSIONS"
+    ],
+    "hardcoded_endpoints": [
+      "docker-compose.yml:45 — spanner-emulator:9010 (emulator)",
+      "tests/conftest.py:32 — localhost:9010 (emulator)"
+    ],
+    "provisioning_evidence": [
+      "scripts/provision/gcp-dev-identities.sh:263 (requires an existing database; does not create it)",
+      "scripts/provision/gcp-dev-identities.sh:328-337 (database IAM bindings)",
+      "brandme-infra/helm/brandme/templates/migrations-job.yaml (schema via runner.py up)",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:19-21 (instance/database names brandme-sandbox)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Foundation processes refuse to start without explicit SPANNER_* (read_api/config.py:31-33 etc.); gateway/legacy services fall back to 'test-project'/'brandme-instance'/'brandme-db' defaults. Instance/database creation only against the emulator (runner.py:131-133). No Spanner instance is provisioned by any code in the repo (terraform has none).",
+    "verification_level": "static-only",
+    "notes": "Auth: Application Default Credentials / Workload Identity (no key files; gateway .env.example:48-49). Emulator pinned 1.5.45 (compose, CI) but 1.5.28 in consumer-ui.yml:64."
+  },
+  {
+    "id": "S2-INT-005",
+    "name": "Google Cloud Firestore",
+    "kind": "database",
+    "sdk_or_api": "google-cloud-firestore==2.14.0 (requirements.lock:514); firebase@13.1.0 + @firebase/rules-unit-testing@6.0.0 (tests only)",
+    "consuming_code": [
+      "brandme_core/firestore/client.py:38-53",
+      "brandme_core/firestore/wardrobe.py",
+      "packages/firestore-rules/test/rules.test.ts:10"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "FIRESTORE_PROJECT_ID",
+      "FIRESTORE_EMULATOR_HOST"
+    ],
+    "hardcoded_endpoints": [
+      "docker-compose.yml:49 — firestore-emulator:8080 (emulator)"
+    ],
+    "provisioning_evidence": [
+      "scripts/provision/gcp-dev-identities.sh:47-49,448-452 (optional projector identity, roles/datastore.user) — not applied"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Client initializes lazily; no process in compose default/Helm uses it (consumers are legacy cube/wardrobe code behind the `legacy` compose profile). No Firestore database is provisioned by any code.",
+    "verification_level": "static-only",
+    "notes": "Firestore security rules live in packages/firestore-rules and are only evaluated by tests against the emulator (ci-cd.yml:192-201); no deploy step for rules found."
+  },
+  {
+    "id": "S2-INT-006",
+    "name": "Google Cloud Storage — private media bucket (consumer domains)",
+    "kind": "object_storage",
+    "sdk_or_api": "google-auth==2.60.0 AuthorizedSession + REST (requirements.lock:501); requests==2.34.2",
+    "consuming_code": [
+      "brandme_core/domains/media/gcs_store.py:325-349",
+      "brandme_core/domains/persona/app.py:120",
+      "brandme_core/domains/persona/jobs.py:81-87"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "BRANDME_MEDIA_BUCKET",
+      "STORAGE_EMULATOR_HOST",
+      "ENVIRONMENT"
+    ],
+    "hardcoded_endpoints": [
+      "brandme_core/domains/media/gcs_store.py:304-306 — storage.googleapis.com upload/v1 path (via self._api)"
+    ],
+    "provisioning_evidence": [
+      "scripts/provision/gcp-dev-identities.sh:50,455-460 (--dom-media-bucket grant, roles/storage.objectUser)",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:81-83 (mediaBucket empty: 'Q14 dev-bucket run not done')"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Unset bucket: media/try-on routers not mounted, /health media=not_configured (app.py:76-81). Emulator refused in strict modes; strict modes also refuse a bucket whose policy has findings (gcs_store.py:347-348).",
+    "verification_level": "static-only",
+    "notes": "Mounted in principle (consumer-domains runs in compose default and in sandbox Helm) but disabled by configuration everywhere (no bucket). Signed URLs via KeySigner/GoogleAuthSigner."
+  },
+  {
+    "id": "S2-INT-007",
+    "name": "Google Cloud Storage — privacy export bucket",
+    "kind": "object_storage",
+    "sdk_or_api": "google-auth==2.60.0 + requests REST (brandme_core/privacy_exports/storage.py:11)",
+    "consuming_code": [
+      "brandme_core/privacy_exports/storage.py:56",
+      "brandme_core/privacy_exports/config.py:38-40",
+      "brandme_core/privacy_exports/__main__.py:32"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "EXPORT_BUCKET",
+      "EXPORT_STORAGE_EMULATOR_HOST",
+      "PRIVACY_EXPORT_SERVICE_TOKEN"
+    ],
+    "hardcoded_endpoints": [
+      "brandme_core/privacy_exports/storage.py:56 — https://storage.googleapis.com"
+    ],
+    "provisioning_evidence": [
+      "scripts/provision/gcp-dev-identities.sh:265 (requires existing bucket), :293-294 custom roles, :347-349 bucket IAM",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:66 (brandme-sandbox-exports-REPLACE_ME_SUFFIX)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Startup refused (exit 2, {\"status\":\"startup_refused\"}) unless EXPORT_BUCKET matches brandme-<mode>-exports-* and the emulator rule for the mode holds (config.py:28-40).",
+    "verification_level": "static-only",
+    "notes": "Mounted only as Helm exports-api/exports-worker (not in compose). Gateway download path verifies X-Export-SHA256 (services/rights.ts:94-110)."
+  },
+  {
+    "id": "S2-INT-008",
+    "name": "Google Cloud Pub/Sub — outbox publisher",
+    "kind": "queue",
+    "sdk_or_api": "google-auth==2.60.0 AuthorizedSession + REST (brandme_core/events/pubsub.py:62-66)",
+    "consuming_code": [
+      "brandme_core/events/pubsub.py:44-121",
+      "brandme_core/events/worker.py:37-58",
+      "brandme-gateway/src/middleware/identity/store.ts (OutboxEvent rows)"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "OUTBOX_PUBSUB_TOPIC_PUBLIC",
+      "OUTBOX_PUBSUB_TOPIC_MEMBER_PRIVATE",
+      "OUTBOX_PUBSUB_TOPIC_RESTRICTED",
+      "OUTBOX_EVENT_TYPES",
+      "PUBSUB_EMULATOR_HOST"
+    ],
+    "hardcoded_endpoints": [
+      "brandme_core/events/pubsub.py:66 — https://pubsub.googleapis.com/v1/",
+      "brandme_core/events/pubsub.py:34 — emulator hostnames localhost|pubsub|pubsub-emulator only"
+    ],
+    "provisioning_evidence": [
+      "scripts/provision/gcp-dev-identities.sh:264 (requires existing topics), :292 brandmeOutboxPublisher role, :342 topic bindings",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:87-90 (topic ids)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Worker refuses to start on missing topics/mode mismatch (worker.py:41-57); check_topics refuses an unprovisioned topic or <24h retention and never creates resources (pubsub.py:94-103). Broker ack != consumption (pubsub.py:1).",
+    "verification_level": "static-only",
+    "notes": "Helm events-worker only; not in compose (no Pub/Sub emulator service), so the outbox is drained locally only by tests/smoke (scripts/brandme.mjs:250-262)."
+  },
+  {
+    "id": "S2-INT-009",
+    "name": "Google Cloud Pub/Sub — consumer-domains lane subscriber (pull)",
+    "kind": "queue",
+    "sdk_or_api": "REST via brandme_core (PubSubPull in brandme_core/domains/persona/ingress.py)",
+    "consuming_code": [
+      "brandme_core/domains/persona/ingress.py:267-295"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "LANE_PUBSUB_SUBSCRIPTION",
+      "PUBSUB_EMULATOR_HOST",
+      "SPANNER_*"
+    ],
+    "hardcoded_endpoints": [
+      "brandme_core/domains/persona/ingress.py:217 — https://pubsub.googleapis.com/v1/"
+    ],
+    "provisioning_evidence": [
+      "scripts/provision/gcp-dev-identities.sh:48,267,451-452 (optional --projector-subscription binding; not this subscriber)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Startup refused without LANE_PUBSUB_SUBSCRIPTION (ingress.py:276-278).",
+    "verification_level": "static-only",
+    "notes": "Code exists with a __main__ but no compose service, Helm workload or CI job runs it; subscription name declared nowhere."
+  },
+  {
+    "id": "S2-INT-010",
+    "name": "Redis / Celery (legacy orchestrator)",
+    "kind": "cache",
+    "sdk_or_api": "celery==5.3.6, redis==5.0.1 (brandme-core/requirements.txt:18-19; NOT in scripts/python/requirements.lock)",
+    "consuming_code": [
+      "brandme-core/orchestrator/celery_app.py:28-32",
+      "brandme-core/orchestrator/tasks.py:19-20",
+      "brandme_core/health.py:21",
+      "brandme-cube/requirements.txt:6"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "CELERY_BROKER_URL",
+      "CELERY_RESULT_BACKEND",
+      "REDIS_URL",
+      "REDIS_PASSWORD"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-core/orchestrator/celery_app.py:30-31 — redis://redis:6379/0 and /1"
+    ],
+    "provisioning_evidence": [
+      "infrastructure/redis/redis.conf (orphan)",
+      "infrastructure/helm/brandme/values.yaml:253-273 (Bitnami redis values, no template)",
+      "agents/database-agent.sh:113-115 (helm install bitnami/redis --set auth.enabled=false)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "No Redis service in any compose file and no Celery worker/beat process is started; compose runs the orchestrator as uvicorn worker:app (docker-compose.yml:114). Importing celery_app runs guard('orchestrator'), which refuses strict modes.",
+    "verification_level": "static-only",
+    "notes": "brandme_core/health.py imports redis.asyncio and nats at module import time although the hashed lock contains neither package; any process importing brandme_core.health under the lock would fail at import (static inference; not executed)."
+  },
+  {
+    "id": "S2-INT-011",
+    "name": "NATS JetStream (legacy /scan publisher)",
+    "kind": "queue",
+    "sdk_or_api": "nats@2.29.3 (pnpm-lock.yaml:11757); nats-py==2.6.0 (brandme-core/requirements.txt:22, not in lock)",
+    "consuming_code": [
+      "brandme-gateway/src/services/nats.ts:17-66",
+      "brandme-gateway/src/routes/scan.ts:46-48",
+      "brandme-gateway/src/index.ts:89-94",
+      "brandme_core/health.py:22"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "NATS_URL",
+      "NATS_MAX_RECONNECT_ATTEMPTS"
+    ],
+    "hardcoded_endpoints": [
+      "docker-compose.yml:231-234 — nats:2.10.29-alpine ports 4222/8222 (profile events)",
+      "infrastructure/helm/brandme/values.yaml:61 — nats://nats:4222",
+      "agents/database-agent.sh:132 — nats://nats.brandme.svc.cluster.local:4222"
+    ],
+    "provisioning_evidence": [
+      "agents/database-agent.sh:91-102 (helm nats/nats; inoperable script)",
+      "agents/integration-agent.sh:22-36 (streams SCAN_EVENTS, POLICY_EVENTS)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Without NATS_URL the gateway logs a warning and /scan answers 503 dependency_unavailable (index.ts:93, scan.ts:47). With NATS_URL set but unreachable, start() throws and the gateway exits 1.",
+    "verification_level": "static-only",
+    "notes": "Gateway creates stream SCANS with workqueue retention (nats.ts:43-49). Not set by the current Helm chart. /scan is a placeholder, not trust evidence (brandme_core/config.py:599)."
+  },
+  {
+    "id": "S2-INT-012",
+    "name": "Neo4j (knowledge graph; agentic CLI and branding engine)",
+    "kind": "database",
+    "sdk_or_api": "neo4j==5.17.0, neo4j-graphrag==0.7.0 (brandme-agents/agentic/requirements.txt:14-15); neo4j>=5.20.0 (branding/requirements.txt:5)",
+    "consuming_code": [
+      "brandme-agents/agentic/graph_db.py:9",
+      "brandme-agents/agentic/graph_db.py:313-315",
+      "brandme-agents/branding/src/database.py:34-35",
+      "brandme-agents/branding/src/database.py:71-90"
+    ],
+    "entry_point_reachable": "cli-only",
+    "config_names": [
+      "NEO4J_URI",
+      "NEO4J_USER",
+      "NEO4J_USERNAME",
+      "NEO4J_PASSWORD",
+      "NEO4J_DATABASE",
+      "NEO4J_READONLY_USER",
+      "NEO4J_READONLY_PASSWORD",
+      "NEO4J_WRITER_USER",
+      "NEO4J_WRITER_PASSWORD"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-agents/agentic/graph_db.py:313 — bolt://localhost:7687",
+      "brandme-agents/branding/src/database.py:71 — neo4j://localhost:7687"
+    ],
+    "provisioning_evidence": [
+      "agents/database-agent.sh:66-83 (helm neo4j/neo4j enterprise, acceptLicenseAgreement=yes; inoperable script)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Defaults to a literal password 'password' (graph_db.py:315, database.py:73). No Neo4j in compose/current Helm; the agentic image stage exists in CI (smoke-image.sh:14-17) but only as a CLI. The branding engine is not wired into any service (graph_engine.py:60).",
+    "verification_level": "static-only",
+    "notes": ""
+  },
+  {
+    "id": "S2-INT-013",
+    "name": "PostgreSQL (legacy; init.sql, schemas, Cloud SQL terraform)",
+    "kind": "database",
+    "sdk_or_api": "asyncpg==0.29.0, sqlalchemy, psycopg2-binary, alembic in brandme-core/brandme-data/brandme-agents requirements; none imported by code (grep)",
+    "consuming_code": [],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "DATABASE_URL",
+      "DB_HOST",
+      "DB_PORT",
+      "DB_NAME",
+      "DB_USER",
+      "DB_PASSWORD",
+      "DATABASE_POOL_SIZE"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-core/.env.example:4 — postgresql+asyncpg://postgres:<redacted>@localhost:5432/brandme_dev",
+      "brandme-cube/.env.example:2 — postgresql://brandme:<redacted>@localhost:5432/brandme",
+      "brandme-infra/helm/brandme-umbrella/values.yaml:21 — 127.0.0.1:5432 (Cloud SQL proxy)"
+    ],
+    "provisioning_evidence": [
+      "init.sql (root; unreferenced)",
+      "brandme-data/schemas/*.sql, brandme-data/seeds/*.sql via scripts/db-init.sh",
+      "brandme-infra/terraform/main.tf:152-193 (google_sql_database_instance POSTGRES_15; terraform validate fails)",
+      "infrastructure/helm/brandme/Chart.yaml:18-21 (bitnami postgresql dependency)",
+      "agents/database-agent.sh:21-51 (gcloud sql ...)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "No running code path depends on Postgres; CLAUDE.md and brandme_core/env.py:5 state PostgreSQL was removed in v8. Infrastructure for it remains declared in several legacy places.",
+    "verification_level": "static-only",
+    "notes": "Config and infra with no code consumer. brandme-cube/Dockerfile:7 still installs postgresql-client."
+  },
+  {
+    "id": "S2-INT-014",
+    "name": "Stripe (test mode only)",
+    "kind": "payments",
+    "sdk_or_api": "stripe==16.0.0 (requirements.lock:1453; brandme_core/domains/commerce/requirements.txt:14), API version 2026-09-30.endive pinned (stripe_test.py:51)",
+    "consuming_code": [
+      "brandme_core/domains/providers/payments/stripe_wire.py:109-125",
+      "brandme_core/domains/providers/payments/stripe_test.py:156-164",
+      "brandme_core/domains/providers/payments/stripe_test.py:577-620",
+      "brandme_core/domains/commerce/composition.py:66-87"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "BRANDME_COMMERCE_PAYMENTS",
+      "STRIPE_TEST_SECRET_KEY",
+      "STRIPE_TEST_WEBHOOK_SECRET",
+      "STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS",
+      "BRANDME_STRIPE_EGRESS_PROXY",
+      "BRANDME_STRIPE_CA_BUNDLE",
+      "STRIPE_LOG"
+    ],
+    "hardcoded_endpoints": [
+      "brandme_core/domains/providers/payments/stripe_test.py:52 — https://api.stripe.com",
+      "brandme_core/domains/providers/payments/stripe_wire.py:16 — https://api.stripe.com"
+    ],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": true,
+      "signature_verified": true,
+      "path:line": "brandme_core/domains/providers/payments/stripe_test.py:586-600 (stripe.WebhookSignature.verify_header, current+previous secret, replay window, livemode refused); gateway relay interface brandme-gateway/src/routes/v1/commerce.ts:44-45 (UNMOUNTED)"
+    },
+    "failure_behavior": "Rail allowed in demo/development only; any BRANDME_COMMERCE_PAYMENTS outside those modes refuses startup (composition.py:102-106). Missing key -> stripe_test_not_configured; live key (sk_live) refused; webhook without secret -> NOT_CONFIGURED.",
+    "verification_level": "static-only",
+    "notes": "The commerce domain has no deployed service, and the gateway commerce router is marked UNMOUNTED (commerce.ts:4), so no Stripe webhook endpoint is reachable. Telemetry disabled, egress pinned (stripe_wire.py:82-106)."
+  },
+  {
+    "id": "S2-INT-015",
+    "name": "Simulated merchant and payment rail (local atelier)",
+    "kind": "payments",
+    "sdk_or_api": "in-repo (brandme_core/domains/providers/local_atelier.py, merchant.py, payments/simulated.py)",
+    "consuming_code": [
+      "brandme_core/domains/providers/merchant.py:123-124",
+      "brandme_core/domains/providers/merchant.py:699-736",
+      "brandme_core/domains/commerce/composition.py:113-123"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "BRANDME_COMMERCE_PAYMENTS"
+    ],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": true,
+      "signature_verified": true,
+      "path:line": "brandme_core/domains/providers/merchant.py:713-736 (HMAC-SHA256 with a per-process random secret, 5-minute replay window)"
+    },
+    "failure_behavior": "demo/development only; registered as a SIMULATED adapter so strict modes refuse it (composition.py:124-131).",
+    "verification_level": "static-only",
+    "notes": "Labelled simulation; not evidence of a real merchant."
+  },
+  {
+    "id": "S2-INT-016",
+    "name": "Nordstrom / Impact affiliate program",
+    "kind": "external_data",
+    "sdk_or_api": "none (descriptor only)",
+    "consuming_code": [
+      "brandme_core/domains/providers/nordstrom.py:33-48",
+      "brandme_core/domains/providers/nordstrom.py:159-172",
+      "brandme_core/domains/providers/nordstrom.py:250-268"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "NORDSTROM_IMPACT_ACCOUNT_REF",
+      "NORDSTROM_IMPACT_CREDENTIAL_SECRET",
+      "NORDSTROM_IMPACT_CAMPAIGN_REF",
+      "NORDSTROM_IMPACT_CATALOG_REF"
+    ],
+    "hardcoded_endpoints": [
+      "brandme_core/domains/providers/nordstrom.py:34 — https://integrations.impact.com/partner-api-reference (docs link)",
+      "brandme_core/domains/providers/nordstrom.py:195,268 — https://www.nordstrom.com (link-check only)"
+    ],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Capabilities gated 'approval'; no HTTP client to Impact exists. Manifest status 'planned'.",
+    "verification_level": "static-only",
+    "notes": "Config/descriptor with no integration code."
+  },
+  {
+    "id": "S2-INT-017",
+    "name": "Anthropic API (assistant model planner, dev only)",
+    "kind": "ai_model",
+    "sdk_or_api": "anthropic==0.125.0 (requirements.lock:11)",
+    "consuming_code": [
+      "brandme_core/orchestrator/anthropic_adapter.py:7",
+      "brandme_core/orchestrator/anthropic_adapter.py:43",
+      "brandme_core/orchestrator/anthropic_adapter.py:115-163",
+      "brandme_core/orchestrator/model_planner.py:53-58",
+      "brandme_core/orchestrator/model_planner.py:275-310",
+      "brandme_core/orchestrator/composition.py:47-70"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "BRANDME_DEV_ANTHROPIC_API_KEY",
+      "BRANDME_ASSISTANT_PLANNER",
+      "BRANDME_ASSISTANT_MODEL",
+      "BRANDME_ASSISTANT_EFFORT",
+      "BRANDME_ASSISTANT_EGRESS_PROXY",
+      "BRANDME_ASSISTANT_CA_BUNDLE",
+      "BRANDME_LOG_REF_KEY"
+    ],
+    "hardcoded_endpoints": [
+      "brandme_core/orchestrator/anthropic_adapter.py:43 — https://api.anthropic.com (egress guard rejects any other host, :147-150)"
+    ],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Without a key: deterministic planner (model_planner.py:293-295). Key outside demo/development: PlannerConfigError model_planner_dev_only (boot refused). SDK imported only when configured (composition.py:8).",
+    "verification_level": "static-only",
+    "notes": "compose_assistant has no caller outside brandme_core/orchestrator (grep); the gateway's routes/v1/assistant.ts is not imported by routes/v1/index.ts. Reachable from tests only (tests/test_commerce_model_live.py)."
+  },
+  {
+    "id": "S2-INT-018",
+    "name": "Anthropic via LangChain (branding engine; agentic GraphRAG)",
+    "kind": "ai_model",
+    "sdk_or_api": "langchain-anthropic==0.1.1, anthropic==0.18.1 (agentic/requirements.txt:8,11); langchain-anthropic>=0.1.0 (branding/requirements.txt:12)",
+    "consuming_code": [
+      "brandme-agents/branding/src/graph_engine.py:60-86",
+      "brandme-agents/agentic/graph_rag.py:21-31"
+    ],
+    "entry_point_reachable": "cli-only",
+    "config_names": [
+      "BRANDME_DEV_ANTHROPIC_API_KEY"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-agents/branding/src/graph_engine.py:63 — https://api.anthropic.com"
+    ],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Branding: raises BrandingEngineDisabled without the dev key (graph_engine.py:79-80); 'Not wired into any service' (:60). Agentic GraphRAG: disabled outright because the pinned SDK would read ambient ANTHROPIC_* and proxy settings (graph_rag.py:30-31).",
+    "verification_level": "static-only",
+    "notes": "Model id 'claude-opus-5-5' hardcoded (graph_engine.py:64)."
+  },
+  {
+    "id": "S2-INT-019",
+    "name": "OpenAI embeddings (agentic GraphRAG)",
+    "kind": "ai_model",
+    "sdk_or_api": "openai==1.10.0, langchain-openai==0.0.2 (agentic/requirements.txt:9,18)",
+    "consuming_code": [
+      "brandme-agents/agentic/graph_rag.py:62"
+    ],
+    "entry_point_reachable": "cli-only",
+    "config_names": [
+      "OPENAI_API_KEY (implicit SDK read; no explicit reader)"
+    ],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "GraphRAG is disabled (graph_rag.py:30-31); no embeddings call can run.",
+    "verification_level": "static-only",
+    "notes": "Declared in .env.deploy.example:19 and required by deploy-brandme.sh:63 for a path that is disabled."
+  },
+  {
+    "id": "S2-INT-020",
+    "name": "Google Vertex AI Virtual Try-On (frontend dev-only route)",
+    "kind": "ai_model",
+    "sdk_or_api": "raw fetch (brandme-frontend/features/spatial/server/photoService.ts)",
+    "consuming_code": [
+      "brandme-frontend/features/spatial/server/photoService.ts:30-72",
+      "brandme-frontend/features/spatial/server/photoService.ts:146",
+      "brandme-frontend/app/try/photo/api/route.ts:8-16"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "BRANDME_PHOTO_DEV_ENABLED",
+      "BRANDME_PHOTO_DEV_PROJECT",
+      "BRANDME_PHOTO_DEV_REGION",
+      "BRANDME_VERTEX_ACCESS_TOKEN",
+      "BRANDME_PHOTO_RETENTION_NOTICE",
+      "NEXT_PUBLIC_BRANDME_MODE",
+      "NODE_ENV"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-frontend/features/spatial/server/photoService.ts:146 — https://<region>-aiplatform.googleapis.com/v1/projects/<project>/locations/<region>/publishers/google/models/virtual-try-on-001:predict"
+    ],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Disabled unless BRANDME_PHOTO_DEV_ENABLED=1, NODE_ENV!=production and mode not production/sandbox, plus project/region/token/retention (photoService.ts:32-58); otherwise reports 'Provider not connected'. Daily attempt ledger (limit 10) on local disk.",
+    "verification_level": "static-only",
+    "notes": "Route is mounted in the consumer Next.js app (app/try/photo/api/route.ts) but gated to local development; token is a short-lived server access token, never ADC."
+  },
+  {
+    "id": "S2-INT-021",
+    "name": "MediaPipe pose model download (local inference)",
+    "kind": "external_data",
+    "sdk_or_api": "@mediapipe/tasks-vision@0.10.22-rc.20250304 (brandme-frontend/package.json); scripts/assets/prepare-vision.py",
+    "consuming_code": [
+      "scripts/assets/prepare-vision.py:9",
+      "scripts/assets/prepare-vision.py:18"
+    ],
+    "entry_point_reachable": "test-only",
+    "config_names": [],
+    "hardcoded_endpoints": [
+      "scripts/assets/prepare-vision.py:18 — https://storage.googleapis.com/mediapipe-models/pose_landmarker/.../pose_landmarker_lite.task",
+      "scripts/assets/prepare-vision.py:9 — https://registry.npmjs.org/"
+    ],
+    "provisioning_evidence": [
+      ".github/workflows/spatial-validation.yml:69-70"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Hash-pinned download in CI; inference runs in the browser (payloads never uploaded, spatial-validation.yml:69).",
+    "verification_level": "static-only",
+    "notes": ""
+  },
+  {
+    "id": "S2-INT-022",
+    "name": "Midnight network (node RPC, indexer, local proof server) via Midnight.js",
+    "kind": "blockchain_rpc",
+    "sdk_or_api": "@midnight-ntwrk/midnight-js-* 4.1.1, compact-js 2.5.1, compact-runtime 0.16.0, ledger-v8 8.1.2, wallet-sdk 1.2.0 (brandme-chain/package.json; pnpm-lock.yaml:1591-1718); ws@8.22.0",
+    "consuming_code": [
+      "brandme-chain/src/midnight/adapter.ts:21-36",
+      "brandme-chain/src/midnight/adapter.ts:113-134",
+      "brandme-chain/src/midnight/network.ts:23-63",
+      "brandme-chain/src/midnight/capability.ts:30-81",
+      "brandme-chain/src/index.ts:35-55"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "MIDNIGHT_NETWORK",
+      "MIDNIGHT_CONTRACT_ADDRESS",
+      "MIDNIGHT_BLOCKFROST_PROJECT_ID",
+      "MIDNIGHT_LOCAL_NODE_PORT",
+      "MIDNIGHT_LOCAL_INDEXER_PORT",
+      "CHAIN_RECONCILIATION_ENABLED",
+      "CHAIN_SERVICE_TOKEN",
+      "SPANNER_*"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-chain/src/midnight/network.ts:26-28 — https://rpc.preview.midnight.network, https://indexer.preview.midnight.network/api/v4/graphql, wss://.../ws",
+      "brandme-chain/src/midnight/network.ts:43-45 — https://rpc.midnight-<preprod|mainnet>.blockfrost.io?project_id=<redacted>, https://midnight-<net>.blockfrost.io/api/v0?project_id=<redacted>, wss://.../ws",
+      "brandme-chain/src/midnight/network.ts:57-59 — http://127.0.0.1:<MIDNIGHT_LOCAL_NODE_PORT>, http://127.0.0.1:<MIDNIGHT_LOCAL_INDEXER_PORT>/api/v4/graphql",
+      "brandme-chain/src/midnight/adapter.ts:118 — proof provider must be a loopback URL",
+      "brandme-chain/scripts/local-network.sh:12,22 — midnightntwrk/proof-server:8.1.3 on 127.0.0.1:6300 (test)"
+    ],
+    "provisioning_evidence": [
+      "brandme-infra/helm/brandme/templates/chain.yaml:57-69",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:23-27 (contract REPLACE_ME: none deployed)",
+      "brandme-chain/tests/network/compose.yml (node 1.0.400 + indexer 4.3.5 by digest; local test only)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "No fallback: MIDNIGHT_FALLBACK_MODE=true throws at import (config/index.ts:33-38). Missing endpoints/contract/artifacts -> capability 'unavailable' with reasons (capability.ts:64-65); writesAuthorized is always false (:58); mainnet writes refused (network.ts:84-86); worker disabled on mainnet (index.ts:46-47). Spanner store present but V012 missing -> fatal exit 1 (index.ts:67-68).",
+    "verification_level": "static-only",
+    "notes": "Only local-network proofs are evidenced (brandme-chain/evidence/); no Preprod transaction, deployed contract or Mainnet write (brandme_core/config.py:400-403). Blockfrost token travels as a URL query parameter (network.ts:40) — redaction helpers exist (redaction.ts, test-midnight-preprod.mjs:13-15)."
+  },
+  {
+    "id": "S2-INT-023",
+    "name": "Cardano (public anchor / legacy ESG oracle / explorer link)",
+    "kind": "blockchain_rpc",
+    "sdk_or_api": "none in current code (UnavailableCardanoAnchor); legacy httpx stubs",
+    "consuming_code": [
+      "brandme-chain/src/cardano/anchor.ts:64-75",
+      "brandme-chain/src/index.ts:57-63",
+      "brandme-agents/compliance/src/lifecycle/esg_verifier.py:71",
+      "brandme-agents/compliance/src/lifecycle/esg_verifier.py:133-169",
+      "brandme-agents/agentic/tools/blockchain_tools.py:34-35",
+      "brandme-console/app/proof/[scanId]/page.tsx:159"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "BLOCKFROST_API_KEY (legacy, unread by code)",
+      "CARDANO_NETWORK (legacy, unread by code)",
+      "NEXT_PUBLIC_CARDANO_EXPLORER_URL"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-agents/compliance/src/lifecycle/esg_verifier.py:71 — http://cardano-node:3001 (legacy default; no such service)",
+      "brandme-agents/agentic/tools/blockchain_tools.py:35 — POST <CHAIN_SERVICE_URL>/tx/cardano (route does not exist in brandme-chain)",
+      "brandme-console/.env.example:21 — https://preprod.cardanoscan.io"
+    ],
+    "provisioning_evidence": [
+      "brandme-infra/helm/brandme-umbrella/values.yaml:174-181 (wallet-secrets cardano-key; legacy, non-functional)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "brandme-chain: anchoring unavailable by design (anchor.ts:69); retired /tx/anchor-scan and /tx/verify-root return 410 (index.ts:57-63). Legacy compliance ESG verifier falls back to a hash-derived stub score on ConnectError (esg_verifier.py:163-169) — a success-shaped fallback, refused by the boot guard in strict modes (brandme_core/config.py:288-297).",
+    "verification_level": "static-only",
+    "notes": "The orchestrator stub still returns fake cardano_tx_* strings (CLAUDE.md; config.py:269-272). No Cardano submitter, Blockfrost Cardano client, Ogmios or Lucid dependency exists."
+  },
+  {
+    "id": "S2-INT-024",
+    "name": "Midnight legacy burn-proof stub (compliance)",
+    "kind": "blockchain_rpc",
+    "sdk_or_api": "httpx (brandme-agents/compliance/src/lifecycle/burn_proof.py:13)",
+    "consuming_code": [
+      "brandme-agents/compliance/src/lifecycle/burn_proof.py:60",
+      "brandme-agents/compliance/src/lifecycle/burn_proof.py:154-176"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [],
+    "hardcoded_endpoints": [
+      "brandme-agents/compliance/src/lifecycle/burn_proof.py:60 — http://midnight-devnet:9000 (no such service anywhere)"
+    ],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "On ConnectError falls back to _stub_verify (burn_proof.py:154-161): success-shaped simulation. Registered as SIMULATED so compliance refuses sandbox/production (config.py:293-296). Compliance runs only in the compose `legacy` profile.",
+    "verification_level": "static-only",
+    "notes": ""
+  },
+  {
+    "id": "S2-INT-025",
+    "name": "Wallet / signing (Midnight dApp connector, test wallet seeds)",
+    "kind": "wallet",
+    "sdk_or_api": "@midnight-ntwrk/dapp-connector-api@4.0.1, @midnight-ntwrk/wallet-sdk@1.2.0, @midnight-ntwrk/testkit-js@4.1.1 (tests)",
+    "consuming_code": [
+      "brandme-chain/src/midnight/adapter.ts:85-134 (proving modes local-proof-server | wallet | managed)",
+      "brandme-chain/src/midnight/capability.ts:75-79",
+      "brandme-chain/tests/network/env.ts:12-45"
+    ],
+    "entry_point_reachable": "test-only",
+    "config_names": [
+      "MN_PREPROD_SEEDS",
+      "MN_NODE_PORT",
+      "MN_INDEXER_PORT",
+      "MN_PROOF_PORT"
+    ],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [
+      "brandme-infra/helm/brandme-umbrella/values.yaml:174-181 (legacy wallet-secrets; brandme-infra/README.md:70-72 says no wallet key belongs in the cluster)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "No member command submission is configured (capability.ts:60); writes never authorized. Preprod runner exits 1 without 3+ funded seeds and a Blockfrost token (test-midnight-preprod.mjs:8-12).",
+    "verification_level": "static-only",
+    "notes": "No server-held wallet key in current code or chart; test seeds are run-time env for the network test only."
+  },
+  {
+    "id": "S2-INT-026",
+    "name": "Email / SMS",
+    "kind": "email",
+    "sdk_or_api": "none found (grep nodemailer|sendgrid|twilio|smtplib|ses: no matches)",
+    "consuming_code": [],
+    "entry_point_reachable": "unknown",
+    "config_names": [],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "No email or SMS provider is integrated.",
+    "verification_level": "static-only",
+    "notes": "Absence recorded for completeness."
+  },
+  {
+    "id": "S2-INT-027",
+    "name": "OpenTelemetry tracing",
+    "kind": "observability",
+    "sdk_or_api": "opentelemetry-api/sdk 1.21.0, exporter-otlp-proto-grpc 1.21.0, instrumentation-httpx 0.42b0 (requirements.lock:945-982); @opentelemetry/api@1.9.1 transitively via next",
+    "consuming_code": [
+      "brandme_core/telemetry.py:8-14",
+      "brandme_core/telemetry.py:28-57",
+      "brandme-agents/branding/src/database.py:41-42",
+      "brandme-agents/branding/src/graph_engine.py:35-36"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "OTEL_EXPORTER_OTLP_ENDPOINT (declared only)",
+      "OTEL_SERVICE_NAME (declared only)",
+      "OTLP_ENDPOINT (declared only)",
+      "ENABLE_TRACING (declared only)"
+    ],
+    "hardcoded_endpoints": [
+      "infrastructure/otel-collector/otel-collector-config.yml:78 — http://loki:3100/loki/api/v1/push",
+      "infrastructure/otel-collector/otel-collector-config.yml:89 — tempo:4317 (insecure)"
+    ],
+    "provisioning_evidence": [
+      "infrastructure/otel-collector/otel-collector-config.yml (orphan; no service runs it)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "TelemetrySetup.configure(otlp_endpoint=None) exports nothing; it has no callers (grep). No process sets an OTLP endpoint. Code present, never wired.",
+    "verification_level": "static-only",
+    "notes": ""
+  },
+  {
+    "id": "S2-INT-028",
+    "name": "Prometheus metrics / alerting",
+    "kind": "observability",
+    "sdk_or_api": "prometheus-client==0.19.0 (requirements.lock:1007)",
+    "consuming_code": [
+      "brandme_core/metrics.py:7",
+      "brandme-cube/src/main.py:198"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [],
+    "hardcoded_endpoints": [
+      "infrastructure/prometheus/prometheus.yml:37-151 — scrape targets gateway:3000, brain:8000, identity:8100, knowledge:8101, compliance:8102, chain:3001, postgres-exporter:9187, redis-exporter:9121, nats:7777, celery-exporter:9808, alertmanager:9093 (none exist in any stack definition)"
+    ],
+    "provisioning_evidence": [
+      "infrastructure/prometheus/prometheus.yml, infrastructure/prometheus/rules/alerts.yml (orphans)",
+      "infrastructure/helm/brandme/values.yaml:297-302 (chart dependency values, no template)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Metrics endpoints exist in legacy Python services only; no scraper is deployed; gateway/chain expose no /metrics (grep of index.ts mounts).",
+    "verification_level": "static-only",
+    "notes": "Target ports in prometheus.yml contradict the current port map (gateway 3001; identity 8005; knowledge 8003; compliance 8004)."
+  },
+  {
+    "id": "S2-INT-029",
+    "name": "Loki / Grafana / Tempo (logs, dashboards, traces)",
+    "kind": "observability",
+    "sdk_or_api": "none in code",
+    "consuming_code": [],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "GRAFANA_PASSWORD (declared only)"
+    ],
+    "hardcoded_endpoints": [
+      "infrastructure/loki/loki-config.yml:71 — http://alertmanager:9093",
+      "scripts/deploy.sh:147 — http://localhost:3030 (Grafana)",
+      "scripts/test-infrastructure.sh:73-76 — localhost:9090/3030/3100/13133"
+    ],
+    "provisioning_evidence": [
+      "infrastructure/loki/loki-config.yml (orphan)",
+      "infrastructure/helm/brandme/Chart.yaml:30-33 (grafana dependency; no template)",
+      ".env.deploy.example:94"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Nothing deploys or configures them.",
+    "verification_level": "static-only",
+    "notes": ""
+  },
+  {
+    "id": "S2-INT-030",
+    "name": "Sentry / error tracking / product analytics",
+    "kind": "analytics",
+    "sdk_or_api": "none found (grep @sentry|sentry_sdk|segment|amplitude|posthog|gtag|analytics: no matches outside docs)",
+    "consuming_code": [],
+    "entry_point_reachable": "unknown",
+    "config_names": [],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "No analytics or error-tracking SDK is integrated. NEXT_TELEMETRY_DISABLED=1 is set in the console image and CI.",
+    "verification_level": "static-only",
+    "notes": ""
+  },
+  {
+    "id": "S2-INT-031",
+    "name": "GKE hosting via Helm chart brandme-infra/helm/brandme",
+    "kind": "hosting",
+    "sdk_or_api": "helm 3.22.1 + kubeconform 0.8.0 pinned by SHA-256 (scripts/validate-helm.sh:30-31, :57-80)",
+    "consuming_code": [
+      "brandme-infra/helm/brandme/templates/*.yaml",
+      ".github/workflows/ci-cd.yml:397-524",
+      "scripts/validate-helm.sh"
+    ],
+    "entry_point_reachable": "unknown",
+    "config_names": [
+      "BM_DEPLOY_ENABLED",
+      "BM_GCP_PROJECT_ID",
+      "BM_GCP_WIF_PROVIDER",
+      "BM_GCP_DEPLOYER_SA",
+      "BM_GKE_CLUSTER",
+      "BM_GCP_REGION"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-infra/helm/brandme/values.yaml:286-292 — GKE metadata server 169.254.169.252:987/988, 169.254.169.254:80/8080",
+      "brandme-infra/helm/brandme/values.yaml:306-308 — GFE ranges 130.211.0.0/22, 35.191.0.0/16"
+    ],
+    "provisioning_evidence": [
+      "brandme-infra/helm/brandme/values-sandbox.yaml (first target; REPLACE_ME placeholders)",
+      "brandme-infra/terraform/main.tf:77-146 (legacy cluster definition, validate fails)",
+      "scripts/provision/gcp-dev-identities.sh (identities only)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Deploy job runs only on a v* tag with BM_DEPLOY_ENABLED=true (ci-cd.yml:404); README states nothing has been deployed and no v* tag exists (brandme-infra/README.md:7-11). Rendering fails on any REPLACE_ME.",
+    "verification_level": "static-only",
+    "notes": "Cluster `brandme-cluster` in project `lux-realestate-app` (ci-cd.yml:43-45) is unconfirmed. ADR-06 names Cloud Run as the initial target; no Cloud Run config exists (brandme-infra/README.md:15-17). Applied state unknown."
+  },
+  {
+    "id": "S2-INT-032",
+    "name": "Container registry (gcr.io)",
+    "kind": "hosting",
+    "sdk_or_api": "docker/build-push-action@v5, docker/metadata-action@v5, google-github-actions/auth@v2",
+    "consuming_code": [
+      ".github/workflows/ci-cd.yml:336",
+      ".github/workflows/ci-cd.yml:364-391",
+      "Makefile:212-254",
+      "agents/service-agent.sh:30-43",
+      "brandme-infra/helm/brandme-umbrella/values.yaml:9"
+    ],
+    "entry_point_reachable": "unknown",
+    "config_names": [
+      "REGISTRY",
+      "GCP_PROJECT_ID",
+      "GCP_SA_KEY"
+    ],
+    "hardcoded_endpoints": [
+      ".github/workflows/ci-cd.yml:43,46 — gcr.io/lux-realestate-app/brandme-<service>",
+      "Makefile:212-232 — gcr.io/brandme/<service>:latest",
+      "brandme-infra/helm/brandme-umbrella/values.yaml:9 — gcr.io/brandme-prod",
+      "infrastructure/helm/brandme/values.yaml:20 — gcr.io/brandme/gateway:latest",
+      "brandme-infra/helm/brandme/values.yaml:42-43 — comment also names us-east1-docker.pkg.dev/<project>/brandme"
+    ],
+    "provisioning_evidence": [
+      "scripts/provision/gcp-dev-identities.sh:30-34,266,388-389 (Artifact Registry repo 'gcr.io' location us; pusher writer role)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Push happens only on push to main or a v* tag (ci-cd.yml:310) using a JSON key secret; the manifest wants it retired in favour of WIF pusher identity (credential-manifest.yaml:241). Digest recorded for the deploy job.",
+    "verification_level": "static-only",
+    "notes": "Three distinct registry paths/projects across CI, Makefile and legacy charts."
+  },
+  {
+    "id": "S2-INT-033",
+    "name": "GitHub Actions -> GCP identity",
+    "kind": "identity",
+    "sdk_or_api": "google-github-actions/auth@v2, google-github-actions/get-gke-credentials@v2",
+    "consuming_code": [
+      ".github/workflows/ci-cd.yml:364-368 (credentials_json: secrets.GCP_SA_KEY)",
+      ".github/workflows/ci-cd.yml:461-466 (workload_identity_provider / service_account from vars)",
+      "scripts/provision/gcp-dev-identities.sh:424-439"
+    ],
+    "entry_point_reachable": "unknown",
+    "config_names": [
+      "GCP_SA_KEY",
+      "BM_GCP_WIF_PROVIDER",
+      "BM_GCP_DEPLOYER_SA",
+      "BM_GCP_PUSH_WIF_PROVIDER"
+    ],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [
+      "scripts/provision/gcp-dev-identities.sh:424-439 (WIF pools github-deploy and github-push with attribute.repository_id conditions; dry-run by default)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Image push uses a long-lived key (legacy); deploy uses keyless WIF. Neither secret nor variable existence is verifiable from the repo.",
+    "verification_level": "static-only",
+    "notes": "Names only; no values observed."
+  },
+  {
+    "id": "S2-INT-034",
+    "name": "Google Secret Manager (via Kubernetes Secret sync)",
+    "kind": "other",
+    "sdk_or_api": "none in code (no google-cloud-secret-manager import; grep)",
+    "consuming_code": [
+      "brandme-infra/helm/brandme/templates/_helpers.tpl:209-219 (secretKeyRef)",
+      "brandme-infra/helm/brandme/values.yaml:65-88",
+      "scripts/provision/gcp-dev-identities.sh:369-375"
+    ],
+    "entry_point_reachable": "unknown",
+    "config_names": [
+      "RIGHTS_SERVICE_TOKEN",
+      "PRIVACY_SERVICE_TOKEN",
+      "PRIVACY_EXPORT_SERVICE_TOKEN",
+      "CHAIN_SERVICE_TOKEN",
+      "MIDNIGHT_BLOCKFROST_PROJECT_ID",
+      "CONSUMER_DOMAIN_ASSERTION_KEY"
+    ],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [
+      "brandme-infra/helm/brandme/values-sandbox.yaml:29-35 (Kubernetes Secret names brandme-sandbox-rts-*/dom-*)",
+      "scripts/provision/gcp-dev-identities.sh:369-375 (empty secret containers + accessor bindings)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Chart renders secretKeyRef with optional:false, so pods fail to schedule until a sync add-on or ESO (not installed by the chart) materialises the Secrets (values.yaml:8-11).",
+    "verification_level": "static-only",
+    "notes": "Applications never call Secret Manager directly."
+  },
+  {
+    "id": "S2-INT-035",
+    "name": "GKE Workload Identity (pod -> GSA)",
+    "kind": "identity",
+    "sdk_or_api": "iam.gke.io/gcp-service-account annotations",
+    "consuming_code": [
+      "brandme-infra/helm/brandme/templates/serviceaccounts.yaml:26-35",
+      "brandme-infra/helm/brandme/templates/migrations-job.yaml:16-27",
+      "brandme-infra/helm/brandme/values-sandbox.yaml:38,48,56-62,75,86,96,103"
+    ],
+    "entry_point_reachable": "unknown",
+    "config_names": [
+      "gateway.gcpServiceAccount etc. (Helm values)"
+    ],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [
+      "scripts/provision/gcp-dev-identities.sh:319-324 (roles/iam.workloadIdentityUser for <project>.svc.id.goog[brandme/<ksa>])"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Render fails without a GSA for each enabled component (_helpers.tpl:101-116; validate-helm.sh:263). Binding creation is outside the chart.",
+    "verification_level": "static-only",
+    "notes": ""
+  },
+  {
+    "id": "S2-INT-036",
+    "name": "Terraform (legacy GCP provisioning)",
+    "kind": "hosting",
+    "sdk_or_api": "hashicorp/google ~> 5.0 (brandme-infra/terraform/main.tf:9-13)",
+    "consuming_code": [
+      "brandme-infra/terraform/main.tf",
+      "agents/infrastructure-agent.sh:26-55",
+      "Makefile:310-332"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [],
+    "hardcoded_endpoints": [
+      "brandme-infra/terraform/main.tf:16-19 — GCS backend bucket brandme-terraform-state"
+    ],
+    "provisioning_evidence": [
+      "brandme-infra/terraform/main.tf (VPC, GKE, Cloud SQL, bucket brandme-passport-blobs-<env>, GSA brandme-workload-<env>)"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "`terraform validate` fails: var.db_password used but undeclared (main.tf:192; brandme-infra/README.md:25). Provisions Cloud SQL that current code does not use and none of Spanner/Pub/Sub/Secret Manager.",
+    "verification_level": "static-only",
+    "notes": "Legacy, non-functional."
+  },
+  {
+    "id": "S2-INT-037",
+    "name": "MCP (Model Context Protocol) tool surface",
+    "kind": "other",
+    "sdk_or_api": "in-repo (brandme_core/mcp/tools.py, authz.py); PyJWT 2.15.1 for token/assertion verification",
+    "consuming_code": [
+      "brandme_core/mcp/tools.py",
+      "brandme_core/mcp/authz.py:1-80",
+      "brandme_core/orchestrator/composition.py:17-19"
+    ],
+    "entry_point_reachable": "not-mounted",
+    "config_names": [
+      "MCP_AS_ISSUER (planned, unread)",
+      "MCP_AS_JWKS_URI (planned, unread)",
+      "BRANDME_LOG_REF_KEY"
+    ],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "No MCP server entry point (no FastMCP/stdio/HTTP mount found); the executor is constructed only inside compose_assistant, which nothing calls. CLAUDE.md names an 'mcp-server' service that is not defined anywhere.",
+    "verification_level": "static-only",
+    "notes": "Tool handlers are registered as SIMULATED (mandate UUIDs, checkout completion, user_id trust) in brandme_core/config.py:308-321."
+  },
+  {
+    "id": "S2-INT-038",
+    "name": "21st.dev Magic MCP server (developer tooling)",
+    "kind": "other",
+    "sdk_or_api": "npx -y @21st-dev/magic@latest (unpinned; .mcp.json:8)",
+    "consuming_code": [
+      ".mcp.json:3-11",
+      ".claude/hooks/session-start.sh:1-38"
+    ],
+    "entry_point_reachable": "cli-only",
+    "config_names": [
+      "MAGIC_API_KEY"
+    ],
+    "hardcoded_endpoints": [],
+    "provisioning_evidence": [
+      ".claude/.env.local.example"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Without MAGIC_API_KEY the server fails authentication (observed in this session's MCP status). Key is passed on the command line (.mcp.json:9).",
+    "verification_level": "static-only",
+    "notes": "Not part of the product; recorded because it is a configured external integration with a secret."
+  },
+  {
+    "id": "S2-INT-039",
+    "name": "Local emulators and mocks (Spanner, Firestore, Pub/Sub, fake-gcs-server, stripe-mock, Midnight node/indexer/proof-server)",
+    "kind": "other",
+    "sdk_or_api": "gcr.io/cloud-spanner-emulator/emulator:1.5.45; google-cloud-cli:587.0.0-emulators; pinned tarballs from dl.google.com (scripts/python/fetch_*.py); midnightntwrk images by digest",
+    "consuming_code": [
+      "scripts/brandme.mjs:37,110-128,330-425",
+      "scripts/python/fetch_firestore_emulator.py:15",
+      "scripts/python/fetch_pubsub_emulator.py:14",
+      "scripts/python/fetch_gcs_emulator.py",
+      "tests/fixtures/providers/stripe_mock.py:36",
+      "brandme-chain/scripts/local-network.sh"
+    ],
+    "entry_point_reachable": "test-only",
+    "config_names": [
+      "SPANNER_EMULATOR_HOST",
+      "SPANNER_EMULATOR_REST",
+      "FIRESTORE_EMULATOR_HOST",
+      "PUBSUB_EMULATOR_BIN",
+      "GCS_EMULATOR_BIN",
+      "STRIPE_MOCK_BIN",
+      "BRANDME_REQUIRE_EMULATORS"
+    ],
+    "hardcoded_endpoints": [
+      "scripts/python/fetch_pubsub_emulator.py:14 — https://dl.google.com/dl/cloudsdk/channels/rapid/components/google-cloud-sdk-pubsub-emulator-20261009074343.tar.gz",
+      "scripts/python/fetch_firestore_emulator.py:15 — https://dl.google.com/.../google-cloud-sdk-cloud-firestore-emulator-20260717053915.tar.gz"
+    ],
+    "provisioning_evidence": [
+      "docker-compose.yml:74-86",
+      ".github/workflows/ci-cd.yml:58-62,135-181"
+    ],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Every emulator host is refused in sandbox/production by the mode guards; BRANDME_REQUIRE_EMULATORS=1 fails CI when any is missing.",
+    "verification_level": "static-only",
+    "notes": ""
+  },
+  {
+    "id": "S2-INT-040",
+    "name": "Console browser API client (axios, localStorage bearer)",
+    "kind": "other",
+    "sdk_or_api": "axios@1.20.0 (pnpm-lock.yaml:3327); next-auth@4.24.15 declared but never imported",
+    "consuming_code": [
+      "brandme-console/lib/api.ts:9-40"
+    ],
+    "entry_point_reachable": "mounted",
+    "config_names": [
+      "NEXT_PUBLIC_GATEWAY_URL",
+      "NEXT_PUBLIC_COMPLIANCE_SERVICE_URL",
+      "NEXT_PUBLIC_KNOWLEDGE_SERVICE_URL",
+      "NEXT_PUBLIC_CHAIN_SERVICE_URL"
+    ],
+    "hardcoded_endpoints": [
+      "brandme-console/lib/api.ts:11-14 — http://localhost:3000, :8102, :8101, :3001 (baked into the browser bundle when unset)"
+    ],
+    "provisioning_evidence": [],
+    "webhook_or_callback": {
+      "present": false,
+      "signature_verified": "n/a",
+      "path:line": ""
+    },
+    "failure_behavior": "Reads an `auth_token` from localStorage and sends it as a Bearer (api.ts:32-35); the gateway's session model is an HttpOnly cookie, so this path cannot authenticate as a member. Direct browser calls to compliance/knowledge/chain bypass the gateway.",
+    "verification_level": "static-only",
+    "notes": "Legacy client; the ops pages use server-side fetches with BRANDME_GATEWAY_URL / BRANDME_GATEWAY_INTERNAL_URL instead."
+  }
+]

@@ -1,0 +1,191 @@
+### start_utc: 2026-11-01T15:24:11Z
+### cmd: BRANDME_MODE=development NEXT_PUBLIC_BRANDME_MODE=development pnpm exec next dev -p 3100 --hostname 127.0.0.1 (no BRANDME_GATEWAY_URL)
+   ▲ Next.js 15.5.28
+   - Local:        http://127.0.0.1:3100
+   - Network:      http://127.0.0.1:3100
+
+ ✓ Starting...
+ ✓ Ready in 1765ms
+ ○ Compiling / ...
+ ✓ Compiled / in 7.1s (935 modules)
+ GET / 200 in 7711ms
+ GET / 200 in 101ms
+ ○ Compiling /api/v1/[...path] ...
+ ✓ Compiled /api/v1/[...path] in 1958ms (884 modules)
+ GET /api/v1/me 503 in 2729ms
+ GET / 200 in 437ms
+ ○ Compiling /start ...
+ ✓ Compiled /start in 740ms (894 modules)
+ GET /start 200 in 1109ms
+ ○ Compiling /today ...
+ ✓ Compiled /today in 554ms (911 modules)
+ GET /today 200 in 948ms
+ GET /api/v1/recommendations 503 in 57ms
+ GET /api/v1/wardrobe/items?collection=owned&limit=6 503 in 67ms
+ ○ Compiling /add ...
+ ✓ Compiled /add in 6.9s (1806 modules)
+ GET /add 200 in 7343ms
+ ○ Compiling /add/scan ...
+ ✓ Compiled /add/scan in 1100ms (1806 modules)
+ GET /add/scan 200 in 1356ms
+ ○ Compiling /closet ...
+ ✓ Compiled /closet in 845ms (1818 modules)
+ GET /closet 200 in 1179ms
+ ○ Compiling /closet/settings ...
+ ✓ Compiled /closet/settings in 577ms (1820 modules)
+ GET /closet/settings 200 in 880ms
+ ○ Compiling /style ...
+ ✓ Compiled /style in 729ms (1830 modules)
+ GET /style 200 in 944ms
+ ○ Compiling /discover ...
+ ✓ Compiled /discover in 1743ms (1842 modules)
+ GET /discover 200 in 1992ms
+ ○ Compiling /circle ...
+ ✓ Compiled /circle in 1586ms (1850 modules)
+ GET /circle 200 in 1945ms
+ GET /api/v1/decisions?role=invited 503 in 146ms
+ GET /api/v1/relationships 503 in 164ms
+ ○ Compiling /circle/decisions/new ...
+ ✓ Compiled /circle/decisions/new in 807ms (1855 modules)
+ GET /circle/decisions/new 200 in 1129ms
+ GET /api/v1/relationships 503 in 56ms
+ GET /api/v1/wardrobe/items 503 in 75ms
+ ○ Compiling /rewards ...
+ ✓ Compiled /rewards in 1644ms (1865 modules)
+ GET /rewards 200 in 1949ms
+ GET /api/v1/rewards 503 in 60ms
+ GET /api/v1/benefits 503 in 79ms
+ GET /api/v1/rewards/reservations 503 in 75ms
+ ○ Compiling /inbox ...
+ ✓ Compiled /inbox in 1002ms (1873 modules)
+ GET /inbox 200 in 1200ms
+ GET /api/v1/notifications?limit=24 503 in 52ms
+ ○ Compiling /me ...
+ ✓ Compiled /me in 2.1s (1881 modules)
+ GET /me 200 in 2331ms
+ ○ Compiling /me/style ...
+ ✓ Compiled /me/style in 2.3s (1891 modules)
+ GET /me/style 200 in 2493ms
+ GET /api/v1/me/persona 503 in 59ms
+ ○ Compiling /me/data ...
+ ✓ Compiled /me/data in 1355ms (1899 modules)
+ GET /me/data 200 in 1679ms
+ GET /api/v1/me/data 503 in 169ms
+ ○ Compiling /me/connections ...
+ ✓ Compiled /me/connections in 1896ms (1907 modules)
+ GET /me/connections 200 in 2179ms
+ GET /api/v1/me 503 in 57ms
+ ○ Compiling /orders ...
+ ✓ Compiled /orders in 980ms (1891 modules)
+ GET /orders 200 in 1223ms
+ ○ Compiling /assistant ...
+ ✓ Compiled /assistant in 1136ms (1893 modules)
+ GET /assistant 200 in 1396ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 1757ms (1899 modules)
+ GET /settings 200 in 2031ms
+ ○ Compiling /scan ...
+ ✓ Compiled /scan in 1714ms (1911 modules)
+ GET /scan 200 in 1945ms
+ ○ Compiling /governance ...
+ ✓ Compiled /governance in 1254ms (1916 modules)
+ GET /governance 200 in 1586ms
+ ○ Compiling /try/device-test ...
+ ✓ Compiled /try/device-test in 4.2s (2122 modules)
+ GET /try/device-test 200 in 5473ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1512ms (2099 modules)
+ GET /this-route-does-not-exist 404 in 1777ms
+ GET /me/connections 200 in 192ms
+ GET /api/v1/me 503 in 70ms
+ GET /api/v1/session 503 in 76ms
+ GET /me/style 200 in 147ms
+ GET /api/v1/me/persona 503 in 49ms
+ GET /api/v1/me 503 in 20ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.4s (1188 modules)
+ GET / 200 in 2723ms
+ ○ Compiling /start ...
+ ✓ Compiled /start in 1462ms (1193 modules)
+ GET /start 200 in 1789ms
+ ○ Compiling /today ...
+ ✓ Compiled /today in 866ms (747 modules)
+ GET /today 200 in 1153ms
+ GET /api/v1/recommendations 503 in 81ms
+ GET /api/v1/wardrobe/items?collection=owned&limit=6 503 in 102ms
+ ○ Compiling /add ...
+ ✓ Compiled /add in 926ms (1185 modules)
+ GET /add 200 in 1266ms
+ ○ Compiling /add/scan ...
+ ✓ Compiled /add/scan in 1115ms (1179 modules)
+ GET /add/scan 200 in 1383ms
+ ○ Compiling /closet ...
+ ✓ Compiled /closet in 3.2s (1187 modules)
+ GET /closet 200 in 3558ms
+ ○ Compiling /closet/settings ...
+ ✓ Compiled /closet/settings in 903ms (1189 modules)
+ GET /closet/settings 200 in 1153ms
+ ○ Compiling /style ...
+ ✓ Compiled /style in 963ms (1196 modules)
+ GET /style 200 in 1229ms
+ ○ Compiling /discover ...
+ ✓ Compiled /discover in 1290ms (1203 modules)
+ GET /discover 200 in 1616ms
+ ○ Compiling /circle ...
+ ✓ Compiled /circle in 1492ms (1209 modules)
+ GET /circle 200 in 1794ms
+ GET /api/v1/decisions?role=invited 503 in 69ms
+ GET /api/v1/relationships 503 in 78ms
+ ○ Compiling /circle/decisions/new ...
+ ✓ Compiled /circle/decisions/new in 1511ms (1198 modules)
+ GET /circle/decisions/new 200 in 1762ms
+ GET /api/v1/relationships 503 in 57ms
+ GET /api/v1/wardrobe/items 503 in 88ms
+ ○ Compiling /rewards ...
+ ✓ Compiled /rewards in 936ms (1204 modules)
+ GET /rewards 200 in 1217ms
+ GET /api/v1/rewards 503 in 66ms
+ GET /api/v1/benefits 503 in 78ms
+ GET /api/v1/rewards/reservations 503 in 76ms
+ ○ Compiling /inbox ...
+ ✓ Compiled /inbox in 965ms (1192 modules)
+ GET /inbox 200 in 1230ms
+ GET /api/v1/notifications?limit=24 503 in 55ms
+ ○ Compiling /me ...
+ ✓ Compiled /me in 1634ms (1200 modules)
+ GET /me 200 in 1954ms
+ GET /me/style 200 in 409ms
+ GET /api/v1/me/persona 503 in 71ms
+ ○ Compiling /me/data ...
+ ✓ Compiled /me/data in 1271ms (1206 modules)
+ GET /me/data 200 in 1665ms
+ GET /api/v1/me/data 503 in 68ms
+ GET /me/connections 200 in 119ms
+ GET /api/v1/me 503 in 55ms
+ ○ Compiling /orders ...
+ ✓ Compiled /orders in 1663ms (1208 modules)
+ GET /orders 200 in 1984ms
+ ○ Compiling /assistant ...
+ ✓ Compiled /assistant in 2.1s (1210 modules)
+ GET /assistant 200 in 2561ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 1347ms (1103 modules)
+ GET /settings 200 in 1693ms
+ ○ Compiling /scan ...
+ ✓ Compiled /scan in 1617ms (1115 modules)
+ GET /scan 200 in 1938ms
+ ○ Compiling /governance ...
+ ✓ Compiled /governance in 1320ms (708 modules)
+ GET /governance 200 in 1737ms
+ ○ Compiling /try/device-test ...
+ ✓ Compiled /try/device-test in 1936ms (814 modules)
+ GET /try/device-test 200 in 2372ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1745ms (815 modules)
+ GET /this-route-does-not-exist 404 in 2103ms
+ GET /me/connections 200 in 137ms
+ GET /api/v1/me 503 in 83ms
+ GET /api/v1/session 503 in 75ms
+ GET /me/style 200 in 191ms
+ GET /api/v1/me/persona 503 in 49ms
+ GET /api/v1/me 503 in 16ms

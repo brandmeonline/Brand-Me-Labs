@@ -1,0 +1,1420 @@
+### $ git for-each-ref --format='%(refname:short) %(objectname) %(committerdate:iso-strict) %(authorname)' refs/remotes/origin | sed 's/ [A-Za-z].*@.*//'
+# exit=0 lines=36
+origin ed19dc151d103b108cf972e6d37971c55d5dcf60 2026-10-30T12:35:08-04:00 Adamus
+origin/bench/astra-consumer-ui-20261005 cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8 2026-10-24T19:35:19-07:00 unknown
+origin/bench/astra-spatial-ar-20261005 1413178b7f74ecaf20589d67c4ba4dcdedbb69c2 2026-10-30T08:28:41-07:00 Adamus
+origin/bench/opus-commerce-agents-20261005 7c61afd7c98a66836ba91d715bc4c6c913807003 2026-10-06T08:03:22-04:00 Adamus
+origin/bench/opus-consumer-domains-20261005 d839267fc1f74b5e778e83f2930953e1a5400712 2026-10-07T08:35:43-04:00 Adamus
+origin/bench/opus-foundation-20261005 67327e45ed816bd76bc20ed1e2eb694009923530 2026-10-05T20:13:47-04:00 Adamus
+origin/bench/opus-midnight-rights-20261005 44aaceab55bdcf595ce56ff2ded562d79bf1d190 2026-10-06T08:03:28-04:00 Adamus
+origin/claude/amazing-goodall-ntrljq 8360813e238e20f78656700340c6c05927107ae0 2026-11-01T14:56:48+00:00 Claude
+origin/claude/brand-me-lux-foundations-audit-8zywr3 eed6737062da451a38114f8002159c1bed0e5cb5 2026-08-31T19:52:40+00:00 Claude
+origin/claude/ci-repair-workflows 512021c35a6b9d381c94fe02495ba903f411b916 2026-08-31T21:45:08+00:00 Claude
+origin/claude/midnight-rights-lifecycle-yhfyyu a05f2e03e58e55cc2b392b8abc7b19f59659f820 2026-10-30T18:09:09+00:00 Claude
+origin/claude/opus-commerce-agents-setup-szpmf7 161f6eb6498c6085c8a070d2a389e3562b1b1ba9 2026-10-25T13:34:49+00:00 Claude
+origin/claude/opus-consumer-domains-1csp2g babb3604ae2f33018edf0ad45270887d4b01945b 2026-10-30T17:15:06+00:00 Claude
+origin/claude/opus-foundation-w00-2hgiw5 f5c906ab163084f791a7b601f3bbb71a828bb934 2026-10-30T05:55:30+00:00 Claude
+origin/claude/setup-design-system-cli-6iovG 8b9bd4a718ef0d2ec0826b94537d438df68b2b32 2026-06-11T00:41:00+00:00 Claude
+origin/codex/chain-projection-worker-20261022 e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d 2026-10-22T19:38:32-04:00 Adamus
+origin/codex/console-contract-publication 06d8fc13f3133fea5108164266a6fee59b88db1f 2026-10-24T19:50:13-07:00 unknown
+origin/codex/consumer-design-preview 0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420 2026-10-30T09:44:06-04:00 Adamus
+origin/codex/critical-dependency-repairs-20261022 542b52cc12ca668e64c13a072acf7374bd0a5752 2026-10-22T20:14:20-04:00 Adamus
+origin/codex/docker-pipeline-20261022 a5373d5c0eef5466a20e6ef4d4682a06275e20d4 2026-10-22T18:05:27-04:00 Adamus
+origin/codex/durable-chain-reconciliation-20261022 e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6 2026-10-22T19:14:57-04:00 Adamus
+origin/codex/durable-outbox-pubsub-20261022 65367789130870c8c2a0e786f2d6152357d88093 2026-10-22T22:21:29-04:00 Adamus
+origin/codex/explain-execution-details-and-next-steps 15ae7bf3ce02773ec431977cd23c6f5b19d811fd 2026-04-26T21:31:29-07:00 brandmeonline
+origin/codex/midnight-integration-20261022 32e63d4d87f515f5398ab01d1eb18eba94019b5c 2026-10-22T18:39:39-04:00 Adamus
+origin/codex/privacy-recovery-safety-20261023 e6274ef5a19e5db77d27c19c3b7349b08fa96c84 2026-10-22T23:04:48-04:00 Adamus
+origin/codex/rights-export-worker 02297b2cea98dfd54818de5a3104a1ce341acfcd 2026-10-23T00:40:45-04:00 Adamus
+origin/codex/rights-privacy-read-api 10a468395cde98eaf7b7f0159855c7bac3a5827a 2026-10-22T23:49:48-04:00 Adamus
+origin/docs/brandme-full-experience-2026-10-05 b31373170953705f180246e254a8c2e9a41b4931 2026-10-23T14:18:46-04:00 Adamus
+origin/fix/property-test-vacuity-guard-flake a699331df56c12570067223dbaad9c0a86d1567a 2026-10-10T14:29:17-04:00 Mia
+origin/main ed19dc151d103b108cf972e6d37971c55d5dcf60 2026-10-30T12:35:08-04:00 Adamus
+origin/mia/next-plans-20261025 057320d4bf01e86c381d6750202e6e5bb7bb741f 2026-10-25T00:18:44-04:00 Adamus
+origin/mia/orchestration-20261023 27f3215a9cb3512ee6d92a5a6fb13519bd82385d 2026-10-23T14:14:01-04:00 Adamus
+origin/mia/pipeline-seed-20261030 5e9eceb67599f2465ca2d7a47b71234965f0b2f1 2026-10-30T11:17:44-04:00 Adamus
+origin/triage/pnpm-version-conflict-20261023 114470007e9c631010ee22930a8ddfb75d0ea700 2026-10-23T09:29:18-04:00 Adamus
+origin/triage/pnpm-workspace-frontend-20261008 64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17 2026-10-08T18:09:15-04:00 Adamus
+origin/w11/integration-20261008 bec80b1f25fcd4a310529888351c45c71d33dc4a 2026-10-08T18:23:43-04:00 Adamus
+
+### $ for each branch: git merge-base origin/main <ref>; git rev-list --left-right --count origin/main...<ref>; git cherry origin/main <ref>
+# exit=0 (see stats.psv) — columns: branch|merge_base|behind(main-only)|ahead(branch-only)|cherry+|cherry-
+branch|mb|ahead_main_only(behind)|ahead_branch|cherry_plus|cherry_minus
+origin/bench/astra-consumer-ui-20261005|cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8|90|0|0|0
+origin/bench/astra-spatial-ar-20261005|1413178b7f74ecaf20589d67c4ba4dcdedbb69c2|5|0|0|0
+origin/bench/opus-commerce-agents-20261005|7c61afd7c98a66836ba91d715bc4c6c913807003|344|0|0|0
+origin/bench/opus-consumer-domains-20261005|d839267fc1f74b5e778e83f2930953e1a5400712|365|0|0|0
+origin/bench/opus-foundation-20261005|67327e45ed816bd76bc20ed1e2eb694009923530|357|0|0|0
+origin/bench/opus-midnight-rights-20261005|44aaceab55bdcf595ce56ff2ded562d79bf1d190|356|0|0|0
+origin/claude/amazing-goodall-ntrljq|ed19dc151d103b108cf972e6d37971c55d5dcf60|0|2|2|0
+origin/claude/brand-me-lux-foundations-audit-8zywr3|0f5f58a9eecaca46b367c9bd96f89654343fa5fb|370|5|5|0
+origin/claude/ci-repair-workflows|512021c35a6b9d381c94fe02495ba903f411b916|369|0|0|0
+origin/claude/midnight-rights-lifecycle-yhfyyu|ed19dc151d103b108cf972e6d37971c55d5dcf60|0|5|5|0
+origin/claude/opus-commerce-agents-setup-szpmf7|161f6eb6498c6085c8a070d2a389e3562b1b1ba9|69|0|0|0
+origin/claude/opus-consumer-domains-1csp2g|97d54477f7667dade1a4fd7220c0b2694cffb604|17|18|16|0
+origin/claude/opus-foundation-w00-2hgiw5|f5c906ab163084f791a7b601f3bbb71a828bb934|18|0|0|0
+origin/claude/setup-design-system-cli-6iovG|8f8a2b7cfae4daabd7d08d2c65104b20a2fcdc53|373|8|6|2
+origin/codex/chain-projection-worker-20261022|238f65a357c64169662738b17adbb526c999a52b|293|1|0|1
+origin/codex/console-contract-publication|06d8fc13f3133fea5108164266a6fee59b88db1f|88|0|0|0
+origin/codex/consumer-design-preview|77280249df4e91d93b4d814b140bd5e38bba4735|87|20|13|0
+origin/codex/critical-dependency-repairs-20261022|74e137534b1b6f04e536a433977763a1775dc950|292|2|2|0
+origin/codex/docker-pipeline-20261022|b294e9e474161c04aeaf80426099f506e6823693|296|7|7|0
+origin/codex/durable-chain-reconciliation-20261022|a2e625a104c4e69e88731ff81e6cdf7b4c2940a4|294|2|2|0
+origin/codex/durable-outbox-pubsub-20261022|fbadf012155663be8e174c4845e6c9c0e3b4dca6|291|2|2|0
+origin/codex/explain-execution-details-and-next-steps|4335e270778049ba7c3fe64599ed92ec253981af|371|1|0|1
+origin/codex/midnight-integration-20261022|1ac8f97da6b326cfe6f425e26abd0daac6044917|295|3|3|0
+origin/codex/privacy-recovery-safety-20261023|1a4cfd1d142bb562b5c2e12c211111345a6fc23d|290|2|2|0
+origin/codex/rights-export-worker|20bf3e95af466df7e3a8eb6cb14c9823921a12b7|288|2|2|0
+origin/codex/rights-privacy-read-api|f4a4015f1820f35a11312ea020421a9d091dbd28|289|1|0|1
+origin/docs/brandme-full-experience-2026-10-05|b31373170953705f180246e254a8c2e9a41b4931|357|0|0|0
+origin/fix/property-test-vacuity-guard-flake|99fc2fa202d2f9c4c4f8d9c4a2a3c5bce6a719d3|300|1|0|1
+origin/main|ed19dc151d103b108cf972e6d37971c55d5dcf60|0|0|0|0
+origin/mia/next-plans-20261025|057320d4bf01e86c381d6750202e6e5bb7bb741f|78|0|0|0
+origin/mia/orchestration-20261023|27f3215a9cb3512ee6d92a5a6fb13519bd82385d|276|0|0|0
+origin/mia/pipeline-seed-20261030|5e9eceb67599f2465ca2d7a47b71234965f0b2f1|14|0|0|0
+origin/triage/pnpm-version-conflict-20261023|6899d88202617808443bf7f72257643503c7c0e8|363|1|0|1
+origin/triage/pnpm-workspace-frontend-20261008|f5c6dd922850a9dc7f836cb448de4839d1fee04f|368|1|1|0
+origin/w11/integration-20261008|bec80b1f25fcd4a310529888351c45c71d33dc4a|319|0|0|0
+
+### $ git rev-list --no-merges origin/main | while read c; do git diff-tree -p $c | git patch-id --stable; done > main-patchids.txt
+# exit=0 cached 364 patch-ids for all non-merge commits on origin/main (438 total commits, 364 non-merge)
+
+### $ for each ahead branch: git log --format='%H %cI %an | %s | parents=%p' origin/main..<ref>
+# exit=0
+=== origin/claude/amazing-goodall-ntrljq
+8360813 8360813e238e20f78656700340c6c05927107ae0 2026-11-01T14:56:48+00:00 Claude | feat(payments): Stripe Connect direct charges for brands (test mode) | parents=45e157f
+45e157f 45e157f5555647f0e9add424b9634f27d606211d 2026-11-01T14:38:51+00:00 Claude | docs: add Stripe Connect integration plan (brands direct, resale separate transfers) | parents=ed19dc1
+=== origin/claude/brand-me-lux-foundations-audit-8zywr3
+eed6737 eed6737062da451a38114f8002159c1bed0e5cb5 2026-08-31T19:52:40+00:00 Claude | fix(ci): scope foundation.yml push trigger to main; correct the stated fix | parents=18a69ac
+18a69ac 18a69acea779c64b37c2a1176a1f04a8470dcee6 2026-08-31T19:50:40+00:00 Claude | docs: root-cause the Security Scan intermittency as duplicate workflow runs | parents=8aa8354
+8aa8354 8aa8354a4a2122e573fc8a03ffce7180940fdaa5 2026-08-31T19:48:00+00:00 Claude | docs: add the third CI root cause (Security Scan SARIF upload) | parents=0957452
+0957452 0957452d8947d054c3e4747f70c0f0d69c4c209d 2026-08-31T19:45:39+00:00 Claude | docs: record that ci-cd.yml has been red on main since January | parents=3523b22
+3523b22 3523b22a0b41f498c046ffe210d73fba3c2f135b 2026-08-31T19:36:56+00:00 Claude | Audit all repos; lift Lux platform foundation into brandme_foundation/ | parents=0f5f58a
+=== origin/claude/midnight-rights-lifecycle-yhfyyu
+a05f2e0 a05f2e03e58e55cc2b392b8abc7b19f59659f820 2026-10-30T18:09:09+00:00 Claude | docs(midnight-rights): check-in packet (Stage 15) | parents=6a4a11a
+6a4a11a 6a4a11a6b424256443acd39de52b544efef5f68c 2026-10-30T18:02:26+00:00 Claude | feat(rights): reprint.attested producer and dev-form My Data composition (Stage 14) | parents=d58e3c8
+d58e3c8 d58e3c8e8426e69225b8c3ea009e4a6cb58c6bf2 2026-10-30T18:02:10+00:00 Claude | feat(rights): authenticated rights command backend (Stage 13) | parents=cd6224d
+cd6224d cd6224d3dfb849c0746b78306cd342578db7d688 2026-10-30T17:30:52+00:00 Claude | feat(privacy): D-007 handler extension, receipt notes and identity ordering (Stage 12) | parents=c55c010
+c55c010 c55c010dbcc6f18a9bf12146dcea0045652dc7a9 2026-10-30T16:47:49+00:00 Claude | docs(midnight-rights): receive and review the round-03 ultra plan (Stage 11) | parents=ed19dc1
+=== origin/claude/opus-consumer-domains-1csp2g
+babb360 babb3604ae2f33018edf0ad45270887d4b01945b 2026-10-30T17:15:06+00:00 Claude | fix: fifth Codex review of #66 (ledger freeze on survey/convert, relationship deletion ends share audiences) | parents=f27e37c
+f27e37c f27e37cb01b996fdb819210e27cd45934fb9b3a7 2026-10-30T16:34:02+00:00 Claude | fix: fourth Codex review of #66 (credits after ledger deletion, recovery debt on release) | parents=5f3e2b4
+5f3e2b4 5f3e2b49f813cf3e9c961d58165ae90d7ad08888 2026-10-30T15:59:40+00:00 Claude | fix: share purge events only for projected shares; My Data test expects the recipient refusal | parents=9ebc062
+9ebc062 9ebc062bbdc838c6b32ad48701d63a4b513a6a42 2026-10-30T15:36:36+00:00 Claude | fix: third Codex review of #66 (deleted cards, share purge, invitee freeze, engagement, withdraw, ranking) | parents=e40ea7c
+e40ea7c e40ea7cd733d3f33720502fb13303e877fdc596e 2026-10-30T14:30:46+00:00 Claude | fix: second Codex review of #66 (card copies, room admission, influence, Flow axes) | parents=8933899
+8933899 8933899d28cd015d59be1fd33796b98f7667c43e 2026-10-30T13:40:37+00:00 Claude | status: point Stages 19-20 at the follow-up's stage numbers (22, 23) | parents=1b4edf2
+1b4edf2 1b4edf2c4f360031d917e2891f9f9ffe36d87fd1 2026-10-30T13:39:52+00:00 Claude | fix: Codex review of #66 (cap, share projection, room blocking, idempotency, card taste) | parents=48c638d
+48c638d 48c638d9bc5a8a57f484a4880a12eb6d3c0aa02a 2026-10-30T12:49:27+00:00 Claude | status: Stage 20, main 97d5447 merged; foundation test counts deviation | parents=c488c25
+c488c25 c488c2568eeb79387014a503ccd6ea7bb75768f2 2026-10-30T12:46:23+00:00 Claude | test(foundation): count the consumer seed's #66 rows in the deletion proof | parents=a89df83
+a89df83 a89df832ec4ab71167c521641d6dbd2c9cdb49ea 2026-10-30T12:40:53+00:00 Claude | Merge origin/main (97d5447: #62 foundation round 4) into consumer-domains | parents=b5e8ea4 97d5447
+b5e8ea4 b5e8ea4cfc573b183c1474e842554746b3e06fcf 2026-10-30T03:53:12+00:00 Claude | status: Stage 19, answer to the Oct 29 status check | parents=9770927
+9770927 9770927ab66e7e43cee42494b614d0397de112ce 2026-10-30T03:51:53+00:00 Claude | Merge origin/main (22ff053: #64 commerce round 3, #67 round-03 plans) into consumer-domains | parents=5aa075b 22ff053
+5aa075b 5aa075b85f7a46096309a45b3ef2d21de4431dc3 2026-10-25T04:30:56+00:00 Claude | wardrobe: keep ownership evidence off the stranger-visible closet level | parents=ecdee84
+ecdee84 ecdee8418702cd5b3e20b3443a3f3b255529e08d 2026-10-25T04:10:39+00:00 Claude | status: record the final-head clean-checkout evidence for stages 15-16 | parents=29913cb
+29913cb 29913cb970eb6d57e49d171bfd07780d144fe512 2026-10-25T03:44:53+00:00 Claude | status: stages 15-16, Ultra plan 02 check-in packet (21 questions with defaults) | parents=068001d
+068001d 068001dcc83ecdee465eabc76bf984339bf278fe 2026-10-25T03:43:41+00:00 Claude | consumer domains: guard member routes individually; honour the privacy freeze on credit | parents=fa0a1a2
+fa0a1a2 fa0a1a21b0fca25457565a21bf8eb40ba162c0a6 2026-10-25T03:43:41+00:00 Claude | consumer domains: surveys and in-app credit, persona card and closet visibility, rooms, experiments, share projector (Ultra plan 02, items 5-8 and 10) | parents=d502a0c
+d502a0c d502a0c2d6443e3a70f029739bc5c85894d0c18a 2026-10-25T03:43:41+00:00 Claude | consumer domains: Now loop, Home = Flow and per-house loyalty standing (Ultra plan 02, items 2-4) | parents=2b5ae88
+=== origin/claude/setup-design-system-cli-6iovG
+8b9bd4a 8b9bd4a718ef0d2ec0826b94537d438df68b2b32 2026-06-11T00:41:00+00:00 Claude | Design audit: definitive Phase B diagnosis — sandbox blocked by 21st.dev | parents=6de84d4
+6de84d4 6de84d4bc239d7b75ea947aeafbc3114bd31ca6b 2026-06-09T16:30:38+00:00 Claude | Design audit Phase B blocked — log two failure modes for resume | parents=425918c
+425918c 425918ccb933a3d5f4213dfd9a2861ca3b9fecde 2026-06-09T16:22:04+00:00 Claude | Design audit Phase A — score brandme-frontend against rubric | parents=12f5ee7
+12f5ee7 12f5ee727613472d0f6ec819e220b6cdffa72178 2026-06-09T16:14:06+00:00 Claude | Add design-audit skill — reproducible audit + concept-generation workflow | parents=e758afb
+e758afb e758afb4079bd3a55e328ec0a7031ae567ca0d04 2026-06-09T16:14:05+00:00 brandmeonline | Add MCP commerce mandate and cart tool handlers (#28) | parents=d6207ad
+d6207ad d6207ade74802b162e3dcc65095524f86d244d2f 2026-06-09T16:14:05+00:00 brandmeonline | Claude/understand repo purpose wc ga7 (#27) | parents=1733fcc
+1733fcc 1733fccc13d97ceebf8a99a98c9d74506f03b1b6 2026-04-26T04:42:35+00:00 Claude | Wire 21st.dev Magic MCP via .mcp.json + SessionStart hook | parents=8dd7aad
+8dd7aad 8dd7aad7668add1e0ded3420002f99f2396ad718 2026-04-26T04:12:29+00:00 Claude | Add UI/UX Pro Max design system skill for Claude | parents=8f8a2b7
+=== origin/codex/chain-projection-worker-20261022
+e96356e e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d 2026-10-22T19:38:32-04:00 Adamus | feat(chain): reconcile durable operations and project finalized entitlements | parents=238f65a
+=== origin/codex/consumer-design-preview
+0ff12fb 0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420 2026-10-30T09:44:06-04:00 Adamus | docs(consumer): publish round-03 restart handoff | parents=2f89dce
+2f89dce 2f89dce5d171138085d994456722cfcb1868f637 2026-10-24T20:04:38-07:00 unknown | Merge completed prerequisites and record preview review gates | parents=c2732a3 7728024
+c2732a3 c2732a3098aa5ae850d285e35183270a028b1a7b 2026-10-24T19:51:17-07:00 unknown | Merge published contract history and final CI receipts into preview | parents=50b0b72 06d8fc1
+50b0b72 50b0b726faccc8b3198e2350bb8dabf8e41a40d1 2026-10-24T19:37:22-07:00 unknown | docs(consumer): record combined contract preview validation | parents=7f7d4e7
+7f7d4e7 7f7d4e71e3f9e7f9a0c3f1ddf367acf0376493a5 2026-10-24T19:36:47-07:00 unknown | Merge console contract 1.1.1 into design preview | parents=3f7e558 4ba1fae
+3f7e558 3f7e558d3a2a8f978af79d53fba6037a74aeef16 2026-10-24T19:36:36-07:00 unknown | Merge approved room revision parent into design preview | parents=9d1e29f cccfe7b
+4ba1fae 4ba1fae8a846a2a34104564ce35010fb4be4ad2c 2026-10-24T19:35:41-07:00 unknown | fix(console): publish shell contract 1.1.1 | parents=cccfe7b
+9d1e29f 9d1e29f4f9e12edc8c17f98dc9c6ce5d98ca8bef 2026-10-24T19:26:21-07:00 unknown | Merge consumer parent repair and record preview CI receipt | parents=2083bae aafc231
+2083bae 2083bae1a45696898f5304474da0ba3935e9bc27 2026-10-24T19:20:54-07:00 unknown | docs(consumer): record final navigation and preview checks | parents=9280571
+9280571 9280571ab026a02c2d49f8c3a3a372d9065bc966 2026-10-24T19:17:53-07:00 unknown | Merge commit '987afcebc72a38e7e494ffe8d9ec1369d74e3fd6' into codex/consumer-design-preview | parents=990e4a9 987afce
+990e4a9 990e4a940e50a0fc9a5e8b91762300a814f09765 2026-10-24T19:17:42-07:00 unknown | fix(consumer): select one current destination per navigation | parents=cd37b6d
+cd37b6d cd37b6de59fc7d804612efd2373cda1f6eadb3bc 2026-10-24T19:13:50-07:00 unknown | test(consumer): await route titles before preview audits | parents=71e9d40
+71e9d40 71e9d40998a3021f4bd7c576c55ced81096eccf7 2026-10-24T19:10:06-07:00 unknown | docs(consumer): record consolidated preview and browser evidence | parents=e67c493
+e67c493 e67c493d61ab655e2ff6e8da0dccf7b050063cce 2026-10-24T19:09:23-07:00 unknown | Merge commit '159d77206315e043a205d6984c730dc450404693' into codex/consumer-design-preview | parents=d2009d0 159d772
+d2009d0 d2009d01d37bd2a67022041e096efdce312a2183 2026-10-24T19:09:23-07:00 unknown | test(consumer): run heartbeat integration with browser checks | parents=d9a5b8a
+d9a5b8a d9a5b8adb03f15cf073679292185dfe43a57a3ab 2026-10-24T19:08:40-07:00 unknown | test(consumer): verify DecisionView heartbeat in browser | parents=fc3b15b
+fc3b15b fc3b15b1a8406874fe6bccb1b4be8e8177f4978f 2026-10-24T19:06:14-07:00 unknown | fix(consumer): refine parallel streams and mobile review evidence | parents=bd7c731
+bd7c731 bd7c731f063a28b729c46ff75fcee9d62a7d7d62 2026-10-24T19:05:26-07:00 unknown | feat(consumer): connect friend response feedback to decisions | parents=77b0a4a
+77b0a4a 77b0a4a530ddd23837c932e917fdc3fd933a3d52 2026-10-24T19:03:41-07:00 unknown | feat(consumer): add optional friend response heartbeat | parents=15f6379
+15f6379 15f637918fbb737c4b5c9e6cd9fcf61038c43cf9 2026-10-24T19:02:20-07:00 unknown | feat(consumer): preview three rooms and private persona card | parents=554dfa5
+=== origin/codex/critical-dependency-repairs-20261022
+542b52c 542b52cc12ca668e64c13a072acf7374bd0a5752 2026-10-22T20:14:20-04:00 Adamus | fix(ci): resolve console codec dependencies from packaged entrypoint | parents=da7918e
+da7918e da7918e0d0c69485c4af4af7bbc93c9ee7b71a17 2026-10-22T20:04:28-04:00 Adamus | fix(security): patch production dependencies and gate image publishing on audits | parents=74e1375
+=== origin/codex/docker-pipeline-20261022
+a5373d5 a5373d5c0eef5466a20e6ef4d4682a06275e20d4 2026-10-22T18:05:27-04:00 Adamus | fix(agents): keep legacy simulated workflows out of strict modes | parents=df57d0b
+df57d0b df57d0be8cc8ca8f5f76af482dd9232fc0354dfc 2026-10-22T18:04:13-04:00 Adamus | fix(security): remove unneeded wheel tooling from agent runtime | parents=16bdf8c
+16bdf8c 16bdf8c231ec8583052dfb725c2645f817c08dc8 2026-10-22T18:03:18-04:00 Adamus | ci: publish only verified images after credential-free builds | parents=368fa8d
+368fa8d 368fa8d81204da42e2b6862160f5e380a7922b5e 2026-10-22T18:02:04-04:00 Adamus | fix(agents): connect packaged CLI to the existing workflow API | parents=4b2a618
+4b2a618 4b2a618702d14029e2f91c8958efe49f05c16e40 2026-10-22T17:59:36-04:00 Adamus | ci: run real Python emulator suites and exclude cloud credentials from images | parents=9b61302
+9b61302 9b613026e79cae05b3c2d40fc3c257420238ee90 2026-10-22T17:56:36-04:00 Adamus | test(ci): smoke packaged runtimes and resolve agent tooling compatibility | parents=c6f5f96
+c6f5f96 c6f5f96276ff141318ec50b6af40a39012b3554e 2026-10-22T17:50:15-04:00 Adamus | fix(ci): build workspace Docker images before publishing | parents=b294e9e
+=== origin/codex/durable-chain-reconciliation-20261022
+e2dcbdd e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6 2026-10-22T19:14:57-04:00 Adamus | test(chain): enforce complete rejection evidence and atomic outbox rollback | parents=6c732e9
+6c732e9 6c732e9b9bd8fe782f39041741a0c56784dba5e5 2026-10-22T19:12:14-04:00 Adamus | feat(chain): persist operation journal and reconcile authenticated transaction evidence | parents=a2e625a
+=== origin/codex/durable-outbox-pubsub-20261022
+6536778 65367789130870c8c2a0e786f2d6152357d88093 2026-10-22T22:21:29-04:00 Adamus | fix(events): require retention and verify transport failures and schema rollout | parents=d7dd90d
+d7dd90d d7dd90d122f5220815033a829dbff12152873b69 2026-10-22T22:14:17-04:00 Adamus | feat(events): deliver durable outbox events through fenced Pub/Sub worker | parents=fbadf01
+=== origin/codex/explain-execution-details-and-next-steps
+15ae7bf 15ae7bf3ce02773ec431977cd23c6f5b19d811fd 2026-04-26T21:31:29-07:00 brandmeonline | Add MCP commerce mandate and cart tool handlers | parents=4335e27
+=== origin/codex/midnight-integration-20261022
+32e63d4 32e63d4d87f515f5398ab01d1eb18eba94019b5c 2026-10-22T18:39:39-04:00 Adamus | fix(ci): run module regression with the repository Node toolchain | parents=6d97169
+6d97169 6d971693c76b1718e39b82ef0e3f16f722b0b991 2026-10-22T18:37:16-04:00 Adamus | fix(core): package rights domain dependencies and validate event schemas in image smoke tests | parents=fc6dfdc
+fc6dfdc fc6dfdc6e5bdb0244adde72cd3552719a48f3868 2026-10-22T18:34:50-04:00 Adamus | feat(integration): connect rights auth boundary, transactional events, and current Preprod configuration | parents=1ac8f97
+=== origin/codex/privacy-recovery-safety-20261023
+e6274ef e6274ef5a19e5db77d27c19c3b7349b08fa96c84 2026-10-22T23:04:48-04:00 Adamus | fix(privacy): enforce durable deletion barriers after restriction removal | parents=e022cfe
+e022cfe e022cfea471f9f7d55ea74180263fe84a84c284d 2026-10-22T22:57:28-04:00 Adamus | fix(privacy): preserve deletion freezes and fail closed during restore recovery | parents=1a4cfd1
+=== origin/codex/rights-export-worker
+02297b2 02297b2cea98dfd54818de5a3104a1ce341acfcd 2026-10-23T00:40:45-04:00 Adamus | fix(privacy): restrict ADC credential-refresh transport | parents=2a6c650
+2a6c650 2a6c6501cf5ea89f524a79e43fba42bb226ee9ca 2026-10-23T00:37:26-04:00 Adamus | feat(privacy): add durable selected rights exports with private downloads | parents=20bf3e9
+=== origin/codex/rights-privacy-read-api
+10a4683 10a468395cde98eaf7b7f0159855c7bac3a5827a 2026-10-22T23:49:48-04:00 Adamus | feat(reads): serve authenticated rights and partial My Data reads | parents=f4a4015
+=== origin/fix/property-test-vacuity-guard-flake
+a699331 a699331df56c12570067223dbaad9c0a86d1567a 2026-10-10T14:29:17-04:00 Mia | fix(tests): make property-test vacuity guard deterministic | parents=99fc2fa
+=== origin/triage/pnpm-version-conflict-20261023
+1144700 114470007e9c631010ee22930a8ddfb75d0ea700 2026-10-23T09:29:18-04:00 Adamus | [triage] module-regression: drop pnpm version pin conflicting with packageManager | parents=6899d88
+=== origin/triage/pnpm-workspace-frontend-20261008
+64d5fd6 64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17 2026-10-08T18:09:15-04:00 Adamus | [triage] add brandme-frontend to pnpm workspace and lockfile | parents=f5c6dd9
+
+### $ git ls-tree --name-only origin/main brandme-data/spanner/migrations/
+# exit=0 lines=17
+brandme-data/spanner/migrations/README.md
+brandme-data/spanner/migrations/V001_identity.sql
+brandme-data/spanner/migrations/V002_persona.sql
+brandme-data/spanner/migrations/V003_wardrobe.sql
+brandme-data/spanner/migrations/V004_social.sql
+brandme-data/spanner/migrations/V005_rewards.sql
+brandme-data/spanner/migrations/V006_providers.sql
+brandme-data/spanner/migrations/V007_commerce.sql
+brandme-data/spanner/migrations/V008_rights.sql
+brandme-data/spanner/migrations/V009_privacy.sql
+brandme-data/spanner/migrations/V010_rights_projection_version.sql
+brandme-data/spanner/migrations/V011_chain_operation_store.sql
+brandme-data/spanner/migrations/V012_chain_reconciliation.sql
+brandme-data/spanner/migrations/V013_outbox_delivery.sql
+brandme-data/spanner/migrations/V014_privacy_exports.sql
+brandme-data/spanner/migrations/V015_commerce_quote_terms.sql
+brandme-data/spanner/migrations/runner.py
+
+### $ git ls-tree --name-only origin/claude/opus-consumer-domains-1csp2g brandme-data/spanner/migrations/
+# exit=0 lines=18
+brandme-data/spanner/migrations/README.md
+brandme-data/spanner/migrations/V001_identity.sql
+brandme-data/spanner/migrations/V002_persona.sql
+brandme-data/spanner/migrations/V003_wardrobe.sql
+brandme-data/spanner/migrations/V004_social.sql
+brandme-data/spanner/migrations/V005_rewards.sql
+brandme-data/spanner/migrations/V006_providers.sql
+brandme-data/spanner/migrations/V007_commerce.sql
+brandme-data/spanner/migrations/V008_rights.sql
+brandme-data/spanner/migrations/V009_privacy.sql
+brandme-data/spanner/migrations/V010_rights_projection_version.sql
+brandme-data/spanner/migrations/V011_chain_operation_store.sql
+brandme-data/spanner/migrations/V012_chain_reconciliation.sql
+brandme-data/spanner/migrations/V013_outbox_delivery.sql
+brandme-data/spanner/migrations/V014_privacy_exports.sql
+brandme-data/spanner/migrations/V015_commerce_quote_terms.sql
+brandme-data/spanner/migrations/V016_consumer_design.sql
+brandme-data/spanner/migrations/runner.py
+
+### $ git ls-tree --name-only origin/claude/midnight-rights-lifecycle-yhfyyu brandme-data/spanner/migrations/
+# exit=0 lines=18
+brandme-data/spanner/migrations/README.md
+brandme-data/spanner/migrations/V001_identity.sql
+brandme-data/spanner/migrations/V002_persona.sql
+brandme-data/spanner/migrations/V003_wardrobe.sql
+brandme-data/spanner/migrations/V004_social.sql
+brandme-data/spanner/migrations/V005_rewards.sql
+brandme-data/spanner/migrations/V006_providers.sql
+brandme-data/spanner/migrations/V007_commerce.sql
+brandme-data/spanner/migrations/V008_rights.sql
+brandme-data/spanner/migrations/V009_privacy.sql
+brandme-data/spanner/migrations/V010_rights_projection_version.sql
+brandme-data/spanner/migrations/V011_chain_operation_store.sql
+brandme-data/spanner/migrations/V012_chain_reconciliation.sql
+brandme-data/spanner/migrations/V013_outbox_delivery.sql
+brandme-data/spanner/migrations/V014_privacy_exports.sql
+brandme-data/spanner/migrations/V015_commerce_quote_terms.sql
+brandme-data/spanner/migrations/V016_rights_transfer_invites.sql
+brandme-data/spanner/migrations/runner.py
+
+### $ git show origin/main:brandme-data/spanner/migrations/runner.py | cat -n
+# exit=0 lines=319
+     1	#!/usr/bin/env python3
+     2	"""Versioned Spanner GoogleSQL migrations with a checksum ledger.
+     3	
+     4	    python brandme-data/spanner/migrations/runner.py up [--create-database] [--wait SECONDS]
+     5	    python brandme-data/spanner/migrations/runner.py status
+     6	    python brandme-data/spanner/migrations/runner.py verify   # exit 1 on checksum drift / pending
+     7	
+     8	Files are ``V<NNN>_<name>.sql`` in this directory. Each file is applied as one
+     9	DDL batch, then recorded in ``SchemaMigrations`` with its SHA-256 checksum.
+    10	Spanner DDL is not transactional, so the runner writes an ``applying`` ledger
+    11	row first: a batch that fails part-way leaves that row behind and later runs
+    12	refuse to continue until an operator inspects the schema (``repair``).
+    13	Nothing is ever masked with ``|| true``.
+    14	
+    15	Services call :func:`assert_schema_supported` at startup so a deployment
+    16	refuses to run against an unsupported schema range.
+    17	
+    18	Version reservations (do not reuse another lane's number): V001 identity/platform
+    19	(foundation), V002 persona, V003 wardrobe, V004 social, V005 rewards,
+    20	V006 providers, V007 commerce, V008 rights, V009 privacy, V010 projection revision,
+    21	V011 durable chain operations, V012 chain reconciliation, V013 outbox delivery.
+    22	"""
+    23	from __future__ import annotations
+    24	
+    25	import argparse
+    26	import hashlib
+    27	import os
+    28	import re
+    29	import sys
+    30	import time
+    31	from dataclasses import dataclass
+    32	from pathlib import Path
+    33	from typing import Iterable, Optional
+    34	
+    35	MIGRATIONS_DIR = Path(__file__).resolve().parent
+    36	FILE_RE = re.compile(r"^V(\d{3})_([a-z0-9_]+)\.sql$")
+    37	LEDGER_DDL = """CREATE TABLE SchemaMigrations (
+    38	  version INT64 NOT NULL,
+    39	  name STRING(128) NOT NULL,
+    40	  checksum STRING(64) NOT NULL,
+# ... (truncated, 319 lines total)
+
+### $ git log origin/main --grep='^Revert' --format='%h %cI | %s'
+# exit=0 lines=1
+
+
+### $ git tag -l | wc -l; git tag -l; git ls-remote --tags origin 2>&1 | head -20
+# exit=0 lines=1
+0
+
+### $ git ls-tree origin/main .gitmodules; git ls-tree -r origin/main | awk '$2=="commit"' | head
+# exit=0 lines=1
+
+
+### $ git ls-tree -r --name-only origin/main | grep -i gitattributes; git grep -n 'filter=lfs' origin/main -- '*.gitattributes' '.gitattributes' 2>&1 | head
+# exit=0 lines=1
+brandme-frontend/public/demo/.gitattributes
+
+### $ git grep -l 'version https://git-lfs.github.com/spec' origin/main 2>&1 | head
+# exit=0 lines=1
+
+
+### $ python3 -I equiv.py  (per unique commit: git diff --name-status C^ C; git diff-tree -p C | git patch-id --stable vs main cache; git diff --name-only C origin/main -- <paths>; added/removed line presence in origin/main:<path>; blob-id equality)
+# exit=0 full output in equiv.json
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/agent-branches/equiv.py", line 9, in <module>
+    p,c = line.split()
+    ^^^
+ValueError: not enough values to unpack (expected 2, got 1)
+
+### $ check C: git diff --name-status <merge-base> <ref>; git rev-parse <ref>:<path>; git cat-file -e origin/main:<path>; grep blob in git ls-tree -r origin/main; git log origin/main --diff-filter=A -- <path>
+# exit=0
+=== origin/claude/brand-me-lux-foundations-audit-8zywr3 (merge-base 0f5f58a9eecaca46b367c9bd96f89654343fa5fb)
+A|.github/workflows/foundation.yml|branch_blob=8c53a8f460|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+M|CLAUDE.md|branch_blob=9bdadc8b90|path_in_main=yes|main_blob=cc06ccb525|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=4335e27
+A|brandme_foundation/__init__.py|branch_blob=7acfdf0a91|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/errors.py|branch_blob=64b55582c9|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/gates/__init__.py|branch_blob=151274500a|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/hooks/__init__.py|branch_blob=591548f8b6|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/hooks/broker.py|branch_blob=0aeefd044b|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/hooks/events.py|branch_blob=6eb5f18c0f|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/hooks/topics.yaml|branch_blob=48f309073b|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/observability.py|branch_blob=36148ff545|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/requirements.txt|branch_blob=dd42b42ef5|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/runtime/__init__.py|branch_blob=c786fa7d2f|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/runtime/config.py|branch_blob=2eb33c848e|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/runtime/health.py|branch_blob=d9c76f6a21|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/runtime/http.py|branch_blob=4db73f2bd2|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/tenancy/__init__.py|branch_blob=6570596caf|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|brandme_foundation/tenancy/models.py|branch_blob=e61e08560c|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|docs/audit/BRANDME_AUDIT.md|branch_blob=9eb2bc3f8f|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|docs/audit/LUX_LIFT_AND_SHIFT.md|branch_blob=3697595742|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|tests/foundation/__init__.py|branch_blob=e69de29bb2|path_in_main=yes|main_blob=e69de29bb2|same_blob=yes|blob_elsewhere_in_main=brandme-cube/src/__init__.py|first_added_on_main=4f9f4bc
+A|tests/foundation/test_broker.py|branch_blob=3f47d4e5e5|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|tests/foundation/test_observability.py|branch_blob=e4c1b9936b|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|tests/foundation/test_runtime_config.py|branch_blob=125a5a207f|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|tests/foundation/test_tenancy.py|branch_blob=cbfa31685e|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+=== origin/claude/setup-design-system-cli-6iovG (merge-base 8f8a2b7cfae4daabd7d08d2c65104b20a2fcdc53)
+A|.claude/.env.local.example|branch_blob=78be2ccc0a|path_in_main=yes|main_blob=78be2ccc0a|same_blob=yes|blob_elsewhere_in_main=.claude/.env.local.example|first_added_on_main=2faae4c
+A|.claude/hooks/session-start.sh|branch_blob=477821d564|path_in_main=yes|main_blob=477821d564|same_blob=yes|blob_elsewhere_in_main=.claude/hooks/session-start.sh|first_added_on_main=2faae4c
+A|.claude/settings.json|branch_blob=ab272e40ad|path_in_main=yes|main_blob=ab272e40ad|same_blob=yes|blob_elsewhere_in_main=.claude/settings.json|first_added_on_main=2faae4c
+A|.claude/skills/design-audit/SKILL.md|branch_blob=10b3bcfe84|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/NEEDS_MAGIC_MCP.md|branch_blob=f7410b9433|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/README.md|branch_blob=de17b641b7|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/audit-2026-06-09.md|branch_blob=918a8039c3|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/FacetList/aesop.md|branch_blob=6a05ee01ed|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/FacetList/are-na.md|branch_blob=dd1015b233|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/FacetList/family-co.md|branch_blob=86666880e3|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/GarmentCard/aesop.md|branch_blob=cfe7a7a5cc|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/GarmentCard/family-co.md|branch_blob=2624eca4af|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/GarmentCard/linear.md|branch_blob=c68bd19d17|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/Header/aesop.md|branch_blob=84561b9293|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/Header/linear.md|branch_blob=79816f5cee|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/Header/the-row.md|branch_blob=8934347d00|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/IntegrityBadge/aesop.md|branch_blob=9ab68c2824|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/IntegrityBadge/linear.md|branch_blob=dbc0d7db56|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/IntegrityBadge/vacheron-watch-archive.md|branch_blob=3ecc4db470|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/layout/aesop.md|branch_blob=87bd5e34e8|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/layout/family-co.md|branch_blob=d94ac970c0|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/layout/linear.md|branch_blob=b653140dcb|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/scan-page/aesop.md|branch_blob=cc79cd5c0f|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/scan-page/family-co.md|branch_blob=d3b70a8ded|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/output/concepts/scan-page/vacheron-watch-archive.md|branch_blob=9c101f8446|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/design-audit/references.md|branch_blob=05906af823|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=never
+A|.claude/skills/ui-ux-pro-max/SKILL.md|branch_blob=9f317dfd68|path_in_main=yes|main_blob=9f317dfd68|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/SKILL.md|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/charts.csv|branch_blob=8b99663166|path_in_main=yes|main_blob=8b99663166|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/charts.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/colors.csv|branch_blob=d9fd0438bc|path_in_main=yes|main_blob=d9fd0438bc|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/colors.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/icons.csv|branch_blob=a85e97f841|path_in_main=yes|main_blob=a85e97f841|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/icons.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/landing.csv|branch_blob=b0e52d1534|path_in_main=yes|main_blob=b0e52d1534|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/landing.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/products.csv|branch_blob=3f95afd9de|path_in_main=yes|main_blob=3f95afd9de|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/products.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/react-performance.csv|branch_blob=671465f29c|path_in_main=yes|main_blob=671465f29c|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/react-performance.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/astro.csv|branch_blob=cacba81c96|path_in_main=yes|main_blob=cacba81c96|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/astro.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/flutter.csv|branch_blob=2e32c6a29b|path_in_main=yes|main_blob=2e32c6a29b|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/flutter.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/html-tailwind.csv|branch_blob=0efe300f3c|path_in_main=yes|main_blob=0efe300f3c|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/html-tailwind.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/jetpack-compose.csv|branch_blob=971ff9e307|path_in_main=yes|main_blob=971ff9e307|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/jetpack-compose.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/nextjs.csv|branch_blob=6e9bea577c|path_in_main=yes|main_blob=6e9bea577c|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/nextjs.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/nuxt-ui.csv|branch_blob=7146e84836|path_in_main=yes|main_blob=7146e84836|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/nuxt-ui.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/nuxtjs.csv|branch_blob=c275d0de8c|path_in_main=yes|main_blob=c275d0de8c|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/nuxtjs.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/react-native.csv|branch_blob=209e893c3b|path_in_main=yes|main_blob=209e893c3b|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/react-native.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/react.csv|branch_blob=ff08ee203a|path_in_main=yes|main_blob=ff08ee203a|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/react.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/shadcn.csv|branch_blob=fb86e8d1c1|path_in_main=yes|main_blob=fb86e8d1c1|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/shadcn.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/svelte.csv|branch_blob=1c6b4562d5|path_in_main=yes|main_blob=1c6b4562d5|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/svelte.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/swiftui.csv|branch_blob=e20f9f90e1|path_in_main=yes|main_blob=e20f9f90e1|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/swiftui.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/stacks/vue.csv|branch_blob=77cb4b06fd|path_in_main=yes|main_blob=77cb4b06fd|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/stacks/vue.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/styles.csv|branch_blob=ab0152b95c|path_in_main=yes|main_blob=ab0152b95c|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/styles.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/typography.csv|branch_blob=e70112102e|path_in_main=yes|main_blob=e70112102e|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/typography.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/ui-reasoning.csv|branch_blob=4553ddd27f|path_in_main=yes|main_blob=4553ddd27f|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/ui-reasoning.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/ux-guidelines.csv|branch_blob=e347aeda74|path_in_main=yes|main_blob=e347aeda74|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/ux-guidelines.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/data/web-interface.csv|branch_blob=4713aadc13|path_in_main=yes|main_blob=4713aadc13|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/data/web-interface.csv|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/scripts/core.py|branch_blob=b7ba227be5|path_in_main=yes|main_blob=b7ba227be5|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/scripts/core.py|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/scripts/design_system.py|branch_blob=209de20733|path_in_main=yes|main_blob=209de20733|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/scripts/design_system.py|first_added_on_main=2faae4c
+A|.claude/skills/ui-ux-pro-max/scripts/search.py|branch_blob=3981cd2ad7|path_in_main=yes|main_blob=3981cd2ad7|same_blob=yes|blob_elsewhere_in_main=.claude/skills/ui-ux-pro-max/scripts/search.py|first_added_on_main=2faae4c
+A|.github/workflows/module-regression.yml|branch_blob=296b31eaf2|path_in_main=yes|main_blob=637be96620|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=0f5f58a
+M|.gitignore|branch_blob=7931c7c04e|path_in_main=yes|main_blob=b63eb05b0f|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=b188611
+A|.mcp.json|branch_blob=484dfa6c69|path_in_main=yes|main_blob=484dfa6c69|same_blob=yes|blob_elsewhere_in_main=.mcp.json|first_added_on_main=2faae4c
+A|CLAUDE.md|branch_blob=459a86d9dc|path_in_main=yes|main_blob=cc06ccb525|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=4335e27
+A|PLAN.md|branch_blob=6a51b631fc|path_in_main=yes|main_blob=c4dd08ab8a|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=4335e27
+M|README.md|branch_blob=2e4802c324|path_in_main=yes|main_blob=692a298044|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=f7ee454
+M|brandme-agents/compliance/src/lifecycle/burn_proof.py|branch_blob=26e2716639|path_in_main=yes|main_blob=26e2716639|same_blob=yes|blob_elsewhere_in_main=brandme-agents/compliance/src/lifecycle/burn_proof.py|first_added_on_main=a2f9fb4
+M|brandme-agents/compliance/src/lifecycle/esg_verifier.py|branch_blob=b53ee9c124|path_in_main=yes|main_blob=b53ee9c124|same_blob=yes|blob_elsewhere_in_main=brandme-agents/compliance/src/lifecycle/esg_verifier.py|first_added_on_main=a2f9fb4
+M|brandme-chain/src/services/blockchain.ts|branch_blob=2b013d6fcc|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=1da0769
+A|brandme-chain/src/services/cardano-wallet.ts|branch_blob=5ad82b8210|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=0f5f58a
+M|brandme-chain/tests/integration/cardano-testnet.test.ts|branch_blob=0d8b001385|path_in_main=no|main_blob=-|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=d296e31
+M|brandme-core/orchestrator/main.py|branch_blob=5d1bd5186e|path_in_main=yes|main_blob=46c305fe59|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=0f69676
+M|brandme-cube/src/main.py|branch_blob=36877a5c5f|path_in_main=yes|main_blob=83765b140c|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=0f69676
+M|brandme-cube/src/service.py|branch_blob=f5286dde7a|path_in_main=yes|main_blob=76fcbecbda|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=0f69676
+M|brandme-frontend/lib/api.ts|branch_blob=4e422dd63f|path_in_main=yes|main_blob=4e422dd63f|same_blob=yes|blob_elsewhere_in_main=brandme-frontend/lib/api.ts|first_added_on_main=e840c78
+M|brandme-frontend/lib/demoData.ts|branch_blob=ce7be53700|path_in_main=yes|main_blob=7659e16de2|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=e840c78
+A|brandme-gateway/.eslintrc.cjs|branch_blob=f43d06c40b|path_in_main=yes|main_blob=f43d06c40b|same_blob=yes|blob_elsewhere_in_main=brandme-gateway/.eslintrc.cjs|first_added_on_main=0f5f58a
+M|brandme-gateway/src/index.ts|branch_blob=0c50204d58|path_in_main=yes|main_blob=2cf4a41c56|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=b188611
+A|brandme-gateway/src/middleware/rateLimiter.test.ts|branch_blob=aa1b68c4cf|path_in_main=yes|main_blob=53d2e6f27e|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=0f5f58a
+A|brandme-gateway/src/middleware/rateLimiter.ts|branch_blob=19e4c1e148|path_in_main=yes|main_blob=04ff07fd46|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=4335e27
+M|brandme_core/__init__.py|branch_blob=491d2e8d28|path_in_main=yes|main_blob=491d2e8d28|same_blob=yes|blob_elsewhere_in_main=brandme_core/__init__.py|first_added_on_main=df5f3e2
+M|brandme_core/mcp/tools.py|branch_blob=c5bc3f4866|path_in_main=yes|main_blob=5d49ec7d4c|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=a2f9fb4
+M|brandme_core/spanner/client.py|branch_blob=9a7384c791|path_in_main=yes|main_blob=9a7384c791|same_blob=yes|blob_elsewhere_in_main=brandme_core/spanner/client.py|first_added_on_main=7322f93
+M|brandme_core/zk/proof_of_ownership.py|branch_blob=1c32a53012|path_in_main=yes|main_blob=1c32a53012|same_blob=yes|blob_elsewhere_in_main=brandme_core/zk/proof_of_ownership.py|first_added_on_main=a2f9fb4
+A|docs/next_steps/REGRESSION_EXECUTION_PLAN.md|branch_blob=6e1fef40a4|path_in_main=yes|main_blob=6e1fef40a4|same_blob=yes|blob_elsewhere_in_main=docs/next_steps/REGRESSION_EXECUTION_PLAN.md|first_added_on_main=0f5f58a
+A|pytest.ini|branch_blob=82bc8d15f0|path_in_main=yes|main_blob=82bc8d15f0|same_blob=yes|blob_elsewhere_in_main=pytest.ini|first_added_on_main=0f5f58a
+A|scripts/regression/README.md|branch_blob=cf92ab92d0|path_in_main=yes|main_blob=cf92ab92d0|same_blob=yes|blob_elsewhere_in_main=scripts/regression/README.md|first_added_on_main=0f5f58a
+A|scripts/regression/lib.sh|branch_blob=585edb847b|path_in_main=yes|main_blob=585edb847b|same_blob=yes|blob_elsewhere_in_main=scripts/regression/lib.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_agents.sh|branch_blob=8902156083|path_in_main=yes|main_blob=8902156083|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_agents.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_chain.sh|branch_blob=72ce57c86a|path_in_main=yes|main_blob=72ce57c86a|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_chain.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_console.sh|branch_blob=30c00dca85|path_in_main=yes|main_blob=30c00dca85|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_console.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_core.sh|branch_blob=907cfd961a|path_in_main=yes|main_blob=907cfd961a|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_core.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_cube.sh|branch_blob=79f177a047|path_in_main=yes|main_blob=79f177a047|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_cube.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_data.sh|branch_blob=d3a5c6069d|path_in_main=yes|main_blob=d3a5c6069d|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_data.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_frontend.sh|branch_blob=cfc9dac2ee|path_in_main=yes|main_blob=cfc9dac2ee|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_frontend.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_gateway.sh|branch_blob=e49908e81e|path_in_main=yes|main_blob=e49908e81e|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_gateway.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_governance.sh|branch_blob=bf3ed4d8c0|path_in_main=yes|main_blob=bf3ed4d8c0|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_governance.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/brandme_infra.sh|branch_blob=0b36d6f7d3|path_in_main=yes|main_blob=0b36d6f7d3|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/brandme_infra.sh|first_added_on_main=0f5f58a
+A|scripts/regression/modules/root_shared.sh|branch_blob=aa5d85e70d|path_in_main=yes|main_blob=aa5d85e70d|same_blob=yes|blob_elsewhere_in_main=scripts/regression/modules/root_shared.sh|first_added_on_main=0f5f58a
+A|scripts/regression/run_all.sh|branch_blob=03d33f2410|path_in_main=yes|main_blob=03d33f2410|same_blob=yes|blob_elsewhere_in_main=scripts/regression/run_all.sh|first_added_on_main=0f5f58a
+M|tests/conftest.py|branch_blob=1d1bf89282|path_in_main=yes|main_blob=15b0051afe|same_blob=no|blob_elsewhere_in_main=none|first_added_on_main=7322f93
+
+### $ check D: git grep -n -e 'bench/' origin/main -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'
+# exit=0 hits=45
+.github/workflows/consumer-ui.yml:7:    branches: ['bench/astra-consumer-ui-20261005']
+.github/workflows/spatial-validation.yml:5:    branches: ['bench/astra-spatial-ar-20261005']
+.github/workflows/workspace-guard.yml:14:  # No branch filter on purpose: lane PRs into bench/* and docs/* bases get the
+docs/build/orchestration/oneshot-plan-03-opus-commerce-agents.md:8:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-commerce-agents-20261005` ·
+docs/build/orchestration/oneshot-plan-03-opus-foundation.md:8:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-foundation-20261005` ·
+docs/build/orchestration/ultra-plan-03-astra-consumer-ui.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/astra-consumer-ui-20261005` ·
+docs/build/orchestration/ultra-plan-03-astra-spatial-ar.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/astra-spatial-ar-20261005` ·
+docs/build/orchestration/ultra-plan-03-opus-consumer-domains.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-consumer-domains-20261005` ·
+docs/build/orchestration/ultra-plan-03-opus-midnight-rights.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-midnight-rights-20261005`
+docs/build/status/astra-consumer-ui.md:3:**Bench:** Astra (Codex) · **Branch:** `bench/astra-consumer-ui-20261005`
+docs/build/status/astra-consumer-ui.md:46:- Branch: `bench/astra-consumer-ui-20261005`; starting commit `813051a`.
+docs/build/status/astra-spatial-ar.md:3:**Bench:** Astra (Codex) · **Branch:** `bench/astra-spatial-ar-20261005`
+docs/build/status/astra-spatial-ar.md:46:- Baseline: `00c9cfc`; isolated worktree on `bench/astra-spatial-ar-20261005`.
+docs/build/status/astra-spatial-ar.md:165:- Published implementation commit `7bea00e682499cddfc4b9bbc839e73643c46257c` to `bench/astra-spatial-ar-20261005`. No merge, PR, deployment, or live capability activation was performed.
+docs/build/status/astra-spatial-ar.md:232:- Implementation **published and fetched back** as `5200b12740d38873eb71b05918315b676aa3fb2b` on `bench/astra-spatial-ar-20261005`. Tree `d0e28ad10f8f0cf13be9a19aadb8d61baa9bd1ed` exactly matches tested local commit `e11ecd20060c84fef406b0fe9fd019dd4fe8d089`; the fetched comparison has zero file differences. All 68 changed blobs were SHA-verified before the non-forced update from `7ccc0b4`.
+docs/build/status/astra-spatial-ar.md:420:The founder explicitly activated the attached Ultra plan 02 and requested work on `bench/astra-spatial-ar-20261005`. Implementation therefore continues from `ceb6ed6f` on that existing branch, overriding the draft's proposed fresh branch. The new review target is `main`. At kickoff, #51 remained draft against main and #56 remained conflicted against the spec branch; this change does not merge or rewrite those lanes. Main integration must be reconciled before merge readiness. No deployment, provider account, production data or credential has been created.
+docs/build/status/opus-commerce-agents.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-commerce-agents-20261005`
+docs/build/status/opus-commerce-agents.md:51:same commit as `bench/opus-commerce-agents-20261005` (`305a24b`). All lane commits land on the `claude/...` branch;
+docs/build/status/opus-commerce-agents.md:52:the bench branch can fast-forward to it. Not pushed to `bench/...` without explicit permission.
+docs/build/status/opus-commerce-agents.md:277:opus-foundation PR #33 merged into `bench/opus-foundation-20261005` (`3704ec7`, verified by fetch). Merged it into this
+docs/build/status/opus-commerce-agents.md:324:**State on resume:** PR #35 merged into `bench/opus-commerce-agents-20261005` as `7c61afd` (2026-10-06). The working branch
+docs/build/status/opus-commerce-agents.md:437:fresh checkout of `bench/opus-commerce-agents-20261005` cannot import the MCP executor or validate AP2 mandates. This
+docs/build/status/opus-commerce-agents.md:444:**274 passed, 0 skipped**; a clean worktree of `origin/bench/opus-commerce-agents-20261005` fails collection of
+docs/build/status/opus-commerce-agents.md:677:- **Evidence.** All of it ran in a scratch `git worktree` of `origin/bench/astra-consumer-ui-20261005` (`a37ec2b`)
+docs/build/status/opus-commerce-agents.md:818:**PR target.** PR #51 targets `bench/opus-commerce-agents-20261005` (`7c61afd`), which `main` already contains.
+docs/build/status/opus-consumer-domains.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-consumer-domains-20261005`
+docs/build/status/opus-consumer-domains.md:48:- Branch worked: `claude/opus-consumer-domains-1csp2g` (session-designated push branch), created from `bench/opus-consumer-domains-20261005` @ `5d919ab`.
+docs/build/status/opus-consumer-domains.md:49:- **Foundation lane had not landed anything but its brief** (`bench/opus-foundation-20261005` @ `e4f1342`): no `packages/*`, no `brandme_core/domains/{__init__,base,events}.py`, no reservation READMEs, no `brandme_core/events/`, no migration runner/ledger/V001, no `routes/v1/index.ts`. This lane therefore builds against chapter-03 contracts directly and records every interim shim below so integration can replace them.
+docs/build/status/opus-consumer-domains.md:97:PR #33 (opus-foundation W00–W02) is merged into **`bench/opus-foundation-20261005` @ `25dff5c`**. This lane's base, `bench/opus-consumer-domains-20261005`, is still at `5d919ab` and does not contain it. Reconciliation therefore happens when the parent moves this lane's base onto the foundation tip, or merges the foundation tip into it. This lane does not copy foundation-owned files into its branch.
+docs/build/status/opus-consumer-domains.md:114:Branch `claude/opus-consumer-domains-1csp2g`, restarted from the merged lane base `d839267` (PR #32 merged 2026-10-07). It now merges **`bench/opus-foundation-20261005` @ `67327e4`**, as the commerce-agents lane did in `1020981`. No foundation-owned file was edited.
+docs/build/status/opus-consumer-domains.md:233:  Room geometry mirrors the spatial lane's manifests at `original-v1` and is **checked against them** (`test_server_room_templates_match_spatial_manifests`, run with the manifests from `bench/astra-spatial-ar-20261005@7ccc0b4`).
+docs/build/status/opus-consumer-domains.md:482:- Console pages `brandme-console/app/(ops)/{moderation,rewards-disputes}` are not built yet. The shell they must plug into (`console-page-header`, console identity adapter) exists only on `bench/astra-consumer-ui-20261005`, not on this lane's base. Planned after W08, verified against an overlay of that shell.
+docs/build/status/opus-consumer-domains.md:588:| Console overlay: these subtrees copied onto `bench/astra-consumer-ui-20261005@a37ec2b` (the shell lives only there), per-app `npm install`, Next 14.2.35 | `tsc --noEmit` exit 0; `next build` exit 0 (`ƒ /moderation`, `ƒ /rewards-disputes`, `ƒ /rewards-disputes/members/[memberId]`). `next lint` not run: the console has no ESLint config, which the UI lane owns. |
+docs/build/status/opus-consumer-domains.md:920:- **Branch.** The plan names `bench/opus-consumer-domains-20261005`. The lane keeps its designated `claude/opus-consumer-domains-1csp2g`, restarted from `main` `d5b993f` after #59 merged.
+docs/build/status/opus-foundation.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-foundation-20261005`
+docs/build/status/opus-foundation.md:47:**Last updated:** 2026-10-05 · **Working branch:** `claude/opus-foundation-w00-2hgiw5` (the session harness designates it; `bench/opus-foundation-20261005` points at the same base `e4f1342`) · **PR:** brandmeonline/Brand-Me-Labs#33 (draft, base `bench/opus-foundation-20261005`)
+docs/build/status/opus-foundation.md:130:PR #33 merged into `bench/opus-foundation-20261005` at `25dff5c8` per founder approval (API merge of the draft required marking it ready-for-review first via GraphQL). The 8 working-branch commits (W00 honest baseline, W01 contracts/workspace/design tokens, W02 persistence/auth/privacy) are now on the bench branch. CI failures at merge time are systemic (fail on `main`, owned by PR #30), not lane-caused. Downstream lanes were notified via comments on PRs #32, #34, #35; the two Astra lanes (no open PRs) will see the merge via the bench watch digest. W00–W02 deliverables are complete *(correction 2026-10-24: overstated; see the open items above and the round-3 gap list)*; remaining foundation-adjacent work is the repo-wide CI repair (PR #30) and the Trivy dependency findings, both outside this lane's ownership.
+docs/build/status/opus-midnight-rights.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-midnight-rights-20261005`
+docs/build/status/opus-midnight-rights.md:50:Working branch: `claude/midnight-rights-lifecycle-yhfyyu` (session-designated; same base commit `ede63f6` as `bench/opus-midnight-rights-20261005`).
+docs/build/status/opus-midnight-rights.md:278:opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into this lane's base (`bench/opus-midnight-rights-20261005` is still `ede63f6`). Preview of integrating the foundation branch (`git merge-tree`):
+docs/build/workspace-governance.md:56:Pending decision: the spatial lane's `scripts/assets` (`@brandme/spatial-asset-tools`, own lockfile, `packageManager: pnpm@11.25.0`) on `origin/bench/astra-spatial-ar-20261005`. At integration it either becomes STANDALONE (drop or align its `packageManager`, regenerate its lockfile with the root pnpm and `--ignore-workspace`, add the entry here) or moves to `packages/spatial-asset-tools`. Until then the guard reports it as `E_UNREGISTERED`, `E_NESTED_LOCKFILE` and `E_PM_NESTED`.
+docs/build/workspace-governance.md:129:1. **The lanes were cut from a pre-foundation base.** Both astra lanes (consumer-ui and spatial-ar) branched from the docs base `4511236` (2026-10-05). That base has `packageManager: pnpm@8.15.0`, `lockfileVersion: '6.0'`, workspace globs for gateway, chain and console only, and a module-regression workflow with `node-version: '20'` and `pnpm/action-setup@v4` `version: 8`. Foundation registered `brandme-frontend` in `4f9f4bc` (2026-10-05), which is not in `4511236`. The consumer-ui brief treated the workspace and lockfile as foundation-owned and left them untouched (`astra-consumer-ui.md:65` on `origin/bench/astra-consumer-ui-20261005`).
+docs/build/workspace-governance.md:146:| `origin/bench/astra-spatial-ar-20261005` (`a78433d`) | 23 | `E_UNREGISTERED scripts/assets`, `E_NESTED_LOCKFILE`, `E_PM_NESTED pnpm@11.25.0`, `E_PNPM_FIELD` (root `pnpm.packageExtensions`), stale `chain-tests.yml`/`ci-cd.yml` (`version: 8`, Node 18), module-regression Node 20, no `.nvmrc`, Dockerfile `pnpm@8.15.0`/`pnpm@8`/unpinned. pnpm frozen check and project list: pass (5 projects) |
+docs/build/workspace-governance.md:147:| `origin/bench/astra-consumer-ui-20261005` (`264b6a0`) | 19 | membership and lockfile now clean; the same stale workflows, missing `.nvmrc` and Dockerfile pins. pnpm checks pass (5 projects) |
+scripts/assets/evidence/round2-summary.json:5:  "branch": "bench/astra-spatial-ar-20261005",
+
+### $ consumers: for each branch name N: git grep -n -F -e N origin/main -- <pathspecs>; git grep -n -F -e N origin/<N> -- <pathspecs>  (docs/audits hits listed by path:line only, content not read)
+# exit=0 full results in consumers.txt (appended below, trimmed)
+--- bench/astra-consumer-ui-20261005 :: in origin/main
+.github/workflows/consumer-ui.yml:7:    branches: ['bench/astra-consumer-ui-20261005']
+docs/build/orchestration/ultra-plan-03-astra-consumer-ui.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/astra-consumer-ui-20261005` ·
+docs/build/status/astra-consumer-ui.md:3:**Bench:** Astra (Codex) · **Branch:** `bench/astra-consumer-ui-20261005`
+docs/build/status/astra-consumer-ui.md:46:- Branch: `bench/astra-consumer-ui-20261005`; starting commit `813051a`.
+docs/build/status/opus-commerce-agents.md:677:- **Evidence.** All of it ran in a scratch `git worktree` of `origin/bench/astra-consumer-ui-20261005` (`a37ec2b`)
+docs/build/status/opus-consumer-domains.md:482:- Console pages `brandme-console/app/(ops)/{moderation,rewards-disputes}` are not built yet. The shell they must plug into (`console-page-header`, consol
+docs/build/status/opus-consumer-domains.md:588:| Console overlay: these subtrees copied onto `bench/astra-consumer-ui-20261005@a37ec2b` (the shell lives only there), per-app `npm install`, Next 14.2.3
+docs/build/workspace-governance.md:129:1. **The lanes were cut from a pre-foundation base.** Both astra lanes (consumer-ui and spatial-ar) branched from the docs base `4511236` (2026-10-05). That base
+docs/build/workspace-governance.md:147:| `origin/bench/astra-consumer-ui-20261005` (`264b6a0`) | 19 | membership and lockfile now clean; the same stale workflows, missing `.nvmrc` and Dockerfile pins.
+--- bench/astra-consumer-ui-20261005 :: in own tree (origin/bench/astra-consumer-ui-20261005)
+--- bench/astra-spatial-ar-20261005 :: in origin/main
+.github/workflows/spatial-validation.yml:5:    branches: ['bench/astra-spatial-ar-20261005']
+docs/build/orchestration/ultra-plan-03-astra-spatial-ar.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/astra-spatial-ar-20261005` ·
+docs/build/status/astra-spatial-ar.md:3:**Bench:** Astra (Codex) · **Branch:** `bench/astra-spatial-ar-20261005`
+docs/build/status/astra-spatial-ar.md:46:- Baseline: `00c9cfc`; isolated worktree on `bench/astra-spatial-ar-20261005`.
+docs/build/status/astra-spatial-ar.md:165:- Published implementation commit `7bea00e682499cddfc4b9bbc839e73643c46257c` to `bench/astra-spatial-ar-20261005`. No merge, PR, deployment, or live capabilit
+docs/build/status/astra-spatial-ar.md:232:- Implementation **published and fetched back** as `5200b12740d38873eb71b05918315b676aa3fb2b` on `bench/astra-spatial-ar-20261005`. Tree `d0e28ad10f8f0cf13be9
+docs/build/status/astra-spatial-ar.md:420:The founder explicitly activated the attached Ultra plan 02 and requested work on `bench/astra-spatial-ar-20261005`. Implementation therefore continues from `
+docs/build/status/opus-consumer-domains.md:233:  Room geometry mirrors the spatial lane's manifests at `original-v1` and is **checked against them** (`test_server_room_templates_match_spatial_manifest
+docs/build/workspace-governance.md:56:Pending decision: the spatial lane's `scripts/assets` (`@brandme/spatial-asset-tools`, own lockfile, `packageManager: pnpm@11.25.0`) on `origin/bench/astra-spatia
+docs/build/workspace-governance.md:146:| `origin/bench/astra-spatial-ar-20261005` (`a78433d`) | 23 | `E_UNREGISTERED scripts/assets`, `E_NESTED_LOCKFILE`, `E_PM_NESTED pnpm@11.25.0`, `E_PNPM_FIELD` (r
+scripts/assets/evidence/round2-summary.json:5:  "branch": "bench/astra-spatial-ar-20261005",
+--- bench/astra-spatial-ar-20261005 :: in own tree (origin/bench/astra-spatial-ar-20261005)
+--- bench/opus-commerce-agents-20261005 :: in origin/main
+docs/build/orchestration/oneshot-plan-03-opus-commerce-agents.md:8:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-commerce-agents-20261005` ·
+docs/build/status/opus-commerce-agents.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-commerce-agents-20261005`
+docs/build/status/opus-commerce-agents.md:51:same commit as `bench/opus-commerce-agents-20261005` (`305a24b`). All lane commits land on the `claude/...` branch;
+docs/build/status/opus-commerce-agents.md:324:**State on resume:** PR #35 merged into `bench/opus-commerce-agents-20261005` as `7c61afd` (2026-10-06). The working branch
+docs/build/status/opus-commerce-agents.md:437:fresh checkout of `bench/opus-commerce-agents-20261005` cannot import the MCP executor or validate AP2 mandates. This
+docs/build/status/opus-commerce-agents.md:444:**274 passed, 0 skipped**; a clean worktree of `origin/bench/opus-commerce-agents-20261005` fails collection of
+docs/build/status/opus-commerce-agents.md:818:**PR target.** PR #51 targets `bench/opus-commerce-agents-20261005` (`7c61afd`), which `main` already contains.
+--- bench/opus-commerce-agents-20261005 :: in own tree (origin/bench/opus-commerce-agents-20261005)
+--- bench/opus-consumer-domains-20261005 :: in origin/main
+docs/build/orchestration/ultra-plan-03-opus-consumer-domains.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-consumer-domains-20261005` ·
+docs/build/status/opus-consumer-domains.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-consumer-domains-20261005`
+docs/build/status/opus-consumer-domains.md:48:- Branch worked: `claude/opus-consumer-domains-1csp2g` (session-designated push branch), created from `bench/opus-consumer-domains-20261005` @ `5d919ab`.
+docs/build/status/opus-consumer-domains.md:97:PR #33 (opus-foundation W00–W02) is merged into **`bench/opus-foundation-20261005` @ `25dff5c`**. This lane's base, `bench/opus-consumer-domains-2026100
+docs/build/status/opus-consumer-domains.md:920:- **Branch.** The plan names `bench/opus-consumer-domains-20261005`. The lane keeps its designated `claude/opus-consumer-domains-1csp2g`, restarted from 
+--- bench/opus-consumer-domains-20261005 :: in own tree (origin/bench/opus-consumer-domains-20261005)
+--- bench/opus-foundation-20261005 :: in origin/main
+docs/build/orchestration/oneshot-plan-03-opus-foundation.md:8:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-foundation-20261005` ·
+docs/build/status/opus-commerce-agents.md:277:opus-foundation PR #33 merged into `bench/opus-foundation-20261005` (`3704ec7`, verified by fetch). Merged it into this
+docs/build/status/opus-consumer-domains.md:49:- **Foundation lane had not landed anything but its brief** (`bench/opus-foundation-20261005` @ `e4f1342`): no `packages/*`, no `brandme_core/domains/{__i
+docs/build/status/opus-consumer-domains.md:97:PR #33 (opus-foundation W00–W02) is merged into **`bench/opus-foundation-20261005` @ `25dff5c`**. This lane's base, `bench/opus-consumer-domains-2026100
+docs/build/status/opus-consumer-domains.md:114:Branch `claude/opus-consumer-domains-1csp2g`, restarted from the merged lane base `d839267` (PR #32 merged 2026-10-07). It now merges **`bench/opus-found
+docs/build/status/opus-foundation.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-foundation-20261005`
+docs/build/status/opus-foundation.md:47:**Last updated:** 2026-10-05 · **Working branch:** `claude/opus-foundation-w00-2hgiw5` (the session harness designates it; `bench/opus-foundation-20261005` poi
+docs/build/status/opus-foundation.md:130:PR #33 merged into `bench/opus-foundation-20261005` at `25dff5c8` per founder approval (API merge of the draft required marking it ready-for-review first via G
+docs/build/status/opus-midnight-rights.md:278:opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into this lane's base (`bench/opus-midnight-rights-20261005` is still `ede63f6`).
+--- bench/opus-foundation-20261005 :: in own tree (origin/bench/opus-foundation-20261005)
+--- bench/opus-midnight-rights-20261005 :: in origin/main
+docs/build/orchestration/ultra-plan-03-opus-midnight-rights.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-midnight-rights-20261005`
+docs/build/status/opus-midnight-rights.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-midnight-rights-20261005`
+docs/build/status/opus-midnight-rights.md:50:Working branch: `claude/midnight-rights-lifecycle-yhfyyu` (session-designated; same base commit `ede63f6` as `bench/opus-midnight-rights-20261005`).
+docs/build/status/opus-midnight-rights.md:278:opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into this lane's base (`bench/opus-midnight-rights-20261005` is still `ede63f6`).
+--- bench/opus-midnight-rights-20261005 :: in own tree (origin/bench/opus-midnight-rights-20261005)
+--- claude/amazing-goodall-ntrljq :: in origin/main
+--- claude/amazing-goodall-ntrljq :: in own tree (origin/claude/amazing-goodall-ntrljq)
+--- claude/brand-me-lux-foundations-audit-8zywr3 :: in origin/main
+--- claude/brand-me-lux-foundations-audit-8zywr3 :: in own tree (origin/claude/brand-me-lux-foundations-audit-8zywr3)
+--- claude/ci-repair-workflows :: in origin/main
+--- claude/ci-repair-workflows :: in own tree (origin/claude/ci-repair-workflows)
+--- claude/midnight-rights-lifecycle-yhfyyu :: in origin/main
+docs/build/status/opus-midnight-rights.md:50:Working branch: `claude/midnight-rights-lifecycle-yhfyyu` (session-designated; same base commit `ede63f6` as `bench/opus-midnight-rights-20261005`).
+--- claude/midnight-rights-lifecycle-yhfyyu :: in own tree (origin/claude/midnight-rights-lifecycle-yhfyyu)
+--- claude/opus-commerce-agents-setup-szpmf7 :: in origin/main
+docs/build/status/opus-commerce-agents.md:50:**Working branch:** the session harness designates `claude/opus-commerce-agents-setup-szpmf7`; at start it pointed at the
+docs/build/status/opus-commerce-agents.md:325:`claude/opus-commerce-agents-setup-szpmf7` was an ancestor of it and was fast-forwarded; this round starts from `7c61afd`.
+docs/build/status/opus-commerce-agents.md:1130:**PR #51** (`claude/opus-commerce-agents-setup-szpmf7` → `main`, head `052f920` plus this status commit), still in draft:
+docs/build/status/opus-commerce-agents.md:1277:- The lane branch is `claude/opus-commerce-agents-setup-szpmf7` (PR #51), not the bench branch.
+--- claude/opus-commerce-agents-setup-szpmf7 :: in own tree (origin/claude/opus-commerce-agents-setup-szpmf7)
+--- claude/opus-consumer-domains-1csp2g :: in origin/main
+docs/build/orchestration/next-consumer-domains-pr52.md:6:1. Merge current `main` (`0c3d7ea2878d66a35d68451df4edb60d79f1ed92`) into the PR #52 branch (`claude/opus-consumer-domains-1csp2g`). No rebase.
+docs/build/status/astra-consumer-ui.md:295:The latest consumer-domain work is on `claude/opus-consumer-domains-1csp2g`
+docs/build/status/opus-consumer-domains.md:48:- Branch worked: `claude/opus-consumer-domains-1csp2g` (session-designated push branch), created from `bench/opus-consumer-domains-20261005` @ `5d919ab`.
+docs/build/status/opus-consumer-domains.md:114:Branch `claude/opus-consumer-domains-1csp2g`, restarted from the merged lane base `d839267` (PR #32 merged 2026-10-07). It now merges **`bench/opus-found
+docs/build/status/opus-consumer-domains.md:607:Commits `eb12620`, `84fad9d`, `e48414a`, `b79436d`, `efa1a25` on `claude/opus-consumer-domains-1csp2g`.
+docs/build/status/opus-consumer-domains.md:920:- **Branch.** The plan names `bench/opus-consumer-domains-20261005`. The lane keeps its designated `claude/opus-consumer-domains-1csp2g`, restarted from 
+--- claude/opus-consumer-domains-1csp2g :: in own tree (origin/claude/opus-consumer-domains-1csp2g)
+--- claude/opus-foundation-w00-2hgiw5 :: in origin/main
+docs/build/evidence/w00/baseline-test-report.md:3:**Executed:** 2026-10-05, branch `claude/opus-foundation-w00-2hgiw5` at `e4f1342`. That is spec baseline `0f5f58a` plus two docs-only commits (`451123
+docs/build/evidence/w00/trust-path-fixtures.md:3:Recorded 2026-10-05 on branch `claude/opus-foundation-w00-2hgiw5` (base `e4f1342`), by reading the cited lines. Nothing here was run against a live net
+docs/build/status/opus-foundation.md:47:**Last updated:** 2026-10-05 · **Working branch:** `claude/opus-foundation-w00-2hgiw5` (the session harness designates it; `bench/opus-foundation-20261005` poi
+docs/build/status/opus-foundation.md:134:**Branch:** `claude/opus-foundation-w00-2hgiw5`, restarted from `main` at `5174ec2`. PR #33 was merged, and the bench branch is in `main`.
+docs/build/status/opus-foundation.md:174:**Branch:** `claude/opus-foundation-w00-2hgiw5`, rebuilt on `main` `48686d2` after #53 merged (`1f0d738`). **PR #58** (draft until this packet). Built as six i
+--- claude/opus-foundation-w00-2hgiw5 :: in own tree (origin/claude/opus-foundation-w00-2hgiw5)
+--- claude/setup-design-system-cli-6iovG :: in origin/main
+--- claude/setup-design-system-cli-6iovG :: in own tree (origin/claude/setup-design-system-cli-6iovG)
+--- codex/chain-projection-worker-20261022 :: in origin/main
+--- codex/chain-projection-worker-20261022 :: in own tree (origin/codex/chain-projection-worker-20261022)
+--- codex/console-contract-publication :: in origin/main
+--- codex/console-contract-publication :: in own tree (origin/codex/console-contract-publication)
+--- codex/consumer-design-preview :: in origin/main
+--- codex/consumer-design-preview :: in own tree (origin/codex/consumer-design-preview)
+--- codex/critical-dependency-repairs-20261022 :: in origin/main
+--- codex/critical-dependency-repairs-20261022 :: in own tree (origin/codex/critical-dependency-repairs-20261022)
+--- codex/docker-pipeline-20261022 :: in origin/main
+--- codex/docker-pipeline-20261022 :: in own tree (origin/codex/docker-pipeline-20261022)
+--- codex/durable-chain-reconciliation-20261022 :: in origin/main
+--- codex/durable-chain-reconciliation-20261022 :: in own tree (origin/codex/durable-chain-reconciliation-20261022)
+--- codex/durable-outbox-pubsub-20261022 :: in origin/main
+--- codex/durable-outbox-pubsub-20261022 :: in own tree (origin/codex/durable-outbox-pubsub-20261022)
+--- codex/explain-execution-details-and-next-steps :: in origin/main
+--- codex/explain-execution-details-and-next-steps :: in own tree (origin/codex/explain-execution-details-and-next-steps)
+--- codex/midnight-integration-20261022 :: in origin/main
+--- codex/midnight-integration-20261022 :: in own tree (origin/codex/midnight-integration-20261022)
+--- codex/privacy-recovery-safety-20261023 :: in origin/main
+--- codex/privacy-recovery-safety-20261023 :: in own tree (origin/codex/privacy-recovery-safety-20261023)
+--- codex/rights-export-worker :: in origin/main
+--- codex/rights-export-worker :: in own tree (origin/codex/rights-export-worker)
+--- codex/rights-privacy-read-api :: in origin/main
+--- codex/rights-privacy-read-api :: in own tree (origin/codex/rights-privacy-read-api)
+--- docs/brandme-full-experience-2026-10-05 :: in origin/main
+docs/build/status/astra-consumer-ui.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/astra-spatial-ar.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/astra-spatial-ar.md:233:- **PR #36 verified open and draft**, head `5200b12740d38873eb71b05918315b676aa3fb2b`, base `docs/brandme-full-experience-2026-10-05`; GitHub reports mergeabl
+docs/build/status/astra-spatial-ar.md:274:- PR **#36 remains open, draft and mergeable**, against `docs/brandme-full-experience-2026-10-05`. The five toolchain files plus this lane status are the enti
+docs/build/status/opus-commerce-agents.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/opus-consumer-domains.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/opus-foundation.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/opus-midnight-rights.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+--- docs/brandme-full-experience-2026-10-05 :: in own tree (origin/docs/brandme-full-experience-2026-10-05)
+--- fix/property-test-vacuity-guard-flake :: in origin/main
+--- fix/property-test-vacuity-guard-flake :: in own tree (origin/fix/property-test-vacuity-guard-flake)
+--- mia/next-plans-20261025 :: in origin/main
+docs/build/orchestration/next-plans-20261025.md:75:  Round 03 triggered 2026-10-25 per founder approval (branch mia/next-plans-20261025 + trigger comments on each lane PR).
+--- mia/next-plans-20261025 :: in own tree (origin/mia/next-plans-20261025)
+--- mia/orchestration-20261023 :: in origin/main
+--- mia/orchestration-20261023 :: in own tree (origin/mia/orchestration-20261023)
+--- mia/pipeline-seed-20261030 :: in origin/main
+--- mia/pipeline-seed-20261030 :: in own tree (origin/mia/pipeline-seed-20261030)
+--- triage/pnpm-version-conflict-20261023 :: in origin/main
+docs/build/workspace-governance.md:131:3. **PR #55 fixed the symptom only.** Its head `1144700` (branch `triage/pnpm-version-conflict-20261023`, parent `6899d88` on the spatial lane) removed `with: ve
+--- triage/pnpm-version-conflict-20261023 :: in own tree (origin/triage/pnpm-version-conflict-20261023)
+--- triage/pnpm-workspace-frontend-20261008 :: in origin/main
+docs/build/workspace-governance.md:133:5. **The same class had happened twice before.** W00 recorded `pnpm install --frozen-lockfile` passing "frontend not in workspace, so not installed" and finding 
+--- triage/pnpm-workspace-frontend-20261008 :: in own tree (origin/triage/pnpm-workspace-frontend-20261008)
+--- w11/integration-20261008 :: in origin/main
+--- w11/integration-20261008 :: in own tree (origin/w11/integration-20261008)
+
+### $ git show origin/main:brandme-frontend/public/demo/.gitattributes
+# exit=0 lines=2
+# Asset manifests hash the generated bytes; preserve JSON line endings on Windows.
+*.json text eol=lf
+
+### $ git grep -l 'filter=lfs' $(git for-each-ref --format='%(refname)' refs/remotes/origin refs/pr) 2>/dev/null | head
+# exit=0 lines=1
+
+
+### $ git log origin/main -i --grep='revert' --format='%h %cI | %s'
+# exit=0 lines=2
+4010ae8 2026-10-30T05:12:51+00:00 | Q8 re-review fixes: every shipped catalog is pinned as required
+b61d572 2026-10-24T03:43:41+00:00 | media: address the Codex review of the GCS store (5 findings)
+
+### $ git ls-remote --tags origin | wc -l
+# exit=0 lines=1
+0
+
+### $ git log origin/main --all --format=%h -- .gitmodules | head; git ls-tree -r origin/main | awk '$2=="commit"' | wc -l
+# exit=0 lines=1
+0
+
+### $ git symbolic-ref refs/remotes/origin/HEAD
+# exit=0 lines=1
+refs/remotes/origin/main
+
+### $ python3 -I equiv.py  (per unique commit: git diff --name-status C^ C; git diff-tree -p C | git patch-id --stable vs main cache; git diff --name-only C origin/main -- <paths>; added/removed line presence in origin/main:<path>; blob-id equality)
+# exit=0 full output in equiv.json; 1 empty-diff main commits skipped in cache
+== origin/claude/amazing-goodall-ntrljq
+  45e157f555 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/194 present, removed-line check: 0/0 still in main | docs: add Stripe Connect integration plan (brands direct, re
+  8360813e23 peq=False content=partial files=9 diffpaths=9 | added-line presence: 22/988 present, removed-line check: 103/111 still in main | feat(payments): Stripe Connect direct charges for brands (te
+== origin/claude/brand-me-lux-foundations-audit-8zywr3
+  3523b22a0b peq=False content=partial files=24 diffpaths=23 | added-line presence: 1/2492 present, removed-line check: 1/1 still in main | Audit all repos; lift Lux platform foundation into brandme_f
+  0957452d89 peq=False content=none files=2 diffpaths=2 | added-line presence: 0/28 present, removed-line check: 0/1 still in main | docs: record that ci-cd.yml has been red on main since Janua
+  8aa8354a4a peq=False content=none files=2 diffpaths=2 | added-line presence: 0/12 present, removed-line check: 0/3 still in main | docs: add the third CI root cause (Security Scan SARIF uploa
+  18a69acea7 peq=False content=none files=2 diffpaths=2 | added-line presence: 0/27 present, removed-line check: 0/5 still in main | docs: root-cause the Security Scan intermittency as duplicat
+  eed6737062 peq=False content=none files=3 diffpaths=3 | added-line presence: 0/19 present, removed-line check: 0/5 still in main | fix(ci): scope foundation.yml push trigger to main; correct 
+== origin/claude/midnight-rights-lifecycle-yhfyyu
+  c55c010dbc peq=False content=partial files=1 diffpaths=1 | added-line presence: 1/50 present, removed-line check: 0/0 still in main | docs(midnight-rights): receive and review the round-03 ultra
+  cd6224d3df peq=False content=partial files=5 diffpaths=5 | added-line presence: 9/237 present, removed-line check: 9/9 still in main | feat(privacy): D-007 handler extension, receipt notes and id
+  d58e3c8e84 peq=False content=partial files=27 diffpaths=27 | added-line presence: 24/1403 present, removed-line check: 64/64 still in main | feat(rights): authenticated rights command backend (Stage 13
+  6a4a11a6b4 peq=False content=partial files=5 diffpaths=5 | added-line presence: 3/207 present, removed-line check: 0/0 still in main | feat(rights): reprint.attested producer and dev-form My Data
+  a05f2e03e5 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/59 present, removed-line check: 0/0 still in main | docs(midnight-rights): check-in packet (Stage 15)
+== origin/claude/opus-consumer-domains-1csp2g
+  d502a0c2d6 peq=False content=partial files=37 diffpaths=37 | added-line presence: 70/1548 present, removed-line check: 68/69 still in main | consumer domains: Now loop, Home = Flow and per-house loyalt
+  fa0a1a21b0 peq=False content=partial files=46 diffpaths=46 | added-line presence: 55/2569 present, removed-line check: 35/54 still in main | consumer domains: surveys and in-app credit, persona card an
+  068001dcc8 peq=False content=partial files=4 diffpaths=4 | added-line presence: 2/12 present, removed-line check: 0/5 still in main | consumer domains: guard member routes individually; honour t
+  29913cb970 peq=False content=partial files=1 diffpaths=1 | added-line presence: 11/175 present, removed-line check: 0/0 still in main | status: stages 15-16, Ultra plan 02 check-in packet (21 ques
+  ecdee84187 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/1 present, removed-line check: 0/1 still in main | status: record the final-head clean-checkout evidence for st
+  5aa075b85f peq=False content=partial files=3 diffpaths=3 | added-line presence: 1/17 present, removed-line check: 0/9 still in main | wardrobe: keep ownership evidence off the stranger-visible c
+  9770927ab6 MERGE files=46 Merge origin/main (22ff053: #64 commerce round 3, #67 round-03 plans) 
+  b5e8ea4cfc peq=False content=partial files=1 diffpaths=1 | added-line presence: 1/18 present, removed-line check: 0/0 still in main | status: Stage 19, answer to the Oct 29 status check
+  a89df832ec MERGE files=61 Merge origin/main (97d5447: #62 foundation round 4) into consumer-doma
+  c488c2568e peq=False content=none files=1 diffpaths=1 | added-line presence: 0/6 present, removed-line check: 3/3 still in main | test(foundation): count the consumer seed's #66 rows in the 
+  48c638d9bc peq=False content=partial files=1 diffpaths=1 | added-line presence: 1/17 present, removed-line check: 0/1 still in main | status: Stage 20, main 97d5447 merged; foundation test count
+  1b4edf2c4f peq=False content=partial files=15 diffpaths=15 | added-line presence: 3/176 present, removed-line check: 21/30 still in main | fix: Codex review of #66 (cap, share projection, room blocki
+  8933899d28 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/2 present, removed-line check: 0/2 still in main | status: point Stages 19-20 at the follow-up's stage numbers 
+  e40ea7cd73 peq=False content=none files=11 diffpaths=11 | added-line presence: 0/129 present, removed-line check: 1/23 still in main | fix: second Codex review of #66 (card copies, room admission
+  9ebc062bbd peq=False content=partial files=12 diffpaths=12 | added-line presence: 2/264 present, removed-line check: 12/39 still in main | fix: third Codex review of #66 (deleted cards, share purge, 
+  5f3e2b49f8 peq=False content=partial files=3 diffpaths=3 | added-line presence: 1/16 present, removed-line check: 3/7 still in main | fix: share purge events only for projected shares; My Data t
+  f27e37cb01 peq=False content=none files=3 diffpaths=3 | added-line presence: 0/78 present, removed-line check: 0/18 still in main | fix: fourth Codex review of #66 (credits after ledger deleti
+  babb3604ae peq=False content=none files=7 diffpaths=7 | added-line presence: 0/89 present, removed-line check: 1/2 still in main | fix: fifth Codex review of #66 (ledger freeze on survey/conv
+== origin/claude/setup-design-system-cli-6iovG
+  8dd7aad766 peq=False content=all files=28 diffpaths=0 | added-line presence: 2964/2964 present, removed-line check: 0/0 still in main | Add UI/UX Pro Max design system skill for Claude
+  1733fccc13 peq=False content=partial files=6 diffpaths=2 | added-line presence: 80/81 present, removed-line check: 0/0 still in main | Wire 21st.dev Magic MCP via .mcp.json + SessionStart hook
+  d6207ade74 peq=True content=partial files=4 diffpaths=4 | added-line presence: 653/775 present, removed-line check: 0/10 still in main | Claude/understand repo purpose wc ga7 (#27)
+  e758afb407 peq=True content=partial files=38 diffpaths=15 | added-line presence: 367/622 present, removed-line check: 477/1257 still in main | Add MCP commerce mandate and cart tool handlers (#28)
+  12f5ee7276 peq=False content=none files=4 diffpaths=4 | added-line presence: 0/236 present, removed-line check: 2/2 still in main | Add design-audit skill — reproducible audit + concept-genera
+  425918ccb9 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/61 present, removed-line check: 0/0 still in main | Design audit Phase A — score brandme-frontend against rubric
+  6de84d4bc2 peq=False content=none files=19 diffpaths=19 | added-line presence: 0/206 present, removed-line check: 0/0 still in main | Design audit Phase B blocked — log two failure modes for res
+  8b9bd4a718 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/18 present, removed-line check: 0/12 still in main | Design audit: definitive Phase B diagnosis — sandbox blocked
+== origin/codex/chain-projection-worker-20261022
+  e96356eaff peq=True content=partial files=23 diffpaths=6 | added-line presence: 781/785 present, removed-line check: 2/67 still in main | feat(chain): reconcile durable operations and project finali
+== origin/codex/consumer-design-preview
+  15f637918f peq=False content=partial files=18 diffpaths=18 | added-line presence: 18/356 present, removed-line check: 28/28 still in main | feat(consumer): preview three rooms and private persona card
+  77b0a4a530 peq=False content=partial files=5 diffpaths=5 | added-line presence: 2/341 present, removed-line check: 0/0 still in main | feat(consumer): add optional friend response heartbeat
+  bd7c731f06 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/2 present, removed-line check: 0/0 still in main | feat(consumer): connect friend response feedback to decision
+  fc3b15b1a8 peq=False content=partial files=4 diffpaths=4 | added-line presence: 1/87 present, removed-line check: 0/5 still in main | fix(consumer): refine parallel streams and mobile review evi
+  d9a5b8adb0 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/181 present, removed-line check: 0/0 still in main | test(consumer): verify DecisionView heartbeat in browser
+  d2009d01d3 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/1 present, removed-line check: 0/1 still in main | test(consumer): run heartbeat integration with browser check
+  e67c493d61 MERGE files=2 Merge commit '159d77206315e043a205d6984c730dc450404693' into codex/con
+  71e9d40998 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/7 present, removed-line check: 0/3 still in main | docs(consumer): record consolidated preview and browser evid
+  cd37b6de59 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/4 present, removed-line check: 0/1 still in main | test(consumer): await route titles before preview audits
+  990e4a940e peq=False content=partial files=4 diffpaths=4 | added-line presence: 11/92 present, removed-line check: 11/11 still in main | fix(consumer): select one current destination per navigation
+  9280571ab0 MERGE files=3 Merge commit '987afcebc72a38e7e494ffe8d9ec1369d74e3fd6' into codex/con
+  2083bae1a4 peq=False content=none files=1 diffpaths=1 | added-line presence: 0/3 present, removed-line check: 0/2 still in main | docs(consumer): record final navigation and preview checks
+  9d1e29f4f9 MERGE files=6 Merge consumer parent repair and record preview CI receipt
+  4ba1fae8a8 peq=False content=partial files=3 diffpaths=1 | added-line presence: 135/142 present, removed-line check: 0/4 still in main | fix(console): publish shell contract 1.1.1
+  3f7e558d3a MERGE files=5 Merge approved room revision parent into design preview
+  7f7d4e71e3 MERGE files=3 Merge console contract 1.1.1 into design preview
+  50b0b726fa peq=False content=none files=1 diffpaths=1 | added-line presence: 0/4 present, removed-line check: 0/0 still in main | docs(consumer): record combined contract preview validation
+  c2732a3098 MERGE files=1 Merge published contract history and final CI receipts into preview
+  2f89dce5d1 MERGE files=1 Merge completed prerequisites and record preview review gates
+  0ff12fbdbc peq=False content=none files=1 diffpaths=1 | added-line presence: 0/57 present, removed-line check: 0/0 still in main | docs(consumer): publish round-03 restart handoff
+== origin/codex/critical-dependency-repairs-20261022
+  da7918e0d0 peq=False content=partial files=12 diffpaths=10 | added-line presence: 615/631 present, removed-line check: 351/1000 still in main | fix(security): patch production dependencies and gate image 
+  542b52cc12 peq=False content=all files=1 diffpaths=1 | added-line presence: 14/14 present, removed-line check: 0/1 still in main | fix(ci): resolve console codec dependencies from packaged en
+== origin/codex/docker-pipeline-20261022
+  c6f5f96276 peq=False content=partial files=10 diffpaths=7 | added-line presence: 80/89 present, removed-line check: 5/127 still in main | fix(ci): build workspace Docker images before publishing
+  9b613026e7 peq=False content=partial files=4 diffpaths=3 | added-line presence: 49/54 present, removed-line check: 1/3 still in main | test(ci): smoke packaged runtimes and resolve agent tooling 
+  4b2a618702 peq=False content=partial files=3 diffpaths=3 | added-line presence: 13/15 present, removed-line check: 4/12 still in main | ci: run real Python emulator suites and exclude cloud creden
+  368fa8d812 peq=False content=all files=2 diffpaths=1 | added-line presence: 19/19 present, removed-line check: 0/7 still in main | fix(agents): connect packaged CLI to the existing workflow A
+  16bdf8c231 peq=False content=partial files=1 diffpaths=1 | added-line presence: 21/22 present, removed-line check: 5/12 still in main | ci: publish only verified images after credential-free build
+  df57d0be8c peq=False content=all files=2 diffpaths=1 | added-line presence: 4/4 present, removed-line check: 0/3 still in main | fix(security): remove unneeded wheel tooling from agent runt
+  a5373d5c0e peq=False content=all files=2 diffpaths=1 | added-line presence: 8/8 present, removed-line check: 0/0 still in main | fix(agents): keep legacy simulated workflows out of strict m
+== origin/codex/durable-chain-reconciliation-20261022
+  6c732e9b9b peq=False content=partial files=31 diffpaths=23 | added-line presence: 933/999 present, removed-line check: 2/60 still in main | feat(chain): persist operation journal and reconcile authent
+  e2dcbdd3a9 peq=False content=all files=3 diffpaths=2 | added-line presence: 28/28 present, removed-line check: 0/0 still in main | test(chain): enforce complete rejection evidence and atomic 
+== origin/codex/durable-outbox-pubsub-20261022
+  d7dd90d122 peq=False content=partial files=15 diffpaths=12 | added-line presence: 673/704 present, removed-line check: 1/61 still in main | feat(events): deliver durable outbox events through fenced P
+  6536778913 peq=False content=partial files=7 diffpaths=4 | added-line presence: 133/134 present, removed-line check: 0/11 still in main | fix(events): require retention and verify transport failures
+== origin/codex/explain-execution-details-and-next-steps
+  15ae7bf3ce peq=True content=partial files=38 diffpaths=15 | added-line presence: 367/622 present, removed-line check: 477/1257 still in main | Add MCP commerce mandate and cart tool handlers
+== origin/codex/midnight-integration-20261022
+  fc6dfdc6e5 peq=False content=partial files=36 diffpaths=24 | added-line presence: 666/689 present, removed-line check: 10/149 still in main | feat(integration): connect rights auth boundary, transaction
+  6d971693c7 peq=False content=all files=4 diffpaths=3 | added-line presence: 6/6 present, removed-line check: 0/0 still in main | fix(core): package rights domain dependencies and validate e
+  32e63d4d87 peq=False content=all files=1 diffpaths=1 | added-line presence: 1/1 present, removed-line check: 0/1 still in main | fix(ci): run module regression with the repository Node tool
+== origin/codex/privacy-recovery-safety-20261023
+  e022cfea47 peq=False content=partial files=7 diffpaths=7 | added-line presence: 596/604 present, removed-line check: 13/113 still in main | fix(privacy): preserve deletion freezes and fail closed duri
+  e6274ef5a1 peq=False content=all files=6 diffpaths=1 | added-line presence: 69/69 present, removed-line check: 0/3 still in main | fix(privacy): enforce durable deletion barriers after restri
+== origin/codex/rights-export-worker
+  2a6c6501cf peq=False content=partial files=30 diffpaths=9 | added-line presence: 4071/4076 present, removed-line check: 102/130 still in main | feat(privacy): add durable selected rights exports with priv
+  02297b2cea peq=False content=all files=2 diffpaths=0 | added-line presence: 33/33 present, removed-line check: 0/2 still in main | fix(privacy): restrict ADC credential-refresh transport
+== origin/codex/rights-privacy-read-api
+  10a468395c peq=True content=partial files=29 diffpaths=17 | added-line presence: 3259/3275 present, removed-line check: 9/28 still in main | feat(reads): serve authenticated rights and partial My Data 
+== origin/fix/property-test-vacuity-guard-flake
+  a699331df5 peq=True content=partial files=1 diffpaths=1 | added-line presence: 77/77 present, removed-line check: 5/5 still in main | fix(tests): make property-test vacuity guard deterministic
+== origin/triage/pnpm-version-conflict-20261023
+  114470007e peq=True content=partial files=1 diffpaths=1 | added-line presence: 0/0 present, removed-line check: 1/2 still in main | [triage] module-regression: drop pnpm version pin conflictin
+== origin/triage/pnpm-workspace-frontend-20261008
+  64d5fd6ca1 peq=False content=partial files=2 diffpaths=2 | added-line presence: 132/246 present, removed-line check: 0/0 still in main | [triage] add brandme-frontend to pnpm workspace and lockfile
+
+### $ consumers (rerun, fixed sed delimiter): for each branch name N: git grep -n -F -e N origin/main -- .github scripts docs '*.md' '*.yml' '*.yaml' '*.json' '*.mjs' '*.sh'; git grep -n -F -e N origin/<N> -- <same>  (docs/audits hits listed by path:line only, content not read)
+# exit=0
+--- bench/astra-consumer-ui-20261005 :: in origin/main
+.github/workflows/consumer-ui.yml:7:    branches: ['bench/astra-consumer-ui-20261005']
+docs/build/orchestration/ultra-plan-03-astra-consumer-ui.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/astra-consumer-ui-20261005` ·
+docs/build/status/astra-consumer-ui.md:3:**Bench:** Astra (Codex) · **Branch:** `bench/astra-consumer-ui-20261005`
+docs/build/status/astra-consumer-ui.md:46:- Branch: `bench/astra-consumer-ui-20261005`; starting commit `813051a`.
+docs/build/status/opus-commerce-agents.md:677:- **Evidence.** All of it ran in a scratch `git worktree` of `origin/bench/astra-consumer-ui-20261005` (`a37ec2b`)
+docs/build/status/opus-consumer-domains.md:482:- Console pages `brandme-console/app/(ops)/{moderation,rewards-disputes}` are not built yet. The shell they must plug into (`console-page-header`, consol
+docs/build/status/opus-consumer-domains.md:588:| Console overlay: these subtrees copied onto `bench/astra-consumer-ui-20261005@a37ec2b` (the shell lives only there), per-app `npm install`, Next 14.2.3
+docs/build/workspace-governance.md:129:1. **The lanes were cut from a pre-foundation base.** Both astra lanes (consumer-ui and spatial-ar) branched from the docs base `4511236` (2026-10-05). That base
+docs/build/workspace-governance.md:147:| `origin/bench/astra-consumer-ui-20261005` (`264b6a0`) | 19 | membership and lockfile now clean; the same stale workflows, missing `.nvmrc` and Dockerfile pins.
+--- bench/astra-consumer-ui-20261005 :: in own tree (origin/bench/astra-consumer-ui-20261005)
+.github/workflows/consumer-ui.yml:7:    branches: ['bench/astra-consumer-ui-20261005']
+docs/build/status/astra-consumer-ui.md:3:**Bench:** Astra (Codex) · **Branch:** `bench/astra-consumer-ui-20261005`
+docs/build/status/astra-consumer-ui.md:46:- Branch: `bench/astra-consumer-ui-20261005`; starting commit `813051a`.
+docs/build/status/opus-commerce-agents.md:677:- **Evidence.** All of it ran in a scratch `git worktree` of `origin/bench/astra-consumer-ui-20261005` (`a37ec2b`)
+docs/build/status/opus-consumer-domains.md:482:- Console pages `brandme-console/app/(ops)/{moderation,rewards-disputes}` are not built yet. The shell they must plug into (`console-page-header`, consol
+docs/build/status/opus-consumer-domains.md:588:| Console overlay: these subtrees copied onto `bench/astra-consumer-ui-20261005@a37ec2b` (the shell lives only there), per-app `npm install`, Next 14.2.3
+docs/build/workspace-governance.md:129:1. **The lanes were cut from a pre-foundation base.** Both astra lanes (consumer-ui and spatial-ar) branched from the docs base `4511236` (2026-10-05). That base
+docs/build/workspace-governance.md:147:| `origin/bench/astra-consumer-ui-20261005` (`264b6a0`) | 19 | membership and lockfile now clean; the same stale workflows, missing `.nvmrc` and Dockerfile pins.
+--- bench/astra-spatial-ar-20261005 :: in origin/main
+.github/workflows/spatial-validation.yml:5:    branches: ['bench/astra-spatial-ar-20261005']
+docs/build/orchestration/ultra-plan-03-astra-spatial-ar.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/astra-spatial-ar-20261005` ·
+docs/build/status/astra-spatial-ar.md:3:**Bench:** Astra (Codex) · **Branch:** `bench/astra-spatial-ar-20261005`
+docs/build/status/astra-spatial-ar.md:46:- Baseline: `00c9cfc`; isolated worktree on `bench/astra-spatial-ar-20261005`.
+docs/build/status/astra-spatial-ar.md:165:- Published implementation commit `7bea00e682499cddfc4b9bbc839e73643c46257c` to `bench/astra-spatial-ar-20261005`. No merge, PR, deployment, or live capabilit
+docs/build/status/astra-spatial-ar.md:232:- Implementation **published and fetched back** as `5200b12740d38873eb71b05918315b676aa3fb2b` on `bench/astra-spatial-ar-20261005`. Tree `d0e28ad10f8f0cf13be9
+docs/build/status/astra-spatial-ar.md:420:The founder explicitly activated the attached Ultra plan 02 and requested work on `bench/astra-spatial-ar-20261005`. Implementation therefore continues from `
+docs/build/status/opus-consumer-domains.md:233:  Room geometry mirrors the spatial lane's manifests at `original-v1` and is **checked against them** (`test_server_room_templates_match_spatial_manifest
+docs/build/workspace-governance.md:56:Pending decision: the spatial lane's `scripts/assets` (`@brandme/spatial-asset-tools`, own lockfile, `packageManager: pnpm@11.25.0`) on `origin/bench/astra-spatia
+docs/build/workspace-governance.md:146:| `origin/bench/astra-spatial-ar-20261005` (`a78433d`) | 23 | `E_UNREGISTERED scripts/assets`, `E_NESTED_LOCKFILE`, `E_PM_NESTED pnpm@11.25.0`, `E_PNPM_FIELD` (r
+scripts/assets/evidence/round2-summary.json:5:  "branch": "bench/astra-spatial-ar-20261005",
+--- bench/astra-spatial-ar-20261005 :: in own tree (origin/bench/astra-spatial-ar-20261005)
+.github/workflows/spatial-validation.yml:5:    branches: ['bench/astra-spatial-ar-20261005']
+docs/build/orchestration/ultra-plan-03-astra-spatial-ar.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/astra-spatial-ar-20261005` ·
+docs/build/status/astra-spatial-ar.md:3:**Bench:** Astra (Codex) · **Branch:** `bench/astra-spatial-ar-20261005`
+docs/build/status/astra-spatial-ar.md:46:- Baseline: `00c9cfc`; isolated worktree on `bench/astra-spatial-ar-20261005`.
+docs/build/status/astra-spatial-ar.md:165:- Published implementation commit `7bea00e682499cddfc4b9bbc839e73643c46257c` to `bench/astra-spatial-ar-20261005`. No merge, PR, deployment, or live capabilit
+docs/build/status/astra-spatial-ar.md:232:- Implementation **published and fetched back** as `5200b12740d38873eb71b05918315b676aa3fb2b` on `bench/astra-spatial-ar-20261005`. Tree `d0e28ad10f8f0cf13be9
+docs/build/status/astra-spatial-ar.md:420:The founder explicitly activated the attached Ultra plan 02 and requested work on `bench/astra-spatial-ar-20261005`. Implementation therefore continues from `
+docs/build/status/opus-consumer-domains.md:233:  Room geometry mirrors the spatial lane's manifests at `original-v1` and is **checked against them** (`test_server_room_templates_match_spatial_manifest
+docs/build/workspace-governance.md:56:Pending decision: the spatial lane's `scripts/assets` (`@brandme/spatial-asset-tools`, own lockfile, `packageManager: pnpm@11.25.0`) on `origin/bench/astra-spatia
+docs/build/workspace-governance.md:146:| `origin/bench/astra-spatial-ar-20261005` (`a78433d`) | 23 | `E_UNREGISTERED scripts/assets`, `E_NESTED_LOCKFILE`, `E_PM_NESTED pnpm@11.25.0`, `E_PNPM_FIELD` (r
+scripts/assets/evidence/round2-summary.json:5:  "branch": "bench/astra-spatial-ar-20261005",
+--- bench/opus-commerce-agents-20261005 :: in origin/main
+docs/build/orchestration/oneshot-plan-03-opus-commerce-agents.md:8:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-commerce-agents-20261005` ·
+docs/build/status/opus-commerce-agents.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-commerce-agents-20261005`
+docs/build/status/opus-commerce-agents.md:51:same commit as `bench/opus-commerce-agents-20261005` (`305a24b`). All lane commits land on the `claude/...` branch;
+docs/build/status/opus-commerce-agents.md:324:**State on resume:** PR #35 merged into `bench/opus-commerce-agents-20261005` as `7c61afd` (2026-10-06). The working branch
+docs/build/status/opus-commerce-agents.md:437:fresh checkout of `bench/opus-commerce-agents-20261005` cannot import the MCP executor or validate AP2 mandates. This
+docs/build/status/opus-commerce-agents.md:444:**274 passed, 0 skipped**; a clean worktree of `origin/bench/opus-commerce-agents-20261005` fails collection of
+docs/build/status/opus-commerce-agents.md:818:**PR target.** PR #51 targets `bench/opus-commerce-agents-20261005` (`7c61afd`), which `main` already contains.
+--- bench/opus-commerce-agents-20261005 :: in own tree (origin/bench/opus-commerce-agents-20261005)
+docs/build/status/opus-commerce-agents.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-commerce-agents-20261005`
+docs/build/status/opus-commerce-agents.md:51:same commit as `bench/opus-commerce-agents-20261005` (`305a24b`). All lane commits land on the `claude/...` branch;
+--- bench/opus-consumer-domains-20261005 :: in origin/main
+docs/build/orchestration/ultra-plan-03-opus-consumer-domains.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-consumer-domains-20261005` ·
+docs/build/status/opus-consumer-domains.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-consumer-domains-20261005`
+docs/build/status/opus-consumer-domains.md:48:- Branch worked: `claude/opus-consumer-domains-1csp2g` (session-designated push branch), created from `bench/opus-consumer-domains-20261005` @ `5d919ab`.
+docs/build/status/opus-consumer-domains.md:97:PR #33 (opus-foundation W00–W02) is merged into **`bench/opus-foundation-20261005` @ `25dff5c`**. This lane's base, `bench/opus-consumer-domains-2026100
+docs/build/status/opus-consumer-domains.md:920:- **Branch.** The plan names `bench/opus-consumer-domains-20261005`. The lane keeps its designated `claude/opus-consumer-domains-1csp2g`, restarted from 
+--- bench/opus-consumer-domains-20261005 :: in own tree (origin/bench/opus-consumer-domains-20261005)
+docs/build/status/opus-consumer-domains.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-consumer-domains-20261005`
+docs/build/status/opus-consumer-domains.md:48:- Branch worked: `claude/opus-consumer-domains-1csp2g` (session-designated push branch), created from `bench/opus-consumer-domains-20261005` @ `5d919ab`.
+docs/build/status/opus-consumer-domains.md:96:PR #33 (opus-foundation W00–W02) is merged into **`bench/opus-foundation-20261005` @ `25dff5c`**. This lane's base, `bench/opus-consumer-domains-2026100
+--- bench/opus-foundation-20261005 :: in origin/main
+docs/build/orchestration/oneshot-plan-03-opus-foundation.md:8:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-foundation-20261005` ·
+docs/build/status/opus-commerce-agents.md:277:opus-foundation PR #33 merged into `bench/opus-foundation-20261005` (`3704ec7`, verified by fetch). Merged it into this
+docs/build/status/opus-consumer-domains.md:49:- **Foundation lane had not landed anything but its brief** (`bench/opus-foundation-20261005` @ `e4f1342`): no `packages/*`, no `brandme_core/domains/{__i
+docs/build/status/opus-consumer-domains.md:97:PR #33 (opus-foundation W00–W02) is merged into **`bench/opus-foundation-20261005` @ `25dff5c`**. This lane's base, `bench/opus-consumer-domains-2026100
+docs/build/status/opus-consumer-domains.md:114:Branch `claude/opus-consumer-domains-1csp2g`, restarted from the merged lane base `d839267` (PR #32 merged 2026-10-07). It now merges **`bench/opus-found
+docs/build/status/opus-foundation.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-foundation-20261005`
+docs/build/status/opus-foundation.md:47:**Last updated:** 2026-10-05 · **Working branch:** `claude/opus-foundation-w00-2hgiw5` (the session harness designates it; `bench/opus-foundation-20261005` poi
+docs/build/status/opus-foundation.md:130:PR #33 merged into `bench/opus-foundation-20261005` at `25dff5c8` per founder approval (API merge of the draft required marking it ready-for-review first via G
+docs/build/status/opus-midnight-rights.md:278:opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into this lane's base (`bench/opus-midnight-rights-20261005` is still `ede63f6`).
+--- bench/opus-foundation-20261005 :: in own tree (origin/bench/opus-foundation-20261005)
+docs/build/status/opus-foundation.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-foundation-20261005`
+docs/build/status/opus-foundation.md:47:**Last updated:** 2026-10-05 · **Working branch:** `claude/opus-foundation-w00-2hgiw5` (the session harness designates it; `bench/opus-foundation-20261005` poi
+docs/build/status/opus-foundation.md:130:PR #33 merged into `bench/opus-foundation-20261005` at `25dff5c8` per founder approval (API merge of the draft required marking it ready-for-review first via G
+--- bench/opus-midnight-rights-20261005 :: in origin/main
+docs/build/orchestration/ultra-plan-03-opus-midnight-rights.md:7:**Repo:** brandmeonline/Brand-Me-Labs · **Lane branch:** `bench/opus-midnight-rights-20261005`
+docs/build/status/opus-midnight-rights.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-midnight-rights-20261005`
+docs/build/status/opus-midnight-rights.md:50:Working branch: `claude/midnight-rights-lifecycle-yhfyyu` (session-designated; same base commit `ede63f6` as `bench/opus-midnight-rights-20261005`).
+docs/build/status/opus-midnight-rights.md:278:opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into this lane's base (`bench/opus-midnight-rights-20261005` is still `ede63f6`).
+--- bench/opus-midnight-rights-20261005 :: in own tree (origin/bench/opus-midnight-rights-20261005)
+docs/build/status/opus-midnight-rights.md:3:**Bench:** Opus 5.5 (Claude Code) · **Branch:** `bench/opus-midnight-rights-20261005`
+docs/build/status/opus-midnight-rights.md:50:Working branch: `claude/midnight-rights-lifecycle-yhfyyu` (session-designated; same base commit `ede63f6` as `bench/opus-midnight-rights-20261005`).
+docs/build/status/opus-midnight-rights.md:278:opus-foundation PR #33 merged into `bench/opus-foundation-20261005`, not into this lane's base (`bench/opus-midnight-rights-20261005` is still `ede63f6`).
+--- claude/amazing-goodall-ntrljq :: in origin/main
+--- claude/amazing-goodall-ntrljq :: in own tree (origin/claude/amazing-goodall-ntrljq)
+--- claude/brand-me-lux-foundations-audit-8zywr3 :: in origin/main
+--- claude/brand-me-lux-foundations-audit-8zywr3 :: in own tree (origin/claude/brand-me-lux-foundations-audit-8zywr3)
+--- claude/ci-repair-workflows :: in origin/main
+--- claude/ci-repair-workflows :: in own tree (origin/claude/ci-repair-workflows)
+--- claude/midnight-rights-lifecycle-yhfyyu :: in origin/main
+docs/build/status/opus-midnight-rights.md:50:Working branch: `claude/midnight-rights-lifecycle-yhfyyu` (session-designated; same base commit `ede63f6` as `bench/opus-midnight-rights-20261005`).
+--- claude/midnight-rights-lifecycle-yhfyyu :: in own tree (origin/claude/midnight-rights-lifecycle-yhfyyu)
+docs/build/status/opus-midnight-rights.md:50:Working branch: `claude/midnight-rights-lifecycle-yhfyyu` (session-designated; same base commit `ede63f6` as `bench/opus-midnight-rights-20261005`).
+docs/build/status/opus-midnight-rights.md:446:- **Branch:** `claude/midnight-rights-lifecycle-yhfyyu`, fresh off `main` `ed19dc1`. The plan's base (`2b5ae889`) and the bench head (`44aaceab`) are both
+docs/build/status/opus-midnight-rights.md:664:- **Head:** this packet sits on Stage 14 `6a4a11a`, branch `claude/midnight-rights-lifecycle-yhfyyu` (PR #70).
+--- claude/opus-commerce-agents-setup-szpmf7 :: in origin/main
+docs/build/status/opus-commerce-agents.md:50:**Working branch:** the session harness designates `claude/opus-commerce-agents-setup-szpmf7`; at start it pointed at the
+docs/build/status/opus-commerce-agents.md:325:`claude/opus-commerce-agents-setup-szpmf7` was an ancestor of it and was fast-forwarded; this round starts from `7c61afd`.
+docs/build/status/opus-commerce-agents.md:1130:**PR #51** (`claude/opus-commerce-agents-setup-szpmf7` → `main`, head `052f920` plus this status commit), still in draft:
+docs/build/status/opus-commerce-agents.md:1277:- The lane branch is `claude/opus-commerce-agents-setup-szpmf7` (PR #51), not the bench branch.
+--- claude/opus-commerce-agents-setup-szpmf7 :: in own tree (origin/claude/opus-commerce-agents-setup-szpmf7)
+docs/build/status/opus-commerce-agents.md:50:**Working branch:** the session harness designates `claude/opus-commerce-agents-setup-szpmf7`; at start it pointed at the
+docs/build/status/opus-commerce-agents.md:325:`claude/opus-commerce-agents-setup-szpmf7` was an ancestor of it and was fast-forwarded; this round starts from `7c61afd`.
+docs/build/status/opus-commerce-agents.md:1130:**PR #51** (`claude/opus-commerce-agents-setup-szpmf7` → `main`, head `052f920` plus this status commit), still in draft:
+docs/build/status/opus-commerce-agents.md:1277:- The lane branch is `claude/opus-commerce-agents-setup-szpmf7` (PR #51), not the bench branch.
+--- claude/opus-consumer-domains-1csp2g :: in origin/main
+docs/build/orchestration/next-consumer-domains-pr52.md:6:1. Merge current `main` (`0c3d7ea2878d66a35d68451df4edb60d79f1ed92`) into the PR #52 branch (`claude/opus-consumer-domains-1csp2g`). No rebase.
+docs/build/status/astra-consumer-ui.md:295:The latest consumer-domain work is on `claude/opus-consumer-domains-1csp2g`
+docs/build/status/opus-consumer-domains.md:48:- Branch worked: `claude/opus-consumer-domains-1csp2g` (session-designated push branch), created from `bench/opus-consumer-domains-20261005` @ `5d919ab`.
+docs/build/status/opus-consumer-domains.md:114:Branch `claude/opus-consumer-domains-1csp2g`, restarted from the merged lane base `d839267` (PR #32 merged 2026-10-07). It now merges **`bench/opus-found
+docs/build/status/opus-consumer-domains.md:607:Commits `eb12620`, `84fad9d`, `e48414a`, `b79436d`, `efa1a25` on `claude/opus-consumer-domains-1csp2g`.
+docs/build/status/opus-consumer-domains.md:920:- **Branch.** The plan names `bench/opus-consumer-domains-20261005`. The lane keeps its designated `claude/opus-consumer-domains-1csp2g`, restarted from 
+--- claude/opus-consumer-domains-1csp2g :: in own tree (origin/claude/opus-consumer-domains-1csp2g)
+docs/build/orchestration/next-consumer-domains-pr52.md:6:1. Merge current `main` (`0c3d7ea2878d66a35d68451df4edb60d79f1ed92`) into the PR #52 branch (`claude/opus-consumer-domains-1csp2g`). No rebase.
+docs/build/status/astra-consumer-ui.md:295:The latest consumer-domain work is on `claude/opus-consumer-domains-1csp2g`
+docs/build/status/opus-consumer-domains.md:48:- Branch worked: `claude/opus-consumer-domains-1csp2g` (session-designated push branch), created from `bench/opus-consumer-domains-20261005` @ `5d919ab`.
+docs/build/status/opus-consumer-domains.md:114:Branch `claude/opus-consumer-domains-1csp2g`, restarted from the merged lane base `d839267` (PR #32 merged 2026-10-07). It now merges **`bench/opus-found
+docs/build/status/opus-consumer-domains.md:607:Commits `eb12620`, `84fad9d`, `e48414a`, `b79436d`, `efa1a25` on `claude/opus-consumer-domains-1csp2g`.
+docs/build/status/opus-consumer-domains.md:920:- **Branch.** The plan names `bench/opus-consumer-domains-20261005`. The lane keeps its designated `claude/opus-consumer-domains-1csp2g`, restarted from 
+docs/build/status/opus-consumer-domains.md:1037:16. **Branch.** The plan names `bench/opus-consumer-domains-20261005`. **The lane keeps its designated `claude/opus-consumer-domains-1csp2g`.**
+--- claude/opus-foundation-w00-2hgiw5 :: in origin/main
+docs/build/evidence/w00/baseline-test-report.md:3:**Executed:** 2026-10-05, branch `claude/opus-foundation-w00-2hgiw5` at `e4f1342`. That is spec baseline `0f5f58a` plus two docs-only commits (`451123
+docs/build/evidence/w00/trust-path-fixtures.md:3:Recorded 2026-10-05 on branch `claude/opus-foundation-w00-2hgiw5` (base `e4f1342`), by reading the cited lines. Nothing here was run against a live net
+docs/build/status/opus-foundation.md:47:**Last updated:** 2026-10-05 · **Working branch:** `claude/opus-foundation-w00-2hgiw5` (the session harness designates it; `bench/opus-foundation-20261005` poi
+docs/build/status/opus-foundation.md:134:**Branch:** `claude/opus-foundation-w00-2hgiw5`, restarted from `main` at `5174ec2`. PR #33 was merged, and the bench branch is in `main`.
+docs/build/status/opus-foundation.md:174:**Branch:** `claude/opus-foundation-w00-2hgiw5`, rebuilt on `main` `48686d2` after #53 merged (`1f0d738`). **PR #58** (draft until this packet). Built as six i
+--- claude/opus-foundation-w00-2hgiw5 :: in own tree (origin/claude/opus-foundation-w00-2hgiw5)
+docs/build/evidence/w00/baseline-test-report.md:3:**Executed:** 2026-10-05, branch `claude/opus-foundation-w00-2hgiw5` at `e4f1342`. That is spec baseline `0f5f58a` plus two docs-only commits (`451123
+docs/build/evidence/w00/trust-path-fixtures.md:3:Recorded 2026-10-05 on branch `claude/opus-foundation-w00-2hgiw5` (base `e4f1342`), by reading the cited lines. Nothing here was run against a live net
+docs/build/status/opus-foundation.md:47:**Last updated:** 2026-10-05 · **Working branch:** `claude/opus-foundation-w00-2hgiw5` (the session harness designates it; `bench/opus-foundation-20261005` poi
+docs/build/status/opus-foundation.md:134:**Branch:** `claude/opus-foundation-w00-2hgiw5`, restarted from `main` at `5174ec2`. PR #33 was merged, and the bench branch is in `main`.
+docs/build/status/opus-foundation.md:174:**Branch:** `claude/opus-foundation-w00-2hgiw5`, rebuilt on `main` `48686d2` after #53 merged (`1f0d738`). **PR #58** (draft until this packet). Built as six i
+--- claude/setup-design-system-cli-6iovG :: in origin/main
+--- claude/setup-design-system-cli-6iovG :: in own tree (origin/claude/setup-design-system-cli-6iovG)
+--- codex/chain-projection-worker-20261022 :: in origin/main
+--- codex/chain-projection-worker-20261022 :: in own tree (origin/codex/chain-projection-worker-20261022)
+--- codex/console-contract-publication :: in origin/main
+--- codex/console-contract-publication :: in own tree (origin/codex/console-contract-publication)
+--- codex/consumer-design-preview :: in origin/main
+--- codex/consumer-design-preview :: in own tree (origin/codex/consumer-design-preview)
+docs/build/status/astra-consumer-ui.md:455:**Scope:** initially prepared from `15c9d3f`, then consolidated with optional haptics on `codex/consumer-design-preview` above the updated #56 head `987afce`
+docs/build/status/astra-consumer-ui.md:656:status file, on `codex/consumer-design-preview` through [draft PR #63](https://github.com/brandmeonline/Brand-Me-Labs/pull/63).
+--- codex/critical-dependency-repairs-20261022 :: in origin/main
+--- codex/critical-dependency-repairs-20261022 :: in own tree (origin/codex/critical-dependency-repairs-20261022)
+--- codex/docker-pipeline-20261022 :: in origin/main
+--- codex/docker-pipeline-20261022 :: in own tree (origin/codex/docker-pipeline-20261022)
+--- codex/durable-chain-reconciliation-20261022 :: in origin/main
+--- codex/durable-chain-reconciliation-20261022 :: in own tree (origin/codex/durable-chain-reconciliation-20261022)
+--- codex/durable-outbox-pubsub-20261022 :: in origin/main
+--- codex/durable-outbox-pubsub-20261022 :: in own tree (origin/codex/durable-outbox-pubsub-20261022)
+--- codex/explain-execution-details-and-next-steps :: in origin/main
+--- codex/explain-execution-details-and-next-steps :: in own tree (origin/codex/explain-execution-details-and-next-steps)
+--- codex/midnight-integration-20261022 :: in origin/main
+--- codex/midnight-integration-20261022 :: in own tree (origin/codex/midnight-integration-20261022)
+--- codex/privacy-recovery-safety-20261023 :: in origin/main
+--- codex/privacy-recovery-safety-20261023 :: in own tree (origin/codex/privacy-recovery-safety-20261023)
+--- codex/rights-export-worker :: in origin/main
+--- codex/rights-export-worker :: in own tree (origin/codex/rights-export-worker)
+--- codex/rights-privacy-read-api :: in origin/main
+--- codex/rights-privacy-read-api :: in own tree (origin/codex/rights-privacy-read-api)
+--- docs/brandme-full-experience-2026-10-05 :: in origin/main
+docs/build/status/astra-consumer-ui.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/astra-spatial-ar.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/astra-spatial-ar.md:233:- **PR #36 verified open and draft**, head `5200b12740d38873eb71b05918315b676aa3fb2b`, base `docs/brandme-full-experience-2026-10-05`; GitHub reports mergeabl
+docs/build/status/astra-spatial-ar.md:274:- PR **#36 remains open, draft and mergeable**, against `docs/brandme-full-experience-2026-10-05`. The five toolchain files plus this lane status are the enti
+docs/build/status/opus-commerce-agents.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/opus-consumer-domains.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/opus-foundation.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/opus-midnight-rights.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+--- docs/brandme-full-experience-2026-10-05 :: in own tree (origin/docs/brandme-full-experience-2026-10-05)
+docs/build/status/astra-spatial-ar.md:4:**Base:** `docs/brandme-full-experience-2026-10-05` · **Spec:** `docs/design/brandme/` + `contracts/`
+docs/build/status/astra-spatial-ar.md:233:- **PR #36 verified open and draft**, head `5200b12740d38873eb71b05918315b676aa3fb2b`, base `docs/brandme-full-experience-2026-10-05`; GitHub reports mergeabl
+docs/build/status/astra-spatial-ar.md:274:- PR **#36 remains open, draft and mergeable**, against `docs/brandme-full-experience-2026-10-05`. The five toolchain files plus this lane status are the enti
+--- fix/property-test-vacuity-guard-flake :: in origin/main
+--- fix/property-test-vacuity-guard-flake :: in own tree (origin/fix/property-test-vacuity-guard-flake)
+--- mia/next-plans-20261025 :: in origin/main
+docs/build/orchestration/next-plans-20261025.md:75:  Round 03 triggered 2026-10-25 per founder approval (branch mia/next-plans-20261025 + trigger comments on each lane PR).
+--- mia/next-plans-20261025 :: in own tree (origin/mia/next-plans-20261025)
+docs/build/orchestration/next-plans-20261025.md:75:  Round 03 triggered 2026-10-25 per founder approval (branch mia/next-plans-20261025 + trigger comments on each lane PR).
+--- mia/orchestration-20261023 :: in origin/main
+--- mia/orchestration-20261023 :: in own tree (origin/mia/orchestration-20261023)
+--- mia/pipeline-seed-20261030 :: in origin/main
+--- mia/pipeline-seed-20261030 :: in own tree (origin/mia/pipeline-seed-20261030)
+--- triage/pnpm-version-conflict-20261023 :: in origin/main
+docs/build/workspace-governance.md:131:3. **PR #55 fixed the symptom only.** Its head `1144700` (branch `triage/pnpm-version-conflict-20261023`, parent `6899d88` on the spatial lane) removed `with: ve
+--- triage/pnpm-version-conflict-20261023 :: in own tree (origin/triage/pnpm-version-conflict-20261023)
+--- triage/pnpm-workspace-frontend-20261008 :: in origin/main
+docs/build/workspace-governance.md:133:5. **The same class had happened twice before.** W00 recorded `pnpm install --frozen-lockfile` passing "frontend not in workspace, so not installed" and finding 
+--- triage/pnpm-workspace-frontend-20261008 :: in own tree (origin/triage/pnpm-workspace-frontend-20261008)
+--- w11/integration-20261008 :: in origin/main
+--- w11/integration-20261008 :: in own tree (origin/w11/integration-20261008)
+
+### $ mcp__github__list_pull_requests owner=brandmeonline repo=Brand-Me-Labs state=all perPage=100 page=1 (read-only); parsed with parse_prs.py
+# exit=0
+71 PRs
+#  1 closed merged=False draft=False base=main                                          head=claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ @ f1a7a4d084 | Claude/init brandme architecture 011 cuutwsz2w2 q6f wxq fj vr j
+#  2 closed merged=False draft=False base=main                                          head=codex/regenerate-worker.py-and-main.py-files @ 4e7a0bb74e | Add policy check service and orchestrator worker stubs
+#  3 closed merged=False draft=False base=main                                          head=claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ @ df5f3e2f08 | feat: Standardize brain service and centralize logging utilities
+#  4 closed merged=False draft=False base=main                                          head=claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ @ 175e98bbea | Claude/init brandme architecture 011 cuutwsz2w2 q6f wxq fj vr j
+#  5 closed merged=False draft=False base=main                                          head=claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ @ 34293a1925 | feat: Complete Tier 3 Infrastructure & Operations implementation
+#  6 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ 6ad8f0de1a | feat: Complete core operational loop and human governance review
+#  7 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ d74bc94413 | refactor: Production-ready services with comprehensive error handling…
+#  8 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ e840c7877b | feat: Add Next.js 14 frontend with blockchain-verified garment passpor
+#  9 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ d74d91081a | refactor: Production-ready services with comprehensive error handling…
+# 10 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ 0b9b131e82 | Claude/update brandme architecture 011 cuv3 j7 zu h he n54 l knu83 h
+# 11 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ d12d04d347 | Claude/update brandme architecture 011 cuv3 j7 zu h he n54 l knu83 h
+# 12 closed merged=False draft=False base=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H head=main @ af528b9bab | Create master sync
+# 13 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ 3d2ef63621 | Claude/update brandme architecture 011 cuv3 j7 zu h he n54 l knu83 h
+# 14 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ b5d63eeddf | Claude/update brandme architecture 011 cuv3 j7 zu h he n54 l knu83 h
+# 15 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ b5d63eeddf | Claude/update brandme architecture 011 cuv3 j7 zu h he n54 l knu83 h
+# 16 closed merged=False draft=False base=main                                          head=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H @ 39d42bfdf0 | feat: Brand.Me v7 — Stable Integrity Spine hardening for docker-compos
+# 17 closed merged=False draft=False base=claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H head=main @ 08a80c53f9 | Merge all
+# 18 closed merged=False draft=False base=main                                          head=claude/integrate-product-cube-service-011CUWYES9s7CKS2iHFkKBG8 @ 991b2e4c39 | Claude/integrate product cube service 011 cuwyes9s7 cks2i h fk kbg8
+# 19 closed merged=False draft=False base=main                                          head=claude/spanner-firestore-refactor-1s5D7 @ d59b1be920 | Architectural refactor: Global Integrity Spine with Spanner + Firestor
+# 20 closed merged=False draft=False base=main                                          head=claude/spanner-firestore-refactor-1s5D7 @ 1a9951d052 | v8 Golden Codebase: Unified Spanner + Firestore Architecture
+# 21 closed merged=False draft=False base=main                                          head=claude/spanner-firestore-refactor-1s5D7 @ a60a32d46d |  v9 2030 Agentic & Circular Economy
+# 22 closed merged=False draft=False base=main                                          head=claude/spanner-firestore-refactor-1s5D7 @ 2906eb8b35 | Claude/spanner firestore refactor 1s5 d7
+# 23 closed merged=False draft=False base=main                                          head=claude/integrate-product-cube-service-011CUWYES9s7CKS2iHFkKBG8 @ 47f1ae4d6c | Claude/integrate product cube service 011 cuwyes9s7 cks2i h fk kbg8
+# 24 closed merged=False draft=False base=main                                          head=claude/spanner-firestore-refactor-1s5D7 @ 09eeee2bf0 | Claude/spanner firestore refactor 1s5 d7
+# 25 closed merged=False draft=False base=main                                          head=claude/spanner-firestore-refactor-1s5D7 @ 4cd6bb209a | Claude/spanner firestore refactor 1s5 d7
+# 26 closed merged=False draft=False base=main                                          head=claude/setup-design-system-cli-6iovG @ 1733fccc13 | Claude/setup design system cli 6iov g
+# 27 closed merged=False draft=False base=main                                          head=claude/understand-repo-purpose-wcGa7 @ d2ef790bbe | Claude/understand repo purpose wc ga7
+# 28 closed merged=False draft=False base=main                                          head=codex/explain-execution-details-and-next-steps @ 15ae7bf3ce | Add module-regression CI and restore/stabilize multiple services, test
+# 29 open   merged=False draft=True  base=main                                          head=claude/brand-me-lux-foundations-audit-8zywr3 @ eed6737062 | Audit all repos; lift Lux platform foundation into brandme_foundation/
+# 30 closed merged=False draft=False base=main                                          head=claude/ci-repair-workflows @ 512021c35a | ci: repair the five workflow-config faults keeping CI red since Januar
+# 31 closed merged=False draft=False base=main                                          head=docs/brandme-full-experience-2026-10-05 @ 4511236afb | Define the complete Brand.Me experience for Claude implementation
+# 32 closed merged=False draft=False base=bench/opus-consumer-domains-20261005          head=claude/opus-consumer-domains-1csp2g @ f394853330 | opus-consumer-domains: persona domain (W03 backend) — stage 1
+# 33 closed merged=False draft=False base=bench/opus-foundation-20261005                head=claude/opus-foundation-w00-2hgiw5 @ 4d1634af12 | opus-foundation: honest baseline + mode guard, contracts/workspace, pe
+# 34 closed merged=False draft=False base=bench/opus-midnight-rights-20261005           head=claude/midnight-rights-lifecycle-yhfyyu @ 2d5c773f38 | W09/W10: real Midnight rights contract, adapter and My Data framework 
+# 35 closed merged=False draft=False base=bench/opus-commerce-agents-20261005           head=claude/opus-commerce-agents-setup-szpmf7 @ 102098124d | opus-commerce-agents: bounded commerce, providers, MCP authz, AP2 v0.2
+# 36 closed merged=False draft=False base=docs/brandme-full-experience-2026-10-05       head=bench/astra-spatial-ar-20261005 @ ceb6ed6f78 | feat(spatial): original closet, local pose and gated development previ
+# 37 closed merged=False draft=False base=main                                          head=triage/pnpm-workspace-frontend-20261008 @ 64d5fd6ca1 | [triage] fix Module Regression: add brandme-frontend to pnpm workspace
+# 39 closed merged=False draft=False base=main                                          head=fix/property-test-vacuity-guard-flake @ a699331df5 | Fix property-test vacuity guard flake (consumeReprintAllowance)
+# 40 closed merged=False draft=False base=main                                          head=claude/midnight-rights-lifecycle-yhfyyu @ 7f02bc8e58 | test(contracts): make the honest reprint path reachable in the random 
+# 41 closed merged=False draft=False base=main                                          head=claude/midnight-rights-lifecycle-yhfyyu @ 9307f97b38 | ci(chain): repair Chain Service Tests; record re-verification on main 
+# 42 closed merged=False draft=False base=main                                          head=codex/docker-pipeline-20261022 @ a5373d5c0e | fix(ci): build and verify all Docker images before publishing
+# 43 closed merged=False draft=False base=main                                          head=codex/midnight-integration-20261022 @ 32e63d4d87 | feat(integration): secure rights routes, wire domain events, and updat
+# 44 closed merged=False draft=False base=main                                          head=codex/durable-chain-reconciliation-20261022 @ e2dcbdd3a9 | feat(chain): persist operations and reconcile authenticated transactio
+# 45 closed merged=False draft=False base=main                                          head=codex/chain-projection-worker-20261022 @ e96356eaff | feat(chain): reconcile durable operations and project finalized entitl
+# 46 closed merged=False draft=False base=main                                          head=codex/critical-dependency-repairs-20261022 @ 542b52cc12 | fix(security): patch production dependencies and gate image publishing
+# 47 closed merged=False draft=False base=main                                          head=codex/durable-outbox-pubsub-20261022 @ 6536778913 | feat(events): deliver durable outbox events through fenced Pub/Sub wor
+# 48 closed merged=False draft=False base=main                                          head=codex/privacy-recovery-safety-20261023 @ e6274ef5a1 | fix(privacy): preserve deletion freezes and resume incomplete restores
+# 49 closed merged=False draft=False base=main                                          head=codex/rights-privacy-read-api @ 10a468395c | feat(reads): add authenticated rights and partial My Data backend
+# 50 closed merged=False draft=False base=main                                          head=codex/rights-export-worker @ 02297b2cea | feat(privacy): add durable selected rights exports and authenticated d
+# 51 closed merged=False draft=False base=main                                          head=claude/opus-commerce-agents-setup-szpmf7 @ 2fd6b291e5 | opus-commerce-agents round 2: foundation adoption, payments/fulfillmen
+# 52 closed merged=False draft=False base=main                                          head=claude/opus-consumer-domains-1csp2g @ 2c5cac707a | opus-consumer-domains: persona, wardrobe, social, rewards, try-on serv
+# 53 closed merged=False draft=False base=main                                          head=claude/opus-foundation-w00-2hgiw5 @ 744d593be7 | opus-foundation round 2: Firestore projections, security rules, log re
+# 54 closed merged=False draft=False base=main                                          head=claude/midnight-rights-lifecycle-yhfyyu @ ecece17711 | chore(chain): re-pin Midnight tuple to the current support matrix (Sta
+# 55 closed merged=False draft=False base=bench/astra-spatial-ar-20261005               head=triage/pnpm-version-conflict-20261023 @ 114470007e | [triage] module-regression: drop pnpm version pin conflicting with pac
+# 56 closed merged=False draft=False base=main                                          head=bench/astra-consumer-ui-20261005 @ cccfe7b4b4 | feat(ui): consumer journeys, foundation integration and versioned shel
+# 57 closed merged=False draft=False base=main                                          head=mia/orchestration-20261023 @ 27f3215a9c | orchestration: direct-trigger protocol, merge log, next assignments, f
+# 58 closed merged=False draft=False base=main                                          head=claude/opus-foundation-w00-2hgiw5 @ da3f1972ce | opus-foundation round 3: honest CI, workspace guard, GKE packet, secre
+# 59 closed merged=False draft=False base=main                                          head=claude/opus-consumer-domains-1csp2g @ b61d5720b3 | opus-consumer-domains: GCS media store on a local GCS emulator (Q19)
+# 60 closed merged=False draft=False base=main                                          head=bench/astra-spatial-ar-20261005 @ 3eddd28678 | feat(spatial): implement guest fit ladder, Pod model and scan boundari
+# 61 closed merged=False draft=False base=main                                          head=claude/opus-consumer-domains-1csp2g @ 1011d74e05 | consumer domains: mount the lane routers behind foundation auth (Ultra
+# 62 closed merged=False draft=False base=main                                          head=claude/opus-foundation-w00-2hgiw5 @ f5c906ab16 | Foundation round 4: Q8 lane outbox catalogs, Q9 deletion purge, #61 fl
+# 63 open   merged=False draft=True  base=main                                          head=codex/consumer-design-preview @ 0ff12fbdbc | feat(consumer): preview three rooms, private style card and optional h
+# 64 closed merged=False draft=False base=main                                          head=claude/opus-commerce-agents-setup-szpmf7 @ 161f6eb649 | opus-commerce-agents round 3: audit closure, autonomy boundaries, part
+# 65 closed merged=False draft=False base=main                                          head=codex/console-contract-publication @ 06d8fc13f3 | fix(console): publish shell contract 1.1.1
+# 66 open   merged=False draft=False base=main                                          head=claude/opus-consumer-domains-1csp2g @ babb3604ae | consumer domains: Now, Flow, loyalty, surveys and credit, persona card
+# 67 closed merged=False draft=False base=main                                          head=mia/next-plans-20261025 @ 057320d4bf | orchestration: round-03 next plans (ultra + oneshot) for all six lanes
+# 68 closed merged=False draft=False base=main                                          head=mia/pipeline-seed-20261030 @ 5e9eceb675 | orchestration: seed continuous build pipeline state file
+# 69 closed merged=False draft=False base=main                                          head=bench/astra-spatial-ar-20261005 @ 1413178b7f | Add passport claims transport and private garment evidence intake
+# 70 open   merged=False draft=True  base=main                                          head=claude/midnight-rights-lifecycle-yhfyyu @ a05f2e03e5 | midnight-rights round 03: finality, anchor record and disclosure enfor
+# 71 open   merged=False draft=True  base=main                                          head=claude/amazing-goodall-ntrljq @ 8360813e23 | Stripe Connect: plan + brands flow (direct charges, test mode)
+# 72 open   merged=False draft=True  base=main                                          head=claude/exciting-hypatia-wl48op @ e033950bc6 | Pin follow-redirects and gaxios overrides to clear prod audit
+
+### $ python3 -I checkH.py (per PR: git cat-file -e <head>; git merge-base --is-ancestor <head> origin/main; if not: git merge-base origin/main <head>; git diff --name-only <mb> <head>; git diff --name-only <head> origin/main -- <paths>)
+# exit=0
+num|state|merged_at|closed_at|head_ref|head_sha|in_clone|ancestor_of_main|mb|paths_touched|paths_still_differ_vs_main|verdict
+#1|closed|2025-10-25T23:17:43Z|2025-10-25T23:17:43Z|claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ|f1a7a4d084|True|True||None|None|
+#2|closed|None|2025-10-25T22:31:39Z|codex/regenerate-worker.py-and-main.py-files|4e7a0bb74e|True|False|f7ee454bc8|2|2|2/2 touched paths differ vs main now (0 absent in main)
+#3|closed|2025-10-25T23:47:53Z|2025-10-25T23:47:53Z|claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ|df5f3e2f08|True|True||None|None|
+#4|closed|2025-10-26T00:22:32Z|2025-10-26T00:22:32Z|claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ|175e98bbea|True|True||None|None|
+#5|closed|2025-10-26T01:52:06Z|2025-10-26T01:52:06Z|claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ|34293a1925|True|True||None|None|
+#6|closed|2025-10-26T02:58:25Z|2025-10-26T02:58:25Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|6ad8f0de1a|True|True||None|None|
+#7|closed|2025-10-26T03:10:30Z|2025-10-26T03:10:31Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|d74bc94413|True|True||None|None|
+#8|closed|2025-10-26T03:45:32Z|2025-10-26T03:45:33Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|e840c7877b|True|True||None|None|
+#9|closed|2025-10-26T04:07:39Z|2025-10-26T04:07:39Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|d74d91081a|True|True||None|None|
+#10|closed|2025-10-26T05:02:01Z|2025-10-26T05:02:01Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|0b9b131e82|True|True||None|None|
+#11|closed|2025-10-26T05:28:13Z|2025-10-26T05:28:13Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|d12d04d347|True|True||None|None|
+#12|closed|2025-10-26T06:31:12Z|2025-10-26T06:31:12Z|main|af528b9bab|True|True||None|None|
+#13|closed|2025-10-26T06:34:08Z|2025-10-26T06:34:08Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|3d2ef63621|True|False|5a03714924|0|None|empty diff vs merge-base
+#14|closed|2025-10-26T07:13:11Z|2025-10-26T07:13:11Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|b5d63eeddf|True|True||None|None|
+#15|closed|2025-10-26T07:15:50Z|2025-10-26T07:15:50Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|b5d63eeddf|True|True||None|None|
+#16|closed|2025-10-26T07:33:09Z|2025-10-26T07:33:09Z|claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H|39d42bfdf0|True|True||None|None|
+#17|closed|2025-10-26T07:35:49Z|2025-10-26T07:35:49Z|main|08a80c53f9|True|True||None|None|
+#18|closed|2025-10-26T22:48:37Z|2025-10-26T22:48:37Z|claude/integrate-product-cube-service-011CUWYES9s7CKS2iHFkKBG8|991b2e4c39|True|False|c0e72a18fa|33|8|8/33 touched paths differ vs main now (0 absent in main)
+#19|closed|2026-01-19T21:09:00Z|2026-01-19T21:09:00Z|claude/spanner-firestore-refactor-1s5D7|d59b1be920|True|False|0f69676739|22|9|9/22 touched paths differ vs main now (0 absent in main)
+#20|closed|2026-01-19T23:52:50Z|2026-01-19T23:52:50Z|claude/spanner-firestore-refactor-1s5D7|1a9951d052|True|False|7322f93c70|24|14|14/24 touched paths differ vs main now (6 absent in main)
+#21|closed|2026-01-20T01:25:20Z|2026-01-20T01:25:20Z|claude/spanner-firestore-refactor-1s5D7|a60a32d46d|True|False|3e3e350fca|17|10|10/17 touched paths differ vs main now (0 absent in main)
+#22|closed|2026-01-20T02:42:49Z|2026-01-20T02:42:49Z|claude/spanner-firestore-refactor-1s5D7|2906eb8b35|True|False|a2f9fb490a|9|6|6/9 touched paths differ vs main now (0 absent in main)
+#23|closed|2026-01-20T02:54:34Z|2026-01-20T02:54:34Z|claude/integrate-product-cube-service-011CUWYES9s7CKS2iHFkKBG8|47f1ae4d6c|True|False|3b8eeec213|11|7|7/11 touched paths differ vs main now (0 absent in main)
+#24|closed|2026-01-20T04:18:39Z|2026-01-20T04:18:39Z|claude/spanner-firestore-refactor-1s5D7|09eeee2bf0|True|False|ce80bf902e|9|6|6/9 touched paths differ vs main now (0 absent in main)
+#25|closed|2026-01-20T04:38:14Z|2026-01-20T04:38:14Z|claude/spanner-firestore-refactor-1s5D7|4cd6bb209a|True|False|c0419e5aad|7|1|1/7 touched paths differ vs main now (0 absent in main)
+#26|closed|2026-04-27T01:29:39Z|2026-04-27T01:29:39Z|claude/setup-design-system-cli-6iovG|1733fccc13|True|False|8f8a2b7cfa|34|2|2/34 touched paths differ vs main now (0 absent in main)
+#27|closed|2026-04-27T02:46:10Z|2026-04-27T02:46:11Z|claude/understand-repo-purpose-wcGa7|d2ef790bbe|True|False|2faae4c11a|4|4|4/4 touched paths differ vs main now (0 absent in main)
+#28|closed|2026-04-27T04:32:35Z|2026-04-27T04:32:35Z|codex/explain-execution-details-and-next-steps|15ae7bf3ce|True|False|4335e27077|38|15|15/38 touched paths differ vs main now (3 absent in main)
+#29|open|None|None|claude/brand-me-lux-foundations-audit-8zywr3|eed6737062|True|False|0f5f58a9ee|24|23|23/24 touched paths differ vs main now (22 absent in main)
+#30|closed|2026-10-07T12:36:15Z|2026-10-07T12:36:15Z|claude/ci-repair-workflows|512021c35a|True|True||None|None|
+#31|closed|2026-10-08T22:32:19Z|2026-10-08T22:32:19Z|docs/brandme-full-experience-2026-10-05|4511236afb|True|True||None|None|
+#32|closed|2026-10-07T12:35:43Z|2026-10-07T12:35:43Z|claude/opus-consumer-domains-1csp2g|f394853330|True|True||None|None|
+#33|closed|2026-10-05T19:52:26Z|2026-10-05T19:52:26Z|claude/opus-foundation-w00-2hgiw5|4d1634af12|True|True||None|None|
+#34|closed|2026-10-06T12:03:28Z|2026-10-06T12:03:28Z|claude/midnight-rights-lifecycle-yhfyyu|2d5c773f38|True|True||None|None|
+#35|closed|2026-10-06T12:03:23Z|2026-10-06T12:03:23Z|claude/opus-commerce-agents-setup-szpmf7|102098124d|True|True||None|None|
+#36|closed|2026-10-23T18:18:47Z|2026-10-23T18:18:47Z|bench/astra-spatial-ar-20261005|ceb6ed6f78|True|True||None|None|
+#37|closed|None|2026-10-08T22:32:27Z|triage/pnpm-workspace-frontend-20261008|64d5fd6ca1|True|False|f5c6dd9228|2|2|2/2 touched paths differ vs main now (0 absent in main)
+#39|closed|2026-10-10T18:30:38Z|2026-10-10T18:30:38Z|fix/property-test-vacuity-guard-flake|a699331df5|True|False|99fc2fa202|1|1|1/1 touched paths differ vs main now (0 absent in main)
+#40|closed|2026-10-10T21:01:16Z|2026-10-10T21:01:16Z|claude/midnight-rights-lifecycle-yhfyyu|7f02bc8e58|True|False|49623e4e37|2|1|1/2 touched paths differ vs main now (0 absent in main)
+#41|closed|2026-10-22T21:39:04Z|2026-10-22T21:39:04Z|claude/midnight-rights-lifecycle-yhfyyu|9307f97b38|True|False|6044818c14|3|2|2/3 touched paths differ vs main now (0 absent in main)
+#42|closed|2026-10-22T22:11:16Z|2026-10-22T22:11:16Z|codex/docker-pipeline-20261022|a5373d5c0e|True|False|b294e9e474|13|6|6/13 touched paths differ vs main now (0 absent in main)
+#43|closed|2026-10-22T22:45:29Z|2026-10-22T22:45:29Z|codex/midnight-integration-20261022|32e63d4d87|True|False|1ac8f97da6|40|27|27/40 touched paths differ vs main now (0 absent in main)
+#44|closed|2026-10-22T23:21:45Z|2026-10-22T23:21:45Z|codex/durable-chain-reconciliation-20261022|e2dcbdd3a9|True|False|a2e625a104|31|22|22/31 touched paths differ vs main now (0 absent in main)
+#45|closed|2026-10-22T23:45:42Z|2026-10-22T23:45:42Z|codex/chain-projection-worker-20261022|e96356eaff|True|False|238f65a357|23|6|6/23 touched paths differ vs main now (0 absent in main)
+#46|closed|2026-10-23T00:20:00Z|2026-10-23T00:20:00Z|codex/critical-dependency-repairs-20261022|542b52cc12|True|False|74e137534b|12|10|10/12 touched paths differ vs main now (0 absent in main)
+#47|closed|2026-10-23T02:28:26Z|2026-10-23T02:28:26Z|codex/durable-outbox-pubsub-20261022|6536778913|True|False|fbadf01215|18|12|12/18 touched paths differ vs main now (0 absent in main)
+#48|closed|2026-10-23T03:10:59Z|2026-10-23T03:10:59Z|codex/privacy-recovery-safety-20261023|e6274ef5a1|True|False|1a4cfd1d14|10|5|5/10 touched paths differ vs main now (0 absent in main)
+#49|closed|2026-10-23T03:57:06Z|2026-10-23T03:57:06Z|codex/rights-privacy-read-api|10a468395c|True|False|f4a4015f18|29|17|17/29 touched paths differ vs main now (0 absent in main)
+#50|closed|2026-10-23T04:47:37Z|2026-10-23T04:47:37Z|codex/rights-export-worker|02297b2cea|True|False|20bf3e95af|30|7|7/30 touched paths differ vs main now (0 absent in main)
+#51|closed|2026-10-25T01:58:44Z|2026-10-25T01:58:44Z|claude/opus-commerce-agents-setup-szpmf7|2fd6b291e5|True|True||None|None|
+#52|closed|2026-10-24T02:10:43Z|2026-10-24T02:10:43Z|claude/opus-consumer-domains-1csp2g|2c5cac707a|True|True||None|None|
+#53|closed|2026-10-23T18:06:39Z|2026-10-23T18:06:39Z|claude/opus-foundation-w00-2hgiw5|744d593be7|True|True||None|None|
+#54|closed|2026-10-23T18:11:05Z|2026-10-23T18:11:05Z|claude/midnight-rights-lifecycle-yhfyyu|ecece17711|True|True||None|None|
+#55|closed|None|2026-10-23T15:19:27Z|triage/pnpm-version-conflict-20261023|114470007e|True|False|6899d88202|1|1|1/1 touched paths differ vs main now (0 absent in main)
+#56|closed|2026-10-25T02:49:40Z|2026-10-25T02:49:41Z|bench/astra-consumer-ui-20261005|cccfe7b4b4|True|True||None|None|
+#57|closed|2026-10-23T18:41:59Z|2026-10-23T18:41:59Z|mia/orchestration-20261023|27f3215a9c|True|True||None|None|
+#58|closed|2026-10-24T01:41:27Z|2026-10-24T01:41:27Z|claude/opus-foundation-w00-2hgiw5|da3f1972ce|True|True||None|None|
+#59|closed|2026-10-24T04:10:31Z|2026-10-24T04:10:31Z|claude/opus-consumer-domains-1csp2g|b61d5720b3|True|True||None|None|
+#60|closed|2026-10-30T14:18:36Z|2026-10-30T14:18:36Z|bench/astra-spatial-ar-20261005|3eddd28678|True|True||None|None|
+#61|closed|2026-10-25T03:23:01Z|2026-10-25T03:23:01Z|claude/opus-consumer-domains-1csp2g|1011d74e05|True|True||None|None|
+#62|closed|2026-10-30T12:38:57Z|2026-10-30T12:38:57Z|claude/opus-foundation-w00-2hgiw5|f5c906ab16|True|True||None|None|
+#63|open|None|None|codex/consumer-design-preview|0ff12fbdbc|True|False|77280249df|23|23|23/23 touched paths differ vs main now (11 absent in main)
+#64|closed|2026-10-25T14:10:40Z|2026-10-25T14:10:40Z|claude/opus-commerce-agents-setup-szpmf7|161f6eb649|True|True||None|None|
+#65|closed|2026-10-25T03:04:06Z|2026-10-25T03:04:06Z|codex/console-contract-publication|06d8fc13f3|True|True||None|None|
+#66|open|None|None|claude/opus-consumer-domains-1csp2g|babb3604ae|True|False|97d54477f7|71|71|71/71 touched paths differ vs main now (23 absent in main)
+#67|closed|2026-10-30T03:47:05Z|2026-10-30T03:47:05Z|mia/next-plans-20261025|057320d4bf|True|True||None|None|
+#68|closed|2026-10-30T16:35:08Z|2026-10-30T16:35:08Z|mia/pipeline-seed-20261030|5e9eceb675|True|True||None|None|
+#69|closed|2026-10-30T15:49:15Z|2026-10-30T15:49:15Z|bench/astra-spatial-ar-20261005|1413178b7f|True|True||None|None|
+#70|open|None|None|claude/midnight-rights-lifecycle-yhfyyu|a05f2e03e5|True|False|ed19dc151d|35|35|35/35 touched paths differ vs main now (13 absent in main)
+#71|open|None|None|claude/amazing-goodall-ntrljq|8360813e23|True|False|ed19dc151d|9|9|9/9 touched paths differ vs main now (3 absent in main)
+#72|open|None|None|claude/exciting-hypatia-wl48op|e033950bc6|True|False|ed19dc151d|2|2|2/2 touched paths differ vs main now (0 absent in main)
+
+### $ check G: git rev-parse <ref> vs GitHub head sha (mcp__github__pull_request_read get for 63,66,70,71); PR 72 presence check
+# exit=0 (see notes)
+### $ git log origin/main --format='%h %cI %s' | grep -E '#[0-9]+'
+# exit=0 lines=60
+ed19dc1 2026-10-30T12:35:08-04:00 Merge pull request #68 from brandmeonline/mia/pipeline-seed-20261030
+b86c016 2026-10-30T11:49:14-04:00 Merge pull request #69: passport transport and private garment evidence intake
+5e9eceb 2026-10-30T11:17:44-04:00 orchestration: refresh pipeline state — #60 merged, main c902317, #66 undrafted but held
+c902317 2026-10-30T10:18:35-04:00 Merge pull request #60: guest fit ladder, Pod model and scan boundaries
+97d5447 2026-10-30T08:38:57-04:00 Merge pull request #62 from brandmeonline/claude/opus-foundation-w00-2hgiw5
+22ff053 2026-10-29T23:47:04-04:00 Merge pull request #67 from brandmeonline/mia/next-plans-20261025
+5d8253c 2026-10-27T00:53:40+00:00 Q8: pin commerce-agents at 7 contracts after #64
+987837b 2026-10-27T00:51:30+00:00 Merge origin/main (bd8215a, #64 commerce round 3) into the foundation round-4 branch
+bd8215a 2026-10-25T10:10:40-04:00 Merge pull request #64 from brandmeonline/claude/opus-commerce-agents-setup-szpmf7
+b4fed4d 2026-10-25T04:32:47+00:00 events: commerce catalog is required now that PR #51 is merged (Q8 finish)
+2b5ae88 2026-10-24T23:23:00-04:00 Merge pull request #61 from brandmeonline/claude/opus-consumer-domains-1csp2g
+7728024 2026-10-24T23:04:05-04:00 Merge pull request #65 from brandmeonline/codex/console-contract-publication
+b9f483b 2026-10-24T22:49:40-04:00 Merge pull request #56 from brandmeonline/bench/astra-consumer-ui-20261005
+8a2aec8 2026-10-25T02:23:16+00:00 docs(status): S23 item 1 done by the founder; #51 merged as 7c4c1cd
+7c4c1cd 2026-10-24T21:58:44-04:00 Merge pull request #51 from brandmeonline/claude/opus-commerce-agents-setup-szpmf7
+a4f7ef0 2026-10-24T01:43:59+00:00 Merge main (47cdba7, #58) into consumer-domains
+47cdba7 2026-10-23T21:41:26-04:00 Merge pull request #58 from brandmeonline/claude/opus-foundation-w00-2hgiw5
+7f7316e 2026-10-23T23:22:05+00:00 Merge main (48686d2: #54 and orchestration docs) into opus-consumer-domains
+b313731 2026-10-23T14:18:46-04:00 feat(spatial): original closet, local pose and gated development preview flows (#36)
+1c83c80 2026-10-23T14:14:00-04:00 orchestration: next assignment for consumer-domains lane, PR #52 conflict resolution (Mia)
+0c3d7ea 2026-10-23T14:11:05-04:00 Merge pull request #54 from brandmeonline/claude/midnight-rights-lifecycle-yhfyyu
+1f0d738 2026-10-23T14:06:39-04:00 Merge pull request #53 from brandmeonline/claude/opus-foundation-w00-2hgiw5
+5174ec2 2026-10-23T00:47:36-04:00 feat(privacy): add durable selected rights exports and authenticated downloads (#50)
+20bf3e9 2026-10-22T23:57:05-04:00 feat(reads): add authenticated rights and partial My Data backend (#49)
+f4a4015 2026-10-22T23:10:58-04:00 fix(privacy): preserve deletion freezes and resume incomplete restores safely (#48)
+1a4cfd1 2026-10-22T22:28:25-04:00 feat(events): deliver durable outbox events through fenced Pub/Sub worker (#47)
+fbadf01 2026-10-22T20:19:59-04:00 fix(security): patch production dependencies and gate image publishing on audits (#46)
+74e1375 2026-10-22T19:45:42-04:00 feat(chain): reconcile durable operations and project finalized entitlements (#45)
+238f65a 2026-10-22T19:21:44-04:00 feat(chain): persist operations and reconcile authenticated transaction evidence (#44)
+a2e625a 2026-10-22T18:45:29-04:00 feat(integration): secure rights routes, wire domain events, and update Preprod (#43)
+1ac8f97 2026-10-22T18:11:16-04:00 fix(ci): build and verify all Docker images before publishing (#42)
+b294e9e 2026-10-22T17:39:03-04:00 ci(chain): repair and verify the Midnight chain gate (#41)
+6044818 2026-10-10T17:01:16-04:00 test(contracts): make the honest reprint path reachable in the random property (#40)
+49623e4 2026-10-10T14:30:38-04:00 fix(tests): make property-test vacuity guard deterministic (#39)
+67327e4 2026-10-05T20:13:47-04:00 fix(foundation): test migrations against V001-only fixture; validate reserved numbers 1-9 (founder patch from 
+9f242b9 2026-10-05T20:08:56+00:00 ci: port PR #30 fixes for pnpm setup, gateway test env and SARIF upload
+3704ec7 2026-10-05T15:54:21-04:00 docs(foundation): record PR #33 merge unblocking downstream lanes
+0f5f58a 2026-04-26T21:32:35-07:00 Add MCP commerce mandate and cart tool handlers (#28)
+4335e27 2026-04-26T19:46:10-07:00 Claude/understand repo purpose wc ga7 (#27)
+2faae4c 2026-04-26T18:29:38-07:00 Claude/setup design system cli 6iov g (#26)
+8f8a2b7 2026-01-19T20:38:14-08:00 Claude/spanner firestore refactor 1s5 d7 (#25)
+c0419e5 2026-01-19T20:18:39-08:00 Claude/spanner firestore refactor 1s5 d7 (#24)
+ce80bf9 2026-01-19T18:54:34-08:00 Claude/integrate product cube service 011 cuwyes9s7 cks2i h fk kbg8 (#23)
+3b8eeec 2026-01-19T18:42:49-08:00 Claude/spanner firestore refactor 1s5 d7 (#22)
+a2f9fb4 2026-01-19T17:25:20-08:00  v9 2030 Agentic & Circular Economy (#21)
+3e3e350 2026-01-19T15:52:50-08:00 v8 Golden Codebase: Unified Spanner + Firestore Architecture (#20)
+7322f93 2026-01-19T13:09:00-08:00 Architectural refactor: Global Integrity Spine with Spanner + Firestore (#19)
+0f69676 2025-10-26T15:48:37-07:00 Claude/integrate product cube service 011 cuwyes9s7 cks2i h fk kbg8 (#18)
+08a80c5 2025-10-26T00:33:09-07:00 Merge pull request #16 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+bac0999 2025-10-26T00:15:50-07:00 Merge pull request #15 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+fcffc95 2025-10-26T00:13:11-07:00 Claude/update brandme architecture 011 cuv3 j7 zu h he n54 l knu83 h (#14)
+af528b9 2025-10-25T22:28:13-07:00 Merge pull request #11 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+cbe1b69 2025-10-25T22:02:01-07:00 Merge pull request #10 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+91c151a 2025-10-25T20:45:32-07:00 Merge pull request #8 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+a35c13a 2025-10-25T20:10:30-07:00 Merge pull request #7 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+093d39c 2025-10-25T19:58:25-07:00 Merge pull request #6 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+0dccf51 2025-10-25T18:52:06-07:00 Merge pull request #5 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+90af9c5 2025-10-25T17:22:32-07:00 Merge pull request #4 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+a5d4bb8 2025-10-25T16:47:53-07:00 Merge pull request #3 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+0beac40 2025-10-25T16:17:43-07:00 Merge pull request #1 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+
+### $ git log origin/main --merges --format='%h %cI %s'
+# exit=0 lines=74
+ed19dc1 2026-10-30T12:35:08-04:00 Merge pull request #68 from brandmeonline/mia/pipeline-seed-20261030
+b86c016 2026-10-30T11:49:14-04:00 Merge pull request #69: passport transport and private garment evidence intake
+c902317 2026-10-30T10:18:35-04:00 Merge pull request #60: guest fit ladder, Pod model and scan boundaries
+3fe809f 2026-10-30T06:43:14-07:00 merge: reconcile spatial lane with foundation main 97d54477
+97d5447 2026-10-30T08:38:57-04:00 Merge pull request #62 from brandmeonline/claude/opus-foundation-w00-2hgiw5
+9dad104 2026-10-30T05:09:14+00:00 Merge wip/opsfix: deploy checklist and runbook verifies fail loudly; consumer-domains in the packet
+e5ccf5e 2026-10-30T03:52:52+00:00 Merge origin/main (22ff053, round-03 plans) into the foundation round-4 branch
+22ff053 2026-10-29T23:47:04-04:00 Merge pull request #67 from brandmeonline/mia/next-plans-20261025
+987837b 2026-10-27T00:51:30+00:00 Merge origin/main (bd8215a, #64 commerce round 3) into the foundation round-4 branch
+dbf0b58 2026-10-27T00:51:19+00:00 Merge wip/ops into the foundation round-4 branch
+c219893 2026-10-27T00:51:17+00:00 Merge wip/d61 into the foundation round-4 branch
+a26a8fd 2026-10-27T00:51:17+00:00 Merge wip/f9 into the foundation round-4 branch
+fb65c63 2026-10-27T00:51:17+00:00 Merge wip/f8 into the foundation round-4 branch
+4fe50a5 2026-10-27T00:51:16+00:00 Merge wip/r4-integrated into the foundation round-4 branch
+bd8215a 2026-10-25T10:10:40-04:00 Merge pull request #64 from brandmeonline/claude/opus-commerce-agents-setup-szpmf7
+26b01c3 2026-10-25T04:23:29+00:00 Merge origin/main (2b5ae88: consumer-domains routers) into opus-commerce-agents round 3
+bf31c98 2026-10-25T04:23:20+00:00 Merge wip/q9: outbox retention job and platform erasure on account deletion (Q9)
+1f0e353 2026-10-25T04:23:13+00:00 Merge wip/q8: foundation worker loads every lane outbox catalog (Q8)
+2c35b55 2026-10-25T04:22:12+00:00 Merge origin/main (2b5ae88) into the foundation round-4 branch
+2b5ae88 2026-10-24T23:23:00-04:00 Merge pull request #61 from brandmeonline/claude/opus-consumer-domains-1csp2g
+5c21460 2026-10-25T03:22:23+00:00 Merge origin/main (7728024: console shell contract 1.1.1, consumer UI) into opus-commerce-agents round 3
+7728024 2026-10-24T23:04:05-04:00 Merge pull request #65 from brandmeonline/codex/console-contract-publication
+b9f483b 2026-10-24T22:49:40-04:00 Merge pull request #56 from brandmeonline/bench/astra-consumer-ui-20261005
+85318b4 2026-10-24T18:58:59-07:00 Merge remote-tracking branch 'origin/main' into bench/astra-consumer-ui-20261005
+7c4c1cd 2026-10-24T21:58:44-04:00 Merge pull request #51 from brandmeonline/claude/opus-commerce-agents-setup-szpmf7
+8a5931f 2026-10-24T18:57:27-07:00 Merge repaired foundation into consumer UI integration
+1b9d320 2026-10-24T18:41:06-07:00 merge: resync consumer UI with the spatial spec base
+beed01f 2026-10-25T01:25:15+00:00 merge: main (d5b993f) into opus-commerce-agents round 2
+d5b993f 2026-10-24T00:10:30-04:00 opus-consumer-domains: GCS media store on a local GCS emulator (Q19)
+785a19b 2026-10-24T02:36:07+00:00 merge: main (3d4cc0b) into opus-commerce-agents round 2
+3d4cc0b 2026-10-23T22:10:43-04:00 opus-consumer-domains: persona, wardrobe, social, rewards, try-on server, ops console, My Data and event delivery (s
+a4f7ef0 2026-10-24T01:43:59+00:00 Merge main (47cdba7, #58) into consumer-domains
+47cdba7 2026-10-23T21:41:26-04:00 Merge pull request #58 from brandmeonline/claude/opus-foundation-w00-2hgiw5
+65e145e 2026-10-24T01:39:33+00:00 merge: review fixes group C
+56694a2 2026-10-24T01:39:33+00:00 merge: review fixes group B
+739c2d7 2026-10-24T01:39:33+00:00 merge: review fixes group A
+7f7316e 2026-10-23T23:22:05+00:00 Merge main (48686d2: #54 and orchestration docs) into opus-consumer-domains
+beea699 2026-10-23T19:39:43+00:00 merge: stateless model planner, runtime guards, budgets, run log and 202 creates
+f02d78e 2026-10-23T19:33:07+00:00 merge: payments and fulfillment behind the merchant, Stripe test mode over a pinned wire
+48686d2 2026-10-23T14:41:58-04:00 orchestration: direct-trigger protocol, merge log, next assignments, founder questions (2026-10-23)
+b313731 2026-10-23T14:18:46-04:00 feat(spatial): original closet, local pose and gated development preview flows (#36)
+0c3d7ea 2026-10-23T14:11:05-04:00 Merge pull request #54 from brandmeonline/claude/midnight-rights-lifecycle-yhfyyu
+588245b 2026-10-23T18:08:55+00:00 Merge main (1f0d738, foundation round 2) into opus-consumer-domains
+1f0d738 2026-10-23T14:06:39-04:00 Merge pull request #53 from brandmeonline/claude/opus-foundation-w00-2hgiw5
+0f75b18 2026-10-23T17:31:33+00:00 merge: operator provider setup and connection tests into the round 2 lane
+09ad4e1 2026-10-23T17:24:03+00:00 Merge main (5174ec2) into opus-consumer-domains
+e5652e6 2026-10-23T12:20:45-04:00 feat(ui): consume foundation and wire consumer domain journeys
+ce85fd0 2026-10-23T16:08:07+00:00 Merge origin/main into opus-commerce-agents round 2
+3fd3684 2026-10-23T11:45:30+00:00 Merge bench/opus-foundation-20261005 (67327e4) into consumer-domains lane
+3f366f0 2026-10-08T18:32:17-04:00 W11: integrate opus foundation, consumer-domains, commerce and midnight-rights lanes into main
+9078839 2026-10-08T18:21:07-04:00 W11: merge opus-midnight-rights lane (W09/W10) into integration branch
+3cdde59 2026-10-08T18:19:40-04:00 W11: merge opus-commerce-agents lane (W06/W07) into integration branch
+ff2167b 2026-10-08T18:19:04-04:00 W11: merge opus-consumer-domains lane (W03-W05/W08) into integration branch
+2eac4d7 2026-10-08T18:16:36-04:00 W11: merge opus-foundation lane (W00/W01/W02) into integration branch
+f5c6dd9 2026-10-07T08:36:15-04:00 ci: repair the five workflow-config faults keeping CI red since January
+d839267 2026-10-07T08:35:43-04:00 Merge opus-consumer-domains persona W03 into bench branch
+44aacea 2026-10-06T08:03:28-04:00 Merge opus-midnight-rights W09/W10 into bench branch
+7c61afd 2026-10-06T08:03:22-04:00 Merge opus-commerce-agents W06/W07 into bench branch
+1020981 2026-10-06T00:56:24+00:00 Merge bench/opus-foundation-20261005 (67327e4: V001-only migration test fixture)
+bdcbad9 2026-10-05T19:56:43+00:00 Merge bench/opus-foundation-20261005 (opus-foundation W00-W02) into commerce lane
+25dff5c 2026-10-05T15:52:26-04:00 Merge opus-foundation W00-W02 into bench branch
+08a80c5 2025-10-26T00:33:09-07:00 Merge pull request #16 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+bac0999 2025-10-26T00:15:50-07:00 Merge pull request #15 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+b5d63ee 2025-10-26T00:11:11-07:00 Merge branch 'main' into claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+af528b9 2025-10-25T22:28:13-07:00 Merge pull request #11 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+cbe1b69 2025-10-25T22:02:01-07:00 Merge pull request #10 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+0b9b131 2025-10-25T22:00:40-07:00 Merge branch 'main' into claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+91c151a 2025-10-25T20:45:32-07:00 Merge pull request #8 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+a35c13a 2025-10-25T20:10:30-07:00 Merge pull request #7 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+093d39c 2025-10-25T19:58:25-07:00 Merge pull request #6 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+0dccf51 2025-10-25T18:52:06-07:00 Merge pull request #5 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+90af9c5 2025-10-25T17:22:32-07:00 Merge pull request #4 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+a5d4bb8 2025-10-25T16:47:53-07:00 Merge pull request #3 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+0beac40 2025-10-25T16:17:43-07:00 Merge pull request #1 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+
+### $ for ahead branches: git diff --name-only <mb> <ref> | top-level dirs
+# exit=0
+origin/claude/amazing-goodall-ntrljq|brandme_core,docs,tests
+origin/claude/brand-me-lux-foundations-audit-8zywr3|(root),.github,brandme_foundation,docs,tests
+origin/claude/midnight-rights-lifecycle-yhfyyu|(root),brandme-chain,brandme-data,brandme-gateway,brandme_core,docs,tests
+origin/claude/opus-consumer-domains-1csp2g|brandme-console,brandme-data,brandme-gateway,brandme_core,docs,tests
+origin/claude/setup-design-system-cli-6iovG|(root),.claude,.github,brandme-agents,brandme-chain,brandme-core,brandme-cube,brandme-frontend,brandme-gateway,brandme_core,docs,scripts,tests
+origin/codex/chain-projection-worker-20261022|.github,brandme-chain,brandme-data,brandme_core,tests
+origin/codex/consumer-design-preview|brandme-frontend,docs
+origin/codex/critical-dependency-repairs-20261022|(root),.github,brandme-chain,brandme-console,brandme-frontend,brandme-gateway,docs
+origin/codex/docker-pipeline-20261022|(root),.github,brandme-agents,brandme-chain,brandme-console,brandme-core,brandme-gateway
+origin/codex/durable-chain-reconciliation-20261022|(root),.github,brandme-chain,brandme-data,brandme-gateway,brandme_core,tests
+origin/codex/durable-outbox-pubsub-20261022|(root),.github,brandme-chain,brandme-core,brandme-data,brandme_core,scripts,tests
+origin/codex/explain-execution-details-and-next-steps|(root),.github,brandme-agents,brandme-chain,brandme-core,brandme-cube,brandme-frontend,brandme-gateway,brandme_core,docs,scripts,tests
+origin/codex/midnight-integration-20261022|(root),.github,brandme-chain,brandme-core,brandme-data,brandme-gateway,brandme_core,docs,tests
+origin/codex/privacy-recovery-safety-20261023|.github,brandme-chain,brandme-gateway,brandme_core,tests
+origin/codex/rights-export-worker|.github,brandme-data,brandme-gateway,brandme_core,packages,tests
+origin/codex/rights-privacy-read-api|(root),.github,brandme-chain,brandme-gateway,brandme_core,packages,tests
+origin/fix/property-test-vacuity-guard-flake|tests
+origin/triage/pnpm-version-conflict-20261023|.github
+origin/triage/pnpm-workspace-frontend-20261008|(root)
+
+### $ for 0-ahead branches: git merge-base --is-ancestor <ref> origin/main
+# exit=0
+origin/bench/astra-consumer-ui-20261005: ancestor=yes (fully contained in main by ancestry)
+origin/bench/astra-spatial-ar-20261005: ancestor=yes (fully contained in main by ancestry)
+origin/bench/opus-commerce-agents-20261005: ancestor=yes (fully contained in main by ancestry)
+origin/bench/opus-consumer-domains-20261005: ancestor=yes (fully contained in main by ancestry)
+origin/bench/opus-foundation-20261005: ancestor=yes (fully contained in main by ancestry)
+origin/bench/opus-midnight-rights-20261005: ancestor=yes (fully contained in main by ancestry)
+origin/claude/ci-repair-workflows: ancestor=yes (fully contained in main by ancestry)
+origin/claude/opus-commerce-agents-setup-szpmf7: ancestor=yes (fully contained in main by ancestry)
+origin/claude/opus-foundation-w00-2hgiw5: ancestor=yes (fully contained in main by ancestry)
+origin/codex/console-contract-publication: ancestor=yes (fully contained in main by ancestry)
+origin/docs/brandme-full-experience-2026-10-05: ancestor=yes (fully contained in main by ancestry)
+origin/main: ancestor=yes (fully contained in main by ancestry)
+origin/mia/next-plans-20261025: ancestor=yes (fully contained in main by ancestry)
+origin/mia/orchestration-20261023: ancestor=yes (fully contained in main by ancestry)
+origin/mia/pipeline-seed-20261030: ancestor=yes (fully contained in main by ancestry)
+origin/w11/integration-20261008: ancestor=yes (fully contained in main by ancestry)
+
+### $ git log -1 --format=%B 4010ae8 | grep -i revert ; same for b61d572
+# exit=0 (see notes: these are not revert commits; the word appears in body text)
+
+### $ git for-each-ref refs/remotes/origin | wc -l ; grep hypatia ; git for-each-ref --contains e033950bc6
+# exit=0 (re-check after PR #72 appeared in GitHub listing)
+refs/audit-delta/claude/exciting-hypatia-wl48op e033950bc6c572616cfc0902d96a5c7ecaa78ea3
+refs/remotes/origin/claude/exciting-hypatia-wl48op e033950bc6c572616cfc0902d96a5c7ecaa78ea3
+
+### $ squash check: for each (branch, PR, squash commit): git diff --name-only <mb> <head>; git diff --name-only <head> <squash> -- <paths>; git diff --name-only <mb> <squash^> -- <paths>; patch-id of (squash^..squash) vs (mb..head)
+# exit=0
+=== origin/codex/docker-pipeline-20261022  PR#42 squash=1ac8f97 (parent=b294e9e; mb=b294e9e; parent==mb: yes) compared=origin/codex/docker-pipeline-20261022
+    touched_paths=13  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/codex/midnight-integration-20261022  PR#43 squash=a2e625a (parent=1ac8f97; mb=1ac8f97; parent==mb: yes) compared=origin/codex/midnight-integration-20261022
+    touched_paths=40  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/codex/durable-chain-reconciliation-20261022  PR#44 squash=238f65a (parent=a2e625a; mb=a2e625a; parent==mb: yes) compared=origin/codex/durable-chain-reconciliation-20261022
+    touched_paths=31  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/codex/chain-projection-worker-20261022  PR#45 squash=74e1375 (parent=238f65a; mb=238f65a; parent==mb: yes) compared=origin/codex/chain-projection-worker-20261022
+    touched_paths=23  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/codex/critical-dependency-repairs-20261022  PR#46 squash=fbadf01 (parent=74e1375; mb=74e1375; parent==mb: yes) compared=origin/codex/critical-dependency-repairs-20261022
+    touched_paths=12  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/codex/durable-outbox-pubsub-20261022  PR#47 squash=1a4cfd1 (parent=fbadf01; mb=fbadf01; parent==mb: yes) compared=origin/codex/durable-outbox-pubsub-20261022
+    touched_paths=18  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/codex/privacy-recovery-safety-20261023  PR#48 squash=f4a4015 (parent=1a4cfd1; mb=1a4cfd1; parent==mb: yes) compared=origin/codex/privacy-recovery-safety-20261023
+    touched_paths=10  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/codex/rights-privacy-read-api  PR#49 squash=20bf3e9 (parent=f4a4015; mb=f4a4015; parent==mb: yes) compared=origin/codex/rights-privacy-read-api
+    touched_paths=29  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/codex/rights-export-worker  PR#50 squash=5174ec2 (parent=20bf3e9; mb=20bf3e9; parent==mb: yes) compared=origin/codex/rights-export-worker
+    touched_paths=30  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/fix/property-test-vacuity-guard-flake  PR#39 squash=49623e4 (parent=99fc2fa; mb=99fc2fa; parent==mb: yes) compared=origin/fix/property-test-vacuity-guard-flake
+    touched_paths=1  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/codex/explain-execution-details-and-next-steps  PR#28 squash=0f5f58a (parent=4335e27; mb=4335e27; parent==mb: yes) compared=origin/codex/explain-execution-details-and-next-steps
+    touched_paths=38  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+=== origin/claude/setup-design-system-cli-6iovG  PR#26 squash=2faae4c (parent=8f8a2b7; mb=8f8a2b7; parent==mb: yes) compared=refs/pr/26
+    touched_paths=34  tip_vs_squash_differing=0  base_moved_on_those_paths(mb..squash^)=0  range_patchid_equal=yes
+
+### $ check H detail: PR#37 (git diff 64d5fd6 origin/main -- pnpm-workspace.yaml; git show origin/main:pnpm-workspace.yaml; git grep brandme-frontend: origin/main -- pnpm-lock.yaml), PR#55 (git show 1144700 -- .github/workflows/module-regression.yml; git grep pnpm/action-setup origin/main -- .github/workflows/module-regression.yml; git log -S'version: 8'), PR#2 (git diff --stat f7ee454 refs/pr/2; blob compare), PR#13 (git diff --stat 5a03714 refs/pr/13)
+# exit=0 (results in notes.md section H)
+
+### $ git merge-tree --write-tree --name-only origin/main <ref>  (each open-PR branch)
+# exit per line
+origin/claude/opus-consumer-domains-1csp2g -> clean (rc=0)
+origin/claude/midnight-rights-lifecycle-yhfyyu -> clean (rc=0)
+origin/codex/consumer-design-preview -> clean (rc=0)
+origin/claude/amazing-goodall-ntrljq -> clean (rc=0)
+origin/claude/brand-me-lux-foundations-audit-8zywr3 -> clean (rc=0)
+e033950bc6 -> clean (rc=0)
+
+### $ pairwise: comm -12 of touched paths; git merge-tree --write-tree --name-only <a> <b>
+# exit per line
+--- origin/claude/opus-consumer-domains-1csp2g  x  origin/claude/midnight-rights-lifecycle-yhfyyu : overlapping_paths=2 merge-tree=CONFLICT
+     overlap: brandme-data/spanner/migrations/README.md
+     overlap: tests/foundation/test_migrations.py
+     conflict: brandme-data/spanner/migrations/README.md
+     conflict: tests/foundation/test_migrations.py
+     conflict: 
+     conflict: Auto-merging brandme-data/spanner/migrations/README.md
+     conflict: CONFLICT (content): Merge conflict in brandme-data/spanner/migrations/README.md
+     conflict: Auto-merging tests/foundation/test_migrations.py
+     conflict: CONFLICT (content): Merge conflict in tests/foundation/test_migrations.py
+--- origin/claude/opus-consumer-domains-1csp2g  x  origin/codex/consumer-design-preview : overlapping_paths=0 merge-tree=clean
+--- origin/claude/opus-consumer-domains-1csp2g  x  origin/claude/amazing-goodall-ntrljq : overlapping_paths=0 merge-tree=clean
+--- origin/claude/opus-consumer-domains-1csp2g  x  origin/claude/brand-me-lux-foundations-audit-8zywr3 : overlapping_paths=0 merge-tree=clean
+--- origin/claude/opus-consumer-domains-1csp2g  x  e033950bc6 : overlapping_paths=0 merge-tree=clean
+--- origin/claude/midnight-rights-lifecycle-yhfyyu  x  origin/codex/consumer-design-preview : overlapping_paths=0 merge-tree=clean
+--- origin/claude/midnight-rights-lifecycle-yhfyyu  x  origin/claude/amazing-goodall-ntrljq : overlapping_paths=0 merge-tree=clean
+--- origin/claude/midnight-rights-lifecycle-yhfyyu  x  origin/claude/brand-me-lux-foundations-audit-8zywr3 : overlapping_paths=0 merge-tree=clean
+--- origin/claude/midnight-rights-lifecycle-yhfyyu  x  e033950bc6 : overlapping_paths=0 merge-tree=clean
+--- origin/codex/consumer-design-preview  x  origin/claude/amazing-goodall-ntrljq : overlapping_paths=0 merge-tree=clean
+--- origin/codex/consumer-design-preview  x  origin/claude/brand-me-lux-foundations-audit-8zywr3 : overlapping_paths=0 merge-tree=clean
+--- origin/codex/consumer-design-preview  x  e033950bc6 : overlapping_paths=0 merge-tree=clean
+--- origin/claude/amazing-goodall-ntrljq  x  origin/claude/brand-me-lux-foundations-audit-8zywr3 : overlapping_paths=0 merge-tree=clean
+--- origin/claude/amazing-goodall-ntrljq  x  e033950bc6 : overlapping_paths=0 merge-tree=clean
+--- origin/claude/brand-me-lux-foundations-audit-8zywr3  x  e033950bc6 : overlapping_paths=0 merge-tree=clean
+
+### $ PR#2 line presence; V016 headers (git show <ref>:<path>); git grep V016 in test_migrations.py and migrations README across main and both branches; git ls-tree origin/main .github/workflows/; stats for origin/claude/exciting-hypatia-wl48op
+# exit=0 (results in notes.md)
+
+### $ git show <rev>:tests/foundation/test_migrations.py | sed -n 23,27p  (RESERVED dict on main and both V016 branches)
+# exit=0
+--- origin/main
+RESERVED = {1: "identity", 2: "persona", 3: "wardrobe", 4: "social", 5: "rewards", 6: "providers",
+            7: "commerce", 8: "rights", 9: "privacy", 10: "rights_projection_version", 11: "chain_operation_store",
+            12: "chain_reconciliation", 13: "outbox_delivery", 14: "privacy_exports",
+            15: "commerce_quote_terms"}
+
+--- origin/claude/opus-consumer-domains-1csp2g
+RESERVED = {1: "identity", 2: "persona", 3: "wardrobe", 4: "social", 5: "rewards", 6: "providers",
+            7: "commerce", 8: "rights", 9: "privacy", 10: "rights_projection_version", 11: "chain_operation_store",
+            12: "chain_reconciliation", 13: "outbox_delivery", 14: "privacy_exports",
+            15: "commerce_quote_terms",
+            16: "consumer_design"}  # consumer-domains design-alignment stage (Ultra plan 02)
+--- origin/claude/midnight-rights-lifecycle-yhfyyu
+RESERVED = {1: "identity", 2: "persona", 3: "wardrobe", 4: "social", 5: "rewards", 6: "providers",
+            7: "commerce", 8: "rights", 9: "privacy", 10: "rights_projection_version", 11: "chain_operation_store",
+            12: "chain_reconciliation", 13: "outbox_delivery", 14: "privacy_exports",
+            15: "commerce_quote_terms", 16: "rights_transfer_invites"}
+
+
+### $ python3 -I assemble.py (builds branch-inventory.json from stats.psv, equiv.json, areas.txt, consumers.txt, prs.json, prs-ancestry.json, classification.json, mergeable.json)
+# exit=0
+
+### $ squash exactness for PRs 18-25,27,40,41: git diff --name-only <mb> refs/pr/N; git diff --name-only refs/pr/N <squash> -- <paths>; patch-id compare
+# exit=0
+PR#18 squash=0f69676 parent==mb:yes touched=33 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#19 squash=7322f93 parent==mb:yes touched=22 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#20 squash=3e3e350 parent==mb:yes touched=24 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#21 squash=a2f9fb4 parent==mb:yes touched=17 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#22 squash=3b8eeec parent==mb:yes touched=9 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#23 squash=ce80bf9 parent==mb:yes touched=11 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#24 squash=c0419e5 parent==mb:yes touched=9 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#25 squash=8f8a2b7 parent==mb:yes touched=7 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#27 squash=4335e27 parent==mb:yes touched=4 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#40 squash=6044818 parent==mb:no touched=2 tip_vs_squash_differ=0 range_patchid_equal=yes
+PR#41 squash=b294e9e parent==mb:yes touched=3 tip_vs_squash_differ=0 range_patchid_equal=yes
+
+### $ mcp__github__pull_request_read get for PRs 29, 63, 66, 70, 71, 72 (read-only); mergeable_state recorded in mergeable.json
+# exit=0
+
+### $ final: cp commands.log -> output dir; python3 json.load validation of branch-inventory.json
+# exit=0
+

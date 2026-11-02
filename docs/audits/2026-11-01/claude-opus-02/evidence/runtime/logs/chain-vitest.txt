@@ -1,0 +1,71 @@
+### step: chain-vitest
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: pnpm test
+### start_utc: 2026-11-01T15:13:53Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+
+> @brandme/chain@1.0.0 test /[REDACTED-LONG-STRING]
+> vitest run
+
+
+ RUN  v3.2.7 /[REDACTED-LONG-STRING]
+
+Sourcemap for "/[REDACTED-LONG-STRING].js" points to missing source files
+ ✓ ../tests/contracts/constraints.test.ts (28 tests) 4279ms
+   ✓ transfer > moves control exactly once and advances the epoch (invariants 1, 2)  302ms
+   ✓ transfer > only the offered recipient can accept  337ms
+ ✓ tests/midnight/reconciliation.test.ts (15 tests) 289ms
+ ✓ tests/midnight/projection.test.ts (6 tests) 1196ms
+   ✓ finalized public entitlement projection > decodes real compiled ledger state at the requested block without deriving private links  308ms
+ ✓ tests/midnight/adapter.test.ts (19 tests) 12121ms
+   ✓ RightsAdapter > happy path: persisted → Proving → Submitted → Observed → Finalized only on finality evidence  1230ms
+   ✓ RightsAdapter > replay of an operation on a different network is rejected before any state mutation  389ms
+   ✓ RightsAdapter > wallet reporting the wrong network blocks execution  354ms
+   ✓ RightsAdapter > account switch during proving aborts before submission; nothing is submitted  809ms
+   ✓ RightsAdapter > session lock during proving aborts before submission  787ms
+   ✓ RightsAdapter > invalid witness → Failed, contract state unchanged, private state restored  1111ms
+   ✓ RightsAdapter > acceptTransfer uses an offer-specific pending secret; a failed accept restores private state  2259ms
+   ✓ RightsAdapter > chain-reported failure → Failed with evidence (app never projects it)  857ms
+   ✓ RightsAdapter > timeout after submission → Reconciling, never a new automatic attempt  820ms
+   ✓ RightsAdapter > keeps broadcast uncertainty reconcilable (timeout), never retries  649ms
+   ✓ RightsAdapter > keeps broadcast uncertainty reconcilable (mismatch), never retries  672ms
+   ✓ RightsAdapter > rechecks wallet identity after the durable journal commit  504ms
+   ✓ RightsAdapter > refuses broadcast when recording the transaction identifier fails  749ms
+ ✓ tests/midnight/private-state.test.ts (6 tests) 5317ms
+   ✓ PrivateStateSession > stores state encrypted (no secret appears in raw storage)  428ms
+   ✓ PrivateStateSession > isolates accounts: a different wallet account does not inherit state  641ms
+   ✓ PrivateStateSession > lock drops access; account change locks and throws  427ms
+   ✓ PrivateStateSession > backup → clean profile restore → restored secret proves control on the contract  2693ms
+   ✓ PrivateStateSession > refuses wrong network, wrong contract, wrong account and wrong password before writing  1117ms
+ ✓ tests/midnight/network.test.ts (4 tests) 200ms
+ ✓ tests/midnight/trust-path.test.ts (4 tests) 171ms
+ ✓ tests/midnight/cardano-anchor.test.ts (3 tests) 7ms
+ ✓ tests/midnight/network-env.test.ts (3 tests) 8ms
+stdout | ../tests/contracts/property.test.ts > property: random command sequences preserve invariants > holds for 100 random sequences of up to 60 commands
+circuit outcomes {
+  registerIssuer: { ok: 101, fail: 0 },
+  registerManufacturer: { ok: 101, fail: 0 },
+  issueEntitlement: { ok: 319, fail: 0 },
+  grantReprintAllowance: { ok: 231, fail: 71 },
+  proveControl: { ok: 128, fail: 86 },
+  consumeReprintAllowance: { ok: 77, fail: 137 },
+  offerTransfer: { ok: 88, fail: 70 },
+  acceptTransfer: { ok: 6, fail: 73 },
+  attestManufacture: { ok: 20, fail: 45 },
+  cancelTransfer: { ok: 10, fail: 61 }
+}
+
+ ✓ ../tests/contracts/property.test.ts (2 tests) 104760ms
+   ✓ property: random command sequences preserve invariants > holds for 100 random sequences of up to 60 commands  56655ms
+   ✓ property: reprint quota is consumed exactly once under duplicate callbacks > holds for 200 random callback storms (each event delivered 1–4 times)  48102ms
+
+ Test Files  10 passed (10)
+      Tests  90 passed (90)
+   Start at  15:13:55
+   Duration  106.34s (transform 1.58s, setup 0ms, collect 16.04s, tests 128.35s, environment 3ms, prepare 1.47s)
+
+-----
+### exit: 0
+### end_utc: 2026-11-01T15:15:42Z
+### duration_s: 109

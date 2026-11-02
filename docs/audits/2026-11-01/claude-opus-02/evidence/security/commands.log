@@ -1,0 +1,127 @@
+# commands.log — S2 independent security evidence collector, 2026-11-01
+# Repo: /home/user/Brand-Me-Labs  branch claude/busy-dirac-nhm16m  HEAD ed19dc151d103b108cf972e6d37971c55d5dcf60 (== origin/main)
+# Local clone is SHALLOW; history read from the full clone at
+#   /tmp/claude-0/-home-user-Brand-Me-Labs/1bf61dcf-0f4d-53ea-917a-a94fd3490bcc/scratchpad/audit-clone/repo
+# Rules followed: read-only (no installs, no app execution, no git writes); docs/audits/ not read; secret values never printed —
+# hits were inspected with a sed mask (first 4 chars + length/shape) only. All file reads below were via the Read tool or cat -n.
+
+## 001  git rev-parse HEAD; git branch --show-current; git status --short; git rev-parse --is-shallow-repository; ls -la
+      -> HEAD ed19dc15…, branch claude/busy-dirac-nhm16m, only untracked docs/audits/, shallow=true.
+## 002  find .github .claude -type f; cat .mcp.json .nvmrc .node-version package.json pnpm-workspace.yaml; find .npmrc/.python-version;
+       node --version; pnpm --version; python3 --version; which gitleaks trivy; find lockfiles (pnpm-lock, requirements*, pyproject, poetry/uv locks)
+      -> 7 workflows + smoke-image.sh; .claude hook + settings; .mcp.json runs `npx -y @21st-dev/magic@latest`; node v22.23.4 (nvmrc 24.21.0),
+         pnpm 10.34.6, python 3.13.18; gitleaks/trivy NOT installed; no .npmrc/.python-version; 17 requirements.txt + pnpm-lock.yaml.
+## 003  mkdir -p docs/audits/2026-11-01/claude-opus-02/evidence/security; find brandme-gateway/src -type f; wc -l *.ts
+      -> 60 files, 7346 lines; NOTE: no services/commerce.ts — commerce is routes/v1/commerce.ts.
+## 004  Read (full): brandme-gateway/src/{index.ts, config/index.ts, middleware/session.ts, middleware/mode.ts, middleware/auth.ts,
+       middleware/rateLimiter.ts, middleware/errorHandler.ts, middleware/identity/store.ts, routes/health.ts, routes/v1/index.ts,
+       routes/v1/commerce.ts, services/rights.ts}
+      -> middleware order, JWT verify (issuer/audience/alg allowlist/30s skew/JWKS cache 600s), cookie flags, CSRF, in-process limiter,
+         dev-login gate, commerce UNMOUNTED, no graceful shutdown (process.exit on SIGTERM).
+## 005  Read (full): middleware/{problem,requestLogger,validation,logPath}.ts, routes/scan.ts, services/{domains,nats}.ts,
+       routes/v1/{chain,privacy,me,persona,rights,ownership,assets}.ts, config/logger.ts, types/index.ts; cat brandme_gateway/src/middleware/auth.ts;
+       cat brandme-gateway/{package.json,Dockerfile,.env.example}
+      -> problem+json without stack traces; NATS URL logged raw; ad-hoc JSON errors in rights/ownership/assets/privacy; orphan mock JWT parser;
+         unused deps jsonwebtoken/express-rate-limit/axios (0 imports, verified by grep); Dockerfile non-root node:24.21.0-bookworm-slim.
+## 006  for each routes/v1/*.ts: grep "from './<name>'" routes/v1/index.ts
+      -> MOUNTED: assets chain decisions me media outfits ownership persona privacy rewards rights social tryon wardrobe;
+         UNMOUNTED: assistant catalog commerce delegations providers read-query (read-query imported only by assets/rights).
+## 007  grep -rn "req\.(body|query|params)\.(user_id|userId|member_id|memberId|subject|owner_id)|x-user-id|x-member-id" brandme-gateway/src (non-test)
+      -> no matches (identity never read from request fields).
+## 008  find brandme_core brandme-core brandme-governance brandme-cube brandme-agents -name '*.py'
+      -> trees listed (brandme_core/domains/{commerce,media,persona,privacy,providers,rewards,rights,social,wardrobe}, mcp/, orchestrator/, read_api/, privacy_exports/).
+## 009  Read (full): brandme-core/brain/main.py, brandme-core/policy/main.py, brandme-core/orchestrator/main.py,
+       brandme-governance/governance_console/main.py, brandme_core/boot.py, brandme_core/config.py, brandme_core/mcp/tools.py,
+       brandme_core/mcp/authz.py, brandme_core/domains/persona/assertion.py
+      -> boot guard inventory; governance body reviewer_user_id unauthenticated (mode-gated); brain stub_ fallback; orchestrator fake tx;
+         policy duplicate routes (203/548, 331/637) + undefined fetch_owner_and_consent; MCP executor model; assertion verifiers.
+## 010  find brandme-chain -type f (excl node_modules/dist); wc -l chain src files
+      -> services/midnight-client.ts DOES NOT EXIST (CLAUDE.md stale); adapter.ts 482 lines.
+## 011  cat -n .github/workflows/*.yml .github/scripts/smoke-image.sh (then Read each file fully); ls .github/CODEOWNERS .github/dependabot.yml CODEOWNERS
+      -> see ci-cd-review.md; CODEOWNERS/dependabot absent.
+## 012  Read (full): brandme-chain/src/{config/index.ts, index.ts, cardano/anchor.ts, midnight/adapter.ts}; cat -n midnight/{network,capability}.ts
+      -> fallback flags refused only when === 'true'; ENVIRONMENT default development; Mainnet writes refused with no switch; Cardano unavailable;
+         replay/binding checks; wallet-supplied signing.
+## 013  cat -n .claude/settings.json .claude/hooks/session-start.sh .claude/.env.local.example
+      -> SessionStart hook exports every line of gitignored .claude/.env.local; no network, no curl|sh.
+## 014  cat -n docker-compose.yml docker-compose.dev.yml init.sql
+      -> emulators on 0.0.0.0 host ports; python containers ro mount; dev key pair loaded from ~/.config; legacy profile for orchestrator/cube/agents/governance;
+         init.sql orphan Postgres schema; no MIDNIGHT_ENABLED (CLAUDE.md :304 claim stale; file is 242 lines).
+## 015  cat -n Makefile deploy-brandme.sh
+      -> Makefile builds/pushes gcr.io/brandme/*:latest from legacy Dockerfiles; dev-up uses override file alone; deploy script sources .env.deploy with API keys + SA key path.
+## 016  grep (py) for f-string / .format / % SQL into execute_sql / sql= ; context around f\"\"\" in domains/spanner/read_api/privacy_exports
+      -> 60+ sites; all interpolate code constants (column lists, fixed table/where by category, int days) and bind values with @params;
+         pii_redactor.py:238 interpolates caller-supplied include_fields.
+## 017  grep -i "allow_stub_fallback|ALLOW_STUB|MIDNIGHT_ENABLED|ENABLE_STUB_MODE|FALLBACK_MODE|stub_fallback" (py/ts/yml, non-test)
+      -> only guard lists (config.py:68,227-231; mode.ts:27; chain config:33). MIDNIGHT_ENABLED: no references.
+## 018  grep ESG "0.5|threshold" brandme-agents/compliance/src
+      -> esg_verifier.py:46,62,66 default threshold 0.5; :185 hash-derived stub score 0.4-0.9; burn_proof.py:155-176 stub verify.
+## 019  grep "x-subject-ref" brandme_core (non-test)
+      -> read_api/app.py:78, privacy_exports/app.py:30 (+ config.py:357 PD-07 note).
+## 020  grep "subprocess|os.system|os.popen|eval(|exec(|shell=True|PythonREPL|ShellTool" brandme-agents/agentic brandme_core/mcp brandme_core/orchestrator
+      -> no matches.
+## 021  grep runtime.py/budget.py for MAX_/budget/loop; anthropic_adapter.py for api_key/base_url/system; agentic tools for @tool / model init
+      -> MAX_CALLS=12, MAX_REFUSALS=12, MAX_PROPOSALS_PER_STEP=4, MAX_SECONDS=30, HARD_MAX_SECONDS=300; cost ledger ceilings; require_dev_key sk-ant-api;
+         pinned https://api.anthropic.com; 18 @tool functions (graph/blockchain/policy) doing HTTP to fixed internal URLs.
+## 022  grep logger calls with email/user_id/token/cookie/authorization/password/secret (py + ts, non-test); grep -A8 "def redact_user_id"
+      -> no PII-carrying log calls outside redaction helpers; redact_user_id -> pseudonymize(); cat -n brandme_core/cors_config.py (wildcard refused in strict).
+## 023  for each tracked package.json: python3 -I json dump of lifecycle scripts/engines/packageManager; find .husky/.pnpmfile.cjs/.npmrc/lint-staged
+      -> no preinstall/postinstall/prepare/husky anywhere; only root has engines+packageManager (pnpm@10.34.6); no husky/npmrc/pnpmfile.
+## 024  for each Dockerfile: grep FROM/USER/ARG/COPY secrets/ADD http/curl|sh ; grep -rn "(curl|wget)[^|]*\|\s*(sh|bash)" scripts/Makefile/Dockerfiles/mjs/yml
+      -> CI images non-root & pinned (node:24.21.0, python:3.11.15 runtime, UID 10001); 7 legacy Dockerfiles python:3.11-slim with no USER; no curl|sh anywhere.
+## 025  Secret patterns over `git ls-files` (PRIVATE KEY, AKIA, sk_live/sk_test, AIza, ghp_/github_pat_, xox*, sk-ant-, sk-, JWT, credentials_json,
+       Blockfrost night*), password literals, committed .env/.pem/.key files, mnemonic-like lines, project ids  (output: path:line + type only)
+      -> no private keys/AWS/Google/GitHub/Slack/JWT; sk_live only as 'sk_live_fictional' Secret-Manager PATH fixtures; sk-ant/sk- only in .env.deploy.example
+         placeholders; Blockfrost shapes only in chain tests; credentials_json at ci-cd.yml:368 + credential-manifest; password literals = shell expansions
+         or legacy default DB password (scripts/backup.sh:23, scripts/db-init.sh:27) and Neo4j default (graph_db.py:315); only *.example dotenv files tracked;
+         public ids: lux-realestate-app (ci-cd.yml:43), brandme-dev, brandme-prod (docs), test-project, ci-fake-project.
+## 026  (full clone) git rev-parse --is-bare-repository; HEAD; --is-shallow-repository; git log --oneline --all | wc -l; git branch -a
+      -> non-bare, HEAD ed19dc15, not shallow, 562 commits, 19 remote branches.
+## 027  (full clone) git log --all --diff-filter=A --name-only -- '*.env' '*.pem' '*.key' '*.p12' '*.pfx' '*id_rsa*' '*service-account*.json' '*credentials*.json' '*secret*' '*.keystore'
+      -> only docs/build/security/secrets-conventions.md and trivy-secret.yaml.
+## 028  (full clone) git log --all -S'PRIVATE KEY' --name-only --pretty='%h %ad %s'
+      -> 6 commits touching docs/tests/providers code with the phrase; PEM-block regex matched none (see 029).
+## 029  (full clone) for each key pattern: git grep -lE <re> $(git rev-list --all | head -400) | uniq -c by path   [ran >120s; completed in background]
+      -> PRIVATE KEY block/AKIA/AIza/xox: none; sk_live: 3 test files (fictional path fixture); ghp_: commerce.test.ts fixture; sk-ant: .env.deploy.example
+         placeholder + 2 planner tests; Blockfrost shape: 5 chain test files; credentials_json: ci-cd.yml + credential-manifest.yaml.
+## 030  find brandme-chain/src brandme-chain/scripts -type f; grep -i "seed|mnemonic|private.?key|BLOCKFROST" brandme-chain/src scripts .env.example;
+       sed -n 1,80p src/routes/operations.ts; cat -n brandme-chain/.env.example
+      -> no seeds/keys read by the service; Preprod script needs MN_PREPROD_SEEDS + token via env and redacts them; operations router: constant-time bearer + UUID x-subject-ref.
+## 031  cat -n scripts/regression/run_all.sh; ls agents/; grep secrets handling in agents/*.sh; grep -o '^[A-Z0-9_]+=' .env*.example (names only);
+       grep .gitignore env/key entries; cat -n .trivyignore.yaml trivy-secret.yaml; ls/grep -c sha256 scripts/python/requirements.lock
+      -> regression lists orphan brandme_gateway module; agents use SA key file + kubectl --from-literal; .gitignore covers .env*, *.pem, *.key, secrets/, *credentials*.json;
+         trivyignore baseline empty; trivy-secret disables test/example/markdown/vendor allow rules; requirements.lock 1341 sha256 lines / 90 pins.
+## 032  sed -n 1,60p brandme-core/orchestrator/worker.py; grep stub/tx hashes; grep cube faces.py/policy_client.py/main.py; grep identity main.py; grep compliance main/lifecycle
+      -> worker fabricates tx_cardano_/tx_midnight_ (151-152); cube viewer from request.state.get (never set); identity path user_id trusted; compliance stubs.
+## 033  grep read_api/app.py and privacy_exports/app.py auth lines; grep privacy.py/deletion.py class/def/retention; sed -n 1,30p events/retention.py + days;
+       grep persona/app.py bind host/emulator/resolver
+      -> hmac.compare_digest bearer + single X-Subject-Ref; export download needs X-Reauth-At; backup retention 30d; outbox purge 7d, sweep 30d;
+         consumer-domains binds 127.0.0.1 in dev, emulator refused in strict.
+## 034  grep commerce/service.py execute_purchase/budget/idempotency; delegation.py; http_api.py auth; stripe_wire.py; url_guard.py
+      -> idempotency scope per principal+operation (274-283); budget reserve/consume/release; delegation limits/expiry/revocation; ES256 gateway assertion with sessions;
+         SSRF guard blocks private/loopback/link-local/metadata, https only, no URL credentials.
+## 035  grep helm templates for securityContext/secrets/REPLACE_ME; grep workflows for github.event.*|head_ref in run:; uses: summary; continue-on-error|pull_request_target|workflow_run; secrets./vars. names
+      -> runAsNonRoot/readOnlyRootFilesystem/drop ALL/seccomp RuntimeDefault; REPLACE_ME refused; private JWK 'd' refused; no untrusted interpolation in run:;
+         1 SHA-pinned action, 12 tag-pinned; no continue-on-error/pull_request_target/workflow_run; secrets.GCP_SA_KEY + 6 vars.
+## 036  cat background task output (029); masked view (sed first-4-chars) of password/key hits; sed credential-manifest.yaml 225-260 with value fields omitted
+      -> classification recorded in secret-scan.md; manifest flags GCP_SA_KEY 'Retire, do not rotate' and MAGIC_API_KEY argv exposure.
+## 037  sed retention.py 160-190; privacy_exports/service.py 255-280; idempotent.py 195-215; pii_redactor.py 228-246
+      -> identifiers from module constants / fixed category mapping / int; pii_redactor include_fields is caller-supplied.
+## 038  grep cube request.state / middleware; grep policy @app.post|fetch_owner_and_consent|http_client; grep zk/proof_of_ownership.py stub/def
+      -> cube sets only request.state.request_id; policy duplicates confirmed; fetch_owner_and_consent undefined; zk manager has no explicit stub flag.
+## 039  sed runtime.py 495-562; grep model_planner.py; grep -A15 require_dev_key; grep -A12 untrusted_text catalog.py
+      -> provenance rule excludes untrusted_text; require_dev_key prefix/length check; untrusted_text normalised/control-stripped/capped/labelled.
+## 040  grep agentic agents.py/cli/main.py/graph_db.py for memory/identity/model/creds; sed blockchain_tools.py 15-50
+      -> no memory/checkpointer; scanner-id CLI option; Neo4j default password; tools POST to retired /tx/cardano.
+## 041  grep helm _helpers.tpl securityContext lines; USER count in 7 legacy Dockerfiles; grep CI/compose/Makefile references to legacy Dockerfiles;
+       grep checksum pins in fetch_firestore_emulator.py / fetch-compactc.sh / validate-helm.sh; requirements.txt pin style; MCP invocation schema; NEXT_PUBLIC_ vars
+      -> legacy Dockerfiles USER=0 count, only Makefile uses them; all downloads SHA-256 verified; requirements pinned ==; invocation schema additionalProperties:false;
+         frontend NEXT_PUBLIC_* are URLs/mode only, no tokens.
+## 042  grep local-network.sh seeds; grep gateway tests for /session/dev strict + X-Forwarded-For; grep http_client.py verify/redirects; ls+grep firestore.rules; grep migrations for admin/password
+      -> no seeds in local-network.sh; XFF hop test present (rateLimiter.test.ts:143-149); firestore.rules owner-only read, writes false; no seeded admin accounts.
+## 043  .env.deploy.example:15,19 shape check (len, x-run, prefix); head requirements.txt; sed cube main.py 315-330; grep mode.test.ts; grep -l gateway unused dep imports
+      -> placeholders confirmed (45/35 chars with x-runs); fastapi==0.134.0 style pins; mode.test.ts covers strict refusals; jsonwebtoken/express-rate-limit/axios 0 imports.
+## 044  python3 -I json.load findings-independent.json; Counter(severity), Counter(status)
+      -> 26 findings valid JSON: Medium 4, Low 18, Info 4; confirmed-static 24, hypothesis-untested 2.
+## 045  Wrote: findings-independent.json, trust-boundaries.md, ci-cd-review.md, secret-scan.md, commands.log (this file) under
+       docs/audits/2026-11-01/claude-opus-02/evidence/security/. No other files were created or modified.
