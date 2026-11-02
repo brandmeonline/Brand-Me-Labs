@@ -104,6 +104,29 @@ it('links a first attested unit to its reprint job by nullifier and emits reprin
   expect(await attested(stray)).toHaveLength(0);
 });
 
+it('emits reprint.attested when a later operation already projected the child entitlement', async () => {
+  const nullifier = random32(); const jobId = randomUUID();
+  await db.table('ReprintJobs').insert([{ job_id: jobId, network: 'undeployed', allowance_id: toHex(random32()),
+    entitlement_id: toHex(random32()), manufacturer_id: toHex(random32()), member_subject_ref: randomUUID(),
+    job_commitment: toHex(random32()), quantity: 1, state: 'rights_consumed', consumption_nullifier: toHex(nullifier),
+    version: 1, created_at: new Date(), updated_at: Spanner.COMMIT_TIMESTAMP }]);
+  let attest = await pending('attestManufacture', [nullifier, 0n, random32(), random32()]);
+  attest = (await store.update(transition(attest, 'Observed', { evidence: { ...attest.evidence!, blockHeight: 12, blockHash: hash, status: 'SucceedEntirely' } }), attest.version))!;
+  attest = (await store.update(transition(attest, 'Finalized', { evidence: { ...attest.evidence!, finalizedHeadHeight: 12 } }), attest.version))!;
+  const later = await finalized(13);
+  const child = { ...projection(), parentConsumption: toHex(nullifier) };
+  const leases = [(await claim())!, (await claim())!];
+  const lease = (id: string) => leases.find((l) => l.operationId === id)!;
+  // The later operation on the child is reconciled first and inserts the projection.
+  expect(await queue.complete(lease(later.operationId), later, child)).toBe(true);
+  // The attestation then finds the row at a higher block: the projection is unchanged, the event still fires.
+  expect(await queue.complete(lease(attest.operationId), attest, child)).toBe(true);
+  expect((await progress(attest.operationId)).projection_outcome).toBe('unchanged');
+  const [events] = await db.run({ sql: "SELECT correlation_id, aggregate_id FROM OutboxEvents WHERE event_type = 'reprint.attested' AND aggregate_id = @job",
+    params: { job: jobId }, json: true });
+  expect((events as any[]).map((e) => e.correlation_id)).toEqual([attest.operationId]);
+});
+
 it('serializes two final operations for the same entitlement without duplicate projection events', async () => {
   const a = await finalized(); const b = await finalized(); const p = projection();
   const leases = [(await claim())!, (await claim())!];

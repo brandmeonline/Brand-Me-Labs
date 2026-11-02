@@ -124,9 +124,13 @@ export class SpannerReconciliationQueue {
               epoch: String(p.epoch), tx_id: e.txId, block_height: String(height), block_hash: e.blockHash }),
             status: 'pending', attempts: 0, next_attempt_at: now, created_at: Spanner.COMMIT_TIMESTAMP,
           });
-          if (op.circuit === 'attestManufacture' && !old) await this.attested(tx, op, p.entitlementId, now);
           outcome = old ? 'advanced' : 'inserted';
         }
+        // The attestation is this operation's own finalized fact, so its event does not depend on
+        // whether this operation happened to insert the child's projection: a later operation on the
+        // child may have been reconciled first (claims are ordered by next_check_at, not block height).
+        // At most once per operation: a completed operation is refused above (projection_completed_at).
+        if (op.circuit === 'attestManufacture') await this.attested(tx, op, p.entitlementId, now);
       }
       tx.update('ChainOperations', { operation_id: claim.operationId, projection_completed_at: now, projection_outcome: outcome,
         reconciliation_lease_id: null, reconciliation_lease_until: null, next_check_at: null });
@@ -135,10 +139,10 @@ export class SpannerReconciliationQueue {
   }
 
   /**
-   * A manufactured unit's first projection, linked to the app's reprint job by the
+   * A finalized attestManufacture operation, linked to the app's reprint job by the
    * consumption nullifier it attests (never by the operation owner). A unit outside
-   * the app workflow emits nothing. Same transaction as the projection, so it is
-   * emitted at most once.
+   * the app workflow emits nothing. Same transaction as the operation's completion,
+   * which happens once, so the event is emitted at most once per attested unit.
    */
   private async attested(tx: Transaction, op: ChainOperation, childEntitlementId: string, now: Date): Promise<void> {
     const [nullifier, unit] = op.args;

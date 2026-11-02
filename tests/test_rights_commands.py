@@ -273,6 +273,41 @@ def test_reprint_quote_reports_missing_conditions_and_never_consumes_quota(clien
     assert rows(db, "SELECT COUNT(*) FROM IdempotencyRecords") == [[0]]
 
 
+def _job(db, quantity, state, *, allowance=None, nullifier=None):
+    with db.batch() as batch:
+        batch.insert("ReprintJobs", ["job_id", "network", "allowance_id", "entitlement_id", "manufacturer_id", "member_subject_ref",
+                                     "job_commitment", "quantity", "state", "version", "created_at", "updated_at",
+                                     "consumption_nullifier"],
+                     [[str(uuid.uuid4()), "preprod", allowance or ALLOWANCE, ENTITLEMENT, MANUFACTURER, SENDER, uuid.uuid4().hex * 2, quantity,
+                       state, 1, datetime.now(timezone.utc), COMMIT_TIMESTAMP, nullifier]])
+
+
+def test_reprint_quote_keeps_quota_consumed_on_chain_after_a_job_fails_or_is_cancelled(client, db):
+    """reprint.py: failures never restore quota automatically. A job that reached rights_consumed keeps its
+    nullifier through failed/cancelled and its units stay consumed; a job that never consumed frees them."""
+    _license(db, used=0)
+    assert quote(client, quantity=5).json()["eligible"] is True
+    _job(db, 4, "failed", nullifier="ab" * 32)
+    assert quote(client, quantity=3).json()["missing"] == ["quota_exceeded"]
+    assert quote(client, quantity=1).json()["quota_remaining"] == "1"
+    _job(db, 1, "cancelled")  # cancelled before any consumption: not counted
+    assert quote(client, quantity=1).json()["eligible"] is True
+
+
+def test_reprint_quote_evaluates_every_grant_not_only_the_newest(client, db):
+    """Grants coexist: a newer FR-only grant must not hide an older US grant that still has quota."""
+    _license(db)  # US, quota 5, 2 approved
+    with db.batch() as batch:
+        batch.insert("LicenseGrants", ["license_id", "network", "entitlement_id", "issuer_id", "permissions", "territory",
+                                       "allowance_id", "quota_granted", "created_at"],
+                     [[str(uuid.uuid4()), "preprod", ENTITLEMENT, ISSUER, ["personal_manufacture"], ["FR"], "allowance-fr", 5,
+                       datetime.now(timezone.utc) + timedelta(seconds=1)]])
+    us = quote(client).json()
+    assert (us["eligible"], us["allowance_id"], us["quota_remaining"]) == (True, ALLOWANCE, "3")
+    fr = quote(client, territory="FR").json()
+    assert (fr["missing"], fr["allowance_id"]) == (["manufacturer_not_capable"], "allowance-fr")
+
+
 def test_challenge_binds_entitlement_epoch_and_audience_without_storing_anything(client, db):
     body = {"entitlement_id": ENTITLEMENT, "audience": "resale-partner", "challenge": "9" * 64, "ttl_seconds": 300}
     ok = client.post("/rights/challenges", json=body, headers=headers(scopes="rights:read"))

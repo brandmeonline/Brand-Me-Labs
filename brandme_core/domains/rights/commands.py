@@ -326,29 +326,43 @@ def reprint_quote(database: Any, scope: ChainScope, subject: str, asset_id: str,
         entitlement_id, _, _, reprintable = _controlled(snap, scope, subject, asset_id=asset_id)
         if not reprintable:
             missing.append("entitlement_not_reprintable")
+        # Every unexpired personal-manufacture grant can coexist (nothing says a newer one supersedes an
+        # older one), so each is evaluated against the request and the first that satisfies it is the
+        # allowance quoted; otherwise the newest grant with the fewest unmet conditions explains the refusal.
         licenses = _rows(snap, "SELECT issuer_id, territory, allowance_id, quota_granted, valid_until FROM LicenseGrants "
                                "WHERE network = @n AND entitlement_id = @e AND 'personal_manufacture' IN UNNEST(permissions) "
                                "AND allowance_id IS NOT NULL AND (valid_until IS NULL OR valid_until > @t) "
-                               "ORDER BY created_at DESC, license_id LIMIT 1",
+                               "ORDER BY created_at DESC, license_id",
                          {"n": scope.network, "e": entitlement_id, "t": at}, {"n": pt.STRING, "e": pt.STRING, "t": pt.TIMESTAMP})
         allowance = remaining = valid_until = None
         if not licenses:
             missing.append("license_missing")
         else:
-            issuer, territories, allowance, granted, valid_until = licenses[0]
-            if territories and territory not in territories:
-                missing.append("territory_not_licensed")
-            used = _rows(snap, "SELECT COALESCE(SUM(quantity), 0) FROM ReprintJobs WHERE network = @n AND allowance_id = @a "
-                               "AND state NOT IN ('cancelled', 'failed')",
-                         {"n": scope.network, "a": allowance}, {"n": pt.STRING, "a": pt.STRING})[0][0]
-            remaining = max((granted or 0) - used, 0)
-            if quantity > remaining:
-                missing.append("quota_exceeded")
-            capable = _rows(snap, "SELECT 1 FROM ManufacturerCapabilities WHERE manufacturer_id = @m AND issuer_id = @i "
-                                  "AND active AND @t IN UNNEST(territories)",
-                            {"m": manufacturer, "i": issuer, "t": territory}, {"m": pt.STRING, "i": pt.STRING, "t": pt.STRING})
-            if not capable:
-                missing.append("manufacturer_not_capable")
+            best: Optional[tuple[list[str], int, str, Any]] = None
+            for issuer, territories, allowance_id, granted, until in licenses:
+                unmet: list[str] = []
+                if territories and territory not in territories:
+                    unmet.append("territory_not_licensed")
+                # Quota consumed on chain stays consumed: a job that failed or was cancelled after
+                # rights_consumed keeps its nullifier and still counts (reprint.py: failures never
+                # restore quota automatically). Jobs that never consumed count only while they are live.
+                used = _rows(snap, "SELECT COALESCE(SUM(quantity), 0) FROM ReprintJobs WHERE network = @n AND allowance_id = @a "
+                                   "AND (consumption_nullifier IS NOT NULL OR state NOT IN ('cancelled', 'failed'))",
+                             {"n": scope.network, "a": allowance_id}, {"n": pt.STRING, "a": pt.STRING})[0][0]
+                left = max((granted or 0) - used, 0)
+                if quantity > left:
+                    unmet.append("quota_exceeded")
+                capable = _rows(snap, "SELECT 1 FROM ManufacturerCapabilities WHERE manufacturer_id = @m AND issuer_id = @i "
+                                      "AND active AND @t IN UNNEST(territories)",
+                                {"m": manufacturer, "i": issuer, "t": territory}, {"m": pt.STRING, "i": pt.STRING, "t": pt.STRING})
+                if not capable:
+                    unmet.append("manufacturer_not_capable")
+                if best is None or len(unmet) < len(best[0]):
+                    best = (unmet, left, allowance_id, until)
+                if not unmet:
+                    break
+            unmet, remaining, allowance, valid_until = best
+            missing.extend(unmet)
     return {
         "eligible": not missing,
         "missing": missing,
