@@ -927,6 +927,10 @@ deploy job is skipped on pull requests, so no required check should depend on it
 
 ## F. Legacy deploy paths — all non-functional; recommend retirement
 
+> **Status 2026-11-02:** retired. Every path in this table except the Helm umbrella's *replacement* chart was
+> deleted in the 2026-11 cleanup (owner decision D9); the Makefile build targets now use the five root-context
+> Dockerfiles CI builds, and `deploy-dev`/`deploy-prod`/`infra-*` targets are gone. Git history preserves the files.
+
 None of these can deploy the current system. Do not delete them in this
 change: CLAUDE.md's kill-list marks `agents/` "DO NOT DELETE" because
 `deploy-brandme.sh` uses it. Retire them together, with a CLAUDE.md update (D9).

@@ -97,8 +97,8 @@ A small but real set:
   `brandme-core/policies/region/{default,eu-west1,us-east1}.yaml`).
 - Hash-chained audit-log writes (compliance service).
 - Token-bucket rate limiting wired into `brandme-gateway/`
-  (`brandme-gateway/src/middleware/rateLimiter.ts`); the older copy in
-  `brandme_gateway/` is an orphan (see the kill-list).
+  (`brandme-gateway/src/middleware/rateLimiter.ts`); the orphan copy in
+  `brandme_gateway/` was removed on 2026-11-02.
 - Tests: CI `test-core` runs **all of `tests/`** (`.github/workflows/ci-cd.yml`).
   Verified 2026-10-24: `tests/test_consent_graph.py`, `tests/test_provenance.py`
   and `tests/test_wardrobe.py` do **not** pass (no fixture applies the legacy
@@ -116,13 +116,18 @@ imports has been moved into `brandme-gateway/src/middleware/`.
 Verified by grepping all of `*.py / *.ts / *.tsx / *.yml / *.yaml / Makefile / *.sh`
 for any reference.
 
-Nothing in this repo is safe to delete blindly. The two rows marked for removal are
-scheduled for the 2026-11 cleanup, each in its own reviewed PR.
+Nothing in this repo is safe to delete blindly. Removed on 2026-11-02 after the audits (history
+stays in git): `brandme_gateway/`, `brandme_core/health.py`, the inoperable deploy chain
+(`agents/`, `deploy-brandme.sh`, `scripts/deploy.sh`, `scripts/db-init.sh`, `scripts/backup.sh`,
+`scripts/test-infrastructure.sh`, `init.sql`), the previous platform's `infrastructure/` configs,
+`brandme-infra/terraform` (invalid, Cloud SQL) and the non-functional umbrella chart, and the seven
+out-of-context Dockerfiles CI never built. The Makefile's build targets now use the five root-context
+Dockerfiles that `ci-cd.yml` builds.
 
 | Folder | Verdict | Why |
 |---|---|---|
-| `brandme_gateway/` | **Orphan, no consumer — remove** | Holds a stale copy of `src/middleware/rateLimiter.ts` and an alternate `auth.ts` whose mock JWT parser accepts any 10+ character token. Nothing imports or runs it: the regression module named `brandme_gateway` (`scripts/regression/modules/brandme_gateway.sh:7-8`) tests `brandme-gateway/`. Re-verified 2026-11-02. |
-| `agents/` (shell scripts) + `deploy-brandme.sh` | **Inoperable — remove** | Every `agents/*.sh` sources `agents/lib/common.sh`, which does not exist, and `deploy-brandme.sh:220` sources another missing file; the chain cannot run (audit S2-OBS-003, `docs/build/deploy/gke-verification-packet.md` section F). The prepared cloud path is that packet. Re-verified 2026-11-02. |
+| `brandme_gateway/` | **Removed 2026-11-02** | Held a stale copy of `rateLimiter.ts` and an alternate `auth.ts` whose mock JWT parser accepted any 10+ character token; nothing imported or ran it (the regression module named `brandme_gateway` tests `brandme-gateway/`). |
+| `agents/` + `deploy-brandme.sh` + `scripts/deploy.sh` | **Removed 2026-11-02** | Every `agents/*.sh` sourced `agents/lib/common.sh`, which did not exist; the chain could not run and one agent wrote credentials to a plaintext file (audit S2-OBS-003; packet section F). The prepared cloud path is `docs/build/deploy/gke-verification-packet.md`. |
 | `brandme-core/policies/region/` | **DO NOT DELETE** | Loaded at runtime by `brandme-core/policy/region_rules.py:39-42`. |
 
 ## Docs map (2026-11-02)

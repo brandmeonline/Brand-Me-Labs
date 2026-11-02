@@ -711,5 +711,5 @@ Store the log next to the deployment evidence. Redact command output down to the
   `protoPayload.methodName="google.iam.admin.v1.CreateServiceAccountKey"`, routed to the
   break-glass owner. With `--enforce-no-sa-keys`, `scripts/provision/gcp-dev-identities.sh`
   also enforces `iam.disableServiceAccountKeyCreation`.
-- **Legacy deploy script.** `scripts/deploy.sh` still sources `.env.${ENVIRONMENT}`. Retire it
-  with the other legacy deploy paths (packet section F).
+- **Legacy deploy script.** `scripts/deploy.sh` (which sourced `.env.${ENVIRONMENT}`) was retired on
+  2026-11-02 with the other legacy deploy paths (packet section F).

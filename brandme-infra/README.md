@@ -21,7 +21,7 @@ prepares the GKE option at the founder's request.
 | Path | State |
 |---|---|
 | [`helm/brandme/`](helm/brandme/README.md) | **Current.** Chart for the processes that boot in strict mode: gateway, chain, console, read API, privacy exports API and worker, outbox worker, plus a pre-install/pre-upgrade migration Job. Workload Identity per workload, digest-pinned images, hardened pods, default-deny NetworkPolicy, optional GKE Ingress (off). |
-| [`helm/brandme-umbrella/`](helm/brandme-umbrella/LEGACY.md) | **Legacy, non-functional.** Its subcharts and `values/values-prod.yaml` do not exist. Kept until the founder retires it. |
+| `helm/brandme-umbrella/` | **Removed 2026-11-02** (non-functional: its subcharts and `values/values-prod.yaml` never existed; packet section F). History stays in git. |
 | `terraform/main.tf` | **Legacy, non-functional.** `terraform validate` fails (`var.db_password` is used at `main.tf:192` but never declared). It provisions Cloud SQL, which current code does not use, and none of Spanner, Pub/Sub, Secret Manager or per-workload identities. The packet's `gcloud` steps replace it for the first sandbox. |
 
 ## Validate the chart

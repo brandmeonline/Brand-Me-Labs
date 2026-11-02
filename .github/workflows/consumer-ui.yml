@@ -4,7 +4,8 @@ on:
   pull_request:
     paths: ['brandme-frontend/**', 'brandme-console/**', 'packages/**', 'pnpm-lock.yaml', '.github/workflows/consumer-ui.yml']
   push:
-    branches: ['bench/astra-consumer-ui-20261005']
+    branches: [main]
+    paths: ['brandme-frontend/**', 'brandme-console/**', 'packages/**', 'pnpm-lock.yaml', '.github/workflows/consumer-ui.yml']
   workflow_dispatch:
 
 permissions:
