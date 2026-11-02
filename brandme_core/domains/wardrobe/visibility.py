@@ -6,16 +6,19 @@ The owner sets two things for each owned or digital piece:
 * **who** sees it: ``private`` (nobody else; the default), ``friends``
   (accepted, unblocked friends) or ``members`` (any signed-in member who is not
   blocked);
-* **how much**:
-  - ``piece``: title, category and house;
+* **how much**, as disclosure facets (``disclosure.py``):
+  - ``piece``: identity, house and maker (title, category, colours, house,
+    materials);
   - ``story``: adds the owner's showcase note and how often it is worn;
-  - ``full``: adds the price, the year it entered the closet and whether
-    ownership is verified, for friends only.
+  - ``full``: the owner's unfold, for friends only. It adds price, ownership
+    (the year it entered the closet, whether ownership is verified) and
+    logistics (its care state).
 
-Strangers (``members``) never see more than ``story``. That is the locked
-disclosure default: price, ownership evidence and logistics stay hidden.
-Receipts, order and source references, tag serials, sizes, care and private
-notes are never shown to anyone else at any level.
+Strangers (``members``) never see more than ``story``: the locked stranger-scan
+default. The cap holds twice: ``set_visibility`` refuses it, and every view
+intersects with the stranger facets whatever is stored. Receipts, order and
+source references, tag serials, sizes, condition, care and private notes are
+never shown to anyone else at any level.
 """
 
 from __future__ import annotations
@@ -43,13 +46,14 @@ from brandme_core.domains.persona.kernel import (
     run_read,
 )
 
+from . import disclosure
+
 AUDIENCES = ("private", "friends", "members")
 DETAILS = ("piece", "story", "full")
 STRANGER_MAX_DETAIL = "story"
 SHOWN_COLLECTIONS = ("owned", "digital")
 MAX_SHOWN = 200
-_COLS = ("item_id", "title", "category", "product_id", "claim_level", "showcase_note", "worn_count", "price_minor", "price_currency",
-         "created_at", "visibility", "visible_detail")
+_COLS = (*disclosure.READ_COLUMNS, "visibility")
 
 
 def relation(snap, viewer: str, owner: str) -> Optional[str]:
@@ -72,17 +76,10 @@ def allowed(item_visibility: Optional[str], rel: Optional[str]) -> bool:
     return item_visibility == "members" or (item_visibility == "friends" and rel == "friends")
 
 
-def shown_piece(row: Mapping[str, Any], houses: Mapping[str, str]) -> Dict[str, Any]:
+def shown_piece(row: Mapping[str, Any], houses: Mapping[str, str], rel: Optional[str]) -> Dict[str, Any]:
+    """What ``rel`` sees of a shown piece: only the facets its detail level and the relation allow."""
     detail = row["visible_detail"] or "piece"
-    out: Dict[str, Any] = {"item_id": row["item_id"], "title": row["title"], "category": row["category"],
-                           "house_ref": houses.get(row["product_id"]) if row["product_id"] else None, "detail": detail}
-    if detail in ("story", "full"):
-        out.update(showcase_note=row["showcase_note"], worn_count=row["worn_count"])
-    if detail == "full":
-        # Ownership evidence (the claim level) is ownership, not identity: only on the owner's unfold.
-        out.update(price=None if row["price_minor"] is None else {"minor": row["price_minor"], "currency": row["price_currency"]},
-                   in_closet_since=row["created_at"].year, verified=row["claim_level"] != "self_reported")
-    return out
+    return {**disclosure.disclose(row, disclosure.facets_for(detail, rel), houses), "detail": detail}
 
 
 class ClosetVisibilityService:
@@ -151,7 +148,7 @@ class ClosetVisibilityService:
                 {"m": owner, "c": list(SHOWN_COLLECTIONS), "a": audiences, "l": MAX_SHOWN},
                 {"m": STR, "c": STR_ARRAY, "a": STR_ARRAY, "l": INT})]
             houses = self.catalog.houses_of(s, sorted({r["product_id"] for r in rows if r["product_id"]})) if self.catalog and rows else {}
-            return {"member_id": owner, "relation": rel, "items": [shown_piece(r, houses) for r in rows]}
+            return {"member_id": owner, "relation": rel, "items": [shown_piece(r, houses, rel) for r in rows]}
 
         return run_read(self.db, read)
 
@@ -161,7 +158,7 @@ def visible_items(snap, viewer: str, owner: str, item_ids: List[str]) -> List[Di
     if not item_ids:
         return []
     rel = relation(snap, viewer, owner)
-    rows = {r[0]: dict(zip(_COLS, r)) for r in query(
+    rows = {d["item_id"]: d for d in (dict(zip(_COLS, r)) for r in query(
         snap, f"SELECT {', '.join(_COLS)} FROM WardrobeItems WHERE member_id=@m AND item_id IN UNNEST(@i) AND collection IN UNNEST(@c)",
-        {"m": owner, "i": list(item_ids), "c": list(SHOWN_COLLECTIONS)}, {"m": STR, "i": STR_ARRAY, "c": STR_ARRAY})}
+        {"m": owner, "i": list(item_ids), "c": list(SHOWN_COLLECTIONS)}, {"m": STR, "i": STR_ARRAY, "c": STR_ARRAY}))}
     return [rows[i] for i in item_ids if i in rows and allowed(rows[i]["visibility"], rel)]

@@ -228,7 +228,7 @@ class PersonaCardService:
     # -------------------------------------------------------------- viewer
 
     def _view(self, snap, owner: str, row: Mapping[str, Any], viewer: Optional[str] = None) -> Dict[str, Any]:
-        from brandme_core.domains.wardrobe.visibility import shown_piece, visible_items
+        from brandme_core.domains.wardrobe.visibility import relation, shown_piece, visible_items
 
         card = row["card"] or {}
 
@@ -239,7 +239,8 @@ class PersonaCardService:
             # leaves every view at once, like a highlight whose piece went private; the stale card is
             # recomposed later by the jobs pass.
             hidden = {r[0] for r in query(s, "SELECT axis_key FROM PersonaAxes WHERE member_id=@m AND hidden", {"m": owner}, {"m": STR})}
-            return [shown_piece(i, houses) for i in items], hidden
+            rel = relation(s, viewer or owner, owner) if items else None
+            return [shown_piece(i, houses, rel) for i in items], hidden
 
         highlights, hidden = read(snap) if snap is not None else run_read(self.db, read)
         taste = [t for t in card.get("taste", []) if t.get("axis") not in hidden]

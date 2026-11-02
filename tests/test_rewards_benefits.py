@@ -284,3 +284,66 @@ def test_frozen_ledger_refuses_debit_corrections(spanner_db):
             rewards.resolve_dispute(ops, d["dispute_id"], body)
         assert e.value.code == "processing_frozen"
     assert count(spanner_db, "SELECT COUNT(*) FROM RewardEntries WHERE member_id=@m AND kind='correction'", m=m.member_id) == 0
+
+
+def reverse_awards(db, member_id):
+    from brandme_core.domains.persona.kernel import command
+
+    ids = [r[0] for r in run_read(db, lambda s: list(s.execute_sql(
+        "SELECT entry_id FROM RewardEntries WHERE member_id=@m AND kind='credit' AND state='posted'",
+        params={"m": member_id}, param_types={"m": param_types.STRING})))]
+    for entry_id in ids:
+        command(db, service_principal("repair-workflow"), lambda t, ctx, e=entry_id: ledger.reverse(t, ctx, member_id, e, "repair_voided", ["repair:test"]))
+
+
+def test_refunded_points_pay_down_recovery_debt_first(spanner_db):
+    from brandme_core.domains.rewards import deletion
+
+    svc = BenefitService(spanner_db)
+    b = benefit(spanner_db, 100)
+    refunded, deleted = funded_member(spanner_db, 100), funded_member(spanner_db, 100)
+    held = {}
+    for m in (refunded, deleted):
+        held[m.member_id] = svc.reserve(m, b["benefit_id"], key())["reservation_id"]
+        reverse_awards(spanner_db, m.member_id)  # the 100 points held for the benefit are now owed back
+        a = acct(spanner_db, m.member_id)
+        assert (a["available"], a["reserved"], a["recovery_due"]) == (0, 100, 100)
+    # A failed fulfillment and a deletion both return the hold, which settles the debt instead of being spendable.
+    assert svc.settle(held[refunded.member_id], succeeded=False)["state"] == "refunded"
+    run_txn(spanner_db, lambda t: deletion.delete_category(t, deleted.member_id, "rewards.redemptions"))
+    for m in (refunded, deleted):
+        a = acct(spanner_db, m.member_id)  # also asserts account == journal
+        assert (a["available"], a["reserved"], a["recovery_due"]) == (0, 0, 0)
+
+
+def test_a_reservation_outlives_a_deleted_ledger_without_breaking_it(spanner_db):
+    from brandme_core.domains.rewards import deletion
+
+    m = funded_member(spanner_db, 100)
+    svc = BenefitService(spanner_db)
+    b = benefit(spanner_db, 40, inventory=3)
+    ok, failed = (svc.reserve(m, b["benefit_id"], key())["reservation_id"] for _ in range(2))
+    run_txn(spanner_db, lambda t: deletion.delete_category(t, m.member_id, "rewards.ledger"))  # the points and their history go
+    RewardsService(spanner_db, approved_repair_issuers=frozenset({ISSUER})).record_verified_repair(
+        service_principal("repair-workflow"), m.member_id, repair_ref=str(uuid.uuid4()), issuer_ref=ISSUER)  # a new account: 50
+    # The reservations still settle, and touch neither the new account nor its journal.
+    assert svc.settle(ok, succeeded=True)["state"] == "fulfilled"
+    assert svc.settle(failed, succeeded=False)["state"] == "refunded"
+    a = acct(spanner_db, m.member_id)
+    assert (a["available"], a["reserved"], a["spent"]) == (50, 0, 0)
+    assert {x["benefit_id"]: x for x in svc.list_benefits(m)["items"]}[b["benefit_id"]]["remaining"] == 2
+
+
+def test_reserving_is_refused_while_the_ledger_is_frozen(spanner_db):
+    from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
+
+    m = funded_member(spanner_db, 100)
+    b = benefit(spanner_db, 40)
+    run_txn(spanner_db, lambda t: t.insert("ProcessingFreezes", columns=("subject_ref", "category", "reason", "deletion_job_id", "created_at"),
+                                           values=[(m.member_id, "rewards.ledger", "deletion", str(uuid.uuid4()), COMMIT_TIMESTAMP)]))
+    with pytest.raises(DetailedInvalidTransition) as e:
+        BenefitService(spanner_db).reserve(m, b["benefit_id"], key())
+    assert e.value.code == "processing_frozen"
+    a = acct(spanner_db, m.member_id)
+    assert (a["available"], a["reserved"]) == (100, 0)
+    assert count(spanner_db, "SELECT COUNT(*) FROM BenefitReservations WHERE member_id=@m", m=m.member_id) == 0

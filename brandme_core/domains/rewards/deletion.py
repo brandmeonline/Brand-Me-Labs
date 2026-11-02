@@ -8,7 +8,6 @@ are operator data and are not part of the member's export.
 
 from __future__ import annotations
 
-from dataclasses import replace
 from typing import Any, Dict, List
 
 from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
@@ -133,16 +132,18 @@ def delete_category(txn, member_id: str, category: str) -> int:
         for _rid, bid, _cost in held:
             pending[bid] = pending.get(bid, 0) + 1
         # Points a pending reservation holds go back to the member through a
-        # release entry, as a failed fulfillment would. When the ledger category
-        # was already deleted (account deletion) there is no balance to restore.
-        if held and query(txn, "SELECT 1 FROM RewardAccounts WHERE member_id=@m", m, _M):
-            acct = ledger.load_account(txn, member_id)
-            total = sum(cost for _rid, _bid, cost in held)
-            for rid, bid, cost in held:
-                ledger.insert_entry(txn, member_id=member_id, entry_id=stable_id("reward-release", rid), kind="release", state="posted",
-                                    points=cost, available_delta=cost, reserved_delta=-cost, reservation_id=rid,
-                                    outcome_reason="privacy_deleted", evidence_refs=[f"benefit:{bid}"], actor_ref="service:privacy")
-            ledger.save_account(txn, replace(acct, reserved=acct.reserved - total, available=acct.available + total))
+        # release entry, as a failed fulfillment would (recovery debt first).
+        # When the ledger category was already deleted there is no hold to return.
+        acct = None
+        for rid, bid, cost in held:
+            if not ledger.holds(txn, member_id, stable_id("reward-reserve", rid)):
+                continue
+            acct, available_delta, recovery_delta = ledger.release_hold(acct or ledger.load_account(txn, member_id), cost)
+            ledger.insert_entry(txn, member_id=member_id, entry_id=stable_id("reward-release", rid), kind="release", state="posted",
+                                points=cost, available_delta=available_delta, reserved_delta=-cost, recovery_delta=recovery_delta,
+                                reservation_id=rid, outcome_reason="privacy_deleted", evidence_refs=[f"benefit:{bid}"], actor_ref="service:privacy")
+        if acct is not None:
+            ledger.save_account(txn, acct)
         for bid, k in pending.items():
             cur = query(txn, "SELECT inventory_reserved, version FROM Benefits WHERE benefit_id=@b", {"b": bid}, {"b": STR})
             if cur:

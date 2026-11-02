@@ -11,7 +11,8 @@ consumer-domains lane. Stage log: `docs/build/status/opus-consumer-domains.md`.
 - **Modules:** `api.py` (router), `service.py`, `model.py`, `kernel.py`, `onboarding.py`, `recommender.py`,
   `backfill.py`, `events.py`, `deletion.py` (My Data handler), `privacy_guard.py`.
 - **Workers:** `ingress.py` (lane ingress consuming outbox events from Pub/Sub), `jobs.py` (scheduled jobs such as
-  reward settlement), `outbox_worker.py`, `lane.py`. Composition evidence for the chain
+  reward settlement), `lane.py`. Outbox delivery is foundation's `brandme_core.events.worker`, which loads this
+  lane's catalog; the lane's own outbox worker is gone (Ultra plan 03, item 9). Composition evidence for the chain
   `events.worker → Pub/Sub → ingress → jobs`: `docs/audits/2026-11-01/claude-opus-02/evidence/runtime/emulator-run.md`.
 - **Tests:** `tests/test_persona_*.py`.
 

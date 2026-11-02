@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from google.cloud.spanner_v1 import COMMIT_TIMESTAMP
 
@@ -92,6 +92,20 @@ def entry(txn, member_id: str, entry_id: str) -> Optional[Dict[str, Any]]:
                  {"m": member_id, "e": entry_id}, {"m": STR, "e": STR})
     return dict(zip(ENTRY_COLS, rows[0])) if rows else None
 
+
+
+def holds(txn, member_id: str, reserve_entry_id: str) -> bool:
+    """The points a ``reserve`` entry set aside are still in the member's ledger. After the member
+    deleted ``rewards.ledger`` they are not: what settles that hold then writes no ledger entries."""
+    return entry(txn, member_id, reserve_entry_id) is not None
+
+
+def release_hold(acct: Account, points: int) -> Tuple[Account, int, int]:
+    """Held points come back, paying down recovery debt first, as any credit to the account does.
+    Returns the account and the ``release`` entry's ``(available_delta, recovery_delta)``."""
+    offset = min(points, acct.recovery_due)
+    return (replace(acct, reserved=acct.reserved - points, available=acct.available + points - offset,
+                    recovery_due=acct.recovery_due - offset), points - offset, -offset)
 
 def _pending(txn) -> Dict[str, Any]:
     """Rows this transaction has buffered. Spanner reads inside a read/write
