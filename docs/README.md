@@ -26,7 +26,7 @@ edited only through the deviation process.
 | [`build/orchestration/pipeline-state.md`](./build/orchestration/pipeline-state.md) | The continuous-build loop's state and queue; open round-03 plans sit beside it |
 | [`build/evidence/`](./build/evidence/) | Acceptance ledger (`results.json`, read by `pnpm evidence:report`) and raw evidence |
 | [`build/deploy/gke-verification-packet.md`](./build/deploy/gke-verification-packet.md) | First-deploy facts, gaps and the founder checklist (nothing is deployed yet) |
-| [`build/security/`](./build/security/) | Secrets conventions, the credential manifest (a CI guard reads it), lane service accounts, vulnerability triage |
+| [`build/security/`](./build/security/) | Secrets conventions, the credential manifest (a CI guard reads it), lane service accounts, vulnerability triage, the branch and tag protection spec (`branch-protection.md`) |
 | [`build/runbooks/credential-rotation.md`](./build/runbooks/credential-rotation.md) | Rotation and exposure runbook |
 
 ## Audits: `audits/`

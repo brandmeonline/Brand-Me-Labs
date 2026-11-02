@@ -66,6 +66,10 @@ docs/                 design contract, live build record, audits, archive
   `docs/build/security/credential-manifest.yaml` must name every secret-shaped environment variable the code reads.
 - Lane ownership, deviations and evidence conventions: [`docs/build/workspace-governance.md`](./docs/build/workspace-governance.md),
   [`docs/build/deviations.md`](./docs/build/deviations.md).
+- The full rules for branches, gates, migrations, documentation and commit messages: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+  Pull requests start from [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMPLATE.md). The protection
+  rulesets for `main` and the preserved refs are specified in
+  [`docs/build/security/branch-protection.md`](./docs/build/security/branch-protection.md) (owner-applied).
 
 ## Claude Code setup
 
