@@ -1,16 +1,16 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * /api/v1 rewards, benefits and disputes — UNMOUNTED routers
- * (lane: opus-consumer-domains). Mount at integration after principalMiddleware:
- *
- *   router.use(rewardsRouter(domainClient));
- *   router.use(rewardsOpsRouter(domainClient));   // console origin only
+ * /api/v1 rewards, benefits, disputes, house standings, surveys and in-app credit (lane:
+ * opus-consumer-domains). `rewardsRouter` is mounted from index.ts behind
+ * principalMiddleware; `rewardsOpsRouter` stays unmounted until the console
+ * has operator auth.
  *
  * There is deliberately no member route that awards, edits or transfers
- * points (ch.01 §5, BM-LOY-005): bodies on member routes never carry amounts.
- * `rewards:write` (proposed, PD-12) lets a member reserve a benefit or open a
- * dispute; it can never award. Operator routes need `moderation:admin` and,
+ * points (ch.01 §5, BM-LOY-005), and none that pays out money. The only
+ * amount a member sends is how many of their own points to turn into in-app
+ * credit. `rewards:write` (proposed, PD-12) lets a member reserve a benefit,
+ * open a dispute, answer a survey or convert points; it can never award. Operator routes need `moderation:admin` and,
  * outside development, an aal2 session; the domain checks both again and
  * refuses self-review.
  */
@@ -36,9 +36,10 @@ function text(v: unknown, name: string, max: number): string {
 
 export function rewardsRouter(client: DomainClient): Router {
   const r = Router();
-  r.use(['/rewards', '/benefits'], requirePrincipal);
+  r.use(['/rewards', '/benefits', '/surveys'], requirePrincipal);
 
   r.get('/rewards', requireScope('rewards:read'), forwardTo(client, () => ({ method: 'GET', path: '/rewards' })));
+  r.get('/rewards/standings', requireScope('rewards:read'), forwardTo(client, () => ({ method: 'GET', path: '/rewards/standings' })));
   r.get(
     '/rewards/entries',
     requireScope('rewards:read'),
@@ -60,6 +61,36 @@ export function rewardsRouter(client: DomainClient): Router {
     }),
   );
   r.get('/benefits', requireScope('rewards:read'), forwardTo(client, () => ({ method: 'GET', path: '/benefits' })));
+  r.get('/surveys', requireScope('rewards:read'), forwardTo(client, () => ({ method: 'GET', path: '/surveys' })));
+  r.post(
+    '/surveys/:surveyId/responses',
+    requireScope('rewards:write'),
+    forwardTo(client, (req, res) => {
+      if ((res.locals.principal as Principal).delegationId) throw problems.forbidden('Surveys are answered by the member.');
+      const b = objectBody(req, 1);
+      onlyKeys(b, ['answers']);
+      if (typeof b.answers !== 'object' || b.answers === null || Array.isArray(b.answers) || Object.keys(b.answers).length > 10) {
+        throw problems.invalid('answers must map each question id to an answer.');
+      }
+      return { method: 'POST', path: `/surveys/${uuidParam(req, 'surveyId')}/responses`, body: { answers: b.answers }, idempotencyKey: idempotencyKey(req) };
+    }),
+  );
+  // Points convert to in-app purchase credit only: the body is a whole number of points, never money or a destination.
+  r.get('/rewards/credits', requireScope('rewards:read'), forwardTo(client, () => ({ method: 'GET', path: '/rewards/credits' })));
+  r.post(
+    '/rewards/credits',
+    requireScope('rewards:write'),
+    forwardTo(client, (req, res) => {
+      if ((res.locals.principal as Principal).delegationId) throw problems.forbidden('Only the member converts points.');
+      const b = objectBody(req, 2);
+      onlyKeys(b, ['points', 'currency']);
+      if (!Number.isInteger(b.points) || (b.points as number) < 500 || (b.points as number) > 100_000 || (b.points as number) % 100 !== 0) {
+        throw problems.invalid('points must be whole hundreds from 500 to 100000.');
+      }
+      if (b.currency !== undefined && (typeof b.currency !== 'string' || !/^[A-Z]{3}$/.test(b.currency))) throw problems.invalid('currency must be ISO 4217.');
+      return { method: 'POST', path: '/rewards/credits', body: b, idempotencyKey: idempotencyKey(req) };
+    }),
+  );
   r.post(
     '/benefits/:benefitId/reservations',
     requireScope('rewards:write'),
@@ -134,11 +165,26 @@ export function rewardsOpsRouter(client: DomainClient): Router {
   r.post(
     '/ops/benefits',
     forwardTo(client, (req) => {
-      const b = objectBody(req, 9);
-      onlyKeys(b, ['kind', 'title', 'description', 'cost_points', 'inventory_total', 'funded', 'sponsor', 'available_until', 'reservation_ttl_seconds']);
+      const b = objectBody(req, 11);
+      onlyKeys(b, ['kind', 'title', 'description', 'cost_points', 'inventory_total', 'funded', 'sponsor', 'available_until', 'reservation_ttl_seconds',
+        'house_ref', 'min_standing']);
       if (b.kind === 'partner' && (b.funded !== true || typeof b.sponsor !== 'string')) throw problems.invalid('Partner benefits must be funded and name a sponsor.');
+      if ((b.house_ref === undefined) !== (b.min_standing === undefined) || (b.house_ref !== undefined && b.kind !== 'partner')) {
+        throw problems.invalid('A house reward is a partner benefit with both house_ref and min_standing.');
+      }
       return { method: 'POST', path: '/ops/benefits', body: b };
     }),
   );
+  r.post(
+    '/ops/surveys',
+    forwardTo(client, (req) => {
+      const b = objectBody(req, 5);
+      onlyKeys(b, ['kind', 'purpose', 'title', 'questions', 'available_until']);
+      if (!Array.isArray(b.questions) || b.questions.length < 1 || b.questions.length > 10) throw problems.invalid('A survey has 1-10 questions.');
+      return { method: 'POST', path: '/ops/surveys', body: b };
+    }),
+  );
+  r.post('/ops/surveys/:surveyId/deactivate',
+    forwardTo(client, (req) => ({ method: 'POST', path: `/ops/surveys/${uuidParam(req, 'surveyId')}/deactivate` })));
   return r;
 }

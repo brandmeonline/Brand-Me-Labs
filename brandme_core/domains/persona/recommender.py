@@ -197,6 +197,18 @@ def _persona_similarity(c: Candidate, req: RecommendationRequest) -> Optional[Tu
     return 1.0 - (sum(diffs) / len(diffs)) / 100.0, overlap
 
 
+def lens(candidates: Sequence[Candidate], req: RecommendationRequest) -> List[Tuple[Candidate, Optional[float]]]:
+    """The persona lens without ranking (Flow): drop what the member's hard
+    constraints exclude, and give each survivor its persona affinity (0..1), or
+    None when there are no shared axes. Order is preserved; no caps apply."""
+    out = []
+    for c in candidates:
+        if _hard_filter(c, req) is None:
+            sim = _persona_similarity(c, req)
+            out.append((c, None if sim is None else sim[0]))
+    return out
+
+
 def _wardrobe_matches(c: Candidate, req: RecommendationRequest) -> Optional[List[WardrobeRef]]:
     if not req.wardrobe:
         return None

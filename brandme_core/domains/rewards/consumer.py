@@ -21,18 +21,25 @@ Event → rule mapping (contracts/reward-rules.json):
   respondent, identical for yes/pass/alternative (the event carries no
   choices); 100/day; a repeated identical request records an excluded entry.
   Badge Trusted Eye.
+* An order-acquired item becoming ``owned`` (delivered) → 25
+  ``decision_influence`` (lane extension, PD-20) to each friend whose
+  in-window verdict it followed. That is a ``yes`` on the same catalog product,
+  or their own ``alternative`` naming it, in a decision that closed within
+  ``INFLUENCE_WINDOW`` before delivery. One credit per decision and friend,
+  ever; 100/day. Self-reported outcomes never qualify, and blocked pairs are
+  skipped.
 """
 
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List
 
-from brandme_core.domains.persona.kernel import NIL_MEMBER, CommandContext, command, member_active, service_principal
+from brandme_core.domains.persona.kernel import STR, TS, NIL_MEMBER, CommandContext, command, member_active, query, service_principal, stable_id
 from brandme_core.domains.persona.privacy_guard import ProcessingFrozen, assert_processing_allowed
 from brandme_core.events import EventEnvelope, first_delivery
 
 from . import badges, ledger
-from .rules import PROPOSAL_PAIR_DAILY_LIMIT, RULES
+from .rules import INFLUENCE_WINDOW, PROPOSAL_PAIR_DAILY_LIMIT, RULES
 
 CONSUMER = "rewards.ledger"
 HANDLED = ("persona.updated", "persona.guest.migrated", "outfit.version.created", "wardrobe.item.created", "wardrobe.item.updated",
@@ -133,8 +140,37 @@ class RewardsConsumer:
             return []
         if not self._eligible_member(txn, member_id, event):
             return [{"status": "member_not_eligible"}]
+        # Influence settles only on a provider-observed delivery (a new order unit, or an order update that moved its
+        # acquisition status), never on a member's own archive/restore of a piece delivered earlier.
+        delivery = event.event_type == "wardrobe.item.created" or "acquisition_status" in p["changed_fields"]
         return [ledger.credit(txn, ctx, member_id, RULES["first_owned_item"], event.event_id, event.occurred_at, [f"item:{p['item_id']}"]),
-                {"badges": badges.evaluate(txn, ctx, member_id, ("closet_curator",))}]
+                {"badges": badges.evaluate(txn, ctx, member_id, ("closet_curator",))},
+                *(self._influence(txn, ctx, event, member_id, p["item_id"]) if delivery else [])]
+
+    def _influence(self, txn, ctx, event, buyer: str, item_id: str) -> List[Dict[str, Any]]:
+        from brandme_core.domains.social.notifications import blocked_between
+
+        row = query(txn, "SELECT product_id, acquisition_source, acquisition_status FROM WardrobeItems WHERE member_id=@m AND item_id=@i",
+                    {"m": buyer, "i": item_id}, {"m": STR, "i": STR})
+        if not row or row[0][1] != "order" or row[0][2] != "delivered" or not row[0][0]:
+            return []
+        product = row[0][0]
+        verdicts = query(
+            txn, "SELECT d.decision_id, r.respondent_id FROM Decisions d JOIN DecisionResponses r "
+                 "ON r.member_id = d.member_id AND r.decision_id = d.decision_id "
+                 "WHERE d.member_id=@b AND d.state='closed' AND d.closed_at >= @since AND d.closed_at <= @at AND r.eligible = TRUE "
+                 "AND ((r.choice='yes' AND d.subject_type='catalog_product' AND d.subject_id=@p) OR (r.choice='alternative' AND r.alternative_ref=@p))",
+            {"b": buyer, "since": event.occurred_at - INFLUENCE_WINDOW, "at": event.occurred_at, "p": product},
+            {"b": STR, "since": TS, "at": TS, "p": STR})
+        out: List[Dict[str, Any]] = []
+        for decision_id, friend in verdicts:
+            if friend == buyer or blocked_between(txn, buyer, friend) or not self._eligible_member(txn, friend, event):
+                out.append({"status": "member_not_eligible", "member_id": friend})
+                continue
+            # The cause is the decision, so several delivered units credit one verdict once.
+            out.append(ledger.credit(txn, ctx, friend, RULES["decision_influence"], stable_id("decision-influence", decision_id),
+                                     event.occurred_at, [f"decision:{decision_id}"]))
+        return out
 
     def _placement(self, txn, ctx, event):
         member_id = event.payload["member_id"]

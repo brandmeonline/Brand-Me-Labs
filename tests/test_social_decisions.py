@@ -77,8 +77,8 @@ def test_server_owns_audience_and_five_minute_deadline(spanner_db, circle):
     assert closes - opened == timedelta(seconds=300)
     assert d["state"] == "open" and d["duration_seconds"] == 300 and 295 <= d["remaining_seconds"] <= 300
     assert sorted(d["audience"]) == sorted(f.member_id for f in friends[:2])
-    # Clients cannot choose another duration or smuggle extra fields (e.g. their own deadline).
-    for bad in (body(item, friends, duration_seconds=600), body(item, friends, duration_seconds=300.0 + 1),
+    # Only the offered windows (180/300/600/900 s); no smuggled fields (e.g. a client deadline).
+    for bad in (body(item, friends, duration_seconds=240), body(item, friends, duration_seconds=300.0 + 1),
                 {**body(item, friends), "closes_at": "2099-01-01T00:00:00Z"}):
         with pytest.raises(ValidationFailed):
             svc.create(owner, bad, key())

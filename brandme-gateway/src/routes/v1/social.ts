@@ -39,6 +39,8 @@ const SHARE_SUBJECTS = ['outfit_version', 'wardrobe_item', 'closet_capsule', 'pe
 const AUDIENCES = ['selected_members', 'unlisted', 'public'];
 const REPORT_TARGETS: Record<string, string[]> = {
   decision_response: ['decision_id', 'respondent_id'],
+  decision_comment: ['decision_id', 'comment_id'],
+  room_post: ['room_id', 'post_id'],
   share: ['share_id'],
   outfit_proposal: ['outfit_id', 'proposal_id'],
   member: ['member_id'],

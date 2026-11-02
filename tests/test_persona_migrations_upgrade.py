@@ -43,7 +43,9 @@ def empty_db():
 def test_database_on_main_upgrades_without_checksum_drift(empty_db):
     runner = load_runner()
     every = runner.load_migrations()
-    base = [m for m in every if m.version not in LANE_VERSIONS]
+    # The historical database: main's V001/V006-V014, from before this lane's numbers landed.
+    base = [m for m in every if m.version not in LANE_VERSIONS and m.version <= 14]
+    pending = [m.version for m in every if m not in base]
     quiet = {"applied_by": "upgrade-test", "log": lambda *_: None}
     assert runner.migrate_up(empty_db, base, **quiet) == [m.version for m in base]
 
@@ -55,7 +57,7 @@ def test_database_on_main_upgrades_without_checksum_drift(empty_db):
     # Strict mode refuses the reserved gap (not checksum drift: V002 is unchanged).
     with pytest.raises(runner.MigrationError, match="out-of-order"):
         runner.migrate_up(empty_db, every, **quiet)
-    assert runner.migrate_up(empty_db, every, allow_out_of_order=True, **quiet) == list(LANE_VERSIONS)
+    assert runner.migrate_up(empty_db, every, allow_out_of_order=True, **quiet) == pending
     assert runner.migrate_up(empty_db, every, **quiet) == []
     assert count(empty_db, "SELECT COUNT(*) FROM PersonaAxes WHERE member_id=@m AND declared_value IS NOT NULL", m=member.member_id) == 1
 

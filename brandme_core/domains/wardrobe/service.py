@@ -81,6 +81,7 @@ MAX_BATCH = 50
 ORDER_CONSUMER = "wardrobe.order-reducer"
 
 CatalogLookup = Callable[[str], Optional[Dict[str, Any]]]  # variant_id -> {product_id,title,category}
+TITLE_MAX_LEN = 200  # WardrobeItems.title STRING(200) (V003); catalog titles allow 500 (V006)
 
 
 def _row(cols: Sequence[str], r: Sequence[Any]) -> Dict[str, Any]:
@@ -879,7 +880,7 @@ class WardrobeService:
                             {
                                 "product_id": info.get("product_id"),
                                 "variant_ref": variant_ref,
-                                "title": info.get("title") or "Item from your order",
+                                "title": (info.get("title") or "Item from your order")[:TITLE_MAX_LEN],
                                 "category": info.get("category") if info.get("category") in CATEGORIES else None,
                                 "collection": u.collection,
                                 "claim_level": "receipt_backed",

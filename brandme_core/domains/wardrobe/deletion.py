@@ -64,7 +64,8 @@ def export_category(snap, member_id: str, category: str) -> List[Dict[str, Any]]
     if category == "wardrobe.items":
         cols = ("item_id", "title", "category", "collection", "claim_level", "evidence_status", "acquisition_source",
                 "acquisition_status", "product_id", "variant_ref", "size_label", "colors", "materials", "care_state",
-                "care_notes", "user_notes", "worn_count", "last_worn_at", "price_minor", "price_currency", "created_at")
+                "care_notes", "user_notes", "worn_count", "last_worn_at", "price_minor", "price_currency", "created_at",
+                "visibility", "visible_detail", "showcase_note")
         rows = query(snap, f"SELECT {', '.join(cols)} FROM WardrobeItems WHERE member_id=@m ORDER BY created_at, item_id", m, _M)
         out = []
         for r in rows:
