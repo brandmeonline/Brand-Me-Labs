@@ -31,7 +31,7 @@ row below. Last refresh: **2026-11-02** (close of the 2026-11 repository cleanup
 | #82 | `eb0b60ce` | `consumer-ui.yml` `live-domains` runs the domain sources of the job's own checkout at the same SHA as the UI (audit WP-01); the dev composition's drifted `OutboxDispatcher` call fixed; ten browser journeys pass in CI |
 | #81 | `9b19ca19` | PR #70 integrated (midnight-rights round 03) with the migration renumbered to V017 plus three Codex-found fixes with tests (consumed reprint quota stays charged after failure or cancellation; every grant evaluated, not only the newest; `reprint.attested` emitted even when a later operation projected the child first); #70 closed |
 | #84 | `652b77a4` | Kernel retry wrapper re-runs the emulator's one-writer `ABORTED` (the `test_concurrent_replays_one_response_one_close` failure on run 41523044806); `node_modules` symlinks ignored |
-| this PR | — | This refresh; `CLAUDE.md` rows for the integrated lanes and the rights command process; archive-ref wording |
+| this PR | — | This refresh; `CLAUDE.md` rows for the integrated lanes and the rights command process; archive-ref wording; the providers redaction masks whole hex identifiers of 16+ characters before the card scan (the merchant's 24-character `demo-order-` reference failed this PR's Test Core on run 41531446288 with a Luhn-valid 15-digit run: the same S2-OBS-008 false positive as #74 on a shorter id), with regression tests in `tests/test_providers_redaction_digest.py` |
 
 Preserved then retired: `archive/lux-foundation-lift-2026-08-31` (PR #29, closed) and `archive/design-audit-skill-2026-06-11`.
 Parked by owner decision: PR #71 (Stripe Connect brands flow; test-mode run pending). Still open and not part of the

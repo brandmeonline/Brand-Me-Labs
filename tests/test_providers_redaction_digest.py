@@ -47,3 +47,36 @@ def test_card_numbers_are_still_caught():
 def test_all_digit_runs_are_not_treated_as_digests():
     # No letter: not a hex digest, so the scanner sees it unchanged (a bare card number stays detectable).
     assert contains_card_number(f"ref 0000 {PAN} 0000")
+
+
+# The merchant's 24-character order reference that failed CI (run 41531446288, PR #85): its 15-digit run
+# 530430084332061 is Luhn-valid. The digest rule above stops at 32 characters, so shorter hex identifiers
+# (the 24-character ``demo-order-`` reference, the 16-character ``token_hex(8)`` cart reference) were still
+# scanned as if they could hold a card number.
+CI_ORDER_REF = "sim:demo_atelier:order:demo-order-bbd530430084332061fd9484"
+
+
+def test_the_order_reference_that_failed_ci_is_not_a_card_number():
+    payload = json.dumps({"acquisition_evidence": [CI_ORDER_REF], "cart_ref": "demo-cart-0a1b2c3d4e5f6071"})
+    assert not contains_card_number(payload), payload
+    assert mask_card_numbers(payload) == payload
+    assert not contains_card_number("0xbbd530430084332061fd9484")  # the same id with a hex prefix
+
+
+def test_random_short_hex_ids_holding_a_letter_are_never_flagged():
+    # A hex token of 16+ characters with at least one letter is an identifier, never a card number. An
+    # all-digit id stays indistinguishable from a card number (see test_all_digit_runs_are_not_treated_as_digests).
+    rng = random.Random(41531446288)
+    for _ in range(20000):
+        order = hashlib.sha256(rng.randbytes(16)).hexdigest()[:24]
+        cart = rng.randbytes(8).hex()
+        for ref in (f"sim:demo_atelier:order:demo-order-{order}", f"demo-cart-{cart}", f"simpay_{cart}"):
+            if any(c in "abcdef" for c in ref.rsplit("-", 1)[-1].rsplit("_", 1)[-1]):
+                assert not contains_card_number(ref), ref
+
+
+def test_card_numbers_fused_to_words_are_still_caught():
+    # Only a whole hex token is an identifier: "card4242…" holds an "r", so it is scanned and found.
+    for text in (f"card{PAN}", f"{PAN}xyz", f"pan={PAN}", f"demo-order-{PAN}", json.dumps({"n": PAN})):
+        assert contains_card_number(text), text
+        assert PAN not in mask_card_numbers(text), text
