@@ -238,6 +238,7 @@ export default function AddItemPage({
         </a>
       </header>
       <div className={styles.toolbar}>
+        <a className={styles.button} href="/add/scan">Scan a garment</a>
         <button
           aria-pressed={mode === "catalog"}
           onClick={() => setMode("catalog")}

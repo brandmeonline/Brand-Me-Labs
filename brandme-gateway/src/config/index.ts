@@ -119,6 +119,13 @@ const configSchema = z.object({
   rateLimitMaxKeys: z.coerce.number().int().positive().default(10_000),
   trustProxy: trustProxySchema,
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
+
+  // Consumer-domain service (persona, wardrobe, social, rewards, media). The
+  // gateway signs a short-lived ES256 principal assertion per request with this
+  // PKCS#8 P-256 key; the service holds only the public JWKS.
+  consumerDomainUrl: z.string().url().optional(),
+  consumerDomainAssertionKey: z.string().min(64).optional(),
+  consumerDomainAssertionKid: z.string().regex(/^[A-Za-z0-9._-]{1,64}$/).optional(),
 });
 
 export type GatewayConfig = z.infer<typeof configSchema> & {
@@ -162,6 +169,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig 
     rateLimitMaxKeys: blank(env.RATE_LIMIT_MAX_KEYS),
     trustProxy: blank(env.TRUST_PROXY),
     logLevel: blank(env.LOG_LEVEL),
+    consumerDomainUrl: blank(env.CONSUMER_DOMAIN_SERVICE_URL),
+    consumerDomainAssertionKey: blank(env.CONSUMER_DOMAIN_ASSERTION_KEY),
+    consumerDomainAssertionKid: blank(env.CONSUMER_DOMAIN_ASSERTION_KID),
   });
   // Legacy field used by the logger and older routes.
   const environment = parsed.mode === 'production' ? 'production' : parsed.mode === 'sandbox' ? 'staging' : 'development';

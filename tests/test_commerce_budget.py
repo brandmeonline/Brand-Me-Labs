@@ -17,7 +17,7 @@ from brandme_core.domains.commerce.money import Money
 from brandme_core.domains.commerce.records import BudgetEntry
 from brandme_core.domains.commerce.store import new_id
 from brandme_core.domains.providers.local_atelier import PROVIDER_ID
-from tests.fixtures.commerce.harness import AGENT_CLIENT, agent, limits, line
+from tests.fixtures.commerce.harness import AGENT_CLIENT, agent, boundary, limits, line, merchant_rule
 from tests.fixtures.commerce.stores import _spanner_db, commerce_store  # noqa: F401  (fixtures)
 from tests.test_commerce_payments_flow import _hook, _order, rail_world
 
@@ -36,7 +36,7 @@ def _one_day_grant(w):
     lim = replace(limits(per_order=CAP, cumulative=CAP), window_seconds=DAY)
     d = w.svc.create_delegation(w.member, client_id=AGENT_CLIENT, mode=AssistanceMode.BUY_WITHIN_RULES,
                                 allowed_providers={PROVIDER_ID}, limits=lim,
-                                expires_at=w.clock.now + timedelta(days=30))
+                                expires_at=w.clock.now + timedelta(days=30), boundary=boundary(merchant_rule()))
     return d, agent(d.id, d.scopes)
 
 

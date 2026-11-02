@@ -1,0 +1,80 @@
+[
+  {
+    "id": "EV-001",
+    "description": "Original checkout baseline and preservation",
+    "artifact": "local-baseline-before-fetch.txt",
+    "method": "read-only Git before isolated fetch"
+  },
+  {
+    "id": "EV-002",
+    "description": "All branch tips and semantic comparisons",
+    "artifact": "branches.json",
+    "method": "Git ancestry/patch/tree comparisons plus GitHub; see history evidence"
+  },
+  {
+    "id": "EV-003",
+    "description": "Canonical static file and syntax checks",
+    "artifact": "static-checks.json",
+    "method": "auditor-owned Python -I; syntax only; exit0"
+  },
+  {
+    "id": "EV-004",
+    "description": "Main CI jobs and dated counts",
+    "artifact": "security-ci-log-summaries.json",
+    "method": "GitHub runs at ed19dc1; not rerun"
+  },
+  {
+    "id": "EV-005",
+    "description": "CI screenshot integrity and mixed revisions",
+    "artifact": "ci-visual-provenance.json",
+    "method": "artifact12998005788; verified SHA256; synthetic development"
+  },
+  {
+    "id": "EV-006",
+    "description": "Repository configuration metadata",
+    "artifact": "security-github-config-metadata.json",
+    "method": "names/metadata only; no secret values"
+  },
+  {
+    "id": "EV-007",
+    "description": "History secret candidates",
+    "artifact": "security-secret-candidates.json",
+    "method": "redacted static scan; no validity testing; binaries excluded"
+  },
+  {
+    "id": "EV-008",
+    "description": "All 19 High/Critical-metadata advisory combinations triaged",
+    "artifact": "security-advisory-triage.json",
+    "method": "Current primary sources and static prerequisites; no application exploitation; 59 Low/Medium alerts and full image/deployed scope remain"
+  },
+  {
+    "id": "EV-009",
+    "description": "Source/requirements coverage",
+    "artifact": "coverage.json",
+    "method": "per-file review union, incomplete exhaustive scope"
+  },
+  {
+    "id": "EV-010",
+    "description": "Final original checkout and main verification",
+    "artifact": "baseline.json",
+    "method": "read-only Git; clean unchanged original"
+  },
+  {
+    "id": "EV-011",
+    "description": "Application runtime prerequisite",
+    "artifact": "runtime-preflight.txt",
+    "method": "Docker engine unavailable; no adequate isolation; no app launch"
+  },
+  {
+    "id": "EV-012",
+    "description": "Issue inventory",
+    "artifact": "github-issues.json",
+    "method": "GitHub issue list state all limit1000 returned1 issue; no truncation"
+  },
+  {
+    "id": "EV-013",
+    "description": "All requirement-to-capability mappings",
+    "artifact": "requirement-traceability.json",
+    "method": "150 catalog rows mapped by manual inference; individual implementation and acceptance not assessed"
+  }
+]

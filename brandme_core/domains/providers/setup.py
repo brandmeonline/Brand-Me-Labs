@@ -44,6 +44,12 @@ from .contracts import (
     ProbeResult, ProviderError, SetupField, SetupProfile, VerifiableProvider,
 )
 from .registry import CapabilityStatus, ProviderConnection, ProviderRegistry, RegistryError
+from .ingestion import CatalogIngestor, IngestionAudit, ShelfCounts
+from .tiers import (
+    ASSIGNMENT_ITEM_KEY, ASSIGNMENT_SECTION, CAPABILITY_CUSTOMIZATION, GATED_CAPABILITIES, PricingTable,
+    ResolvedTier, TierAuditSink, TierDecision, assignment_value, check_capability, decision_record, emit,
+    pricing_table_for, resolve_from_items, shelf_decision,
+)
 
 T = TypeVar("T")
 
@@ -87,6 +93,16 @@ class SetupRefused(CommerceError):
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _lines_during(exc: BaseException, lines: Callable[[], Any]) -> None:
+    """Writes an operation's decision lines while ``exc`` propagates. ``emit`` swallows operational sink
+    failures, so only a strict (test) log refusing a line raises here; it rides on ``exc`` as a note and never
+    replaces it."""
+    try:
+        lines()
+    except Exception as refused:
+        exc.add_note(f"tier decision log refused a line: {refused}")
 
 
 def _iso(ts: Optional[datetime]) -> Optional[str]:
@@ -479,14 +495,19 @@ def _default_profile(conn: ProviderConnection) -> SetupProfile:
 
 class ProviderSetupService:
     def __init__(self, registry: ProviderRegistry, store: Optional[ProviderSetupStore] = None, *,
-                 clock: Callable[[], datetime] = _utcnow, freshness: timedelta = ACTIVATION_FRESHNESS):
+                 clock: Callable[[], datetime] = _utcnow, freshness: timedelta = ACTIVATION_FRESHNESS,
+                 pricing_table: Optional[PricingTable] = None, tier_audit: Optional[TierAuditSink] = None):
         self.registry = registry
         self.environment = registry.environment
         self.store = store if store is not None else InMemoryProviderSetupStore()
         self.clock = clock
         self.freshness = freshness
-        self._lock = threading.Lock()
-        self._hydrated: set = set()
+        # Partner tiers (tiers.py): placeholder tiers in demo/development only; elsewhere none until priced.
+        self.pricing_table: PricingTable = pricing_table_for(self.environment, pricing_table)
+        self.tier_audit = tier_audit
+        self._lock = threading.RLock()  # serializes applying persisted state to this process's registry
+        self._applied: Dict[str, int] = {}  # provider -> the persisted connection version this process applied
+        self._hydrate_refused: Dict[str, frozenset] = {}  # provider -> the hydrate refusals already logged
 
     # -- helpers -------------------------------------------------------------
     def _require_operator(self, principal: Principal) -> None:
@@ -500,24 +521,65 @@ class ProviderSetupService:
             conn = self.registry.get(str(provider_id))
         except RegistryError:
             raise NotFound("provider not found") from None
-        self._hydrate(conn)
+        self._refresh(conn)
         return conn
 
     @staticmethod
     def profile(conn: ProviderConnection) -> SetupProfile:
         return getattr(conn.adapter, "setup_profile", None) or _default_profile(conn)
 
-    def _hydrate(self, conn: ProviderConnection) -> None:
-        """Re-apply persisted setup and capability evidence to this process's registry once per provider."""
+    def _refresh(self, conn: ProviderConnection, snap: Optional[SetupSnapshot] = None) -> None:
+        """Brings this process's registry to the persisted setup and capability rows whenever the connection's
+        persisted version moved: the first use (hydration), every write here, and writes by other processes
+        (a downgrade elsewhere reaches this process on its next setup call). Versions apply in order, so a
+        stale snapshot never overwrites a newer one. A 3D/AR capability applies as executable only where the
+        current tier allows it; the store stays the record. An operator's suspension in this process is never
+        lifted by a refresh. A hydrate refusal is logged when it first applies, not again on each version."""
+        if snap is None:
+            snap = self.store.snapshot(self.environment, conn.provider_id)  # a failed read is retried next time
+        version = snap.connection.version if snap.connection is not None else 0
+        overridden: List[Tuple[str, TierDecision]] = []
         with self._lock:
-            if conn.provider_id in self._hydrated:
+            if self._applied.get(conn.provider_id, -1) >= version:
                 return
-        snap = self.store.snapshot(self.environment, conn.provider_id)  # a failed read is retried next time
-        self._sync(conn, snap)
-        for status in snap.capabilities.values():
-            self.registry.set_capability(conn.provider_id, status)
-        with self._lock:
-            self._hydrated.add(conn.provider_id)
+            tier = resolve_from_items(snap.items, self.pricing_table)
+            self._sync(conn, snap)
+            refused = set()
+            for status in snap.capabilities.values():
+                if conn.capability(status.name).state == "suspended":
+                    continue  # in-process only (registry.suspend): held until the process lifts it
+                if status.name in GATED_CAPABILITIES and status.state in EXECUTABLE_STATES:
+                    d = check_capability(tier, status.name)
+                    if not d.allowed:  # e.g. the pricing table changed since activation: never revive it
+                        # One line per activation and tier, keyed on the activation item (its run and time): a
+                        # re-test elsewhere never logs it again, and a fresh activation is logged even when this
+                        # process never saw the reset between them.
+                        item = snap.items.get(f"activate:{status.name}")
+                        key = (status.name, item.evidence_ref if item else None, item.recorded_at if item else None,
+                               d.code, tier.tier_id, tier.source, tier.table_version)
+                        status = CapabilityStatus(status.name, "unconfigured", "tier_excludes_capability",
+                                                  self.clock())
+                        refused.add(key)
+                        if key not in self._hydrate_refused.get(conn.provider_id, frozenset()):
+                            overridden.append((status.name, d))
+                # The suspension check repeats under the registry's lock, so a suspend racing this is kept.
+                self.registry.set_capability(conn.provider_id, status, tier_checked=True, keep_suspension=True)
+            self._hydrate_refused[conn.provider_id] = frozenset(refused)
+            self._applied[conn.provider_id] = version
+        for name, d in overridden:
+            emit(self.tier_audit, decision_record(
+                origin="hydrate", dimension="customization", outcome="refuse", code=d.code,
+                provider_id=conn.provider_id, tier=tier, capability=name))
+
+    def _after_commit(self, conn: ProviderConnection, lines: Callable[[], Any]) -> None:
+        """Applies a committed write to this process's registry, then writes the operation's decision lines.
+        The lines are written even when the post-commit read fails, because the write did commit."""
+        try:
+            self._refresh(conn)
+        except BaseException as exc:
+            _lines_during(exc, lines)
+            raise
+        lines()
 
     def _sync(self, conn: ProviderConnection, snap: SetupSnapshot) -> None:
         """Committed setup → in-process connection and adapter (never capability states)."""
@@ -595,7 +657,7 @@ class ProviderSetupService:
         else:
             self._save(principal, conn, profile, self._clean(profile, fields), if_match)
         snap = self.store.snapshot(self.environment, conn.provider_id)
-        self._sync(conn, snap)
+        self._refresh(conn, snap)
         return self._view(conn, snap, self.store.recent_runs(self.environment, conn.provider_id, limit=20))
 
     def _clean(self, profile: SetupProfile, fields: Mapping[str, Any]) -> Dict[str, Any]:
@@ -681,7 +743,11 @@ class ProviderSetupService:
             raise InvalidRequest("unknown capability", code="unknown_capability")
         now, actor = self.clock(), operator_ref(principal)
 
+        seen: List[ResolvedTier] = []  # the tier the committed (or refusing) attempt read
+
         def fn(snap: SetupSnapshot):
+            del seen[:]
+            seen.append(resolve_from_items(snap.items, self.pricing_table))
             row = self._base_row(conn, snap, if_match)
             problems = self._activation_problems(conn, profile, snap, row, capability, now)
             if problems:
@@ -692,8 +758,103 @@ class ProviderSetupService:
             item = SetupItemRow(f"activate:{capability}", "activation", True, run.run_id, actor, now)
             return SetupWrite(replace(row, version=row.version + 1), (item,), (status,)), status
 
-        status = self.store.transact(self.environment, conn.provider_id, fn)
-        self.registry.set_capability(conn.provider_id, status)
+        gated = capability in GATED_CAPABILITIES
+
+        def record(tier: ResolvedTier) -> None:
+            d = check_capability(tier, capability)
+            emit(self.tier_audit, decision_record(
+                origin="activation", dimension="customization", outcome=d.outcome, code=d.code,
+                provider_id=conn.provider_id, tier=tier, actor_ref=principal.actor_ref, capability=capability))
+
+        try:
+            self.store.transact(self.environment, conn.provider_id, fn)
+        except SetupRefused as e:
+            if gated and e.code == "activation_tier_excludes_capability" and seen:
+                _lines_during(e, lambda: record(seen[0]))  # never replaces the refusal
+            raise
+        # The committed row, in commit order (never the value computed before commit).
+        self._after_commit(conn, lambda: record(seen[0]) if gated and seen else None)
+
+    # -- partner tiers -----------------------------------------------------------
+    def assign_tier(self, principal: Principal, provider_id: str, tier_id: Optional[str], *,
+                    if_match: Optional[int] = None) -> Dict[str, Any]:
+        """Records the connection's partner tier (``None`` clears it: no tier, nothing gated). Never enables a
+        capability: an upgrade still needs activation backed by a fresh passing test. In the same write it
+        resets every persisted-executable presentation capability that the new tier excludes, or that the tier
+        in force did not allow (an activation from before a pricing-table change, or from before tiers)."""
+        self._require_operator(principal)
+        conn = self._connection(provider_id)
+        table = self.pricing_table
+        if tier_id is not None:
+            tier = table.get(tier_id) if isinstance(tier_id, str) else None
+            if tier is None:  # placeholder tables never exist outside demo/development (pricing_table_for)
+                raise InvalidRequest("unknown partner tier", code="tier_unknown")
+        now, actor = self.clock(), operator_ref(principal)
+
+        def fn(snap: SetupSnapshot):
+            row = self._base_row(conn, snap, if_match)
+            assigned = SetupItemRow(ASSIGNMENT_ITEM_KEY, ASSIGNMENT_SECTION, tier_id is not None,
+                                    assignment_value(tier_id, table) if tier_id is not None else None, actor, now)
+            before = resolve_from_items(snap.items, table)
+            new_tier = resolve_from_items({**snap.items, ASSIGNMENT_ITEM_KEY: assigned}, table)
+            items: List[SetupItemRow] = [assigned]
+            resets: List[CapabilityStatus] = []
+            for cap in sorted(GATED_CAPABILITIES):
+                persisted = snap.capabilities.get(cap)  # the store decides, not this process's view
+                if cap not in conn.capabilities or persisted is None or persisted.state not in EXECUTABLE_STATES:
+                    continue
+                if check_capability(new_tier, cap).allowed and check_capability(before, cap).allowed:
+                    continue
+                resets.append(CapabilityStatus(cap, "unconfigured", "tier_excludes_capability", now))
+                items.append(SetupItemRow(f"activate:{cap}", "activation", False, None, actor, now))
+            return SetupWrite(replace(row, version=row.version + 1), tuple(items), tuple(resets)), (new_tier, resets)
+
+        new_tier, resets = self.store.transact(self.environment, conn.provider_id, fn)
+
+        def lines() -> None:
+            emit(self.tier_audit, decision_record(
+                origin="assignment", dimension="assignment", outcome="allow",
+                code="tier_assigned" if tier_id is not None else "tier_cleared", provider_id=conn.provider_id,
+                tier=new_tier, actor_ref=principal.actor_ref))
+            for status in resets:
+                emit(self.tier_audit, decision_record(
+                    origin="assignment", dimension="customization", outcome="refuse", code="tier_reset_capability",
+                    provider_id=conn.provider_id, tier=new_tier, actor_ref=principal.actor_ref,
+                    capability=status.name))
+
+        self._after_commit(conn, lines)
+        snap = self.store.snapshot(self.environment, conn.provider_id)
+        return self._view(conn, snap, self.store.recent_runs(self.environment, conn.provider_id, limit=20))
+
+    def load_shelf_page(self, ingestor: CatalogIngestor, page: Any, *, provider_id: str, now: datetime,
+                        audit: IngestionAudit, request_id: Optional[str] = None) -> Tuple[str, str]:
+        """Loads one catalog page onto a connection's shelf within its tier's quota (the only production
+        entry to ``CatalogIngestor.ingest_page``; no caller yet, the brand-shelf load is not built). The tier
+        is read from the setup store for each page; one decision line per page that applies (a failed page
+        that changed nothing writes none); returns ``(outcome, code)``."""
+        conn = self._connection(provider_id)
+        tier = resolve_from_items(self.store.snapshot(self.environment, conn.provider_id).items, self.pricing_table)
+        counts = ShelfCounts()  # this page's own counts, kept under the ingestor's lock (an audit may be shared)
+
+        def line() -> Tuple[str, str]:
+            outcome, code = shelf_decision(tier, requested=counts.added + counts.refused, refused=counts.refused)
+            emit(self.tier_audit, decision_record(
+                origin="ingestion", dimension="shelf_variants", outcome=outcome, code=code,
+                provider_id=conn.provider_id, tier=tier, units_requested=counts.added + counts.refused,
+                units_refused=counts.refused, request_id=request_id))
+            return outcome, code
+
+        try:
+            ingestor.ingest_page(page, provider_id=conn.provider_id, now=now, audit=audit,
+                                 max_active_listings=tier.limits.shelf_variants, counts=counts)
+        except BaseException as exc:
+            # A page applies whole (ingest_page), so a failed one usually changed nothing and gets no line:
+            # an allow/no_new_listings line would read as an empty page that succeeded. One that did admit or
+            # refuse listings before failing (another ingestor) is recorded with what it admitted.
+            if counts.added or counts.refused:
+                _lines_during(exc, line)
+            raise
+        return line()
 
     # -- connection tests -------------------------------------------------------
     def run_verification(self, principal: Principal, provider_id: str, capability: Any, mode: Any) -> Dict[str, Any]:
@@ -709,9 +870,25 @@ class ProviderSetupService:
                               probe.evidence_kind, probe.evidence_ref, probe.sanitized_summary, probe.reason_code,
                               operator_ref(principal), now)
 
+        gate: List[Tuple[ResolvedTier, TierDecision]] = []
+
         def fn(snap: SetupSnapshot):
+            del gate[:]
             status = None
-            if conn.capability(capability).state in EXECUTABLE_STATES:  # not yet enabled: only activation enables
+            # Enabled means enabled in the store (or declared by the adapter and never changed), read in this
+            # transaction: a process whose view is stale can never refresh or degrade a reset capability.
+            # An operator's suspension in this process wins: a test never lifts it.
+            persisted = snap.capabilities.get(capability)
+            state = persisted.state if persisted is not None else conn.capability(capability).state
+            if conn.capability(capability).state == "suspended":
+                state = "suspended"
+            if state in EXECUTABLE_STATES:  # not yet enabled: only activation enables
+                if capability in GATED_CAPABILITIES:
+                    tier = resolve_from_items(snap.items, self.pricing_table)
+                    d = check_capability(tier, capability)
+                    if not d.allowed:  # e.g. a stale process after a downgrade: never refresh or degrade it
+                        gate.append((tier, d))
+                        return SetupWrite(runs=(run,)), None
                 if probe.verifies:
                     status = self.registry.verification_status(
                         conn.provider_id, capability, evidence_ref=probe.evidence_ref,
@@ -724,9 +901,16 @@ class ProviderSetupService:
             row = snap.connection or ConnectionRow.from_connection(conn)
             return SetupWrite(replace(row, version=row.version + 1), (), (status,), (run,)), status
 
-        status = self.store.transact(self.environment, conn.provider_id, fn)
-        if status is not None:
-            self.registry.set_capability(conn.provider_id, status)
+        self.store.transact(self.environment, conn.provider_id, fn)
+
+        def lines() -> None:
+            if gate:
+                tier, d = gate[0]
+                emit(self.tier_audit, decision_record(
+                    origin="verification", dimension="customization", outcome="refuse", code=d.code,
+                    provider_id=conn.provider_id, tier=tier, actor_ref=principal.actor_ref, capability=capability))
+
+        self._after_commit(conn, lines)
         current = conn.capability(capability)
         return dict(run.to_wire(), capability_state=dict(current.to_public(), evidence_kind=current.evidence_kind))
 
@@ -766,6 +950,15 @@ class ProviderSetupService:
             return [("activation_capability_not_offered", f"{capability} is not offered by this provider")]
         if state == "suspended":
             return [("activation_capability_suspended", f"{capability} is suspended; lift the suspension first")]
+        tier = resolve_from_items(snap.items, self.pricing_table)  # the tier this transaction read
+        if not check_capability(tier, capability).allowed:
+            needed = CAPABILITY_CUSTOMIZATION[capability].value
+            held = f"tier {tier.tier_id} does not include it" if tier.assigned else {
+                "unassigned": "no partner tier is assigned",
+                "assigned_unknown": "the assigned tier is not in the current pricing table",
+                "unconfigured": f"no pricing table is configured in {self.environment}"}[tier.source]
+            return [("activation_tier_excludes_capability",
+                     f"{capability} needs a partner tier with {needed} customization; {held}")]
         problems: List[Tuple[str, str]] = []
         missing = self._missing(profile, snap, row, capability)
         if missing:
@@ -802,6 +995,10 @@ class ProviderSetupService:
         caps = {name: conn.capabilities[name] for name in sorted(conn.capabilities)}
         offered = [n for n, s in caps.items() if s.state != "unsupported"]
         unsupported = [n for n, s in caps.items() if s.state == "unsupported"]
+        tier_view = None
+        if any(n in GATED_CAPABILITIES for n in offered) or ASSIGNMENT_ITEM_KEY in snap.items:
+            tier_view = {"tier": resolve_from_items(snap.items, self.pricing_table).to_wire(),
+                         "tier_options": [t.to_wire() for t in self.pricing_table.tiers()]}
         done = lambda key: bool(snap.items.get(key) and snap.items[key].done)  # noqa: E731
         level_chosen = done("access_level")
 
@@ -911,7 +1108,7 @@ class ProviderSetupService:
                 continue
             problems = self._activation_problems(conn, profile, snap, row, name, now)
             hard = {"activation_capability_not_offered", "activation_capability_suspended",
-                    "activation_evidence_not_verifying"}
+                    "activation_evidence_not_verifying", "activation_tier_excludes_capability"}
             if not problems:
                 sections["activation"].append(item(f"activate:{name}", label, "todo",
                                                    f"Ready: prerequisites done and a passing test within {hours} h."))
@@ -941,4 +1138,7 @@ class ProviderSetupService:
             "freshness_hours": hours,
             "recent_runs": [r.to_wire() for r in runs],
             "editable": True,
+            # Partner tier (operator view only), shown where it bounds something: placeholder tiers are labeled
+            # and nothing here is a price. A link-out or affiliate connection with no 3D/AR has no tier block.
+            **(tier_view or {}),
         }

@@ -22,6 +22,15 @@ import { createRightsRouter } from './rights';
 import { createOwnershipRouter } from './ownership';
 import { createAssetsRouter } from './assets';
 import { createPrivacyRouter } from './privacy';
+import { consumerDomainClient } from '../../services/domains';
+import { personaRouter, type DomainClient } from './persona';
+import { wardrobeRouter } from './wardrobe';
+import { outfitsRouter } from './outfits';
+import { socialRouter } from './social';
+import { decisionsRouter } from './decisions';
+import { rewardsRouter } from './rewards';
+import { mediaRouter } from './media';
+import { tryOnRouter } from './tryon';
 
 const validateDevSession = validator('DevSessionCreate');
 
@@ -31,6 +40,8 @@ export interface ApiV1Deps {
   jwks?: JWTVerifyGetKey;
   fetchImpl?: typeof fetch;
   rights?: V1Deps;
+  /** Consumer-domain transport; defaults to the signed-assertion client from cfg. */
+  domains?: DomainClient;
 }
 
 async function timed(name: string, fn: () => Promise<void>) {
@@ -124,6 +135,14 @@ export function apiV1(deps: ApiV1Deps): Router {
   router.use('/assets', createAssetsRouter(rights));
   router.use('/me', createPrivacyRouter(rights));
   router.use('/me', meRouter(cfg, store));
+
+  // Consumer domains (persona, wardrobe, outfits, social, decisions, rewards,
+  // media, try-on): behind principalMiddleware, forwarded with a signed
+  // principal assertion (services/domains.ts). Unconfigured → 503 per route.
+  const domains = deps.domains ?? consumerDomainClient(cfg, doFetch);
+  for (const mount of [personaRouter, wardrobeRouter, outfitsRouter, socialRouter, decisionsRouter, rewardsRouter, mediaRouter, tryOnRouter]) {
+    router.use(mount(domains));
+  }
 
   router.use((req: Request, res: Response) => problemHandler(problems.notFound(), req, res, () => undefined));
   router.use(problemHandler);

@@ -37,7 +37,7 @@ than inventing a parallel one:
 
 | Code-enforced rule | Where |
 |---|---|
-| `ENVIRONMENT` must equal `BRANDME_MODE` (otherwise the service refuses to start) | `brandme_core/read_api/config.py:26`, `brandme_core/privacy_exports/config.py:24`, `brandme_core/events/worker.py:38` |
+| `ENVIRONMENT` must equal `BRANDME_MODE` (otherwise the service refuses to start) | `brandme_core/read_api/config.py:26`, `brandme_core/privacy_exports/config.py:24`, `brandme_core/events/worker.py:41` |
 | The export bucket must start with `brandme-<mode>-exports-` | `brandme_core/privacy_exports/config.py:39` |
 | Pub/Sub outbox topics must start with `brandme-<ENVIRONMENT>-` | `brandme_core/events/pubsub.py:51-52`, `brandme_core/events/README.md:18` |
 | Strict modes are `sandbox` and `production` | `brandme_core/config.py:99-108` (`Mode.is_strict`) |

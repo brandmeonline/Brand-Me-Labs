@@ -222,7 +222,9 @@ def test_the_domain_http_api_requires_an_audit_sink():
     with pytest.raises(TypeError):
         CommerceHttpApi(service=w.svc, verifier=verifier)  # no default: mounting cannot forget it
     with pytest.raises(ValueError):
-        CommerceHttpApi(service=w.svc, verifier=verifier, audit=None)
+        CommerceHttpApi(service=w.svc, verifier=verifier, audit=None, tier_audit=lambda r: None)
+    with pytest.raises(ValueError):  # partner-tier decisions are audited too
+        CommerceHttpApi(service=w.svc, verifier=verifier, audit=lambda r: None, tier_audit=None)
 
 
 def test_every_agent_request_on_the_domain_http_api_writes_one_record():

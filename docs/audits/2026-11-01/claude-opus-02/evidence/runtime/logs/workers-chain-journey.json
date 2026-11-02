@@ -1,0 +1,180 @@
+{
+  "steps": [
+    {
+      "name": "two dev sessions",
+      "result": "passed",
+      "detail": "alice 624d4e70\u2026 bob 05476e0a\u2026"
+    },
+    {
+      "name": "alice adds a wardrobe item",
+      "result": "passed",
+      "detail": "HTTP 201"
+    },
+    {
+      "name": "alice invites bob",
+      "result": "passed",
+      "detail": "HTTP 201, keys ['relationship_id', 'state']"
+    },
+    {
+      "name": "bob accepts",
+      "result": "passed",
+      "detail": "HTTP 200, state accepted"
+    },
+    {
+      "name": "alice creates a five-minute decision",
+      "result": "passed",
+      "detail": "HTTP 201, state open"
+    },
+    {
+      "name": "decision is open with a 300 s server deadline",
+      "result": "passed",
+      "detail": "HTTP 200, span 300.0"
+    },
+    {
+      "name": "bob responds 'pass'",
+      "result": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "alice closes early; result pass=1",
+      "result": "passed",
+      "detail": "HTTP 200, state closed, result {'yes': 0, 'pass': 1, 'alternative': 0, 'label': '0 yes, 1 pass', 'zero_replies': False}"
+    },
+    {
+      "name": "bob's rewards before any worker runs",
+      "result": "passed",
+      "detail": "available 0"
+    },
+    {
+      "name": "events.worker --check (schema, config, topics)",
+      "result": "passed",
+      "detail": "exit 0: {\"status\": \"ready\", \"environment\": \"development\", \"transport\": \"pubsub_emulator\", \"event_contracts\": 54, \"catalogs\": {\"commerce-agents\": \"loaded\", \"consumer-domains\": \"loaded\", \"foundation\": \"loaded\"}}"
+    },
+    {
+      "name": "events.worker --once publishes pending outbox rows to Pub/Sub",
+      "result": "passed",
+      "detail": "exit 0: {\"status\": \"dispatch\", \"delivered\": 13, \"failed\": 0, \"dead\": 0, \"stale\": 0}"
+    },
+    {
+      "name": "persona.ingress --once consumes lane events (x6)",
+      "result": "passed",
+      "detail": "{\"not_subscribed\": 7, \"processed\": 3, \"status\": \"applied\"} | {\"not_subscribed\": 1, \"status\": \"applied\"} | {\"status\": \"applied\"}"
+    },
+    {
+      "name": "persona.jobs --once (close_due / expire_due) runs",
+      "result": "passed",
+      "detail": "exit 0: {\"decisions\": {\"closed\": 0, \"skipped\": 0}, \"fulfillment\": \"not_configured\", \"media\": \"not_configured\", \"reservations\": {\"released\": 0}, \"status\": \"ran\"}"
+    },
+    {
+      "name": "bob's reward settled through worker -> Pub/Sub -> ingress (friend_decision_response = 10 points)",
+      "result": "passed",
+      "detail": "available 10, account {'available': 10, 'reserved': 0, 'lifetime_earned': 10, 'gross_earned': 10, 'reversed': 0, 'spent': 0, 'recovery_due': 0, 'version': '1'}"
+    },
+    {
+      "name": "alice's rewards readable after settlement (no rule credits the asker)",
+      "result": "passed",
+      "detail": "available 25"
+    },
+    {
+      "name": "bob has in-app notifications from the decision flow",
+      "result": "passed",
+      "detail": "unread 2"
+    },
+    {
+      "name": "alice blocks bob",
+      "result": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "after the block bob can no longer read the decision",
+      "result": "passed",
+      "detail": "HTTP 404"
+    }
+  ],
+  "processes": [
+    {
+      "module": "brandme_core.events.worker",
+      "args": [
+        "--check"
+      ],
+      "exit": 0,
+      "stdout_tail": "{\"status\": \"ready\", \"environment\": \"development\", \"transport\": \"pubsub_emulator\", \"event_contracts\": 54, \"catalogs\": {\"commerce-agents\": \"loaded\", \"consumer-domains\": \"loaded\", \"foundation\": \"loaded\"}}",
+      "stderr_tail": "  warnings.warn(message, FutureWarning)"
+    },
+    {
+      "module": "brandme_core.events.worker",
+      "args": [
+        "--once"
+      ],
+      "exit": 0,
+      "stdout_tail": "{\"status\": \"dispatch\", \"delivered\": 13, \"failed\": 0, \"dead\": 0, \"stale\": 0}",
+      "stderr_tail": "  warnings.warn(message, FutureWarning)"
+    },
+    {
+      "module": "brandme_core.domains.persona.ingress",
+      "args": [
+        "--once"
+      ],
+      "exit": 0,
+      "stdout_tail": "{\"not_subscribed\": 7, \"processed\": 3, \"status\": \"applied\"}",
+      "stderr_tail": "  warnings.warn(message, FutureWarning)"
+    },
+    {
+      "module": "brandme_core.domains.persona.ingress",
+      "args": [
+        "--once"
+      ],
+      "exit": 0,
+      "stdout_tail": "{\"not_subscribed\": 1, \"status\": \"applied\"}",
+      "stderr_tail": "  warnings.warn(message, FutureWarning)"
+    },
+    {
+      "module": "brandme_core.domains.persona.ingress",
+      "args": [
+        "--once"
+      ],
+      "exit": 0,
+      "stdout_tail": "{\"status\": \"applied\"}",
+      "stderr_tail": "  warnings.warn(message, FutureWarning)"
+    },
+    {
+      "module": "brandme_core.domains.persona.ingress",
+      "args": [
+        "--once"
+      ],
+      "exit": 0,
+      "stdout_tail": "{\"status\": \"applied\"}",
+      "stderr_tail": "  warnings.warn(message, FutureWarning)"
+    },
+    {
+      "module": "brandme_core.domains.persona.ingress",
+      "args": [
+        "--once"
+      ],
+      "exit": 0,
+      "stdout_tail": "{\"status\": \"applied\"}",
+      "stderr_tail": "  warnings.warn(message, FutureWarning)"
+    },
+    {
+      "module": "brandme_core.domains.persona.ingress",
+      "args": [
+        "--once"
+      ],
+      "exit": 0,
+      "stdout_tail": "{\"status\": \"applied\"}",
+      "stderr_tail": "  warnings.warn(message, FutureWarning)"
+    },
+    {
+      "module": "brandme_core.domains.persona.jobs",
+      "args": [
+        "--once"
+      ],
+      "exit": 0,
+      "stdout_tail": "{\"decisions\": {\"closed\": 0, \"skipped\": 0}, \"fulfillment\": \"not_configured\", \"media\": \"not_configured\", \"reservations\": {\"released\": 0}, \"status\": \"ran\"}",
+      "stderr_tail": "  warnings.warn(message, FutureWarning)"
+    }
+  ],
+  "passed": 18,
+  "failed": 0,
+  "decision_id": "4d2a12ce-7282-543a-b747-cfa9fd9ab3c0"
+}

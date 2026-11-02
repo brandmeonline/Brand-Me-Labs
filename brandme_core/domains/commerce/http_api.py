@@ -45,6 +45,7 @@ from brandme_core.mcp.authz import DOMAIN_AUDIENCE, AuthError, ExecutorAssertion
 from brandme_core.mcp.refs import log_ref
 from brandme_core.orchestrator.runtime import IdempotencyReuse, TaskConstraints
 
+from .autonomy import ASSISTANT_CLIENT_ID, AutonomyBoundary, decision_context  # noqa: F401  (re-exported)
 from .delegation import AssistanceMode, DelegationLimits
 from .errors import AssistantBusy, Forbidden, IdempotencyConflict, InvalidRequest, NotFound
 from .money import Money, MoneyError
@@ -53,7 +54,6 @@ from .records import ApprovalChallenge, Cart, Order, PurchaseApproval, PurchaseO
 from .service import CommerceService, _uuid_or_none, correlation
 
 PREFIX = "/internal/commerce/v1"
-ASSISTANT_CLIENT_ID = "brandme-assistant"  # Brand.Me's own assistant acts only under a grant to this client
 PROVIDER_ADMIN_SCOPE = "provider:admin"
 
 
@@ -92,7 +92,9 @@ def operation_wire(o: PurchaseOperation) -> Dict[str, Any]:
 def challenge_wire(c: ApprovalChallenge) -> Dict[str, Any]:
     # The trusted surface needs the plaintext nonce exactly once, to post it back with the approval.
     return {"id": c.id, "operation_id": c.operation_id, "quote_id": c.quote_id, "quote_hash": c.quote_hash,
-            "nonce": c.nonce, "expires_at": _iso(c.expires_at)}
+            "nonce": c.nonce, "expires_at": _iso(c.expires_at),
+            # who places the order if the member approves now: the member's assistant rules decide
+            "completed_by": c.completed_by or "member", "autonomy_codes": list(c.autonomy_codes)}
 
 
 def approval_wire(a: PurchaseApproval) -> Dict[str, Any]:
@@ -126,7 +128,8 @@ def delegation_wire(d) -> Dict[str, Any]:
                 "allowed_merchants": sorted(lim.allowed_merchants), "allowed_categories": sorted(lim.allowed_categories),
                 "delivery_ref": lim.delivery_ref, "require_returnable": lim.require_returnable,
                 "refund_credit_back": lim.refund_credit_back,
-                "require_final_human_approval": lim.require_final_human_approval}}
+                "require_final_human_approval": lim.require_final_human_approval},
+            "autonomy_boundary": d.boundary.to_wire() if d.boundary is not None else None}
 
 
 def _summary_state(conn, capability: str) -> str:
@@ -149,12 +152,16 @@ AuditSink = Callable[[Dict[str, Any]], None]
 
 class CommerceHttpApi:
     def __init__(self, *, service: CommerceService, verifier: ExecutorAssertionVerifier, audit: AuditSink,
-                 runtime: Any = None, planner_factory: Optional[Callable[[], Any]] = None,
-                 setup_store: Any = None, task_runner: Any = None):
+                 tier_audit: AuditSink, runtime: Any = None, planner_factory: Optional[Callable[[], Any]] = None,
+                 setup_store: Any = None, task_runner: Any = None, pricing_table: Any = None):
         if verifier.audience != DOMAIN_AUDIENCE or not verifier.allow_session:
             raise ValueError("the commerce domain hop needs a verifier for brandme:commerce-domain with sessions")
         if not callable(audit):
             raise ValueError("the commerce domain hop needs an audit sink for agent requests")
+        if not callable(tier_audit):
+            raise ValueError("the commerce domain hop needs a partner-tier decision sink (RunLog.tier_decision)")
+        if not service._autonomy_sinks:
+            raise ValueError("the commerce domain hop needs an autonomy decision sink (add_autonomy_sink)")
         self.svc = service
         self.verifier = verifier
         self.audit = audit
@@ -163,7 +170,8 @@ class CommerceHttpApi:
         # Runs planners marked ``runs_in_background`` (model runs) off the request (``BackgroundRunner``).
         self.task_runner = task_runner
         # Operator setup and connection tests; the store defaults to in-memory (InMemoryProviderSetupStore).
-        self.setup = ProviderSetupService(service.registry, setup_store, clock=service.clock)
+        self.setup = ProviderSetupService(service.registry, setup_store, clock=service.clock,
+                                          pricing_table=pricing_table, tier_audit=tier_audit)
         # operation -> (allowed argument names, handler)
         self.ops: Dict[str, Tuple[frozenset, Handler]] = {
             "cart.create": (frozenset({"provider_id", "merchant_id", "lines"}), self._cart_create),
@@ -179,8 +187,10 @@ class CommerceHttpApi:
             "order.return": (frozenset({"order_id", "source_variant_ref", "quantity"}), self._order_return),
             "order.cancel": (frozenset({"order_id"}), self._order_cancel),
             "delegation.list": (frozenset(), self._delegation_list),
-            "delegation.create": (frozenset({"client_id", "mode", "allowed_providers", "expires_at", "limits"}),
-                                  self._delegation_create),
+            "delegation.create": (frozenset({"client_id", "mode", "allowed_providers", "expires_at", "limits",
+                                             "autonomy_boundary"}), self._delegation_create),
+            "delegation.boundary.update": (frozenset({"delegation_id", "autonomy_boundary"}),
+                                           self._delegation_boundary_update),
             "delegation.revoke": (frozenset({"delegation_id"}), self._delegation_revoke),
             "catalog.search": (frozenset({"q", "provider", "cursor", "limit"}), self._catalog_search),
             "catalog.product": (frozenset({"product_id"}), self._catalog_product),
@@ -191,6 +201,7 @@ class CommerceHttpApi:
             "provider.setup.get": (frozenset({"provider_id"}), self._provider_setup_get),
             "provider.setup.update": (frozenset({"provider_id"}) | SETUP_UPDATE_FIELDS, self._provider_setup_update),
             "provider.verify": (frozenset({"provider_id", "capability", "mode"}), self._provider_verify),
+            "provider.tier.assign": (frozenset({"provider_id", "tier_id"}), self._provider_tier_assign),
             "provider.runs": (frozenset({"provider_id", "capability", "limit"}), self._provider_runs),
             "commerce.ops.queue": (frozenset(), lambda p, a, h: (200, self.svc.operator_queue(p))),
             "assistant.task.create": (frozenset({"goal", "assistance_mode", "budget_hint"}), self._task_create),
@@ -262,7 +273,8 @@ class CommerceHttpApi:
         if allowed is not None and set(args) - allowed:
             # Identity, scope and approval never come from request fields.
             raise InvalidRequest(f"unexpected fields: {sorted(set(args) - allowed)}", code="unexpected_field")
-        with correlation(headers.get("x-request-id")):  # the gateway's request id, when it is a UUID
+        rid = headers.get("x-request-id")
+        with correlation(rid), decision_context(origin="api", request_id=rid):  # the gateway's request id
             status, payload = handler(principal, args, headers)
         extra = {"ETag": f'"{payload["revision"]}"'} if isinstance(payload, dict) and "revision" in payload else {}
         return status, payload, extra
@@ -396,10 +408,21 @@ class CommerceHttpApi:
                     allow_substitution=bool(l.get("allow_substitution", False)))
             except (KeyError, TypeError, ValueError):  # MoneyError is a ValueError; DelegationInvalid propagates
                 raise InvalidRequest("invalid delegation limits") from None
+        raw = a.get("autonomy_boundary")
+        boundary = AutonomyBoundary.from_wire(raw) if raw is not None else None
         d = self.svc.create_delegation(p, client_id=str(a["client_id"]), mode=mode,
                                        allowed_providers=[str(x) for x in a["allowed_providers"]],
-                                       limits=limits, expires_at=expires_at)
+                                       limits=limits, expires_at=expires_at, boundary=boundary)
         return 201, delegation_wire(d)
+
+    def _delegation_boundary_update(self, p, a, h):
+        """The member's explicit boundary change (If-Match: the grant version). ``null`` clears the rules:
+        the concierge prepares and the member completes."""
+        self._need(a, "delegation_id", "autonomy_boundary")
+        raw = a["autonomy_boundary"]
+        boundary = AutonomyBoundary.from_wire(raw) if raw is not None else None
+        d = self.svc.update_autonomy_boundary(p, str(a["delegation_id"]), boundary, if_match=self._if_match(h))
+        return 200, delegation_wire(d)
 
     def _delegation_revoke(self, p, a, h):
         self._need(a, "delegation_id")
@@ -497,6 +520,16 @@ class CommerceHttpApi:
         if_match = self._if_match(h) if h.get("if-match") else None  # optional lost-update guard
         fields = {k: v for k, v in a.items() if k != "provider_id"}
         return 200, self.setup.update_setup(p, str(a.get("provider_id", "")), fields, if_match=if_match)
+
+    def _provider_tier_assign(self, p, a, h):
+        """The connection's partner tier (``tier_id: null`` clears it). Never enables a capability."""
+        self._require_admin(p)
+        self._need(a, "tier_id")
+        tier_id = a["tier_id"]
+        if tier_id is not None and not isinstance(tier_id, str):
+            raise InvalidRequest("tier_id must be a string or null", code="tier_unknown")
+        # If-Match is required (428 without it): a downgrade resets capabilities, so never on a stale view.
+        return 200, self.setup.assign_tier(p, str(a.get("provider_id", "")), tier_id, if_match=self._if_match(h))
 
     def _provider_verify(self, p, a, h):
         self._require_admin(p)

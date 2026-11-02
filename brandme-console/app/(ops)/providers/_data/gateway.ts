@@ -48,7 +48,7 @@ async function problemOf(r: Response): Promise<{ code: string; detail: string }>
  * PATCH/POST to an operator route with the incoming bearer only (never cookies). The gateway and
  * the domain authorize and validate; this only relays the outcome, including problem+json refusals.
  */
-export async function sendToGateway<T>(method: 'PATCH' | 'POST', path: string, body: unknown,
+export async function sendToGateway<T>(method: 'PATCH' | 'POST' | 'PUT', path: string, body: unknown,
                                        ifMatch?: string): Promise<Sent<T>> {
   const base = process.env.BRANDME_GATEWAY_URL
   if (!base) return { ok: false, status: 0, code: 'not_connected', detail: 'Set BRANDME_GATEWAY_URL for the console server.' }
@@ -218,6 +218,34 @@ export type ProviderSetup = {
   freshness_hours: number
   recent_runs: VerificationRunRow[]
   editable: boolean
+  /** Present only where a tier bounds something (3D/AR offered, or a tier already recorded). */
+  tier?: PartnerTier
+  tier_options?: TierOption[]
+}
+/** Partner tier (operator view). Placeholder tiers carry no price and sit at the two ends of each limit. */
+export type TierIncludes = {
+  shelf_variants: number | null
+  customization: string
+  analytics: string
+  member_connection: string
+}
+export type PartnerTier = {
+  tier_id: string | null
+  source: 'assigned' | 'unassigned' | 'assigned_unknown' | 'unconfigured'
+  table_version: string
+  placeholder: boolean
+  price_status: 'not_priced'
+  price_label: string
+  includes: TierIncludes
+  label: string | null
+}
+export type TierOption = {
+  tier_id: string
+  display_name: string
+  placeholder: boolean
+  price_status: 'not_priced'
+  price_label: string
+  includes: TierIncludes
 }
 export type VerificationRuns = { provider_id: string; environment: string; simulation: boolean; items: VerificationRunRow[] }
 

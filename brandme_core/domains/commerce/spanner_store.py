@@ -17,13 +17,15 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, TypeVar
 
 from google.cloud.spanner_v1 import COMMIT_TIMESTAMP, JsonObject, KeyRange, KeySet, param_types
 
 from brandme_core.domains.providers.contracts import CartLineRequest
 from brandme_core.events import EventEnvelope, write_events
 
+from .autonomy import STORAGE_KEY as AUTONOMY_STORAGE_KEY
+from .autonomy import AutonomyBoundary
 from .delegation import AgentDelegation, AssistanceMode, DelegationLimits
 from .errors import QuoteExpired
 from .money import Money
@@ -181,10 +183,24 @@ _DELEGATION_COLS = ("delegation_id", "member_id", "client_id", "mode", "scopes",
                     "created_at", "expires_at", "revoked_at", "version")
 
 
-def _limits_to_json(l: Optional[DelegationLimits]):
-    if l is None:
-        return None
-    return JsonObject({
+def _grant_json(l: Optional[DelegationLimits], boundary: Optional[AutonomyBoundary]):
+    """One JSON document per grant: the limits' keys, plus the member's autonomy boundary under its own key."""
+    doc = dict(_limits_doc(l)) if l is not None else {}
+    if boundary is not None:
+        doc[AUTONOMY_STORAGE_KEY] = boundary.to_storage()
+    return JsonObject(doc) if doc else None
+
+
+def _grant_from_json(v) -> Tuple[Optional[DelegationLimits], Optional[AutonomyBoundary]]:
+    if v is None:
+        return None, None
+    d = _json(v)
+    boundary = AutonomyBoundary.from_storage(d[AUTONOMY_STORAGE_KEY]) if AUTONOMY_STORAGE_KEY in d else None
+    return (_limits_from_doc(d) if "currency" in d else None), boundary
+
+
+def _limits_doc(l: DelegationLimits) -> Dict[str, Any]:
+    return ({
         "currency": l.currency, "max_per_order_minor": l.max_per_order.amount_minor,
         "max_cumulative_minor": l.max_cumulative.amount_minor, "window_seconds": l.window_seconds,
         "allowed_merchants": sorted(l.allowed_merchants), "allowed_categories": sorted(l.allowed_categories),
@@ -196,10 +212,7 @@ def _limits_to_json(l: Optional[DelegationLimits]):
     })
 
 
-def _limits_from_json(v) -> Optional[DelegationLimits]:
-    if v is None:
-        return None
-    d = _json(v)
+def _limits_from_doc(d: Mapping[str, Any]) -> DelegationLimits:
     cur = d["currency"]
     return DelegationLimits(
         currency=cur, max_per_order=Money(d["max_per_order_minor"], cur),
@@ -216,19 +229,20 @@ def _load_delegation(r, key):
     row = _read_one(r, "AgentDelegations", _DELEGATION_COLS, key)
     if row is None:
         return None
+    limits, boundary = _grant_from_json(row["limits"])
     return AgentDelegation(
         id=row["delegation_id"], member_id=row["member_id"], client_id=row["client_id"],
         mode=AssistanceMode(row["mode"]), scopes=frozenset(row["scopes"]),
-        allowed_providers=frozenset(row["allowed_providers"]), limits=_limits_from_json(row["limits"]),
+        allowed_providers=frozenset(row["allowed_providers"]), limits=limits,
         created_at=row["created_at"], expires_at=row["expires_at"], revoked_at=row["revoked_at"],
-        version=row["version"])
+        version=row["version"], boundary=boundary)
 
 
 def _save_delegation(tx, key, d: AgentDelegation, exists):
     _write(tx, "AgentDelegations", exists, {
         "delegation_id": d.id, "member_id": d.member_id, "client_id": d.client_id, "mode": d.mode.value,
         "scopes": sorted(d.scopes), "allowed_providers": sorted(d.allowed_providers),
-        "limits": _limits_to_json(d.limits), "created_at": d.created_at, "expires_at": d.expires_at,
+        "limits": _grant_json(d.limits, d.boundary), "created_at": d.created_at, "expires_at": d.expires_at,
         "revoked_at": d.revoked_at, "version": d.version})
 
 

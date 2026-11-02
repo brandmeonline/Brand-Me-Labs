@@ -1,0 +1,19 @@
+{
+  "time_utc": "2026-11-01T14:51:43.664581+00:00",
+  "status": "pass",
+  "json_files": 67,
+  "links_checked": 3758,
+  "immutable_source_files_checked": 166,
+  "inventory_counts": {
+    "branches": 36,
+    "capabilities": 20,
+    "components": 39,
+    "integrations": 24,
+    "journeys": 17,
+    "findings": 22,
+    "requirements_mapped": 150
+  },
+  "errors": [],
+  "warnings": [],
+  "scope": "Artifact structural/source-reference validation only. No application code execution. Network links not all live-probed."
+}

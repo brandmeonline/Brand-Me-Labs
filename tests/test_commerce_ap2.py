@@ -80,6 +80,32 @@ def test_replayed_mandate_rejected(setup):
     assert e.value.code == "ap2_replay"
 
 
+_P256_N = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
+
+
+def _high_s(token):
+    """The member's own ECDSA signature re-encoded as (r, n - s): it still verifies, but the bytes differ."""
+    import base64
+    issuer, rest = token.split("~", 1)
+    header, payload, sig = issuer.split(".")
+    raw = base64.urlsafe_b64decode(sig + "=" * (-len(sig) % 4))
+    s = (_P256_N - int.from_bytes(raw[32:], "big")).to_bytes(32, "big")
+    return f"{header}.{payload}.{base64.urlsafe_b64encode(raw[:32] + s).rstrip(b'=').decode()}~{rest}"
+
+
+def test_a_re_encoded_mandate_never_approves_a_sibling_request(setup):
+    """Review finding: single use keyed on the encoded mandate let a re-encoded signature approve a second
+    request for the same quote. One member signature approves one request."""
+    w, ag, quote, op, user, now = setup
+    cm, pm = mandates(w, quote, user, now)
+    w.svc.approve_with_ap2(ag, operation_id=op.id, checkout_mandate=cm, payment_mandate=pm)
+    op2 = w.svc.request_purchase(ag, quote.id)
+    assert _high_s(cm) != cm
+    with pytest.raises(ApprovalInvalid) as e:
+        w.svc.approve_with_ap2(ag, operation_id=op2.id, checkout_mandate=_high_s(cm), payment_mandate=pm)
+    assert e.value.code == "ap2_replay" and w.store.get("operations", op2.id).state == "awaiting_approval"
+
+
 def test_mandate_signed_by_unregistered_key_rejected(setup):
     w, ag, quote, op, _, now = setup
     stranger = JWK.generate(kty="EC", crv="P-256")

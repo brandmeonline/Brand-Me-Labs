@@ -12,7 +12,7 @@ case "$service" in
     docker run --rm --entrypoint node "$image" --input-type=module -e "await import('./dist/src/midnight/spanner-store.js'); await import('./dist/src/routes/operations.js'); await import('./dist/src/midnight/reconciliation-worker.js'); await import('./dist/src/midnight/projection.js'); console.log('chain operation runtime imports OK')"
     ;;
   agents)
-    docker run --rm --entrypoint python "$image" -c "import pydantic, langchain, neo4j_graphrag, faiss, sentence_transformers; print('agent dependencies import OK')"
+    docker run --rm --entrypoint python "$image" -c "import pydantic, langchain, neo4j_graphrag, faiss; print('agent dependencies import OK')"
     docker run --rm "$image"
     docker run --rm -e BRANDME_MODE=production --entrypoint python "$image" -c "from typer.testing import CliRunner; from agentic.cli.main import app; from brandme_core.config import TrustPathViolation; r = CliRunner().invoke(app, ['scan', '--tag', 'test', '--scanner-id', 'test']); assert isinstance(r.exception, TrustPathViolation), r.exception; print('legacy simulated workflow refused in production')"
     ;;
@@ -26,21 +26,41 @@ case "$service" in
     echo 'runtime default command prints usage and exits 64'
     docker run --rm --entrypoint python "$image" -m pip check
     docker run --rm --entrypoint python "$image" -m brandme_core.events.worker --help
+    docker run --rm --entrypoint python "$image" -m brandme_core.events.retention --help
     docker run --rm --entrypoint python "$image" -m brandme_core.read_api --help
     docker run --rm --entrypoint python "$image" -m brandme_core.privacy_exports --help
+    docker run --rm --entrypoint python "$image" -m brandme_core.domains.persona.app --help
     docker run --rm --entrypoint python "$image" brandme-data/spanner/migrations/runner.py --help
     docker run --rm --read-only --network none --entrypoint python "$image" -c "import sys; sys.path.insert(0, 'brandme-data/spanner/migrations'); import runner; v = [m.version for m in runner.load_migrations()]; assert v and 13 in v and 14 in v, v; print('packaged migrations', v)"
     # Strict modes refuse incomplete configuration before any network call. stdout must be exactly the refusal
     # record; stderr may carry dependency warnings (google.api_core warns about Python 3.11's end of life from
     # 2026-10-24) but never a traceback.
     err=$(mktemp)
-    for module in brandme_core.read_api brandme_core.privacy_exports brandme_core.events.worker; do
+    for module in brandme_core.read_api brandme_core.privacy_exports brandme_core.events.worker brandme_core.events.retention brandme_core.domains.persona.app; do
       set +e; out=$(docker run --rm --read-only --network none -e BRANDME_MODE=sandbox -e ENVIRONMENT=sandbox --entrypoint python "$image" -m "$module" --check 2>"$err"); rc=$?; set -e
       test "$rc" -eq 2 && test "$out" = '{"status":"startup_refused"}' && ! grep -q 'Traceback' "$err" \
         || { echo "$module --check: rc=$rc stdout=$out" >&2; cat "$err" >&2; exit 1; }
     done
     rm -f "$err"
     echo 'sandbox --check refuses missing configuration (exit 2)'
+    # The packaged trust-path inventory audits the consumer-domain process: a configured sandbox process passes the
+    # boot guard (a throwaway public key generated here), and the simulated try-on provider is still refused.
+    docker run --rm --read-only --network none --entrypoint python "$image" -c "
+import json
+from cryptography.hazmat.primitives.asymmetric import ec
+from jwt.algorithms import ECAlgorithm
+from brandme_core.boot import BootRefused, guard
+jwk = {**json.loads(ECAlgorithm.to_jwk(ec.generate_private_key(ec.SECP256R1()).public_key())), 'kid': 'smoke'}
+env = {'BRANDME_MODE': 'sandbox', 'ENVIRONMENT': 'sandbox', 'CONSUMER_DOMAIN_ASSERTION_ISSUER': 'brandme-gateway',
+       'CONSUMER_DOMAIN_ASSERTION_JWKS': json.dumps({'keys': [jwk]})}
+assert guard('consumer_domains', env=env).value == 'sandbox'
+try:
+    guard('consumer_domains', env={**env, 'BRANDME_TRYON_PROVIDER': 'simulated'})
+except BootRefused:
+    pass
+else:
+    raise SystemExit('simulated try-on provider allowed in sandbox')
+print('consumer_domains boot guard: configured sandbox allowed, simulated try-on refused')"
     docker run --rm --entrypoint python "$image" -c "from brandme_core.privacy_exports.app import create_app; from brandme_core.privacy_exports.storage import PrivateStore; print('selected rights export API and worker imports OK')"
     docker run --rm --entrypoint python "$image" -c "from brandme_core.read_api.app import create_app; from brandme_core.read_api.config import ReadConfig; print('authenticated read API runtime imports OK')"
     # Read-only root + /tmp tmpfs mirrors the chart's securityContext.
@@ -77,6 +97,12 @@ with TestClient(create_export_app(UnavailableDatabase(), export_config, None)) a
     assert response.status_code == 503 and response.json() == {'error': 'dependency_unavailable'}
     assert response.headers['cache-control'] == 'private, no-store'
 print('packaged export API HTTP authentication and redaction OK')
+from brandme_core.domains.persona.app import create_app as create_domain_app
+with TestClient(create_domain_app(UnavailableDatabase(), resolve_principal=lambda request: None)) as client:
+    assert client.get('/health').json() == {'status': 'ok', 'media': 'not_configured'}
+    for path in ('/me/persona', '/wardrobe/items'):
+        assert client.get(path).status_code == 401, path
+print('packaged consumer-domain routers mount and refuse calls without a gateway assertion')
 PY
     docker run --rm -e BRANDME_MODE=development --entrypoint python "$image" -c "from uuid import uuid4; from brandme_core.domains.rights.projection import apply_observation; from brandme_core.domains.privacy.privacy import MyDataService; from brandme_core.events import EventEnvelope; j = str(uuid4()); EventEnvelope(event_type='privacy.deletion.requested', schema_version='1', aggregate_type='deletion_job', aggregate_id=j, aggregate_version=1, environment='development', actor_ref='service:privacy', correlation_id=j, privacy_class='restricted', payload={'job_id': j, 'scope': 'account'}).validate(); print('core rights/privacy imports and packaged event schema OK')"
     ;;

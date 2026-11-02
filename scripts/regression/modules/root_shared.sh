@@ -7,5 +7,5 @@ source "${ROOT_DIR}/scripts/regression/lib.sh"
 require_cmd bash
 require_cmd find
 
-run_step "root: markdown/docs sanity" bash -lc "test -f '${ROOT_DIR}/PLAN.md' && test -f '${ROOT_DIR}/CLAUDE.md'"
+run_step "root: markdown/docs sanity" bash -lc "test -f '${ROOT_DIR}/CLAUDE.md' && test -f '${ROOT_DIR}/README.md' && test -f '${ROOT_DIR}/docs/build/implementation-status.md'"
 run_step "root: shell scripts syntax" bash -lc "find '${ROOT_DIR}/scripts' -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n"

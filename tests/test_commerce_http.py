@@ -33,8 +33,11 @@ class Http:
             gateway_issuer=GW, keys={"gw-1": self.key.public_key()}, environment="development"))
         self.runtime = AssistantRuntime(mcp, environment="development")
         self.audit = []
+        from brandme_core.orchestrator.runlog import MemoryRunLog
+        self.tier_log = MemoryRunLog(strict=True)  # partner-tier decisions, through the closed schema
         self.api = CommerceHttpApi(service=self.w.svc, verifier=verifier, runtime=self.runtime,
-                                   planner_factory=DeterministicPlanner, audit=self.audit.append)
+                                   planner_factory=DeterministicPlanner, audit=self.audit.append,
+                                   tier_audit=self.tier_log.tier_decision)
         self.client = TestClient(create_commerce_app(self.api))
 
     def assertion(self, principal, audience=DOMAIN_AUDIENCE):

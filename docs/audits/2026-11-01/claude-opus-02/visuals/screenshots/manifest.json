@@ -1,0 +1,1523 @@
+{
+  "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "label": "OBSERVED SCREENSHOT — second audit local run",
+  "environment": "local worktree, frontend only, no gateway/backend",
+  "data_mode": "synthetic/guest; no backend",
+  "generated_utc": "2026-11-01T15:28:45.802Z",
+  "screenshots": [
+    {
+      "filename": "home-desktop-1440x900.png",
+      "route": "/",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:25:31.718Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A wardrobethat feelslike you."
+        ],
+        "status": [],
+        "firstParagraphs": [
+          "A wardrobe that feels like you.",
+          "Be More U.",
+          "Not a new you. More of you.A place for your style, your favorite pieces, and the people whose taste you trust."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "start-desktop-1440x900.png",
+      "route": "/start",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:25:34.627Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A wardrobe that feels like you."
+        ],
+        "status": [],
+        "firstParagraphs": [
+          "A wardrobe that feels like you.",
+          "Be More U",
+          "A few choices to get started. Every one stays editable."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "today-desktop-1440x900.png",
+      "route": "/today",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:25:37.809Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Today · Brand.Me",
+        "h1": [
+          "Make room for you."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Today",
+          "A little inspiration for your day",
+          "A considered look. A fresh perspective. A place to begin."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/recommendations -> 503",
+        "GET /api/v1/wardrobe/items -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "add-desktop-1440x900.png",
+      "route": "/add",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:25:49.688Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A new place in your wardrobe."
+        ],
+        "status": [
+          "Review your item, status, and destination before adding.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Make it yours",
+          "Guest demo · Saved on this device"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "add-scan-desktop-1440x900.png",
+      "route": "/add/scan",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:25:52.772Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Every piece has a story."
+        ],
+        "status": [
+          "Scanning is not connected yet. A product resolver and server-authorized disclosure service are required before results can be shown.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Discover a garment",
+          "Start with a tag or a photo. Product identification is separate from ownership and authenticity."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "closet-desktop-1440x900.png",
+      "route": "/closet",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:25:56.671Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Walnut Atelier"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Closet",
+          "Your wardrobe, your world",
+          "Guest demo · Saved on this device · Fictional starter pieces"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "closet-settings-desktop-1440x900.png",
+      "route": "/closet/settings",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:00.329Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Make room for you"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Closet",
+          "Your wardrobe, your world",
+          "Guest demo · Saved on this device · Fictional starter pieces"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "style-desktop-1440x900.png",
+      "route": "/style",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:03.001Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Start with what is yours."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Style",
+          "Style Me",
+          "Guest look · Saved on this device · Original fictional starter items"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "discover-desktop-1440x900.png",
+      "route": "/discover",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:07.556Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A world to discover."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Discover",
+          "Discover",
+          "Search connected catalogs with source, freshness and provider disclosures in view."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "circle-desktop-1440x900.png",
+      "route": "/circle",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:11.693Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Your circle. Your call."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Circle",
+          "Brand.Me",
+          "People whose opinions matter to you."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/decisions -> 503",
+        "GET /api/v1/relationships -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "circle-decisions-new-desktop-1440x900.png",
+      "route": "/circle/decisions/new",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:15.099Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Five minutes. A little perspective."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Circle",
+          "Brand.Me",
+          "Ask about something in your wardrobe."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/relationships -> 503",
+        "GET /api/v1/wardrobe/items -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "rewards-desktop-1440x900.png",
+      "route": "/rewards",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:19.311Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Good style. Good company."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Rewards",
+          "Brand.Me",
+          "Rewards grounded in contributions, with evidence you can inspect."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/rewards -> 503",
+        "GET /api/v1/benefits -> 503",
+        "GET /api/v1/rewards/reservations -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "inbox-desktop-1440x900.png",
+      "route": "/inbox",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:22.694Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Keep in touch with your world."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Inbox",
+          "Your updates",
+          "Decisions, requests and account updates, visible only to you."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/notifications -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-desktop-1440x900.png",
+      "route": "/me",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:26.851Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Me · Brand.Me",
+        "h1": [
+          "You get the final say."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Me",
+          "Me / always a work in progress",
+          "Your taste is a starting point, never a box to fit into."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-style-desktop-1440x900.png",
+      "route": "/me/style",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:31.504Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "More you. On your terms."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Me",
+          "Me / Looking Glass",
+          "Twelve preferences, with a clear distinction between what you choose and what Brand.Me learns."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me/persona -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-data-desktop-1440x900.png",
+      "route": "/me/data",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:35.751Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Your data. Your decisions."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / My Data",
+          "My Data",
+          "Inspect the connected inventory, its sources and retention, and the actions currently available."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me/data -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-connections-desktop-1440x900.png",
+      "route": "/me/connections",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:40.020Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Connected, with your permission."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Connections",
+          "Me / Connections",
+          "Review your account and the services allowed to act for you."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "orders-desktop-1440x900.png",
+      "route": "/orders",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:42.918Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Every piece has a next chapter."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Orders",
+          "Your world, taking shape",
+          "Orders are not connected in this preview. No retailer purchase has been made or confirmed."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "assistant-desktop-1440x900.png",
+      "route": "/assistant",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:46.029Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A little help, on your terms."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / My Assistant",
+          "Your world, taking shape",
+          "Your assistant is not connected in this preview. No tasks, purchases or agent permissions have been created."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "settings-desktop-1440x900.png",
+      "route": "/settings",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:49.767Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Settings · Brand.Me",
+        "h1": [
+          "Comfort, by design."
+        ],
+        "status": [
+          "Display preferences are saved on this device.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Settings",
+          "Your experience",
+          "A calmer screen, a different light, a simpler view. Make this space yours."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "scan-desktop-1440x900.png",
+      "route": "/scan",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:53.385Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Atelier 7 / Denim Capsule 03"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Reclaimed 14oz selvedge denim",
+          "Provenance and sustainability claims logged to immutable audit trail"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "governance-desktop-1440x900.png",
+      "route": "/governance",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:26:56.622Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Governance Console"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Review and approve escalated scan requests",
+          "Always in your hands"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "try-device-test-desktop-1440x900.png",
+      "route": "/try/device-test",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:04.081Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Device validation"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Native AR is still unverified. Start the development device-test build described in the spatial lane status to collect evidence.",
+          "Always in your hands"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "this-route-does-not-exist-desktop-1440x900.png",
+      "route": "/this-route-does-not-exist",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:07.568Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 404,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Let’s find your way."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Your world, taking shape",
+          "This page may have moved or isn’t part of the current experience. You can keep exploring Today and adjust your display settings."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-connections-after-signin-attempt-desktop-1440x900.png",
+      "route": "/me/connections",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:11.699Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "fill test identity \"audit-guest\" and submit \"Connect development session\"",
+      "observed_result": {
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Connected, with your permission."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Connections",
+          "Me / Connections",
+          "Review your account and the services allowed to act for you."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me -> 503",
+        "GET /api/v1/session -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-style-after-save-attempt-desktop-1440x900.png",
+      "route": "/me/style",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:13.272Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "click the first save/confirm button on the style (persona) page",
+      "observed_result": {
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "More you. On your terms."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Me",
+          "Me / Looking Glass",
+          "Twelve preferences, with a clear distinction between what you choose and what Brand.Me learns."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me/persona -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "(no screenshot)",
+      "route": "/api/v1/me",
+      "viewport": "1440x900",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:13.311Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "direct GET to the same-origin BFF proxy",
+      "observed_result": {
+        "http_status": 503,
+        "body": "{\"type\":\"about:blank\",\"status\":503,\"code\":\"gateway_unconfigured\",\"title\":\"Account services are not connected.\"}"
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "home-mobile-390x844.png",
+      "route": "/",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:17.772Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A wardrobethat feelslike you."
+        ],
+        "status": [],
+        "firstParagraphs": [
+          "A wardrobe that feels like you.",
+          "Be More U.",
+          "Not a new you. More of you.A place for your style, your favorite pieces, and the people whose taste you trust."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "start-mobile-390x844.png",
+      "route": "/start",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:21.192Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A wardrobe that feels like you."
+        ],
+        "status": [],
+        "firstParagraphs": [
+          "A wardrobe that feels like you.",
+          "Be More U",
+          "A few choices to get started. Every one stays editable."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "today-mobile-390x844.png",
+      "route": "/today",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:24.486Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Today · Brand.Me",
+        "h1": [
+          "Make room for you."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Today",
+          "A little inspiration for your day",
+          "A considered look. A fresh perspective. A place to begin."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/recommendations -> 503",
+        "GET /api/v1/wardrobe/items -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "add-mobile-390x844.png",
+      "route": "/add",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:28.644Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A new place in your wardrobe."
+        ],
+        "status": [
+          "Review your item, status, and destination before adding.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Make it yours",
+          "Guest demo · Saved on this device"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "add-scan-mobile-390x844.png",
+      "route": "/add/scan",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:31.685Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Every piece has a story."
+        ],
+        "status": [
+          "Scanning is not connected yet. A product resolver and server-authorized disclosure service are required before results can be shown.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Discover a garment",
+          "Start with a tag or a photo. Product identification is separate from ownership and authenticity."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "closet-mobile-390x844.png",
+      "route": "/closet",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:37.965Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Walnut Atelier"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Closet",
+          "Your wardrobe, your world",
+          "Guest demo · Saved on this device · Fictional starter pieces"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "closet-settings-mobile-390x844.png",
+      "route": "/closet/settings",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:41.831Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Make room for you"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Closet",
+          "Your wardrobe, your world",
+          "Guest demo · Saved on this device · Fictional starter pieces"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "style-mobile-390x844.png",
+      "route": "/style",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:44.713Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Start with what is yours."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Style",
+          "Style Me",
+          "Guest look · Saved on this device · Original fictional starter items"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "discover-mobile-390x844.png",
+      "route": "/discover",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:47.998Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A world to discover."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Discover",
+          "Discover",
+          "Search connected catalogs with source, freshness and provider disclosures in view."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "circle-mobile-390x844.png",
+      "route": "/circle",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:51.823Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Your circle. Your call."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Circle",
+          "Brand.Me",
+          "People whose opinions matter to you."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/decisions -> 503",
+        "GET /api/v1/relationships -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "circle-decisions-new-mobile-390x844.png",
+      "route": "/circle/decisions/new",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:55.592Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Five minutes. A little perspective."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Circle",
+          "Brand.Me",
+          "Ask about something in your wardrobe."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/relationships -> 503",
+        "GET /api/v1/wardrobe/items -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "rewards-mobile-390x844.png",
+      "route": "/rewards",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:27:58.953Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Good style. Good company."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Rewards",
+          "Brand.Me",
+          "Rewards grounded in contributions, with evidence you can inspect."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/rewards -> 503",
+        "GET /api/v1/benefits -> 503",
+        "GET /api/v1/rewards/reservations -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "inbox-mobile-390x844.png",
+      "route": "/inbox",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:02.164Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Keep in touch with your world."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Inbox",
+          "Your updates",
+          "Decisions, requests and account updates, visible only to you."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/notifications -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-mobile-390x844.png",
+      "route": "/me",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:05.692Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Me · Brand.Me",
+        "h1": [
+          "You get the final say."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Me",
+          "Me / always a work in progress",
+          "Your taste is a starting point, never a box to fit into."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-style-mobile-390x844.png",
+      "route": "/me/style",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:08.633Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "More you. On your terms."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Me",
+          "Me / Looking Glass",
+          "Twelve preferences, with a clear distinction between what you choose and what Brand.Me learns."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me/persona -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-data-mobile-390x844.png",
+      "route": "/me/data",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:12.291Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Your data. Your decisions."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / My Data",
+          "My Data",
+          "Inspect the connected inventory, its sources and retention, and the actions currently available."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me/data -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-connections-mobile-390x844.png",
+      "route": "/me/connections",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:14.428Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Connected, with your permission."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Connections",
+          "Me / Connections",
+          "Review your account and the services allowed to act for you."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "orders-mobile-390x844.png",
+      "route": "/orders",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:18.044Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Every piece has a next chapter."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Orders",
+          "Your world, taking shape",
+          "Orders are not connected in this preview. No retailer purchase has been made or confirmed."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "assistant-mobile-390x844.png",
+      "route": "/assistant",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:22.254Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "A little help, on your terms."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / My Assistant",
+          "Your world, taking shape",
+          "Your assistant is not connected in this preview. No tasks, purchases or agent permissions have been created."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "settings-mobile-390x844.png",
+      "route": "/settings",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:25.577Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Settings · Brand.Me",
+        "h1": [
+          "Comfort, by design."
+        ],
+        "status": [
+          "Display preferences are saved on this device.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Settings",
+          "Your experience",
+          "A calmer screen, a different light, a simpler view. Make this space yours."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "scan-mobile-390x844.png",
+      "route": "/scan",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:29.105Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Atelier 7 / Denim Capsule 03"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Reclaimed 14oz selvedge denim",
+          "Provenance and sustainability claims logged to immutable audit trail"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "governance-mobile-390x844.png",
+      "route": "/governance",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:32.489Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Governance Console"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Review and approve escalated scan requests",
+          "Always in your hands"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "try-device-test-mobile-390x844.png",
+      "route": "/try/device-test",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:36.521Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 200,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Device validation"
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Native AR is still unverified. Start the development device-test build described in the spatial lane status to collect evidence.",
+          "Always in your hands"
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "this-route-does-not-exist-mobile-390x844.png",
+      "route": "/this-route-does-not-exist",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:40.250Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "navigate (guest, no backend)",
+      "observed_result": {
+        "http_status": 404,
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Let’s find your way."
+        ],
+        "status": [
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Explore",
+          "Your world, taking shape",
+          "This page may have moved or isn’t part of the current experience. You can keep exploring Today and adjust your display settings."
+        ]
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-connections-after-signin-attempt-mobile-390x844.png",
+      "route": "/me/connections",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:44.297Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "fill test identity \"audit-guest\" and submit \"Connect development session\"",
+      "observed_result": {
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "Connected, with your permission."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Connections",
+          "Me / Connections",
+          "Review your account and the services allowed to act for you."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me -> 503",
+        "GET /api/v1/session -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "me-style-after-save-attempt-mobile-390x844.png",
+      "route": "/me/style",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:45.704Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "click the first save/confirm button on the style (persona) page",
+      "observed_result": {
+        "title": "Brand.Me — Be More U",
+        "h1": [
+          "More you. On your terms."
+        ],
+        "status": [
+          "This service is not connected or temporarily unavailable. No result is confirmed.",
+          "Display preferences are saved on this device."
+        ],
+        "firstParagraphs": [
+          "Your world / Me",
+          "Me / Looking Glass",
+          "Twelve preferences, with a clear distinction between what you choose and what Brand.Me learns."
+        ]
+      },
+      "api_calls_observed": [
+        "GET /api/v1/me/persona -> 503"
+      ],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    },
+    {
+      "filename": "(no screenshot)",
+      "route": "/api/v1/me",
+      "viewport": "390x844",
+      "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+      "capture_time_utc": "2026-11-01T15:28:45.728Z",
+      "environment": "local worktree, frontend only, no gateway/backend",
+      "data_mode": "synthetic/guest; no backend",
+      "action": "direct GET to the same-origin BFF proxy",
+      "observed_result": {
+        "http_status": 503,
+        "body": "{\"type\":\"about:blank\",\"status\":503,\"code\":\"gateway_unconfigured\",\"title\":\"Account services are not connected.\"}"
+      },
+      "api_calls_observed": [],
+      "label": "OBSERVED SCREENSHOT — second audit local run"
+    }
+  ]
+}

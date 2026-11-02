@@ -1,0 +1,110 @@
+[
+  {
+    "argv": [
+      "rg",
+      "-n",
+      "createCommerceRouter|createHttpCommerceDomainClient|createAssistantRouter|createCommerceWebhookRouter|create_commerce_app|build_providers",
+      "--glob",
+      "!*.md",
+      "--glob",
+      "!pnpm-lock.yaml",
+      "--glob",
+      "!package-lock.json",
+      "."
+    ],
+    "cwd": "isolated audit clone at ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "exit_status": 0,
+    "stdout": ".\\docs\\build\\security\\credential-manifest.yaml:775:  # entrypoint: nothing outside tests calls build_providers (brandme_core/domains/commerce/composition.py:90)\n.\\brandme-gateway\\src\\routes\\v1\\assistant.ts:27:export function createAssistantRouter(client: CommerceDomainClient): Router {\n.\\brandme-gateway\\src\\routes\\v1\\commerce.ts:13: * gateway-signed assertion (`createHttpCommerceDomainClient`).\n.\\brandme-gateway\\src\\routes\\v1\\commerce.ts:204:export function createCommerceRouter(client: CommerceDomainClient): Router {\n.\\brandme-gateway\\src\\routes\\v1\\commerce.ts:255:export function createCommerceWebhookRouter(client: CommerceDomainClient): Router {\n.\\brandme-gateway\\src\\routes\\v1\\commerce.ts:308:export function createHttpCommerceDomainClient(opts: HttpCommerceClientOptions): CommerceDomainClient {\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:13:import { createAssistantRouter } from './assistant';\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:16:  type CommerceDomainClient, type DomainResult, DOMAIN_AUDIENCE, createCommerceOpsRouter, createCommerceRouter,\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:17:  createCommerceWebhookRouter,\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:18:  createHttpCommerceDomainClient, principalClaim, WEBHOOK_HEADER,\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:74:const commerce = (a: express.Express, c: CommerceDomainClient) => a.use('/commerce', createCommerceRouter(c));\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:350:    const mount = (a: express.Express, c: CommerceDomainClient) => a.use('/assistant', createAssistantRouter(c));\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:359:      a.use('/webhooks', express.raw({ type: '*/*' }), createCommerceWebhookRouter(c));\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:390:    const client = createHttpCommerceDomainClient({ baseUrl: 'http://c', issuer: 'gw', kid: 'k', privateKey, fetchImpl });\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:404:    const client = createHttpCommerceDomainClient({ baseUrl: 'http://commerce.internal/', issuer: 'gw', kid: 'gw-1', privateKey, fetchImpl });\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:427:    const client = createHttpCommerceDomainClient({ baseUrl: 'http://c', issuer: 'gw', kid: 'k', privateKey, fetchImpl });\n.\\brandme-gateway\\src\\routes\\v1\\commerce.test.ts:438:    const client = createHttpCommerceDomainClient({ baseUrl: 'http://c', issuer: 'gw', kid: 'k', privateKey, fetchImpl });\n.\\brandme_core\\mcp\\schemas\\domain_assertion.schema.json:5:  \"description\": \"Signed by brandme-gateway createHttpCommerceDomainClient; verified by ExecutorAssertionVerifier(audience='brandme:commerce-domain', allow_session=True). principal is null only on provider-webhook service calls. Never accepted on the MCP executor hop.\",\n.\\tests\\test_commerce_http.py:16:from brandme_core.domains.commerce.http_api import ASSISTANT_CLIENT_ID, PREFIX, CommerceHttpApi, create_commerce_app\n.\\tests\\test_commerce_http.py:41:        self.client = TestClient(create_commerce_app(self.api))\n.\\tests\\test_commerce_payments_flow.py:334:    from brandme_core.domains.commerce.composition import CompositionError, build_providers\n.\\tests\\test_commerce_payments_flow.py:337:        build_providers(environment, env=env, stripe_wire_factory=StripeSemanticsDouble(lambda: None))\n.\\tests\\test_commerce_payments_flow.py:342:    from brandme_core.domains.commerce.composition import build_providers\n.\\tests\\test_commerce_payments_flow.py:345:    sim = build_providers(\"development\", env={})\n.\\tests\\test_commerce_payments_flow.py:349:    stripe = build_providers(\"demo\", env={**STRIPE, \"STRIPE_TEST_SECRET_KEY\": SK_TEST}, clock=clock,\n.\\tests\\test_commerce_payments_flow.py:357:    assert build_providers(\"production\", env={}).registry.all() == []  # no simulated merchant outside dev\n.\\tests\\test_commerce_payments_flow.py:359:    restricted = build_providers(\"development\", env={**STRIPE, \"STRIPE_TEST_SECRET_KEY\": \"rk_\" + \"test_\" + \"A1\" * 12},\n.\\tests\\test_commerce_payments_flow.py:366:    from brandme_core.domains.commerce.composition import build_providers\n.\\tests\\test_commerce_payments_flow.py:368:    built = build_providers(\"development\", env={**STRIPE, \"STRIPE_TEST_SECRET_KEY\": SK_TEST})\n.\\tests\\test_commerce_payments_flow.py:391:    from brandme_core.domains.commerce.composition import ENV_KEYS, build_providers\n.\\tests\\test_commerce_payments_flow.py:396:    build_providers(\"development\", env=env, stripe_wire_factory=StripeSemanticsDouble(lambda: None))\n.\\tests\\test_commerce_payments_flow.py:403:    from brandme_core.domains.commerce.composition import CompositionError, build_providers\n.\\tests\\test_commerce_payments_flow.py:412:        build_providers(\"development\", env={})\n.\\tests\\test_commerce_payments_flow.py:422:            \"from brandme_core.domains.commerce.composition import build_providers\\n\"\n.\\tests\\test_commerce_payments_flow.py:423:            \"p = build_providers('development', env={})\\n\"\n.\\tests\\test_commerce_payments_flow.py:432:    from brandme_core.domains.commerce.composition import build_providers\n.\\tests\\test_commerce_payments_flow.py:438:    built = build_providers(\"development\", env={**STRIPE, \"STRIPE_TEST_SECRET_KEY\": SK_TEST}, clock=clock,\n.\\tests\\test_commerce_payments_flow.py:1089:    from brandme_core.domains.commerce.http_api import PREFIX, CommerceHttpApi, create_commerce_app\n.\\tests\\test_commerce_payments_flow.py:1097:    client = TestClient(create_commerce_app(api))\n.\\brandme_core\\domains\\commerce\\http_api.py:638:def create_commerce_app(api: CommerceHttpApi) -> FastAPI:\n.\\brandme_core\\domains\\commerce\\composition.py:90:def build_providers(environment: str, *, env: Mapping[str, str],\n",
+    "stderr": "",
+    "interpretation": "rg exit 1 means no matches; static source/config evidence only"
+  },
+  {
+    "argv": [
+      "rg",
+      "-n",
+      "persona.jobs|persona.ingress|LANE_PUBSUB_SUBSCRIPTION",
+      "-g",
+      "*.yaml",
+      "-g",
+      "*.yml",
+      "-g",
+      "*.sh",
+      "."
+    ],
+    "cwd": "isolated audit clone at ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "exit_status": 1,
+    "stdout": "",
+    "stderr": "",
+    "interpretation": "rg exit 1 means no matches; static source/config evidence only"
+  },
+  {
+    "argv": [
+      "rg",
+      "-n",
+      "register_consumer_domains",
+      "-g",
+      "*.py",
+      "."
+    ],
+    "cwd": "isolated audit clone at ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "exit_status": 0,
+    "stdout": ".\\tests\\foundation\\test_outbox_retention.py:17:from brandme_core.domains.persona.lane import register_consumer_domains\n.\\tests\\foundation\\test_outbox_retention.py:133:        register_consumer_domains(reg, database=db, media_store=MemoryMediaStore())\n.\\tests\\foundation\\test_deletion_leaves_no_member_rows.py:29:from brandme_core.domains.persona.lane import register_consumer_domains\n.\\tests\\foundation\\test_deletion_leaves_no_member_rows.py:183:    register_consumer_domains(reg, database=db, media_store=store)\n.\\tests\\foundation\\test_deletion_leaves_no_member_rows.py:295:    register_consumer_domains(reg, database=database, media_store=store)\n.\\tests\\test_persona_lane_mydata.py:6:its handlers with ``register_consumer_domains``, and the privacy service then\n.\\tests\\test_persona_lane_mydata.py:38:    register_consumer_domains,\n.\\tests\\test_persona_lane_mydata.py:208:    assert register_consumer_domains(reg, database=db, media_store=store) == list(CONSUMER_DOMAINS)\n.\\tests\\test_persona_lane_mydata.py:209:    register_consumer_domains(reg)  # idempotent for the same registry\n.\\brandme_core\\domains\\persona\\lane.py:8:* ``register_consumer_domains(registry, database=, media_store=)`` registers the\n.\\brandme_core\\domains\\persona\\lane.py:46:def register_consumer_domains(registry: Any, *, database: Any = None, media_store: Any = None,\n",
+    "stderr": "",
+    "interpretation": "rg exit 1 means no matches; static source/config evidence only"
+  },
+  {
+    "argv": [
+      "git",
+      "ls-tree",
+      "-r",
+      "--name-only",
+      "0f5f58a9eecaca46b367c9bd96f89654343fa5fb",
+      "brandme_core/domains",
+      "packages",
+      "brandme_core/privacy_exports"
+    ],
+    "cwd": "isolated audit clone at ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "exit_status": 0,
+    "stdout": "",
+    "stderr": "",
+    "interpretation": "rg exit 1 means no matches; static source/config evidence only"
+  },
+  {
+    "argv": [
+      "rg",
+      "-n",
+      "RegionRulesEngine|region_rules|region_allowed|get_engine",
+      "-g",
+      "*.py",
+      "-g",
+      "*.ts",
+      "-g",
+      "*.yaml",
+      "-g",
+      "*.yml",
+      "."
+    ],
+    "cwd": "isolated audit clone at ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "exit_status": 0,
+    "stdout": ".\\brandme-core\\policy\\region_rules.py:25:class RegionRulesEngine:\n.\\brandme-core\\policy\\region_rules.py:136:_engine: Optional[RegionRulesEngine] = None\n.\\brandme-core\\policy\\region_rules.py:139:def get_engine() -> RegionRulesEngine:\n.\\brandme-core\\policy\\region_rules.py:140:    \"\"\"Get or create the global RegionRulesEngine instance.\"\"\"\n.\\brandme-core\\policy\\region_rules.py:143:        _engine = RegionRulesEngine()\n.\\brandme-core\\policy\\region_rules.py:154:    This is a convenience function that delegates to the global RegionRulesEngine.\n.\\brandme-core\\policy\\region_rules.py:173:    engine = get_engine()\n.\\brandme-core\\policy\\region_rules.py:184:    _engine = None  # Force recreation on next get_engine() call\n",
+    "stderr": "",
+    "interpretation": "rg exit 1 means no matches; static source/config evidence only"
+  },
+  {
+    "argv": [
+      "rg",
+      "-n",
+      "ClosetRepository|createGuestClosetRepository",
+      "brandme-frontend",
+      "-g",
+      "*.ts",
+      "-g",
+      "*.tsx"
+    ],
+    "cwd": "isolated audit clone at ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "exit_status": 0,
+    "stdout": "brandme-frontend\\features\\spatial\\photoMedia.ts:1:import { createGuestClosetRepository } from \"../closet/repository\";\nbrandme-frontend\\features\\spatial\\photoMedia.ts:5:  const repository = createGuestClosetRepository();\nbrandme-frontend\\features\\spatial\\PhotoPreview.tsx:3:import { createGuestClosetRepository } from \"../closet/repository\";\nbrandme-frontend\\features\\spatial\\PhotoPreview.tsx:224:      const repo = createGuestClosetRepository();\nbrandme-frontend\\features\\closet\\AddItemPage.tsx:24:import type { AddInput, ClosetRepository } from \"./repository\";\nbrandme-frontend\\features\\closet\\AddItemPage.tsx:29:}: { repository?: ClosetRepository } = {}) {\nbrandme-frontend\\features\\closet\\ClosetPage.tsx:18:import type { ClosetRepository } from \"./repository\";\nbrandme-frontend\\features\\closet\\ClosetPage.tsx:25:  repository?: ClosetRepository;\nbrandme-frontend\\features\\closet\\repository.ts:52:export interface ClosetRepository {\nbrandme-frontend\\features\\closet\\repository.ts:266: * A production host must inject an authenticated API implementation of ClosetRepository. */\nbrandme-frontend\\features\\closet\\repository.ts:267:export function createGuestClosetRepository(\nbrandme-frontend\\features\\closet\\repository.ts:269:): ClosetRepository {\nbrandme-frontend\\features\\closet\\useCloset.ts:5:  createGuestClosetRepository,\nbrandme-frontend\\features\\closet\\useCloset.ts:7:  type ClosetRepository,\nbrandme-frontend\\features\\closet\\useCloset.ts:10:export function useCloset(injected?: ClosetRepository) {\nbrandme-frontend\\features\\closet\\useCloset.ts:12:    () => injected ?? createGuestClosetRepository(),\n",
+    "stderr": "",
+    "interpretation": "rg exit 1 means no matches; static source/config evidence only"
+  }
+]

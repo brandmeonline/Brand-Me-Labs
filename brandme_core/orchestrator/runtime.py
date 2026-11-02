@@ -415,8 +415,11 @@ class AssistantRuntime:
         elif tool == "brandme.purchase.request":
             with self._lock:
                 task.state = "awaiting_approval"
-                self._emit(task, "approval_requested", {"operation_id": content["operation_id"],
-                                                        "approval_surface": content["approval_surface"]})
+                completed_by = content.get("completed_by")
+                self._emit(task, "approval_requested", {
+                    "operation_id": content["operation_id"], "approval_surface": content["approval_surface"],
+                    # who places the order once the member approves it: the member's rules decide
+                    "completed_by": completed_by if completed_by in ("agent", "member") else None})
         else:
             self._emit(task, "outcome", {"tool": tool, "result": _summary(content)})
 

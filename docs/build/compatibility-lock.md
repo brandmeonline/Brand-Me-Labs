@@ -89,8 +89,10 @@ Listed directly in `scripts/python/requirements.in` (not `-r` of the lane file, 
 | PyJWT[crypto] | **2.15.1** | MCP token and executor assertions (`brandme_core/mcp/authz.py`), `providers/local_atelier.py` | installed+tested. CVE-2026-103001 (options-dict mutation) has no fixed release; the lane passes a fresh literal options dict on every decode |
 | rfc8785 | **0.1.4** | RFC 8785 canonical JSON for quote hashes (`commerce/quote.py`, `service.py`) | installed+tested |
 | sd-jwt | **0.10.4** (same pin as the official AP2 SDK) | AP2 SD-JWT | installed+tested |
+| anthropic | **0.125.0** (Q11, resolved by #51's merge 7c4c1cd; last release on httpx<1, which the lock holds at 0.25.1) | dev model planner (`brandme_core/orchestrator/anthropic_adapter.py`), imported lazily, only with `BRANDME_DEV_ANTHROPIC_API_KEY` in development/demo | locked; imports in the `--require-hashes` venv |
+| stripe | **16.0.0** (Q11, resolved by #51's merge) | Stripe TEST mode only (`providers/payments/stripe_test.py`), sync HTTP through `stripe.HTTPXClient` on the locked httpx | locked by #51 together with anthropic: distro 1.9.0, docstring-parser 0.18.0 and jiter 0.18.0 came with them; `uv pip check` clean |
 
-With the pins the commerce suites import, but on `main` 15 commerce tests still fail on JSON files that were never committed (the old blanket `*.json` ignore rule) and 3 modules fail at import; they are quarantined with owner and blocker in `tests/conftest.py` until PR #51 brings the files.
+PR #51 brought the vendored AP2 and MCP schema files and deleted its QUARANTINE entries (052f920); the commerce suites now run in test-core like every other suite.
 
 ## Known compatibility issues (tested)
 

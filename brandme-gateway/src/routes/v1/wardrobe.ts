@@ -1,8 +1,8 @@
 /**
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
- * /api/v1 wardrobe items and closet layout/placements — UNMOUNTED router
- * (lane: opus-consumer-domains). Mount at integration after principalMiddleware:
+ * /api/v1 wardrobe items and closet layout/placements (lane: opus-consumer-domains).
+ * Mounted by routes/v1/index.ts after principalMiddleware:
  *
  *   router.use(wardrobeRouter(domainClient));
  *

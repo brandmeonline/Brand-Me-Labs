@@ -16,11 +16,14 @@
  *   `If-Match: "<version>"` guards against lost updates.
  * - `POST /:id/verification-runs` — run one connection test for one exact capability.
  * - `GET /:id/verification-runs` — recent runs (time, environment, capability, sanitized evidence).
+ * - `PUT /:id/tier` — the connection's partner tier (`tier_id: null` clears it); `If-Match` required. Placeholder
+ *   tiers carry no price; assigning a tier never enables a capability (3D/AR still needs activation and a
+ *   passing test), and a downgrade resets the capabilities the new tier excludes.
  */
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { type CommerceDomainClient, forward, rejectIdentityFields, requireRole, validate } from './commerce';
+import { type CommerceDomainClient, forward, rejectIdentityFields, requireIfMatch, requireRole, validate } from './commerce';
 
 /** Chapter 05 capability names (the domain's closed `CAPABILITIES` tuple; tests/test_providers.py checks drift). */
 export const CAPABILITY_NAMES = [
@@ -103,6 +106,10 @@ export const SetupUpdate = z
   .refine((o) => Object.keys(o).length > 0, 'send at least one setup field')
   .refine((o) => o.activate === undefined || Object.keys(o).length === 1, 'send activate on its own');
 
+export const TierAssignment = z
+  .object({ tier_id: z.string().regex(/^[a-z][a-z0-9_]{1,39}$/).nullable() })
+  .strict();
+
 export const VerificationRun = z
   .object({ capability, mode: z.enum(['read_only_test', 'staging_ingestion']) })
   .strict();
@@ -120,6 +127,8 @@ export function createProvidersRouter(client: CommerceDomainClient): Router {
   router.patch('/:id/setup', validate(SetupUpdate),
     forward(client, 'provider.setup.update', (req, res) => ({ provider_id: req.params.id, ...(res.locals.input as object) })));
   router.get('/:id/health', forward(client, 'provider.health', (req) => ({ provider_id: req.params.id })));
+  router.put('/:id/tier', requireIfMatch, validate(TierAssignment),
+    forward(client, 'provider.tier.assign', (req, res) => ({ provider_id: req.params.id, ...(res.locals.input as object) })));
   router.post('/:id/verification-runs', validate(VerificationRun),
     forward(client, 'provider.verify', (req, res) => ({ provider_id: req.params.id, ...(res.locals.input as object) })));
   router.get('/:id/verification-runs', validate(VerificationRunsQuery, 'query'),

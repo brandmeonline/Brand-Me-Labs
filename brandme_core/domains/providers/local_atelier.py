@@ -136,10 +136,6 @@ def variant_uuid(source_variant_ref: str) -> str:
     return str(uuid.uuid5(_NS, f"{PROVIDER_ID}:{source_variant_ref}"))
 
 
-def variant_uuid(source_variant_ref: str) -> str:
-    return str(uuid.uuid5(_NS, f"{PROVIDER_ID}:{source_variant_ref}"))
-
-
 class _ProbeFailed(Exception):
     def __init__(self, detail: str, reason_code: str):
         super().__init__(detail)

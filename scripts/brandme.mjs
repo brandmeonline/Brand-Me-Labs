@@ -5,15 +5,22 @@
 //   node scripts/brandme.mjs setup --mode demo     validate runtimes, venv, deps, emulator, migrations (idempotent)
 //   node scripts/brandme.mjs dev --mode demo|development
 //   node scripts/brandme.mjs smoke                 gateway → brain → Spanner + outbox round trip
-//   node scripts/brandme.mjs check                 drift, types, unit + emulator tests (all of tests/), spec validator
-//                                                  BRANDME_REQUIRE_EMULATORS=1: an unreachable emulator fails the run
+//   node scripts/brandme.mjs check [--no-provision] [--no-python]
+//                                                  drift, types, lint, unit + emulator tests (all of tests/), spec
+//                                                  validator. First provisions every emulator the suites use: Spanner
+//                                                  (ensureEmulator) and its REST endpoint, Firestore (pinned; started
+//                                                  as a child when unreachable, stopped on exit), the pinned Pub/Sub and
+//                                                  GCS emulator binaries (fetched into .cache/, SHA256-verified, reused
+//                                                  on a cache hit), and Java. --no-provision only probes.
+//                                                  BRANDME_REQUIRE_EMULATORS=1: anything missing fails before a step
+//                                                  runs (CI foundation-check runs the full check this way)
 //                                                  BRANDME_CHECK_SKIP_PYTHON=1 or --no-python: skip the pytest step
-//                                                  (CI foundation-check only; CI test-core runs the full suite)
+//                                                  (local speed flag only; reported not_run, never passed)
 //   node scripts/brandme.mjs workspace [--with-pnpm] [--json]  pnpm workspace + toolchain governance guard
 //   node scripts/brandme.mjs migrate               apply Spanner migrations
 //   node scripts/brandme.mjs evidence              acceptance status summary from recorded results
 import { spawn, spawnSync } from 'node:child_process';
-import { accessSync, constants, existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
+import { accessSync, constants, existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, openSync } from 'node:fs';
 import { createConnection } from 'node:net';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -275,6 +282,161 @@ function executable(file) {
   }
 }
 
+// ---- emulator provisioning (check) -------------------------------------------
+
+const CACHE = join(ROOT, '.cache');
+const LOOPBACK = new Set(['127.0.0.1', 'localhost']);
+const SPANNER_REST_DEFAULT = 'http://127.0.0.1:9020'; // ensureEmulator maps 9020 next to 9010
+const FIRESTORE_DEFAULT = '127.0.0.1:8080'; // tests/conftest.py defaults to the same port
+
+function hostPort(value) {
+  const i = value.lastIndexOf(':');
+  return i > 0 ? [value.slice(0, i), Number(value.slice(i + 1))] : [value, NaN];
+}
+
+async function httpOk(url) {
+  try {
+    return (await fetch(url, { signal: AbortSignal.timeout(3000) })).ok;
+  } catch {
+    return false;
+  }
+}
+
+// A pinned fetcher: download + SHA256 verify, or its stamped cache hit (scripts/python/_fetch.py). Returns the path it prints.
+function fetchPinned(script, dir) {
+  const r = capture(PY, [join(ROOT, 'scripts/python', script), join(CACHE, dir)]);
+  const path = (r.stdout ?? '').trim().split('\n').pop();
+  if (r.status !== 0 || !path || !executable(path)) {
+    throw new Error(`${script} failed: ${(r.stderr ?? '').trim().split('\n').pop() || `exit ${r.status}`}`);
+  }
+  return path;
+}
+
+function javaVersion() {
+  const r = capture('java', ['-version']);
+  if (r.status !== 0) return null;
+  // The JVM may print "Picked up JAVA_TOOL_OPTIONS" first; the version line names the runtime.
+  return `${r.stderr ?? ''}${r.stdout ?? ''}`.split('\n').find((l) => /version "/.test(l))?.trim() ?? 'java (version not printed)';
+}
+
+let firestoreChild = null;
+function stopFirestoreChild() {
+  if (firestoreChild && firestoreChild.exitCode === null && firestoreChild.signalCode === null) {
+    // The launcher is a bash script that runs java as its child: signal the whole process group.
+    try { process.kill(-firestoreChild.pid, 'SIGTERM'); } catch { /* already gone */ }
+  }
+}
+
+async function startFirestore(env, host, port) {
+  const launcher = fetchPinned('fetch_firestore_emulator.py', 'firestore-emulator');
+  mkdirSync(CACHE, { recursive: true });
+  const logFile = join(CACHE, 'firestore-emulator.log');
+  const log = openSync(logFile, 'w');
+  process.on('exit', stopFirestoreChild);
+  for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => process.exit(sig === 'SIGINT' ? 130 : 143));
+  firestoreChild = spawn(launcher, ['start', `--host=${host}`, `--port=${port}`], { cwd: ROOT, env, detached: true, stdio: ['ignore', log, log] });
+  const exited = new Promise((res) => {
+    firestoreChild.on('exit', (code, signal) => res(`exited (${signal ?? code}) before it was ready`));
+    firestoreChild.on('error', (e) => res(`could not start (${e.code ?? e.message})`));
+  });
+  const ready = waitFor('Firestore emulator', () => httpOk(`http://${host}:${port}/`), 60).then(() => null);
+  const problem = await Promise.race([ready, exited]).catch((e) => e.message);
+  if (problem) {
+    stopFirestoreChild();
+    throw new Error(`Firestore emulator ${problem}; see ${logFile.replace(ROOT + '/', '')}`);
+  }
+  return `started pinned emulator on ${host}:${port} (pid ${firestoreChild.pid}, stopped when check exits; log ${logFile.replace(ROOT + '/', '')})`;
+}
+
+// Makes every emulator the suites use available, or says why not. Never fails by itself: the
+// REQUIRE preflight in check() and the not_run suffixes report what is missing.
+async function provisionEmulators(env, { provision, needPython }) {
+  const notes = [];
+  const note = (ok, what, detail) => notes.push({ ok, what, detail });
+  const attempt = async (what, fn) => {
+    try {
+      return await fn();
+    } catch (e) {
+      note(false, what, e.message);
+      return null;
+    }
+  };
+  const state = {};
+
+  // Spanner gRPC: only the default local endpoint is started (docker brandme-spanner, ensureEmulator).
+  const [spHost, spPort] = hostPort(env.SPANNER_EMULATOR_HOST);
+  const spDefault = LOOPBACK.has(spHost) && spPort === PORTS.spanner;
+  state.spanner = Number.isInteger(spPort) && (await portOpen(spPort, spHost));
+  if (state.spanner) note(true, 'Spanner emulator', `reachable at ${env.SPANNER_EMULATOR_HOST}`);
+  else if (provision && spDefault) {
+    const how = await attempt('Spanner emulator', ensureEmulator);
+    state.spanner = Boolean(how);
+    if (how) note(true, 'Spanner emulator', how);
+  } else note(false, 'Spanner emulator', `not reachable at ${env.SPANNER_EMULATOR_HOST}${provision ? '; only the default localhost:9010 is started here' : ''}`);
+
+  // Spanner REST (tests/test_commerce_migrations.py). Exported only once it answers: that suite skips when the
+  // variable is unset and fails when it is set but unreachable.
+  const rest = env.SPANNER_EMULATOR_REST ?? (spDefault ? SPANNER_REST_DEFAULT : undefined);
+  state.spannerRest = false;
+  if (rest && state.spanner) {
+    const url = `${rest.replace(/\/$/, '')}/v1/projects/${env.SPANNER_PROJECT_ID}/instances`;
+    state.spannerRest = await waitFor('Spanner REST', () => httpOk(url), 15).then(() => true, () => false);
+  }
+  if (state.spannerRest) {
+    env.SPANNER_EMULATOR_REST = rest;
+    note(true, 'Spanner REST', rest);
+  } else if (!rest) note(false, 'Spanner REST', 'SPANNER_EMULATOR_REST unset (defaulted only for the default localhost:9010)');
+  else note(false, 'Spanner REST', `${rest} not answering${state.spanner ? '' : ' (Spanner gRPC unreachable)'}`);
+
+  state.java = javaVersion();
+  note(Boolean(state.java), 'Java', state.java ?? 'java -version failed (the Pub/Sub and Firestore emulators need Java 11+)');
+
+  // Firestore: started as a child (pinned 1.22.0) only on a loopback host that does not answer.
+  if (!env.FIRESTORE_EMULATOR_HOST) env.FIRESTORE_EMULATOR_HOST = FIRESTORE_DEFAULT;
+  const [fsHost, fsPort] = hostPort(env.FIRESTORE_EMULATOR_HOST);
+  state.firestore = Number.isInteger(fsPort) && (await httpOk(`http://${fsHost}:${fsPort}/`));
+  if (state.firestore) note(true, 'Firestore emulator', `reachable at ${env.FIRESTORE_EMULATOR_HOST}`);
+  else if (provision && LOOPBACK.has(fsHost) && Number.isInteger(fsPort) && state.java) {
+    const how = await attempt('Firestore emulator', () => startFirestore(env, fsHost, fsPort));
+    state.firestore = Boolean(how);
+    if (how) note(true, 'Firestore emulator', how);
+  } else note(false, 'Firestore emulator', `not reachable at ${env.FIRESTORE_EMULATOR_HOST}${provision ? (state.java ? '; only a loopback host is started here' : '; no Java to start one') : ''}`);
+
+  // Pub/Sub and GCS: the pytest suites start these binaries themselves; only the pytest step needs them.
+  for (const [key, label, script, dir] of [
+    ['PUBSUB_EMULATOR_BIN', 'Pub/Sub emulator binary', 'fetch_pubsub_emulator.py', 'pubsub-emulator'],
+    ['GCS_EMULATOR_BIN', 'GCS emulator binary (fake-gcs-server)', 'fetch_gcs_emulator.py', 'gcs-emulator'],
+  ]) {
+    const id = key === 'PUBSUB_EMULATOR_BIN' ? 'pubsub' : 'gcs';
+    state[id] = Boolean(env[key]) && executable(env[key]);
+    if (state[id]) note(true, label, env[key]);
+    else if (provision && needPython) {
+      const path = await attempt(label, () => fetchPinned(script, dir));
+      state[id] = Boolean(path);
+      if (path) {
+        env[key] = path;
+        note(true, label, `${path.replace(ROOT + '/', '')} (pinned, SHA256-verified)`);
+      }
+    } else if (needPython) note(false, label, `${key}=${env[key] ?? 'unset'} is not executable`);
+  }
+
+  for (const n of notes) console.log(`${n.ok ? c.ok('✓') : c.warn('!')} ${n.what} ${c.dim(`— ${n.detail}`)}`);
+  return state;
+}
+
+// node --test summary lines of the security-rules suite inside the pnpm --filter output; same rule as CI test-core
+// (ci-cd.yml): no skips and at least one pass. A suite that cannot reach the emulator reports "pass 0".
+function rulesSuiteRan(output) {
+  const count = (k) => {
+    const m = new RegExp(`^packages/firestore-rules test: ℹ ${k} (\\d+)$`, 'm').exec(output);
+    return m ? Number(m[1]) : null;
+  };
+  const [pass, skipped, failed] = [count('pass'), count('skipped'), count('fail')];
+  if (pass === null || skipped === null || failed === null) return 'firestore-rules printed no node --test summary';
+  if (skipped !== 0 || pass === 0) return `firestore-rules reported pass ${pass}, skipped ${skipped}: the suite did not run against the emulator`;
+  return null;
+}
+
 async function check() {
   const results = [];
   // Child processes (gateway emulator suites, tests/fixtures/*) spawn BRANDME_PYTHON; without it they fall back to
@@ -282,20 +444,22 @@ async function check() {
   const env = { ...baseEnv('development'), BRANDME_PYTHON: PY };
   const requireEmulators = env.BRANDME_REQUIRE_EMULATORS === '1';
   const skipPython = env.BRANDME_CHECK_SKIP_PYTHON === '1' || args.includes('--no-python');
-  const [spHost, spPort] = env.SPANNER_EMULATOR_HOST.split(':');
-  const emulator = await portOpen(Number(spPort || PORTS.spanner), spHost || '127.0.0.1');
-  const [fsHost, fsPort] = (env.FIRESTORE_EMULATOR_HOST ?? '').split(':');
-  const firestore = Boolean(fsHost && fsPort) && (await portOpen(Number(fsPort), fsHost));
-  // The Pub/Sub tests start the pinned emulator themselves from PUBSUB_EMULATOR_BIN; only the pytest step needs it.
-  const pubsub = Boolean(env.PUBSUB_EMULATOR_BIN) && executable(env.PUBSUB_EMULATOR_BIN);
+  const provision = !args.includes('--no-provision');
+  const s = await provisionEmulators(env, { provision, needPython: !skipPython });
   if (requireEmulators) {
     const missing = [];
-    if (!emulator) missing.push(`Spanner emulator (SPANNER_EMULATOR_HOST=${env.SPANNER_EMULATOR_HOST})`);
-    if (!firestore) missing.push(`Firestore emulator (FIRESTORE_EMULATOR_HOST=${env.FIRESTORE_EMULATOR_HOST ?? 'unset'})`);
-    if (!skipPython && !pubsub) missing.push(`Pub/Sub emulator binary (PUBSUB_EMULATOR_BIN=${env.PUBSUB_EMULATOR_BIN ?? 'unset'})`);
+    if (!s.spanner) missing.push(`Spanner emulator (SPANNER_EMULATOR_HOST=${env.SPANNER_EMULATOR_HOST})`);
+    if (!s.firestore) missing.push(`Firestore emulator (FIRESTORE_EMULATOR_HOST=${env.FIRESTORE_EMULATOR_HOST})`);
+    if (!skipPython) {
+      if (!s.spannerRest) missing.push(`Spanner REST (SPANNER_EMULATOR_REST=${env.SPANNER_EMULATOR_REST ?? 'unset'})`);
+      if (!s.pubsub) missing.push(`Pub/Sub emulator binary (PUBSUB_EMULATOR_BIN=${env.PUBSUB_EMULATOR_BIN ?? 'unset'})`);
+      if (!s.gcs) missing.push(`GCS emulator binary (GCS_EMULATOR_BIN=${env.GCS_EMULATOR_BIN ?? 'unset'})`);
+      if (!s.java) missing.push('Java (java -version)');
+    }
     if (missing.length) fail(`BRANDME_REQUIRE_EMULATORS=1 but these are not available, so their suites would be skipped:\n  - ${missing.join('\n  - ')}`);
   }
-  const notRun = [!emulator && 'Spanner', !firestore && 'Firestore', !pubsub && 'Pub/Sub'].filter(Boolean);
+  const notRun = [!s.spanner && 'Spanner', !s.spannerRest && 'Spanner REST', !s.firestore && 'Firestore', !s.pubsub && 'Pub/Sub',
+    !s.gcs && 'GCS', !s.java && 'Java'].filter(Boolean);
   const steps = [
     ['workspace + toolchain governance', process.execPath, ['scripts/check-workspace.mjs', '--with-pnpm']],
     ['spec package validator', PY, ['docs/design/brandme/contracts/validate_spec.py']],
@@ -303,9 +467,11 @@ async function check() {
     ['credential manifest', process.execPath, ['scripts/check-credential-manifest.mjs']],
     ['guard self-tests', process.execPath, ['--test', 'scripts/check-workspace.test.mjs', 'scripts/check-credential-manifest.test.mjs']],
     ['packages type-check', 'pnpm', ['--filter', './packages/*', 'type-check']],
-    ['packages tests' + (firestore ? '' : ' (security-rules suite skipped)'), 'pnpm', ['--filter', './packages/*', 'test']],
+    ['packages tests' + (s.firestore ? '' : ' (security-rules suite skipped)'), 'pnpm', ['--filter', './packages/*', 'test'],
+      { verify: requireEmulators ? rulesSuiteRan : null }],
+    ['gateway lint', 'pnpm', ['--filter', '@brandme/gateway', 'lint']],
     ['gateway type-check', 'pnpm', ['--filter', '@brandme/gateway', 'type-check']],
-    ['gateway tests' + (emulator ? '' : ' (emulator suites skipped)'), 'pnpm', ['--filter', '@brandme/gateway', 'exec', 'vitest', 'run']],
+    ['gateway tests' + (s.spanner ? '' : ' (emulator suites skipped)'), 'pnpm', ['--filter', '@brandme/gateway', 'exec', 'vitest', 'run']],
     ['python tests (tests/)', PY, ['-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider', '--timeout=300', '-ra', '--continue-on-collection-errors'],
       { python: true, suffix: notRun.length ? ` (${notRun.join(', ')} suites skipped)` : '' }],
     ['docs/build links', process.execPath, [fileURLToPath(import.meta.url), 'links']],
@@ -313,26 +479,33 @@ async function check() {
   for (const [label, bin, argv, flags = {}] of steps) {
     if (flags.python && skipPython) {
       results.push({ name: label, result: 'not_run' });
-      console.log(c.warn(`- ${label} not_run: BRANDME_CHECK_SKIP_PYTHON=1 / --no-python (CI test-core runs the full suite)`));
+      console.log(c.warn(`- ${label} not_run: BRANDME_CHECK_SKIP_PYTHON=1 / --no-python (local speed flag; CI foundation-check runs it)`));
       continue;
     }
     const name = label + (flags.suffix ?? '');
     const t0 = Date.now();
     const r = capture(bin, argv, { env });
-    const ok = r.status === 0;
+    const problem = r.status === 0 ? flags.verify?.(r.stdout ?? '') ?? null : null;
+    const ok = r.status === 0 && !problem;
     results.push({ name, result: ok ? 'passed' : 'failed', seconds: (Date.now() - t0) / 1000 });
     console.log(`${ok ? c.ok('✓') : c.bad('✖')} ${name} ${c.dim(`${((Date.now() - t0) / 1000).toFixed(1)}s`)}`);
+    if (problem) console.log(c.bad(`    ${problem}`));
     if (flags.python) {
       // Quarantined and allowlisted tests are not passes; always show the counts.
       for (const line of (r.stdout ?? '').split('\n')) {
         if (/^(QUARANTINED|ALLOWLISTED SKIPS)|^\d+ (passed|failed)/.test(line)) console.log(c.dim(`    ${line}`));
       }
     }
-    if (!ok) console.log((r.stdout + r.stderr).split('\n').slice(-25).join('\n'));
+    if (r.status !== 0) console.log((r.stdout + r.stderr).split('\n').slice(-25).join('\n'));
   }
-  if (!emulator) console.log(c.warn(`! Spanner emulator not reachable at ${env.SPANNER_EMULATOR_HOST}; emulator suites were skipped (not_run), not passed.`));
-  if (!firestore) console.log(c.warn('! Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST); projection and security-rules suites were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_firestore_emulator.py'));
-  if (!pubsub && !skipPython) console.log(c.warn('! PUBSUB_EMULATOR_BIN not set or not executable; the real Pub/Sub delivery tests were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_pubsub_emulator.py'));
+  if (!s.spanner) console.log(c.warn(`! Spanner emulator not reachable at ${env.SPANNER_EMULATOR_HOST}; emulator suites were skipped (not_run), not passed.`));
+  if (!s.firestore) console.log(c.warn('! Firestore emulator not reachable (FIRESTORE_EMULATOR_HOST); projection and security-rules suites were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_firestore_emulator.py'));
+  if (!skipPython) {
+    if (!s.spannerRest) console.log(c.warn('! Spanner REST endpoint (SPANNER_EMULATOR_REST) not answering; the migration-ledger suite was skipped (not_run), not passed.'));
+    if (!s.pubsub) console.log(c.warn('! PUBSUB_EMULATOR_BIN not set or not executable; the real Pub/Sub delivery tests were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_pubsub_emulator.py'));
+    if (!s.gcs) console.log(c.warn('! GCS_EMULATOR_BIN not set or not executable; the GCS media-store tests were skipped (not_run), not passed. Fetch one with: python scripts/python/fetch_gcs_emulator.py'));
+    if (!s.java) console.log(c.warn('! java -version failed; suites that start the Pub/Sub or Firestore emulator were skipped (not_run), not passed.'));
+  }
   process.exit(results.every((r) => r.result !== 'failed') ? 0 : 1);
 }
 

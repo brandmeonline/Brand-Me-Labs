@@ -3,6 +3,8 @@ Copyright (c) Brand.Me, Inc. All rights reserved.
 Gateway: brandme-gateway/Dockerfile runtime (node, uid 1000), port 3001,
 GET /healthz (brandme-gateway/src/index.ts:56). Strict modes need OIDC
 issuer/audience over https and https PUBLIC_ORIGINS (src/middleware/mode.ts).
+With consumerDomains.enabled it signs each consumer-domain request with the
+assertion key from secretRefs.consumerDomainAssertionKey.
 */ -}}
 {{- if .Values.gateway.enabled }}
 {{- $root := . }}
@@ -94,6 +96,14 @@ spec:
             - name: PRIVACY_EXPORT_SERVICE_URL
               value: {{ include "brandme.serviceUrl" (list . "exports-api" .Values.exportsApi.port) | quote }}
             {{- include "brandme.secretEnv" (list . "PRIVACY_EXPORT_SERVICE_TOKEN" "privacyExportServiceToken") | nindent 12 }}
+            {{- end }}
+            {{- if .Values.consumerDomains.enabled }}
+            {{- /* src/config/index.ts:126-128,172-174; the key never leaves this pod (src/services/domains.ts). */}}
+            - name: CONSUMER_DOMAIN_SERVICE_URL
+              value: {{ include "brandme.serviceUrl" (list . "consumer-domains" .Values.consumerDomains.port) | quote }}
+            - name: CONSUMER_DOMAIN_ASSERTION_KID
+              value: {{ include "brandme.req" (list .Values.consumerDomains.assertion.signingKid "consumerDomains.assertion.signingKid") | quote }}
+            {{- include "brandme.secretEnv" (list . "CONSUMER_DOMAIN_ASSERTION_KEY" "consumerDomainAssertionKey") | nindent 12 }}
             {{- end }}
             {{- with $c.extraEnv }}
             {{- toYaml . | nindent 12 }}

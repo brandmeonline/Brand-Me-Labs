@@ -9,8 +9,10 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { PageHeader } from '../../_data/shell'
-import { activateCapability, runConnectionTest, saveSetup } from '../../_data/actions'
-import { capabilityLabel, loadFromGateway, type ProviderSetup, type SetupItem, type SetupSection } from '../../_data/gateway'
+import { activateCapability, assignTier, runConnectionTest, saveSetup } from '../../_data/actions'
+import {
+  capabilityLabel, loadFromGateway, type PartnerTier, type ProviderSetup, type SetupItem, type SetupSection, type TierIncludes,
+} from '../../_data/gateway'
 import { readOutcome, type Outcome } from '../../_data/outcome'
 import { LoadState } from '../../_data/states'
 
@@ -83,7 +85,9 @@ function OutcomeNotice({ outcome }: { outcome: Outcome }) {
       ? `Connection test recorded: ${outcome.result}. See the results table below.`
       : outcome.kind === 'saved'
         ? 'Setup saved. Saving does not enable any capability.'
-        : 'Capability activated with the recorded passing test as evidence.'
+        : outcome.kind === 'tier_assigned'
+          ? 'Partner tier recorded. A tier never enables a capability; 3D and AR still need a passing test and activation.'
+          : 'Capability activated with the recorded passing test as evidence.'
   return (
     <section id="outcome" className="console-notice" role="status" aria-labelledby="outcome-heading" tabIndex={-1}>
       <h2 id="outcome-heading">{text}</h2>
@@ -124,6 +128,55 @@ function SectionBlock({ section, children }: { section: SetupSection; children?:
       {section.description && <p>{section.description}</p>}
       <Checklist section={section} />
       {children}
+    </section>
+  )
+}
+
+const TIER_SOURCE: Record<PartnerTier['source'], string> = {
+  assigned: 'assigned by an operator',
+  unassigned: 'no tier assigned, so 3D and AR stay off',
+  assigned_unknown: 'the assigned tier is not in the current pricing table, so 3D and AR stay off',
+  unconfigured: 'no pricing table is configured in this environment, so 3D and AR stay off',
+}
+
+function Includes({ includes }: { includes: TierIncludes }) {
+  const limit = (n: number | null) => (n === null ? 'no limit' : String(n))
+  return (
+    <ul>
+      <li>Shelf: {limit(includes.shelf_variants)} active listings</li>
+      <li>Customization up to: {includes.customization}</li>
+      <li>Analytics: {includes.analytics}</li>
+      <li>Member connection: {includes.member_connection.replaceAll('_', ' ')}</li>
+    </ul>
+  )
+}
+
+function TierBlock({ s, t, assign }: { s: ProviderSetup; t: PartnerTier; assign: (form: FormData) => Promise<void> }) {
+  const options = s.tier_options ?? []
+  return (
+    <section className="console-section" aria-labelledby="section-tier">
+      <h2 id="section-tier">Partner tier</h2>
+      <p>
+        {t.tier_id ? <code>{t.tier_id}</code> : 'No tier'} — {TIER_SOURCE[t.source]}. <strong>{t.price_label}.</strong>
+      </p>
+      {t.label && <p>{t.label}</p>}
+      <Includes includes={t.includes} />
+      {options.length > 0 && (
+        <form action={assign} aria-label="Assign partner tier">
+          <input type="hidden" name="version" value={s.version} />
+          <label htmlFor="f-tier_id">Assign a tier</label>
+          <br />
+          <select id="f-tier_id" name="tier_id" defaultValue={t.source === 'assigned' && t.tier_id ? t.tier_id : ''}>
+            <option value="">No tier (clear the assignment)</option>
+            {options.map((o) => (
+              <option key={o.tier_id} value={o.tier_id}>
+                {o.display_name}
+              </option>
+            ))}
+          </select>{' '}
+          <button type="submit">Record tier (does not enable anything)</button>
+        </form>
+      )}
     </section>
   )
 }
@@ -176,6 +229,7 @@ export default async function ProviderSetupPage({
   const save = saveSetup.bind(null, rawId)
   const runTest = runConnectionTest.bind(null, rawId)
   const activate = activateCapability.bind(null, rawId)
+  const assign = assignTier.bind(null, rawId)
   const enables = section('enables')
   const prerequisites = section('prerequisites')
   const credentials = section('credentials')
@@ -204,6 +258,8 @@ export default async function ProviderSetupPage({
       {outcome && <OutcomeNotice outcome={outcome} />}
 
       {enables && <SectionBlock section={enables} />}
+
+      {s.tier && <TierBlock s={s} t={s.tier} assign={assign} />}
 
       {editable.size > 0 ? (
         <form action={save} aria-label="Save provider setup">

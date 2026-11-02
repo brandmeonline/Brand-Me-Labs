@@ -1,0 +1,4 @@
+worktree C:/Users/auditor/Documents/Codex/2026-11-01/files-pasted-by-the-user-you/work/brand-me-labs-audit
+HEAD ed19dc151d103b108cf972e6d37971c55d5dcf60
+detached
+

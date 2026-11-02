@@ -913,3 +913,30 @@ After the fixes: `test_media_gcs_signing.py` **27 passed**, `test_media_gcs_stor
 **Handoffs (foundation)**
 - `scripts/brandme.mjs` should treat `GCS_EMULATOR_BIN` the way it treats `PUBSUB_EMULATOR_BIN`, so `pnpm check` with `BRANDME_REQUIRE_EMULATORS=1` reports it up front. Today the skip fails inside pytest, with a clear reason.
 - Fill in the `docs/build/security/lane-service-accounts.md` row "media bucket once GCS replaces MemoryMediaStore" with the roles above when the bucket is provisioned.
+
+## Stage 14 — Ultra plan 02, item 1: lane routers mounted behind foundation auth — 2026-10-25
+Ultra plan 02 (design-alignment stage) was uploaded by the founder on 2026-10-25, and the lane treats that upload as the trigger. Its header still says "DRAFT … not yet triggered", so the founder should confirm.
+- **Source of the locked design.** The plan cites an "Oct 23 locked design" for Now/Flow/loyalty/visibility. That document is not in the repository or on any branch, so the plan's own text is the specification this lane builds to.
+- **Branch.** The plan names `bench/opus-consumer-domains-20261005`. The lane keeps its designated `claude/opus-consumer-domains-1csp2g`, restarted from `main` `d5b993f` after #59 merged.
+
+**What ships**
+- **Gateway → domain hop (ruling Q12).** `brandme-gateway/src/services/domains.ts` signs one ES256 principal assertion per request, valid 30 s, with audience `brandme:consumer-domains` and a single-use `jti`. The member's cookie or token never leaves the gateway. Only router-built fields cross: method, path, query, JSON body, If-Match, Idempotency-Key, request id. Try-on result images come back as bytes; any other non-JSON reply is a 503, never relayed.
+- **Verifier.** `brandme_core/domains/persona/assertion.py` checks key id and algorithm (ES256 only), issuer, audience, lifetime ≤ 60 s, currency, `jti` replay and environment. It mirrors the commerce lane's executor assertion. The service holds public keys only (`CONSUMER_DOMAIN_ASSERTION_JWKS`) and refuses a private JWK.
+- **Domain service.** `python -m brandme_core.domains.persona.app` serves persona, wardrobe and outfits, social, decisions, shares, notifications, reports, rewards and benefits. With `BRANDME_MEDIA_BUCKET` set it also serves media and try-on. The `/ops` routers stay unmounted until the console has operator auth. It runs foundation's in-process boot guard as `consumer_domains`. That name is not yet in the audited inventory, so strict modes refuse it until foundation adds it.
+- **Mount.** `routes/v1/index.ts` mounts the eight lane routers after the existing ones, behind `principalMiddleware` and its CSRF, origin and rate-limit checks. Unconfigured, every lane route answers 503.
+- **Session scopes (ruling Q11 / PD-12).** First-party sessions now also carry `wardrobe:*`, `outfits:*`, `social:*`, `rewards:read` and `rewards:write`; this is a one-line edit in foundation's `middleware/session.ts`. Bearer clients still get only what their token grants. Without this scope edit, no lane route is reachable by a member.
+- **Try-on provider selection.** `BRANDME_TRYON_PROVIDER` is unset by default, giving no provider. `simulated` selects the labelled stand-in in demo/development only and is refused in strict modes. The jobs process now also runs `dispatch_queued` and `collect_processing`.
+- **Config and manifest.** New gateway fields: `CONSUMER_DOMAIN_SERVICE_URL`, `_ASSERTION_KEY`, `_ASSERTION_KID`. The manifest gains rows for the key and kid (status `active`, owner `dom`), and 8 consumer line numbers that the config insertion shifted are updated. The checker shows 0 errors and the same 14 warnings as `main`.
+
+**Evidence (Spanner emulator 1.5.45, fake-gcs-server 1.56.1)**
+| Check | Result |
+|---|---|
+| `consumer-domains.test.ts`: dev session → real gateway → domain service → Spanner + GCS emulator | **passed**. Unauthenticated → 401. Then: capabilities (simulated, labelled) → wardrobe item → signed upload to the bucket → complete (verified) → job (202) → jobs process dispatches and collects → result `image/png`, `private, no-store`, `generated_visual_preview_simulated` → save → delete → result 404. The service answers 401 to no assertion and to a forged one. |
+| `domains.test.ts` (gateway client) | **4 passed**: claim set, 30 s lifetime, ES256 `kid`, only router-built headers, fresh `jti` per request, no assertion for anonymous calls, image passthrough, non-JSON → 503, unconfigured or unreachable → 503 |
+| `test_persona_domain_app.py` | **6 passed**: valid assertion; replay, wrong issuer, unknown kid, foreign key, TTL > 60 s, expired, other environment, malformed scopes, wrong audience and HS256 all refused; private JWK refused; mounted app 401 → 200; media not mounted without a bucket; config refusals; simulated provider dev-only |
+| Mutation checks | Removing the replay, lifetime or environment check each fails the refusal test |
+| Gateway suite (type-check, lint, vitest) | 0 / 0 / **151 passed** (145 before + 4 client + 2 e2e) |
+
+**Not yet**
+- **No real provider or real bucket.** The try-on run uses the simulated provider and the GCS emulator. The dev-bucket run (item 11) still needs the founder's GCP credential.
+- **No deployment wiring.** Helm and compose still lack the domain service and its key; that is foundation's.

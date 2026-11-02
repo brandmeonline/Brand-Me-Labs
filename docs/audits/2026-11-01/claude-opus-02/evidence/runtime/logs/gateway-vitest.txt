@@ -1,0 +1,186 @@
+### step: gateway-vitest
+### cwd: /[REDACTED-LONG-STRING]
+### cmd: pnpm exec vitest run
+### start_utc: 2026-11-01T15:11:20Z
+### node=v22.23.4 pnpm=10.34.6 python3.11=Python 3.11.18
+-----
+
+ RUN  v3.2.7 /[REDACTED-LONG-STRING]
+
+[2026-11-01 15:11:25.594 +0000] WARN: problem extension members dropped (spec Problem has none; use a header)
+    requestId: "9c3e8211-1be5-44c7-8ac9-4b096ebbf1ff"
+    code: "insufficient_scope"
+    droppedMembers: [
+      "required_scopes"
+    ]
+[2026-11-01 15:11:25.661 +0000] WARN: problem extension members dropped (spec Problem has none; use a header)
+    requestId: "60c02f39-48ef-4c07-a176-ef195f5938dd"
+    code: "insufficient_scope"
+    droppedMembers: [
+      "required_scopes"
+    ]
+[2026-11-01 15:11:25.685 +0000] WARN: problem extension members dropped (spec Problem has none; use a header)
+    requestId: "ff37e3bc-0145-47d8-825a-9b42612537c4"
+    code: "insufficient_scope"
+    droppedMembers: [
+      "required_scopes"
+    ]
+[2026-11-01 15:11:25.971 +0000] WARN: problem extension members dropped (spec Problem has none; use a header)
+    requestId: "d5a11860-af7f-4e0e-8dba-e7085bca39b4"
+    code: "insufficient_scope"
+    droppedMembers: [
+      "required_scopes"
+    ]
+[2026-11-01 15:11:25.991 +0000] WARN: problem extension members dropped (spec Problem has none; use a header)
+    requestId: "767fb058-1dbe-40b0-9235-9f86d0f9eb96"
+    code: "insufficient_scope"
+    droppedMembers: [
+      "required_scopes"
+    ]
+ ✓ src/routes/v1/commerce.test.ts (26 tests) 1290ms
+   ✓ delegations, providers, catalog, assistant > setup routes refuse secret-looking values in every reference field and forward only clean input  334ms
+ ↓ src/routes/v1/me.test.ts (12 tests | 12 skipped)
+ ✓ src/middleware/rateLimiter.test.ts (17 tests) 169ms
+[2026-11-01 15:11:28.753 +0000] WARN: Rate limit exceeded
+    requestId: "a3bb189e-8bf9-4888-9912-ace4e6543002"
+    scope: "t"
+    keyKind: "ip"
+    method: "GET"
+    path: "/:id"
+[2026-11-01 15:11:28.764 +0000] WARN: Rate limit exceeded
+    requestId: "6ab218f7-6889-4c1e-9905-1d10b8153381"
+    scope: "t"
+    keyKind: "member"
+    method: "POST"
+    path: "/:id"
+[2026-11-01 15:11:28.772 +0000] WARN: Rate limit exceeded
+    requestId: "338daeb5-8c5c-492c-b3d9-af14089c1607"
+    scope: "t"
+    keyKind: "ip"
+    method: "POST"
+    path: "/:id"
+[2026-11-01 15:11:28.783 +0000] WARN: Rate limit exceeded
+    requestId: "6ebf69da-91dc-43d4-a436-20fa3b6efe12"
+    scope: "ip"
+    keyKind: "ip"
+    method: "GET"
+    path: "/:id"
+[2026-11-01 15:11:28.789 +0000] WARN: Rate limit exceeded
+    requestId: "5dd85e79-ee22-4cc7-bc02-cef224963c93"
+    scope: "ip"
+    keyKind: "ip"
+    method: "GET"
+    path: "/:id"
+[2026-11-01 15:11:28.798 +0000] WARN: Rate limit exceeded
+    requestId: "e611c405-fa75-49f7-bf3d-1378de2587f9"
+    scope: "ip"
+    keyKind: "ip"
+    method: "GET"
+    path: "/:id"
+[2026-11-01 15:11:28.804 +0000] WARN: Rate limit exceeded
+    requestId: "b254da2e-c8d0-45d9-9702-a23418fd5584"
+    scope: "principal"
+    keyKind: "member"
+    method: "POST"
+    path: "/api/v1/wardrobe/items"
+[2026-11-01 15:11:28.816 +0000] WARN: Rate limit exceeded
+    requestId: "47ae8b27-deb1-469c-9f91-e224135692bc"
+    scope: "principal"
+    keyKind: "member"
+    method: "POST"
+    path: "/api/v1/session"
+[2026-11-01 15:11:28.818 +0000] WARN: Rate limit exceeded
+    requestId: "b95bd9a4-6225-4c93-bda7-3dad58544492"
+    scope: "principal"
+    keyKind: "member"
+    method: "POST"
+    path: "/api/v1/me/deletion"
+[2026-11-01 15:11:28.820 +0000] WARN: Rate limit exceeded
+    requestId: "3ec8ec4c-e479-461b-afe5-47c2d9997c87"
+    scope: "principal"
+    keyKind: "member"
+    method: "PATCH"
+    path: "/api/v1/me"
+[2026-11-01 15:11:28.838 +0000] WARN: Rate limit exceeded
+    requestId: "d1d325d3-778d-4c59-9371-c428f69e76c8"
+    scope: "principal"
+    keyKind: "ip"
+    method: "PATCH"
+    path: "/api/v1/me"
+[2026-11-01 15:11:28.844 +0000] WARN: Rate limit exceeded
+    requestId: "6e2e7a1f-37cd-405e-ae11-bf916f303e52"
+    scope: "ip"
+    keyKind: "ip"
+    method: "GET"
+    path: "/api/v1/me"
+[2026-11-01 15:11:28.847 +0000] WARN: Rate limit exceeded
+    requestId: "a7024c1f-2fd3-4410-8237-7e2653921a95"
+    scope: "ip"
+    keyKind: "ip"
+    method: "POST"
+    path: "/scan"
+[2026-11-01 15:11:28.870 +0000] WARN: Rate limit exceeded
+    requestId: "1375b73a-3105-4800-b10e-c6623e934f65"
+    scope: "ip"
+    keyKind: "ip"
+    method: "GET"
+    path: "/api/v1/me"
+ ✓ src/routes/v1/integration.test.ts (21 tests) 917ms
+ ↓ src/routes/v1/export-backend.test.ts (2 tests | 2 skipped)
+ ✓ src/routes/v1/social.test.ts (9 tests) 502ms
+ ↓ src/routes/v1/consumer-domains.test.ts (2 tests | 2 skipped)
+ ✓ src/routes/v1/v1-routes.test.ts (9 tests) 324ms
+ ✓ src/middleware/mode.test.ts (15 tests) 29ms
+ ↓ src/routes/v1/read-backend.test.ts (2 tests | 2 skipped)
+ ✓ src/routes/v1/persona.test.ts (7 tests) 204ms
+ ✓ src/routes/v1/rewards.test.ts (5 tests) 310ms
+ ✓ src/routes/v1/wardrobe.test.ts (6 tests) 223ms
+[2026-11-01 15:11:41.680 +0000] WARN: problem extension members dropped (spec Problem has none; use a header)
+    requestId: "b1e1c5c2-3c7d-49de-803a-08f830240bfe"
+    code: "insufficient_scope"
+    droppedMembers: [
+      "required_scopes"
+    ]
+[2026-11-01 15:11:41.690 +0000] ERROR: unhandled api error
+    requestId: "d5155f23-ad27-4d3d-ab1b-2ccbfef003b6"
+    errName: "Error"
+    path: "/:id/:id"
+[2026-11-01 15:11:41.940 +0000] WARN: problem extension members dropped (spec Problem has none; use a header)
+    requestId: "6187963c-82ef-4b57-a548-9c2b0b56d106"
+    code: "insufficient_scope"
+    droppedMembers: [
+      "required_scopes"
+    ]
+[2026-11-01 15:11:41.943 +0000] ERROR: unhandled api error
+    requestId: "82c66c6e-fd0c-4ecf-abea-8d26c8fce975"
+    errName: "Error"
+    path: "/:id/:id"
+[2026-11-01 15:11:42.014 +0000] WARN: problem extension members dropped (spec Problem has none; use a header)
+    requestId: "bb6c0896-6093-4d7e-aefb-16911f296de7"
+    code: "insufficient_scope"
+    droppedMembers: [
+      "required_scopes"
+    ]
+[2026-11-01 15:11:42.039 +0000] ERROR: unhandled api error
+    requestId: "3726863d-be73-4afc-991b-2ae35e29de60"
+    errName: "Error"
+    path: "/:id/:id"
+ ✓ src/middleware/problem.test.ts (9 tests) 637ms
+   ✓ problem+json bodies > v1 problemHandler: every helper yields a spec Problem with exactly its members  310ms
+ ✓ src/routes/v1/tryon.test.ts (4 tests) 415ms
+   ✓ media/try-on routers (unmounted) > try-on job: consent required, unavailable modes never forwarded  318ms
+ ✓ src/services/domains.test.ts (4 tests) 49ms
+ ✓ src/middleware/requestLogger.test.ts (7 tests) 330ms
+ ✓ src/middleware/redaction.test.ts (2 tests) 13ms
+ ✓ src/routes/scan.test.ts (7 tests) 121ms
+ ✓ src/middleware/session.test.ts (3 tests) 9ms
+
+ Test Files  16 passed | 4 skipped (20)
+      Tests  151 passed | 18 skipped (169)
+   Start at  15:11:22
+   Duration  23.85s (transform 2.06s, setup 0ms, collect 40.48s, tests 5.54s, environment 5ms, prepare 5.38s)
+
+-----
+### exit: 0
+### end_utc: 2026-11-01T15:11:46Z
+### duration_s: 26

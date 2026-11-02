@@ -13,7 +13,8 @@ them for a single-replica workload.
       (list "read-api" .Values.readApi.enabled)
       (list "exports-api" .Values.exportsApi.enabled)
       (list "exports-worker" .Values.exportsWorker.enabled)
-      (list "events-worker" .Values.eventsWorker.enabled) }}
+      (list "events-worker" .Values.eventsWorker.enabled)
+      (list "consumer-domains" .Values.consumerDomains.enabled) }}
 {{- range $w := $workloads }}
 {{- if index $w 1 }}
 ---

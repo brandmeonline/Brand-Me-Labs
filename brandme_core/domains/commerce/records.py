@@ -88,6 +88,10 @@ class ApprovalChallenge:
     expires_at: datetime
     used: bool = False
     nonce: str = ""  # set only on the object returned by open_approval_challenge
+    # Also return-only: who places the order if the member approves it now ("agent" | "member"),
+    # and the autonomy codes behind that, for the trusted surface to show.
+    completed_by: str = ""
+    autonomy_codes: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

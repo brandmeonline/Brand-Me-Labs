@@ -1,0 +1,1760 @@
+{
+  "id": "CHECK-STATIC-001",
+  "time_utc": "2026-11-01T14:31:44.481828+00:00",
+  "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "cwd": "C:\\Users\\auditor\\Documents\\Codex\\2026-11-01\\files-pasted-by-the-user-you\\work\\brand-me-labs-audit",
+  "python_version": "3.12.14",
+  "mode": "static parsing; auditor-owned script; repository code not imported/executed",
+  "file_count": 1340,
+  "python": [
+    {
+      "path": ".claude/skills/ui-ux-pro-max/scripts/core.py",
+      "status": "parsed"
+    },
+    {
+      "path": ".claude/skills/ui-ux-pro-max/scripts/design_system.py",
+      "status": "parsed"
+    },
+    {
+      "path": ".claude/skills/ui-ux-pro-max/scripts/search.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/cli/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/cli/main.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/graph_db.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/graph_rag.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/orchestrator/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/orchestrator/agents.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/setup.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/tools/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/tools/blockchain_tools.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/tools/graph_tools.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/agentic/tools/policy_tools.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/branding/src/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/branding/src/database.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/branding/src/graph_engine.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/branding/src/schemas.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/compliance/src/lifecycle/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/compliance/src/lifecycle/burn_proof.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/compliance/src/lifecycle/esg_verifier.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/compliance/src/lifecycle/state_machine.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/compliance/src/main.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/identity/src/main.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/knowledge/src/main.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-chain/tests/support/store-database.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-core/brain/main.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-core/orchestrator/celery_app.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-core/orchestrator/main.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-core/orchestrator/tasks.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-core/orchestrator/worker.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-core/policy/main.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-core/policy/region_rules.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/api/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/api/cubes.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/api/faces.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/clients/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/clients/compliance_client.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/clients/identity_client.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/clients/orchestrator_client.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/clients/policy_client.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/database/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/database/crud.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/database/schema.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/main.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/models.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/passport_filter.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/src/service.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/tests/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/tests/test_api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-cube/tests/test_service.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-data/spanner/migrations/runner.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/lib/testing/dev-domains.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-governance/governance_console/main.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/boot.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/config.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/cors_config.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/base.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/autonomy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/composition.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/delegation.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/errors.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/events.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/http_api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/money.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/principal.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/privacy_handler.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/protocols.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/quote.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/records.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/service.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/spanner_store.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/store.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/events.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/media/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/media/api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/media/deletion.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/media/events.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/media/gcs_store.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/media/providers.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/media/service.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/media/store.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/app.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/assertion.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/backfill.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/deletion.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/events.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/http.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/ingress.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/jobs.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/kernel.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/lane.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/model.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/onboarding.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/outbox_worker.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/privacy_guard.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/recommender.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/persona/service.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/privacy/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/privacy/deletion.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/privacy/foundation_bridge.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/privacy/privacy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/catalog.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/contracts.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/fulfillment/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/fulfillment/simulated.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/ingestion.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/local_atelier.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/merchant.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/nordstrom.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/payments/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/payments/simulated.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/payments/stripe_test.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/payments/stripe_wire.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/redaction.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/registry.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/setup.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/tiers.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/providers/url_guard.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/badges.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/benefits.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/consumer.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/deletion.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/events.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/ledger.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/operators.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/rules.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rewards/service.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rights/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rights/passport.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rights/privacy_handler.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rights/projection.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/rights/reprint.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/clock.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/decisions.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/deletion.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/events.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/notifications.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/policy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/relationships.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/reports.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/social/shares.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/deletion.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/events.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/guest_sections.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/model.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/outfits.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/placement.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/rooms.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/wardrobe/service.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/env.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/catalogs.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/envelope.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/erasure.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/inbox.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/outbox.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/projections.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/pubsub.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/retention.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/events/worker.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/exceptions.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/firestore/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/firestore/agentic.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/firestore/client.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/firestore/realtime.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/firestore/sync.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/firestore/wardrobe.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/graceful_shutdown.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/health.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/http_client.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/logging.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/mcp/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/mcp/authz.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/mcp/consent.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/mcp/refs.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/mcp/tools.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/metrics.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/anthropic_adapter.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/background.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/budget.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/composition.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/model_adapter.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/model_planner.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/runlog.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/runtime.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/orchestrator/transcript.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/privacy_exports/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/privacy_exports/__main__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/privacy_exports/app.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/privacy_exports/config.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/privacy_exports/service.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/privacy_exports/storage.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/read_api/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/read_api/__main__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/read_api/app.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/read_api/config.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/read_api/reads.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/spanner/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/spanner/client.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/spanner/consent_graph.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/spanner/idempotent.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/spanner/pii_redactor.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/spanner/pool.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/spanner/provenance.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/telemetry.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/zk/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/zk/proof_of_ownership.py",
+      "status": "parsed"
+    },
+    {
+      "path": "docs/design/brandme/contracts/validate_spec.py",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/contracts/python/brandme_contracts/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/contracts/python/brandme_contracts/models.py",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/prepare-vision.py",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/python/_fetch.py",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/python/fetch_firestore_emulator.py",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/python/fetch_gcs_emulator.py",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/python/fetch_pubsub_emulator.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/conftest.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/commerce/ap2_issuer.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/commerce/ap2_sdk_oracle.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/commerce/fake_anthropic.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/commerce/harness.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/commerce/stores.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/export_storage.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/privacy/persona_fixture.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/providers/stripe_double.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/providers/stripe_events.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/providers/stripe_mock.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/seed_read_api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/__init__.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/conftest.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_boot_guard.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_contract_models.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_deletion_leaves_no_member_rows.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_domain_framework.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_logging_redaction.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_migrations.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_mode_guard.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_outbox_delivery.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_outbox_emulator.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_outbox_lane_catalogs.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_outbox_retention.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_projections_emulator.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/foundation/test_rights_event_contracts.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_ap2.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_assistant.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_assistant_composition.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_assistant_planning.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_assistant_privacy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_audit_coverage.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_autonomy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_budget.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_events_catalog.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_hardening.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_http.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_legacy_graph_rag.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_migrations.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_model_live.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_model_planner.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_operations_copy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_payments_flow.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_principal.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_privacy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_privacy_freeze.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_protocols.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_purchase.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_quote.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_stripe_live.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_commerce_wardrobe_contract.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_consent_graph.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_mcp.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_media_gcs_signing.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_media_gcs_store.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_media_tryon.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_backfill.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_domain_app.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_harness.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_lane_events.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_lane_jobs.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_lane_mydata.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_migrations_upgrade.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_model.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_privacy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_recommender.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_persona_service.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_privacy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_privacy_exports.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_privacy_recovery.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_provenance.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_providers.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_providers_fulfillment.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_providers_payments.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_providers_setup.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_providers_stripe.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_providers_stripe_wire.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_providers_tiers.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_read_api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_rewards_api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_rewards_benefits.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_rewards_ledger.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_rights.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_rights_cube_filter.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_social_decisions.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_social_privacy_api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_social_relationships.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_social_reports.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_social_shares.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_wardrobe.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_wardrobe_api.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_wardrobe_model.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_wardrobe_outfits.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_wardrobe_placement.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_wardrobe_privacy.py",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/test_wardrobe_service.py",
+      "status": "parsed"
+    }
+  ],
+  "json": [
+    {
+      "path": ".claude/settings.json",
+      "status": "parsed"
+    },
+    {
+      "path": ".mcp.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-agents/branding/data/product_catalog.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-chain/contracts/artifact-manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-chain/contracts/managed/brandme_rights/compiler/contract-info.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-chain/contracts/toolchain.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-chain/evidence/undeployed-2026-10-05T18-51-38-369Z.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-chain/evidence/undeployed-2026-10-10T21-15-56-331Z.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-chain/evidence/undeployed-2026-10-23T12-13-38-231Z.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-chain/package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-chain/tsconfig.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-console/package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-console/tsconfig.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/features/spatial/generated-catalog.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/catalog.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/environment-progression.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/garments/bag/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/garments/dress/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/garments/jacket/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/garments/knit/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/garments/overshirt/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/garments/sneaker/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/garments/tee/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/garments/trousers/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/overlays/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/photo-only/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/rights.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/rooms/garden_studio/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/rooms/limestone_gallery/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/rooms/starter_modular/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/rooms/starter_modular/rights.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/rooms/starter_wooden/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/rooms/starter_wooden/rights.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/rooms/walnut_atelier/manifest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/test-person/annotations.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/public/demo/test-person/rights.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-frontend/tsconfig.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-gateway/package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme-gateway/tsconfig.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/checkout_mandate.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/checkout_receipt.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/open_checkout_mandate.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/open_payment_mandate.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/payment_mandate.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/payment_receipt.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/types/amount.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/types/item.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/types/jwk.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/types/merchant.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/types/payment_instrument.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/types/pisp.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ap2/types/receipt_status.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ucp/types/buyer.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ucp/types/checkout.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ucp/types/line_item.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ucp/types/link.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ucp/types/message.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ucp/types/message_error.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ucp/types/message_info.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ucp/types/message_warning.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/domains/commerce/ap2_schemas/ucp/types/total.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/mcp/schemas/domain_assertion.schema.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/mcp/schemas/executor_assertion.schema.json",
+      "status": "parsed"
+    },
+    {
+      "path": "brandme_core/mcp/schemas/tool_invocation.schema.json",
+      "status": "parsed"
+    },
+    {
+      "path": "docs/build/evidence/results.json",
+      "status": "parsed"
+    },
+    {
+      "path": "docs/build/evidence/w00/smoke-latest.json",
+      "status": "parsed"
+    },
+    {
+      "path": "docs/design/brandme/contracts/acceptance-catalog.json",
+      "status": "parsed"
+    },
+    {
+      "path": "docs/design/brandme/contracts/contract-examples.json",
+      "status": "parsed"
+    },
+    {
+      "path": "docs/design/brandme/contracts/demo-scenario.json",
+      "status": "parsed"
+    },
+    {
+      "path": "docs/design/brandme/contracts/design-tokens.json",
+      "status": "parsed"
+    },
+    {
+      "path": "docs/design/brandme/contracts/domain.schema.json",
+      "status": "parsed"
+    },
+    {
+      "path": "docs/design/brandme/contracts/reward-rules.json",
+      "status": "parsed"
+    },
+    {
+      "path": "package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/contracts/generated/domain.schema.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/contracts/generated/openapi.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/contracts/package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/contracts/src/foundation-schemas.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/contracts/src/read-schemas.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/contracts/tsconfig.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/design-system/package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/design-system/tsconfig.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/firestore-rules/package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/firestore-rules/tsconfig.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/provider-contracts/package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "packages/provider-contracts/tsconfig.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/camera-measurements.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/asset-validation.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/browser-results.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/fit-evidence.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/keyboard-placement-results.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/pose-inference.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/round2-summary.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/round3-followup-pose-inference.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/round3-followup-summary.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/round3-pose-inference.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/round3-summary.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/ultra-asset-validation.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/evidence/ultra-browser-results.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/folded-measurements.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/package.json",
+      "status": "parsed"
+    },
+    {
+      "path": "scripts/assets/tsconfig.json",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/media/gcs_v4_signing_vectors.json",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/persona/catalog_candidates.json",
+      "status": "parsed"
+    },
+    {
+      "path": "tests/fixtures/providers/impact_feed_fictional.json",
+      "status": "parsed"
+    }
+  ],
+  "application_test_counts": {
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "not_run": "all runtime/build/browser/integration suites"
+  },
+  "limits": "Parsing verifies syntax/encoding only, not imports, types, authorization, business behavior, or deployment."
+}

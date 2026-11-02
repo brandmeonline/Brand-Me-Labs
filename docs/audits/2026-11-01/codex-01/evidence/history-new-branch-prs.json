@@ -1,0 +1,17 @@
+[
+  {
+    "number": 71,
+    "title": "docs: Stripe Connect integration plan",
+    "state": "open",
+    "draft": true,
+    "merged_at": null,
+    "closed_at": null,
+    "created_at": "2026-11-01T14:39:05Z",
+    "updated_at": "2026-11-01T14:39:05Z",
+    "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/pull/71",
+    "head_ref": "claude/amazing-goodall-ntrljq",
+    "head_sha": "45e157f5555647f0e9add424b9634f27d606211d",
+    "base_ref": "main",
+    "base_sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60"
+  }
+]

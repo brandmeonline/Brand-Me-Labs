@@ -1,0 +1,225 @@
+{
+  "baseline_main": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "date": "2026-11-01",
+  "method": "Second auditor reconciliation of first audit (BRANCHES_CODE.md / evidence/branches.json) against independent sub-agent evidence (branch-inventory.json, notes.md, commands.log) plus lead-auditor checks SC-17..SC-19, SC-28..SC-30, SC-33 and orchestration-doc greps. Taxonomy: KEEP / INTEGRATE / PRESERVE_THEN_RETIRE / DELETION_CANDIDATE / UNKNOWN. A branch with an unresolved process/dependency concern is never listed as DELETION_CANDIDATE.",
+  "key_fact_agreed_by_both": "For every branch whose tip is an ancestor of main, deleting the ref loses no commits (they remain reachable from main). For every squash-merged branch, patch-id(squash) == patch-id(merge-base..tip) and the tree diff over touched paths is empty (independent check, stronger than the first audit's cherry/added-path tests).",
+  "verdicts": [
+    {
+      "id": "BR-001",
+      "ref": "bench/astra-consumer-ui-20261005",
+      "first": "KEEP",
+      "agent": "PRESERVE_THEN_RETIRE",
+      "second": "KEEP",
+      "confidence": "high",
+      "reason": "0 unique commits (ancestor via #56). Executable consumer: .github/workflows/consumer-ui.yml:7 push trigger; named as lane branch in docs/build/orchestration/ultra-plan-03-astra-consumer-ui.md:7. Nothing to preserve; deletion requires editing the workflow first, so KEEP until that edit is reviewed. Agent's PRESERVE_THEN_RETIRE is equivalent in effect (there is no content to preserve)."
+    },
+    {
+      "id": "BR-002",
+      "ref": "bench/astra-spatial-ar-20261005",
+      "first": "KEEP",
+      "agent": "PRESERVE_THEN_RETIRE",
+      "second": "KEEP",
+      "confidence": "high",
+      "reason": "0 unique commits (ancestor via #69). Executable consumer: spatial-validation.yml:5 push trigger; lane branch in ultra-plan-03-astra-spatial-ar.md:7; workspace-governance.md:56 references a pending decision on this branch. Same handling as BR-001."
+    },
+    {
+      "id": "BR-003",
+      "ref": "bench/opus-commerce-agents-20261005",
+      "first": "KEEP",
+      "agent": "DELETION_CANDIDATE",
+      "second": "UNKNOWN (owner decision; no content at risk)",
+      "confidence": "high on facts, low on process",
+      "reason": "0 unique commits; ancestor; base of merged #35. No executable consumer. Named 'Lane branch' in oneshot-plan-03-opus-commerce-agents.md:8 (round-03 plan, 2026-10-25..30). Whether AI-session orchestration still targets it is not determinable from git. Safe to delete the moment the owner retires or repoints the lane plan; nothing to archive."
+    },
+    {
+      "id": "BR-004",
+      "ref": "bench/opus-consumer-domains-20261005",
+      "first": "KEEP",
+      "agent": "DELETION_CANDIDATE",
+      "second": "UNKNOWN (owner decision; no content at risk)",
+      "confidence": "high/low",
+      "reason": "As BR-003; named in ultra-plan-03-opus-consumer-domains.md:7. Active work is on claude/opus-consumer-domains-1csp2g (#66), not here."
+    },
+    {
+      "id": "BR-005",
+      "ref": "bench/opus-foundation-20261005",
+      "first": "KEEP",
+      "agent": "DELETION_CANDIDATE",
+      "second": "UNKNOWN (owner decision; no content at risk)",
+      "confidence": "high/low",
+      "reason": "As BR-003; named in oneshot-plan-03-opus-foundation.md:8."
+    },
+    {
+      "id": "BR-006",
+      "ref": "bench/opus-midnight-rights-20261005",
+      "first": "KEEP",
+      "agent": "DELETION_CANDIDATE",
+      "second": "UNKNOWN (owner decision; no content at risk)",
+      "confidence": "high/low",
+      "reason": "As BR-003; named in ultra-plan-03-opus-midnight-rights.md:7. Active work is on claude/midnight-rights-lifecycle-yhfyyu (#70)."
+    },
+    {
+      "id": "BR-007",
+      "ref": "claude/brand-me-lux-foundations-audit-8zywr3",
+      "first": "PRESERVE_THEN_RETIRE",
+      "agent": "INTEGRATE (low)",
+      "second": "PRESERVE_THEN_RETIRE",
+      "confidence": "high",
+      "reason": "5 unique commits (2026-08-31), 22/24 paths absent from main (brandme_foundation/, foundation.yml, docs/audit). Agent adds: merge-tree onto main is clean despite 370 behind (it only adds files). Integration is not justified by product evidence: current brandme_core already has modes, tenancy, outbox, identity contracts; a second parallel foundation would create the duplicate-authority problem the first audit warns about. Preserve exact tip eed67370 (bundle) and resolve draft #29 by owner decision."
+    },
+    {
+      "id": "BR-008",
+      "ref": "claude/ci-repair-workflows",
+      "first": "DELETION_CANDIDATE",
+      "agent": "DELETION_CANDIDATE",
+      "second": "DELETION_CANDIDATE",
+      "confidence": "high",
+      "reason": "Ancestor via #30; no consumers."
+    },
+    {
+      "id": "BR-009",
+      "ref": "claude/midnight-rights-lifecycle-yhfyyu",
+      "first": "INTEGRATE",
+      "agent": "KEEP",
+      "second": "INTEGRATE",
+      "confidence": "high",
+      "reason": "5 unique commits; open draft #70, mergeable_state clean; carries V016_rights_transfer_invites.sql + RESERVED 16:'rights_transfer_invites' which textually conflicts with #66 (README.md, test_migrations.py). Must renumber to V017 if #66 lands first (or vice versa). Transfers router still unmounted (F-BR-002, first audit; not re-verified line-by-line here)."
+    },
+    {
+      "id": "BR-010",
+      "ref": "claude/opus-commerce-agents-setup-szpmf7",
+      "first": "KEEP",
+      "agent": "DELETION_CANDIDATE (medium)",
+      "second": "UNKNOWN (owner decision; no content at risk)",
+      "confidence": "high/low",
+      "reason": "0 unique commits; PRs #35/#51/#64 from this head merged. Docs describe it as a session lane branch restarted from main each round; whether the next round reuses the name is unknowable from git."
+    },
+    {
+      "id": "BR-011",
+      "ref": "claude/opus-consumer-domains-1csp2g",
+      "first": "INTEGRATE",
+      "agent": "KEEP",
+      "second": "INTEGRATE",
+      "confidence": "high",
+      "reason": "18 unique commits (16 non-merge); open #66 (not draft); 71 paths; mergeable_state unstable solely because of the `shell` visual-baseline job (SC-30). Carries V016_consumer_design.sql and the conflicting RESERVED entry. First integration candidate, as the first audit proposed."
+    },
+    {
+      "id": "BR-012",
+      "ref": "claude/opus-foundation-w00-2hgiw5",
+      "first": "KEEP",
+      "agent": "DELETION_CANDIDATE (medium)",
+      "second": "UNKNOWN (owner decision; no content at risk)",
+      "confidence": "high/low",
+      "reason": "0 unique commits; merged via #62 (97d54477) and earlier #33/#53/#58. Same lane-reuse caveat as BR-010."
+    },
+    {
+      "id": "BR-013",
+      "ref": "claude/setup-design-system-cli-6iovG",
+      "first": "PRESERVE_THEN_RETIRE",
+      "agent": "PRESERVE_THEN_RETIRE",
+      "second": "PRESERVE_THEN_RETIRE",
+      "confidence": "high",
+      "reason": "Agent strengthens the first audit: 4 commits (12f5ee7, 425918c, 6de84d4, 8b9bd4a; 2026-06-09..11) adding .claude/skills/design-audit/** (23 files) were never in any PR and their blobs exist nowhere in main. Preserve exact tip 8b9bd4a7 before any retirement."
+    },
+    {
+      "id": "BR-014..BR-025 (codex/* 2026-10-22/23 + console-contract-publication + explain-execution)",
+      "ref": "codex/chain-projection-worker-20261022; codex/console-contract-publication; codex/critical-dependency-repairs-20261022; codex/docker-pipeline-20261022; codex/durable-chain-reconciliation-20261022; codex/durable-outbox-pubsub-20261022; codex/explain-execution-details-and-next-steps; codex/midnight-integration-20261022; codex/privacy-recovery-safety-20261023; codex/rights-export-worker; codex/rights-privacy-read-api",
+      "first": "DELETION_CANDIDATE (all 11)",
+      "agent": "DELETION_CANDIDATE (all 11)",
+      "second": "DELETION_CANDIDATE",
+      "confidence": "high",
+      "reason": "Exact squash merges (#42–#50, #28, #65) confirmed by patch-id equality AND empty `git diff <tip> <squash> -- <touched paths>`; zero hunks missing from main; no consumers. Confirms the first audit's 'squash-merge trap' analysis."
+    },
+    {
+      "id": "BR-016",
+      "ref": "codex/consumer-design-preview",
+      "first": "INTEGRATE",
+      "agent": "KEEP",
+      "second": "INTEGRATE (after re-sync)",
+      "confidence": "high",
+      "reason": "20 unique commits; open draft #63; 87 behind; merge-base 77280249; pipeline-state.md claim of re-sync to 97d54477 is false (SC-28). No path overlap with #66/#70."
+    },
+    {
+      "id": "BR-026",
+      "ref": "docs/brandme-full-experience-2026-10-05",
+      "first": "UNKNOWN",
+      "agent": "DELETION_CANDIDATE (medium)",
+      "second": "DELETION_CANDIDATE (medium)",
+      "confidence": "medium",
+      "reason": "Tip b3137317 is the #36 squash and an ancestor of main; #31 merged from it. Only historical status files cite it as a base; the commit stays reachable from main after ref deletion, so those citations keep resolving. No executable consumer. First audit's UNKNOWN was over-cautious; the only residual is unknown external tooling, which applies equally to every branch."
+    },
+    {
+      "id": "BR-027",
+      "ref": "fix/property-test-vacuity-guard-flake",
+      "first": "DELETION_CANDIDATE",
+      "agent": "DELETION_CANDIDATE",
+      "second": "DELETION_CANDIDATE",
+      "confidence": "high",
+      "reason": "Exact squash via #39 → 49623e4."
+    },
+    {
+      "id": "BR-028",
+      "ref": "main",
+      "first": "KEEP",
+      "agent": "KEEP",
+      "second": "KEEP",
+      "confidence": "high",
+      "reason": "Default branch."
+    },
+    {
+      "id": "BR-029/030/031",
+      "ref": "mia/next-plans-20261025; mia/orchestration-20261023; mia/pipeline-seed-20261030",
+      "first": "DELETION_CANDIDATE",
+      "agent": "DELETION_CANDIDATE",
+      "second": "DELETION_CANDIDATE",
+      "confidence": "high",
+      "reason": "All ancestors (#67, #57, #68); no consumers."
+    },
+    {
+      "id": "BR-032/033",
+      "ref": "triage/pnpm-version-conflict-20261023; triage/pnpm-workspace-frontend-20261008",
+      "first": "DELETION_CANDIDATE",
+      "agent": "DELETION_CANDIDATE",
+      "second": "DELETION_CANDIDATE",
+      "confidence": "high",
+      "reason": "Closed-unmerged #55/#37; semantic replacement verified by both audits (pnpm-workspace.yaml membership + lockfile importer; module-regression.yml has no pnpm version pin)."
+    },
+    {
+      "id": "BR-034",
+      "ref": "w11/integration-20261008",
+      "first": "UNKNOWN",
+      "agent": "DELETION_CANDIDATE (high)",
+      "second": "DELETION_CANDIDATE (medium)",
+      "confidence": "medium",
+      "reason": "Ancestor of main; no PR used it as head or base; no consumer references the name; its merge history remains reachable from main. First audit's 'retention purpose not established' is not an evidence-based reason to retain a ref that contains nothing unique."
+    },
+    {
+      "id": "BR-036",
+      "ref": "claude/amazing-goodall-ntrljq",
+      "first": "KEEP (docs-only at 45e157f5)",
+      "agent": "KEEP",
+      "second": "KEEP (now code: Stripe Connect, tip 8360813e)",
+      "confidence": "high",
+      "reason": "Open draft #71; tip moved after the first audit's snapshot (SC-19). Unverified against Stripe test mode per its own commit message; commerce routers remain unmounted on main."
+    },
+    {
+      "id": "BR-037 (new)",
+      "ref": "claude/exciting-hypatia-wl48op",
+      "first": "not inventoried (appeared after snapshot)",
+      "agent": "KEEP",
+      "second": "KEEP",
+      "confidence": "high",
+      "reason": "Open draft #72; 2-file pnpm override fix for the unthresholded `pnpm audit --prod` gate (S2-OBS-002)."
+    }
+  ],
+  "tally_second_audit": {
+    "KEEP": 5,
+    "INTEGRATE": 3,
+    "PRESERVE_THEN_RETIRE": 2,
+    "DELETION_CANDIDATE": 20,
+    "UNKNOWN_owner_decision": 6,
+    "total_remote_branches": 37
+  },
+  "tally_note": "37 = 35 at first-audit snapshot + exciting-hypatia + counting main. Deletion candidates: 11 codex + ci-repair + 3 mia + 2 triage + fix/property + BR-026 + BR-034 = 19 (first audit: 18; +BR-026 +BR-034). The six UNKNOWN rows contain no unique commits; they are withheld from the deletion list only because round-03 orchestration documents and two workflow files still name them. Corrected 2026-11-02 (CORRECTIONS C-15/C-16): the verdict rows name 20 deletion candidates and 5 KEEP; the earlier 19/7 figures cancelled to the same 36-ref total.",
+  "preservation_prerequisites_unchanged": "Bundle + verified recovery of BR-007 (eed67370) and BR-013 (8b9bd4a7) before any retirement; fresh `git ls-remote` tip check with --force-with-lease=<ref>:<expected> before any deletion; no mass-delete script. These are proposals; nothing was created or deleted by either audit."
+}

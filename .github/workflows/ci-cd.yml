@@ -124,6 +124,10 @@ jobs:
       - name: Build frontend with lint and type checks
         run: pnpm --filter brandme-frontend build
 
+  # The same pytest suite (all of tests/) and rules suite now also run inside foundation-check's full
+  # `pnpm check`, under the same emulators and BRANDME_REQUIRE_EMULATORS=1. This job stays until one CI run on
+  # one SHA shows identical pytest summary counts (passed, skipped, xfailed, QUARANTINED) in both jobs; delete it
+  # (and its entry in build-images.needs) only in a change that cites that run.
   test-core:
     name: Test Core (Python/FastAPI)
     runs-on: ubuntu-latest
@@ -196,52 +200,19 @@ jobs:
           grep -Eq "fail 0$" .cache/rules.log
           grep -Eq "pass [1-9][0-9]*$" .cache/rules.log
 
-  test-consumer-domains:
-    name: Test Consumer Domains (Python)
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    services:
-      spanner:
-        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
-        ports:
-          - 9010:9010
-    env:
-      SPANNER_EMULATOR_HOST: localhost:9010
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install --require-hashes -r scripts/python/requirements.lock
-
-      - name: Require Spanner emulator
-        run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
-
-      # Persona, wardrobe, social, rewards and media, including My Data end to end,
-      # real Pub/Sub delivery through the foundation outbox worker and the GCS media
-      # store on the pinned local GCS emulator (fake-gcs-server).
-      - name: Test persona, wardrobe, social, rewards and try-on
-        env:
-          PUBSUB_EMULATOR_BIN: .cache/pubsub-emulator/platform/pubsub-emulator/bin/cloud-pubsub-emulator
-          GCS_EMULATOR_BIN: .cache/gcs-emulator/fake-gcs-server
-        run: |
-          python scripts/python/fetch_pubsub_emulator.py
-          test -x "$PUBSUB_EMULATOR_BIN"
-          python scripts/python/fetch_gcs_emulator.py
-          test -x "$GCS_EMULATOR_BIN"
-          python -m pytest tests/test_persona_*.py tests/test_wardrobe_*.py tests/test_social_*.py tests/test_rewards_*.py tests/test_media_*.py -q --timeout=300 -ra
-
-  # The foundation gate (scripts/brandme.mjs check + smoke): spec validator, contract/token drift, package and
-  # gateway type checks and tests, docs links, and the gateway -> brain -> Spanner smoke. The pytest step of
-  # `pnpm check` is skipped here only, because test-core runs the same full suite; locally `pnpm check` runs it.
+  # The foundation gate: the FULL `pnpm check` (scripts/brandme.mjs check), exactly what a developer runs, then
+  # `pnpm smoke`. check() provisions the emulators itself (Spanner via this service container and its REST port,
+  # the pinned Firestore started as a child, the pinned Pub/Sub and GCS binaries fetched and SHA256-verified, Java
+  # checked) and, with BRANDME_REQUIRE_EMULATORS=1, fails before any step if one is missing. Steps: workspace
+  # governance, spec validator, contract/token drift, credential manifest, guard self-tests, package type-check
+  # and tests (the security-rules suite must report pass > 0 and skipped 0), gateway lint, type-check and
+  # tests, every test under tests/ (pytest), docs links.
+  # (A hand-picked consumer-domains subset job ran here before: a subset of tests/ with no REQUIRE flag, no
+  # Firestore and no Spanner REST. Removed; this job and test-core run its files under stricter rules.)
   foundation-check:
     name: Foundation check
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     services:
       spanner:
         image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
@@ -282,17 +253,14 @@ jobs:
       - name: Require Spanner emulator
         run: python -c "import socket; socket.create_connection(('localhost', 9010), timeout=10).close()"
 
-      - name: Start pinned Firestore emulator (security-rules suite)
-        run: |
-          launcher=$(python scripts/python/fetch_firestore_emulator.py .cache/firestore-emulator)
-          nohup "$launcher" start --host=127.0.0.1 --port=8080 > .cache/firestore-emulator.log 2>&1 &
-          for _ in $(seq 1 60); do curl -sf http://127.0.0.1:8080/ >/dev/null && break; sleep 1; done
-          python -c "import socket; socket.create_connection(('127.0.0.1', 8080), timeout=10).close()"
-
-      - name: pnpm check
-        env:
-          BRANDME_CHECK_SKIP_PYTHON: '1'
+      # Full check, pytest included. Firestore (FIRESTORE_EMULATOR_HOST above), Pub/Sub and GCS are provisioned
+      # by check() itself; its preflight lists anything it could not provide and fails.
+      - name: pnpm check (full, emulators provisioned by check)
         run: pnpm check
+
+      - name: Firestore emulator log (on failure)
+        if: failure()
+        run: tail -n 80 .cache/firestore-emulator.log || true
 
       - name: pnpm smoke (gateway -> brain -> Spanner, restart persistence, outbox)
         run: pnpm smoke
@@ -330,7 +298,7 @@ jobs:
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [test-gateway, test-core, test-consumer-domains, foundation-check, test-chain, test-frontend, security-scan]
+    needs: [test-gateway, test-core, foundation-check, test-chain, test-frontend, security-scan]
     timeout-minutes: 40
     # Matrix legs write distinct output names, so the job outputs combine.
     outputs:
@@ -438,7 +406,7 @@ jobs:
     concurrency:
       group: deploy-sandbox
       cancel-in-progress: false
-    timeout-minutes: 30
+    timeout-minutes: 40
     # A job-level block replaces the workflow-level one: restate contents.
     permissions:
       contents: read
@@ -485,7 +453,10 @@ jobs:
           } > "$RUNNER_TEMP/release-args"
           mapfile -t args < "$RUNNER_TEMP/release-args"
           .cache/tools/bin/helm template brandme brandme-infra/helm/brandme "${args[@]}" > "$RUNNER_TEMP/release.yaml"
-          grep -c '^kind: Deployment$' "$RUNNER_TEMP/release.yaml"
+          # The Deployments this release renders; the rollout check below reads the optional ones from here.
+          python -c 'import sys, yaml; print("\n".join(d["metadata"]["name"] for d in yaml.safe_load_all(open(sys.argv[1])) if d and d.get("kind") == "Deployment"))' \
+            "$RUNNER_TEMP/release.yaml" > "$RUNNER_TEMP/deployments"
+          cat "$RUNNER_TEMP/deployments"
 
       - name: Authenticate to Google Cloud (Workload Identity Federation, no key)
         uses: google-github-actions/auth@v2
@@ -515,17 +486,40 @@ jobs:
       - name: Verify rollout and in-cluster checks
         run: |
           set -euo pipefail
-          for d in gateway chain read-api exports-api exports-worker events-worker; do
+          deploys=(gateway chain read-api exports-api exports-worker events-worker)
+          # consumer-domains only when the rendered release has it (consumerDomains.enabled in values-sandbox.yaml).
+          if grep -qx brandme-consumer-domains "$RUNNER_TEMP/deployments"; then deploys+=(consumer-domains); fi
+          for d in "${deploys[@]}"; do
             kubectl -n brandme rollout status "deployment/brandme-$d" --timeout=5m
           done
           kubectl -n brandme exec deploy/brandme-read-api -- python -m brandme_core.read_api --check
           kubectl -n brandme exec deploy/brandme-exports-worker -- python -m brandme_core.privacy_exports --check
           kubectl -n brandme exec deploy/brandme-events-worker -- python -m brandme_core.events.worker --check
 
+      # One pass of the hourly retention CronJob now, as a Job from its own template (same KSA, image and env), so a
+      # broken Workload Identity binding or schema shows up in this deploy and not at the next :17. A Failed Job
+      # (container exit != 0 after backoffLimit) or no terminal condition within 10 minutes fails the deploy.
+      - name: Run one retention pass (brandme-events-retention)
+        run: |
+          set -euo pipefail
+          job="brandme-events-retention-deploy-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          kubectl -n brandme create job "$job" --from=cronjob/brandme-events-retention
+          state=""
+          for _ in $(seq 1 60); do
+            state=$(kubectl -n brandme get job "$job" -o jsonpath='{.status.conditions[?(@.status=="True")].type}')
+            case " $state " in *" Complete "*|*" Failed "*) break ;; esac
+            sleep 10
+          done
+          kubectl -n brandme logs "job/$job" --tail=40 || true
+          case " $state " in
+            *" Complete "*) echo "retention pass $job completed" ;;
+            *) echo "retention pass $job did not complete (conditions: ${state:-none})" >&2; exit 1 ;;
+          esac
+
       - name: Diagnostics on failure (no secret values)
         if: failure()
         run: |
-          kubectl -n brandme get deploy,pods,jobs -o wide || true
+          kubectl -n brandme get deploy,pods,jobs,cronjobs -o wide || true
           kubectl -n brandme get events --sort-by=.lastTimestamp | tail -n 60 || true
           .cache/tools/bin/helm -n brandme history brandme --max 5 || true
 

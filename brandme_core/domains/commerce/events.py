@@ -24,6 +24,17 @@ DELEGATION_REVOKED = register(
     "commerce.delegation.revoked", "1",
     closed({"delegation_id": UUID}, ("delegation_id",)), "member_private")
 
+# The member changed their assistant's autonomy boundary (the grant row is overwritten; this is its history).
+DELEGATION_BOUNDARY_CHANGED = register(
+    "commerce.delegation.boundary_changed", "1",
+    closed({"delegation_id": UUID, "version": {"type": "integer", "minimum": 2},
+            "change": {"enum": ["narrowing", "widening"]},
+            "rule_count": {"type": "integer", "minimum": 0, "maximum": 20},
+            # approved purchases a narrowing handed back to the member to complete
+            "returned_operations": {"type": "integer", "minimum": 0, "maximum": 1000}},
+           ("delegation_id", "version", "change", "rule_count", "returned_operations")),
+    "member_private")
+
 QUOTE_READY = register(
     "commerce.quote.ready", "1",
     closed({"quote_id": UUID, "quote_hash": _HASH, "cart_id": UUID}, ("quote_id", "quote_hash", "cart_id")),

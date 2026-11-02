@@ -1,0 +1,10 @@
+# run log (second audit, strict emulator run) — absolute scratchpad paths are audit-environment paths, not repository paths
+15:37:22 worktree HEAD: ed19dc151d103b108cf972e6d37971c55d5dcf60
+15:37:22 python: Python 3.11.18
+15:37:24 spanner emulator: /opt/google-cloud-sdk/bin/cloud_spanner_emulator/emulator_main (1.5.53)
+15:37:24 pids: spanner-gateway(+emulator)=26263 firestore=26264
+15:37:25 spanner 9010 open
+15:37:26 spanner REST 9020 open
+15:37:26 firestore 8080 open
+15:37:26 rest 9020 http=200
+15:54:18 pytest exit=0 duration=1012s

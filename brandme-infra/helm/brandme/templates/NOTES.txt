@@ -8,11 +8,18 @@ Verify each process against its real dependencies:
 {{- if .Values.eventsWorker.enabled }}
   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "events-worker") }} -- python -m brandme_core.events.worker --check
 {{- end }}
+{{- if .Values.eventsRetention.enabled }}
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "brandme.componentName" (list . "events-retention") }} {{ include "brandme.componentName" (list . "events-retention") }}-now   # one pass; then kubectl logs job/...-now
+{{- end }}
 {{- if .Values.exportsWorker.enabled }}
   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "exports-worker") }} -- python -m brandme_core.privacy_exports --check
 {{- end }}
 {{- if .Values.readApi.enabled }}
   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "read-api") }} -- python -m brandme_core.read_api --check
+{{- end }}
+{{- if .Values.consumerDomains.enabled }}
+  # configuration and boot guard only: this --check does not reach Spanner
+  kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "brandme.componentName" (list . "consumer-domains") }} -- python -m brandme_core.domains.persona.app --check
 {{- end }}
 
 Nothing here proves funded Midnight transactions, Preprod finality, or that a

@@ -33,3 +33,10 @@ __all__ = [
     "canonical_digest", "data_categories", "expect_version", "parse_if_match", "register_data_category",
     "run_command", "run_idempotent_command",
 ]
+
+# Foundation's own platform records (OutboxEvents, IdempotencyRecords) in My
+# Data and account deletion (events/erasure.py). Last, after every name above:
+# erasure imports this package's base and the privacy lane only inside the call.
+from brandme_core.events.erasure import register_platform_privacy as _register_platform_privacy  # noqa: E402
+
+_register_platform_privacy()

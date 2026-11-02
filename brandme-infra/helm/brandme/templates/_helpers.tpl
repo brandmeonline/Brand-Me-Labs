@@ -131,6 +131,62 @@ placeholder, otherwise returns the value.
 {{- $n -}}
 {{- end -}}
 
+{{/*
+consumerDomains.assertion.jwks as compact JSON (CONSUMER_DOMAIN_ASSERTION_JWKS).
+Public P-256 keys only, the shape DomainAssertionVerifier.from_jwks accepts
+(brandme_core/domains/persona/assertion.py:50-57). Any private or unknown
+member fails the render; nothing is silently dropped.
+*/}}
+{{- define "brandme.consumerDomainJwks" -}}
+{{- $jwks := .Values.consumerDomains.assertion.jwks -}}
+{{- if not (kindIs "map" $jwks) -}}
+{{- fail "consumerDomains.assertion.jwks must be a map {keys: [...]}" -}}
+{{- end -}}
+{{- range $member, $_ := $jwks -}}
+{{- if ne $member "keys" -}}
+{{- fail (printf "consumerDomains.assertion.jwks has member %q: a JWKS here holds only keys" $member) -}}
+{{- end -}}
+{{- end -}}
+{{- $keys := $jwks.keys -}}
+{{- if or (not (kindIs "slice" $keys)) (not $keys) -}}
+{{- fail "consumerDomains.assertion.jwks.keys is required: the gateway's public P-256 key(s), each {kty: EC, crv: P-256, kid, x, y}" -}}
+{{- end -}}
+{{- $kids := list -}}
+{{- range $i, $k := $keys -}}
+{{- if not (kindIs "map" $k) -}}
+{{- fail (printf "consumerDomains.assertion.jwks.keys[%d] must be a JWK map" $i) -}}
+{{- end -}}
+{{- if hasKey $k "d" -}}
+{{- fail (printf "consumerDomains.assertion.jwks.keys[%d] holds a private key (\"d\"): the service takes public keys only; the private key belongs in Secret Manager (secretRefs.consumerDomainAssertionKey)" $i) -}}
+{{- end -}}
+{{- range $member, $_ := $k -}}
+{{- if eq $member "true" -}}
+{{- fail (printf "consumerDomains.assertion.jwks.keys[%d]: quote the y member (\"y\": ...); YAML reads a bare y key as true" $i) -}}
+{{- end -}}
+{{- if not (has $member (list "kty" "crv" "kid" "x" "y" "use" "alg")) -}}
+{{- fail (printf "consumerDomains.assertion.jwks.keys[%d] has member %q: only the public members kty, crv, kid, x, y (and use, alg) are accepted" $i $member) -}}
+{{- end -}}
+{{- end -}}
+{{- if or (ne (toString $k.kty) "EC") (ne (toString $k.crv) "P-256") -}}
+{{- fail (printf "consumerDomains.assertion.jwks.keys[%d] must be kty EC, crv P-256 (ES256 only)" $i) -}}
+{{- end -}}
+{{- if or (and (hasKey $k "use") (ne (toString $k.use) "sig")) (and (hasKey $k "alg") (ne (toString $k.alg) "ES256")) -}}
+{{- fail (printf "consumerDomains.assertion.jwks.keys[%d]: use must be sig and alg ES256 when set" $i) -}}
+{{- end -}}
+{{- if not (regexMatch "^[A-Za-z0-9._-]{1,64}$" (toString $k.kid)) -}}
+{{- fail (printf "consumerDomains.assertion.jwks.keys[%d].kid must match ^[A-Za-z0-9._-]{1,64}$ (the gateway's kid format, brandme-gateway/src/config/index.ts:128)" $i) -}}
+{{- end -}}
+{{- if not (and (regexMatch "^[A-Za-z0-9_-]{43}$" (toString $k.x)) (regexMatch "^[A-Za-z0-9_-]{43}$" (toString $k.y))) -}}
+{{- fail (printf "consumerDomains.assertion.jwks.keys[%d].x and .y must be base64url P-256 coordinates (43 characters each)" $i) -}}
+{{- end -}}
+{{- if has (toString $k.kid) $kids -}}
+{{- fail (printf "consumerDomains.assertion.jwks has two keys with kid %q" (toString $k.kid)) -}}
+{{- end -}}
+{{- $kids = append $kids (toString $k.kid) -}}
+{{- end -}}
+{{- toJson (dict "keys" $keys) -}}
+{{- end -}}
+
 {{/* BRANDME_MODE and ENVIRONMENT always agree (read_api/config.py:26). */}}
 {{- define "brandme.modeEnv" -}}
 - name: BRANDME_MODE

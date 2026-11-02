@@ -14,7 +14,7 @@ with tarfile.open(fileobj=io.BytesIO(bundle)) as archive:
         content = archive.extractfile('package/' + name).read()
         target = out / version / name.replace('.cjs', '.js')
         target.parent.mkdir(parents=True, exist_ok=True); target.write_bytes(content)
-        files[str(target.relative_to(out))] = {'sha256': hashlib.sha256(content).hexdigest(), 'bytes': len(content)}
+        files[target.relative_to(out).as_posix()] = {'sha256': hashlib.sha256(content).hexdigest(), 'bytes': len(content)}
 model = download('https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task')
 assert hashlib.sha256(model).hexdigest() == '59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a'
 (out / 'pose-lite-v1.task').write_bytes(model)

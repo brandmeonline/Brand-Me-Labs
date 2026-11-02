@@ -296,11 +296,11 @@ def test_revocation_racing_submission_stops_unsent_work(w):
     approval = w.approve(op)
     original = w.svc._submit
 
-    def revoke_then_submit(op_, quote, principal):
+    def revoke_then_submit(op_, quote, principal, *rest):
         # Revocation lands after reservation commit but before provider I/O.
         w.store.run(lambda tx: tx.put("delegations", d.id, replace(tx.get("delegations", d.id),
                                                                     revoked_at=w.clock.now)))
-        return original(op_, quote, principal)
+        return original(op_, quote, principal, *rest)
 
     w.svc._submit = revoke_then_submit
     res = w.svc.execute_purchase(ag, operation_id=op.id, approval_id=approval.id, idempotency_key="race-00000000000")
@@ -343,6 +343,88 @@ def test_timeout_after_accept_reconciles_to_one_order(w):  # BM-COM-009 + failur
     assert len(w.provider.submit_calls) == 1  # never re-sent
     assert [e.state for e in w.store.rows("reservations")] == ["consumed"]
     assert w.svc.reconcile(op.id).state == "accepted"  # idempotent
+
+
+@pytest.mark.parametrize("drafter", ["agent", "member"])
+def test_two_approved_requests_for_one_quote_never_block_each_other(w, drafter):
+    """Review finding: an approved but unsent sibling counted as in flight, so two approved requests for one
+    quote (a retried request, say) each refused the other forever. The first to execute is placed; then the
+    other is refused because the quote is bought, never because both are merely approved."""
+    d, ag = w.delegate()
+    actor = ag if drafter == "agent" else w.member
+    _, quote, op1 = w.prepared(actor)
+    op2 = w.svc.request_purchase(actor, quote.id)
+    a1, a2 = w.approve(op1), w.approve(op2)
+    done = w.svc.execute_purchase(w.member, operation_id=op2.id, approval_id=a2.id, idempotency_key="pair-00000000001")
+    assert done.state == "accepted" and len(w.provider.submit_calls) == 1
+    with pytest.raises(IdempotencyConflict) as e:
+        w.svc.execute_purchase(actor, operation_id=op1.id, approval_id=a1.id, idempotency_key="pair-00000000002")
+    assert e.value.code == "purchase_in_progress" and len(w.provider.submit_calls) == 1  # never bought twice
+
+
+@pytest.mark.parametrize("later", ["cancel_requested", "partially_fulfilled", "fulfilled", "partially_refunded",
+                                   "refunded", "disputed", "cancelled"])
+def test_a_placed_order_never_frees_its_quote_for_an_approved_sibling(w, later):
+    """Review finding: once the first order left 'accepted' (a lost cancel reply, a shipment, a refund), the
+    second approved request passed and the quote was bought twice. A placed order holds its quote for good."""
+    d, ag = w.delegate()
+    _, quote, op1 = w.prepared(ag)
+    op2 = w.svc.request_purchase(ag, quote.id)
+    a1, a2 = w.approve(op1), w.approve(op2)
+    w.svc.execute_purchase(ag, operation_id=op1.id, approval_id=a1.id, idempotency_key="held-00000000001")
+    placed = w.store.get("operations", op1.id)
+    w.store.run(lambda tx: tx.put("operations", op1.id, replace(placed, state=later, version=placed.version + 1)))
+    with pytest.raises(IdempotencyConflict) as e:
+        w.svc.execute_purchase(ag, operation_id=op2.id, approval_id=a2.id, idempotency_key="held-00000000002")
+    assert e.value.code == "purchase_in_progress" and len(w.provider.submit_calls) == 1
+
+
+@pytest.mark.parametrize("first", ["declined", "cancelled_before_send"])
+def test_a_sibling_that_was_never_bought_frees_the_quote(w, first):
+    """The other side of the rule: a request the merchant declined, or one cancelled before it was sent,
+    bought nothing, so the member's other approved request for that quote can still be placed."""
+    from brandme_core.domains.commerce.autonomy import AutonomyBoundary, AutonomyLevel, BoundaryRule, RuleScope
+    from brandme_core.domains.providers.local_atelier import MERCHANT_ID, PROVIDER_ID
+    d, ag = w.delegate()
+    _, quote, op1 = w.prepared(ag)
+    op2 = w.svc.request_purchase(ag, quote.id)
+    a1, a2 = w.approve(op1), w.approve(op2)
+    if first == "declined":
+        w.provider.arm(Behavior.REJECTED_AUTH)
+    else:  # the member narrows the rules after the execute committed: the last gate cancels op1 unsent
+        real_submit = w.svc._submit
+
+        def narrow_first(op_, quote_, principal, *rest):
+            g = w.store.get("delegations", d.id)
+            tight = AutonomyBoundary(rules=(BoundaryRule(RuleScope.MERCHANT, PROVIDER_ID, AutonomyLevel.PREPARE,
+                                                         merchant_id=MERCHANT_ID),))
+            w.store.run(lambda tx: tx.put("delegations", d.id, replace(g, boundary=tight, version=g.version + 1)))
+            w.svc._submit = real_submit
+            return real_submit(op_, quote_, principal, *rest)
+
+        w.svc._submit = narrow_first
+    gone = w.svc.execute_purchase(ag, operation_id=op1.id, approval_id=a1.id, idempotency_key="free-00000000001")
+    assert gone.state in ("rejected", "cancelled") and gone.order_id is None
+    done = w.svc.execute_purchase(w.member, operation_id=op2.id, approval_id=a2.id, idempotency_key="free-00000000002")
+    assert done.state == "accepted" and len(w.store.rows("orders")) == 1
+
+
+def test_a_sibling_being_sent_blocks_the_other_approved_request(w, monkeypatch):
+    d, ag = w.delegate()
+    _, quote, op1 = w.prepared(ag)
+    op2 = w.svc.request_purchase(ag, quote.id)
+    a1, a2 = w.approve(op1), w.approve(op2)
+    real, raced = w.provider.submit, []
+
+    def submit_while_the_sibling_executes(request):
+        with pytest.raises(IdempotencyConflict) as e:  # op1 is 'submitting' right now
+            w.svc.execute_purchase(w.member, operation_id=op2.id, approval_id=a2.id, idempotency_key="sent-00000000002")
+        raced.append(e.value.code)
+        return real(request)
+
+    monkeypatch.setattr(w.provider, "submit", submit_while_the_sibling_executes)
+    done = w.svc.execute_purchase(ag, operation_id=op1.id, approval_id=a1.id, idempotency_key="sent-00000000001")
+    assert done.state == "accepted" and raced == ["purchase_in_progress"] and len(w.provider.submit_calls) == 1
 
 
 # ------------------------------------------------------------------ webhooks

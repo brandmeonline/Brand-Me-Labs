@@ -61,7 +61,7 @@ _EXPORT_SQL: Dict[str, Dict[str, str]] = {
         "purchase": """SELECT operation_id, client_id, quote_id, quote_hash, provider_id, state, order_id,
             reason_code, created_at, updated_at FROM PurchaseOperations WHERE member_id = @s ORDER BY created_at""",
         "approval": """SELECT approval_id, quote_id, quote_hash, merchant_id, allowed_total_minor, currency, method,
-            assurance_level, state, issued_at, expires_at FROM PurchaseApprovals WHERE member_id = @s
+            assurance_level, state, delegation_ref, issued_at, expires_at FROM PurchaseApprovals WHERE member_id = @s
             ORDER BY issued_at""",
         "signing_key": """SELECT key_thumbprint, registered_at, revoked_at FROM MemberSurfaceKeys
             WHERE member_id = @s ORDER BY registered_at""",
@@ -101,7 +101,9 @@ class CommercePrivacyHandler:
                 AGENT_GRANTS, "commerce", "Assistant permissions you granted", Supplier.MEMBER,
                 ("member", "client:while_active"),
                 "Until you revoke or delete them; a grant behind an order is kept, revoked, as evidence of who "
-                "authorized it", "Revoke or replace the grant; an assistant can never widen it", OnDelete.ERASE),
+                "authorized it, without your assistant rules",
+                "Edit your assistant's rules, or revoke or replace the grant; an assistant can never widen them",
+                OnDelete.ERASE),
             DataCategory(
                 CARTS_QUOTES, "commerce", "Carts, checkout quotes and approval prompts", Supplier.MEMBER, ("member",),
                 "Until deleted; a quote behind an order is kept with the order",

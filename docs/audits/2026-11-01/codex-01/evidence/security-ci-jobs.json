@@ -1,0 +1,1398 @@
+{
+  "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "run_id": 41091237404,
+  "total_count": 12,
+  "jobs": [
+    {
+      "id": 124185343778,
+      "name": "Test Core (Python/FastAPI)",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185343778",
+      "started_at": "2026-10-30T16:35:14Z",
+      "completed_at": "2026-10-30T16:48:30Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:35:14Z",
+          "completed_at": "2026-10-30T16:35:15Z"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:35:15Z",
+          "completed_at": "2026-10-30T16:35:19Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:35:19Z",
+          "completed_at": "2026-10-30T16:35:21Z"
+        },
+        {
+          "name": "Setup Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:35:21Z",
+          "completed_at": "2026-10-30T16:35:21Z"
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:35:21Z",
+          "completed_at": "2026-10-30T16:35:35Z"
+        },
+        {
+          "name": "Require Spanner emulator",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:35:35Z",
+          "completed_at": "2026-10-30T16:35:35Z"
+        },
+        {
+          "name": "Start pinned Firestore emulator (projections + rules)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-30T16:35:35Z",
+          "completed_at": "2026-10-30T16:35:38Z"
+        },
+        {
+          "name": "Test full Python suite (tests/)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-30T16:35:38Z",
+          "completed_at": "2026-10-30T16:48:16Z"
+        },
+        {
+          "name": "Setup Node.js for Firestore rules tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-30T16:48:16Z",
+          "completed_at": "2026-10-30T16:48:21Z"
+        },
+        {
+          "name": "Install pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:48:21Z",
+          "completed_at": "2026-10-30T16:48:22Z"
+        },
+        {
+          "name": "Firestore security rules (emulator-evaluated)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-10-30T16:48:22Z",
+          "completed_at": "2026-10-30T16:48:26Z"
+        },
+        {
+          "name": "Post Install pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-30T16:48:26Z",
+          "completed_at": "2026-10-30T16:48:26Z"
+        },
+        {
+          "name": "Post Setup Node.js for Firestore rules tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-10-30T16:48:26Z",
+          "completed_at": "2026-10-30T16:48:26Z"
+        },
+        {
+          "name": "Post Setup Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-30T16:48:26Z",
+          "completed_at": "2026-10-30T16:48:26Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-30T16:48:26Z",
+          "completed_at": "2026-10-30T16:48:27Z"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22,
+          "started_at": "2026-10-30T16:48:27Z",
+          "completed_at": "2026-10-30T16:48:28Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23,
+          "started_at": "2026-10-30T16:48:28Z",
+          "completed_at": "2026-10-30T16:48:29Z"
+        }
+      ]
+    },
+    {
+      "id": 124185343876,
+      "name": "Test Frontend (Next.js)",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185343876",
+      "started_at": "2026-10-30T16:35:14Z",
+      "completed_at": "2026-10-30T16:36:02Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:35:15Z",
+          "completed_at": "2026-10-30T16:35:16Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:35:16Z",
+          "completed_at": "2026-10-30T16:35:18Z"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:35:18Z",
+          "completed_at": "2026-10-30T16:35:23Z"
+        },
+        {
+          "name": "Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:35:23Z",
+          "completed_at": "2026-10-30T16:35:24Z"
+        },
+        {
+          "name": "Install locked frontend dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:35:24Z",
+          "completed_at": "2026-10-30T16:35:29Z"
+        },
+        {
+          "name": "Reject production and critical dependency advisories",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:35:29Z",
+          "completed_at": "2026-10-30T16:35:31Z"
+        },
+        {
+          "name": "Build frontend with lint and type checks",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-30T16:35:31Z",
+          "completed_at": "2026-10-30T16:35:59Z"
+        },
+        {
+          "name": "Post Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-10-30T16:35:59Z",
+          "completed_at": "2026-10-30T16:35:59Z"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-10-30T16:35:59Z",
+          "completed_at": "2026-10-30T16:35:59Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-10-30T16:35:59Z",
+          "completed_at": "2026-10-30T16:35:59Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-10-30T16:35:59Z",
+          "completed_at": "2026-10-30T16:35:59Z"
+        }
+      ]
+    },
+    {
+      "id": 124185343966,
+      "name": "Test Gateway (Node/TypeScript)",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185343966",
+      "started_at": "2026-10-30T16:35:14Z",
+      "completed_at": "2026-10-30T16:36:29Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:35:15Z",
+          "completed_at": "2026-10-30T16:35:16Z"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:35:16Z",
+          "completed_at": "2026-10-30T16:35:20Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:35:20Z",
+          "completed_at": "2026-10-30T16:35:23Z"
+        },
+        {
+          "name": "Setup Python for identity database migrations",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:35:23Z",
+          "completed_at": "2026-10-30T16:35:23Z"
+        },
+        {
+          "name": "Install migration dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:35:23Z",
+          "completed_at": "2026-10-30T16:35:41Z"
+        },
+        {
+          "name": "Require Spanner emulator",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:35:41Z",
+          "completed_at": "2026-10-30T16:35:41Z"
+        },
+        {
+          "name": "Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-30T16:35:41Z",
+          "completed_at": "2026-10-30T16:35:45Z"
+        },
+        {
+          "name": "Install pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-30T16:35:45Z",
+          "completed_at": "2026-10-30T16:35:47Z"
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-30T16:35:47Z",
+          "completed_at": "2026-10-30T16:35:58Z"
+        },
+        {
+          "name": "Lint",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:35:58Z",
+          "completed_at": "2026-10-30T16:36:00Z"
+        },
+        {
+          "name": "Type check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-10-30T16:36:00Z",
+          "completed_at": "2026-10-30T16:36:03Z"
+        },
+        {
+          "name": "Run tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-10-30T16:36:03Z",
+          "completed_at": "2026-10-30T16:36:25Z"
+        },
+        {
+          "name": "Post Install pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-30T16:36:25Z",
+          "completed_at": "2026-10-30T16:36:25Z"
+        },
+        {
+          "name": "Post Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-30T16:36:25Z",
+          "completed_at": "2026-10-30T16:36:25Z"
+        },
+        {
+          "name": "Post Setup Python for identity database migrations",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22,
+          "started_at": "2026-10-30T16:36:25Z",
+          "completed_at": "2026-10-30T16:36:25Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23,
+          "started_at": "2026-10-30T16:36:25Z",
+          "completed_at": "2026-10-30T16:36:26Z"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24,
+          "started_at": "2026-10-30T16:36:26Z",
+          "completed_at": "2026-10-30T16:36:27Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25,
+          "started_at": "2026-10-30T16:36:27Z",
+          "completed_at": "2026-10-30T16:36:27Z"
+        }
+      ]
+    },
+    {
+      "id": 124185344116,
+      "name": "Security Scan",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185344116",
+      "started_at": "2026-10-30T16:35:14Z",
+      "completed_at": "2026-10-30T16:35:51Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:35:14Z",
+          "completed_at": "2026-10-30T16:35:16Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:35:16Z",
+          "completed_at": "2026-10-30T16:35:17Z"
+        },
+        {
+          "name": "Block on fixable CRITICAL vulnerabilities",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:35:17Z",
+          "completed_at": "2026-10-30T16:35:35Z"
+        },
+        {
+          "name": "Block on committed secrets (repo-wide)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:35:35Z",
+          "completed_at": "2026-10-30T16:35:35Z"
+        },
+        {
+          "name": "Run Trivy vulnerability scanner",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:35:35Z",
+          "completed_at": "2026-10-30T16:35:41Z"
+        },
+        {
+          "name": "Upload Trivy results to GitHub Security",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:35:41Z",
+          "completed_at": "2026-10-30T16:35:48Z"
+        },
+        {
+          "name": "Post Upload Trivy results to GitHub Security",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:35:48Z",
+          "completed_at": "2026-10-30T16:35:49Z"
+        },
+        {
+          "name": "Post Run Trivy vulnerability scanner",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-10-30T16:35:49Z",
+          "completed_at": "2026-10-30T16:35:49Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-10-30T16:35:49Z",
+          "completed_at": "2026-10-30T16:35:49Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-10-30T16:35:49Z",
+          "completed_at": "2026-10-30T16:35:49Z"
+        }
+      ]
+    },
+    {
+      "id": 124185344132,
+      "name": "Foundation check",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185344132",
+      "started_at": "2026-10-30T16:35:14Z",
+      "completed_at": "2026-10-30T16:50:09Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:35:15Z",
+          "completed_at": "2026-10-30T16:35:16Z"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:35:16Z",
+          "completed_at": "2026-10-30T16:35:20Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:35:20Z",
+          "completed_at": "2026-10-30T16:35:22Z"
+        },
+        {
+          "name": "Setup Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:35:22Z",
+          "completed_at": "2026-10-30T16:35:23Z"
+        },
+        {
+          "name": "Python venv from the hashed lock",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:35:23Z",
+          "completed_at": "2026-10-30T16:35:44Z"
+        },
+        {
+          "name": "Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:35:44Z",
+          "completed_at": "2026-10-30T16:35:48Z"
+        },
+        {
+          "name": "Install pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-30T16:35:48Z",
+          "completed_at": "2026-10-30T16:35:49Z"
+        },
+        {
+          "name": "Install dependencies (frozen lockfile)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-30T16:35:49Z",
+          "completed_at": "2026-10-30T16:36:00Z"
+        },
+        {
+          "name": "Require Spanner emulator",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-30T16:36:00Z",
+          "completed_at": "2026-10-30T16:36:00Z"
+        },
+        {
+          "name": "pnpm check (full, emulators provisioned by check)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:36:00Z",
+          "completed_at": "2026-10-30T16:49:54Z"
+        },
+        {
+          "name": "Firestore emulator log (on failure)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 11,
+          "started_at": "2026-10-30T16:49:54Z",
+          "completed_at": "2026-10-30T16:49:54Z"
+        },
+        {
+          "name": "pnpm smoke (gateway -> brain -> Spanner, restart persistence, outbox)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-10-30T16:49:54Z",
+          "completed_at": "2026-10-30T16:50:03Z"
+        },
+        {
+          "name": "Post Install pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-30T16:50:03Z",
+          "completed_at": "2026-10-30T16:50:03Z"
+        },
+        {
+          "name": "Post Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-30T16:50:03Z",
+          "completed_at": "2026-10-30T16:50:03Z"
+        },
+        {
+          "name": "Post Setup Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22,
+          "started_at": "2026-10-30T16:50:03Z",
+          "completed_at": "2026-10-30T16:50:03Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23,
+          "started_at": "2026-10-30T16:50:03Z",
+          "completed_at": "2026-10-30T16:50:03Z"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24,
+          "started_at": "2026-10-30T16:50:03Z",
+          "completed_at": "2026-10-30T16:50:04Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25,
+          "started_at": "2026-10-30T16:50:04Z",
+          "completed_at": "2026-10-30T16:50:04Z"
+        }
+      ]
+    },
+    {
+      "id": 124185344188,
+      "name": "Test Chain (Node/TypeScript)",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124185344188",
+      "started_at": "2026-10-30T16:35:14Z",
+      "completed_at": "2026-10-30T16:35:43Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:35:15Z",
+          "completed_at": "2026-10-30T16:35:16Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:35:16Z",
+          "completed_at": "2026-10-30T16:35:18Z"
+        },
+        {
+          "name": "Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:35:18Z",
+          "completed_at": "2026-10-30T16:35:23Z"
+        },
+        {
+          "name": "Install pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:35:23Z",
+          "completed_at": "2026-10-30T16:35:24Z"
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:35:24Z",
+          "completed_at": "2026-10-30T16:35:36Z"
+        },
+        {
+          "name": "Verify chain types and committed artifacts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:35:36Z",
+          "completed_at": "2026-10-30T16:35:39Z"
+        },
+        {
+          "name": "Post Install pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:35:39Z",
+          "completed_at": "2026-10-30T16:35:40Z"
+        },
+        {
+          "name": "Post Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-10-30T16:35:40Z",
+          "completed_at": "2026-10-30T16:35:40Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-10-30T16:35:40Z",
+          "completed_at": "2026-10-30T16:35:40Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-10-30T16:35:40Z",
+          "completed_at": "2026-10-30T16:35:40Z"
+        }
+      ]
+    },
+    {
+      "id": 124193024151,
+      "name": "Build Docker Images (chain)",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024151",
+      "started_at": "2026-10-30T16:50:12Z",
+      "completed_at": "2026-10-30T16:56:52Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:50:13Z",
+          "completed_at": "2026-10-30T16:50:15Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:50:15Z",
+          "completed_at": "2026-10-30T16:50:18Z"
+        },
+        {
+          "name": "Read Node toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:50:18Z",
+          "completed_at": "2026-10-30T16:50:18Z"
+        },
+        {
+          "name": "Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:50:18Z",
+          "completed_at": "2026-10-30T16:50:23Z"
+        },
+        {
+          "name": "Extract metadata",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:50:23Z",
+          "completed_at": "2026-10-30T16:50:24Z"
+        },
+        {
+          "name": "Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:50:24Z",
+          "completed_at": "2026-10-30T16:56:23Z"
+        },
+        {
+          "name": "Verify packaged runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-30T16:56:23Z",
+          "completed_at": "2026-10-30T16:56:25Z"
+        },
+        {
+          "name": "Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-30T16:56:25Z",
+          "completed_at": "2026-10-30T16:56:25Z"
+        },
+        {
+          "name": "Configure Docker for GCR",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-30T16:56:25Z",
+          "completed_at": "2026-10-30T16:56:29Z"
+        },
+        {
+          "name": "Publish verified images",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:56:29Z",
+          "completed_at": "2026-10-30T16:56:38Z"
+        },
+        {
+          "name": "Post Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-30T16:56:38Z",
+          "completed_at": "2026-10-30T16:56:38Z"
+        },
+        {
+          "name": "Post Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-30T16:56:38Z",
+          "completed_at": "2026-10-30T16:56:38Z"
+        },
+        {
+          "name": "Post Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-10-30T16:56:38Z",
+          "completed_at": "2026-10-30T16:56:49Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-30T16:56:49Z",
+          "completed_at": "2026-10-30T16:56:50Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-30T16:56:50Z",
+          "completed_at": "2026-10-30T16:56:50Z"
+        }
+      ]
+    },
+    {
+      "id": 124193024218,
+      "name": "Build Docker Images (gateway)",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024218",
+      "started_at": "2026-10-30T16:50:12Z",
+      "completed_at": "2026-10-30T16:51:24Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:50:13Z",
+          "completed_at": "2026-10-30T16:50:14Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:50:14Z",
+          "completed_at": "2026-10-30T16:50:16Z"
+        },
+        {
+          "name": "Read Node toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:50:16Z",
+          "completed_at": "2026-10-30T16:50:16Z"
+        },
+        {
+          "name": "Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:50:16Z",
+          "completed_at": "2026-10-30T16:50:21Z"
+        },
+        {
+          "name": "Extract metadata",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:50:21Z",
+          "completed_at": "2026-10-30T16:50:21Z"
+        },
+        {
+          "name": "Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:50:21Z",
+          "completed_at": "2026-10-30T16:51:08Z"
+        },
+        {
+          "name": "Verify packaged runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-30T16:51:08Z",
+          "completed_at": "2026-10-30T16:51:09Z"
+        },
+        {
+          "name": "Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-30T16:51:09Z",
+          "completed_at": "2026-10-30T16:51:09Z"
+        },
+        {
+          "name": "Configure Docker for GCR",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-30T16:51:09Z",
+          "completed_at": "2026-10-30T16:51:13Z"
+        },
+        {
+          "name": "Publish verified images",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:51:13Z",
+          "completed_at": "2026-10-30T16:51:18Z"
+        },
+        {
+          "name": "Post Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-30T16:51:18Z",
+          "completed_at": "2026-10-30T16:51:18Z"
+        },
+        {
+          "name": "Post Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-30T16:51:18Z",
+          "completed_at": "2026-10-30T16:51:18Z"
+        },
+        {
+          "name": "Post Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-10-30T16:51:18Z",
+          "completed_at": "2026-10-30T16:51:23Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-30T16:51:23Z",
+          "completed_at": "2026-10-30T16:51:23Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-30T16:51:23Z",
+          "completed_at": "2026-10-30T16:51:23Z"
+        }
+      ]
+    },
+    {
+      "id": 124193024221,
+      "name": "Build Docker Images (console)",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024221",
+      "started_at": "2026-10-30T16:50:12Z",
+      "completed_at": "2026-10-30T16:52:12Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:50:13Z",
+          "completed_at": "2026-10-30T16:50:14Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:50:14Z",
+          "completed_at": "2026-10-30T16:50:16Z"
+        },
+        {
+          "name": "Read Node toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:50:16Z",
+          "completed_at": "2026-10-30T16:50:16Z"
+        },
+        {
+          "name": "Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:50:16Z",
+          "completed_at": "2026-10-30T16:50:21Z"
+        },
+        {
+          "name": "Extract metadata",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:50:21Z",
+          "completed_at": "2026-10-30T16:50:22Z"
+        },
+        {
+          "name": "Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:50:22Z",
+          "completed_at": "2026-10-30T16:51:54Z"
+        },
+        {
+          "name": "Verify packaged runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-30T16:51:54Z",
+          "completed_at": "2026-10-30T16:51:56Z"
+        },
+        {
+          "name": "Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-30T16:51:56Z",
+          "completed_at": "2026-10-30T16:51:56Z"
+        },
+        {
+          "name": "Configure Docker for GCR",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-30T16:51:56Z",
+          "completed_at": "2026-10-30T16:52:02Z"
+        },
+        {
+          "name": "Publish verified images",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:52:02Z",
+          "completed_at": "2026-10-30T16:52:05Z"
+        },
+        {
+          "name": "Post Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-30T16:52:05Z",
+          "completed_at": "2026-10-30T16:52:06Z"
+        },
+        {
+          "name": "Post Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-30T16:52:06Z",
+          "completed_at": "2026-10-30T16:52:06Z"
+        },
+        {
+          "name": "Post Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-10-30T16:52:06Z",
+          "completed_at": "2026-10-30T16:52:10Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-30T16:52:10Z",
+          "completed_at": "2026-10-30T16:52:11Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-30T16:52:11Z",
+          "completed_at": "2026-10-30T16:52:11Z"
+        }
+      ]
+    },
+    {
+      "id": 124193024251,
+      "name": "Build Docker Images (core)",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024251",
+      "started_at": "2026-10-30T16:50:12Z",
+      "completed_at": "2026-10-30T16:51:05Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:50:12Z",
+          "completed_at": "2026-10-30T16:50:14Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:50:14Z",
+          "completed_at": "2026-10-30T16:50:16Z"
+        },
+        {
+          "name": "Read Node toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:50:16Z",
+          "completed_at": "2026-10-30T16:50:16Z"
+        },
+        {
+          "name": "Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:50:16Z",
+          "completed_at": "2026-10-30T16:50:24Z"
+        },
+        {
+          "name": "Extract metadata",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:50:24Z",
+          "completed_at": "2026-10-30T16:50:25Z"
+        },
+        {
+          "name": "Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:50:25Z",
+          "completed_at": "2026-10-30T16:50:34Z"
+        },
+        {
+          "name": "Verify packaged runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-30T16:50:34Z",
+          "completed_at": "2026-10-30T16:50:53Z"
+        },
+        {
+          "name": "Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-30T16:50:53Z",
+          "completed_at": "2026-10-30T16:50:53Z"
+        },
+        {
+          "name": "Configure Docker for GCR",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-30T16:50:53Z",
+          "completed_at": "2026-10-30T16:50:58Z"
+        },
+        {
+          "name": "Publish verified images",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:50:58Z",
+          "completed_at": "2026-10-30T16:51:02Z"
+        },
+        {
+          "name": "Post Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-30T16:51:02Z",
+          "completed_at": "2026-10-30T16:51:02Z"
+        },
+        {
+          "name": "Post Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-30T16:51:02Z",
+          "completed_at": "2026-10-30T16:51:03Z"
+        },
+        {
+          "name": "Post Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-10-30T16:51:03Z",
+          "completed_at": "2026-10-30T16:51:03Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-30T16:51:03Z",
+          "completed_at": "2026-10-30T16:51:03Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-30T16:51:03Z",
+          "completed_at": "2026-10-30T16:51:03Z"
+        }
+      ]
+    },
+    {
+      "id": 124193024274,
+      "name": "Build Docker Images (agents)",
+      "conclusion": "success",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124193024274",
+      "started_at": "2026-10-30T16:50:12Z",
+      "completed_at": "2026-10-30T16:51:15Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-30T16:50:12Z",
+          "completed_at": "2026-10-30T16:50:15Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-30T16:50:15Z",
+          "completed_at": "2026-10-30T16:50:16Z"
+        },
+        {
+          "name": "Read Node toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-30T16:50:16Z",
+          "completed_at": "2026-10-30T16:50:16Z"
+        },
+        {
+          "name": "Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T16:50:16Z",
+          "completed_at": "2026-10-30T16:50:22Z"
+        },
+        {
+          "name": "Extract metadata",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-30T16:50:22Z",
+          "completed_at": "2026-10-30T16:50:23Z"
+        },
+        {
+          "name": "Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-30T16:50:23Z",
+          "completed_at": "2026-10-30T16:50:54Z"
+        },
+        {
+          "name": "Verify packaged runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-30T16:50:54Z",
+          "completed_at": "2026-10-30T16:51:03Z"
+        },
+        {
+          "name": "Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-30T16:51:03Z",
+          "completed_at": "2026-10-30T16:51:03Z"
+        },
+        {
+          "name": "Configure Docker for GCR",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-30T16:51:03Z",
+          "completed_at": "2026-10-30T16:51:09Z"
+        },
+        {
+          "name": "Publish verified images",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-30T16:51:09Z",
+          "completed_at": "2026-10-30T16:51:12Z"
+        },
+        {
+          "name": "Post Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-30T16:51:12Z",
+          "completed_at": "2026-10-30T16:51:12Z"
+        },
+        {
+          "name": "Post Build image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-30T16:51:12Z",
+          "completed_at": "2026-10-30T16:51:12Z"
+        },
+        {
+          "name": "Post Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-10-30T16:51:12Z",
+          "completed_at": "2026-10-30T16:51:13Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-30T16:51:13Z",
+          "completed_at": "2026-10-30T16:51:13Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-30T16:51:13Z",
+          "completed_at": "2026-10-30T16:51:13Z"
+        }
+      ]
+    },
+    {
+      "id": 124196439542,
+      "name": "Deploy to GKE (sandbox)",
+      "conclusion": "skipped",
+      "html_url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/41091237404/job/124196439542",
+      "started_at": "2026-10-30T16:56:53Z",
+      "completed_at": "2026-10-30T16:56:53Z",
+      "steps": []
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "artifacts": [
+    {
+      "id": 12998575486,
+      "name": "consumer-ui-d657103ee21674ef14d6182572a78d75d0241b29",
+      "size_in_bytes": 8117698,
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/actions/artifacts/12998575486",
+      "archive_download_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/actions/artifacts/12998575486/zip",
+      "expired": false,
+      "created_at": "2026-10-30T17:29:55Z",
+      "expires_at": "2026-11-13T17:29:54Z",
+      "updated_at": "2026-10-30T17:29:55Z",
+      "digest": "sha256:f2358a10e56cfc2325a67d970fa8d24edd5d944074fa8adb7696bf9f481b6df0",
+      "workflow_run": {
+        "id": 41098774318,
+        "repository_id": 1083300600,
+        "head_repository_id": 1083300600,
+        "head_branch": "claude/opus-consumer-domains-1csp2g",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      }
+    },
+    {
+      "id": 12998005788,
+      "name": "live-consumer-ui-d657103ee21674ef14d6182572a78d75d0241b29",
+      "size_in_bytes": 556767,
+      "url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/actions/artifacts/12998005788",
+      "archive_download_url": "https://api.github.com/repos/brandmeonline/Brand-Me-Labs/actions/artifacts/12998005788/zip",
+      "expired": false,
+      "created_at": "2026-10-30T17:28:07Z",
+      "expires_at": "2026-11-13T17:28:06Z",
+      "updated_at": "2026-10-30T17:28:07Z",
+      "digest": "sha256:d33f7d1feda53dbe862c84ef60501962db984ecc8f9447a9ce1ae4c28d71d533",
+      "workflow_run": {
+        "id": 41098774318,
+        "repository_id": 1083300600,
+        "head_repository_id": 1083300600,
+        "head_branch": "claude/opus-consumer-domains-1csp2g",
+        "head_sha": "babb3604ae2f33018edf0ad45270887d4b01945b"
+      }
+    }
+  ]
+}

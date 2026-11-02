@@ -1,0 +1,272 @@
+[
+  {
+    "path": ".github/workflows/consumer-ui.yml",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-chain/src/midnight/adapter.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/app/assistant/page.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/app/closet/page.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/app/me/connections/page.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/app/orders/page.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/app/page.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/components/shell/app-shell.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/closet/AddItemPage.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/closet/SpatialModeGate.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/closet/repository.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/closet/useCloset.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/commerce/catalog.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/persona/looking-glass.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/persona/onboarding.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/persona/today.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/privacy/connections.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/privacy/my-data.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/rewards/rewards.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/social/circle.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/spatial/PhotoPreview.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/spatial/TryPage.tsx",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/spatial/photoMedia.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/features/spatial/previewMedia.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/lib/client/gateway.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/lib/server/gateway-proxy.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/lib/testing/verify-domain-views.mjs",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/lib/testing/verify-live-domains.mjs",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-frontend/package.json",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-gateway/src/middleware/session.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-gateway/src/routes/v1/assistant.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-gateway/src/routes/v1/commerce.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-gateway/src/routes/v1/index.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme-gateway/src/services/domains.ts",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme_core/domains/persona/api.py",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme_core/domains/persona/app.py",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme_core/domains/rewards/api.py",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme_core/domains/social/api.py",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme_core/domains/wardrobe/api.py",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme_core/privacy_exports/service.py",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme_core/read_api/app.py",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "brandme_core/read_api/reads.py",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "package.json",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "pnpm-workspace.yaml",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  },
+  {
+    "path": "scripts/brandme.mjs",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "status": "reviewed targeted source sections and wiring",
+    "executed": false
+  }
+]

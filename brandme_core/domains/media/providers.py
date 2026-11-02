@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Protocol, Tuple
+from typing import Dict, List, Mapping, Optional, Protocol, Tuple
 
 GENERATED_LABEL = "generated_visual_preview"
 
@@ -83,3 +83,19 @@ class ProviderRegistry:
 
     def get(self, provider_id: Optional[str]) -> Optional[TryOnProvider]:
         return self._p.get(provider_id or "")
+
+
+def registry_from_environment(env: Mapping[str, str]) -> ProviderRegistry:
+    """``BRANDME_TRYON_PROVIDER``: unset means no provider (photo previews report
+    ``photo_preview_not_configured``). ``simulated`` selects the labelled stand-in,
+    which is allowed in demo/development only. Its results carry the ``_simulated``
+    label, and it holds them in process memory, so it is a dev-loop tool, never
+    evidence of a real provider. No real provider is approved yet."""
+    choice = env.get("BRANDME_TRYON_PROVIDER", "").strip()
+    if not choice:
+        return ProviderRegistry()
+    if choice == "simulated":
+        if env.get("ENVIRONMENT") not in ("demo", "development"):
+            raise ValueError("the simulated try-on provider is refused in sandbox/production")
+        return ProviderRegistry([SimulatedTryOnProvider()])
+    raise ValueError("unknown try-on provider")

@@ -125,7 +125,11 @@ export function principalMiddleware({ cfg, store, jwks }: PrincipalResolverDeps)
             subject: session.member_id,
             sessionId: sha256(secret).slice(0, 16),
             clientId: session.client_id,
-            scopes: ['profile:read', 'profile:write', 'privacy:manage', 'rights:read', 'rights:transfer', 'rights:reprint'],
+            // First-party member scopes (ch.03 §3; consumer-domain set per ruling Q11 / PD-12).
+            // Bearer clients get only what their token grants; agents never get social:write or rewards:write.
+            scopes: ['profile:read', 'profile:write', 'privacy:manage', 'rights:read', 'rights:transfer', 'rights:reprint',
+              'wardrobe:read', 'wardrobe:write', 'outfits:read', 'outfits:write', 'social:read', 'social:write',
+              'rewards:read', 'rewards:write'],
             assuranceLevel: session.assurance_level,
             environment: cfg.mode,
             delegationId: null,

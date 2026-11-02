@@ -300,6 +300,7 @@ identities=(
   "fnd-pusher|CI image push (main and v* tags) via GitHub WIF|-"
   "fnd-migrator|Spanner schema migrations (helm pre-upgrade Job)|migrations"
   "fnd-outbox|Outbox to Pub/Sub dispatcher|events-worker"
+  "fnd-retention|Outbox retention and erasure (CronJob)|events-retention"
   "fnd-gateway|API gateway|gateway"
   "rts-chain|Midnight chain service|chain"
   "rts-read-api|Rights and privacy read API (read-only)|read-api"
@@ -331,7 +332,8 @@ spanner_bind() {
 }
 spanner_bind fnd-migrator roles/spanner.databaseUser   # DDL + migration ledger; no drop/IAM
 spanner_bind rts-read-api roles/spanner.databaseReader
-for key in fnd-outbox fnd-gateway rts-chain rts-export-api rts-export-wkr com-domain dom-api; do
+# fnd-retention: this role only (its partitioned-DML purge needs beginPartitionedDmlTransaction); no Pub/Sub.
+for key in fnd-outbox fnd-retention fnd-gateway rts-chain rts-export-api rts-export-wkr com-domain dom-api; do
   spanner_bind "$key" "$role_spanner_rw"
 done
 
@@ -355,6 +357,9 @@ secret_specs=(
   "privacy-export-service-token|rts|midnight-rights|90|fnd-gateway,rts-export-api,rts-export-wkr"
   "chain-service-token|rts|midnight-rights|90|fnd-gateway,rts-chain"
   "midnight-blockfrost-project-id|rts|midnight-rights|event-driven|rts-chain"
+  # Gateway-only signing key for consumer-domain principal assertions; the domain
+  # service gets the public JWKS from Helm values, never this secret.
+  "domain-assertion-key|dom|consumer-domains|180|fnd-gateway"
 )
 [ "$include_planned" -eq 0 ] || secret_specs+=("domain-assertion-key|com|commerce-agents|180|fnd-gateway")
 for spec in "${secret_specs[@]}"; do

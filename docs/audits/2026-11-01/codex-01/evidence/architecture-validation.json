@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "json_files": [
+    "capabilities.json",
+    "components.json",
+    "coverage-architecture.json",
+    "findings-architecture.json",
+    "requirements-inventory.json",
+    "assets-architecture.json",
+    "architecture-reference-searches.json"
+  ],
+  "unique_ids": 66,
+  "immutable_and_local_links": 113,
+  "errors": [],
+  "pending_other_agent_artifacts": [
+    "BRANCHES_CODE.md",
+    "ROADMAP.md"
+  ],
+  "scope": "JSON parse, ID uniqueness, immutable citation existence/line bounds and local artifact existence; not runtime application verification."
+}

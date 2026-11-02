@@ -1,0 +1,978 @@
+[
+  {
+    "id": "INT-001",
+    "name": "OIDC and Spanner sessions",
+    "category": "required",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/middleware/session.ts",
+        "line": 19,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/middleware/session.ts#L19"
+      }
+    ],
+    "implementation": "implemented verification; partial browser login",
+    "invoked": "Bearer /api/v1 connected; browser creates only development session",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "IDENTITY_PROVIDER",
+      "OIDC_ISSUER",
+      "OIDC_AUDIENCE",
+      "OIDC_JWKS_URI",
+      "OIDC_ALGORITHMS",
+      "SESSION_TTL_HOURS",
+      "PUBLIC_ORIGINS",
+      "CORS_ORIGINS"
+    ],
+    "required_locations": "gateway server; browser public origins",
+    "required_resources": "Selected issuer tenant, API audience, registered browser client/redirects, session tables",
+    "sdk_api_version": "jose from pnpm lock; OIDC Core 1.0",
+    "owner": "not assigned by auditor",
+    "next_action": "Select issuer; implement code/PKCE callback + session exchange and recovery; register exact HTTPS origins; preserve revocation and CSRF. Keys alone cannot create the missing browser flow.",
+    "acceptance_criterion": "Strict-mode browser sign-in, refresh, expiry/revocation, sign-out and cross-account denial; negative issuer/audience tests",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "IDENTITY_PROVIDER": "public identifier/resource ID/runtime setting",
+      "OIDC_ISSUER": "public identifier/resource ID/runtime setting",
+      "OIDC_AUDIENCE": "public identifier/resource ID/runtime setting",
+      "OIDC_JWKS_URI": "public identifier/resource ID/runtime setting",
+      "OIDC_ALGORITHMS": "public identifier/resource ID/runtime setting",
+      "SESSION_TTL_HOURS": "public identifier/resource ID/runtime setting",
+      "PUBLIC_ORIGINS": "public identifier/resource ID/runtime setting",
+      "CORS_ORIGINS": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-002",
+    "name": "Cloud Spanner",
+    "category": "required",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/middleware/identity/store.ts",
+        "line": 85,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/middleware/identity/store.ts#L85"
+      }
+    ],
+    "implementation": "implemented",
+    "invoked": "gateway, domains, rights, export, outbox",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "CI emulator suite at pinned main (not cloud Spanner)",
+    "configuration_variables": [
+      "SPANNER_PROJECT_ID",
+      "SPANNER_INSTANCE_ID",
+      "SPANNER_DATABASE_ID",
+      "SPANNER_EMULATOR_HOST"
+    ],
+    "required_locations": "server/worker/migration; emulator only local",
+    "required_resources": "Environment-specific instance/database, Google SQL dialect schema/indexes, runtime data IAM, migration DDL IAM",
+    "sdk_api_version": "google-cloud-spanner Python 3.40.1; TS @google-cloud/spanner 9.0.0",
+    "owner": "not assigned by auditor",
+    "next_action": "Choose project/region; provision DB; apply ordered migration ledger; grant per-service IAM; seed synthetic pilot data; verify schema and backup restore.",
+    "acceptance_criterion": "Two accounts persist across process restart; tenant denial; migrations ledger/digests; restore into disposable DB",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "SPANNER_PROJECT_ID": "public identifier/resource ID/runtime setting",
+      "SPANNER_INSTANCE_ID": "public identifier/resource ID/runtime setting",
+      "SPANNER_DATABASE_ID": "public identifier/resource ID/runtime setting",
+      "SPANNER_EMULATOR_HOST": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-003",
+    "name": "Firestore projections and security rules",
+    "category": "implemented conditional",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/firestore/client.py",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/firestore/client.py#L1"
+      }
+    ],
+    "implementation": "implemented",
+    "invoked": "shared library/projection tests; direct browser consumers require separate proof",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "CI rules test step success; legacy 5 wardrobe tests xfailed",
+    "configuration_variables": [
+      "FIRESTORE_PROJECT_ID",
+      "FIRESTORE_EMULATOR_HOST"
+    ],
+    "required_locations": "server/projector; local emulator",
+    "required_resources": "Firestore database, security rules deploy, authenticated projection principal and indexes",
+    "sdk_api_version": "google-cloud-firestore 2.14.0",
+    "owner": "not assigned by auditor",
+    "next_action": "Verify whether direct realtime reads are in the selected milestone; provision/rules-test only if used. Existing legacy wardrobe path has known quarantined failure.",
+    "acceptance_criterion": "Rules reject cross-member reads/writes and public private-data access; projection delivery verified",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "FIRESTORE_PROJECT_ID": "public identifier/resource ID/runtime setting",
+      "FIRESTORE_EMULATOR_HOST": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-004",
+    "name": "GCS private media",
+    "category": "required for cloud uploads",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/media/gcs_store.py",
+        "line": 325,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/media/gcs_store.py#L325"
+      }
+    ],
+    "implementation": "implemented",
+    "invoked": "consumer media routes mounted only with bucket",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "BRANDME_MEDIA_BUCKET",
+      "STORAGE_EMULATOR_HOST"
+    ],
+    "required_locations": "domains API + jobs worker",
+    "required_resources": "Private bucket, public access prevention, uniform IAM, no incompatible retention/versioning, CORS, service identity signing permissions",
+    "sdk_api_version": "Google Storage REST v1; ADC",
+    "owner": "not assigned by auditor",
+    "next_action": "Provision separate private media bucket matching bucket_findings; configure signed upload CORS and signer IAM; deploy media jobs/purge process (F-ARCH-002).",
+    "acceptance_criterion": "Synthetic upload/finalize, wrong-owner denial, signature expiry, unsaved 24-hour purge and deletion retry",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "BRANDME_MEDIA_BUCKET": "public identifier/resource ID/runtime setting",
+      "STORAGE_EMULATOR_HOST": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-005",
+    "name": "GCS selected-category privacy export",
+    "category": "required for export",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/privacy_exports/config.py",
+        "line": 9,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/config.py#L9"
+      }
+    ],
+    "implementation": "implemented selected categories",
+    "invoked": "gateway to export API + independent export worker",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "CI emulator coverage only",
+    "configuration_variables": [
+      "PRIVACY_EXPORT_SERVICE_URL",
+      "PRIVACY_EXPORT_SERVICE_TOKEN",
+      "EXPORT_BUCKET",
+      "EXPORT_NETWORK",
+      "EXPORT_CONTRACT_ADDRESS",
+      "EXPORT_STORAGE_EMULATOR_HOST"
+    ],
+    "required_locations": "gateway/API/worker",
+    "required_resources": "Dedicated environment export bucket, per-service token, worker GSA, rights network/contract scope",
+    "sdk_api_version": "Google Storage/Spanner adapters",
+    "owner": "not assigned by auditor",
+    "next_action": "Provision private export bucket; deploy API and worker; apply schema; configure recent-auth assertions; document full-account export remains unsupported.",
+    "acceptance_criterion": "Create, poll, download under recent auth, reject other user, verify digest and expire object",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "PRIVACY_EXPORT_SERVICE_URL": "public identifier/resource ID/runtime setting",
+      "PRIVACY_EXPORT_SERVICE_TOKEN": "secret",
+      "EXPORT_BUCKET": "public identifier/resource ID/runtime setting",
+      "EXPORT_NETWORK": "public identifier/resource ID/runtime setting",
+      "EXPORT_CONTRACT_ADDRESS": "public identifier/resource ID/runtime setting",
+      "EXPORT_STORAGE_EMULATOR_HOST": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-006",
+    "name": "Pub/Sub transactional outbox",
+    "category": "required for async domains",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/events/worker.py",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/events/worker.py#L1"
+      }
+    ],
+    "implementation": "implemented publisher",
+    "invoked": "Helm events-worker; business consumers separately required",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "CI emulator suite and smoke only",
+    "configuration_variables": [
+      "OUTBOX_PUBSUB_TOPIC_PUBLIC",
+      "OUTBOX_PUBSUB_TOPIC_MEMBER_PRIVATE",
+      "OUTBOX_PUBSUB_TOPIC_RESTRICTED",
+      "OUTBOX_EVENT_TYPES",
+      "PUBSUB_EMULATOR_HOST"
+    ],
+    "required_locations": "worker/subscriber; local emulator",
+    "required_resources": "Three private topics, >=24h topic retention, subscriptions before publish, retry/dead-letter policy, IAM publish/get and subscriber",
+    "sdk_api_version": "REST Pub/Sub; contract catalogs",
+    "owner": "not assigned by auditor",
+    "next_action": "Create topics/subscriptions and service identities, deploy catalog-compatible consumers and domain ingress/jobs; do not treat delivered as business completion.",
+    "acceptance_criterion": "Lost-ack duplicate delivered exactly once at business layer using event_id/inbox transaction; replay respects deletion freeze",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "OUTBOX_PUBSUB_TOPIC_PUBLIC": "public identifier/resource ID/runtime setting",
+      "OUTBOX_PUBSUB_TOPIC_MEMBER_PRIVATE": "public identifier/resource ID/runtime setting",
+      "OUTBOX_PUBSUB_TOPIC_RESTRICTED": "public identifier/resource ID/runtime setting",
+      "OUTBOX_EVENT_TYPES": "public identifier/resource ID/runtime setting",
+      "PUBSUB_EMULATOR_HOST": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-007",
+    "name": "GKE Helm application hosting",
+    "category": "required proposed deployment",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-infra/helm/brandme/values.yaml",
+        "line": 15,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-infra/helm/brandme/values.yaml#L15"
+      }
+    ],
+    "implementation": "implemented declarations",
+    "invoked": "CI tag deploy gate; deployment skipped on pinned main",
+    "configuration_present": "Helm placeholders declared; repository Actions variables list empty, so BM_DEPLOY_ENABLED and BM_GCP_* repository settings absent as observed 2026-11-01",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "BM_DEPLOY_ENABLED",
+      "BM_GCP_PROJECT_ID",
+      "BM_GCP_REGION",
+      "BM_GKE_CLUSTER",
+      "BM_GCP_WIF_PROVIDER",
+      "BM_GCP_DEPLOYER_SA"
+    ],
+    "required_locations": "CI / cluster / DNS",
+    "required_resources": "Authorized project, cluster, namespace, ingress controller, reserved IP, HTTPS DNS/cert, workload identities, network policy, secrets sync",
+    "sdk_api_version": "Helm chart; GKE Kubernetes target not observed",
+    "owner": "not assigned by auditor",
+    "next_action": "Complete verification packet, retain ingress disabled until OIDC/probes/tenant tests; add consumer frontend serving and workers needed for chosen milestone; validate F-SEC-002 before rollout.",
+    "acceptance_criterion": "Immutable image digest → readiness → synthetic browser business journey; measured rollback and restore",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "BM_DEPLOY_ENABLED": "public identifier/resource ID/runtime setting",
+      "BM_GCP_PROJECT_ID": "public identifier/resource ID/runtime setting",
+      "BM_GCP_REGION": "public identifier/resource ID/runtime setting",
+      "BM_GKE_CLUSTER": "public identifier/resource ID/runtime setting",
+      "BM_GCP_WIF_PROVIDER": "public identifier/resource ID/runtime setting",
+      "BM_GCP_DEPLOYER_SA": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-008",
+    "name": "Container registry image publishing",
+    "category": "implemented",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": ".github/workflows/ci-cd.yml",
+        "line": 364,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.github/workflows/ci-cd.yml#L364"
+      }
+    ],
+    "implementation": "implemented",
+    "invoked": "main CI builds/pushes five image families",
+    "configuration_present": "GCP_SA_KEY secret metadata present (created/updated 2026-10-09); value not read; repository variables list empty",
+    "resource_provisioned": "registry accepted CI push at run time; external inventory unknown",
+    "permission_entitlement_valid": "valid for CI push at run time; exact scope unknown",
+    "network_reachable": "CI registry reachable at run time",
+    "meaningful_operation_verified": "Observed CI successful publish 2026-10-30 at pinned main",
+    "configuration_variables": [
+      "GCP_SA_KEY",
+      "GCP_PROJECT_ID",
+      "REGISTRY"
+    ],
+    "required_locations": "CI only",
+    "required_resources": "Registry push identity and five images, registry access/retention",
+    "sdk_api_version": "google-github-actions/auth@v2",
+    "owner": "not assigned by auditor",
+    "next_action": "Replace build key with narrowly scoped WIF pusher; reconcile hardcoded publishing project versus BM_GCP_PROJECT_ID; pin consumed digest.",
+    "acceptance_criterion": "One authorized main push authenticates without stored JSON key and release references exact pushed digest",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "GCP_SA_KEY": "secret",
+      "GCP_PROJECT_ID": "public identifier/resource ID/runtime setting",
+      "REGISTRY": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-009",
+    "name": "GCP IAM/WIF/Secret Manager",
+    "category": "required",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "scripts/provision/gcp-dev-identities.sh",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/scripts/provision/gcp-dev-identities.sh#L1"
+      }
+    ],
+    "implementation": "implemented provisioning proposal",
+    "invoked": "script not executed in audit; Helm secret references",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "RIGHTS_SERVICE_TOKEN",
+      "PRIVACY_SERVICE_TOKEN",
+      "PRIVACY_EXPORT_SERVICE_TOKEN",
+      "CHAIN_SERVICE_TOKEN",
+      "CONSUMER_DOMAIN_ASSERTION_KEY",
+      "CONSUMER_DOMAIN_ASSERTION_KID",
+      "CONSUMER_DOMAIN_ASSERTION_JWKS"
+    ],
+    "required_locations": "server/worker/CI; private keys server only",
+    "required_resources": "Per-process GSA/KSA, resource-scoped IAM, WIF issuer/ref/environment conditions, Secret Manager versions and sync",
+    "sdk_api_version": "not independently checked",
+    "owner": "not assigned by auditor",
+    "next_action": "After owner selects project, review plan output; grant minimal Spanner/Storage/PubSub permissions; provision independent service tokens and assertion key; test rotation by overlapping kid.",
+    "acceptance_criterion": "Runtime impersonates only its own identity; unrelated resource access denied; no secret in rendered chart/log/browser",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "RIGHTS_SERVICE_TOKEN": "secret",
+      "PRIVACY_SERVICE_TOKEN": "secret",
+      "PRIVACY_EXPORT_SERVICE_TOKEN": "secret",
+      "CHAIN_SERVICE_TOKEN": "secret",
+      "CONSUMER_DOMAIN_ASSERTION_KEY": "secret",
+      "CONSUMER_DOMAIN_ASSERTION_KID": "public identifier/resource ID/runtime setting",
+      "CONSUMER_DOMAIN_ASSERTION_JWKS": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-010",
+    "name": "Midnight / Blockfrost",
+    "category": "implemented partial",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/midnight/capability.ts",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/midnight/capability.ts#L1"
+      }
+    ],
+    "implementation": "real adapter and compiled contracts",
+    "invoked": "read-only chain service; reconciliation requires configured DB/contract",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "Committed local-network evidence exists; not re-executed by auditor",
+    "configuration_variables": [
+      "MIDNIGHT_NETWORK",
+      "MIDNIGHT_CONTRACT_ADDRESS",
+      "MIDNIGHT_BLOCKFROST_PROJECT_ID",
+      "CHAIN_RECONCILIATION_ENABLED",
+      "CHAIN_SERVICE_TOKEN"
+    ],
+    "required_locations": "chain server/worker; token secret",
+    "required_resources": "Correct-network Blockfrost project, RPC/indexer entitlement, test contract, finality oracle, persisted operations/projection",
+    "sdk_api_version": "Midnight.js 4.1.1; ledger-v8 8.1.2; Compact runtime 0.16.0",
+    "owner": "not assigned by auditor",
+    "next_action": "Select authorized Preprod project; provision token in Secret Manager; verify artifacts and test contract; run authorized synthetic operation and reconcile finality. Mainnet writes remain unavailable.",
+    "acceptance_criterion": "Actual Preprod transaction/contract/receipt matched by node finality and entitlement projection; duplicate/reorg recovery",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "MIDNIGHT_NETWORK": "public identifier/resource ID/runtime setting",
+      "MIDNIGHT_CONTRACT_ADDRESS": "public identifier/resource ID/runtime setting",
+      "MIDNIGHT_BLOCKFROST_PROJECT_ID": "public identifier/resource ID/runtime setting",
+      "CHAIN_RECONCILIATION_ENABLED": "public identifier/resource ID/runtime setting",
+      "CHAIN_SERVICE_TOKEN": "secret"
+    }
+  },
+  {
+    "id": "INT-011",
+    "name": "Member wallet and proof server",
+    "category": "required for rights writes",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/midnight/adapter.ts",
+        "line": 204,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/midnight/adapter.ts#L204"
+      }
+    ],
+    "implementation": "implemented library; wallet production binding partial",
+    "invoked": "member-controlled adapter; no server member signer",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "local-network committed evidence only",
+    "configuration_variables": [
+      "MN_PREPROD_SEEDS",
+      "MIDNIGHT_LOCAL_NODE_PORT",
+      "MIDNIGHT_LOCAL_INDEXER_PORT",
+      "APP__INFRA__SECRET"
+    ],
+    "required_locations": "wallet/browser/test harness; seeds only authorized isolated tests",
+    "required_resources": "Compatible Lace/dApp connector, funded test wallet, locally controlled proof server, private state recovery",
+    "sdk_api_version": "dapp-connector-api 4.0.1; wallet-sdk 1.2.0",
+    "owner": "not assigned by auditor",
+    "next_action": "Integrate wallet connection and clear signing confirmation; keep witnesses local; implement backup/recovery and verify correct network/address before proving.",
+    "acceptance_criterion": "User sees exact operation and signs; no member seed reaches server; wrong network refused; restart recovers private state",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "MN_PREPROD_SEEDS": "secret",
+      "MIDNIGHT_LOCAL_NODE_PORT": "public identifier/resource ID/runtime setting",
+      "MIDNIGHT_LOCAL_INDEXER_PORT": "public identifier/resource ID/runtime setting",
+      "APP__INFRA__SECRET": "secret"
+    }
+  },
+  {
+    "id": "INT-012",
+    "name": "Cardano anchoring",
+    "category": "optional unavailable",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/cardano/anchor.ts",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/cardano/anchor.ts#L1"
+      }
+    ],
+    "implementation": "unavailable adapter",
+    "invoked": "retired routes return 410",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "BLOCKFROST_API_KEY"
+    ],
+    "required_locations": "future adapter server; legacy variable unused by canonical path",
+    "required_resources": "Authorized Cardano RPC account, signer custody, network, submitter and reconciliation implementation",
+    "sdk_api_version": "not applicable",
+    "owner": "not assigned by auditor",
+    "next_action": "Keep unavailable for first milestone; build and test real submitter only if explicit product requirement survives.",
+    "acceptance_criterion": "Real testnet transaction finalized and verified; never fabricate transaction hash",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "BLOCKFROST_API_KEY": "secret"
+    }
+  },
+  {
+    "id": "INT-013",
+    "name": "Stripe test payments",
+    "category": "optional development",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/composition.py",
+        "line": 90,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/composition.py#L90"
+      }
+    ],
+    "implementation": "implemented test rail",
+    "invoked": "dormant factory; gateway commerce routes not mounted (F-ARCH-001)",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "live test and stripe-mock checks skipped in main CI",
+    "configuration_variables": [
+      "BRANDME_COMMERCE_PAYMENTS",
+      "STRIPE_TEST_SECRET_KEY",
+      "STRIPE_TEST_WEBHOOK_SECRET",
+      "STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS",
+      "BRANDME_STRIPE_EGRESS_PROXY",
+      "BRANDME_STRIPE_CA_BUNDLE",
+      "STRIPE_LOG"
+    ],
+    "required_locations": "commerce server only; demo/development",
+    "required_resources": "Selected Stripe sandbox, restricted test key, signed webhook destination, test payment methods, durable commerce reconciliation",
+    "sdk_api_version": "stripe 16.0.0; version pinned by stripe_test.py",
+    "owner": "not assigned by auditor",
+    "next_action": "Connect commerce application first; select test account; configure allowed test keys and separate webhook secret; preserve API version compatibility. No live payments authorized or supported.",
+    "acceptance_criterion": "Sandbox authorize/capture/void/refund; duplicate webhook and lost-response recovery; test/live mismatch rejected",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "BRANDME_COMMERCE_PAYMENTS": "public identifier/resource ID/runtime setting",
+      "STRIPE_TEST_SECRET_KEY": "secret",
+      "STRIPE_TEST_WEBHOOK_SECRET": "secret",
+      "STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS": "secret",
+      "BRANDME_STRIPE_EGRESS_PROXY": "public identifier/resource ID/runtime setting",
+      "BRANDME_STRIPE_CA_BUNDLE": "public identifier/resource ID/runtime setting",
+      "STRIPE_LOG": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-014",
+    "name": "Nordstrom / Impact partner catalog",
+    "category": "proposed / link-only",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/providers/nordstrom.py",
+        "line": 44,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/providers/nordstrom.py#L44"
+      }
+    ],
+    "implementation": "link validation implemented; Impact API not built",
+    "invoked": "dormant commerce provider setup; external handoff only",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "NORDSTROM_IMPACT_ACCOUNT_REF",
+      "NORDSTROM_IMPACT_CREDENTIAL_SECRET",
+      "NORDSTROM_IMPACT_CAMPAIGN_REF",
+      "NORDSTROM_IMPACT_CATALOG_REF"
+    ],
+    "required_locations": "operator config + server Secret Manager refs",
+    "required_resources": "Approved publisher account/catalog, account-specific API docs, imagery/caching/transformation/affiliate rights",
+    "sdk_api_version": "no Impact wire client",
+    "owner": "not assigned by auditor",
+    "next_action": "Obtain approval and usage rights; confirm approved-account endpoints, then implement adapter. A secret reference or link probe must not enable checkout.",
+    "acceptance_criterion": "Read-only authenticated catalog test and permission review; checkout stays unsupported until separate contracted API",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "NORDSTROM_IMPACT_ACCOUNT_REF": "public identifier/resource ID/runtime setting",
+      "NORDSTROM_IMPACT_CREDENTIAL_SECRET": "secret",
+      "NORDSTROM_IMPACT_CAMPAIGN_REF": "public identifier/resource ID/runtime setting",
+      "NORDSTROM_IMPACT_CATALOG_REF": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-015",
+    "name": "Anthropic assistant planner",
+    "category": "optional development",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/orchestrator/model_planner.py",
+        "line": 53,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/orchestrator/model_planner.py#L53"
+      }
+    ],
+    "implementation": "implemented bounded model adapter",
+    "invoked": "composition not wired to public gateway (F-ARCH-001)",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "live model test skipped in main CI",
+    "configuration_variables": [
+      "BRANDME_ASSISTANT_PLANNER",
+      "BRANDME_DEV_ANTHROPIC_API_KEY",
+      "BRANDME_ASSISTANT_MODEL",
+      "BRANDME_ASSISTANT_EFFORT",
+      "BRANDME_ASSISTANT_EGRESS_PROXY",
+      "BRANDME_ASSISTANT_CA_BUNDLE",
+      "BRANDME_LOG_REF_KEY"
+    ],
+    "required_locations": "server only; demo/development",
+    "required_resources": "Authorized Claude account/model entitlement, approved data-use terms, spend controls",
+    "sdk_api_version": "anthropic 0.125.0; code API version 2023-06-01, model claude-opus-5-5",
+    "owner": "not assigned by auditor",
+    "next_action": "Connect deterministic assistant first; verify current model/API entitlement and request schema before selecting model; preserve independent executor authorization; persist budgets before replicas.",
+    "acceptance_criterion": "Adversarial tool data cannot add scopes/approval; cancellation stops new effects; per-user/day budget enforced across restart",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "BRANDME_ASSISTANT_PLANNER": "public identifier/resource ID/runtime setting",
+      "BRANDME_DEV_ANTHROPIC_API_KEY": "secret",
+      "BRANDME_ASSISTANT_MODEL": "public identifier/resource ID/runtime setting",
+      "BRANDME_ASSISTANT_EFFORT": "public identifier/resource ID/runtime setting",
+      "BRANDME_ASSISTANT_EGRESS_PROXY": "public identifier/resource ID/runtime setting",
+      "BRANDME_ASSISTANT_CA_BUNDLE": "public identifier/resource ID/runtime setting",
+      "BRANDME_LOG_REF_KEY": "secret"
+    }
+  },
+  {
+    "id": "INT-016",
+    "name": "Google Vertex virtual try-on experiment",
+    "category": "optional dev only",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/spatial/server/photoService.ts",
+        "line": 30,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/spatial/server/photoService.ts#L30"
+      }
+    ],
+    "implementation": "implemented synthetic-only development route",
+    "invoked": "opt-in development photo route; production disabled",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "not tested by auditor",
+    "configuration_variables": [
+      "BRANDME_PHOTO_DEV_ENABLED",
+      "BRANDME_PHOTO_DEV_PROJECT",
+      "BRANDME_PHOTO_DEV_REGION",
+      "BRANDME_VERTEX_ACCESS_TOKEN",
+      "BRANDME_PHOTO_RETENTION_NOTICE",
+      "NEXT_PUBLIC_BRANDME_MODE"
+    ],
+    "required_locations": "Next server only; public mode flag only in browser",
+    "required_resources": "Approved GCP project, Vertex AI model entitlement/region, short-lived token, retention disclosure",
+    "sdk_api_version": "virtual-try-on-001 REST predict",
+    "owner": "not assigned by auditor",
+    "next_action": "Select dev project/terms explicitly; keep synthetic-only; do not confuse this separate experiment with approved consumer-domain production provider.",
+    "acceptance_criterion": "Synthetic request reports accurate preview label; no real user image accepted; cancellation/retention limits disclosed",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "BRANDME_PHOTO_DEV_ENABLED": "public identifier/resource ID/runtime setting",
+      "BRANDME_PHOTO_DEV_PROJECT": "public identifier/resource ID/runtime setting",
+      "BRANDME_PHOTO_DEV_REGION": "public identifier/resource ID/runtime setting",
+      "BRANDME_VERTEX_ACCESS_TOKEN": "secret",
+      "BRANDME_PHOTO_RETENTION_NOTICE": "public identifier/resource ID/runtime setting",
+      "NEXT_PUBLIC_BRANDME_MODE": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-017",
+    "name": "NATS legacy scan publisher",
+    "category": "optional legacy",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/services/nats.ts",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/services/nats.ts#L1"
+      }
+    ],
+    "implementation": "implemented publisher",
+    "invoked": "/scan only when configured; no proof of business consumer",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "NATS_URL",
+      "NATS_MAX_RECONNECT_ATTEMPTS"
+    ],
+    "required_locations": "gateway/local NATS",
+    "required_resources": "NATS server authentication, stream/subscription and consumer",
+    "sdk_api_version": "nats JS; compose 2.10.29-alpine",
+    "owner": "not assigned by auditor",
+    "next_action": "Retain only if legacy scan journey retained; otherwise consolidate behind canonical outbox.",
+    "acceptance_criterion": "Synthetic event reaches named consumer with retry and broker-failure behavior",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "NATS_URL": "public identifier/resource ID/runtime setting",
+      "NATS_MAX_RECONNECT_ATTEMPTS": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-018",
+    "name": "Legacy PostgreSQL / Redis / Neo4j",
+    "category": "legacy or dormant",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-infra/terraform/main.tf",
+        "line": 152,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-infra/terraform/main.tf#L152"
+      }
+    ],
+    "implementation": "SQL declaration; graph CLI/branding adapters; Redis health utility",
+    "invoked": "not canonical consumer-domain persistence",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "DB_PASSWORD",
+      "DATABASE_URL",
+      "REDIS_URL",
+      "NEO4J_PASSWORD",
+      "NEO4J_READONLY_PASSWORD",
+      "NEO4J_WRITER_PASSWORD"
+    ],
+    "required_locations": "legacy scripts/CLI only",
+    "required_resources": "Only if separately retained: SQL/Redis/Neo4j instances and IAM/password delivery",
+    "sdk_api_version": "PostgreSQL 15 declaration; Neo4j/Redis runtime unknown",
+    "owner": "not assigned by auditor",
+    "next_action": "Do not provision for main consumer milestone. Reconcile each retained legacy module before archive/removal; Terraform has F-SEC-005.",
+    "acceptance_criterion": "Named inbound consumer and reproducible business use before retaining service",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "DB_PASSWORD": "public identifier/resource ID/runtime setting",
+      "DATABASE_URL": "public identifier/resource ID/runtime setting",
+      "REDIS_URL": "public identifier/resource ID/runtime setting",
+      "NEO4J_PASSWORD": "public identifier/resource ID/runtime setting",
+      "NEO4J_READONLY_PASSWORD": "public identifier/resource ID/runtime setting",
+      "NEO4J_WRITER_PASSWORD": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-019",
+    "name": "Observability: metrics, OTLP, Grafana/Loki",
+    "category": "required operational; implementation partial",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/telemetry.py",
+        "line": 20,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/telemetry.py#L20"
+      }
+    ],
+    "implementation": "implemented utilities/configuration",
+    "invoked": "legacy hooks; consumer-domain production alerting unverified",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "GRAFANA_PASSWORD",
+      "LOG_LEVEL"
+    ],
+    "required_locations": "server/collector/operator",
+    "required_resources": "Collector endpoint, authenticated dashboard, log retention/redaction, alert destinations and incident ownership",
+    "sdk_api_version": "OpenTelemetry 1.21.0; prometheus-client 0.19.0",
+    "owner": "not assigned by auditor",
+    "next_action": "Instrument chosen live path; alert on outbox age/dead letters, purge failures, auth errors and readiness; set retention and test alert delivery without contacting customers.",
+    "acceptance_criterion": "Fault injection produces one actionable alert and a runbook; traces exclude private content",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "OTEL_EXPORTER_OTLP_ENDPOINT": "public identifier/resource ID/runtime setting",
+      "GRAFANA_PASSWORD": "public identifier/resource ID/runtime setting",
+      "LOG_LEVEL": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-020",
+    "name": "Email / push notifications",
+    "category": "proposed optional",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/social/notifications.py",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/social/notifications.py#L1"
+      }
+    ],
+    "implementation": "in-app notifications implemented; external sender not found in reviewed canonical path",
+    "invoked": "in-app routes; no verified email/push delivery",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "none"
+    ],
+    "required_locations": "future worker",
+    "required_resources": "Chosen sender account, consent/preferences, delivery/webhook verification, unsubscribe/bounce handling",
+    "sdk_api_version": "none",
+    "owner": "not assigned by auditor",
+    "next_action": "Keep external notifications unavailable until provider and worker implemented; no messages sent in audit.",
+    "acceptance_criterion": "Opt-in event delivers once; unsubscribe honored; failure tracked",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {}
+  },
+  {
+    "id": "INT-021",
+    "name": "Developer Magic MCP tool",
+    "category": "optional developer tooling",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": ".mcp.json",
+        "line": 8,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/.mcp.json#L8"
+      }
+    ],
+    "implementation": "config implemented",
+    "invoked": "Claude SessionStart/MCP launch conditional",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "MAGIC_API_KEY"
+    ],
+    "required_locations": "developer process only",
+    "required_resources": "Approved pinned third-party package and key storage",
+    "sdk_api_version": "@21st-dev/magic@latest (unpinned)",
+    "owner": "not assigned by auditor",
+    "next_action": "Address F-SEC-001: pin audited version; pass minimum key via environment/private channel; allowlist exported variable names.",
+    "acceptance_criterion": "Process argv contains no key; unapproved variables never forwarded",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "MAGIC_API_KEY": "secret"
+    }
+  },
+  {
+    "id": "INT-022",
+    "name": "AP2/UCP mandate contracts",
+    "category": "implemented library / optional partner",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/ap2.py",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/ap2.py#L1"
+      }
+    ],
+    "implementation": "schemas/verification library implemented",
+    "invoked": "commerce executor path dormant; official SDK oracle skipped",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "AP2_SDK_PYTHON tests skipped in main CI",
+    "configuration_variables": [
+      "AP2_SDK_PYTHON",
+      "MCP_AS_ISSUER",
+      "MCP_AS_JWKS_URI",
+      "COMMERCE_DOMAIN_ASSERTION_KEY",
+      "COMMERCE_DOMAIN_ASSERTION_KID"
+    ],
+    "required_locations": "commerce/server and isolated compatibility test",
+    "required_resources": "Approved protocol partner, signer/JWKS trust, supported SDK oracle version and account/network scope",
+    "sdk_api_version": "schema snapshots in commerce/ap2_schemas",
+    "owner": "not assigned by auditor",
+    "next_action": "Run official SDK oracle in pinned isolated interpreter; mount authenticated commerce; obtain real partner acceptance before claiming interoperability.",
+    "acceptance_criterion": "Signed mandate accepted by actual partner sandbox; replay/expiry/audience/amount denial; provider receipt reconciled",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "AP2_SDK_PYTHON": "public identifier/resource ID/runtime setting",
+      "MCP_AS_ISSUER": "public identifier/resource ID/runtime setting",
+      "MCP_AS_JWKS_URI": "public identifier/resource ID/runtime setting",
+      "COMMERCE_DOMAIN_ASSERTION_KEY": "secret",
+      "COMMERCE_DOMAIN_ASSERTION_KID": "public identifier/resource ID/runtime setting"
+    }
+  },
+  {
+    "id": "INT-023",
+    "name": "Legacy branding LLM / GraphRAG embeddings",
+    "category": "dormant legacy",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-agents/branding/src/graph_engine.py",
+        "line": 62,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-agents/branding/src/graph_engine.py#L62"
+      }
+    ],
+    "implementation": "branding LangGraph/Anthropic library; GraphRAG constructor explicitly disabled",
+    "invoked": "no service wiring found; graph CLI exists",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "unverified",
+    "configuration_variables": [
+      "BRANDME_DEV_ANTHROPIC_API_KEY",
+      "NEO4J_URI",
+      "NEO4J_USERNAME",
+      "NEO4J_DATABASE",
+      "NEO4J_PASSWORD",
+      "NEO4J_READONLY_USER",
+      "NEO4J_READONLY_PASSWORD",
+      "NEO4J_WRITER_USER",
+      "NEO4J_WRITER_PASSWORD",
+      "OPENAI_API_KEY"
+    ],
+    "required_locations": "optional developer CLI/server library",
+    "required_resources": "If deliberately restored: compatible pinned LangChain client, Neo4j graph and RBAC, authorized Anthropic model; embeddings client implementation",
+    "sdk_api_version": "branding requirements use ranges; agentic legacy pins documented by graph_rag.py",
+    "owner": "not assigned by auditor",
+    "next_action": "Keep dormant pending product decision; do not supply OPENAI_API_KEY to revive disabled GraphRAG. Reuse hardened canonical model transport rather than restoring ambient credential behavior.",
+    "acceptance_criterion": "Chosen retained use case runs under isolated credentials, scoped graph queries and synthetic data; disabled GraphRAG remains fail-closed",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {
+      "BRANDME_DEV_ANTHROPIC_API_KEY": "secret",
+      "NEO4J_URI": "public identifier/resource ID/runtime setting",
+      "NEO4J_USERNAME": "public identifier/resource ID/runtime setting",
+      "NEO4J_DATABASE": "public identifier/resource ID/runtime setting",
+      "NEO4J_PASSWORD": "public identifier/resource ID/runtime setting",
+      "NEO4J_READONLY_USER": "public identifier/resource ID/runtime setting",
+      "NEO4J_READONLY_PASSWORD": "public identifier/resource ID/runtime setting",
+      "NEO4J_WRITER_USER": "public identifier/resource ID/runtime setting",
+      "NEO4J_WRITER_PASSWORD": "public identifier/resource ID/runtime setting",
+      "OPENAI_API_KEY": "secret"
+    }
+  },
+  {
+    "id": "INT-024",
+    "name": "MediaPipe local pose runtime/model",
+    "category": "optional development asset",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "evidence": [
+      {
+        "commit": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "scripts/assets/prepare-vision.py",
+        "line": 6,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/scripts/assets/prepare-vision.py#L6"
+      }
+    ],
+    "implementation": "hash-pinned development asset fetch script",
+    "invoked": "spatial-validation prepares local runtime; browser/device audit in USER_FLOWS",
+    "configuration_present": "declarations/templates present; runtime values unknown",
+    "resource_provisioned": "unknown",
+    "permission_entitlement_valid": "unknown",
+    "network_reachable": "unverified",
+    "meaningful_operation_verified": "not re-executed by auditor",
+    "configuration_variables": [
+      "none"
+    ],
+    "required_locations": "development build/browser; no runtime provider key",
+    "required_resources": "npm runtime archive and Google-hosted pose model; redistribution/provenance review before shipped model",
+    "sdk_api_version": "MediaPipe tasks-vision 0.10.35; pose landmarker lite float16 model 1",
+    "owner": "not assigned by auditor",
+    "next_action": "Retain pinned integrity validation and on-device processing; resolve model redistribution review before production packaging; verify disabled/permission-denied fallbacks on devices.",
+    "acceptance_criterion": "No camera frame network upload; explicit camera permission/revocation; model integrity and licensing record; actual device performance captured",
+    "external_environment": "unknown; no cloud project authorized for inspection",
+    "configuration_classification": {}
+  }
+]

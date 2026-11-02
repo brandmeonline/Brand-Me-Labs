@@ -1,0 +1,879 @@
+{
+  "schemaVersion": 1,
+  "increment": "Spatial-AR round 2",
+  "measuredAt": "2026-10-25T01:41:37.570Z",
+  "branch": "bench/astra-spatial-ar-20261005",
+  "baseBeforeIncrement": "ceb6ed6f7851422cfb4d4532249c6f9e8fb9363b",
+  "implementationCommit": "fe3b761f6da6ab9346fabe2fd52ae1d699fffa97",
+  "ciRunnerCorrection": "8604f3716f0fc203d5125634b02d4eaa6b7ea99e",
+  "pullRequest": "https://github.com/brandmeonline/Brand-Me-Labs/pull/60",
+  "environment": {
+    "os": "Windows",
+    "node": "22.21.0",
+    "browser": "Chromium 141 via Playwright 1.56.1",
+    "fixturePolicy": "Original synthetic assets only"
+  },
+  "verification": {
+    "fullBrowser": {
+      "stats": {
+        "startTime": "2026-10-25T01:30:50.928Z",
+        "duration": 493586.11000000004,
+        "expected": 80,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "reportSha256": "c10c4cab5aac2de19d9e2533b788c3ee4cfbbb61eafb0525c5f8a91a48650f81",
+      "files": [
+        {
+          "file": "spatial-accessibility.spec.ts",
+          "cases": [
+            {
+              "title": "placement opens with instructions and native destination and slot keys remain draft edits",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "placement navigator previews one destination and Escape or Cancel restores focus without a write",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "navigator confirmation persists exactly one move and returns keyboard focus",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "pending placement cannot be cancelled or submitted twice and restores focus after the real commit",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "a completed pending move respects deliberate focus outside placement",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "occupied-slot failure keeps the saved placement and keyboard retry usable",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial-admission.spec.ts",
+          "cases": [
+            {
+              "title": "shoe admission rejects geometric overlap atomically and permits separated slots, undo and retry",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "concurrent shoe reservations admit one transaction and unplaced remains available",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial-calibration.spec.ts",
+          "cases": [
+            {
+              "title": "calibration refuses missing, nonfinite and inconsistent measurements and bounds ease without claiming fit",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "measurement preparation stays private, requires repeats and clears on exit while fit remains disabled",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "native device test cannot be activated in an ordinary build",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial-fit-evidence.spec.ts",
+          "cases": [
+            {
+              "title": "every body dimension requires bounded units, uncertainty, timestamp, source and method provenance",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "Pod intake binds each measurement to its subject, capture and time",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "Pod use fails closed on revocation, expiry, future time and unbounded retention",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "paired Pod correction carries both method references and conservative uncertainty without fit claims",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "cross-tier calibration refuses wrong subjects, missing purpose, stale pairs and mixed real/synthetic data",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "brand output is a fixed fit-outcome projection and rejects attached body data",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "dimensional error reports sample counts, signed bias, MAE, RMSE and maxima against references",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "error reporting rejects inflated counts, unknown provenance and malformed numeric input",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "supplied physical records cannot self-certify calibrated fit or independent verification",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "manual preparation exports provenance and forged body intervals fail closed",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial-fit-ladder.spec.ts",
+          "cases": [
+            {
+              "title": "fit learning isolates houses, categories, size systems and silhouette, and replaces repeat garments",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "fit inference withholds a starting size for ties, discomfort, restriction and tailoring needs",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "fit boundaries reject unsafe fields, malformed provenance, corrupt storage, duplicate evidence and unbounded history",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "failed device writes and deletions preserve existing evidence and never assert success",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "depth capability uses feature results and never promotes AR or exposed APIs to depth capture",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "guest fit questions persist, isolate each house and can be corrected and deleted without uploads",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "corrupt guest storage stays quarantined until explicit reset and unsafe answers do not create notes",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "storage failures retain data, recover on retry and deletions in another tab clear the reading",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "fit saves, single deletes and resets serialize across tabs under the real origin lock",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "without cross-tab locking fit history is read-only and mutation APIs fail closed",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "tier 2 stays unavailable with no uploads or camera session even when a browser reports AR support",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial-folded.spec.ts",
+          "cases": [
+            {
+              "title": "folded placement loads the authored variant and survives refresh and each room",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "legacy folded coordinates migrate once and stale writes conflict without losing identity",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial-interactions.spec.ts",
+          "cases": [
+            {
+              "title": "slow add prefetches its asset, shows an uncommitted destination, then settles only after commit",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "reduced motion retains usable named camera views and remembers the chosen view",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "saved camera views restore exact poses, remain room-local and can be deleted",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "orbit position persists after idle and is restored after reload",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "theme change fades the old room before replacement and reduced motion swaps immediately",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "dragging a wardrobe image onto a semantic destination commits one move and survives reload",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "touch long press enters placement while early movement remains scrolling",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "search keeps room context dimmed while the accessible list shows matches",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "an image-only item remains a labeled photo display in the rendered room",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "multi-selection across search filters creates a persisted capsule without changing item status",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "reversing a room change during fade cannot leave the canvas hidden",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial-photo.spec.ts",
+          "cases": [
+            {
+              "title": "photo service enforces origin, consent, test-only image and ownership before external requests",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "photo service keeps retry idempotency, changed-input rejection and durable attempt cap",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "photo controls drive upload, processing, durable closet reference and deletion through the real dev service with a provider double",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "a lost photo job stops polling and can be discarded without creating a new provider attempt",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial-pose.spec.ts",
+          "cases": [
+            {
+              "title": "real pinned local model detects synthetic fixture and rejects an empty frame",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "actual try-on camera flow uses real local worker and stops on mode exit",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial-scan.spec.ts",
+          "cases": [
+            {
+              "title": "scan defaults to an honest unconfigured state with no capture or upload",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "scan displays public facets and opens private details only through explicit owner requests",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "owner denial leaves private fields closed and error text does not expose provider data",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "expired owner claims never disclose their private payload",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "revoked owner claims never disclose their private payload",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "visible claims expire in place and owner disclosure closes without a navigation",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "a non-public default projection is rejected instead of rendering private data",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "changed scan input cancels pending work and ignores a late resolver response",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "photo scan sends only the supplied original fixture after explicit consent",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "scan timeout and cancellation keep the request retryable without opening data",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "resolver failure is redacted and offline clears all displayed details",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "claims parser rejects mismatched assets, malformed metadata and duplicate claims",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "spatial.spec.ts",
+          "cases": [
+            {
+              "title": "original rooms render from the real cameras and retain usable controls",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "keyboard placement survives refresh and semantic theme remapping",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "add animation starts only after the item commit and Undo removes its record",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "reduced motion commits immediately without the flight and persists",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "idempotent retries, key binding and concurrent versions reject duplicate writes",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "500 items remain virtualized, searchable and keyboard reachable",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "no WebGL still provides full item organization",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "WebGL context loss exposes Simple View without losing items",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "preview ladder gates camera, provider uploads and calibrated fit",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "camera cleanup handles exit and a late permission result without uploads",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "expired unsaved preview is removed; saved preview deletes completely",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "active camera and worker stop when the page is backgrounded",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "failed placement does not animate or create an item, and retry can succeed",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "outfit editor saves real item references and survives refresh",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "spatial UI reflows at 320px without document overflow",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "spatial UI reflows at 390px without document overflow",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "spatial UI reflows at 768px without document overflow",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "finalFitAfterQueuedSaveGuard": {
+      "stats": {
+        "startTime": "2026-10-25T01:33:22.471Z",
+        "duration": 48371.226,
+        "expected": 11,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "reportSha256": "8336f3543c82fe7eec4adbd0beded2e719e3f1a449e2f8ae99a4231f00559407",
+      "files": [
+        {
+          "file": "spatial-fit-ladder.spec.ts",
+          "cases": [
+            {
+              "title": "fit learning isolates houses, categories, size systems and silhouette, and replaces repeat garments",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "fit inference withholds a starting size for ties, discomfort, restriction and tailoring needs",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "fit boundaries reject unsafe fields, malformed provenance, corrupt storage, duplicate evidence and unbounded history",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "failed device writes and deletions preserve existing evidence and never assert success",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "depth capability uses feature results and never promotes AR or exposed APIs to depth capture",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "guest fit questions persist, isolate each house and can be corrected and deleted without uploads",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "corrupt guest storage stays quarantined until explicit reset and unsafe answers do not create notes",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "storage failures retain data, recover on retry and deletions in another tab clear the reading",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "fit saves, single deletes and resets serialize across tabs under the real origin lock",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "without cross-tab locking fit history is read-only and mutation APIs fail closed",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            },
+            {
+              "title": "tier 2 stays unavailable with no uploads or camera session even when a browser reports AR support",
+              "outcome": "expected",
+              "attempts": [
+                "passed"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "initialAttempts": "Initial 78-case run had 74 passes and four form-selector/claim-markup failures. The accessible select labels and semantic dt/dd claim fields were corrected without weakening assertions. Final full and focused results above supersede those attempts.",
+    "types": {
+      "status": "PASS",
+      "command": "node scripts/assets/node_modules/typescript/bin/tsc -p scripts/assets/tsconfig.json"
+    },
+    "productionBuild": {
+      "status": "PASS",
+      "command": "node node_modules/next/dist/bin/next build",
+      "cwd": "brandme-frontend"
+    },
+    "builtApplicationSmoke": {
+      "status": "PASS",
+      "measuredAt": "2026-10-25T01:41:36.844Z",
+      "build": "Next 15.5.28 production build on loopback",
+      "checks": [
+        "guest fit save",
+        "reload and review",
+        "explicit complete deletion",
+        "no fit uploads",
+        "scan unconfigured",
+        "photo disabled GET",
+        "photo POST 503"
+      ],
+      "browserErrors": 0,
+      "photoProviderRequests": 0
+    },
+    "assets": {
+      "status": "PASS",
+      "requiredPaths": 36,
+      "manifests": 14,
+      "command": "node scripts/assets/validate.mjs"
+    },
+    "starterRendering": {
+      "status": "PASS",
+      "command": "node scripts/assets/starter-environments.mjs --check",
+      "rooms": [
+        {
+          "id": "starter_wooden",
+          "triangles": 4260,
+          "drawCalls": 6,
+          "gzipBytes": 27461,
+          "supportedShelfSlots": 6
+        },
+        {
+          "id": "starter_modular",
+          "triangles": 4464,
+          "drawCalls": 6,
+          "gzipBytes": 29370,
+          "supportedShelfSlots": 6
+        }
+      ]
+    },
+    "responsive": {
+      "widthsPixels": [
+        320,
+        390,
+        768,
+        1440
+      ],
+      "horizontalOverflow": false,
+      "surfaces": [
+        "fit questions",
+        "unconfigured scan"
+      ],
+      "manualScreenReaderAndTouch": "NOT_RUN"
+    }
+  },
+  "localPose": {
+    "measuredAt": "2026-10-25T01:35:43.028Z",
+    "landmarks": 33,
+    "blankPoseCount": 0,
+    "medianMs": 128.69999980926514,
+    "p95Ms": 189.4000005722046,
+    "accuracy": {
+      "method": "Coarse visual estimates on the original synthetic fixture; not surveyed/physical ground truth",
+      "annotationUncertaintyPixels": 20,
+      "meanPixelError": 23.63997351246386,
+      "pckAt015Torso": 1,
+      "tolerancePixels": 64.512
+    },
+    "limits": "One synthetic fixture, Chromium CPU, no physical camera or population accuracy/fit validation."
+  },
+  "physicalFit": {
+    "status": "NOT_RUN",
+    "physicalGarmentCount": 0,
+    "physicalMeasurementCount": 0
+  },
+  "github": {
+    "checkedCommit": "8604f3716f0fc203d5125634b02d4eaa6b7ea99e",
+    "moduleRegression": {
+      "status": "PASS",
+      "moduleGroups": 11,
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40151251074",
+      "limits": "Seven Cardano testnet tests skipped; no live network verification"
+    },
+    "spatial": {
+      "status": "PASS",
+      "jobs": [
+        "Spatial assets and types",
+        "Spatial browser and local pose"
+      ],
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40151251053"
+    },
+    "supersededSetupFailure": {
+      "url": "https://github.com/brandmeonline/Brand-Me-Labs/actions/runs/40151186848",
+      "reason": "Rolling ubuntu-latest selected Ubuntu 26.04, unsupported by pinned Playwright 1.56.1; runner pinned to supported Ubuntu 24.04"
+    }
+  },
+  "pending": {
+    "photoProvider": "NOT_RUN: no dev credentials/project/region configured",
+    "photogrammetry": "NOT_IMPLEMENTED: no reconstruction engine or approved capture",
+    "nativeDevices": "NOT_RUN: physical session required",
+    "pod": "Validated proposal only; no physical station or authoritative consent backend",
+    "scan": "No actual tag/photo-to-anchor resolver or authenticated producer integration",
+    "progression": "Original assets delivered; consumer shell/reward integration pending",
+    "main": "Draft only; foundation/domain sequencing and branch reconciliation required"
+  },
+  "evidenceFiles": [
+    {
+      "file": "scripts/assets/evidence/fit-evidence.json",
+      "sha256": "1bb913da2fad18b64172745f314057704c9d40fd5af87ab9703a849addad3873"
+    },
+    {
+      "file": "scripts/assets/evidence/pose-inference.json",
+      "sha256": "09d6861ec2b2355ce96c8aef76fd2a4029f8b4c90b495b7097e061bad6953b83"
+    },
+    {
+      "file": "scripts/assets/evidence/pose-preview.png",
+      "sha256": "02166b5c58e20e47fd3293b5a565e3b82b3ccb749d0679197b741e39e7068b96"
+    },
+    {
+      "file": "scripts/assets/evidence/round2-fit-390.png",
+      "sha256": "63896204ac3401b3a03f33f9ab558c46f4940bbae30e5e4ab713af6d9b279376"
+    },
+    {
+      "file": "scripts/assets/evidence/round2-scan-1440.png",
+      "sha256": "c76444e86566a6c010bdb16566a1b87174f7c254faadbf3fb2b51fc070e4df36"
+    }
+  ]
+}

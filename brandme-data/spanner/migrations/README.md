@@ -11,7 +11,8 @@ python brandme-data/spanner/migrations/runner.py verify   # exit 1 on drift or p
 | Rule | Behaviour |
 |---|---|
 | Naming | `V<NNN>_<name>.sql`; duplicates and other names are rejected |
-| Reservations | V001 foundation (identity + platform) · V002 persona · V003 wardrobe · V004 social · V005 rewards · V006 providers · V007 commerce · V008 rights · V009 privacy |
+| Reservations | V001 identity + platform (foundation) · V002 persona, V003 wardrobe, V004 social, V005 rewards (consumer-domains) · V006 providers, V007 commerce (commerce-agents) · V008 rights, V009 privacy, V010 rights_projection_version, V011 chain_operation_store, V012 chain_reconciliation (midnight-rights; V010–V012 from integration PRs #43–#45) · V013 outbox_delivery (foundation events; integration PR #47) · V014 privacy_exports (midnight-rights; integration PR #50) · V015 commerce_quote_terms (commerce-agents, PR #51). The table is `RESERVED` in `tests/foundation/test_migrations.py`; a new migration takes the next number, V016, and adds its row there and here in the same change |
+| Contiguity | The packaged set is V001…V<max> with no gap, and each reserved number has exactly one file (`test_packaged_versions_are_contiguous_and_reserved_once`). A gap would leave a lower number to land after a higher one was applied, which the ordering rule below refuses in sandbox/production |
 | Checksums | SHA-256 of the file; editing an applied migration is refused (write a new one) |
 | Partial failure | Spanner DDL is not transactional. A failed batch leaves an `applying` row; later runs stop until an operator inspects and runs `repair --version N` |
 | Ordering | A pending version lower than an applied one is refused (`--allow-out-of-order` is local-only, refused in sandbox/production) |

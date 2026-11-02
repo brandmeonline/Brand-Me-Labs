@@ -1,0 +1,124 @@
+{
+  "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "status": "static review complete for listed areas; dynamic/cloud/provider checks incomplete",
+  "reviewed": [
+    "gateway identity/mode/session/CSRF/rate-limiter and service transport",
+    "domain assertion verifier and member-scoped media boundaries",
+    "rights/read/export API transport and config",
+    "provider registry/composition, URL guard, payment wire, AI planner/runtime egress",
+    "Midnight index/config/routes/adapter boundaries",
+    "Terraform/Helm workload/env/probes/network declarations",
+    "CI pipeline, image build/publish/deploy gates",
+    "Claude MCP config/session-start and pnpm/Docker lifecycle paths",
+    "All19 HIGH/Critical-rule-metadata package/advisory combinations matched to primary sources and static prerequisites;59 lower-metadata alerts and deployed/image reachability remain unreviewed"
+  ],
+  "sampled": [
+    "domain authorization/storage methods, privacy erasure/event consumers",
+    "ledger concurrency and payment/AI runtime logic",
+    "legacy Neo4j/SQL/Redis/observability modules",
+    "source-level upload checks and permission denial tests"
+  ],
+  "executed": [
+    "auditor Python Git-object regex scanner and names-only static extraction",
+    "GitHub public metadata and bounded CI log retrieval with pre-output redaction"
+  ],
+  "not_executed": [
+    "repository code, install/build/tests, containers, migrations, live payments/wallet operations, provider requests"
+  ],
+  "blocked": [
+    "Docker adequate isolation unavailable",
+    "no selected authorized cloud project",
+    "no live provider sandbox credentials/account selected"
+  ],
+  "unreviewed": [
+    "all historical binary contents",
+    "all historical line-by-line trust boundaries",
+    "complete container SBOM/current advisory scan",
+    "full CI artifact contents and logs",
+    "actual cloud IAM/backup/DNS/deployed state"
+  ],
+  "primary_sources": [
+    [
+      "OIDC",
+      "https://openid.net/specs/openid-connect-core-1_0.html",
+      "Core 1.0 errata 2, 2023-12-15; issuer/audience verification and browser authorization flow"
+    ],
+    [
+      "Spanner/GKE",
+      "https://docs.cloud.google.com/spanner/docs/connect-gke-cluster?hl=en",
+      "Workload identity and database IAM are separate from connection identifiers"
+    ],
+    [
+      "GKE identity",
+      "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/workload-identity",
+      "Enable workload federation, bind each runtime identity to resource permissions"
+    ],
+    [
+      "Pub/Sub",
+      "https://docs.cloud.google.com/pubsub/docs/create-topic",
+      "Create topics, subscriptions and retention; publishing alone is not consumption"
+    ],
+    [
+      "GCS privacy",
+      "https://docs.cloud.google.com/storage/docs/public-access-prevention",
+      "Public-access prevention for private storage"
+    ],
+    [
+      "Stripe keys",
+      "https://docs.stripe.com/keys",
+      "Sandbox key selection and separate webhook signing secret"
+    ],
+    [
+      "Stripe events",
+      "https://docs.stripe.com/webhooks",
+      "Register accessible HTTPS endpoint; authenticate received events"
+    ],
+    [
+      "Midnight networks",
+      "https://docs.midnight.network/relnotes/network",
+      "Preprod uses Blockfrost token; retired October 2026 hostnames must not be reused"
+    ],
+    [
+      "Midnight deployment",
+      "https://docs.midnight.network/guides/deploy-and-operate",
+      "Test network contract, wallet and local proof server; witness privacy boundary"
+    ],
+    [
+      "Anthropic",
+      "https://platform.claude.com/docs/en/api/overview",
+      "API account/authentication and explicit rate/spend constraints"
+    ],
+    [
+      "OWASP",
+      "https://wstg.owasp.org/v4.2/",
+      "WSTG v4.2 static review checklist; not a completed dynamic penetration test"
+    ],
+    [
+      "Vertex try-on",
+      "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/image/generate-virtual-try-on-images",
+      "Select authorized project/model region and account permission before synthetic experiment"
+    ],
+    [
+      "Nordstrom publisher",
+      "https://www.nordstrom.com/browse/affiliate-program",
+      "Official publisher application links to Impact; no checkout API entitlement implied"
+    ],
+    [
+      "Firestore rules",
+      "https://firebase.google.com/docs/firestore/security/get-started",
+      "Deploy and test database access rules for authenticated client access"
+    ],
+    [
+      "GCS signed URLs",
+      "https://docs.cloud.google.com/storage/docs/access-control/signing-urls-with-helpers",
+      "IAM signing and object permissions required for signed storage URLs"
+    ]
+  ],
+  "owned_outputs": [
+    "SECURITY_RELIABILITY.md",
+    "INTEGRATIONS_INFRASTRUCTURE.md",
+    "evidence/integrations.json",
+    "evidence/findings-security.json"
+  ],
+  "manual_path_inventory": "evidence/coverage-security-paths.json"
+}

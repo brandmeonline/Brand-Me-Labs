@@ -5,7 +5,7 @@
 # any cluster yet. See docs/build/deploy/gke-verification-packet.md.
 apiVersion: v2
 name: brandme
-description: Brand.Me strict-mode foundation workloads for GKE (gateway, chain, console, read API, privacy exports, outbox worker, migrations)
+description: Brand.Me strict-mode foundation workloads for GKE (gateway, chain, console, read API, privacy exports, outbox worker and retention, migrations)
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
