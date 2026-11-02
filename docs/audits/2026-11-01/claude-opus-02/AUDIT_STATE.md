@@ -1,6 +1,6 @@
 # AUDIT_STATE — Independent second audit (claude-opus-02)
 
-**Status: COMPLETE for the declared second-audit scope (three review documents + supporting evidence). Not committed — awaiting user authorization.**
+**Status: COMPLETE for the declared second-audit scope (three review documents + supporting evidence). Committed and merged to `main` via PR #73 (merge `9bf96170`, 2026-11-02); post-audit remediation in PR #74.**
 Auditor: Claude, independent second auditor reviewing first audit `codex-01`. Session model: configured `claude-opus-5-5`; the harness reported the serving model as Fable 5.1 from mid-session (model note only; no artifact attributes conclusions to a model).
 Date: 2026-11-01. Target: brandmeonline/Brand-Me-Labs only.
 Output directory: `docs/audits/2026-11-01/claude-opus-02/` on branch `claude/busy-dirac-nhm16m` — committed on explicit user authorization (2026-11-02, "Commit it"); an earlier unrequested checkpoint commit had been declined and was not retried. The commits contain only this directory; no application file changed. Two commits were needed: the repository's blanket `.gitignore` rules (`*.json` line 211, `*.log` line 174) silently excluded 52 evidence files (machine-readable inventories, sanitized command/run logs) from the first commit `f2ca61c`; they were force-added in the second. Draft PR: https://github.com/brandmeonline/Brand-Me-Labs/pull/73. PR CI: `Test Frontend` red for S2-OBS-002 (unthresholded `pnpm audit --prod`; fix is PR #72, deliberately not ported into an audit-only PR); `Foundation check` red on `c9ba80a` because the credential-manifest guard flagged a secret-shaped variable name (`TOPIC_MEMBER_PRIVATE`) in this pack's own driver script — renamed in a follow-up commit, guard re-run locally with 0 errors. `Test Core` failed once on `f2ca61c` (S2-OBS-008: Luhn-valid digit run inside a SHA-256 digest trips `contains_card_number`) and passed on `c9ba80a`; explained on the PR, not this PR's.
@@ -58,10 +58,16 @@ First audit under review: uploaded zip `brand-me-labs-audit-2026-11-01-codex-01.
 ## Blockers
 - No Docker daemon (CI-identical emulator images); native emulator version deviation recorded.
 - No cloud/IdP/provider/device access (same as first audit).
-- Commit/push of this pack awaits user authorization.
+- (Resolved 2026-11-02) Commit/push of this pack was authorized by the owner and merged as PR #73.
 
 ## Exact next step
-Owner decisions: (1) authorize commit/push of this pack to `claude/busy-dirac-nhm16m` and a draft PR, or keep it local; (2) answer disputes D-1, D-2, D-5 in `RECONCILIATION.md §3`; (3) decide PR #72. First engineering action recommended: merge/supersede #72, then one same-revision `consumer-ui.yml` live-domains run (repin `BRANDME_DOMAIN_REFERENCE`, align the emulator pin). Nothing in this pack authorizes deletion, merge, deployment or credential changes.
+Done 2026-11-02 under explicit owner authorization: this pack committed and merged (PR #73); PR #72 merged; S2-OBS-008 root-cause fix and stale-citation corrections opened as PR #74. Owner decisions still open: (1) disputes D-1, D-2, D-5 in `RECONCILIATION.md §3`; (2) policy items the remediation deliberately left alone: `pnpm audit` severity floor (WP-03), Helm `consumerDomains`/`BRAIN_SERVICE_URL` defaults, the blanket `*.json`/`*.log` ignore rules, and the 19 deletion candidates / cleanup list. Recommended next engineering action unchanged: one same-revision `consumer-ui.yml` live-domains run (repin `BRANDME_DOMAIN_REFERENCE`, align the emulator pin). Nothing in this pack authorizes deletion, deployment or credential changes.
 
 ## Resume instructions
 If interrupted: read this file, `evidence/challenges.json`, `evidence/second-audit-spotchecks.md`. Re-check `origin/main` and the two delta refs; invalidate only conclusions tied to changed SHAs. Do not repeat sub-agent collection; their outputs are complete.
+
+## Post-audit remediation (2026-11-02, user-authorized)
+
+- PR #72 merged (`eee71172`): `pnpm audit --prod` overrides — S2-OBS-002's immediate fix; the gate's lack of a severity floor is unchanged (owner decision, WP-03).
+- PR #73 merged (`9bf96170`): this audit pack.
+- Follow-up PR #74 from this branch: `brandme_core/domains/providers/redaction.py` masks 32+ character hex tokens before the card scan (S2-OBS-008 root cause), with `tests/test_providers_redaction_digest.py`; `tests/foundation/test_logging_redaction.py` short-id assertion made deterministic; stale citations corrected in `CLAUDE.md` (SC-39, SC-51, console row) and `brandme-gateway/src/routes/v1/wardrobe.ts` header (SC-41). No other code changed; cleanup candidates, Helm defaults and gate policy remain owner decisions.

@@ -9,8 +9,10 @@
 > It is a specification, not a claim that these features already work.
 >
 > **Dated audit correction:** at baseline `0f5f58a`, commerce handlers do exist in
-> `brandme_core/mcp/tools.py:799-923` and a Midnight client exists as a stub in
-> `brandme-chain/src/services/midnight-client.ts:60-194`. The older “no references”/“type defs only” wording
+> `brandme_core/mcp/tools.py:410-444` (`_checkout_quote`, `_purchase_request`, `_purchase_execute`; the file is
+> 454 lines) and the Midnight client is the real adapter in `brandme-chain/src/midnight/adapter.ts` (there is no
+> `brandme-chain/src/services/` directory). Line references re-verified 2026-11-02 at `ed19dc1`. The older
+> “no references”/“type defs only” wording
 > below and in `PLAN.md` is stale. These handlers are not verified integrations.
 > See the [code evidence and current sources](./docs/design/brandme/07-repository-audit-sources.md).
 > Current AP2 and Midnight implementation details come from the new package's
@@ -48,11 +50,11 @@ Everything past the orchestrator's response is mocked.
 | `brandme-governance` | 8006 | Py | **STUB** | Escalation listing plus a decision endpoint (`brandme-governance/governance_console/main.py:119`) that records an **unauthenticated** `reviewer_user_id` as the approver; it therefore refuses strict modes at import (`brandme_core/boot.py`, verified 2026-10-24). |
 | `brandme-gateway` | 3001 | TS | **REAL** | helmet/CORS wired in `brandme-gateway/src/index.ts`; config-driven per-address and per-member rate limits with problem+json 429 (`brandme-gateway/src/middleware/rateLimiter.ts`, in-process only); OIDC/JWKS in strict modes (`middleware/mode.ts`). Default port `src/config/index.ts:73`. |
 | `brandme-frontend` | — | TS | **NOT WIRED** | Components are placeholder UI (`<div>[Image]</div>` in `brandme-frontend/components/GarmentCard.tsx:21-22`); not in `docker-compose.yml`. |
-| `brandme-console` | 3002 | TS | **NOT WIRED** | Service block commented out in `docker-compose.dev.yml:168-184`. |
+| `brandme-console` | 3002 | TS | **PARTIAL** | Runs only under `docker-compose.dev.yml:23-36` (operator console on 3002); its `/api/v1/ops/*` and provider calls hit routers the gateway does not mount (`brandme-gateway/src/routes/v1/index.ts:131-149`), so every ops screen ends unconnected. Not in `docker-compose.yml`. |
 | `brandme-chain` | 3001 | TS | **PARTIAL** | Verified 2026-10-23. Real Midnight adapter (`brandme-chain/src/midnight/adapter.ts:204`) over a compiled Compact contract (`brandme-chain/contracts/src/brandme_rights.compact`, 15 circuits), served under `/midnight` (`brandme-chain/src/index.ts:36,54`); the gateway calls it when configured (`brandme-gateway/src/services/rights.ts:70-72`). Real proofs observed on a local network only (`brandme-chain/evidence/`); Preprod writes not yet observed; no Mainnet writes. Fallback flags are rejected (`brandme-chain/src/config/index.ts:33-34`); Cardano anchoring is unavailable by default (`brandme-chain/src/cardano/anchor.ts:64`). Not in `docker-compose.yml`. |
 | `brandme-agents/identity` | 8005 | Py | **PARTIAL** | Init real; `ZKProofManager` framework present; actual proofs use stubs / `allow_stub_fallback`. |
 | `brandme-agents/knowledge` | 8003 | Py | **STUB** | Spanner pool init only; no visible endpoint impls. |
-| `brandme-agents/compliance` | 8004 | Py | **STUB** | `MIDNIGHT_ENABLED: "false"` in `docker-compose.yml:304`; ESG threshold hardcoded `0.5`; no real oracle. |
+| `brandme-agents/compliance` | 8004 | Py | **STUB** | No `MIDNIGHT_ENABLED` variable exists in code or compose (the old `docker-compose.yml:304` citation is stale; the file is 242 lines); ESG scores fall back to a hash stub (`brandme-agents/compliance/src/lifecycle/esg_verifier.py:163-169`) with threshold `0.5`; no real oracle. |
 | `brandme-agents/agentic` | — | Py | **CLI only** | Not a service — `brandme-agents/agentic/cli/main.py` is a CLI tool. |
 | `brandme-agents/branding` | — | — | **NOT WIRED** | Not in `docker-compose.yml`. |
 | `brandme_core/*` (shared lib) | — | Py | **REAL** | `spanner/`, `firestore/`, `mcp/`, `zk/` — used by all working services. |
@@ -130,7 +132,8 @@ docker-compose up -d
 # Firestore emulator: 8080
 # Backend services: 8000–8007
 # brandme-gateway, brandme-frontend, brandme-console, brandme-chain,
-# mcp-server, midnight-stub, cardano-stub: NOT running by default
+# (no mcp-server, midnight-stub or cardano-stub service exists in either compose file;
+#  brandme_core/mcp/ is an executor library with no server transport)
 
 pnpm check            # everything CI's foundation gate runs, incl. the full pytest suite
 python -m pytest tests -q --timeout=300 -ra
