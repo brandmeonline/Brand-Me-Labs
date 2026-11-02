@@ -4,7 +4,7 @@
 Auditor: Claude, independent second auditor reviewing first audit `codex-01`. Session model: configured `claude-opus-5-5`; the harness reported the serving model as Fable 5.1 from mid-session (model note only; no artifact attributes conclusions to a model).
 Date: 2026-11-01. Target: brandmeonline/Brand-Me-Labs only.
 Output directory: `docs/audits/2026-11-01/claude-opus-02/` on branch `claude/busy-dirac-nhm16m` — committed on explicit user authorization (2026-11-02, "Commit it"); an earlier unrequested checkpoint commit had been declined and was not retried. The commits contain only this directory; no application file changed. Two commits were needed: the repository's blanket `.gitignore` rules (`*.json` line 211, `*.log` line 174) silently excluded 52 evidence files (machine-readable inventories, sanitized command/run logs) from the first commit `f2ca61c`; they were force-added in the second. Draft PR: https://github.com/brandmeonline/Brand-Me-Labs/pull/73. PR CI: `Test Frontend` red for S2-OBS-002 (unthresholded `pnpm audit --prod`; fix is PR #72, deliberately not ported into an audit-only PR); `Foundation check` red on `c9ba80a` because the credential-manifest guard flagged a secret-shaped variable name (`TOPIC_MEMBER_PRIVATE`) in this pack's own driver script — renamed in a follow-up commit, guard re-run locally with 0 errors. `Test Core` failed once on `f2ca61c` (S2-OBS-008: Luhn-valid digit run inside a SHA-256 digest trips `contains_card_number`) and passed on `c9ba80a`; explained on the PR, not this PR's.
-First audit under review: uploaded zip `brand-me-labs-audit-2026-11-01-codex-01.zip` (115 files), extracted read-only to scratchpad; retained unchanged; not copied into this pack.
+First audit under review: uploaded zip `brand-me-labs-audit-2026-11-01-codex-01.zip` (115 files), extracted read-only to scratchpad; retained unchanged during the review; committed beside this pack as `../codex-01/` on 2026-11-02 at the owner's instruction (local account name scrubbed from four evidence paths; see its `_PROVENANCE.md`).
 
 ## Deliverables (this directory)
 
@@ -37,7 +37,7 @@ First audit under review: uploaded zip `brand-me-labs-audit-2026-11-01-codex-01.
 
 ## Phases
 - [x] 0 Intake + baseline (0 broken links in first pack; visuals labelled; validation JSON pass)
-- [x] 1 Branches — 4 agents' evidence + lead verification; verdicts reconciled (19 deletion candidates, 6 owner decisions)
+- [x] 1 Branches — 4 agents' evidence + lead verification; verdicts reconciled (20 deletion candidates, 6 owner decisions; tally corrected 2026-11-02, C-16)
 - [x] 2 Security — 26 independent findings; F-SEC-* confirmed; two severities lowered; four additions verified
 - [x] 3 Journeys/integrations — wiring trace, 40-integration matrix, runtime execution, screenshots
 - [x] 3b Emulator-backed pytest (`BRANDME_REQUIRE_EMULATORS=1`, native Spanner 1.5.53 + pinned Firestore/Pub/Sub/GCS) — **`2146 passed, 20 skipped, 17 xfailed`, exit 0, 1011s** (15:37–15:54Z; reproduces CI's counts; `evidence/runtime/emulator-run.md`)

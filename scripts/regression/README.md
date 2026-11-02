@@ -41,7 +41,7 @@ REGRESSION_TIMEOUT=900 bash scripts/regression/run_all.sh
 
 ## CI
 
-The workflow `.github/workflows/module-regression.yml` runs this suite on every push and pull request.
+The workflow `.github/workflows/module-regression.yml` runs this suite on pushes and pull requests to `main` and `develop` (`module-regression.yml:9-16`).
 
 ## Practical loop after each run
 
@@ -53,4 +53,6 @@ The workflow `.github/workflows/module-regression.yml` runs this suite on every 
 
 ## Current baseline
 
-After the latest fix loop (2026-04-27), `run_all.sh` completes with all modules passing locally.
+Dated claim (2026-04-27): `run_all.sh` completed with all modules passing locally. A module pass means its syntax and
+compile checks (and, for the gateway, its test suite) succeeded; it is not a functional test of the service
+(`docs/build/evidence/w00/baseline-test-report.md`, F12).

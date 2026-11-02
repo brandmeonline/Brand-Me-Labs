@@ -1,14 +1,15 @@
-# brandme_core/domains/rewards (reserved)
+# brandme_core/domains/rewards
 
-Reserved by the opus-foundation lane. The framework provides **no logic** here.
+Points ledger, badges, benefits and operator-defined reward rules (ch.03 §4). Reserved by the opus-foundation lane;
+implemented by the consumer-domains lane. Stage log: `docs/build/status/opus-consumer-domains.md`.
 
-- **Owning lane:** consumer-domains
-- **Migration number:** V005 (`brandme-data/spanner/migrations/`)
-- **Entities (ch.03 §4):** RewardAccount, RewardEntry, BadgeAward, BenefitReservation
+- **Migration:** `brandme-data/spanner/migrations/V005_rewards.sql`.
+- **Modules:** `api.py` (router), `service.py`, `ledger.py` (append-only points ledger), `rules.py`, `badges.py`,
+  `benefits.py`, `consumer.py` (event consumer that awards points), `operators.py`, `events.py`, `deletion.py`
+  (My Data handler).
+- **Tests:** `tests/test_rewards_*.py`.
+- **Note:** loyalty standing, surveys and in-app credit are in PR #66, not yet on `main`.
 
-Contract for the owning lane:
-- Commands go through `brandme_core.domains.run_command` / `run_idempotent_command`. Domain rows and events commit in one transaction. Callbacks have no external side effects.
-- Every object read/write calls `brandme_core.domains.authorize`, which is deny-by-default; unauthorized private reads raise `NotFound`.
-- Event types are registered with an exact closed payload schema (`brandme_core.domains.events.register`). Payloads carry references, not personal data.
-- Personal data categories are registered with `register_data_category` (export + idempotent delete) when the domain is introduced.
-- API shapes are added to `packages/contracts` (`scripts/endpoints.mjs`, schemas) and regenerated. Never hand-edit `generated/`.
+Foundation contract every domain follows: commands through `run_command` / `run_idempotent_command` with rows and
+events in one transaction; `authorize` deny-by-default; events registered with closed schemas; data categories
+registered for export and idempotent delete; API shapes generated from `packages/contracts`.

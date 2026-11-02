@@ -2,115 +2,50 @@
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
 
-Web interfaces for Brand.Me platform: Governance Console and Transparency Portal.
+Next.js operator console (port **3002**). Status per `CLAUDE.md`: **PARTIAL**. It builds and runs, but its
+operations screens (`/api/v1/ops/*` and the provider pages) call gateway routers that `main` does not mount
+(`brandme-gateway/src/routes/v1/index.ts`), so every ops screen ends unconnected. `app/proof/[scanId]` and
+`app/dashboard/scans` use `lib/api.ts`, a legacy bearer-token client that reads `auth_token` from `localStorage`;
+it bypasses the gateway session model and is on the cleanup list.
 
-## Applications
+## Run
 
-### 1. Governance Console (Internal)
-
-**Authentication**: RBAC (ROLE_GOVERNANCE, ROLE_COMPLIANCE)
-
-**Pages**:
-- `/dashboard/scans` - View all scans
-- `/dashboard/scan/[scan_id]` - Detailed scan view
-- `/dashboard/escalations` - Flagged scans requiring review
-- `/dashboard/reveal` - Controlled Midnight facet reveal (dual approval)
-
-**Features**:
-- View policy decisions and versions
-- See blockchain transaction hashes
-- Perform controlled reveals with dual approval
-- Audit trail visibility
-
-### 2. Transparency Portal (Public)
-
-**Authentication**: Public (no login required)
-
-**Pages**:
-- `/proof/[scan_id]` - Public proof view
-
-**Output**:
-- Authenticity status (real/counterfeit)
-- Creator attribution
-- ESG proof hash summary
-- Policy version used
-- **No private Midnight data**
-
-## Tech Stack
-
-- **Framework**: Next.js 14 (App Router)
-- **UI**: React, Tailwind CSS, shadcn/ui
-- **State Management**: Zustand
-- **API Client**: Axios
-- **Authentication**: NextAuth.js
-
-## Development
+The console is not in `docker-compose.yml`; it runs only under `docker-compose.dev.yml` (service `console`) or
+natively:
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Run development server
-pnpm dev
-
-# Build
-pnpm build
-
-# Start production
-pnpm start
-
-# Lint
-pnpm lint
+pnpm --filter @brandme/console dev    # http://localhost:3002, expects the gateway on :3001
+pnpm --filter @brandme/console build
+pnpm --filter @brandme/console type-check
 ```
 
-## Environment Variables
+`pnpm --filter @brandme/console lint` has no ESLint configuration and prompts interactively; CI never runs it
+(audit S2-OBS-007).
+
+## Configuration
+
+Variables the console reads (`process.env.*` in `app/` and `lib/`):
 
 ```bash
-# API URLs
-NEXT_PUBLIC_GATEWAY_URL=http://localhost:3000
-NEXT_PUBLIC_COMPLIANCE_SERVICE_URL=http://localhost:8102
+BRANDME_MODE=development
+BRANDME_GATEWAY_URL=http://localhost:3001          # server-side calls
+BRANDME_GATEWAY_INTERNAL_URL=http://gateway:3001   # inside compose
+NEXT_PUBLIC_GATEWAY_URL=http://localhost:3001      # browser calls
+NEXT_PUBLIC_KNOWLEDGE_SERVICE_URL=http://localhost:8003
+NEXT_PUBLIC_COMPLIANCE_SERVICE_URL=http://localhost:8004
+NEXT_PUBLIC_CHAIN_SERVICE_URL=http://localhost:3003
+NEXT_PUBLIC_CARDANO_EXPLORER_URL=https://preprod.cardanoscan.io
+```
 
-# OAuth
+Legacy template entries, read by nothing in the console today (kept because the credential manifest records them
+as `legacy-unread`):
+
+```bash
 NEXTAUTH_URL=http://localhost:3002
 NEXTAUTH_SECRET=your-nextauth-secret
-
-# Environment
-NEXT_PUBLIC_ENVIRONMENT=development
 ```
 
-## Architecture
+## Where the rest is documented
 
-```
-┌────────────────────────────────────┐
-│   Governance Console (Internal)    │
-│   - RBAC Protected                 │
-│   - Scan Management                │
-│   - Escalation Handling            │
-│   - Controlled Reveals             │
-└────────────────────────────────────┘
-
-┌────────────────────────────────────┐
-│   Transparency Portal (Public)     │
-│   - No Authentication              │
-│   - Public Proof Display           │
-│   - Creator Attribution            │
-│   - ESG Verification               │
-└────────────────────────────────────┘
-```
-
-## Deployment
-
-### Docker
-
-```bash
-docker build -t brandme-console:latest .
-docker run -p 3002:3002 brandme-console:latest
-```
-
-### Kubernetes
-
-Helm chart available in `/brandme-infra/helm/brandme-console/`.
-
-## License
-
-Copyright (c) Brand.Me, Inc. All rights reserved.
+Shell contract and console pages: `docs/build/status/opus-commerce-agents.md` (operator console rounds) and
+`docs/build/status/astra-consumer-ui.md` (shell layout contract). Status table: `CLAUDE.md`.

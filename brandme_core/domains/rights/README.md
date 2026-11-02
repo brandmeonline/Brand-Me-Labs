@@ -1,14 +1,17 @@
-# brandme_core/domains/rights (reserved)
+# brandme_core/domains/rights
 
-Reserved by the opus-foundation lane. The framework provides **no logic** here.
+Rights entitlements, passports and licensed reprint as projected from the Midnight rights contract (ch.04).
+Reserved by the opus-foundation lane; implemented by the midnight-rights lane. Stage log:
+`docs/build/status/opus-midnight-rights.md`; chain side in `brandme-chain/`.
 
-- **Owning lane:** midnight-rights
-- **Migration number:** V008 (`brandme-data/spanner/migrations/`)
-- **Entities (ch.03 §4):** OwnershipClaim, TransferIntent, LicenseGrant, ReprintJob, ChainOperation, Attestation
+- **Migrations:** `brandme-data/spanner/migrations/V008_rights.sql`, `V010_rights_projection_version.sql`.
+- **Modules:** `projection.py` (finalized-only entitlement projection with its own revision), `passport.py`
+  (claim-level passport read model), `reprint.py` (reprint workflow and manufacturer callbacks), `privacy_handler.py`
+  (My Data handler).
+- **Reads:** served by `brandme_core/read_api/` behind the gateway; see its README.
+- **Tests:** `tests/test_rights*.py` and the chain suites in `brandme-chain/tests/`.
+- **Note:** the authenticated rights command backend (`brandme_core.rights_commands`) is in PR #70, not yet on `main`.
 
-Contract for the owning lane:
-- Commands go through `brandme_core.domains.run_command` / `run_idempotent_command`. Domain rows and events commit in one transaction. Callbacks have no external side effects.
-- Every object read/write calls `brandme_core.domains.authorize`, which is deny-by-default; unauthorized private reads raise `NotFound`.
-- Event types are registered with an exact closed payload schema (`brandme_core.domains.events.register`). Payloads carry references, not personal data.
-- Personal data categories are registered with `register_data_category` (export + idempotent delete) when the domain is introduced.
-- API shapes are added to `packages/contracts` (`scripts/endpoints.mjs`, schemas) and regenerated. Never hand-edit `generated/`.
+Foundation contract every domain follows: commands through `run_command` / `run_idempotent_command` with rows and
+events in one transaction; `authorize` deny-by-default; events registered with closed schemas; data categories
+registered for export and idempotent delete; API shapes generated from `packages/contracts`.

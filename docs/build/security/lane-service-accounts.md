@@ -127,7 +127,7 @@ switch `BM_GCP_PUSH_WIF_PROVIDER` and `BM_GCP_PUSHER_SA`.
 ## Prerequisites (never created by the script; checked before any change)
 
 1. **Pick the project.** CI currently pushes to `lux-realestate-app`
-   (`.github/workflows/ci-cd.yml:37`), which looks shared. With `--apply` the script
+   (`.github/workflows/ci-cd.yml:43`), which looks shared. With `--apply` the script
    refuses any project id containing `prod` or `lux-realestate` unless you pass
    `--i-understand-shared-project`. A dedicated sandbox project is the recommended
    default.

@@ -1,14 +1,16 @@
-# brandme_core/domains/wardrobe (reserved)
+# brandme_core/domains/wardrobe
 
-Reserved by the opus-foundation lane. The framework provides **no logic** here.
+Wardrobe items, outfits, rooms and closet placement (ch.01 §closet, ch.03 §4). Reserved by the opus-foundation lane;
+implemented by the consumer-domains lane with the spatial-ar lane for rooms and placement. Stage logs:
+`docs/build/status/opus-consumer-domains.md`, `docs/build/status/astra-spatial-ar.md`.
 
-- **Owning lane:** consumer-domains
-- **Migration number:** V003 (`brandme-data/spanner/migrations/`)
-- **Entities (ch.03 §4):** WardrobeItem, AssetInstance links, ClosetLayout, ClosetPlacement, Outfit/OutfitVersion
+- **Migration:** `brandme-data/spanner/migrations/V003_wardrobe.sql` (also creates the media tables).
+- **Modules:** `api.py` (router, mounted by the gateway's `wardrobeRouter`), `service.py`, `model.py`, `outfits.py`,
+  `rooms.py`, `placement.py`, `guest_sections.py`, `events.py`, `deletion.py` (My Data handler).
+- **Tests:** `tests/test_wardrobe_*.py` (the legacy `tests/test_wardrobe.py` is quarantined in `tests/conftest.py`).
+- **Gap:** the browser's wardrobe is still guest-local; the member-aware server repository and guest migration are
+  audit work package WP-04 (`docs/audits/2026-11-01/claude-opus-02/RECONCILIATION.md`).
 
-Contract for the owning lane:
-- Commands go through `brandme_core.domains.run_command` / `run_idempotent_command`. Domain rows and events commit in one transaction. Callbacks have no external side effects.
-- Every object read/write calls `brandme_core.domains.authorize`, which is deny-by-default; unauthorized private reads raise `NotFound`.
-- Event types are registered with an exact closed payload schema (`brandme_core.domains.events.register`). Payloads carry references, not personal data.
-- Personal data categories are registered with `register_data_category` (export + idempotent delete) when the domain is introduced.
-- API shapes are added to `packages/contracts` (`scripts/endpoints.mjs`, schemas) and regenerated. Never hand-edit `generated/`.
+Foundation contract every domain follows: commands through `run_command` / `run_idempotent_command` with rows and
+events in one transaction; `authorize` deny-by-default; events registered with closed schemas; data categories
+registered for export and idempotent delete; API shapes generated from `packages/contracts`.

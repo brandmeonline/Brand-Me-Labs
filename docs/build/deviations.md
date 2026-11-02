@@ -63,3 +63,12 @@ Other lanes propose deviations in their own status files. The parent records acc
 - **Reason:** the baselined CRITICALs could only be fixed there. anyio needs fastapi 0.134.0 and pydantic 2.7.4 in `brandme_core/requirements.txt`, because the lock includes that file with `-r`. The unused python-jose and sentence-transformers pins live in the legacy files.
 - **Replacement:** fastapi 0.134.0 / pydantic 2.7.4 (full `tests/` suite unchanged, contracts no drift). Removal of python-jose ×2 and sentence-transformers (no imports), plus the agents smoke import list. The pinned-emulator fetchers (one was added by consumer-domains) share a retrying `_fetch.py`.
 - **Approval:** parent review at merge.
+
+## D-009 Next.js 15.5 interim instead of the spec's 16.3 target
+
+- **Requirement:** ch.03 §1 (`docs/design/brandme/03-architecture-data-api.md:8`) targets Next 16.3.
+- **Reason:** the pinned toolchain tuple (`docs/build/compatibility-lock.md:24`) records Next 15.5.28; the upgrade belongs to the consumer-ui lane and is not scheduled.
+- **Replacement:** 15.5.28 for every app until the owning lane upgrades the tuple in one change.
+- **Impact:** none observed on shipped journeys; features that depend on 16.x APIs are not claimed.
+- **Evidence:** `docs/build/compatibility-lock.md`; `docs/build/status/opus-foundation.md:219` (where the interim was proposed).
+- **Approval:** recorded 2026-11-02 during the documentation consolidation; the founder rejects it by scheduling the upgrade.
