@@ -1,4 +1,4 @@
-/** Local development composition only. Imports pinned, unchanged lane sources. */
+/** Local development composition only. Imports the gateway sources of the checkout named by BRANDME_DOMAIN_REFERENCE (in CI, the job's own checkout). */
 import {createRequire} from 'node:module'
 import {createHmac,randomUUID} from 'node:crypto'
 import {pathToFileURL} from 'node:url'

@@ -719,3 +719,9 @@ asserted.
 
 **Credential manifest:** No credentials were created or copied. Publication uses the
 existing connected GitHub access.
+
+## Integration note (2026-11-02, repository cleanup; not a lane stage)
+
+- PR #63 was integrated through PR #79 (`integrate/consumer-design-preview-20261102`: #63's head `0ff12fb` plus a merge of `main` and a visual-baseline refresh reviewed as described in that commit). #63 is closed with a pointer.
+- Audit WP-01: the `live-domains` job of `consumer-ui.yml` composed the domain sources pinned at `dafd3b16` and the UI at the PR head, so its evidence was composite. The job now sets `BRANDME_DOMAIN_REFERENCE` to the job's own checkout (same SHA as the UI) and uses the emulator pin every other workflow uses (`1.5.45`). The paragraphs above that name `dafd3b16` and `1.5.28` describe the harness as it was when written.
+- Known open gate issue: the full-page capture height in `verify-visual.mjs` comparisons is not deterministic (one capture reported "dimensions changed" on an unrelated docs PR, #76). The fix belongs in the capture step, not in the baselines.

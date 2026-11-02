@@ -62,14 +62,15 @@ jobs:
     timeout-minutes: 25
     services:
       spanner:
-        image: gcr.io/cloud-spanner-emulator/emulator:1.5.28
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.45
         ports: ['9010:9010', '9020:9020']
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       BRANDME_MODE: development
       SPANNER_EMULATOR_HOST: 127.0.0.1:9010
       BRANDME_PYTHON: ${{ github.workspace }}/.venv/bin/python
-      BRANDME_DOMAIN_REFERENCE: ${{ github.workspace }}/domain-reference
+      # Same SHA as the UI under test (audit WP-01): the domain sources are the job's own checkout.
+      BRANDME_DOMAIN_REFERENCE: ${{ github.workspace }}
       BRANDME_GATEWAY_URL: http://127.0.0.1:3001
       BRANDME_PUBLIC_ORIGIN: http://127.0.0.1:3000
       BRANDME_GATEWAY_HEALTH_URL: http://127.0.0.1:3001/health
@@ -77,11 +78,6 @@ jobs:
       BRANDME_EVIDENCE_DIR: ${{ github.workspace }}/live-ui-evidence
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          ref: dafd3b169da777ec3e3a7fc2c3f0cab573358e2b
-          path: domain-reference
-          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
@@ -94,9 +90,8 @@ jobs:
           pnpm install --frozen-lockfile
           python -m venv .venv
           .venv/bin/pip install --require-hashes -r scripts/python/requirements.lock
-          ln -s "$GITHUB_WORKSPACE/brandme-gateway/node_modules" "$BRANDME_DOMAIN_REFERENCE/brandme-gateway/node_modules"
           pnpm --dir brandme-frontend exec playwright install chromium
-      - name: Start unchanged domain sources with real emulator persistence
+      - name: Start this checkout's domain sources with real emulator persistence
         run: |
           mkdir -p "$BRANDME_EVIDENCE_DIR"
           node brandme-frontend/lib/testing/start-dev-gateway.mjs > "$RUNNER_TEMP/dev-gateway.log" 2>&1 &
