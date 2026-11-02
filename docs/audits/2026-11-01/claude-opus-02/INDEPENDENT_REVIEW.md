@@ -127,6 +127,7 @@ M1 remains blocked exactly where the first audit says (browser OIDC, privacy sco
 | S2-OBS-005 | — / Low | Events worker / privacy exports cannot start in the default compose stack (required emulator hosts undeclared) | SC-46 |
 | S2-OBS-006 | — / Low | Emulator pin drift 1.5.28 vs 1.5.45; CLAUDE.md cites nonexistent code in three places | SC-50, SC-39, SC-51 |
 | S2-OBS-007 | — / Info | Console `pnpm lint` has no ESLint config (interactive prompt); CI never runs it | runtime step 13 |
+| S2-OBS-008 | — / Medium (delivery) | Non-deterministic `Test Core` gate: `contains_card_number` (`redaction.py:82`) flags random SHA-256 digests whose digit runs happen to be Luhn-valid (observed on PR #73: `quote_hash` run `44095025254762`); ~0.75% of runs per PR #66's own description; passes on re-run. "Flake" with a known, fixable root cause in `_card_spans`. | SC-62 |
 
 Full security list (26 findings: 4 Medium, 18 Low, 4 Info): [`evidence/security/findings-independent.json`](evidence/security/findings-independent.json).
 
