@@ -65,3 +65,9 @@ Owner decisions: (1) authorize commit/push of this pack to `claude/busy-dirac-nh
 
 ## Resume instructions
 If interrupted: read this file, `evidence/challenges.json`, `evidence/second-audit-spotchecks.md`. Re-check `origin/main` and the two delta refs; invalidate only conclusions tied to changed SHAs. Do not repeat sub-agent collection; their outputs are complete.
+
+## Post-audit remediation (2026-11-02, user-authorized)
+
+- PR #72 merged (`eee71172`): `pnpm audit --prod` overrides — S2-OBS-002's immediate fix; the gate's lack of a severity floor is unchanged (owner decision, WP-03).
+- PR #73 merged (`9bf96170`): this audit pack.
+- Follow-up PR from this branch: `brandme_core/domains/providers/redaction.py` masks 32+ character hex tokens before the card scan (S2-OBS-008 root cause), with `tests/test_providers_redaction_digest.py`; `tests/foundation/test_logging_redaction.py` short-id assertion made deterministic; stale citations corrected in `CLAUDE.md` (SC-39, SC-51, console row) and `brandme-gateway/src/routes/v1/wardrobe.ts` header (SC-41). No other code changed; cleanup candidates, Helm defaults and gate policy remain owner decisions.
