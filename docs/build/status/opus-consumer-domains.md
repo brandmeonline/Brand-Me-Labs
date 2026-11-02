@@ -1280,7 +1280,7 @@ GitHub CI is fully green on both `5f3e2b4` and `f27e37c`.
 
 **Credential manifest (fifth review).** No credential was created.
 
-## Stage 22 — Ultra plan 03, item 12: disclosure facets at the API layer — 2026-10-25 (opens after #66)
+## Stage 22 — Ultra plan 03, item 12: disclosure facets at the API layer — 2026-10-25 (PR #83)
 The locked stranger-scan default is now one classification that every lane surface showing another member's piece is built from: strangers see identity, house, maker and story; price, ownership and logistics stay hidden unless the owner unfolds them.
 
 **The facet model** (`wardrobe/disclosure.py`)
@@ -1322,7 +1322,7 @@ The locked stranger-scan default is now one classification that every lane surfa
 
 **Credential manifest.** No credential was created in this stage.
 
-## Stage 23 — Ultra plan 03, item 9: the lane outbox worker is deleted — 2026-10-30 (opens after #66)
+## Stage 23 — Ultra plan 03, item 9: the lane outbox worker is deleted — 2026-10-30 (PR #83)
 Foundation's Q8 landed with #62 (`main` `97d5447`). `brandme_core/events/catalogs.py` now imports `brandme_core.domains.persona.lane` and runs `load_domains()`, so the foundation worker publishes every consumer-domain contract itself. The lane's private entrypoint `brandme_core/domains/persona/outbox_worker.py` is deleted, as foundation's D-006 and `brandme_core/events/README.md` asked.
 
 - **Nothing else referenced it.** No code, test, manifest or workflow imports it; only foundation's README and D-006 mention it, both as redundant. The lane's own `persona/README.md`, written on `main` since, listed it among the workers; that line now points at foundation's worker. The dated audit records under `docs/audits/2026-11-01/` are left as they are.
@@ -1349,6 +1349,17 @@ Foundation's Q8 landed with #62 (`main` `97d5447`). `brandme_core/events/catalog
 | Reserving wrote the ledger's reserve entry behind a `rewards.redemptions` guard only | It also guards `rewards.ledger`, as conversion does since round 5 | `test_reserving_is_refused_while_the_ledger_is_frozen` |
 
 Credits now use the same two helpers. Their round-4 tests still pass, and the shared offset was mutation-checked through both.
+
+**Evidence for the follow-up PR #83 (head `24b6820`, on `main` `30e70ab`).**
+- GitHub CI is fully green: 15 checks, with the GKE deploy skipped as usual.
+- Codex review: no issues.
+- A clean-checkout CI mirror of the same commit is green:
+  - lane suite: 314 passed;
+  - full `tests/`: 2202 passed, 20 skipped, 17 xfailed (quarantined);
+  - Firestore rules, `pnpm check` and `pnpm smoke`: passed;
+  - `pnpm audit --prod`: no known vulnerabilities, none critical;
+  - frontend and console builds: passed;
+  - gateway: 182/182.
 
 **Credential manifest.** No credential was created in this stage.
 
