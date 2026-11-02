@@ -1,6 +1,8 @@
 # Brand.Me — founder questions, 2026-10-23 (Mia, orchestrator)
 
-Companion to `brandme-full-assessment-20261023.md` (per-lane grades + evidence). Answer any part with "defaults" to take all of Mia's recommendations in that part, or answer by number.
+Companion to `brandme-full-assessment-20261023.md` (per-lane grades + evidence; that file was never committed).
+
+> Status 2026-11-02: kept as the dated decision packet. Items 24–27 were resolved by events (see `next-plans-20261025.md` and `pipeline-state.md`). Answer any part with "defaults" to take all of Mia's recommendations in that part, or answer by number.
 
 ## What I think we're really building (Mia's read — correct me where it's wrong)
 

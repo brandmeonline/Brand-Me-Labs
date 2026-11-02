@@ -2,147 +2,29 @@
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
 
-Authoritative database schema and seed data for Brand.Me platform.
+Database definitions. The only live part is the Spanner migration set.
 
-## Overview
+## Spanner migrations (`spanner/migrations/`)
 
-This repository contains:
-
-- **spanner/**: Google Cloud Spanner DDL schema (v8 primary database)
-- **schemas/**: Legacy PostgreSQL schema definitions (deprecated, kept for reference)
-- **seeds/**: Development and test data seeds
-
-## v8 Database Architecture
-
-**Version 8** uses a dual-database stack:
-
-- **Google Cloud Spanner**: Source of truth for users, assets, consent graph, provenance
-- **Firestore**: Real-time wardrobe state, edge caching, agentic state
-
-### Spanner Connection
+GoogleSQL migrations `V001_identity.sql` … `V015_commerce_quote_terms.sql`, applied by `runner.py` with a
+checksum ledger. Rules, reservations per lane and the behaviour on partial failure are in
+[`spanner/migrations/README.md`](./spanner/migrations/README.md); `tests/foundation/test_migrations.py` enforces
+contiguity and the reservation table.
 
 ```bash
-# Development (with emulator)
-export SPANNER_EMULATOR_HOST=localhost:9010
-export SPANNER_PROJECT_ID=brandme-project
-export SPANNER_INSTANCE_ID=brandme-instance
-export SPANNER_DATABASE_ID=brandme-db
-
-# Production
-export SPANNER_PROJECT_ID=brandme-production
-export SPANNER_INSTANCE_ID=brandme-global
-export SPANNER_DATABASE_ID=brandme-db
+pnpm migrate                                                   # = runner.py up --create-database --wait 60 (emulator)
+python brandme-data/spanner/migrations/runner.py status        # applied / pending / drift
+python brandme-data/spanner/migrations/runner.py verify        # exit 1 on drift or pending
 ```
 
-### Firestore Connection
+In containers the `spanner-migrate` service of `docker-compose.yml` runs the same `up`.
 
-```bash
-# Development (with emulator)
-export FIRESTORE_EMULATOR_HOST=localhost:8080
-export FIRESTORE_PROJECT_ID=brandme-dev
+## Legacy files (not applied by anything)
 
-# Production
-export FIRESTORE_PROJECT_ID=brandme-production
-```
+- `spanner/schema.sql`: PostgreSQL-syntax schema that GoogleSQL rejects; the runner ignores it
+  (`docs/build/evidence/w00/baseline-test-report.md`).
+- `schemas/001_users.sql` … `007_audit_log.sql`, `schemas/cube_service.sql`, `seeds/*.sql`, and the root
+  `init.sql`: PostgreSQL-era definitions kept for reference. `scripts/db-init.sh` and the legacy cube database
+  module still name them; neither is part of `pnpm check` or the compose default profile.
 
-## v8 Spanner Tables
-
-### Node Tables (Graph)
-
-1. **Users** - User accounts with trust scores
-2. **Assets** - Asset records (cubes, garments)
-
-### Edge Tables (Graph Relationships)
-
-3. **Owns** - Ownership relationships (Owner → Asset)
-4. **Created** - Creator attribution (Creator → Asset)
-5. **FriendsWith** - Social graph (User ↔ User)
-
-### Supporting Tables
-
-6. **ConsentPolicies** - Privacy and visibility rules
-7. **ProvenanceChain** - Interleaved provenance with sequence numbers
-8. **CubeFaces** - Product Cube face data
-9. **AuditLog** - Hash-chained audit trail
-10. **ChainAnchor** - Blockchain transaction references
-11. **MutationLog** - Idempotent write deduplication
-
-### Graph Definition
-
-See `spanner/schema.sql` for the full Spanner Graph DDL.
-
-## Schema Initialization
-
-### Local Development with Emulator
-
-The Spanner schema is automatically initialized when running:
-
-```bash
-docker-compose up -d
-```
-
-The `spanner-init` service applies `spanner/schema.sql` to the emulator.
-
-### Production Deployment
-
-```bash
-# Create Spanner database with schema
-gcloud spanner databases create brandme-db \
-  --instance=brandme-instance \
-  --ddl-file=brandme-data/spanner/schema.sql
-```
-
-## Seeding Data
-
-Seed files in `seeds/` can be loaded via the spanner-init service or manually:
-
-```bash
-# Load seed data (development only)
-docker-compose exec spanner-init python load_seeds.py
-```
-
-## Schema Management
-
-### Constraints
-
-- All primary keys are UUIDs stored as STRING(36)
-- Foreign keys enforced via graph edge constraints
-- All timestamps use `TIMESTAMP` with commit timestamp support
-- Indexes on frequently queried columns
-
-### Security
-
-- No PII in plain text logs
-- Wallet keys NEVER stored in database
-- Midnight references stored encrypted at rest
-- Audit logs are hash-chained and tamper-evident
-- Driver-level PII redaction in brandme_core.spanner.pii_redactor
-
-## Testing
-
-```bash
-# Run database tests against emulator
-pytest tests/ -v
-```
-
-## Environment Variables
-
-```bash
-# Spanner Configuration
-SPANNER_EMULATOR_HOST=localhost:9010  # For local dev
-SPANNER_PROJECT_ID=brandme-project
-SPANNER_INSTANCE_ID=brandme-instance
-SPANNER_DATABASE_ID=brandme-db
-SPANNER_POOL_SIZE=10
-SPANNER_MAX_SESSIONS=100
-
-# Firestore Configuration
-FIRESTORE_EMULATOR_HOST=localhost:8080  # For local dev
-FIRESTORE_PROJECT_ID=brandme-dev
-```
-
-## Compliance
-
-- GDPR: User data can be fully purged via cascade delete
-- Audit Trail: All mutations logged with hash-chain
-- Right to Access: User data export via service endpoints
+Seeding for development happens through the domain commands and `pnpm smoke`, not through these SQL files.

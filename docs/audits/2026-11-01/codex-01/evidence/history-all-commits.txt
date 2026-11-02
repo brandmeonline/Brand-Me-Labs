@@ -1,0 +1,520 @@
+a05f2e03e58e55cc2b392b8abc7b19f59659f820|6a4a11a6b424256443acd39de52b544efef5f68c|2026-10-30|docs(midnight-rights): check-in packet (Stage 15)
+6a4a11a6b424256443acd39de52b544efef5f68c|d58e3c8e8426e69225b8c3ea009e4a6cb58c6bf2|2026-10-30|feat(rights): reprint.attested producer and dev-form My Data composition (Stage 14)
+d58e3c8e8426e69225b8c3ea009e4a6cb58c6bf2|cd6224d3dfb849c0746b78306cd342578db7d688|2026-10-30|feat(rights): authenticated rights command backend (Stage 13)
+cd6224d3dfb849c0746b78306cd342578db7d688|c55c010dbcc6f18a9bf12146dcea0045652dc7a9|2026-10-30|feat(privacy): D-007 handler extension, receipt notes and identity ordering (Stage 12)
+babb3604ae2f33018edf0ad45270887d4b01945b|f27e37cb01b996fdb819210e27cd45934fb9b3a7|2026-10-30|fix: fifth Codex review of #66 (ledger freeze on survey/convert, relationship deletion ends share audiences)
+c55c010dbcc6f18a9bf12146dcea0045652dc7a9|ed19dc151d103b108cf972e6d37971c55d5dcf60|2026-10-30|docs(midnight-rights): receive and review the round-03 ultra plan (Stage 11)
+ed19dc151d103b108cf972e6d37971c55d5dcf60|b86c016b865ec90bb247754352f6b9afd3b121cf 5e9eceb67599f2465ca2d7a47b71234965f0b2f1|2026-10-30|Merge pull request #68 from brandmeonline/mia/pipeline-seed-20261030
+f27e37cb01b996fdb819210e27cd45934fb9b3a7|5f3e2b49f813cf3e9c961d58165ae90d7ad08888|2026-10-30|fix: fourth Codex review of #66 (credits after ledger deletion, recovery debt on release)
+5f3e2b49f813cf3e9c961d58165ae90d7ad08888|9ebc062bbdc838c6b32ad48701d63a4b513a6a42|2026-10-30|fix: share purge events only for projected shares; My Data test expects the recipient refusal
+b86c016b865ec90bb247754352f6b9afd3b121cf|c902317df3da58b9f20916811052111dfdf23569 1413178b7f74ecaf20589d67c4ba4dcdedbb69c2|2026-10-30|Merge pull request #69: passport transport and private garment evidence intake
+9ebc062bbdc838c6b32ad48701d63a4b513a6a42|e40ea7cd733d3f33720502fb13303e877fdc596e|2026-10-30|fix: third Codex review of #66 (deleted cards, share purge, invitee freeze, engagement, withdraw, ranking)
+1413178b7f74ecaf20589d67c4ba4dcdedbb69c2|aa26dc4a62669caa990c1e02fc5fffdd55db49cb|2026-10-30|docs(spatial): record passport and private intake verification
+aa26dc4a62669caa990c1e02fc5fffdd55db49cb|c902317df3da58b9f20916811052111dfdf23569|2026-10-30|feat(spatial): add private garment intake and passport claims transport
+5e9eceb67599f2465ca2d7a47b71234965f0b2f1|a7fd20270c0e2eeae657cf55a493a57954b2bedd|2026-10-30|orchestration: refresh pipeline state — #60 merged, main c902317, #66 undrafted but held
+e40ea7cd733d3f33720502fb13303e877fdc596e|8933899d28cd015d59be1fd33796b98f7667c43e|2026-10-30|fix: second Codex review of #66 (card copies, room admission, influence, Flow axes)
+c902317df3da58b9f20916811052111dfdf23569|97d54477f7667dade1a4fd7220c0b2694cffb604 3eddd286784296d4257d43788ce1487c01e5751c|2026-10-30|Merge pull request #60: guest fit ladder, Pod model and scan boundaries
+3eddd286784296d4257d43788ce1487c01e5751c|d3cc93e235f0fbec227ba494c95fd26d72de7bed|2026-10-30|docs(spatial): record round three browser pose and integration evidence
+d3cc93e235f0fbec227ba494c95fd26d72de7bed|5608c26985a350f15136b9cc641f6d09589d08aa|2026-10-30|fix(spatial): invalidate queued first saves after empty history reset
+5608c26985a350f15136b9cc641f6d09589d08aa|c42171e42738bac132d3afe76f2f10c2d911ff85|2026-10-30|fix(ci): exclude model-bearing traces from spatial artifacts
+c42171e42738bac132d3afe76f2f10c2d911ff85|3fe809fde951de4a5de0fc2a2831d6ee151d2244|2026-10-30|fix(spatial): await fit persistence and align validation with main
+0ff12fbdbce2a8b4ea1391a02ef3ea821ae6a420|2f89dce5d171138085d994456722cfcb1868f637|2026-10-30|docs(consumer): publish round-03 restart handoff
+3fe809fde951de4a5de0fc2a2831d6ee151d2244|2852b786432051114097d389c27fe67a5c4c838d 97d54477f7667dade1a4fd7220c0b2694cffb604|2026-10-30|merge: reconcile spatial lane with foundation main 97d54477
+8933899d28cd015d59be1fd33796b98f7667c43e|1b4edf2c4f360031d917e2891f9f9ffe36d87fd1|2026-10-30|status: point Stages 19-20 at the follow-up's stage numbers (22, 23)
+1b4edf2c4f360031d917e2891f9f9ffe36d87fd1|48c638d9bc5a8a57f484a4880a12eb6d3c0aa02a|2026-10-30|fix: Codex review of #66 (cap, share projection, room blocking, idempotency, card taste)
+a7fd20270c0e2eeae657cf55a493a57954b2bedd|ff1758f07a2939d3ecca8d8dfb03e6776d9501d7|2026-10-30|orchestration: add ping-pong protocol to pipeline state
+48c638d9bc5a8a57f484a4880a12eb6d3c0aa02a|c488c2568eeb79387014a503ccd6ea7bb75768f2|2026-10-30|status: Stage 20, main 97d5447 merged; foundation test counts deviation
+c488c2568eeb79387014a503ccd6ea7bb75768f2|a89df832ec4ab71167c521641d6dbd2c9cdb49ea|2026-10-30|test(foundation): count the consumer seed's #66 rows in the deletion proof
+a89df832ec4ab71167c521641d6dbd2c9cdb49ea|b5e8ea4cfc573b183c1474e842554746b3e06fcf 97d54477f7667dade1a4fd7220c0b2694cffb604|2026-10-30|Merge origin/main (97d5447: #62 foundation round 4) into consumer-domains
+ff1758f07a2939d3ecca8d8dfb03e6776d9501d7|97d54477f7667dade1a4fd7220c0b2694cffb604|2026-10-30|orchestration: seed continuous build pipeline state file
+97d54477f7667dade1a4fd7220c0b2694cffb604|22ff053ac73e002394f011a668fe23493998591c f5c906ab163084f791a7b601f3bbb71a828bb934|2026-10-30|Merge pull request #62 from brandmeonline/claude/opus-foundation-w00-2hgiw5
+f5c906ab163084f791a7b601f3bbb71a828bb934|5ee20d6665a2bd9ffbf8116fc1a00abebfb1b99c|2026-10-30|status: record the local full-suite counts on the final code
+5ee20d6665a2bd9ffbf8116fc1a00abebfb1b99c|89ad5fa4b1ec3ed93a6a877d770c8c6ff11ca949|2026-10-30|status: round 4 exit evidence and founder flags (done, pending merge)
+89ad5fa4b1ec3ed93a6a877d770c8c6ff11ca949|4c4307acf64df913632450a1720abf0c651f252e|2026-10-30|deviations: D-006 lane test edits (Q8), D-007 Q9 redaction split, D-008 dependency fixes
+4c4307acf64df913632450a1720abf0c651f252e|4010ae8bdd6201b47819f30b60ab1faeba0d4df7|2026-10-30|Q9 re-review fixes: restore without the job ledger, fail-loud bridge
+4010ae8bdd6201b47819f30b60ab1faeba0d4df7|9dad10476e088334b3c47d6e281c68f034e872e2|2026-10-30|Q8 re-review fixes: every shipped catalog is pinned as required
+9dad10476e088334b3c47d6e281c68f034e872e2|11ebcb136dcc5cac37a9fe2ecd73c8015fd15ea1 db33b9d7dc8f4504ce72813206f6c1bcdb8f52b3|2026-10-30|Merge wip/opsfix: deploy checklist and runbook verifies fail loudly; consumer-domains in the packet
+db33b9d7dc8f4504ce72813206f6c1bcdb8f52b3|375180b1c239613e8185c1cda41e65672cf0d2c6|2026-10-30|ops review fixes: verifies that fail loudly, consumer-domains in the packet and deploy rollout
+11ebcb136dcc5cac37a9fe2ecd73c8015fd15ea1|375180b1c239613e8185c1cda41e65672cf0d2c6|2026-10-30|pnpm: override qs to 6.16.1 (GHSA-6pq8-jhm2-2vcw)
+375180b1c239613e8185c1cda41e65672cf0d2c6|e5ccf5e0603dfd2a39d15f6ac84a0e4edab46bc9|2026-10-30|status: round 4 progress (session alive and working)
+b5e8ea4cfc573b183c1474e842554746b3e06fcf|9770927ab66e7e43cee42494b614d0397de112ce|2026-10-30|status: Stage 19, answer to the Oct 29 status check
+e5ccf5e0603dfd2a39d15f6ac84a0e4edab46bc9|86ce9e68d4f6cb37373ca68684855e012483b0c8 22ff053ac73e002394f011a668fe23493998591c|2026-10-30|Merge origin/main (22ff053, round-03 plans) into the foundation round-4 branch
+9770927ab66e7e43cee42494b614d0397de112ce|5aa075b85f7a46096309a45b3ef2d21de4431dc3 22ff053ac73e002394f011a668fe23493998591c|2026-10-30|Merge origin/main (22ff053: #64 commerce round 3, #67 round-03 plans) into consumer-domains
+22ff053ac73e002394f011a668fe23493998591c|bd8215a9b16f02102a1899c79d12992a78486cb7 057320d4bf01e86c381d6750202e6e5bb7bb741f|2026-10-29|Merge pull request #67 from brandmeonline/mia/next-plans-20261025
+86ce9e68d4f6cb37373ca68684855e012483b0c8|6cbddd6928ed0acef16aa608fbe1cacdfac7245b|2026-10-27|dev keys: BRANDME_DEV_ASSERTION_DIR (not secret-shaped); manifest planner citation :541
+6cbddd6928ed0acef16aa608fbe1cacdfac7245b|5d8253c5a905c03db9b8e0f755de598fa14087b2|2026-10-27|d61 review fixes: one domain replica, honest checks, dev key outside the repo
+5d8253c5a905c03db9b8e0f755de598fa14087b2|987837bed3040843280e45f0c7be64a2313beb86|2026-10-27|Q8: pin commerce-agents at 7 contracts after #64
+987837bed3040843280e45f0c7be64a2313beb86|dbf0b58dddf025b7e036f294090049472d2ed7f3 bd8215a9b16f02102a1899c79d12992a78486cb7|2026-10-27|Merge origin/main (bd8215a, #64 commerce round 3) into the foundation round-4 branch
+dbf0b58dddf025b7e036f294090049472d2ed7f3|c2198931709f2d06b9eedc0ebd159a560f651d87 558dc034ac722d61f0d3fd9d8cd5cf9028963c61|2026-10-27|Merge wip/ops into the foundation round-4 branch
+c2198931709f2d06b9eedc0ebd159a560f651d87|a26a8fd1bbc90bb5eed32facc84a0fcb94ca1f74 7bdc71f4f70fc174bcb819f48bec11f08c9f6e2d|2026-10-27|Merge wip/d61 into the foundation round-4 branch
+a26a8fd1bbc90bb5eed32facc84a0fcb94ca1f74|fb65c63959cdce2e45d6dbce922fdaa133cdbe73 3b3fd9d554bea8f059ca7466f6029f58d641b6dd|2026-10-27|Merge wip/f9 into the foundation round-4 branch
+fb65c63959cdce2e45d6dbce922fdaa133cdbe73|4fe50a538c04f70f23a6a83b86ff38d1081eba23 b4fed4d5d1a8a9bd1913d358e8697fe42d0f72fa|2026-10-27|Merge wip/f8 into the foundation round-4 branch
+4fe50a538c04f70f23a6a83b86ff38d1081eba23|9bdb12977fcb8684399e1a5d12cba93d4b764246 bf31c98577b318ea6a1ba61ade8b17549f5a45f1|2026-10-27|Merge wip/r4-integrated into the foundation round-4 branch
+bd8215a9b16f02102a1899c79d12992a78486cb7|2b5ae8893f883c674907cf3f9a449cab4a1d6cd5 161f6eb6498c6085c8a070d2a389e3562b1b1ba9|2026-10-25|Merge pull request #64 from brandmeonline/claude/opus-commerce-agents-setup-szpmf7
+161f6eb6498c6085c8a070d2a389e3562b1b1ba9|e97605b04a09de14a3d2151c3eee12bbcfa9ad9c|2026-10-25|fix(providers): read catalog page items once; pin the ambiguity filters (S33)
+e97605b04a09de14a3d2151c3eee12bbcfa9ad9c|c8535f428168cb17cade3b30b020416fe0d6d61c|2026-10-25|fix(providers,commerce): sixth independent review of the S31 fixes (S32)
+c8535f428168cb17cade3b30b020416fe0d6d61c|36dacbe33245c04e557ddfa75782d8dfb70e91c5|2026-10-25|fix(providers): fifth independent review of the S30 fixes (S31)
+36dacbe33245c04e557ddfa75782d8dfb70e91c5|e3502546844e9145d1cbfd54070185e95a5e7ac8|2026-10-25|fix(commerce,providers): fourth independent review of the S29 fixes (S30)
+e3502546844e9145d1cbfd54070185e95a5e7ac8|6fdffc4d4eb4873501df4c8f2d1837f4c38219ee|2026-10-25|fix(commerce,providers): third independent review of the S28 fixes (S29)
+6fdffc4d4eb4873501df4c8f2d1837f4c38219ee|72b432e7f0b5c1db91d61d6d034c3a8e6f8e5a0b|2026-10-25|docs(status): S28 records the 2b5ae88 merge
+72b432e7f0b5c1db91d61d6d034c3a8e6f8e5a0b|26b01c330bb13ca77a093c3d91194e3102f8d5b4|2026-10-25|fix(commerce,providers): second independent review of round 3 (S28)
+558dc034ac722d61f0d3fd9d8cd5cf9028963c61|8679c95891eb121617262d3ce89317a7cfefc9a7|2026-10-25|packet: section C becomes a founder execution checklist (nothing run)
+8679c95891eb121617262d3ce89317a7cfefc9a7|050fef1e262de830488b35be5591424fc650bcad|2026-10-25|runbook: full credential rotation procedures for the active set on bf31c98
+050fef1e262de830488b35be5591424fc650bcad|a57fb1bd7443b6d0e9d9b76ee784ebeedc05fbe6|2026-10-25|trivy: renewal record 2026-10-25 (0 CRITICAL, HIGH backlog with owners)
+a57fb1bd7443b6d0e9d9b76ee784ebeedc05fbe6|93821bb147df05509334c0da39eaaf7f177ec725|2026-10-25|credential manifest: re-audit on bf31c98 (all rows but CONSUMER_DOMAIN_*)
+93821bb147df05509334c0da39eaaf7f177ec725|b43cff14c0a850a067150b5e6228403746076d50|2026-10-25|ci: check() provisions every emulator; foundation-check runs the full check
+3b3fd9d554bea8f059ca7466f6029f58d641b6dd|bf31c98577b318ea6a1ba61ade8b17549f5a45f1|2026-10-25|Q9 review fixes: account-scope-only platform erasure, unlink others' events
+9bdb12977fcb8684399e1a5d12cba93d4b764246|2c35b55aaa3bf7563b09c0db9ebe9e329955ec89|2026-10-25|fastapi 0.134.0 / starlette 1.3.1: clear the starlette findings the upgrade surfaced
+7bdc71f4f70fc174bcb819f48bec11f08c9f6e2d|76e77261fa1cc06cf0f4070e909113885b97ef6a|2026-10-25|smoke, provisioning: consumer-domain service and the fnd-retention identity
+76e77261fa1cc06cf0f4070e909113885b97ef6a|33232195f2862d8431d4509beece7680151c7253|2026-10-25|compose: run the consumer-domain service with a runtime-generated dev key pair
+33232195f2862d8431d4509beece7680151c7253|92fb900b07395d2a7bd2bcd9cecff109d7467e36|2026-10-25|helm: run the consumer-domain service and wire the gateway's assertion key
+92fb900b07395d2a7bd2bcd9cecff109d7467e36|bf31c98577b318ea6a1ba61ade8b17549f5a45f1|2026-10-25|config: audit the consumer_domains process in the trust-path inventory
+b4fed4d5d1a8a9bd1913d358e8697fe42d0f72fa|bf31c98577b318ea6a1ba61ade8b17549f5a45f1|2026-10-25|events: commerce catalog is required now that PR #51 is merged (Q8 finish)
+b43cff14c0a850a067150b5e6228403746076d50|bf31c98577b318ea6a1ba61ade8b17549f5a45f1|2026-10-25|migrations: registry lists V001-V015 with owners; contiguity guard
+5aa075b85f7a46096309a45b3ef2d21de4431dc3|ecdee8418702cd5b3e20b3443a3f3b255529e08d|2026-10-25|wardrobe: keep ownership evidence off the stranger-visible closet level
+26b01c330bb13ca77a093c3d91194e3102f8d5b4|8c1126f86a92e6c9713995447b436bd2da93702f 2b5ae8893f883c674907cf3f9a449cab4a1d6cd5|2026-10-25|Merge origin/main (2b5ae88: consumer-domains routers) into opus-commerce-agents round 3
+bf31c98577b318ea6a1ba61ade8b17549f5a45f1|1f0e353652b8526d30e753bf86fd19dfc1fed349 50e2544e74acaa6648121b47bc9849ad8995b06f|2026-10-25|Merge wip/q9: outbox retention job and platform erasure on account deletion (Q9)
+1f0e353652b8526d30e753bf86fd19dfc1fed349|2c35b55aaa3bf7563b09c0db9ebe9e329955ec89 c3206902ce0feb3b5fb019c4f14946948a695392|2026-10-25|Merge wip/q8: foundation worker loads every lane outbox catalog (Q8)
+2c35b55aaa3bf7563b09c0db9ebe9e329955ec89|98774964517be4de9434bf80ec39e68891bf3c9d 2b5ae8893f883c674907cf3f9a449cab4a1d6cd5|2026-10-25|Merge origin/main (2b5ae88) into the foundation round-4 branch
+057320d4bf01e86c381d6750202e6e5bb7bb741f|6116baef5269894c849b9273e317210a9cbc9004|2026-10-25|orchestration: round-03 next plans (ultra-plan-03-astra-spatial-ar.md)
+6116baef5269894c849b9273e317210a9cbc9004|718d031ba6a4006b525d675446372b0cf9df157a|2026-10-25|orchestration: round-03 next plans (ultra-plan-03-astra-consumer-ui.md)
+718d031ba6a4006b525d675446372b0cf9df157a|4298e571d3ef41d120aef5da1dffdccbd2c112ab|2026-10-25|orchestration: round-03 next plans (ultra-plan-03-opus-midnight-rights.md)
+4298e571d3ef41d120aef5da1dffdccbd2c112ab|4beeff619489a664a053209e165921f9d4c16d4d|2026-10-25|orchestration: round-03 next plans (ultra-plan-03-opus-consumer-domains.md)
+4beeff619489a664a053209e165921f9d4c16d4d|9536dd4582d5d6ac73c34054bc9c7ea7baf52719|2026-10-25|orchestration: round-03 next plans (oneshot-plan-03-opus-commerce-agents.md)
+9536dd4582d5d6ac73c34054bc9c7ea7baf52719|d148596804294725ae4400f3d6cebaef9b0abd5c|2026-10-25|orchestration: round-03 next plans (oneshot-plan-03-opus-foundation.md)
+d148596804294725ae4400f3d6cebaef9b0abd5c|2b5ae8893f883c674907cf3f9a449cab4a1d6cd5|2026-10-25|orchestration: round-03 next plans (next-plans-20261025.md)
+ecdee8418702cd5b3e20b3443a3f3b255529e08d|29913cb970eb6d57e49d171bfd07780d144fe512|2026-10-25|status: record the final-head clean-checkout evidence for stages 15-16
+8c1126f86a92e6c9713995447b436bd2da93702f|713654c2730c39db0eb1afba242e1fafcd1c34e6|2026-10-25|docs(status): S24-S27 autonomy boundaries, partner tiers, shell swap, check-in packet
+29913cb970eb6d57e49d171bfd07780d144fe512|068001dcc83ecdee465eabc76bf984339bf278fe|2026-10-25|status: stages 15-16, Ultra plan 02 check-in packet (21 questions with defaults)
+068001dcc83ecdee465eabc76bf984339bf278fe|fa0a1a21b0fca25457565a21bf8eb40ba162c0a6|2026-10-25|consumer domains: guard member routes individually; honour the privacy freeze on credit
+fa0a1a21b0fca25457565a21bf8eb40ba162c0a6|d502a0c2d6443e3a70f029739bc5c85894d0c18a|2026-10-25|consumer domains: surveys and in-app credit, persona card and closet visibility, rooms, experiments, share projector (Ultra plan 02, items 5-8 and 10)
+d502a0c2d6443e3a70f029739bc5c85894d0c18a|2b5ae8893f883c674907cf3f9a449cab4a1d6cd5|2026-10-25|consumer domains: Now loop, Home = Flow and per-house loyalty standing (Ultra plan 02, items 2-4)
+713654c2730c39db0eb1afba242e1fafcd1c34e6|5c21460881dada8d655499a251e1bf136a21ec6b|2026-10-25|feat(console): provider pages use the published shell page header (Ultra plan 02 item 8)
+2b5ae8893f883c674907cf3f9a449cab4a1d6cd5|77280249df4e91d93b4d814b140bd5e38bba4735 1011d74e05911fee901a38e2afa3fbdc81a420a4|2026-10-24|Merge pull request #61 from brandmeonline/claude/opus-consumer-domains-1csp2g
+5c21460881dada8d655499a251e1bf136a21ec6b|674d5326bd4ba2670421951a7e46218495fd92d4 77280249df4e91d93b4d814b140bd5e38bba4735|2026-10-25|Merge origin/main (7728024: console shell contract 1.1.1, consumer UI) into opus-commerce-agents round 3
+674d5326bd4ba2670421951a7e46218495fd92d4|71f11551048a5fdb7d9d6e9e39063e499fba4464|2026-10-25|fix(commerce): autonomy boundaries after independent review (Ultra plan 02 item 6)
+2f89dce5d171138085d994456722cfcb1868f637|c2732a3098aa5ae850d285e35183270a028b1a7b 77280249df4e91d93b4d814b140bd5e38bba4735|2026-10-24|Merge completed prerequisites and record preview review gates
+50e2544e74acaa6648121b47bc9849ad8995b06f|98774964517be4de9434bf80ec39e68891bf3c9d|2026-10-25|Q9 purge: outbox retention job and platform erasure on account deletion
+77280249df4e91d93b4d814b140bd5e38bba4735|b9f483be139f1e0a3c324cdf5f30bbb3c5bdc22b 06d8fc13f3133fea5108164266a6fee59b88db1f|2026-10-24|Merge pull request #65 from brandmeonline/codex/console-contract-publication
+c3206902ce0feb3b5fb019c4f14946948a695392|98774964517be4de9434bf80ec39e68891bf3c9d|2026-10-25|events: foundation worker loads every lane outbox catalog (Q8)
+71f11551048a5fdb7d9d6e9e39063e499fba4464|8a2aec896d301e59563e3ee18a83acdbc2537449|2026-10-25|feat(providers): partner tiers behind a pricing-table interface (Ultra plan 02 item 7)
+c2732a3098aa5ae850d285e35183270a028b1a7b|50b0b726faccc8b3198e2350bb8dabf8e41a40d1 06d8fc13f3133fea5108164266a6fee59b88db1f|2026-10-24|Merge published contract history and final CI receipts into preview
+06d8fc13f3133fea5108164266a6fee59b88db1f|b9f483be139f1e0a3c324cdf5f30bbb3c5bdc22b|2026-10-24|fix(console): publish shell contract 1.1.1
+b9f483be139f1e0a3c324cdf5f30bbb3c5bdc22b|7c4c1cd2af9ae2c52a1238bb6cdfb712a2ad7384 cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8|2026-10-24|Merge pull request #56 from brandmeonline/bench/astra-consumer-ui-20261005
+2852b786432051114097d389c27fe67a5c4c838d|bfa99cadc53b6879cfa9470f4110aabddb2b2c95|2026-10-24|fix(frontend): render original garment images in shop and stash
+50b0b726faccc8b3198e2350bb8dabf8e41a40d1|7f7d4e71e3f9e7f9a0c3f1ddf367acf0376493a5|2026-10-24|docs(consumer): record combined contract preview validation
+7f7d4e71e3f9e7f9a0c3f1ddf367acf0376493a5|3f7e558d3a2a8f978af79d53fba6037a74aeef16 4ba1fae8a846a2a34104564ce35010fb4be4ad2c|2026-10-24|Merge console contract 1.1.1 into design preview
+3f7e558d3a2a8f978af79d53fba6037a74aeef16|9d1e29f4f9e12edc8c17f98dc9c6ce5d98ca8bef cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8|2026-10-24|Merge approved room revision parent into design preview
+4ba1fae8a846a2a34104564ce35010fb4be4ad2c|cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8|2026-10-24|fix(console): publish shell contract 1.1.1
+cccfe7b4b4ce9f44fb9bebd9a7cb2c47b4fe97b8|aafc231dd01b31c5715269d831a6e508fbc14d6b|2026-10-24|fix(wardrobe): align room revisions with spatial manifests
+9d1e29f4f9e12edc8c17f98dc9c6ce5d98ca8bef|2083bae1a45696898f5304474da0ba3935e9bc27 aafc231dd01b31c5715269d831a6e508fbc14d6b|2026-10-24|Merge consumer parent repair and record preview CI receipt
+aafc231dd01b31c5715269d831a6e508fbc14d6b|24d1b2c9dd12e16d6b4cad154eb634d1a3d3a7a9|2026-10-24|test(ui): enforce console adapter parity and record validation
+24d1b2c9dd12e16d6b4cad154eb634d1a3d3a7a9|987afcebc72a38e7e494ffe8d9ec1369d74e3fd6|2026-10-24|fix(console): resolve shell adapters through local dependencies
+8a2aec896d301e59563e3ee18a83acdbc2537449|de845a29c285c25bf1a8d5b9c5c59558c565451e|2026-10-25|docs(status): S23 item 1 done by the founder; #51 merged as 7c4c1cd
+de845a29c285c25bf1a8d5b9c5c59558c565451e|c66c3b0bc2a063ee187293ea8495e2567bf30780|2026-10-25|feat(commerce): member-set autonomy boundaries for agent grants (Ultra plan 02 item 6)
+c66c3b0bc2a063ee187293ea8495e2567bf30780|7c4c1cd2af9ae2c52a1238bb6cdfb712a2ad7384|2026-10-25|docs(status): S23 Ultra plan 02 item map, audit closure, console proof, BM-COM-011 checklist
+2083bae1a45696898f5304474da0ba3935e9bc27|9280571ab026a02c2d49f8c3a3a372d9065bc966|2026-10-24|docs(consumer): record final navigation and preview checks
+9280571ab026a02c2d49f8c3a3a372d9065bc966|990e4a940e50a0fc9a5e8b91762300a814f09765 987afcebc72a38e7e494ffe8d9ec1369d74e3fd6|2026-10-24|Merge commit '987afcebc72a38e7e494ffe8d9ec1369d74e3fd6' into codex/consumer-design-preview
+990e4a940e50a0fc9a5e8b91762300a814f09765|cd37b6de59fc7d804612efd2373cda1f6eadb3bc|2026-10-24|fix(consumer): select one current destination per navigation
+987afcebc72a38e7e494ffe8d9ec1369d74e3fd6|7e2af7eac9e90435bebe6983e5dafb06a4ec441d|2026-10-24|docs(consumer): record explicit React type peer repair
+7e2af7eac9e90435bebe6983e5dafb06a4ec441d|159d77206315e043a205d6984c730dc450404693|2026-10-24|fix(workspace): bind React declaration peers to app runtimes
+cd37b6de59fc7d804612efd2373cda1f6eadb3bc|71e9d40998a3021f4bd7c576c55ced81096eccf7|2026-10-24|test(consumer): await route titles before preview audits
+71e9d40998a3021f4bd7c576c55ced81096eccf7|e67c493d61ab655e2ff6e8da0dccf7b050063cce|2026-10-24|docs(consumer): record consolidated preview and browser evidence
+e67c493d61ab655e2ff6e8da0dccf7b050063cce|d2009d01d37bd2a67022041e096efdce312a2183 159d77206315e043a205d6984c730dc450404693|2026-10-24|Merge commit '159d77206315e043a205d6984c730dc450404693' into codex/consumer-design-preview
+d2009d01d37bd2a67022041e096efdce312a2183|d9a5b8adb03f15cf073679292185dfe43a57a3ab|2026-10-24|test(consumer): run heartbeat integration with browser checks
+159d77206315e043a205d6984c730dc450404693|d38d81f73d7f65463ce7c5d007ac76db2b7abc44|2026-10-24|docs(consumer): record integration checks and domain ownership gate
+d38d81f73d7f65463ce7c5d007ac76db2b7abc44|554dfa5a02ac7751d4e4f39959b104439ad84f78|2026-10-24|test(ui): wait for route metadata before accessibility audits
+d9a5b8adb03f15cf073679292185dfe43a57a3ab|fc3b15b1a8406874fe6bccb1b4be8e8177f4978f|2026-10-24|test(consumer): verify DecisionView heartbeat in browser
+fc3b15b1a8406874fe6bccb1b4be8e8177f4978f|bd7c731f063a28b729c46ff75fcee9d62a7d7d62|2026-10-24|fix(consumer): refine parallel streams and mobile review evidence
+bd7c731f063a28b729c46ff75fcee9d62a7d7d62|77b0a4a530ddd23837c932e917fdc3fd933a3d52|2026-10-24|feat(consumer): connect friend response feedback to decisions
+77b0a4a530ddd23837c932e917fdc3fd933a3d52|15f637918fbb737c4b5c9e6cd9fcf61038c43cf9|2026-10-24|feat(consumer): add optional friend response heartbeat
+15f637918fbb737c4b5c9e6cd9fcf61038c43cf9|554dfa5a02ac7751d4e4f39959b104439ad84f78|2026-10-24|feat(consumer): preview three rooms and private persona card
+98774964517be4de9434bf80ec39e68891bf3c9d|6e8e3235b7424a8abcdbce2c20b8720984cd6170|2026-10-25|fastapi 0.115.14: anyio 4.15.1 closes the last baselined CRITICAL
+554dfa5a02ac7751d4e4f39959b104439ad84f78|85318b44b00a07e4418141affb35b62a170bea2a|2026-10-24|docs(ui): record prerequisite merge and resync evidence
+85318b44b00a07e4418141affb35b62a170bea2a|8a5931f82ce208ae87c3bf028b68b8aabcee5c72 7c4c1cd2af9ae2c52a1238bb6cdfb712a2ad7384|2026-10-24|Merge remote-tracking branch 'origin/main' into bench/astra-consumer-ui-20261005
+7c4c1cd2af9ae2c52a1238bb6cdfb712a2ad7384|d5b993f202092c8bcb522a99d08ad849a5f0f03d 2fd6b291e58118ba0dd2a5c5a5ed479d7bb4f607|2026-10-24|Merge pull request #51 from brandmeonline/claude/opus-commerce-agents-setup-szpmf7
+8a5931f82ce208ae87c3bf028b68b8aabcee5c72|15c9d3f4ee0a7575a786f64879d262e44742ad34 2fd6b291e58118ba0dd2a5c5a5ed479d7bb4f607|2026-10-24|Merge repaired foundation into consumer UI integration
+6e8e3235b7424a8abcdbce2c20b8720984cd6170|2ef50a6cd2aa5aef99ce6868c4d0f612a767647f|2026-10-25|smoke: agents image no longer ships sentence-transformers
+15c9d3f4ee0a7575a786f64879d262e44742ad34|1b9d320eb8a7a2946591d3fd27e324dd2c80affa|2026-10-24|fix(console): isolate preferences from consumer React runtime
+2fd6b291e58118ba0dd2a5c5a5ed479d7bb4f607|beed01ffac02163ad965ae54bbb9bd8b9b3ce681|2026-10-24|fix(ci): lock commerce SDK runtime dependencies
+bfa99cadc53b6879cfa9470f4110aabddb2b2c95|8604f3716f0fc203d5125634b02d4eaa6b7ea99e|2026-10-24|docs(spatial): record round two evidence and passing CI
+2ef50a6cd2aa5aef99ce6868c4d0f612a767647f|cfee5ee1eca5f5a79b700f8ec733a219d6526460|2026-10-25|ci: retry the pinned emulator downloads before failing
+1b9d320eb8a7a2946591d3fd27e324dd2c80affa|7fd94757c1395c442b305abfbac003c883256e80 b31373170953705f180246e254a8c2e9a41b4931|2026-10-24|merge: resync consumer UI with the spatial spec base
+cfee5ee1eca5f5a79b700f8ec733a219d6526460|804d3a35553813bf083e9d6de6a9f196925b3559|2026-10-25|trivy renewal triage: fix four of five baselined CRITICALs
+8604f3716f0fc203d5125634b02d4eaa6b7ea99e|fe3b761f6da6ab9346fabe2fd52ae1d699fffa97|2026-10-24|fix(ci): pin spatial checks to supported Ubuntu release
+fe3b761f6da6ab9346fabe2fd52ae1d699fffa97|ceb6ed6f7851422cfb4d4532249c6f9e8fb9363b|2026-10-24|feat(spatial): add fit history, Pod provenance and scan boundaries
+beed01ffac02163ad965ae54bbb9bd8b9b3ce681|5cc2db0233f235c7551d7f56f3082e8884019600 d5b993f202092c8bcb522a99d08ad849a5f0f03d|2026-10-25|merge: main (d5b993f) into opus-commerce-agents round 2
+5cc2db0233f235c7551d7f56f3082e8884019600|37771d45772ef410dacfb115732791acc41e0f1c|2026-10-25|test(commerce): BM-COM-011 wardrobe contract through the wardrobe's own unit reducer
+37771d45772ef410dacfb115732791acc41e0f1c|cc693f14661702198416028b660b155d04d0b986|2026-10-25|fix(commerce): audit agent REST requests and pre-verification refusals; prove zero bypass
+1011d74e05911fee901a38e2afa3fbdc81a420a4|d5b993f202092c8bcb522a99d08ad849a5f0f03d|2026-10-25|consumer domains: mount the lane routers behind foundation auth (Ultra plan 02, item 1)
+804d3a35553813bf083e9d6de6a9f196925b3559|d5b993f202092c8bcb522a99d08ad849a5f0f03d|2026-10-25|Q11: lock stripe 16.0.0 and anthropic 0.125.0 for the commerce lane
+cc693f14661702198416028b660b155d04d0b986|54ba8de80f4512db7eeb45803fe4902db625f761|2026-10-25|docs(status): S21 demo-key note; AP2 oracle and Pub/Sub tests now run locally
+d5b993f202092c8bcb522a99d08ad849a5f0f03d|3d4cc0b85c82119eaab0c912d45f3a8167dfab95 b61d5720b35353929122210a0a692684bcdeeec1|2026-10-24|opus-consumer-domains: GCS media store on a local GCS emulator (Q19)
+b61d5720b35353929122210a0a692684bcdeeec1|64cc4b17d2f04ba66090a6d7fe153c5f18f77d2c|2026-10-24|media: address the Codex review of the GCS store (5 findings)
+64cc4b17d2f04ba66090a6d7fe153c5f18f77d2c|64bd9d3ee0345382dce8872803e5e368e15b76b5|2026-10-24|status: stage 13 clean-checkout evidence
+64bd9d3ee0345382dce8872803e5e368e15b76b5|fc4b63c66dc149916aadcfe530dad041fc05b498|2026-10-24|status: describe the secret-scan finding without quoting its pattern
+fc4b63c66dc149916aadcfe530dad041fc05b498|6a81c2692171b1f58df87a8651123188e9b36d91|2026-10-24|tests: build the throwaway service-account info without the secret-scan pattern
+54ba8de80f4512db7eeb45803fe4902db625f761|933cd8be9b1bd9b6b4f980a3f41f914e4d3d71cb|2026-10-24|docs(status): S20 check-in packet: evidence, 21 questions, next steps for the top three
+6a81c2692171b1f58df87a8651123188e9b36d91|3d4cc0b85c82119eaab0c912d45f3a8167dfab95|2026-10-24|media: GCS-backed MediaStore on a local GCS emulator (ruling Q19)
+933cd8be9b1bd9b6b4f980a3f41f914e4d3d71cb|052f9204022f38e4fe99878fcd5f8b97982b7077|2026-10-24|docs(status): S19 main merge, CI adaptation, the remaining foundation lock hand-off
+052f9204022f38e4fe99878fcd5f8b97982b7077|785a19bb49feb53cf3b565c05e07cae5c6ab8220|2026-10-24|fix(commerce): follow main's strict Problem contract and lift this lane's quarantine entries
+785a19bb49feb53cf3b565c05e07cae5c6ab8220|df5de291ef348a63b41da8ced6657f85b67475ae 3d4cc0b85c82119eaab0c912d45f3a8167dfab95|2026-10-24|merge: main (3d4cc0b) into opus-commerce-agents round 2
+df5de291ef348a63b41da8ced6657f85b67475ae|d6314127be2c33e417c9e4eaebd78534cf539a2f|2026-10-24|test: build fictional token, key and PEM fixtures at runtime
+d6314127be2c33e417c9e4eaebd78534cf539a2f|fa4d764e146d425907fb8ea29aa60522c3df9a0c|2026-10-24|docs(status): S17 payments seam, Stripe test mode and stateless planner; S18 review and fixes
+3d4cc0b85c82119eaab0c912d45f3a8167dfab95|47cdba7d8f8ab980e674ec45194d09694d7b18b2 2c5cac707a48d94fcc08aa9e1f593340192233a4|2026-10-23|opus-consumer-domains: persona, wardrobe, social, rewards, try-on server, ops console, My Data and event delivery (stages 2-11)
+fa4d764e146d425907fb8ea29aa60522c3df9a0c|8c229ae591ef4bd840a408342a207a1e5b43b865|2026-10-24|fix(mcp): the card screen also catches CV2, hyphenated labels, distant labels and 3-digit groups
+8c229ae591ef4bd840a408342a207a1e5b43b865|8c7ab7ed3b7a699bf5649fa3fe296c4d8e8fcc23|2026-10-24|fix(commerce): advisory operation states pass through one allowed state instead of sticking
+8c7ab7ed3b7a699bf5649fa3fe296c4d8e8fcc23|65e145eab989be23100d64c31f255cda539a174c|2026-10-24|fix(providers): a refund refused when re-sent is taken again by the same cancellation key
+2c5cac707a48d94fcc08aa9e1f593340192233a4|a4f7ef0c68b33291937128a7778286769a49c636|2026-10-24|status: stage 12 (main 47cdba7 merged, quarantine entries cleared, evidence)
+a4f7ef0c68b33291937128a7778286769a49c636|0c5efb22ae662db2c6e81022a25938e797c26e62 47cdba7d8f8ab980e674ec45194d09694d7b18b2|2026-10-24|Merge main (47cdba7, #58) into consumer-domains
+47cdba7d8f8ab980e674ec45194d09694d7b18b2|48686d26e6387fa264a0dd447c1267cacf9fc151 da3f1972ce839842262fb748bd69cd00a7a7bf34|2026-10-23|Merge pull request #58 from brandmeonline/claude/opus-foundation-w00-2hgiw5
+65e145eab989be23100d64c31f255cda539a174c|56694a2de21715c59bf63ab014ae67f8eea2316e af3916c66db666af663586b92b2f89f356bc7d0c|2026-10-24|merge: review fixes group C
+56694a2de21715c59bf63ab014ae67f8eea2316e|739c2d76fd1bc2928ec38c1df11cd7122b4de105 5e28652db917a978235c32bd642e6a810d7f6dde|2026-10-24|merge: review fixes group B
+739c2d76fd1bc2928ec38c1df11cd7122b4de105|beea6992b766df17d2acf8b20d6d85bbe51573e1 d6fe5b74fc2db12b6753cbf64bc966044e458b3f|2026-10-24|merge: review fixes group A
+da3f1972ce839842262fb748bd69cd00a7a7bf34|dda1f770f28a462762c2900b8662612617abee1c|2026-10-24|Round 3 status, corrected evidence records and the founder check-in packet
+dda1f770f28a462762c2900b8662612617abee1c|0e66e4661798522a3d8b9171c364e102a0ebf8c2|2026-10-24|Address the adversarial review: guards, WIF scoping, CI gates, cross-lane compatibility
+af3916c66db666af663586b92b2f89f356bc7d0c|ba9fb6d3fcc499c6440fa4272656e712f37dc132|2026-10-24|docs(commerce): reflow the assistant planner selection paragraph
+ba9fb6d3fcc499c6440fa4272656e712f37dc132|99a72b582f89a7b8690ff8d5bbc4647514e279a0|2026-10-24|fix(console): the operations page no longer promises automatic reconciliation
+99a72b582f89a7b8690ff8d5bbc4647514e279a0|2b069bacd15fbc1bbe487a84107703b31597a8cf|2026-10-24|test(assistant): pin that a mid-run cancel stops the next action and the next model request
+2b069bacd15fbc1bbe487a84107703b31597a8cf|103c31adbff27ced0554f78a581cd155323f662e|2026-10-24|test(providers): assert "no SDK retries" where a retry would actually happen
+103c31adbff27ced0554f78a581cd155323f662e|b602537c4ff6479ba0161106a475c61043bf4582|2026-10-24|fix(assistant): ambient ANTHROPIC_CUSTOM_HEADERS no longer reach the API under allowlisted names
+b602537c4ff6479ba0161106a475c61043bf4582|83d5f54bb96cfe56e81f76692f46ea01d45ede35|2026-10-24|fix(assistant): a dev model key outside development or demo refuses boot instead of being ignored
+d6fe5b74fc2db12b6753cbf64bc966044e458b3f|c60e1eab3ed810b76d44940ae749ab3725881bcb|2026-10-24|test(commerce): a signed Stripe event that contradicts the processor never moves the order
+83d5f54bb96cfe56e81f76692f46ea01d45ede35|95b1e24a8a7b6545271453b2af780105a44cffb4|2026-10-24|fix(agents): legacy GraphRAG refuses outright instead of building a client from ambient ANTHROPIC_*
+95b1e24a8a7b6545271453b2af780105a44cffb4|4d93214b186428a040a083aa6491c8755d02d3b2|2026-10-24|fix(assistant): card numbers and security codes are caught whatever the separator or phrasing
+c60e1eab3ed810b76d44940ae749ab3725881bcb|ab6b6487db06a1f3e748f51a3784cb05d9d6e84c|2026-10-24|test(commerce): exercise the merchant's payment-binding echo check offline
+0e66e4661798522a3d8b9171c364e102a0ebf8c2|123a069c3dcc6688ce6da74246838027c8a29e2e|2026-10-24|Core image smoke: compare --check stdout only, reject tracebacks on stderr
+4d93214b186428a040a083aa6491c8755d02d3b2|beea6992b766df17d2acf8b20d6d85bbe51573e1|2026-10-24|fix(mcp): a tool call whose handler raises still leaves its one audit record
+123a069c3dcc6688ce6da74246838027c8a29e2e|8a1cf461d28e792840bc7f9f28184302266d42f9|2026-10-24|Patch new production advisories: zod 4.6.7, body-parser 1.20.9, fast-uri 3.1.9
+ab6b6487db06a1f3e748f51a3784cb05d9d6e84c|0beb7f0117dae7ccf5e0154e6e87cffaccab701d|2026-10-24|fix(providers): a payment event after a merchant restart is re-read into the live order
+0c5efb22ae662db2c6e81022a25938e797c26e62|caa980e3472f369813fa2cc07fa4dba94dd9ee13|2026-10-24|status: stage 11 (re-merge, Codex review fixes, clean-checkout evidence)
+5e28652db917a978235c32bd642e6a810d7f6dde|d0788730c21f4037236a9cf8ea990d0b7ba92515|2026-10-23|fix(orchestrator): assistant tasks run under their processing basis
+caa980e3472f369813fa2cc07fa4dba94dd9ee13|4964fe8a4f6565907052b368d26c87109529eb9e|2026-10-23|migrations: use the foundation-reserved V003-V005; persona link opens V003
+0beb7f0117dae7ccf5e0154e6e87cffaccab701d|875ccb71e94048fd871824cb955401cbc9bbfef0|2026-10-23|fix(commerce): credit a reduced capture whenever the capture is first observed
+4964fe8a4f6565907052b368d26c87109529eb9e|f41b34db2ed24ffa59717ca141e0404cd6a7ad19|2026-10-23|persona, wardrobe, social: close review findings on deletion, outfits and drafts
+f41b34db2ed24ffa59717ca141e0404cd6a7ad19|81f0d8e5cef273ef61314681cdb6a627b970c4fc|2026-10-23|rewards: lease reservations before fulfillment; release points on deletion; guard all corrections
+81f0d8e5cef273ef61314681cdb6a627b970c4fc|98807353e914735d8f17d31c8bdd3f190a3bb9ca|2026-10-23|media: ask providers to delete in-flight jobs; drop inputs on failed dispatch
+98807353e914735d8f17d31c8bdd3f190a3bb9ca|7f7316ec970cce7850a00f77738cbfa038b520b3|2026-10-23|migrations: keep V002 immutable; lane schema moves to V016-V019
+d0788730c21f4037236a9cf8ea990d0b7ba92515|1782afefaf7dce8754992bdbfece604a1ec510c9|2026-10-23|fix(commerce): a pending agent-grants deletion stops spending under the grant
+8a1cf461d28e792840bc7f9f28184302266d42f9|6875ed9e094c3c32b1b340d2212a7cb51a7ed774|2026-10-23|Wire the foundation packages together and close verifier findings
+875ccb71e94048fd871824cb955401cbc9bbfef0|5c1a321ac5960826cc395eb0543d6bfe3a325b0b|2026-10-23|fix(providers): nothing is cancelled while a capture is unsettled
+1782afefaf7dce8754992bdbfece604a1ec510c9|d3fe561668cd10d1a4cbeafcf0dc7fdc8fa2547a|2026-10-23|test(commerce): every money path refuses while its category deletion is pending
+6875ed9e094c3c32b1b340d2212a7cb51a7ed774|295c2412b4e90660e78b24d3193c658c1dd85c46|2026-10-23|Close W02 gateway gaps: rate limits, log hygiene, /scan, Problem contract, strict mode
+295c2412b4e90660e78b24d3193c658c1dd85c46|9bc9a4037f88159b536a6c2b2936729b1be58e03|2026-10-23|Enforce the boot guard in-process and audit foundation trust paths
+9bc9a4037f88159b536a6c2b2936729b1be58e03|fc0e40641f3b618a9f455ace31cd16dd149792a4|2026-10-23|Add validated GKE chart, core runtime image and deploy packet
+fc0e40641f3b618a9f455ace31cd16dd149792a4|4408e1561a1b3d573b8bef6a6fc8069bbdaf3e57|2026-10-23|Add secrets scaffolding: credential manifest, checker, sandbox identities
+4408e1561a1b3d573b8bef6a6fc8069bbdaf3e57|78102822a226d1ca68900d095057328f248f48c4|2026-10-23|Add workspace guard for unregistered packages and toolchain pins
+78102822a226d1ca68900d095057328f248f48c4|48686d26e6387fa264a0dd447c1267cacf9fc151|2026-10-23|Make CI honest: full test suite, quarantine registry, blocking scans
+7f7316ec970cce7850a00f77738cbfa038b520b3|588245bede4f78048a1055b459427fa4d59f16c0 48686d26e6387fa264a0dd447c1267cacf9fc151|2026-10-23|Merge main (48686d2: #54 and orchestration docs) into opus-consumer-domains
+5c1a321ac5960826cc395eb0543d6bfe3a325b0b|beea6992b766df17d2acf8b20d6d85bbe51573e1|2026-10-23|fix(providers): a retried cancellation never refunds the same units twice
+d3fe561668cd10d1a4cbeafcf0dc7fdc8fa2547a|15cbcf79417b0df592ee2801fcad13ce43a3f2bc|2026-10-23|fix(commerce): My Data export of order lines includes quantity_cancelled
+7fd94757c1395c442b305abfbac003c883256e80|45c5c59db2d6a81543702d2af457bc09a9b096bf|2026-10-23|test(ui): retain the complete enlarged-text Today baseline
+15cbcf79417b0df592ee2801fcad13ce43a3f2bc|beea6992b766df17d2acf8b20d6d85bbe51573e1|2026-10-23|fix(commerce): a late budget credit no longer opens headroom in a later window
+beea6992b766df17d2acf8b20d6d85bbe51573e1|f02d78e10d7693433f19f430ce9ec37ff9fc35bd ad99f3efd65bdb4f449d256db1b5b8c0ccaf85e5|2026-10-23|merge: stateless model planner, runtime guards, budgets, run log and 202 creates
+f02d78e10d7693433f19f430ce9ec37ff9fc35bd|6c7901053f5b80479c36a6635e644aa45d06ac57 923ecfede8687fb8373f397caa980a3e59c89926|2026-10-23|merge: payments and fulfillment behind the merchant, Stripe test mode over a pinned wire
+923ecfede8687fb8373f397caa980a3e59c89926|544f70fee28d20be705942fc8fb1319f62dbeed4|2026-10-23|fix(providers): a pending money op is never re-sent inside its settle window or past the key horizon
+544f70fee28d20be705942fc8fb1319f62dbeed4|ac47d0dddaf0bd001fb7852993a5d5bfc31d3163|2026-10-23|feat(console): show the merchant's payment rail and its process-local health to operators
+ac47d0dddaf0bd001fb7852993a5d5bfc31d3163|a945c5a00ef2f28f833c3e20b2c1feb6dda301f2|2026-10-23|test(commerce): live Stripe test-mode suite for the founder flow, lost response, decline and void
+a945c5a00ef2f28f833c3e20b2c1feb6dda301f2|92f9b662d5a2fdb862a4a259b25159b67829a586|2026-10-23|test(providers): replay every request of the offline Stripe flow against stripe-mock
+92f9b662d5a2fdb862a4a259b25159b67829a586|9ef4a9f3a1f89d82cc1e78195a8df16d57b7e0db|2026-10-23|test(commerce): purchase flows on both rails, and the founder flow on the Stripe semantics double
+9ef4a9f3a1f89d82cc1e78195a8df16d57b7e0db|59354569586039ac724f2324547f47c36abed998|2026-10-23|feat(commerce): composition reads an allowlisted env view and runs the trust-path check
+59354569586039ac724f2324547f47c36abed998|63ffb140094b6b8620f355e5ea027e274a0da057|2026-10-23|fix(commerce): bind the approved payee, ignore irrelevant webhooks, never call sandbox available
+63ffb140094b6b8620f355e5ea027e274a0da057|102de48b6e7c48fe9db5fa96aa40d10a2886c80f|2026-10-23|refactor(providers): Demo Atelier becomes a composed merchant over injected payment and fulfillment
+48686d26e6387fa264a0dd447c1267cacf9fc151|0c3d7ea2878d66a35d68451df4edb60d79f1ed92 27f3215a9cb3512ee6d92a5a6fb13519bd82385d|2026-10-23|orchestration: direct-trigger protocol, merge log, next assignments, founder questions (2026-10-23)
+ad99f3efd65bdb4f449d256db1b5b8c0ccaf85e5|e4199bce60a7fd97413a559fc309acb9742a1820|2026-10-23|docs(commerce): dev model planner section in the domain README
+e4199bce60a7fd97413a559fc309acb9742a1820|600b944a83a4f3a20120d71c903cc13264972090|2026-10-23|fix(agents): unwired LangChain agents refuse to run without an explicit dev key
+600b944a83a4f3a20120d71c903cc13264972090|bd2303a9bbb1c2a706e30708c2e3f1dc16f481c8|2026-10-23|feat(orchestrator): stateless model planner with runtime guards, budgets and 202 creates
+102de48b6e7c48fe9db5fa96aa40d10a2886c80f|a920ea1165b4098ea28d92ac13b27ca76c86d443|2026-10-23|feat(providers): simulated fulfillment behind the merchant
+bd2303a9bbb1c2a706e30708c2e3f1dc16f481c8|8764aa20aca546ecda47cbac4325f07b68c36a2e|2026-10-23|feat(orchestrator): building blocks for a stateless model planner
+a920ea1165b4098ea28d92ac13b27ca76c86d443|986d9616ffee29ce252b07cc4eed1989d0371d45|2026-10-23|feat(providers): Stripe test-mode processor over a pinned wire, with the money-safety fixes
+b31373170953705f180246e254a8c2e9a41b4931|4511236afb00deeb3c3f45d67a3c7c9b429525be ceb6ed6f7851422cfb4d4532249c6f9e8fb9363b|2026-10-23|feat(spatial): original closet, local pose and gated development preview flows (#36)
+27f3215a9cb3512ee6d92a5a6fb13519bd82385d|1c83c801e4320cc7ccb339b58d183036c8fafbc0|2026-10-23|orchestration: founder question set 2026-10-23 with Mia recommendations (Mia)
+1c83c801e4320cc7ccb339b58d183036c8fafbc0|7697a01fcc0fbf7eaeb2187ed9bcb71e0bcd2713|2026-10-23|orchestration: next assignment for consumer-domains lane, PR #52 conflict resolution (Mia)
+7697a01fcc0fbf7eaeb2187ed9bcb71e0bcd2713|d81180182574a192efa794cc449030c7627d0cf5|2026-10-23|orchestration: 2026-10-23 merge log with per-PR rationale (Mia)
+d81180182574a192efa794cc449030c7627d0cf5|0c3d7ea2878d66a35d68451df4edb60d79f1ed92|2026-10-23|orchestration: direct-trigger protocol (Mia)
+0c3d7ea2878d66a35d68451df4edb60d79f1ed92|1f0d7387e6877c5727136fcf35f043951de4f3ac ecece17711466d91f9fc67c626d3e7bf5980bd7c|2026-10-23|Merge pull request #54 from brandmeonline/claude/midnight-rights-lifecycle-yhfyyu
+986d9616ffee29ce252b07cc4eed1989d0371d45|e41bbb46f41625ff99614e2aa85f76ac021978f7|2026-10-23|refactor(providers): card-number helpers and processor log redaction in a leaf module
+e41bbb46f41625ff99614e2aa85f76ac021978f7|cb88977e8d3d0b6c7c2ff0a22751659c0bf2d257|2026-10-23|feat(providers): payment and fulfillment collaborator interfaces, behind the merchant
+588245bede4f78048a1055b459427fa4d59f16c0|4b984729058321d3be5249d1c9441b27d6e70cfd 1f0d7387e6877c5727136fcf35f043951de4f3ac|2026-10-23|Merge main (1f0d738, foundation round 2) into opus-consumer-domains
+1f0d7387e6877c5727136fcf35f043951de4f3ac|5174ec27a482e9364173be82137c7d7dbc17f375 744d593be75bf892171631ccdb18785d7f0c6e27|2026-10-23|Merge pull request #53 from brandmeonline/claude/opus-foundation-w00-2hgiw5
+8764aa20aca546ecda47cbac4325f07b68c36a2e|cb88977e8d3d0b6c7c2ff0a22751659c0bf2d257|2026-10-23|feat(mcp): keyed log refs, audited refusals, card security codes, transaction guard
+45c5c59db2d6a81543702d2af457bc09a9b096bf|00f863b4c43e0f110e2226daaaebcc963abb9c94|2026-10-23|test(ui): wait for hydration before enlarged-text checks
+4b984729058321d3be5249d1c9441b27d6e70cfd|929b965cfd036c8b572c14b5512aa9937e0e5f0f|2026-10-23|status: record the ignored-fixture finding and clean-checkout evidence
+6c7901053f5b80479c36a6635e644aa45d06ac57|cb88977e8d3d0b6c7c2ff0a22751659c0bf2d257|2026-10-23|docs(status): S16 audited assistant path, payment seam, dev planner, cancellation, provider setup
+929b965cfd036c8b572c14b5512aa9937e0e5f0f|cbca4101bec6cdb030f17beb671b9ac9c10d9c99|2026-10-23|tests: commit the persona recommender fixture (.gitignore *.json hid it)
+00f863b4c43e0f110e2226daaaebcc963abb9c94|cfdecb6597b3bba6814e6ab69a0f87117757555d|2026-10-23|test(ui): activate reviewed visual regression baselines
+cb88977e8d3d0b6c7c2ff0a22751659c0bf2d257|de820ade85f7e326806cb3d5da96143e59a75f22|2026-10-23|chore(commerce): bind the submit failure explicitly in its retried callback; drop unused imports
+de820ade85f7e326806cb3d5da96143e59a75f22|0f75b1872f17950db8bcfe1aeebce6fbd165ba37|2026-10-23|fix(orchestrator): model planner fails closed and leaks nothing it should not
+cbca4101bec6cdb030f17beb671b9ac9c10d9c99|17c7d9a93ca60a3f15365b75dfe29534f93e4e97|2026-10-23|ci: run the consumer-domains suites (persona, wardrobe, social, rewards, media)
+ceb6ed6f7851422cfb4d4532249c6f9e8fb9363b|a78433d66e8c41963abd1f62f810f920ecdc6ee1|2026-10-23|feat(spatial): add tested local pose and gated development preview flows
+cfdecb6597b3bba6814e6ab69a0f87117757555d|9a93d926fdc45672351f5bb97d267681598d0fc6|2026-10-23|fix(ui): stabilize capture state and compact account navigation
+17c7d9a93ca60a3f15365b75dfe29534f93e4e97|bce75143c9f2d722e571e91ea06f99e1e1c1eca4|2026-10-23|status: stage 10 (main merged, PR retargeted, Next 15 fix)
+0f75b1872f17950db8bcfe1aeebce6fbd165ba37|0bb033d1f39eef17edcde687feb2af4277bfe6fb 5145a52e02e0a666018485693d62c7581353a934|2026-10-23|merge: operator provider setup and connection tests into the round 2 lane
+bce75143c9f2d722e571e91ea06f99e1e1c1eca4|315879c59c5a652d4314ee02c4628a7d02cac954|2026-10-23|check-in rulings: PD-09/10/11 ratified, unwired reward rules hidden
+315879c59c5a652d4314ee02c4628a7d02cac954|09ad4e1cfb8aef2b911de45c97c5c66d5205fcca|2026-10-23|console: Next 15 request APIs in the ops pages
+9a93d926fdc45672351f5bb97d267681598d0fc6|0db9ec6f5fe8778c890133e6d229e0f29edc1891|2026-10-23|fix(ui): decode product routes and preserve reservation retries
+09ad4e1cfb8aef2b911de45c97c5c66d5205fcca|851e0eadf7b8c32053452e355294fe248bcba7c0 5174ec27a482e9364173be82137c7d7dbc17f375|2026-10-23|Merge main (5174ec2) into opus-consumer-domains
+0bb033d1f39eef17edcde687feb2af4277bfe6fb|07a3fdc50c38b6fab704bcc19e9ebcb7aaada304|2026-10-23|feat(commerce): member-requested cancellation of unshipped units
+07a3fdc50c38b6fab704bcc19e9ebcb7aaada304|be4e959c827ae2a609705efd85de70456c3fdec4|2026-10-23|fix(commerce): exchanges back into an earlier variant, and returning units are not exchangeable
+5145a52e02e0a666018485693d62c7581353a934|5051efc392c6f7b17c7f7180efeec1e9ed3d383c|2026-10-23|fix(providers): retry setup hydration when the first store read fails
+0db9ec6f5fe8778c890133e6d229e0f29edc1891|c9a458f5e53b2ef5be327db28c10cb258041f2ea|2026-10-23|fix(ui): complete dev decision mount and enlarged-text navigation
+5051efc392c6f7b17c7f7180efeec1e9ed3d383c|1dc4245f66688ab6bb8270efed0b54a4f01859c1|2026-10-23|feat(console): editable provider setup with connection tests and results
+be4e959c827ae2a609705efd85de70456c3fdec4|fa6c429832d89db24d17fb94624a4aad606f5eaf|2026-10-23|feat(commerce): simulator merchant pays through an injected rail; Stripe test mode is startup config
+851e0eadf7b8c32053452e355294fe248bcba7c0|efa1a25928dc1960736a748b90dc14d578e396f3|2026-10-23|status: stage 9 (Ultra Plan), credential manifest, check-in packet
+1dc4245f66688ab6bb8270efed0b54a4f01859c1|5ab141fa3cbffb9084ec31c07307e4005b13411b|2026-10-23|feat(providers): operator setup workflow and connection tests
+c9a458f5e53b2ef5be327db28c10cb258041f2ea|28804c723dd4faca3801ac711bbc9fe6d0072dec|2026-10-23|feat(ui): connect My Data and correct wardrobe identity consumers
+fa6c429832d89db24d17fb94624a4aad606f5eaf|3b5bc5e31f1d1f0c8b011bcbbba85349a5169f7f|2026-10-23|feat(providers): payment processor seam with simulated and Stripe test-mode processors
+efa1a25928dc1960736a748b90dc14d578e396f3|b79436d6a013982ad2da6bb0206aa68b0e6a7aee|2026-10-23|jobs: one scheduled-work process for the lane
+b79436d6a013982ad2da6bb0206aa68b0e6a7aee|e48414a08f6d6fc3316080904be5183d76f9dbc5|2026-10-23|social: mute (ch.01 §6.4)
+3b5bc5e31f1d1f0c8b011bcbbba85349a5169f7f|d7ad7d17d512693ed1d82971e1623b7f0e60bb6b|2026-10-23|feat(orchestrator): model-backed planner (dev form) behind a provider-neutral adapter
+28804c723dd4faca3801ac711bbc9fe6d0072dec|9c2bb10614c4409d74d2b31664ee115422e909da|2026-10-23|feat(ui): connect catalog and inbox with preference and browser fixes
+e48414a08f6d6fc3316080904be5183d76f9dbc5|84fad9d5bf74f2d491efee8a7aea6e053ad71b7c|2026-10-23|console shell adapter and PD-10/PD-11 defaults in one place
+d7ad7d17d512693ed1d82971e1623b7f0e60bb6b|5ab141fa3cbffb9084ec31c07307e4005b13411b|2026-10-23|fix(commerce): foundation authorize for ownership, idempotent task creation, webhook header allowlist
+84fad9d5bf74f2d491efee8a7aea6e053ad71b7c|eb1262015a623d4ba599579598c20082f44e853a|2026-10-23|events: lane Pub/Sub ingress and outbox worker entrypoint
+eb1262015a623d4ba599579598c20082f44e853a|dafd3b169da777ec3e3a7fc2c3f0cab573358e2b|2026-10-23|privacy: guard every consumer writer, register with My Data, close deletion gaps
+9c2bb10614c4409d74d2b31664ee115422e909da|57403ab22ead0a1ee55a47327b9698ad623f173d|2026-10-23|fix(ui): preserve guest retries and validate exact budget entry
+5ab141fa3cbffb9084ec31c07307e4005b13411b|840540b5120ae251c9fd60fe9c0bb205d55b44c0|2026-10-23|fix(mcp): audit assistant tool calls and correlate commerce events with request and task ids
+57403ab22ead0a1ee55a47327b9698ad623f173d|4617097405027f40af1cd79049e93a479a5d32ac|2026-10-23|feat(ui): verify live consumer journeys against isolated domain gateway
+840540b5120ae251c9fd60fe9c0bb205d55b44c0|074278aa043830ac730d670e4d06ba371a93d5e0|2026-10-23|docs(status): S15 reconciliation with main, V015 deviation, credential manifest
+4617097405027f40af1cd79049e93a479a5d32ac|e5652e6db311458a592f393a6199d6d1413f04c5|2026-10-23|fix(ci): use an available context for UI artifact paths
+074278aa043830ac730d670e4d06ba371a93d5e0|2a504265ad1db71d1802ef28ec5a874e148f4bc9|2026-10-23|feat(commerce): register natively with My Data and guard writes against deletion freezes
+e5652e6db311458a592f393a6199d6d1413f04c5|264b6a0f1c0ca1e5ee6c7363547825537ab380f6 67327e45ed816bd76bc20ed1e2eb694009923530|2026-10-23|feat(ui): consume foundation and wire consumer domain journeys
+2a504265ad1db71d1802ef28ec5a874e148f4bc9|d0554b2600d05544c80c6b737b18d85af69448e9|2026-10-23|fix(console): await params and headers() for Next 15
+d0554b2600d05544c80c6b737b18d85af69448e9|ce85fd0d65e1449fdc7fa050f6d0236ab0b282f1|2026-10-23|fix(migrations): keep V007 as merged and move round-2 schema to V015
+ce85fd0d65e1449fdc7fa050f6d0236ab0b282f1|0fbe7771a6accc5c7f13ca6d36fd0623b64371ea 5174ec27a482e9364173be82137c7d7dbc17f375|2026-10-23|Merge origin/main into opus-commerce-agents round 2
+0fbe7771a6accc5c7f13ca6d36fd0623b64371ea|3823ea5dd5b31a5abf68a44c94054ad0a4801f66|2026-10-23|refactor(console): route the page header through one shell-contract seam
+264b6a0f1c0ca1e5ee6c7363547825537ab380f6|da2f430e99c45d559a032414da20444ba6297d22|2026-10-23|feat(ui): publish versioned console shell contract for domain lanes
+a78433d66e8c41963abd1f62f810f920ecdc6ee1|e576558d1b1113514d67ed5b439a4f2289427dbd|2026-10-23|docs(spatial): record published toolchain repair and green CI
+e576558d1b1113514d67ed5b439a4f2289427dbd|5acc8ee40c79b3b4be52357846eed513cbeb6d63|2026-10-23|fix(toolchain): align spatial workspace and restore regression checks
+dafd3b169da777ec3e3a7fc2c3f0cab573358e2b|11860e49658aaf301377945f400de6e3b030692a|2026-10-23|status: stage 8 addendum (console build on branch, pnpm check)
+11860e49658aaf301377945f400de6e3b030692a|e13fd434024a2d9fceefcab4a7670ce0655c3ee8|2026-10-23|console: render the page header locally so ops pages build without the shell
+e13fd434024a2d9fceefcab4a7670ce0655c3ee8|94a91d92d15286d078843c0dd9ff7b9a2b3bbeb2|2026-10-23|console: operator pages for moderation and reward disputes
+da2f430e99c45d559a032414da20444ba6297d22|460814da775a56ce0a78867836d8f62eb37c5250|2026-10-23|fix(toolchain): register consumer frontend in foundation pnpm workspace
+94a91d92d15286d078843c0dd9ff7b9a2b3bbeb2|585b4e02f1e8f3443cca6a7d30257d42c47ad502|2026-10-23|social: member reports and moderation actions
+585b4e02f1e8f3443cca6a7d30257d42c47ad502|5a6d2a727cbe1df749601bf57f276d9b276c6866|2026-10-23|media: try-on server with consent-gated jobs, 24 h retention and manifest deletion
+5acc8ee40c79b3b4be52357846eed513cbeb6d63|cbdc30a716b744dbd61738717b9bc1d64321128c|2026-10-23|docs(spatial): record verified keyboard milestone checkpoint
+744d593be75bf892171631ccdb18785d7f0c6e27|cebbbd6feb56f801026df4b9e50e2c081da1b565|2026-10-23|Projections: address review findings (per-recipient shares, purge marker, field stems)
+cbdc30a716b744dbd61738717b9bc1d64321128c|6899d88202617808443bf7f72257643503c7c0e8|2026-10-23|fix(spatial): preserve keyboard placement focus and native controls
+114470007e9c631010ee22930a8ddfb75d0ea700|6899d88202617808443bf7f72257643503c7c0e8|2026-10-23|[triage] module-regression: drop pnpm version pin conflicting with packageManager
+5a6d2a727cbe1df749601bf57f276d9b276c6866|efae8b49263c705dd6e47c727c6dd62afbb47b94|2026-10-23|rewards: V005 ledger, UTC caps, linked reversals, badges, benefit reservations, disputes
+3823ea5dd5b31a5abf68a44c94054ad0a4801f66|0f30d41ae1c0df74b4493e55cacd9a7bd4963c03|2026-10-23|fix(commerce): close review findings on approved terms, grants, returns and tasks (S14)
+6899d88202617808443bf7f72257643503c7c0e8|5200b12740d38873eb71b05918315b676aa3fb2b|2026-10-23|docs(spatial): record verified PR publication and recovery checkpoint
+5200b12740d38873eb71b05918315b676aa3fb2b|7ccc0b4d18a64c8f4bb43a2a59a50244916e8581|2026-10-23|feat(spatial): ground folded garment displays and verify transitions
+460814da775a56ce0a78867836d8f62eb37c5250|a37ec2b3f0c70820e7c09f591cc8d3b39d09b984|2026-10-23|fix(ci): use packageManager pnpm version for module regression
+efae8b49263c705dd6e47c727c6dd62afbb47b94|e4dc4556ec2592fa68548acd5951aea340a638e7|2026-10-23|social: V004, friendships/blocks, server-timed decisions, revocable shares, notifications
+0f30d41ae1c0df74b4493e55cacd9a7bd4963c03|72e593ee4a690272ee80631a44f898540efd6d98|2026-10-23|fix(console): use a lane-owned page header so the pages build without the shell branch
+72e593ee4a690272ee80631a44f898540efd6d98|61fb22aa3f05cf0006de8003138435b6df53f669|2026-10-23|feat(commerce): simulator exchange and exchanged wardrobe effect (S13)
+61fb22aa3f05cf0006de8003138435b6df53f669|9bb175338719ca0227b0b4ef4d6332abb751aff8|2026-10-23|feat(console): provider and commerce operations pages on shell contract v1 (S12)
+9bb175338719ca0227b0b4ef4d6332abb751aff8|0bab30e1679e58552b1c1a4f3e915036ebd340cf|2026-10-23|feat(commerce): routers on foundation middleware and unmounted domain HTTP API (S11)
+e4dc4556ec2592fa68548acd5951aea340a638e7|18b4a8226df8c9cba0f4bd6fa50faccd8253aeac|2026-10-23|wardrobe: V003, intake, duplicates, placement validation, outfits, packing, order reduction
+0bab30e1679e58552b1c1a4f3e915036ebd340cf|07aebddff2d25775f0462d71bdb057a0a58d2959|2026-10-23|feat(provider-contracts): normalized provider payloads and capability helpers (S10)
+07aebddff2d25775f0462d71bdb057a0a58d2959|8cf7d59e0c35299af3485bff88d213618eabe887|2026-10-23|docs(status): opus-commerce-agents S9 CI-gating gap and proposed patch
+8cf7d59e0c35299af3485bff88d213618eabe887|d82551e90ba9f7a414f9e620178c2ac8eb42bafe|2026-10-23|feat(commerce): Spanner store for V006/V007, retry-safe transactions, My Data jobs (S9)
+ecece17711466d91f9fc67c626d3e7bf5980bd7c|240a96776e503173fdcd48a19df79564da270e61|2026-10-23|docs(midnight-rights): record network verification of the re-pinned tuple
+18b4a8226df8c9cba0f4bd6fa50faccd8253aeac|61274dd638061064d3646a94d02679fd27db638d|2026-10-23|persona: internal HTTP router, unmounted gateway router, idempotent guest migration
+240a96776e503173fdcd48a19df79564da270e61|cc8620914214cc3b0bb43bef4631107b826cf38b|2026-10-23|docs(chain): correct node-version claims after the 1.0.400 move
+a37ec2b3f0c70820e7c09f591cc8d3b39d09b984|019204c3ff9d51b3500db4b0489fb82fa0fabe70|2026-10-23|feat(ui): harden shell clearance and add accessible control primitives
+cc8620914214cc3b0bb43bef4631107b826cf38b|5174ec27a482e9364173be82137c7d7dbc17f375|2026-10-23|chore(chain): re-pin Midnight tuple to the current support matrix (Stage 10)
+cebbbd6feb56f801026df4b9e50e2c081da1b565|5174ec27a482e9364173be82137c7d7dbc17f375|2026-10-23|Foundation round 2: Firestore projections, security rules, log redaction
+61274dd638061064d3646a94d02679fd27db638d|3fd36846f681a5e302dc7bd718b09696a1922fa8|2026-10-23|persona: reconcile with foundation framework, register W10 privacy categories, legacy backfill
+d82551e90ba9f7a414f9e620178c2ac8eb42bafe|4325a4d8be194f5a6a178cc449d57db1c71af46a|2026-10-23|docs(status): opus-commerce-agents S8 clean-checkout verification
+4325a4d8be194f5a6a178cc449d57db1c71af46a|450c12634d2c2678e6d5ffc0d734b8d667300bb6|2026-10-23|feat(commerce): adopt foundation Principal, errors, event registry and data categories (S8)
+450c12634d2c2678e6d5ffc0d734b8d667300bb6|7c61afd7c98a66836ba91d715bc4c6c913807003|2026-10-23|docs(status): opus-commerce-agents S7 — resume, re-verified AP2/MCP pins, amended principal mapping
+3fd36846f681a5e302dc7bd718b09696a1922fa8|d839267fc1f74b5e778e83f2930953e1a5400712 67327e45ed816bd76bc20ed1e2eb694009923530|2026-10-23|Merge bench/opus-foundation-20261005 (67327e4) into consumer-domains lane
+5174ec27a482e9364173be82137c7d7dbc17f375|20bf3e95af466df7e3a8eb6cb14c9823921a12b7|2026-10-23|feat(privacy): add durable selected rights exports and authenticated downloads (#50)
+02297b2cea98dfd54818de5a3104a1ce341acfcd|2a6c6501cf5ea89f524a79e43fba42bb226ee9ca|2026-10-23|fix(privacy): restrict ADC credential-refresh transport
+2a6c6501cf5ea89f524a79e43fba42bb226ee9ca|20bf3e95af466df7e3a8eb6cb14c9823921a12b7|2026-10-23|feat(privacy): add durable selected rights exports with private downloads
+20bf3e95af466df7e3a8eb6cb14c9823921a12b7|f4a4015f1820f35a11312ea020421a9d091dbd28|2026-10-22|feat(reads): add authenticated rights and partial My Data backend (#49)
+10a468395cde98eaf7b7f0159855c7bac3a5827a|f4a4015f1820f35a11312ea020421a9d091dbd28|2026-10-22|feat(reads): serve authenticated rights and partial My Data reads
+f4a4015f1820f35a11312ea020421a9d091dbd28|1a4cfd1d142bb562b5c2e12c211111345a6fc23d|2026-10-22|fix(privacy): preserve deletion freezes and resume incomplete restores safely (#48)
+e6274ef5a19e5db77d27c19c3b7349b08fa96c84|e022cfea471f9f7d55ea74180263fe84a84c284d|2026-10-22|fix(privacy): enforce durable deletion barriers after restriction removal
+e022cfea471f9f7d55ea74180263fe84a84c284d|1a4cfd1d142bb562b5c2e12c211111345a6fc23d|2026-10-22|fix(privacy): preserve deletion freezes and fail closed during restore recovery
+1a4cfd1d142bb562b5c2e12c211111345a6fc23d|fbadf012155663be8e174c4845e6c9c0e3b4dca6|2026-10-22|feat(events): deliver durable outbox events through fenced Pub/Sub worker (#47)
+65367789130870c8c2a0e786f2d6152357d88093|d7dd90d122f5220815033a829dbff12152873b69|2026-10-22|fix(events): require retention and verify transport failures and schema rollout
+d7dd90d122f5220815033a829dbff12152873b69|fbadf012155663be8e174c4845e6c9c0e3b4dca6|2026-10-22|feat(events): deliver durable outbox events through fenced Pub/Sub worker
+fbadf012155663be8e174c4845e6c9c0e3b4dca6|74e137534b1b6f04e536a433977763a1775dc950|2026-10-22|fix(security): patch production dependencies and gate image publishing on audits (#46)
+542b52cc12ca668e64c13a072acf7374bd0a5752|da7918e0d0c69485c4af4af7bbc93c9ee7b71a17|2026-10-22|fix(ci): resolve console codec dependencies from packaged entrypoint
+da7918e0d0c69485c4af4af7bbc93c9ee7b71a17|74e137534b1b6f04e536a433977763a1775dc950|2026-10-22|fix(security): patch production dependencies and gate image publishing on audits
+74e137534b1b6f04e536a433977763a1775dc950|238f65a357c64169662738b17adbb526c999a52b|2026-10-22|feat(chain): reconcile durable operations and project finalized entitlements (#45)
+e96356eaffaffb0c64e2a4ed1b2e1753a8cd992d|238f65a357c64169662738b17adbb526c999a52b|2026-10-22|feat(chain): reconcile durable operations and project finalized entitlements
+238f65a357c64169662738b17adbb526c999a52b|a2e625a104c4e69e88731ff81e6cdf7b4c2940a4|2026-10-22|feat(chain): persist operations and reconcile authenticated transaction evidence (#44)
+e2dcbdd3a916c23ac409ee564b6ada3fa56f0cf6|6c732e9b9bd8fe782f39041741a0c56784dba5e5|2026-10-22|test(chain): enforce complete rejection evidence and atomic outbox rollback
+6c732e9b9bd8fe782f39041741a0c56784dba5e5|a2e625a104c4e69e88731ff81e6cdf7b4c2940a4|2026-10-22|feat(chain): persist operation journal and reconcile authenticated transaction evidence
+a2e625a104c4e69e88731ff81e6cdf7b4c2940a4|1ac8f97da6b326cfe6f425e26abd0daac6044917|2026-10-22|feat(integration): secure rights routes, wire domain events, and update Preprod (#43)
+32e63d4d87f515f5398ab01d1eb18eba94019b5c|6d971693c76b1718e39b82ef0e3f16f722b0b991|2026-10-22|fix(ci): run module regression with the repository Node toolchain
+6d971693c76b1718e39b82ef0e3f16f722b0b991|fc6dfdc6e5bdb0244adde72cd3552719a48f3868|2026-10-22|fix(core): package rights domain dependencies and validate event schemas in image smoke tests
+fc6dfdc6e5bdb0244adde72cd3552719a48f3868|1ac8f97da6b326cfe6f425e26abd0daac6044917|2026-10-22|feat(integration): connect rights auth boundary, transactional events, and current Preprod configuration
+1ac8f97da6b326cfe6f425e26abd0daac6044917|b294e9e474161c04aeaf80426099f506e6823693|2026-10-22|fix(ci): build and verify all Docker images before publishing (#42)
+a5373d5c0eef5466a20e6ef4d4682a06275e20d4|df57d0be8cc8ca8f5f76af482dd9232fc0354dfc|2026-10-22|fix(agents): keep legacy simulated workflows out of strict modes
+df57d0be8cc8ca8f5f76af482dd9232fc0354dfc|16bdf8c231ec8583052dfb725c2645f817c08dc8|2026-10-22|fix(security): remove unneeded wheel tooling from agent runtime
+16bdf8c231ec8583052dfb725c2645f817c08dc8|368fa8d81204da42e2b6862160f5e380a7922b5e|2026-10-22|ci: publish only verified images after credential-free builds
+368fa8d81204da42e2b6862160f5e380a7922b5e|4b2a618702d14029e2f91c8958efe49f05c16e40|2026-10-22|fix(agents): connect packaged CLI to the existing workflow API
+4b2a618702d14029e2f91c8958efe49f05c16e40|9b613026e79cae05b3c2d40fc3c257420238ee90|2026-10-22|ci: run real Python emulator suites and exclude cloud credentials from images
+9b613026e79cae05b3c2d40fc3c257420238ee90|c6f5f96276ff141318ec50b6af40a39012b3554e|2026-10-22|test(ci): smoke packaged runtimes and resolve agent tooling compatibility
+c6f5f96276ff141318ec50b6af40a39012b3554e|b294e9e474161c04aeaf80426099f506e6823693|2026-10-22|fix(ci): build workspace Docker images before publishing
+b294e9e474161c04aeaf80426099f506e6823693|6044818c14930b1caa7f02fa3e558a5c8816dc0a|2026-10-22|ci(chain): repair and verify the Midnight chain gate (#41)
+6044818c14930b1caa7f02fa3e558a5c8816dc0a|7325aef24218ad6319b39cebff4702fee591a293|2026-10-10|test(contracts): make the honest reprint path reachable in the random property (#40)
+7325aef24218ad6319b39cebff4702fee591a293|49623e4e3746eb2913b839545428d21b5d03e12d|2026-10-10|fix(deps): unpin pydantic to resolve langchain/anthropic/graphrag conflict
+49623e4e3746eb2913b839545428d21b5d03e12d|99fc2fa202d2f9c4c4f8d9c4a2a3c5bce6a719d3|2026-10-10|fix(tests): make property-test vacuity guard deterministic (#39)
+a699331df56c12570067223dbaad9c0a86d1567a|99fc2fa202d2f9c4c4f8d9c4a2a3c5bce6a719d3|2026-10-10|fix(tests): make property-test vacuity guard deterministic
+99fc2fa202d2f9c4c4f8d9c4a2a3c5bce6a719d3|7a3e7fed82a4a9aef5e8b848e82037abbd26015d|2026-10-10|fix(deps): bump neo4j to 5.17.0 for neo4j-graphrag 0.7.0 compat
+7a3e7fed82a4a9aef5e8b848e82037abbd26015d|1a4b5a0751f4ab01f19b071a3c2837109d61ff59|2026-10-09|fix(deps): unpin neo4j-graphrag to let pip resolve compatible version
+1a4b5a0751f4ab01f19b071a3c2837109d61ff59|9e6699be54223c1ac8e838c5bb568b581c6f6635|2026-10-09|fix(deps): use neo4j-graphrag 0.7.0 compatible with neo4j 5.16
+9e6699be54223c1ac8e838c5bb568b581c6f6635|ba87ebcc64d70d6af9144ac188c990da126078ac|2026-10-09|ci: use lux-realestate-app GCP project for Docker push
+ba87ebcc64d70d6af9144ac188c990da126078ac|e2ea5834da0acd690101665f59e4d95fc9f5aab6|2026-10-09|fix(deps): bump neo4j-graphrag to existing version 1.0.0
+e2ea5834da0acd690101665f59e4d95fc9f5aab6|772cd45b91f7a527dc987cbe2fda57cc259495a2|2026-10-09|ci: rewrite staged lockfile importer per service for Docker builds
+772cd45b91f7a527dc987cbe2fda57cc259495a2|e1e0780ba8773f4f5ce703964e840c193612d9f3|2026-10-09|ci: add lockfile importer rewrite script for Docker builds
+e1e0780ba8773f4f5ce703964e840c193612d9f3|67e974eb8b560cd1881d049ab15cef7f30ca3bb7|2026-10-08|fix(pnpm): move overrides to pnpm-workspace.yaml for Docker builds
+67e974eb8b560cd1881d049ab15cef7f30ca3bb7|18b09e371a06b78861cb440de80b75d1e7678566|2026-10-08|ci: stage pnpm-workspace.yaml for Node Docker builds
+18b09e371a06b78861cb440de80b75d1e7678566|b3205828d3019f1b97c4f8c8eb606276ac3cc842|2026-10-08|fix(docker): copy pnpm-workspace.yaml for overrides in Node builds
+b3205828d3019f1b97c4f8c8eb606276ac3cc842|7aa6d32ceddfddce6ccdcb1f461fac4135309b92|2026-10-08|fix(docker): align Node Dockerfiles with pnpm 10 toolchain
+7aa6d32ceddfddce6ccdcb1f461fac4135309b92|e007271d57703d825c46ab295d03befe9f200576|2026-10-08|ci: stage pnpm lockfile for Node Docker builds
+e007271d57703d825c46ab295d03befe9f200576|e3862f5de819313ddb9d2d2b192488afe388d876|2026-10-08|ci: stage brandme_core for Python Docker builds
+e3862f5de819313ddb9d2d2b192488afe388d876|dd88f29a22f9b36032430a87cf82e57b4aa52a5f|2026-10-08|fix(docker): copy brandme_core from build context, not parent dir
+dd88f29a22f9b36032430a87cf82e57b4aa52a5f|0fcee6f858bb1e87765ba533ecd9a46b7210c386|2026-10-08|ci: update test-gateway to Node 20 and pnpm v4 for v9 lockfile
+0fcee6f858bb1e87765ba533ecd9a46b7210c386|cc5b354d4fd93835045149db4b555a527c5a1287|2026-10-08|W11: set engineStrict=false so dependency engines do not fail CI install
+cc5b354d4fd93835045149db4b555a527c5a1287|e1d69c1028a7804b2de355eb5ff93b797ad5036c|2026-10-08|W11: relax brandme-chain engines.node to >=20 to match CI runner
+e1d69c1028a7804b2de355eb5ff93b797ad5036c|3f366f0748a678f623e40a37ce375483e96a1fe7|2026-10-08|W11: relax engines.node to >=20 to match CI runner
+3f366f0748a678f623e40a37ce375483e96a1fe7|f5c6dd922850a9dc7f836cb448de4839d1fee04f bec80b1f25fcd4a310529888351c45c71d33dc4a|2026-10-08|W11: integrate opus foundation, consumer-domains, commerce and midnight-rights lanes into main
+bec80b1f25fcd4a310529888351c45c71d33dc4a|907883926b674ddb6c03f238ab2a6c4537307678|2026-10-08|W11: regenerate pnpm-lock.yaml under pnpm 10 (lockfileVersion 9.0) with midnight overrides
+907883926b674ddb6c03f238ab2a6c4537307678|3cdde59093a32c1322a08ac3d358ca13af317074 44aaceab55bdcf595ce56ff2ded562d79bf1d190|2026-10-08|W11: merge opus-midnight-rights lane (W09/W10) into integration branch
+3cdde59093a32c1322a08ac3d358ca13af317074|ff2167b598b943d0b00acc58e7236a2382e069a1 7c61afd7c98a66836ba91d715bc4c6c913807003|2026-10-08|W11: merge opus-commerce-agents lane (W06/W07) into integration branch
+ff2167b598b943d0b00acc58e7236a2382e069a1|2eac4d70c67be17790239f0ecd930636ba70fce9 d839267fc1f74b5e778e83f2930953e1a5400712|2026-10-08|W11: merge opus-consumer-domains lane (W03-W05/W08) into integration branch
+2eac4d70c67be17790239f0ecd930636ba70fce9|2b0befd7beec2f4a3e2686f789f9f64d7892b66b 67327e45ed816bd76bc20ed1e2eb694009923530|2026-10-08|W11: merge opus-foundation lane (W00/W01/W02) into integration branch
+2b0befd7beec2f4a3e2686f789f9f64d7892b66b|f5c6dd922850a9dc7f836cb448de4839d1fee04f|2026-10-08|W11: pre-resolve foundation module-regression.yml (identical fix, comment wording)
+64d5fd6ca17d3cfebd600c0d9fa2a7584f0f4f17|f5c6dd922850a9dc7f836cb448de4839d1fee04f|2026-10-08|[triage] add brandme-frontend to pnpm workspace and lockfile
+7ccc0b4d18a64c8f4bb43a2a59a50244916e8581|5b020d776a40c7b93a4c20546b3fe414be2163c2|2026-10-08|feat(spatial): add saved views, capsule tray and placement interactions
+5b020d776a40c7b93a4c20546b3fe414be2163c2|7bea00e682499cddfc4b9bbc839e73643c46257c|2026-10-07|docs(spatial): record verified branch publication and remaining gates
+7bea00e682499cddfc4b9bbc839e73643c46257c|00c9cfcbef951e14fbdbe578a81d4407bdc67ed6|2026-10-07|feat(spatial): scaffold original closet assets and guest AR experience
+f5c6dd922850a9dc7f836cb448de4839d1fee04f|0f5f58a9eecaca46b367c9bd96f89654343fa5fb 512021c35a6b9d381c94fe02495ba903f411b916|2026-10-07|ci: repair the five workflow-config faults keeping CI red since January
+d839267fc1f74b5e778e83f2930953e1a5400712|5d919ab6fdc99d2cb2d3f295b9d8473dff4619e1 f394853330d71ade90d7d682f6961d8c36e752ef|2026-10-07|Merge opus-consumer-domains persona W03 into bench branch
+44aaceab55bdcf595ce56ff2ded562d79bf1d190|ede63f6128827819776cac94920b2276d0f5961c 2d5c773f38aca9e858a827a4d145f52b8a079317|2026-10-06|Merge opus-midnight-rights W09/W10 into bench branch
+7c61afd7c98a66836ba91d715bc4c6c913807003|305a24beacd5882011edfa23405455e1723b2312 102098124d79cc6c47381a89f81aa87766041fd9|2026-10-06|Merge opus-commerce-agents W06/W07 into bench branch
+102098124d79cc6c47381a89f81aa87766041fd9|81a1bbe3b57cd381a6931209792d51bc40bfcf7e 67327e45ed816bd76bc20ed1e2eb694009923530|2026-10-06|Merge bench/opus-foundation-20261005 (67327e4: V001-only migration test fixture)
+67327e45ed816bd76bc20ed1e2eb694009923530|3704ec701b8adaf60fd41df068e4fe001ae3d59b|2026-10-05|fix(foundation): test migrations against V001-only fixture; validate reserved numbers 1-9 (founder patch from PR #35)
+81a1bbe3b57cd381a6931209792d51bc40bfcf7e|31bea91307ea4d918c6825322fb57925bab812bf|2026-10-05|docs(status): record foundation migration-test blocker with proposed patch
+2d5c773f38aca9e858a827a4d145f52b8a079317|9211286b0d5aaa17bd4c8ddfcb6edc8a007443b8|2026-10-05|docs(status): record CI fixes and the untracked-JSON correction
+9211286b0d5aaa17bd4c8ddfcb6edc8a007443b8|62cde973aba37bf9ff83578d827bee9c91ef850c|2026-10-05|fix(chain): pass an explicit WebSocket implementation to the indexer provider
+62cde973aba37bf9ff83578d827bee9c91ef850c|9f242b9c36a1b09450cb90c7ea1dfe1dbde89d71|2026-10-05|fix(chain): track toolchain/manifest/evidence JSON ignored by root *.json rule
+31bea91307ea4d918c6825322fb57925bab812bf|7df7a9c51e047f4db2a877ed4fa7cb2e9f3d6e92|2026-10-05|fix(deps): bump PyJWT, cryptography and jwcrypto pins for reported CVEs
+9f242b9c36a1b09450cb90c7ea1dfe1dbde89d71|7c259a035ef0fb83b229036176638c8ed29ade21|2026-10-05|ci: port PR #30 fixes for pnpm setup, gateway test env and SARIF upload
+7c259a035ef0fb83b229036176638c8ed29ade21|a419088a8d82d92c2841fa645f55ebd7dc1e4829|2026-10-05|feat(privacy): bridge foundation register_data_category into My Data orchestrator
+7df7a9c51e047f4db2a877ed4fa7cb2e9f3d6e92|33198a670725b055f1c75e0dcb0ec726817f39ec|2026-10-05|docs(status): opus-commerce-agents S6 foundation merge reconciliation
+33198a670725b055f1c75e0dcb0ec726817f39ec|bdcbad9023c09a001b48a7aa05a7c840ea849e79|2026-10-05|fix(mcp): stop flagging UUIDs as card numbers in the PAN guard
+bdcbad9023c09a001b48a7aa05a7c840ea849e79|2fc4a1c69f66fa34b4967d1498f2adbf76d80f16 3704ec701b8adaf60fd41df068e4fe001ae3d59b|2026-10-05|Merge bench/opus-foundation-20261005 (opus-foundation W00-W02) into commerce lane
+f394853330d71ade90d7d682f6961d8c36e752ef|aa7220062b0adf40c1c66c3c3b4d9754db2ffd4b|2026-10-05|status: record foundation merge location and reconciliation checklist
+3704ec701b8adaf60fd41df068e4fe001ae3d59b|25dff5c8e90c0b3a5b83210aad928c4f1b9f20ae|2026-10-05|docs(foundation): record PR #33 merge unblocking downstream lanes
+25dff5c8e90c0b3a5b83210aad928c4f1b9f20ae|e4f134289087f8a06f5f8de07326ded189cc4b8c 4d1634af12dcd90b6d9d8813a5467ea9ea1c9efa|2026-10-05|Merge opus-foundation W00-W02 into bench branch
+a419088a8d82d92c2841fa645f55ebd7dc1e4829|4e26d14b32afa01a5f633fc15a109b8759ec0818|2026-10-05|feat(chain): live local-network evidence, two-phase deploy, Cardano anchor boundary, cube field filtering
+019204c3ff9d51b3500db4b0489fb82fa0fabe70|472c404f3c34ff3eb59e23256abc77b36fb6da75|2026-10-05|docs(ui): record independent browser verification of W01 shell at 472c404
+4d1634af12dcd90b6d9d8813a5467ea9ea1c9efa|dc4b62bf4421f1140d3ac5b9dd427f2b45771474|2026-10-05|Status: CI state and pre-existing Trivy findings
+dc4b62bf4421f1140d3ac5b9dd427f2b45771474|050e3c36982008f1a8bda8a25384f9f663ea8572|2026-10-05|Fix intermittent Spanner session leak in gateway store; update SARIF upload
+050e3c36982008f1a8bda8a25384f9f663ea8572|63df43fc9a8c50267ebace8b86be255c6edfd228|2026-10-05|W00-W02 status, fresh-checkout evidence and acceptance results
+4e26d14b32afa01a5f633fc15a109b8759ec0818|063316034fb4f2bd229b2813d123b7660714c8cd|2026-10-05|feat(gateway): unmounted v1 rights, chain, ownership, assets and privacy routers
+63df43fc9a8c50267ebace8b86be255c6edfd228|14680c10e9396c04cb5f0082df4280e2ea68f3f3|2026-10-05|Track contracts foundation-schemas.json hidden by the *.json ignore rule
+063316034fb4f2bd229b2813d123b7660714c8cd|49ac4e67498e2e63e06eefde2dfc62f2f81bbe5f|2026-10-05|feat(privacy,rights): My Data framework, per-domain deletion registry, rights projections and reprint workflow
+14680c10e9396c04cb5f0082df4280e2ea68f3f3|01d34222db5ae96c4874aa6f469b09984f02fff2|2026-10-05|docs/build: compatibility lock, deviations, local setup; setup builds the venv
+01d34222db5ae96c4874aa6f469b09984f02fff2|4f9f4bc7aba4cfc21fe72e35f74ef9fa87de270b|2026-10-05|W02: gateway identity boundary, /api/v1/me, developer commands and CI gate
+472c404f3c34ff3eb59e23256abc77b36fb6da75|9e21bd07d6649e5ed5a6548e382d91a5f5baf6da|2026-10-05|feat(ui): build consumer and operations shells from design tokens
+49ac4e67498e2e63e06eefde2dfc62f2f81bbe5f|e84a275c61700cd1f94e0d06b3c0620893b3092a|2026-10-05|feat(chain): replace Midnight stub with real provider adapter, operation tracking and private-state recovery
+2fc4a1c69f66fa34b4967d1498f2adbf76d80f16|e292d0145b50a11badb8c6a23e290e08f77d0f8c|2026-10-05|feat(commerce): V006/V007 Spanner migrations, unmounted gateway routers, assistant task runtime
+4f9f4bc7aba4cfc21fe72e35f74ef9fa87de270b|14562aa1b18d014924e9b575166e7972fea8395f|2026-10-05|W01/W02: pinned workspace, contract packages, migration ledger and outbox framework
+e292d0145b50a11badb8c6a23e290e08f77d0f8c|d6c9e204c07217c767d0ef1aa260c103b65d8e11|2026-10-05|feat(commerce): AP2 v0.2 closed mandate verifier with official-SDK interop; ACP/UCP/A2A gates
+e84a275c61700cd1f94e0d06b3c0620893b3092a|5a07cbe6be961e2336d80914ad68b5c0b8190703|2026-10-05|feat(chain): Compact rights contract with pinned toolchain, artifact manifest and local property tests
+14562aa1b18d014924e9b575166e7972fea8395f|e4f134289087f8a06f5f8de07326ded189cc4b8c|2026-10-05|W00: honest baseline report, trust-path inventory and fail-closed mode guard
+d6c9e204c07217c767d0ef1aa260c103b65d8e11|1d1b21140e946f9063dc112fc54073c6c89383f0|2026-10-05|feat(mcp): principal-bound tool executor, audience-bound authz, retire fake AP2/ACP tools
+1d1b21140e946f9063dc112fc54073c6c89383f0|9f6daa7b8acc2464e6b931b6c30b38fc9d667800|2026-10-05|feat(commerce): bounded purchase domain, provider registry, local simulated provider, Nordstrom gate
+aa7220062b0adf40c1c66c3c3b4d9754db2ffd4b|5d919ab6fdc99d2cb2d3f295b9d8473dff4619e1|2026-10-05|persona: Looking Glass domain, V002 migration, deterministic recommender and emulator-backed tests
+9e21bd07d6649e5ed5a6548e382d91a5f5baf6da|813051af289b431a91dfe296cfcf4421ed94e695|2026-10-05|docs(ui): publish console shell contract and foundation dependencies
+5a07cbe6be961e2336d80914ad68b5c0b8190703|ede63f6128827819776cac94920b2276d0f5961c|2026-10-05|docs(status): record re-verified Midnight tuple and toolchain reachability
+9f6daa7b8acc2464e6b931b6c30b38fc9d667800|305a24beacd5882011edfa23405455e1723b2312|2026-10-05|docs(status): opus-commerce-agents S0 — pins and MCP executor/transport interface
+00c9cfcbef951e14fbdbe578a81d4407bdc67ed6|4511236afb00deeb3c3f45d67a3c7c9b429525be|2026-10-05|docs: add astra-spatial-ar lane brief and ownership map
+813051af289b431a91dfe296cfcf4421ed94e695|4511236afb00deeb3c3f45d67a3c7c9b429525be|2026-10-05|docs: add astra-consumer-ui lane brief and ownership map
+ede63f6128827819776cac94920b2276d0f5961c|4511236afb00deeb3c3f45d67a3c7c9b429525be|2026-10-05|docs: add opus-midnight-rights lane brief and ownership map
+305a24beacd5882011edfa23405455e1723b2312|4511236afb00deeb3c3f45d67a3c7c9b429525be|2026-10-05|docs: add opus-commerce-agents lane brief and ownership map
+5d919ab6fdc99d2cb2d3f295b9d8473dff4619e1|4511236afb00deeb3c3f45d67a3c7c9b429525be|2026-10-05|docs: add opus-consumer-domains lane brief and ownership map
+e4f134289087f8a06f5f8de07326ded189cc4b8c|4511236afb00deeb3c3f45d67a3c7c9b429525be|2026-10-05|docs: add opus-foundation lane brief and ownership map
+4511236afb00deeb3c3f45d67a3c7c9b429525be|0f5f58a9eecaca46b367c9bd96f89654343fa5fb|2026-10-05|docs: specify the complete Brand.Me consumer and Midnight experience
+512021c35a6b9d381c94fe02495ba903f411b916|0f5f58a9eecaca46b367c9bd96f89654343fa5fb|2026-08-31|ci: repair the five workflow-config faults keeping CI red since January
+eed6737062da451a38114f8002159c1bed0e5cb5|18a69acea779c64b37c2a1176a1f04a8470dcee6|2026-08-31|fix(ci): scope foundation.yml push trigger to main; correct the stated fix
+18a69acea779c64b37c2a1176a1f04a8470dcee6|8aa8354a4a2122e573fc8a03ffce7180940fdaa5|2026-08-31|docs: root-cause the Security Scan intermittency as duplicate workflow runs
+8aa8354a4a2122e573fc8a03ffce7180940fdaa5|0957452d8947d054c3e4747f70c0f0d69c4c209d|2026-08-31|docs: add the third CI root cause (Security Scan SARIF upload)
+0957452d8947d054c3e4747f70c0f0d69c4c209d|3523b22a0b41f498c046ffe210d73fba3c2f135b|2026-08-31|docs: record that ci-cd.yml has been red on main since January
+3523b22a0b41f498c046ffe210d73fba3c2f135b|0f5f58a9eecaca46b367c9bd96f89654343fa5fb|2026-08-31|Audit all repos; lift Lux platform foundation into brandme_foundation/
+8b9bd4a718ef0d2ec0826b94537d438df68b2b32|6de84d4bc239d7b75ea947aeafbc3114bd31ca6b|2026-06-11|Design audit: definitive Phase B diagnosis — sandbox blocked by 21st.dev
+6de84d4bc239d7b75ea947aeafbc3114bd31ca6b|425918ccb933a3d5f4213dfd9a2861ca3b9fecde|2026-06-09|Design audit Phase B blocked — log two failure modes for resume
+425918ccb933a3d5f4213dfd9a2861ca3b9fecde|12f5ee727613472d0f6ec819e220b6cdffa72178|2026-06-09|Design audit Phase A — score brandme-frontend against rubric
+12f5ee727613472d0f6ec819e220b6cdffa72178|e758afb4079bd3a55e328ec0a7031ae567ca0d04|2026-06-09|Add design-audit skill — reproducible audit + concept-generation workflow
+e758afb4079bd3a55e328ec0a7031ae567ca0d04|d6207ade74802b162e3dcc65095524f86d244d2f|2026-06-09|Add MCP commerce mandate and cart tool handlers (#28)
+d6207ade74802b162e3dcc65095524f86d244d2f|1733fccc13d97ceebf8a99a98c9d74506f03b1b6|2026-06-09|Claude/understand repo purpose wc ga7 (#27)
+0f5f58a9eecaca46b367c9bd96f89654343fa5fb|4335e270778049ba7c3fe64599ed92ec253981af|2026-04-26|Add MCP commerce mandate and cart tool handlers (#28)
+15ae7bf3ce02773ec431977cd23c6f5b19d811fd|4335e270778049ba7c3fe64599ed92ec253981af|2026-04-26|Add MCP commerce mandate and cart tool handlers
+4335e270778049ba7c3fe64599ed92ec253981af|2faae4c11a933beb52543bd77b010c76924ea3d6|2026-04-26|Claude/understand repo purpose wc ga7 (#27)
+2faae4c11a933beb52543bd77b010c76924ea3d6|8f8a2b7cfae4daabd7d08d2c65104b20a2fcdc53|2026-04-26|Claude/setup design system cli 6iov g (#26)
+1733fccc13d97ceebf8a99a98c9d74506f03b1b6|8dd7aad7668add1e0ded3420002f99f2396ad718|2026-04-26|Wire 21st.dev Magic MCP via .mcp.json + SessionStart hook
+8dd7aad7668add1e0ded3420002f99f2396ad718|8f8a2b7cfae4daabd7d08d2c65104b20a2fcdc53|2026-04-26|Add UI/UX Pro Max design system skill for Claude
+8f8a2b7cfae4daabd7d08d2c65104b20a2fcdc53|c0419e5aad84c538b6195827ed535de4442ebdcf|2026-01-19|Claude/spanner firestore refactor 1s5 d7 (#25)
+c0419e5aad84c538b6195827ed535de4442ebdcf|ce80bf902e876429b7f5fc2c3c79fc885149aaca|2026-01-19|Claude/spanner firestore refactor 1s5 d7 (#24)
+ce80bf902e876429b7f5fc2c3c79fc885149aaca|3b8eeec21351769bd52332e83d11940cb82e3f41|2026-01-19|Claude/integrate product cube service 011 cuwyes9s7 cks2i h fk kbg8 (#23)
+3b8eeec21351769bd52332e83d11940cb82e3f41|a2f9fb490acced746dc21b1815cc35757eecafc7|2026-01-19|Claude/spanner firestore refactor 1s5 d7 (#22)
+a2f9fb490acced746dc21b1815cc35757eecafc7|3e3e350fca691808164f042c22c7be81ac6b5604|2026-01-19| v9 2030 Agentic & Circular Economy (#21)
+3e3e350fca691808164f042c22c7be81ac6b5604|7322f93c70cf5b2f6cf688d1ba7a5d3255a74bc1|2026-01-19|v8 Golden Codebase: Unified Spanner + Firestore Architecture (#20)
+7322f93c70cf5b2f6cf688d1ba7a5d3255a74bc1|0f696767398941dca211846e84efdb81058cc9bd|2026-01-19|Architectural refactor: Global Integrity Spine with Spanner + Firestore (#19)
+0f696767398941dca211846e84efdb81058cc9bd|c0e72a18fa7537433a91c3a9777672253e78b7fc|2025-10-26|Claude/integrate product cube service 011 cuwyes9s7 cks2i h fk kbg8 (#18)
+c0e72a18fa7537433a91c3a9777672253e78b7fc|c9fecb61ec47a3ea05723f18c893e13fcb344442|2025-10-26|Add final summary document
+c9fecb61ec47a3ea05723f18c893e13fcb344442|c0f15557c0c569c3861221eaacbacb275b094957|2025-10-26|Reorganize documentation into logical structure
+c0f15557c0c569c3861221eaacbacb275b094957|65eb9873fb368d4d4edccfc3bb5ab40e5d4f0317|2025-10-26|Phase 4: Complete observability documentation
+65eb9873fb368d4d4edccfc3bb5ab40e5d4f0317|019b52ff5ceadabf7535cb7136f2b3439e957622|2025-10-26|Phase 4: Add metrics endpoints to all Python services
+019b52ff5ceadabf7535cb7136f2b3439e957622|011fcdbede2a3c813b421d6c60321f439bb53196|2025-10-26|Phase 4: Begin observability implementation
+011fcdbede2a3c813b421d6c60321f439bb53196|184817bd37b9ee217252854f608afd420f149238|2025-10-26|Create complete session report with final status
+184817bd37b9ee217252854f608afd420f149238|190045abc1f5e0de01e81dca8734ebf4fcdc7e52|2025-10-26|Final documentation synchronization
+190045abc1f5e0de01e81dca8734ebf4fcdc7e52|fe1c663f3f062e22a8427ca998ba9115b58caa98|2025-10-26|Update STATUS_UPDATE with all completed improvements
+fe1c663f3f062e22a8427ca998ba9115b58caa98|4513fe54586b533f90cfc6577f3d89e77e24332f|2025-10-26|Add deployment ready checklist
+4513fe54586b533f90cfc6577f3d89e77e24332f|e56942ebc2d78b214a5f0b77b481f62a6d8fd072|2025-10-26|Add comprehensive session summary and final documentation
+e56942ebc2d78b214a5f0b77b481f62a6d8fd072|ae729b0abbd5255886d1c625309b6665ef8797e9|2025-10-26|Phase 3: Implement authentication, rate limiting, and secure CORS
+ae729b0abbd5255886d1c625309b6665ef8797e9|09d49e55e4248542a4305f13884f42e77a09aa99|2025-10-26|Add progress report and update status documentation
+09d49e55e4248542a4305f13884f42e77a09aa99|85e29fb7068a515e78294744501fbac7e9dea616|2025-10-26|Phase 2: Add retry logic and environment variable management
+85e29fb7068a515e78294744501fbac7e9dea616|08a80c53f94daf325b4d4d5917eaaa5bd5e4e6a2|2025-10-26|Phase 1: Fix critical database security issues and add enterprise-grade health checks
+08a80c53f94daf325b4d4d5917eaaa5bd5e4e6a2|bac0999935563e16661707c30bae949a319f8c6f 39d42bfdf0b26554213022d9ecaef392ed3c3460|2025-10-26|Merge pull request #16 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+39d42bfdf0b26554213022d9ecaef392ed3c3460|2c1de332431af1492e2ee9a32d34945f5f0f71c6|2025-10-26|feat: Brand.Me v7 — Stable Integrity Spine hardening for docker-compose
+bac0999935563e16661707c30bae949a319f8c6f|fcffc95adb619400d7257f3fb0823acbce1d7ba4 b5d63eeddf8cbc8e8fa604edf718921b5360e2b2|2025-10-26|Merge pull request #15 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+fcffc95adb619400d7257f3fb0823acbce1d7ba4|c532683533f563ea7cdd9a468316346855ff72f9|2025-10-26|Claude/update brandme architecture 011 cuv3 j7 zu h he n54 l knu83 h (#14)
+b5d63eeddf8cbc8e8fa604edf718921b5360e2b2|2c1de332431af1492e2ee9a32d34945f5f0f71c6 c532683533f563ea7cdd9a468316346855ff72f9|2025-10-26|Merge branch 'main' into claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+2c1de332431af1492e2ee9a32d34945f5f0f71c6|fdf7710ee04a39193036462f5ef1d6788ddef674|2025-10-26|docs: Update README with comprehensive v6 Stable Integrity Spine documentation
+fdf7710ee04a39193036462f5ef1d6788ddef674|5a03714924c8d3721c100fb5370beee1d846115c|2025-10-26|feat: Apply Brand.Me v6 — Stable Integrity Spine updates across all services
+c532683533f563ea7cdd9a468316346855ff72f9|af528b9bab5aedc691f57df722ae809f2c6eda9e|2025-10-25|chore: Cleanse and finalize all 9 backend services with production-ready implementations
+5a03714924c8d3721c100fb5370beee1d846115c|d12d04d34726c5659454bc601b9e2ff9a5665a21|2025-10-26|chore: Cleanse and finalize all 9 backend services with production-ready implementations
+af528b9bab5aedc691f57df722ae809f2c6eda9e|cbe1b693349361d737939957a5ffbc5f21ffa5ff d12d04d34726c5659454bc601b9e2ff9a5665a21|2025-10-25|Merge pull request #11 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+d12d04d34726c5659454bc601b9e2ff9a5665a21|871020d9e757042f13d28dac7401abb11a9c71bd|2025-10-26|fix: Resolve syntax errors and cleanup corrupted service implementations
+871020d9e757042f13d28dac7401abb11a9c71bd|0b9b131e821e896d59af3f89ea9b52de0932dee7|2025-10-26|fix: Resolve syntax error in identity service and add DID issuance TODO
+cbe1b693349361d737939957a5ffbc5f21ffa5ff|871f1c95a0230156a5a33a05600ebdfc90cf139d 0b9b131e821e896d59af3f89ea9b52de0932dee7|2025-10-25|Merge pull request #10 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+0b9b131e821e896d59af3f89ea9b52de0932dee7|ad70a753a1d5472e1a877d1e9882c4261a388c48 871f1c95a0230156a5a33a05600ebdfc90cf139d|2025-10-25|Merge branch 'main' into claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+ad70a753a1d5472e1a877d1e9882c4261a388c48|d74d91081aff01ee69e728d52a28bbc5f72c0d0a|2025-10-26|feat: Complete Brand.Me backend with production-ready services and Docker orchestration
+871f1c95a0230156a5a33a05600ebdfc90cf139d|91c151a86b6aaaad8f62ce07227b72f286eb136a|2025-10-25|refactor: Production-ready services with comprehensive error handling and resilience
+d74d91081aff01ee69e728d52a28bbc5f72c0d0a|e840c7877b5ffc40565bb9734cd2215c4b219efb|2025-10-26|refactor: Production-ready services with comprehensive error handling and resilience
+91c151a86b6aaaad8f62ce07227b72f286eb136a|a35c13ab66b713480fc85c0d0b66f95e3482aef1 e840c7877b5ffc40565bb9734cd2215c4b219efb|2025-10-25|Merge pull request #8 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+e840c7877b5ffc40565bb9734cd2215c4b219efb|d74bc944131704151cd0abefb90af815b3badeea|2025-10-26|feat: Add Next.js 14 frontend with blockchain-verified garment passports
+a35c13ab66b713480fc85c0d0b66f95e3482aef1|093d39c9ba4e9ae806869aaa6852cad3ad9bcb43 d74bc944131704151cd0abefb90af815b3badeea|2025-10-25|Merge pull request #7 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+d74bc944131704151cd0abefb90af815b3badeea|6ad8f0de1ad87e90786eb57a75c445d8316363da|2025-10-26|refactor: Production-ready services with comprehensive error handling and resilience
+093d39c9ba4e9ae806869aaa6852cad3ad9bcb43|0dccf51afab1aa55fd7797000eb5f7174b3bb632 6ad8f0de1ad87e90786eb57a75c445d8316363da|2025-10-25|Merge pull request #6 from brandmeonline/claude/update-brandme-architecture-011CUV3J7ZuHHeN54LKnu83H
+6ad8f0de1ad87e90786eb57a75c445d8316363da|0dccf51afab1aa55fd7797000eb5f7174b3bb632|2025-10-26|feat: Complete core operational loop and human governance review
+0dccf51afab1aa55fd7797000eb5f7174b3bb632|90af9c5af4b6cabaeb207e616e5ad1d156b97e8a 34293a19251c1bef33f4d008dd9125004003a8e3|2025-10-25|Merge pull request #5 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+34293a19251c1bef33f4d008dd9125004003a8e3|90af9c5af4b6cabaeb207e616e5ad1d156b97e8a|2025-10-26|feat: Complete Tier 3 Infrastructure & Operations implementation
+90af9c5af4b6cabaeb207e616e5ad1d156b97e8a|a5d4bb807e7d483a5922cb9c6ddf967d48de44cc 175e98bbea38ae7817b6460535a0cfff2bb3c891|2025-10-25|Merge pull request #4 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+175e98bbea38ae7817b6460535a0cfff2bb3c891|d47db7e8a7b0bf09d5dd4853f764b1ee708b6d94|2025-10-26|fix: Resolve all TypeScript and Python compilation errors with long-term solutions
+d47db7e8a7b0bf09d5dd4853f764b1ee708b6d94|df5f3e2f088b752ca08d308eae8a23f2eb2e7334|2025-10-25|chore: Setup pnpm workspace with lockfile for reproducible builds
+a5d4bb807e7d483a5922cb9c6ddf967d48de44cc|0beac40a3d1db67d64ef7733bb058009a89e29c6 df5f3e2f088b752ca08d308eae8a23f2eb2e7334|2025-10-25|Merge pull request #3 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+df5f3e2f088b752ca08d308eae8a23f2eb2e7334|f1a7a4d084294ca4035c4b3da1a0cfd0d5230de6|2025-10-25|feat: Standardize brain service and centralize logging utilities
+0beac40a3d1db67d64ef7733bb058009a89e29c6|f7ee454bc8460710519b5140070efcb043a96ee8 f1a7a4d084294ca4035c4b3da1a0cfd0d5230de6|2025-10-25|Merge pull request #1 from brandmeonline/claude/init-brandme-architecture-011CUUTWSZ2w2Q6fWXQFjVrJ
+f1a7a4d084294ca4035c4b3da1a0cfd0d5230de6|1c85f57e9aeef6d70c560411b098f030f0f1c8d8|2025-10-25|docs: Add quick start guide for one-day deployment
+1c85f57e9aeef6d70c560411b098f030f0f1c8d8|c785a02caac0de7c5eaf46cc7245d357ab87698f|2025-10-25|feat: Add one-click production deployment system with automated agents
+c785a02caac0de7c5eaf46cc7245d357ab87698f|9abcdab654bec400353e262ade480367115f8ad4|2025-10-25|Migrate policy service to FastAPI framework
+9abcdab654bec400353e262ade480367115f8ad4|899b116379dc69eeef4167a51de2e5cb4330c199|2025-10-25|Refactor worker.py for psycopg2 and logging updates
+899b116379dc69eeef4167a51de2e5cb4330c199|b25ff088069767d95565e7ba2a04aa5038fb8a1a|2025-10-25|feat: Implement comprehensive agentic system with knowledge graphs and AI agents
+b25ff088069767d95565e7ba2a04aa5038fb8a1a|182d5bfe11d3863ff3a2cee0b3765bdaa9e4644a|2025-10-25|docs: Add comprehensive project status document
+182d5bfe11d3863ff3a2cee0b3765bdaa9e4644a|d296e317ad94cbb8764198ab5129c9443c668fdc|2025-10-25|feat: Implement Brand.Me Console with Governance and Transparency Portal
+d296e317ad94cbb8764198ab5129c9443c668fdc|e77a79b80ac968ef3fe538c5b456e00439d8d410|2025-10-25|feat: Add comprehensive test infrastructure for blockchain services
+e77a79b80ac968ef3fe538c5b456e00439d8d410|1da07697d9294c69f85381a337d5dd111758bfd7|2025-10-25|feat: Implement real Cardano SDK integration and Midnight architecture
+1da07697d9294c69f85381a337d5dd111758bfd7|b1886112a464cf42ee6bea383fcfca750ee4d49a|2025-10-25|feat: Implement complete Brand.Me backend services and infrastructure
+b1886112a464cf42ee6bea383fcfca750ee4d49a|f7ee454bc8460710519b5140070efcb043a96ee8|2025-10-25|feat: Initialize Brand.Me platform architecture
+f7ee454bc8460710519b5140070efcb043a96ee8||2025-10-25|Initial commit

@@ -1,0 +1,274 @@
+[
+  {
+    "ref": "bench/astra-consumer-ui-20261005",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fastra-consumer-ui-20261005/protection"
+    }
+  },
+  {
+    "ref": "bench/astra-spatial-ar-20261005",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fastra-spatial-ar-20261005/protection"
+    }
+  },
+  {
+    "ref": "bench/opus-commerce-agents-20261005",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fopus-commerce-agents-20261005/protection"
+    }
+  },
+  {
+    "ref": "bench/opus-consumer-domains-20261005",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fopus-consumer-domains-20261005/protection"
+    }
+  },
+  {
+    "ref": "bench/opus-foundation-20261005",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fopus-foundation-20261005/protection"
+    }
+  },
+  {
+    "ref": "bench/opus-midnight-rights-20261005",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/bench%2Fopus-midnight-rights-20261005/protection"
+    }
+  },
+  {
+    "ref": "claude/brand-me-lux-foundations-audit-8zywr3",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fbrand-me-lux-foundations-audit-8zywr3/protection"
+    }
+  },
+  {
+    "ref": "claude/ci-repair-workflows",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fci-repair-workflows/protection"
+    }
+  },
+  {
+    "ref": "claude/midnight-rights-lifecycle-yhfyyu",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fmidnight-rights-lifecycle-yhfyyu/protection"
+    }
+  },
+  {
+    "ref": "claude/opus-commerce-agents-setup-szpmf7",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fopus-commerce-agents-setup-szpmf7/protection"
+    }
+  },
+  {
+    "ref": "claude/opus-consumer-domains-1csp2g",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fopus-consumer-domains-1csp2g/protection"
+    }
+  },
+  {
+    "ref": "claude/opus-foundation-w00-2hgiw5",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fopus-foundation-w00-2hgiw5/protection"
+    }
+  },
+  {
+    "ref": "claude/setup-design-system-cli-6iovG",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/claude%2Fsetup-design-system-cli-6iovG/protection"
+    }
+  },
+  {
+    "ref": "codex/chain-projection-worker-20261022",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fchain-projection-worker-20261022/protection"
+    }
+  },
+  {
+    "ref": "codex/console-contract-publication",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fconsole-contract-publication/protection"
+    }
+  },
+  {
+    "ref": "codex/consumer-design-preview",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fconsumer-design-preview/protection"
+    }
+  },
+  {
+    "ref": "codex/critical-dependency-repairs-20261022",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fcritical-dependency-repairs-20261022/protection"
+    }
+  },
+  {
+    "ref": "codex/docker-pipeline-20261022",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fdocker-pipeline-20261022/protection"
+    }
+  },
+  {
+    "ref": "codex/durable-chain-reconciliation-20261022",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fdurable-chain-reconciliation-20261022/protection"
+    }
+  },
+  {
+    "ref": "codex/durable-outbox-pubsub-20261022",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fdurable-outbox-pubsub-20261022/protection"
+    }
+  },
+  {
+    "ref": "codex/explain-execution-details-and-next-steps",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fexplain-execution-details-and-next-steps/protection"
+    }
+  },
+  {
+    "ref": "codex/midnight-integration-20261022",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fmidnight-integration-20261022/protection"
+    }
+  },
+  {
+    "ref": "codex/privacy-recovery-safety-20261023",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Fprivacy-recovery-safety-20261023/protection"
+    }
+  },
+  {
+    "ref": "codex/rights-export-worker",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Frights-export-worker/protection"
+    }
+  },
+  {
+    "ref": "codex/rights-privacy-read-api",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/codex%2Frights-privacy-read-api/protection"
+    }
+  },
+  {
+    "ref": "docs/brandme-full-experience-2026-10-05",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/docs%2Fbrandme-full-experience-2026-10-05/protection"
+    }
+  },
+  {
+    "ref": "fix/property-test-vacuity-guard-flake",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/fix%2Fproperty-test-vacuity-guard-flake/protection"
+    }
+  },
+  {
+    "ref": "main",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/main/protection"
+    }
+  },
+  {
+    "ref": "mia/next-plans-20261025",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/mia%2Fnext-plans-20261025/protection"
+    }
+  },
+  {
+    "ref": "mia/orchestration-20261023",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/mia%2Forchestration-20261023/protection"
+    }
+  },
+  {
+    "ref": "mia/pipeline-seed-20261030",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/mia%2Fpipeline-seed-20261030/protection"
+    }
+  },
+  {
+    "ref": "triage/pnpm-version-conflict-20261023",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/triage%2Fpnpm-version-conflict-20261023/protection"
+    }
+  },
+  {
+    "ref": "triage/pnpm-workspace-frontend-20261008",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/triage%2Fpnpm-workspace-frontend-20261008/protection"
+    }
+  },
+  {
+    "ref": "w11/integration-20261008",
+    "protected": false,
+    "protection": {
+      "access_error": "gh: Branch not protected (HTTP 404)\n[{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}]",
+      "endpoint": "repos/brandmeonline/Brand-Me-Labs/branches/w11%2Fintegration-20261008/protection"
+    }
+  }
+]

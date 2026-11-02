@@ -86,7 +86,7 @@ The first audit never claimed an integration works. Independent inventory (40 in
 
 | Recommendation | Independent evidence | Verdict |
 |---|---|---|
-| CMP-039 `brandme_gateway/` orphan → removal candidate | SC-20: `scripts/regression/run_all.sh:14` lists it as a regression module; S2-SEC-011: it holds a mock JWT parser accepting any 10+ char token | **Corrected (qualified)** — a script consumer exists; remove *with* `scripts/regression/modules/brandme_gateway.sh`; the folder is a security smell and should go |
+| CMP-039 `brandme_gateway/` orphan → removal candidate | SC-20 (re-checked 2026-11-02): the regression module named `brandme_gateway` tests `brandme-gateway/`, not the orphan; S2-SEC-011: the folder holds a mock JWT parser accepting any 10+ char token | **Confirmed** — the 2026-11-01 "script consumer" qualification was wrong and is withdrawn (CORRECTIONS C-15); remove the folder alone; it is a security smell and should go |
 | CMP-018 `persona/outbox_worker.py` removal after recheck | SC-21: only self/docs references; deletion explicitly assigned to the consumer-domains lane's follow-up to #66 | **Confirmed** — do not remove ahead of that PR |
 | CLAUDE.md kill-list: keep `agents/` because `deploy-brandme.sh` consumes it | **SC-44: every `agents/*.sh` sources `agents/lib/common.sh`, which does not exist** | **Corrected** — the consumer is itself inoperable; archive both as a unit after owner confirmation |
 | Legacy region YAML dormant (F-ARCH-007) | SC-13 | **Confirmed** |

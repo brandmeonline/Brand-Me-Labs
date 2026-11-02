@@ -1,14 +1,18 @@
-# brandme_core/domains/providers (reserved)
+# brandme_core/domains/providers
 
-Reserved by the opus-foundation lane. The framework provides **no logic** here.
+Catalog, payment and fulfillment providers behind the commerce domain (ch.05). Reserved by the opus-foundation lane;
+implemented by the commerce-agents lane. Stage log: `docs/build/status/opus-commerce-agents.md`.
 
-- **Owning lane:** commerce-agents
-- **Migration number:** V006 (`brandme-data/spanner/migrations/`)
-- **Entities (ch.03 §4):** ProviderConnection, ProviderCredentialRef, IngestionCursor, WebhookReceipt, CatalogProduct/ProductVariant/ProductOffer
+- **Migration:** `brandme-data/spanner/migrations/V006_providers.sql`.
+- **Modules:** `registry.py` and `setup.py` (provider registration and composition), `contracts.py`, `tiers.py`
+  (partner tiers), `catalog.py`, `ingestion.py`, `merchant.py`, `local_atelier.py` and `nordstrom.py` (catalog
+  sources), `payments/simulated.py`, `payments/stripe_test.py` and `payments/stripe_wire.py` (Stripe test mode over
+  a loopback-recorded wire; no live run), `fulfillment/simulated.py`, `url_guard.py`, `redaction.py` (card-number
+  and processor-text redaction used by logs and events).
+- **Tests:** `tests/test_providers_*.py`.
+- **Status:** simulated and Stripe test-mode rails are exercised by the suite; no provider has been run against a
+  live account. Stripe Connect (brands flow) is parked in PR #71.
 
-Contract for the owning lane:
-- Commands go through `brandme_core.domains.run_command` / `run_idempotent_command`. Domain rows and events commit in one transaction. Callbacks have no external side effects.
-- Every object read/write calls `brandme_core.domains.authorize`, which is deny-by-default; unauthorized private reads raise `NotFound`.
-- Event types are registered with an exact closed payload schema (`brandme_core.domains.events.register`). Payloads carry references, not personal data.
-- Personal data categories are registered with `register_data_category` (export + idempotent delete) when the domain is introduced.
-- API shapes are added to `packages/contracts` (`scripts/endpoints.mjs`, schemas) and regenerated. Never hand-edit `generated/`.
+Foundation contract every domain follows: commands through `run_command` / `run_idempotent_command` with rows and
+events in one transaction; `authorize` deny-by-default; events registered with closed schemas; data categories
+registered for export and idempotent delete; API shapes generated from `packages/contracts`.

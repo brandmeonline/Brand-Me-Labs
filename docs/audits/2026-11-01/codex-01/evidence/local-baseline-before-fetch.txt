@@ -1,0 +1,24 @@
+Captured 2026-11-01T14:29:11.6751644Z Repository: C:\Users\auditor\OneDrive\Documents\Hyper_Trade_Agent\repos\Brand-Me-Labs
+REV PARSE:
+C:/Users/auditor/OneDrive/Documents/Hyper_Trade_Agent/repos/Brand-Me-Labs
+false
+0f5f58a9eecaca46b367c9bd96f89654343fa5fb
+CURRENT REF:
+refs/heads/main
+STATUS:
+
+REFS:
+refs/heads/main 0f5f58a9eecaca46b367c9bd96f89654343fa5fb 2026-04-26T21:32:35-07:00
+refs/remotes/origin/HEAD 0f5f58a9eecaca46b367c9bd96f89654343fa5fb 2026-04-26T21:32:35-07:00
+refs/remotes/origin/claude/setup-design-system-cli-6iovG 8b9bd4a718ef0d2ec0826b94537d438df68b2b32 2026-06-11T00:41:00Z
+refs/remotes/origin/codex/explain-execution-details-and-next-steps 15ae7bf3ce02773ec431977cd23c6f5b19d811fd 2026-04-26T21:31:29-07:00
+refs/remotes/origin/main 0f5f58a9eecaca46b367c9bd96f89654343fa5fb 2026-04-26T21:32:35-07:00
+REMOTES:
+origin	https://github.com/brandmeonline/Brand-Me-Labs.git (fetch)
+origin	https://github.com/brandmeonline/Brand-Me-Labs.git (push)
+WORKTREES:
+worktree C:/Users/auditor/OneDrive/Documents/Hyper_Trade_Agent/repos/Brand-Me-Labs
+HEAD 0f5f58a9eecaca46b367c9bd96f89654343fa5fb
+branch refs/heads/main
+PARTIAL SPARSE:
+

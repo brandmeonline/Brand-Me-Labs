@@ -1,0 +1,1189 @@
+[
+  {
+    "id": "CAP-001",
+    "name": "Identity and account sessions",
+    "intended_outcome": "Enter without a wallet; durable member identity, recovery and revocation",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/03-architecture-data-api.md",
+        "line": 73,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/03-architecture-data-api.md#L73"
+      }
+    },
+    "role": "guest/member/operator",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme-gateway/src/routes/v1/index.ts",
+      "brandme-gateway/src/index.ts"
+    ],
+    "actual_entry_point": "Gateway /api/v1/session/dev, /session and /me; real OIDC via principal middleware",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 85,
+        "end_line": 129,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L85-L129"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/index.ts",
+        "line": 81,
+        "end_line": 98,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/index.ts#L81-L98"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "Dev session is explicitly simulated; managed login/recovery and console stronger identity must be validated in a configured environment."
+  },
+  {
+    "id": "CAP-002",
+    "name": "Editable Looking Glass persona",
+    "intended_outcome": "Inspect, edit, lock, reset and restore owned style preferences",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/01-product-experience.md",
+        "line": 111,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/01-product-experience.md#L111"
+      }
+    },
+    "role": "member",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/persona/app.py",
+      "brandme_core/domains/persona/service.py",
+      "brandme_core/domains/persona/service.py"
+    ],
+    "actual_entry_point": "Gateway persona router → signed assertion → PersonaService → Spanner",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 68,
+        "end_line": 75,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L68-L75"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/service.py",
+        "line": 510,
+        "end_line": 614,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/service.py#L510-L614"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/service.py",
+        "line": 841,
+        "end_line": 1004,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/service.py#L841-L1004"
+      }
+    ],
+    "implementation": "implemented",
+    "wiring": "connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "matches intent",
+    "missing_link": "Browser journey and deployed service not executed by this audit; guest and server state must remain visibly distinct."
+  },
+  {
+    "id": "CAP-003",
+    "name": "Explainable, wardrobe-aware recommendations",
+    "intended_outcome": "Recommendations reflect editable persona, actual catalog and owned garments",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/01-product-experience.md",
+        "line": 166,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/01-product-experience.md#L166"
+      }
+    },
+    "role": "member",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/persona/app.py",
+      "brandme_core/domains/persona/service.py",
+      "brandme_core/domains/persona/service.py"
+    ],
+    "actual_entry_point": "GET persona recommendations / preview → recommend(candidate_source(principal), request)",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 68,
+        "end_line": 71,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L68-L71"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/service.py",
+        "line": 128,
+        "end_line": 141,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/service.py#L128-L141"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/service.py",
+        "line": 1117,
+        "end_line": 1159,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/service.py#L1117-L1159"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "F-ARCH-003: application composition supplies neither catalog candidates nor wardrobe refs; defaults are empty."
+  },
+  {
+    "id": "CAP-004",
+    "name": "Durable wardrobe intake and item lifecycle",
+    "intended_outcome": "Keep wish/saved/ordered/owned/verified concepts separate; edit items and care records",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/01-product-experience.md",
+        "line": 172,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/01-product-experience.md#L172"
+      }
+    },
+    "role": "member",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/persona/app.py",
+      "brandme_core/domains/wardrobe/service.py",
+      "brandme_core/domains/wardrobe/service.py"
+    ],
+    "actual_entry_point": "Gateway wardrobe routes → WardrobeService → Spanner V003",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 70,
+        "end_line": 74,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L70-L74"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/wardrobe/service.py",
+        "line": 274,
+        "end_line": 368,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/wardrobe/service.py#L274-L368"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/wardrobe/service.py",
+        "line": 398,
+        "end_line": 521,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/wardrobe/service.py#L398-L521"
+      }
+    ],
+    "implementation": "implemented",
+    "wiring": "connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "matches intent",
+    "missing_link": "Configured emulators/DB/schema/assertion keys needed; actual UI-to-DB persistence unexecuted here."
+  },
+  {
+    "id": "CAP-005",
+    "name": "Spatial wardrobe and placement",
+    "intended_outcome": "Choose room, arrange garments, persist changes; accessible list fallback",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/02-visual-motion-spatial.md",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/02-visual-motion-spatial.md#L1"
+      }
+    },
+    "role": "member/guest",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/wardrobe/service.py",
+      "brandme-frontend/features/closet/SpatialModeGate.tsx",
+      "brandme-frontend/public/demo/garments/tee/manifest.json"
+    ],
+    "actual_entry_point": "Frontend /closet; domain layout/placement methods",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/wardrobe/service.py",
+        "line": 660,
+        "end_line": 831,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/wardrobe/service.py#L660-L831"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/closet/SpatialModeGate.tsx",
+        "line": 12,
+        "end_line": 23,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/closet/SpatialModeGate.tsx#L12-L23"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/public/demo/garments/tee/manifest.json",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/public/demo/garments/tee/manifest.json#L1"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "F-ARCH-006: only guest IndexedDB ClosetRepository is supplied; strict-mode gate blocks the route. Connect authenticated server wardrobe/layout contracts."
+  },
+  {
+    "id": "CAP-006",
+    "name": "Versioned outfits, collaboration and packing",
+    "intended_outcome": "Compose items, save versions, propose friend changes, build packing list",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/01-product-experience.md",
+        "line": 203,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/01-product-experience.md#L203"
+      }
+    },
+    "role": "member/friend",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/persona/app.py",
+      "brandme_core/domains/wardrobe/outfits.py",
+      "brandme_core/domains/wardrobe/outfits.py"
+    ],
+    "actual_entry_point": "Gateway outfits router → OutfitService with friendship_proposal_policy",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 70,
+        "end_line": 74,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L70-L74"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/wardrobe/outfits.py",
+        "line": 178,
+        "end_line": 277,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/wardrobe/outfits.py#L178-L277"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/wardrobe/outfits.py",
+        "line": 282,
+        "end_line": 508,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/wardrobe/outfits.py#L282-L508"
+      }
+    ],
+    "implementation": "implemented",
+    "wiring": "connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "matches intent",
+    "missing_link": "Cross-member browser and persistence behavior requires isolated journey execution."
+  },
+  {
+    "id": "CAP-007",
+    "name": "Friends, shares and five-minute decisions",
+    "intended_outcome": "Private invitation, vote, close result, block/revoke access",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/01-product-experience.md",
+        "line": 207,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/01-product-experience.md#L207"
+      }
+    },
+    "role": "member/friend/recipient",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/persona/app.py",
+      "brandme_core/domains/social/decisions.py",
+      "brandme_core/domains/social/decisions.py",
+      "brandme_core/domains/persona/jobs.py"
+    ],
+    "actual_entry_point": "Gateway social/decisions → Social services; jobs closes due decisions",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 73,
+        "end_line": 74,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L73-L74"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/social/decisions.py",
+        "line": 254,
+        "end_line": 301,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/social/decisions.py#L254-L301"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/social/decisions.py",
+        "line": 355,
+        "end_line": 486,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/social/decisions.py#L355-L486"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/jobs.py",
+        "line": 42,
+        "end_line": 65,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/jobs.py#L42-L65"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "F-ARCH-002: close_due job has executable module but no compose/Helm startup; no observed scheduler."
+  },
+  {
+    "id": "CAP-008",
+    "name": "Rewards ledger, badges and benefits",
+    "intended_outcome": "Earn for verified actions, inspect ledger, reserve/release benefits",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/01-product-experience.md",
+        "line": 235,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/01-product-experience.md#L235"
+      }
+    },
+    "role": "member/operator",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/rewards/consumer.py",
+      "brandme_core/domains/persona/ingress.py",
+      "brandme_core/domains/persona/jobs.py"
+    ],
+    "actual_entry_point": "Gateway rewards → Spanner; Pub/Sub consumer awards; jobs expires reservations",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/rewards/consumer.py",
+        "line": 43,
+        "end_line": 71,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/rewards/consumer.py#L43-L71"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/ingress.py",
+        "line": 147,
+        "end_line": 180,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/ingress.py#L147-L180"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/jobs.py",
+        "line": 42,
+        "end_line": 65,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/jobs.py#L42-L65"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "F-ARCH-002: subscription consumer/jobs absent from deploy composition; partner fulfillment intentionally not configured."
+  },
+  {
+    "id": "CAP-009",
+    "name": "Catalog, retailer tiers and provider setup",
+    "intended_outcome": "Authorized product discovery, exact variants and truthful retailer capability",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/05-commerce-agents-connectors.md",
+        "line": 21,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/05-commerce-agents-connectors.md#L21"
+      }
+    },
+    "role": "member/operator",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/providers/nordstrom.py",
+      "brandme_core/domains/providers/setup.py",
+      "brandme_core/domains/commerce/composition.py"
+    ],
+    "actual_entry_point": "Provider/domain factories and unmounted gateway router; test harnesses",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/providers/nordstrom.py",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/providers/nordstrom.py#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/providers/setup.py",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/providers/setup.py#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/composition.py",
+        "line": 90,
+        "end_line": 133,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/composition.py#L90-L133"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "unreachable",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "F-ARCH-001 plus provider agreements/feed rights/resource setup. Strict commerce registry is empty."
+  },
+  {
+    "id": "CAP-010",
+    "name": "Bounded checkout, payment and reconciliation",
+    "intended_outcome": "Fresh quote, bound approval, idempotent submit, provider-observed order",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/05-commerce-agents-connectors.md",
+        "line": 118,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/05-commerce-agents-connectors.md#L118"
+      }
+    },
+    "role": "member/delegated agent",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme-gateway/src/routes/v1/commerce.ts",
+      "brandme_core/domains/commerce/http_api.py",
+      "brandme_core/domains/commerce/composition.py"
+    ],
+    "actual_entry_point": "Unregistered commerce gateway factory; Python FastAPI factory consumed by tests",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/commerce.ts",
+        "line": 204,
+        "end_line": 269,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/commerce.ts#L204-L269"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/http_api.py",
+        "line": 638,
+        "end_line": 670,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/http_api.py#L638-L670"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/commerce/composition.py",
+        "line": 102,
+        "end_line": 133,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/commerce/composition.py#L102-L133"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "unreachable",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "F-ARCH-001: compose real service entry, contract and webhook mounting; no real contracted merchant registered; Stripe test is not live retail."
+  },
+  {
+    "id": "CAP-011",
+    "name": "Shopping assistant and MCP authority",
+    "intended_outcome": "Research and prepare within grant; user approves exact purchase",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/05-commerce-agents-connectors.md",
+        "line": 89,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/05-commerce-agents-connectors.md#L89"
+      }
+    },
+    "role": "member/delegated agent",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme-gateway/src/routes/v1/assistant.ts",
+      "brandme_core/mcp/tools.py",
+      "brandme_core/orchestrator/composition.py"
+    ],
+    "actual_entry_point": "Assistant/MCP domain objects plus unmounted gateway factory; no discoverable public MCP transport found",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/assistant.ts",
+        "line": 27,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/assistant.ts#L27"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/mcp/tools.py",
+        "line": 220,
+        "end_line": 265,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/mcp/tools.py#L220-L265"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/orchestrator/composition.py",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/orchestrator/composition.py#L1"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "unreachable",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "F-ARCH-001; durable assistant task/budget/audit stores and job queue remain required; current dev model is not a production integration."
+  },
+  {
+    "id": "CAP-012",
+    "name": "Media upload and photo try-on",
+    "intended_outcome": "Private validated media; clearly labeled preview with expiry/deletion",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/02-visual-motion-spatial.md",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/02-visual-motion-spatial.md#L1"
+      }
+    },
+    "role": "member",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/persona/app.py",
+      "brandme_core/domains/persona/app.py",
+      "docker-compose.yml",
+      "brandme_core/domains/persona/jobs.py"
+    ],
+    "actual_entry_point": "Gateway media/tryon routes; consumer mounts only with media_store",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 21,
+        "end_line": 28,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L21-L28"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 76,
+        "end_line": 77,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L76-L77"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docker-compose.yml",
+        "line": 188,
+        "end_line": 211,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docker-compose.yml#L188-L211"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/jobs.py",
+        "line": 56,
+        "end_line": 64,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/jobs.py#L56-L64"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "Default compose has no bucket/store; no approved real try-on provider; jobs not deployed. Device AR/fit execution unverified."
+  },
+  {
+    "id": "CAP-013",
+    "name": "Midnight rights and ownership observations",
+    "intended_outcome": "Real proof/contract state; private state stays separate from public commitments",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/04-midnight-ownership-lifecycle.md",
+        "line": 33,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/04-midnight-ownership-lifecycle.md#L33"
+      }
+    },
+    "role": "member/issuer",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme-chain/src/index.ts",
+      "brandme-chain/src/midnight/adapter.ts",
+      "brandme-chain/contracts/src/brandme_rights.compact",
+      "brandme-gateway/src/services/rights.ts"
+    ],
+    "actual_entry_point": "Gateway rights/chain routes → chain service → Midnight adapter/operations; reads → Spanner projections",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/index.ts",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/index.ts#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/midnight/adapter.ts",
+        "line": 204,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/midnight/adapter.ts#L204"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/contracts/src/brandme_rights.compact",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/contracts/src/brandme_rights.compact#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/services/rights.ts",
+        "line": 70,
+        "end_line": 72,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/services/rights.ts#L70-L72"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "No deployed SHA or environment business execution observed by this audit. Owner-command surface remains incomplete on main; #70 contains additional commands."
+  },
+  {
+    "id": "CAP-014",
+    "name": "Ownership transfer and licensed reprint",
+    "intended_outcome": "Offer/accept/cancel transfer; bounded manufacturer entitlement/reprint",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/04-midnight-ownership-lifecycle.md",
+        "line": 129,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/04-midnight-ownership-lifecycle.md#L129"
+      }
+    },
+    "role": "member/recipient/manufacturer",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/rights/reprint.py",
+      "brandme_core/read_api/app.py"
+    ],
+    "actual_entry_point": "Read-only rights service and chain operations; main lacks rights command composition",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/rights/reprint.py",
+        "line": 88,
+        "end_line": 168,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/rights/reprint.py#L88-L168"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/app.py",
+        "line": 122,
+        "end_line": 125,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/app.py#L122-L125"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "Main read API returns 503 for commands. Preserve/integrate #70 rights_commands after migration collision review; manufacturer/physical attestation and disputes remain separate."
+  },
+  {
+    "id": "CAP-015",
+    "name": "Selected rights data export",
+    "intended_outcome": "Reauthenticated, private, bounded export with explicit coverage",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/06-delivery-verification.md",
+        "line": 103,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/06-delivery-verification.md#L103"
+      }
+    },
+    "role": "member",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/privacy_exports/service.py",
+      "brandme_core/privacy_exports/service.py",
+      "brandme_core/privacy_exports/service.py"
+    ],
+    "actual_entry_point": "Gateway My Data export → privacy_exports API/worker → Spanner and private object store",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/privacy_exports/service.py",
+        "line": 23,
+        "end_line": 24,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/service.py#L23-L24"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/privacy_exports/service.py",
+        "line": 114,
+        "end_line": 170,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/service.py#L114-L170"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/privacy_exports/service.py",
+        "line": 250,
+        "end_line": 295,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/service.py#L250-L295"
+      }
+    ],
+    "implementation": "implemented",
+    "wiring": "connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "Requires configured export bucket, token, schema and worker. Five rights categories only, not full account export."
+  },
+  {
+    "id": "CAP-016",
+    "name": "Full-account export, deletion and recovery",
+    "intended_outcome": "Delete/correct/export persona, wardrobe, social, commerce and derived copies; restore tombstones",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/06-delivery-verification.md",
+        "line": 103,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/06-delivery-verification.md#L103"
+      }
+    },
+    "role": "member/operator",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/read_api/reads.py",
+      "brandme_core/read_api/reads.py",
+      "brandme_core/read_api/app.py",
+      "brandme_core/domains/persona/lane.py"
+    ],
+    "actual_entry_point": "Reusable domain privacy handlers; public inventory/read-only deletion status; main mutation route disabled",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/reads.py",
+        "line": 83,
+        "end_line": 86,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/reads.py#L83-L86"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/reads.py",
+        "line": 180,
+        "end_line": 186,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/reads.py#L180-L186"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/app.py",
+        "line": 122,
+        "end_line": 125,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/app.py#L122-L125"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/lane.py",
+        "line": 46,
+        "end_line": 61,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/lane.py#L46-L61"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "F-ARCH-004: privacy composition and all-domain export/deletion worker unmounted; do not claim complete erasure."
+  },
+  {
+    "id": "CAP-017",
+    "name": "Operator moderation, dispute and provider controls",
+    "intended_outcome": "Scoped stronger auth; reviewed decisions and evidence; no direct points editing",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/03-architecture-data-api.md",
+        "line": 73,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/03-architecture-data-api.md#L73"
+      }
+    },
+    "role": "operator/support",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/persona/app.py",
+      "brandme_core/domains/persona/kernel.py",
+      "brandme_core/domains/rewards/service.py",
+      "brandme-governance/governance_console/main.py"
+    ],
+    "actual_entry_point": "Console UI and library router factories; consumer /ops routers deliberately not mounted",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 13,
+        "end_line": 14,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L13-L14"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/kernel.py",
+        "line": 192,
+        "end_line": 209,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/kernel.py#L192-L209"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/rewards/service.py",
+        "line": 188,
+        "end_line": 250,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/rewards/service.py#L188-L250"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-governance/governance_console/main.py",
+        "line": 119,
+        "end_line": 165,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-governance/governance_console/main.py#L119-L165"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "Establish actual operator authority and mount scoped routers; legacy governance is protected from strict startup because approver identity is not authenticated."
+  },
+  {
+    "id": "CAP-018",
+    "name": "Durable domain events and projections",
+    "intended_outcome": "Atomic state/outbox, bounded delivery, dedupe and privacy-aware derived state",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/03-architecture-data-api.md",
+        "line": 13,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/03-architecture-data-api.md#L13"
+      }
+    },
+    "role": "services/operators",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme_core/domains/persona/kernel.py",
+      "brandme_core/events/catalogs.py",
+      "brandme_core/events/worker.py",
+      "brandme_core/domains/persona/ingress.py"
+    ],
+    "actual_entry_point": "Transaction outbox → Pub/Sub publisher → separate consumer ingress",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/kernel.py",
+        "line": 440,
+        "end_line": 468,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/kernel.py#L440-L468"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/events/catalogs.py",
+        "line": 29,
+        "end_line": 35,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/events/catalogs.py#L29-L35"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/events/worker.py",
+        "line": 71,
+        "end_line": 109,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/events/worker.py#L71-L109"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/ingress.py",
+        "line": 147,
+        "end_line": 180,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/ingress.py#L147-L180"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "Publishing worker is wired in Helm; consumer ingress is not. Broker acknowledgement alone is not application success."
+  },
+  {
+    "id": "CAP-019",
+    "name": "Legacy garment scan, policy and provenance",
+    "intended_outcome": "Authorize garment read/transfer based on consent and regional rules",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/07-repository-audit-sources.md",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/07-repository-audit-sources.md#L1"
+      }
+    },
+    "role": "scanner/owner/operator",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme-core/brain/main.py",
+      "brandme-core/policy/main.py",
+      "brandme-core/orchestrator/main.py"
+    ],
+    "actual_entry_point": "Legacy /scan NATS publisher; brain/policy/orchestrator/cube paths",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/brain/main.py",
+        "line": 11,
+        "end_line": 16,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/brain/main.py#L11-L16"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/policy/main.py",
+        "line": 88,
+        "end_line": 99,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/policy/main.py#L88-L99"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/orchestrator/main.py",
+        "line": 77,
+        "end_line": 93,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/orchestrator/main.py#L77-L93"
+      }
+    ],
+    "implementation": "partial",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "Legacy orchestrator fabricates cardano_tx string in dev and strict boot guard blocks it; do not confuse with newer Midnight service."
+  },
+  {
+    "id": "CAP-020",
+    "name": "Cardano public anchoring",
+    "intended_outcome": "Public audit anchors if required separately from private Midnight rights",
+    "authoritative_source": {
+      "date": "2026-10-05",
+      "classification": "explicit implementation contract; numerical defaults are proposals",
+      "evidence": {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "docs/design/brandme/04-midnight-ownership-lifecycle.md",
+        "line": 214,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/docs/design/brandme/04-midnight-ownership-lifecycle.md#L214"
+      }
+    },
+    "role": "issuer/operator",
+    "branch": "main",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "implementation_paths": [
+      "brandme-chain/src/cardano/anchor.ts",
+      "brandme-core/orchestrator/main.py"
+    ],
+    "actual_entry_point": "Cardano interface/no configured real anchor; legacy synthetic transfer hash",
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/cardano/anchor.ts",
+        "line": 1,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/cardano/anchor.ts#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-core/orchestrator/main.py",
+        "line": 92,
+        "end_line": null,
+        "symbol": null,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-core/orchestrator/main.py#L92"
+      }
+    ],
+    "implementation": "placeholder/mock",
+    "wiring": "partly connected",
+    "verification": "static evidence",
+    "deployment": "unknown",
+    "product_fit": "partial match",
+    "missing_link": "A real adapter, network, funding, verification and privacy-safe anchor semantics remain required; optional after the consumer milestone."
+  }
+]

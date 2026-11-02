@@ -6,7 +6,7 @@ Deployment assets for Brand.Me on Google Kubernetes Engine (GKE).
 
 **Status (2026-10-23): nothing here has been deployed.** The target cluster
 (`brandme-cluster`, `us-east1`, project `lux-realestate-app` per
-`.github/workflows/ci-cd.yml:36-39`) is unconfirmed, no GCP credentials were
+`.github/workflows/ci-cd.yml:43-45`) is unconfirmed, no GCP credentials were
 available to verify it, and the CI `Deploy to GKE` job has never run (no `v*`
 tag exists). What works today is offline validation. The ordered founder
 actions, verified facts and gaps are in

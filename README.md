@@ -1,301 +1,78 @@
-# Brand.Me Labs — v9 Agentic & Circular Economy
+# Brand.Me Labs
 
 **Copyright (c) Brand.Me, Inc. All rights reserved.**
 
-Brand.Me is a symbiotic intelligence platform that merges digital fashion, identity expression, and verifiable trust on the Cardano blockchain. Autonomous agents handle precision and scale while humans govern intent, empathy, and ethics.
+Brand.Me is a consumer platform for garment identity, social shopping, loyalty and verifiable ownership: a Next.js
+consumer app and an Express gateway in front of Python domain services on Google Cloud Spanner and Firestore, with
+a Midnight (Compact) rights contract for private ownership and licensed reprint.
 
-> **For the actual implementation status of each service (what runs end-to-end vs. what is stubbed), see [`CLAUDE.md`](./CLAUDE.md).** This README describes the target architecture; CLAUDE.md describes today's reality.
+This README is the entry point only. Three documents carry the truth about this repository:
 
-## Documentation
+| Question | Read |
+|---|---|
+| What is actually wired up today, per service, with file references | [`CLAUDE.md`](./CLAUDE.md) |
+| What is being built, in what order, with acceptance criteria | [`docs/design/brandme/README.md`](./docs/design/brandme/README.md) (the build contract) and its [kickoff prompt](./docs/design/brandme/CLAUDE_BUILD_PROMPT.md) |
+| Where the program stands right now: baseline, lanes, evidence, blockers, next action | [`docs/build/implementation-status.md`](./docs/build/implementation-status.md) |
 
-**Current complete product specification (2026-10-05):**
-[Brand.Me — Be More U](./docs/design/brandme/README.md) covers editable identity,
-social shopping, loyalty, three 3D closets, AR, authorized agent commerce,
-Midnight ownership and licensed reprint. It includes 150 acceptance criteria,
-machine-readable contracts and a [Claude build prompt](./docs/design/brandme/CLAUDE_BUILD_PROMPT.md).
-This is the forward-looking implementation contract; it does not change the
-current code's verified readiness.
+Everything else is indexed in [`docs/README.md`](./docs/README.md). Documents that described earlier platforms live
+under [`docs/archive/`](./docs/archive/README.md) and are not a description of this tree.
 
-**Quick Links**:
-- [Architecture](./docs/architecture/SYSTEM_ARCHITECTURE.md) - v9 System architecture
-- [Agentic Architecture](./docs/architecture/AGENTIC_ARCHITECTURE.md) - Agent system design
-- [Deployment Guide](./docs/deployment/DEPLOYMENT_GUIDE.md) - How to deploy
-- [Current Status](./docs/status/CURRENT_STATUS.md) - Platform status
+## Start here (local)
 
-## v9 Core Technologies
-
-| Technology | Purpose |
-|------------|---------|
-| **Google Cloud Spanner** | Native Property Graph, O(1) consent lookups, Material tracking |
-| **Firestore** | Real-time wardrobe sync, AR glasses biometric sync (<100ms) |
-| **Model Context Protocol** | External agent access to Style Vault (7 tools) |
-| **Cardano** | Public provenance, ESG oracle verification |
-| **Midnight** | Private ownership, ZK burn proofs for circular economy |
-
-## Key Features
-
-### Product Cube (7 Faces)
-
-Digital passport for physical assets:
-
-| Face | Visibility | Blockchain |
-|------|------------|------------|
-| product_details | Public | Cardano |
-| provenance | Public | Cardano |
-| ownership | Private | Midnight |
-| social_layer | Friends/Public | - |
-| esg_impact | Public | Cardano |
-| lifecycle | Public | Cardano |
-| molecular_data | Private | Midnight |
-
-### DPP Lifecycle State Machine
-
-```
-PRODUCED → ACTIVE → REPAIR → ACTIVE
-                  ↘ DISSOLVE → REPRINT → PRODUCED
-```
-
-Enables circular economy with ZK burn proof verification for material recovery.
-
-### MCP Tools for External Agents
-
-```json
-{
-  "tools": [
-    "search_wardrobe",
-    "get_cube_details",
-    "suggest_outfit",
-    "initiate_rental",
-    "list_for_resale",
-    "request_repair",
-    "request_dissolve"
-  ]
-}
-```
-
-All transaction tools require ESG verification from Cardano oracle.
-
-## Architecture Overview
-
-Brand.Me uses a dual-blockchain architecture for privacy-preserving garment provenance:
-
-- **Cardano**: Public provenance, creator attribution, and ESG anchors
-- **Midnight**: Private ownership lineage, pricing history, and consent snapshots
-- **Cross-Chain Verification**: Cryptographic linking between chains
-
-### Service Architecture (v9)
-
-The intended architecture spans 9 backend services with X-Request-Id tracing,
-PII redaction (`redact_user_id()`, `truncate_id()`), CORS on public-facing
-services, consent-graph integration, hash-chained audit logging, human
-escalation guardrails, and safe-facet-only previews.
-
-**Current implementation reality:** the consent / policy / provenance layer is
-real against emulators; orchestrator blockchain anchoring, the cube state
-machine, governance approve/deny, ZK proofs, ESG oracle verification, and the
-Cardano + Midnight TX builders are stubbed or not wired. See
-[`CLAUDE.md`](./CLAUDE.md) for the per-service status table.
-
-#### Service Ports
-| Service | Port | Description |
-|---------|------|-------------|
-| **brain** | 8000 | Intent resolver, scan entrypoint, CORS enabled |
-| **policy** | 8001 | Consent graph & policy decisions, CORS enabled |
-| **orchestrator** | 8002 | Scan processing & blockchain anchoring |
-| **knowledge** | 8003 | Safe facet retrieval, CORS enabled |
-| **compliance** | 8004 | Hash-chained audit logging & escalations |
-| **identity** | 8005 | User profiles & consent graph |
-| **governance_console** | 8006 | Human review UI, CORS enabled |
-| **cube** | 8007 | Product Cube storage & serving, CORS enabled |
-| **agentic/orchestrator** | — | Multi-agent workflow (library) |
-| **brandme_core/logging** | — | Shared logging utilities (library) |
-
-### Key Components
-Brand.Me uses a **triple-layer architecture** for global consistency and real-time updates:
-
-- **Spanner**: Source of truth for users, assets, consent graph, provenance chain
-- **Firestore**: Real-time wardrobe state, agentic modifications, frontend sync
-- **Cardano + Midnight**: Blockchain anchoring for immutable provenance
-
-### Database Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Client Layer                                 │
-│         (Mobile App, Web, AR Glasses via Biometric Sync)        │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────┴──────────────────────────────────┐
-│                      brandme-gateway                             │
-│            OAuth, Rate Limiting, MCP Server, NATS                │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-         ┌─────────────────────┼─────────────────────┐
-         ▼                     ▼                     ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────────────┐
-│  brandme-core   │ │ brandme-agents  │ │     brandme-chain       │
-│                 │ │                 │ │                         │
-│ • Brain (8000)  │ │ • Identity      │ │ • TX Builder            │
-│ • Policy (8001) │ │ • Knowledge     │ │   Cardano + Midnight    │
-│ • Orchestrator  │ │ • Compliance    │ │ • Cross-Chain Verifier  │
-│ • Cube (8007)   │ │ • Agentic       │ │                         │
-└────────┬────────┘ └────────┬────────┘ └────────────┬────────────┘
-         │                   │                       │
-         └───────────────────┼───────────────────────┘
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        DATA LAYER                                │
-│  ┌──────────────────────┐  ┌──────────────────────────────────┐│
-│  │ Google Cloud Spanner │  │ Firestore                        ││
-│  │ Native Property Graph│  │ Real-time sync, AR glasses       ││
-│  │ O(1) consent lookups │  │ Agentic state tracking           ││
-│  └──────────────────────┘  └──────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────┘
-                             │
-┌────────────────────────────┴────────────────────────────────────┐
-│                     BLOCKCHAIN LAYER                             │
-│  ┌──────────────────────┐  ┌──────────────────────────────────┐│
-│  │ Cardano (Public)     │  │ Midnight (Private)               ││
-│  │ Provenance, ESG      │  │ Ownership, Burn Proofs           ││
-│  └──────────────────────┘  └──────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Service Ports
-
-| Service | Port | Description |
-|---------|------|-------------|
-| brain | 8000 | Intent resolver, scan entrypoint |
-| policy | 8001 | Consent graph & policy decisions |
-| orchestrator | 8002 | Scan processing & blockchain anchoring |
-| knowledge | 8003 | Safe facet retrieval |
-| compliance | 8004 | Hash-chained audit, ESG verification |
-| identity | 8005 | User profiles, ZK proofs |
-| governance | 8006 | Human review console |
-| cube | 8007 | Product Cube with real-time state |
-
-## Repository Structure
-
-```
-Brand-Me-Labs/
-├── brandme-gateway/          # Edge gateway, MCP server
-├── brandme-core/             # Core services (brain, policy, orchestrator)
-├── brandme-agents/           # Agent services (identity, knowledge, compliance, agentic)
-├── brandme-governance/       # Human review console
-├── brandme-cube/             # Product Cube service
-├── brandme_core/             # Shared utilities (spanner, firestore, mcp, zk)
-├── brandme-data/             # Database schemas (spanner/)
-├── brandme-chain/            # Blockchain integration
-├── brandme-console/          # Web interfaces
-└── brandme-infra/            # Infrastructure as Code
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Docker and Docker Compose
-- Node.js 18+ and pnpm
-- Python 3.11+
-- kubectl and helm
-- gcloud CLI
-
-### Local Development
+The verified path from a fresh checkout is native, not containers
+([`docs/build/local-setup.md`](./docs/build/local-setup.md)):
 
 ```bash
-# Clone the repository
-git clone https://github.com/brandme-labs/Brand-Me-Labs.git
-cd Brand-Me-Labs
-
-# Start emulators and services
-docker-compose up -d
-
-# Services started:
-# - Spanner Emulator (9010, 9020)
-# - Firestore Emulator (8080)
-# - All 8 backend services
-
-# Run tests
-pytest tests/ -v
+pnpm setup:demo   # runtimes, .venv from the hashed lock, frozen install, .env.local, Spanner emulator, migrations
+pnpm dev:demo     # brain :8000, gateway :3001, consumer :3000  (BRANDME_MODE=demo)
+pnpm smoke        # gateway → brain → Spanner, session, PATCH /me, restart persistence, outbox dispatch
+pnpm check        # the CI foundation gate: spec validator, contract drift, guards, type checks, full test suite, doc links
 ```
 
-### Environment Variables
+`docker compose up -d` starts the same default set plus the Firestore emulator and the consumer-domains service;
+`--profile legacy` adds the stubbed legacy services (see `CLAUDE.md`).
 
-```bash
-# Spanner
-SPANNER_EMULATOR_HOST=localhost:9010
-SPANNER_PROJECT_ID=brandme-project
-SPANNER_INSTANCE_ID=brandme-instance
-SPANNER_DATABASE_ID=brandme-db
+Pinned toolchain: Node 24.21.0 (`.nvmrc`), pnpm 10.34.6 (`packageManager`), Python 3.11, Spanner emulator 1.5.45.
+The full tuple is in [`docs/build/compatibility-lock.md`](./docs/build/compatibility-lock.md); the workspace guard
+refuses other versions.
 
-# Firestore
-FIRESTORE_EMULATOR_HOST=localhost:8080
-FIRESTORE_PROJECT_ID=brandme-dev
+## Repository layout
 
-# Blockchain (Production)
-CARDANO_NODE_URL=http://cardano-node:3001
-MIDNIGHT_API_URL=http://midnight-devnet:9000
+```
+brandme-frontend/     Next.js consumer app (port 3000)
+brandme-gateway/      Express edge gateway: sessions, CSRF, rate limits, consumer routers (port 3001)
+brandme_core/         Python shared library and the consumer domains (persona, wardrobe, social, rewards,
+                      media, providers, commerce, rights, privacy), events outbox, read API, MCP executor
+brandme-core/         Legacy Python services: brain (8000), policy (8001), orchestrator (8002, stub)
+brandme-agents/       Legacy Python services: identity, knowledge, compliance (stubs); agentic CLI
+brandme-cube/         Legacy Product Cube service (8007, unverified)
+brandme-governance/   Legacy governance console service (8006, stub)
+brandme-chain/        Midnight rights contract (Compact) and chain service
+brandme-console/      Next.js operator console (port 3002, dev compose only)
+brandme-data/         Spanner migrations (V001…) and the migration runner
+brandme-infra/        Helm chart and GKE deployment assets (nothing deployed yet)
+packages/             Generated contracts, design tokens, Firestore rules, provider contracts
+scripts/              brandme.mjs (check/smoke/migrate), guards, regression harness, dev tooling
+tests/                Python test suite (foundation, domains, journeys), run with emulators in CI
+docs/                 design contract, live build record, audits, archive
 ```
 
-## Claude Code Setup
+## How changes land
 
-This repo ships with two project-scoped Claude Code integrations:
+- Branch from `main`; one change per pull request; CI must be green on the exact head.
+- `pnpm check` is the same gate CI runs. Known-broken tests are quarantined by name in `tests/conftest.py` and never
+  reported as passing.
+- No credentials in the tree: a repo-wide Trivy secret scan blocks the pipeline, and
+  `docs/build/security/credential-manifest.yaml` must name every secret-shaped environment variable the code reads.
+- Lane ownership, deviations and evidence conventions: [`docs/build/workspace-governance.md`](./docs/build/workspace-governance.md),
+  [`docs/build/deviations.md`](./docs/build/deviations.md).
 
-- **UI/UX Pro Max skill** at `.claude/skills/ui-ux-pro-max/` — design-system reasoning (typography, color, components, per-stack patterns). Loads automatically.
-- **21st.dev Magic MCP server** declared in `.mcp.json` — generates UI components on demand.
+## Claude Code setup
 
-The Magic server requires an API key. To enable it (local CLI or Claude Code on the web):
-
-1. Get a key at https://21st.dev/magic/console
-2. `cp .claude/.env.local.example .claude/.env.local` and set `MAGIC_API_KEY`
-3. Start a new Claude Code session — the SessionStart hook at `.claude/hooks/session-start.sh` exports the key into the session so the MCP server in `.mcp.json` picks it up.
-
-`.claude/.env.local` is gitignored. Never commit real API keys.
-
-## Security Guarantees
-
-1. **O(1) Consent Checks** - Spanner graph queries for instant policy decisions
-2. **ESG Verification** - All agent transactions require Cardano oracle check
-3. **Idempotent Writes** - Commit timestamps prevent duplicate operations
-4. **PII Redaction** - Driver-level redaction for all database operations
-5. **Hash-Chained Audit** - Tamper-evident compliance trail
-6. **Human-in-the-Loop** - Escalation workflow for high-risk decisions
-
-## Tech Stack
-
-### Infrastructure
-- **Cloud**: Google Cloud Platform (GCP)
-- **Kubernetes**: GKE
-- **Primary Database**: Google Cloud Spanner (global consistency)
-- **Real-time State**: Firestore
-- **Event Bus**: NATS JetStream
-- **Observability**: OpenTelemetry, Prometheus, Grafana
-
-### Services
-- **Backend**: Python (FastAPI), Node.js (TypeScript)
-- **Frontend**: Next.js, React, Tailwind CSS
-- **Blockchain**: Cardano, Midnight
-- **Infrastructure**: Terraform, Helm
-
-## Contributing
-
-### Code Standards
-- TypeScript: ESLint + Prettier
-- Python: Black + Ruff + MyPy
-- All services emit OpenTelemetry traces
-- **No PII in logs** - Use `redact_user_id()` and `truncate_id()`
-- Spanner for writes, Firestore for real-time reads
-- All database operations must be idempotent
-
-### Git Workflow
-1. Create feature branch from `main`
-2. Make changes with clear commit messages
-3. Ensure all tests pass (including emulator tests)
-4. Submit PR with description
-5. Require 2 approvals for merge
+The repo ships a project-scoped skill at `.claude/skills/ui-ux-pro-max/` and declares the 21st.dev Magic MCP server
+in `.mcp.json`. The Magic server needs an API key: copy `.claude/.env.local.example` to `.claude/.env.local`, set
+`MAGIC_API_KEY`, and start a new session; `.claude/.env.local` is gitignored.
 
 ## License
-
-Copyright (c) Brand.Me, Inc. All rights reserved.
 
 Proprietary and confidential. Unauthorized copying or distribution is prohibited.

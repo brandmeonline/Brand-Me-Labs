@@ -12,4 +12,6 @@ Mia is the standing orchestrator for the Brand.Me bench program (founder directi
 
 ## Current state
 
-See `merge-log-20261023.md` for the 2026-10-23 merge train and `questions-for-founder-20261023.md` for the open decision set.
+See `pipeline-state.md` (the loop's single source of truth since 2026-10-30) and `next-plans-20261025.md` for the
+round-03 queue. The 2026-10-23 merge train and the completed foundation assignment are archived under
+`docs/archive/2026-10-orchestration-history/`; `questions-for-founder-20261023.md` is the dated decision packet.

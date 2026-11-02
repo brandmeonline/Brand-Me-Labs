@@ -18,7 +18,7 @@ Baseline `ed19dc151d103b108cf972e6d37971c55d5dcf60` (both audits). Date 2026-11-
 | BR-026, BR-034 | UNKNOWN | DELETION CANDIDATE (medium) | pure ancestors; no consumer; commits stay reachable |
 | F-SEC-003 severity | High | Medium | single admin collaborator; no second writer; protection wouldn't bind admin |
 | F-SEC-006/007 severity | Medium | Low | documented limitations; preStop sleep |
-| CMP-039 `brandme_gateway/` | no consumer | script consumer in `run_all.sh:14`; still remove (mock auth) | SC-20 |
+| CMP-039 `brandme_gateway/` | no consumer | 2026-11-01: "script consumer in `run_all.sh:14`" — **withdrawn 2026-11-02**, the first audit is right (C-15); still remove (mock auth) | SC-20 |
 | `agents/` retention rationale | consumed by `deploy-brandme.sh` | consumer is inoperable (`agents/lib/common.sh` missing) | SC-44 |
 | CI reproducibility | green with open alerts | also red-on-new-advisories (`pnpm audit --prod`, no floor); main's green not reproducible today | SC-32, PR #71/#72 |
 | Helm deployment view | declares workloads | `consumerDomains.enabled: false` default; `BRAIN_SERVICE_URL` unset; probes on always-200 route | SC-40/45 |
@@ -38,7 +38,7 @@ Baseline `ed19dc151d103b108cf972e6d37971c55d5dcf60` (both audits). Date 2026-11-
 | D-5 | Intended GCP project for image publishing | "reconcile hardcoded project" | `lux-realestate-app` named; mismatch with product | Owner confirms project; then WIF migration (WP-02). |
 | D-6 | Dependabot / 78 code-scanning alerts reachability | 19 High/Critical triaged statically | not re-triaged by the second audit | Dependabot access or a current `trivy fs`/SBOM run against the exact image digests. |
 
-No dispute concerns a deletion: every ref either audit would delete is agreed by both (19 candidates = first audit's 18 + BR-026 + BR-034); every ref either audit would keep for process reasons is withheld from deletion.
+No dispute concerns a deletion: every ref either audit would delete is agreed by both (20 candidates = first audit's 18 + BR-026 + BR-034; the pack's tally line said 19 and 7 KEEP and was corrected to 20 and 5 on 2026-11-02, C-16); every ref either audit would keep for process reasons is withheld from deletion.
 
 ## 4. Final priority order (combined)
 
@@ -59,7 +59,7 @@ Severity and product importance are kept separate from sequence; this is the seq
 
 **Branch recovery (parallel, owner-gated)**
 10. Allocate V016/V017 (F-BR-001); integrate **#66**, then **#63** against the accepted API, then **#70** with mount + trust-path registration (F-BR-002).
-11. Bundle + verified recovery of BR-007/BR-013; owner decision on D-1/D-2; then individually authorized ref retirements of the 19 candidates with fresh tip checks.
+11. Bundle + verified recovery of BR-007/BR-013; owner decision on D-1/D-2; then individually authorized ref retirements of the 20 candidates with fresh tip checks.
 
 **M1 — staging pilot**
 12. **WP-08** browser OIDC (F-UX-003) — launch-blocking.

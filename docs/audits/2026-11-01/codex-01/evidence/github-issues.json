@@ -1,0 +1,18 @@
+[
+  {
+    "createdAt": "2026-10-10T17:58:43Z",
+    "labels": [
+      {
+        "id": "LA_kwDOQJHa-M8AAAACN8b3nw",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 38,
+    "state": "CLOSED",
+    "title": "[midnight-rights] consumeReprintAllowance test failure on main",
+    "updatedAt": "2026-10-10T18:30:43Z",
+    "url": "https://github.com/brandmeonline/Brand-Me-Labs/issues/38"
+  }
+]

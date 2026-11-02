@@ -1,0 +1,393 @@
+{
+  "checked": "2026-11-01",
+  "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+  "scope": "All 19 distinct package/advisory combinations labelled HIGH or Critical by stored GitHub rule metadata in the complete visible 78-alert listing; source-level prerequisites assessed, deployed reachability remains unverified",
+  "items": [
+    {
+      "alert": 4,
+      "advisory": "CVE-2024-30251",
+      "primary": "https://github.com/aio-libs/aiohttp/security/advisories/GHSA-5m98-qgg9-wh84",
+      "upstream_severity": "High",
+      "affected": "<3.9.4",
+      "fixed": "3.9.4",
+      "assessment": "Declared aiohttp3.9.1 is affected. A specially crafted multipart POST triggers an infinite loop in aiohttp server parsing and blocks subsequent requests.",
+      "reachability": "No first-party aiohttp server or multipart reader use found. Reviewed servers use FastAPI/Uvicorn; default core lock excludes aiohttp. No runtime exploit or deployed legacy inventory established.",
+      "package": "aiohttp",
+      "declared_version": "3.9.1",
+      "source_location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 14,
+      "advisory": "CVE-2025-69223",
+      "primary": "https://github.com/aio-libs/aiohttp/security/advisories/GHSA-6mq8-rvhq-8wgg",
+      "upstream_severity": "High",
+      "affected": "<=3.13.2",
+      "fixed": "3.13.3",
+      "assessment": "Declared aiohttp3.9.1 is affected. Requires aiohttp server automatic decompression of attacker-controlled compressed request data; expansion exhausts memory.",
+      "reachability": "No first-party aiohttp server/auto_decompress use found. Default core lock excludes aiohttp; deployed legacy/transitive use unverified.",
+      "package": "aiohttp",
+      "declared_version": "3.9.1",
+      "source_location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 36,
+      "advisory": "CVE-2026-34516",
+      "primary": "https://github.com/aio-libs/aiohttp/security/advisories/GHSA-m5qp-6w8w-w647",
+      "upstream_severity": "Low (global advisory/current instance Medium; historical rule metadata High)",
+      "affected": "<=3.13.3",
+      "fixed": "3.13.4",
+      "assessment": "Declared aiohttp3.9.1 is affected. Excess multipart headers can consume memory outside ordinary header limits; upstream notes other limits constrain impact.",
+      "reachability": "No first-party aiohttp multipart parser found. Default core lock excludes aiohttp; legacy deployment and transitive use unverified.",
+      "package": "aiohttp",
+      "declared_version": "3.9.1",
+      "source_location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 43,
+      "advisory": "CVE-2026-34520",
+      "primary": "https://github.com/aio-libs/aiohttp/security/advisories/GHSA-63hf-3vf5-4wqf",
+      "assessment": "Upstream LOW and current instance LOW contradict historical rule security_severity_level critical; do not report a confirmed critical vulnerability. Legacy aiohttp 3.9.1 manifest; not in default core image hashed lock.",
+      "reachability": "unverified legacy-only dependency",
+      "package": "aiohttp",
+      "declared_version": "3.9.1",
+      "source_location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 75,
+      "advisory": "CVE-2026-45134",
+      "primary": "https://github.com/langchain-ai/langsmith-sdk/security/advisories/GHSA-3644-q5cj-c5c7",
+      "upstream_severity": "High",
+      "affected": "langchain<0.3.30",
+      "fixed": "langchain0.3.30; dependent SDK version compatibility must be assessed",
+      "assessment": "Legacy agentic requirements pin langchain0.1.0. Unlike the aiohttp manifest, this file is installed in the default agents Dockerfile stage; the CI matrix builds/publishes agents. Upstream requires use of an untrusted public Hub prompt without independent validation.",
+      "reachability": "Repository-wide source search for pull_prompt, pullPrompt, hub.pull and langsmith returned no calls. Affected pin can ship, but the specific advisory prerequisite was not found. Exact deployed image digest and transitive dependency/SBOM inventory remain unverified.",
+      "package": "langchain",
+      "declared_version": "0.1.0",
+      "source_location": {
+        "path": "brandme-agents/agentic/requirements.txt",
+        "start_line": 7,
+        "end_line": 7,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 79,
+      "advisory": "CVE-2026-69244",
+      "primary": "https://github.com/aio-libs/aiohttp/security/advisories/GHSA-cq5v-8q36-5273",
+      "upstream_severity": "High",
+      "affected": "<=3.14.2",
+      "fixed": "3.14.3",
+      "assessment": "Declared aiohttp3.9.1 is affected. The client C response parser error path can read outside its buffer on malformed responses, causing denial of service; Python parser is not affected.",
+      "reachability": "No first-party aiohttp client found; sampled legacy network clients use httpx.AsyncClient. Default core lock excludes aiohttp. Transitive/deployed client use and compiled extension state unverified.",
+      "package": "aiohttp",
+      "declared_version": "3.9.1",
+      "source_location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 472,
+      "advisory": "CVE-2026-111064",
+      "primary": "https://github.com/aio-libs/aiohttp/security/advisories/GHSA-5wr8-gcqf-gqf3",
+      "upstream_severity": "Low (global advisory/scanner High)",
+      "affected": "<=3.14.3",
+      "fixed": "3.14.4",
+      "assessment": "Declared aiohttp3.9.1 is affected. Requires an aiohttp server: idle connections before initial request data avoid its keepalive timeout.",
+      "reachability": "Legacy servers reviewed are FastAPI/Uvicorn; no aiohttp server invocation found. Legacy manifest pin alone does not establish deployed vulnerability. Default core lock excludes aiohttp.",
+      "package": "aiohttp",
+      "declared_version": "3.9.1",
+      "source_location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 473,
+      "advisory": "CVE-2026-111066",
+      "primary": "https://github.com/aio-libs/aiohttp/security/advisories/GHSA-9xw5-w5jj-pvcg",
+      "upstream_severity": "Moderate (global advisory/scanner High)",
+      "affected": "Global range >=2.0.0,<3.14.4; maintainer affected field includes3.14.4 while also naming3.14.4 as fixed",
+      "fixed": "3.14.4; affected-field boundary discrepancy should be checked before remediation",
+      "assessment": "Declared aiohttp3.9.1 is affected under both ranges. Requires aiohttp server Request.post() on hostile multipart input; descriptor exhaustion causes denial of service.",
+      "reachability": "Legacy manifest only; no first-party aiohttp invocation found. Default core image independently installs a canonical lock without aiohttp. Actual deployed/transitive library use remains unverified.",
+      "package": "aiohttp",
+      "declared_version": "3.9.1",
+      "source_location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 474,
+      "advisory": "GHSA-2g87-pp6c-29x5",
+      "primary": "https://github.com/aio-libs/aiohttp/security/advisories/GHSA-2g87-pp6c-29x5",
+      "assessment": "Upstream Moderate versus scanner High; legacy aiohttp 3.9.1 affected, patched 3.14.4. No aiohttp use found in legacy core .py search; default core image uses different lock.",
+      "reachability": "legacy manifest affected; runtime exposure unverified",
+      "package": "aiohttp",
+      "declared_version": "3.9.1",
+      "source_location": {
+        "path": "brandme-core/requirements.txt",
+        "start_line": 28,
+        "end_line": 28,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 496,
+      "advisory": "CVE-2026-114134",
+      "primary": "https://github.com/psf/black/security/advisories/GHSA-cg8m-r9f2-5wm2",
+      "assessment": "Pinned Black 26.10.0 is affected only for bundled GitHub Action with use_pyproject true. No psf/black or use_pyproject use found in repository workflows. Upstream fixed 26.10.1.",
+      "reachability": "published vulnerable workflow prerequisite absent in reviewed configuration",
+      "package": "black",
+      "declared_version": "26.10.0",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 86,
+        "end_line": 86,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 498,
+      "advisory": "CVE-2026-54621",
+      "primary": "https://github.com/datamodel-code-generator/datamodel-code-generator/security/advisories/GHSA-j884-q54q-mmx3",
+      "upstream_severity": "High",
+      "affected": ">=0.25.0, <0.60.1",
+      "fixed": "0.60.1",
+      "assessment": "Installed 0.34.0 is affected by GraphQL Union description injection.",
+      "reachability": "Observed invocation explicitly selects jsonschema rather than graphql; GraphQL-specific input prerequisite absent at reviewed call site.",
+      "package": "datamodel-code-generator",
+      "declared_version": "0.34.0",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 499,
+      "advisory": "CVE-2026-54653",
+      "primary": "https://github.com/datamodel-code-generator/datamodel-code-generator/security/advisories/GHSA-386q-5hp3-95m9",
+      "upstream_severity": "High",
+      "affected": ">=0.17.0, <=0.60.1",
+      "fixed": "0.60.2",
+      "assessment": "Installed 0.34.0 is affected. Schema default_factory content may produce Python evaluated on generated-model import, without special flags.",
+      "reachability": "JSON Schema to pydantic_v2.BaseModel generation is a real build path, and tests import committed generated models. No default_factory field found in current two source schemas, nor public untrusted schema intake. Conditional future schema/import risk; not a demonstrated live application RCE.",
+      "package": "datamodel-code-generator",
+      "declared_version": "0.34.0",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 500,
+      "advisory": "CVE-2026-54654",
+      "primary": "https://github.com/datamodel-code-generator/datamodel-code-generator/security/advisories/GHSA-wjv6-jcfj-mf9r",
+      "upstream_severity": "High",
+      "affected": ">=0.14.1, <=0.60.1",
+      "fixed": "0.60.2",
+      "assessment": "Installed 0.34.0 is affected; malicious extra-template-data comments can emit Python executed when generated code is imported.",
+      "reachability": "Observed invocation does not pass --extra-template-data. Required input option absent at reviewed call site; no application exploitation established.",
+      "package": "datamodel-code-generator",
+      "declared_version": "0.34.0",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 501,
+      "advisory": "CVE-2026-54690",
+      "primary": "https://github.com/datamodel-code-generator/datamodel-code-generator/security/advisories/GHSA-954p-556p-r752",
+      "upstream_severity": "High",
+      "affected": ">=0.9.1, <=0.60.2",
+      "fixed": "0.61.0",
+      "assessment": "Installed 0.34.0 is affected by remote JSON Schema reference SSRF when HTTP support is available. HTTPX exists in the same lock, so declaration of the optional extra was not used to dismiss reachability.",
+      "reachability": "Generator processes repository JSON Schema with default flags. No HTTP/HTTPS reference found in the two current input schemas; no public schema-ingestion route found. Conditional build-time risk if attacker-influenced schema is later accepted.",
+      "package": "datamodel-code-generator",
+      "declared_version": "0.34.0",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 502,
+      "advisory": "CVE-2026-54691",
+      "primary": "https://github.com/datamodel-code-generator/datamodel-code-generator/security/advisories/GHSA-rfr2-mq9m-x2qx",
+      "upstream_severity": "High",
+      "affected": ">=0.9.1, <=0.60.2",
+      "fixed": "0.61.0",
+      "assessment": "Installed 0.34.0 is affected by unrestricted URL/redirect fetching.",
+      "reachability": "Observed invocation uses --input local-file and --input-file-type jsonschema; no --url flag. This direct-URL prerequisite is absent at the reviewed call site. Remote-reference sibling is assessed separately, and no exploit was attempted.",
+      "package": "datamodel-code-generator",
+      "declared_version": "0.34.0",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 503,
+      "advisory": "CVE-2026-55389",
+      "primary": "https://github.com/datamodel-code-generator/datamodel-code-generator/security/advisories/GHSA-8359-h9fx-j6v9",
+      "upstream_severity": "High",
+      "affected": "<=0.61.0",
+      "fixed": "0.62.0 for explicit remote-reference-control bypass; default compatibility mode needs policy review",
+      "assessment": "Installed 0.34.0 is in published affected range. Malicious file or parent-path JSON Schema references can read outside the intended input directory. Upstream default compatibility behavior is not an unconditional containment guarantee.",
+      "reachability": "Repository schema generation is used, but no file:// or ../ reference found in current two schema inputs. No external user schema endpoint found. Upgrade plus explicit trusted-reference policy required before treating third-party schemas as safe.",
+      "package": "datamodel-code-generator",
+      "declared_version": "0.34.0",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 504,
+      "advisory": "CVE-2026-55391",
+      "primary": "https://github.com/datamodel-code-generator/datamodel-code-generator/security/advisories/GHSA-vx7x-vcc2-c44g",
+      "upstream_severity": "High",
+      "affected": "<=0.62.0",
+      "fixed": "0.63.0",
+      "assessment": "Installed 0.34.0 is in published affected range. DNS rebinding matters when fetching an attacker-influenced URL; upstream fix pins validated DNS results.",
+      "reachability": "Observed generator receives a repository-owned local JSON Schema. No external schema intake or non-local reference found in the two input schema files. HTTPX is installed, so absence of the HTTP extra declaration alone is not a sufficient mitigation claim. Build-time exposure to future malicious schema changes remains conditional.",
+      "package": "datamodel-code-generator",
+      "declared_version": "0.34.0",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 505,
+      "advisory": "CVE-2026-55415",
+      "primary": "https://github.com/datamodel-code-generator/datamodel-code-generator/security/advisories/GHSA-5578-w22f-pfx9",
+      "advisory_database": "https://github.com/advisories/GHSA-5578-w22f-pfx9",
+      "assessment": "Pinned 0.34.0 is within affected range. Generator used on repository schema; exploit requires malicious schema followed by importing emitted Python. Upstream advisory patched-version field says None while reviewed DB/Trivy list 0.64.0; confirm exact security fix before choosing replacement, then regenerate contracts.",
+      "reachability": "build-time generator confirmed; untrusted external schema ingress not found",
+      "package": "datamodel-code-generator",
+      "declared_version": "0.34.0",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 468,
+        "end_line": 468,
+        "start_column": 1,
+        "end_column": 1
+      }
+    },
+    {
+      "alert": 508,
+      "advisory": "CVE-2026-0994",
+      "primary": "https://github.com/protocolbuffers/protobuf/pull/25239",
+      "advisory_database": "https://github.com/advisories/GHSA-7gcm-g887-7qv7",
+      "assessment": "Pinned protobuf 4.25.9 is within published affected range. ParseDict of attacker-controlled nested Any is prerequisite; no direct application ParseDict/json_format use found in sampled canonical code.",
+      "reachability": "dependency affected; public exploit path unverified",
+      "package": "protobuf",
+      "declared_version": "4.25.9",
+      "source_location": {
+        "path": "scripts/python/requirements.lock",
+        "start_line": 1018,
+        "end_line": 1018,
+        "start_column": 1,
+        "end_column": 1
+      }
+    }
+  ],
+  "package_summary": [
+    {
+      "package": "datamodel-code-generator",
+      "version": "0.34.0",
+      "context": "Observed build generator; also installed by shared lock in default core image",
+      "advisories": 8
+    },
+    {
+      "package": "aiohttp",
+      "version": "3.9.1",
+      "context": "Legacy core manifest; absent canonical default core lock; no first-party calls found",
+      "advisories": 8
+    },
+    {
+      "package": "protobuf",
+      "version": "4.25.9",
+      "context": "Canonical runtime lock; vulnerable parsing call not found in sampled application",
+      "advisories": 1
+    },
+    {
+      "package": "black",
+      "version": "26.10.0",
+      "context": "Shared lock tooling; specific GitHub Action option not present",
+      "advisories": 1
+    },
+    {
+      "package": "langchain",
+      "version": "0.1.0",
+      "context": "Agents image default stage installs legacy agentic requirements; public prompt pull call not found",
+      "advisories": 1
+    }
+  ],
+  "unreviewed_remainder": [
+    "59 visible Low/Medium-rule-metadata alerts were inventoried but not individually matched to all upstream advisories or reachability paths",
+    "No complete fresh package/container OS SBOM scan or image-digest inventory was executed",
+    "Dependabot alerts returned HTTP403; transitive and deployed-provider vulnerability state remains unknown",
+    "Dynamic, reflective, indirect/transitive library use and downstream consumers were not conclusively excluded by text searches"
+  ]
+}

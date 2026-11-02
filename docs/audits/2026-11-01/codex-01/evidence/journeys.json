@@ -1,0 +1,720 @@
+[
+  {
+    "id": "J-001",
+    "actor_preconditions": "Guest; modern browser with local storage",
+    "intended_steps_outcome": "Explore → four-step editable style onboarding → first useful direction without wallet/camera/contact import",
+    "actual_steps_outcome": "/start implements intent, fictional look selection, room choice, three adjustable axes and save. Landing CTA leads to /today; onboarding is a separate route.",
+    "trace": "Home /today link → /start Onboarding → localStorage guest draft → fictional 2D study → optional account migration",
+    "persistence_external_effects": "Device localStorage only until explicit migration; no retailer or chain effect.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/app/page.tsx",
+        "line": 25,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/app/page.tsx#L25"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/persona/onboarding.tsx",
+        "line": 44,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/persona/onboarding.tsx#L44"
+      }
+    ],
+    "highest_risk_alternatives": "Skip/back exist; storage errors keep in-tab state with warning. Reload and unknown preferences traced, not exercised.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-002",
+    "actor_preconditions": "New or returning real member in sandbox/production",
+    "intended_steps_outcome": "Provider login/recovery → secure browser session → reauthentication for sensitive changes",
+    "actual_steps_outcome": "Browser account page offers only fictional development sign-in. Strict build displays sign-in unavailable. Gateway verifies bearer tokens but has no production browser session creation/callback in its mounted routes.",
+    "trace": "/me/connections → Connections → /session/dev only; strict mode refuses it. Browser proxy forwards bm_session, not bearer Authorization; command() requires /session.",
+    "persistence_external_effects": "No complete browser production account journey demonstrated. OIDC bearer validation is a separate API capability.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-UX-003"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/app/me/connections/page.tsx",
+        "line": 4,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/app/me/connections/page.tsx#L4"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/privacy/connections.tsx",
+        "line": 13,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/privacy/connections.tsx#L13"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 85,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L85"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/middleware/session.ts",
+        "line": 66,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/middleware/session.ts#L66"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/lib/server/gateway-proxy.ts",
+        "line": 100,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/lib/server/gateway-proxy.ts#L100"
+      }
+    ],
+    "highest_risk_alternatives": "Missing/expired sessions yield errors. Password recovery and callback UI confirmed absent from inspected app route inventory; external IdP recovery remains unverified.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-003",
+    "actor_preconditions": "Synthetic development member; gateway, migrated Spanner and consumer API configured",
+    "intended_steps_outcome": "Sign in → migrate guest choices once → refresh/relogin with durable saved persona",
+    "actual_steps_outcome": "Development session route resolves member and creates session. Guest migration preserves request and key before sending; only clears local draft after response.",
+    "trace": "Connections → command(/session/dev) → gateway IdentityStore → Spanner session → command(/me/guest-migration) → signed domain client → GuestMigrationService",
+    "persistence_external_effects": "Server persistence code exists; dev identity is explicitly simulated, not verified real identity.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "Runtime assembly and emulator unavailable for audit execution"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/persona/onboarding.tsx",
+        "line": 24,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/persona/onboarding.tsx#L24"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 94,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L94"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/services/domains.ts",
+        "line": 37,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/services/domains.ts#L37"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 70,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L70"
+      }
+    ],
+    "highest_risk_alternatives": "Stable idempotency key on timeout; account-change guard and no automatic write retries. Consumer CI uses separately pinned domain source, so it is not an all-main test.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence",
+    "additional_historical_execution_evidence": {
+      "path": "CI_JOURNEY_EVIDENCE.md",
+      "ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+      "domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+      "qualification": "Selected parts verified in historical composite CI. Does not upgrade current-main verification. Item intake was API-seeded."
+    }
+  },
+  {
+    "id": "J-004",
+    "actor_preconditions": "Signed-in member; consumer domain API available",
+    "intended_steps_outcome": "Inspect/edit/lock/reset style axes → preview recommendations → save with conflict handling",
+    "actual_steps_outcome": "Looking Glass uses server persona and If-Match updates. Recommendation service exists but production composition supplies no catalog/wardrobe candidates, so connected ranking output is missing.",
+    "trace": "/me/style → LookingGlass → same-origin proxy → personaRouter → signed principal → PersonaService → Spanner → visible saved revision",
+    "persistence_external_effects": "Persona updates persist server-side if assembled; preview is not a retail transaction.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-ARCH-003"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/persona/looking-glass.tsx",
+        "line": 15,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/persona/looking-glass.tsx#L15"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/persona/looking-glass.tsx",
+        "line": 70,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/persona/looking-glass.tsx#L70"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/api.py",
+        "line": 40,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/api.py#L40"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/persona/app.py",
+        "line": 69,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/persona/app.py#L69"
+      }
+    ],
+    "highest_risk_alternatives": "Version conflicts require reload; preview requests carry revision; reset controls present. /me still falsely says guest (F-UX-001).",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence",
+    "additional_historical_execution_evidence": {
+      "path": "CI_JOURNEY_EVIDENCE.md",
+      "ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+      "domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+      "qualification": "Selected parts verified in historical composite CI. Does not upgrade current-main verification. Item intake was API-seeded."
+    }
+  },
+  {
+    "id": "J-005",
+    "actor_preconditions": "Guest/demo; IndexedDB and optional WebGL",
+    "intended_steps_outcome": "Place owned/wanted pieces in chosen room → accessible list → persist across devices",
+    "actual_steps_outcome": "Guest closet has transactional IndexedDB, placement conflicts and cross-tab notifications. Sandbox/production route is explicitly blocked. No authenticated repository is injected.",
+    "trace": "/closet → SpatialModeGate → ClosetPage/useCloset → createGuestClosetRepository → IndexedDB → room/list",
+    "persistence_external_effects": "Persists on this browser/device; does not prove ownership or cross-device sync.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-ARCH-006"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/app/closet/page.tsx",
+        "line": 5,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/app/closet/page.tsx#L5"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/closet/SpatialModeGate.tsx",
+        "line": 12,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/closet/SpatialModeGate.tsx#L12"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/closet/useCloset.ts",
+        "line": 10,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/closet/useCloset.ts#L10"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/closet/repository.ts",
+        "line": 265,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/closet/repository.ts#L265"
+      }
+    ],
+    "highest_risk_alternatives": "Storage failure, optimistic-version conflict, duplicate operation and subscribe cleanup reviewed; WebGL/device recovery not run.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-006",
+    "actor_preconditions": "Member or guest adding a garment",
+    "intended_steps_outcome": "Add self-reported item → see it in Today and spatial closet → update/archive consistently",
+    "actual_steps_outcome": "Mounted server wardrobe intake and separate guest AddItem/closet stores both exist. UI spatial IDs and IndexedDB state are not connected to the server wardrobe returned by Today.",
+    "trace": "Guest /add → guest repository; separate API POST /wardrobe/items → wardrobeRouter → WardrobeService/Spanner → TodayData GET /wardrobe/items",
+    "persistence_external_effects": "Two distinct persistence systems, with self-reported vs fictional claim labels.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-ARCH-006"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/closet/AddItemPage.tsx",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/closet/AddItemPage.tsx#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/closet/repository.ts",
+        "line": 145,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/closet/repository.ts#L145"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/wardrobe/api.py",
+        "line": 48,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/wardrobe/api.py#L48"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/persona/today.tsx",
+        "line": 10,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/persona/today.tsx#L10"
+      }
+    ],
+    "highest_risk_alternatives": "Intake validation and claim labels traced; no fresh browser/API cross-device test. A test seeding via API is not the Add-item UI journey.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence",
+    "additional_historical_execution_evidence": {
+      "path": "CI_JOURNEY_EVIDENCE.md",
+      "ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+      "domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+      "qualification": "Selected parts verified in historical composite CI. Does not upgrade current-main verification. Item intake was API-seeded."
+    }
+  },
+  {
+    "id": "J-007",
+    "actor_preconditions": "Two signed-in members; accepted relationship and server wardrobe item",
+    "intended_steps_outcome": "Ask selected friends for five minutes → yes/pass/alternative → server closes → access revocation",
+    "actual_steps_outcome": "Consumer UI, gateway mounts and social service handlers exist. Uses member references for requests; server-backed wardrobe is prerequisite. Deadline and access are periodically refreshed.",
+    "trace": "/circle → /relationships; /circle/decisions/new → /decisions → signed principal → DecisionService/Spanner → visible server state",
+    "persistence_external_effects": "Server records and internal notifications; page explicitly sends no external notifications.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "End-to-end deployment unverified; guest items do not seed server wardrobe",
+      "F-ARCH-002: consumer scheduler/ingress composition missing; UI refresh is not durable deadline closure or reward settlement"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/social/circle.tsx",
+        "line": 32,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/social/circle.tsx#L32"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/social/circle.tsx",
+        "line": 48,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/social/circle.tsx#L48"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/social/api.py",
+        "line": 83,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/social/api.py#L83"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 143,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L143"
+      }
+    ],
+    "highest_risk_alternatives": "Blind-until-response, no-replies, close early, block/revocation and server deadline paths traced; no participant notification delivery observed.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence",
+    "additional_historical_execution_evidence": {
+      "path": "CI_JOURNEY_EVIDENCE.md",
+      "ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+      "domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+      "qualification": "Selected parts verified in historical composite CI. Does not upgrade current-main verification. Item intake was API-seeded."
+    }
+  },
+  {
+    "id": "J-008",
+    "actor_preconditions": "Signed-in member with reward events and available benefit",
+    "intended_steps_outcome": "Earn auditable participation rewards → reserve benefit → fulfill or reverse",
+    "actual_steps_outcome": "Rewards summary and reservation UI call mounted domain endpoints. UI distinguishes reserved from fulfilled. Earning/scheduler/provider fulfillment are separate operational dependencies.",
+    "trace": "/rewards → /rewards,/benefits → review dialog → idempotent reservation command → RewardsService/BenefitService → Spanner → status",
+    "persistence_external_effects": "Points/reservations code; no evidence of partner fulfillment or real monetary value.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "Worker and fulfillment deployment unverified",
+      "F-ARCH-002: consumer scheduler/ingress composition missing; UI refresh is not durable deadline closure or reward settlement"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/rewards/rewards.tsx",
+        "line": 44,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/rewards/rewards.tsx#L44"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/domains/rewards/api.py",
+        "line": 35,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/domains/rewards/api.py#L35"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 143,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L143"
+      }
+    ],
+    "highest_risk_alternatives": "Reservation unknown-outcome retains key; mocked browser harness tests repeat and focus recovery; not executed here.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence",
+    "additional_historical_execution_evidence": {
+      "path": "CI_JOURNEY_EVIDENCE.md",
+      "ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+      "domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+      "qualification": "Selected parts verified in historical composite CI. Does not upgrade current-main verification. Item intake was API-seeded."
+    }
+  },
+  {
+    "id": "J-009",
+    "actor_preconditions": "Member searching an authorized provider",
+    "intended_steps_outcome": "Discover → live catalog variants → save/try/quote",
+    "actual_steps_outcome": "Discover sends /catalog/search and renders explicit provider observations. Catalog/provider routers are not mounted in main; ProductDetail has no save/try/checkout action.",
+    "trace": "/discover → /api/v1/catalog/search → proxy → gateway catch-all 404; standalone router/adapters are unreachable from this mount",
+    "persistence_external_effects": "Visible test catalog screenshots are HTTP test doubles, not live retailer results.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-ARCH-001"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/commerce/catalog.tsx",
+        "line": 55,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/commerce/catalog.tsx#L55"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/commerce/catalog.tsx",
+        "line": 179,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/commerce/catalog.tsx#L179"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 131,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L131"
+      }
+    ],
+    "highest_risk_alternatives": "UI handles provider unavailable and untrusted text; search success baselines are mocked.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-010",
+    "actor_preconditions": "Member approves exact variant and bounded spend",
+    "intended_steps_outcome": "Quote → trusted approval → authorized order → reconcile/cancel/refund",
+    "actual_steps_outcome": "/orders is an unavailable-state page; commerce domain and provider safety code exist but the public router/application composition is disconnected.",
+    "trace": "/orders → AvailabilityState; proposed path would use commerce gateway → domain → provider → webhook/reconcile → order view",
+    "persistence_external_effects": "No actual purchase, payment or refund performed or verified.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-ARCH-001"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/app/orders/page.tsx",
+        "line": 4,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/app/orders/page.tsx#L4"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/commerce.ts",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/commerce.ts#L1"
+      }
+    ],
+    "highest_risk_alternatives": "Idempotency/approval logic reviewed by security reviewer; sandbox provider receipts and timeout reconciliation remain unverified.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-011",
+    "actor_preconditions": "Member grants bounded assistant permission",
+    "intended_steps_outcome": "Ask assistant → review plan/grant → execute within scope → cancel/revoke",
+    "actual_steps_outcome": "/assistant is an unavailable-state page; standalone assistant/delegation router work is not mounted.",
+    "trace": "/assistant → AvailabilityState; no reachable consumer task creation journey on main",
+    "persistence_external_effects": "No agent authority or external action created in audit.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-ARCH-001"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/app/assistant/page.tsx",
+        "line": 4,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/app/assistant/page.tsx#L4"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/assistant.ts",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/assistant.ts#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 131,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L131"
+      }
+    ],
+    "highest_risk_alternatives": "Tool permission, injection and cancellation analysis belongs to security evidence; no autonomous task was launched.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-012",
+    "actor_preconditions": "Member with recent authentication; rights read/export services configured",
+    "intended_steps_outcome": "Inspect all personal data → export selected categories with integrity verification",
+    "actual_steps_outcome": "UI honestly shows partial rights inventory. Export job/service supports selected rights categories, hash verification and account-change discard; not a full account export.",
+    "trace": "/me/data → gateway privacy routes → read_api rights catalog; export command → privacy_exports service/worker/store → verified JSON download",
+    "persistence_external_effects": "Server job and private artifact code exists; resource/worker/access configuration not observed.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-ARCH-004",
+      "F-UX-003"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/privacy/my-data.tsx",
+        "line": 80,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/privacy/my-data.tsx#L80"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/lib/client/gateway.ts",
+        "line": 36,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/lib/client/gateway.ts#L36"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/reads.py",
+        "line": 180,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/reads.py#L180"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/privacy_exports/service.py",
+        "line": 71,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/privacy_exports/service.py#L71"
+      }
+    ],
+    "highest_risk_alternatives": "Hash mismatch, account switch and partial scope handled; browser screenshots come from mocked harness, not exported private data.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-013",
+    "actor_preconditions": "Member requesting correction/removal",
+    "intended_steps_outcome": "Freeze processing → delete permitted data → show retained exceptions and receipt",
+    "actual_steps_outcome": "Main My Data cannot initiate deletion and read service returns commands unavailable; it can display an existing deletion receipt. Full consumer/privacy handlers are not composed into this entry point.",
+    "trace": "/me/data → inventory says deletion unavailable; /me/data/deletion/[id] → read-only receipt",
+    "persistence_external_effects": "No erasure requested; public ledger exceptions and full account completion not verified.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-ARCH-004"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/privacy/my-data.tsx",
+        "line": 211,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/privacy/my-data.tsx#L211"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/app.py",
+        "line": 122,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/app.py#L122"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/reads.py",
+        "line": 180,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/reads.py#L180"
+      }
+    ],
+    "highest_risk_alternatives": "Retained/exception states displayed. Proposed new branch composition must be integrated and tested, not counted as main behavior.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-014",
+    "actor_preconditions": "Guest with camera permission or optional photo provider",
+    "intended_steps_outcome": "Preview garment with honest fidelity → deny/revoke camera → discard media",
+    "actual_steps_outcome": "Spatial preview, overlay and photo-service code exists; guest storage and explicit consent are used. Fit/provenance labels are distinct. No audit camera/device/provider execution.",
+    "trace": "/try/[itemId] → TryPage → model/overlay/photo branch → cameraSession or photo route → optional provider → local preview-media/closet link",
+    "persistence_external_effects": "Local camera/IndexedDB and optional external photo transmission when configured and consented; not proof of fit or ownership.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "Authenticated spatial connection missing; provider and devices unverified"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/spatial/TryPage.tsx",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/spatial/TryPage.tsx#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/spatial/PhotoPreview.tsx",
+        "line": 118,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/spatial/PhotoPreview.tsx#L118"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/spatial/photoMedia.ts",
+        "line": 3,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/spatial/photoMedia.ts#L3"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/spatial/previewMedia.ts",
+        "line": 10,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/spatial/previewMedia.ts#L10"
+      }
+    ],
+    "highest_risk_alternatives": "Permission denial/revocation, reduced motion and cleanup have source/test paths; physically calibrated fit and real mobile AR remain untested.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-015",
+    "actor_preconditions": "Member/operator requesting digital ownership/lifecycle action",
+    "intended_steps_outcome": "Authenticate authority → real chain submission → reconcile/projection → visible proof/failure",
+    "actual_steps_outcome": "Gateway mounts rights reads/exports and chain reconciliation. The chain server is read-only; ownership challenge creation reaches a read-service mutation boundary returning 503. Client-owned wallet proof/submission is not a mounted server signer. Legacy scan/governance screens remain simulations.",
+    "trace": "Gateway /rights reads and /chain reconciliation → configured read/chain service → Spanner projections when configured. Ownership challenge POST → read API mutation boundary → 503. Member wallet submission is a separate unverified connection.",
+    "persistence_external_effects": "No wallet signature or chain write was performed; deployed version/contract and network remain unknown.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-BR-002: rights command service/route guard incomplete on PR #70; main mutation endpoint unavailable",
+      "F-UX-003: production browser identity incomplete",
+      "Cloud/network/contract/worker deployment unobserved"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 131,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L131"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/components/shell/app-shell.tsx",
+        "line": 215,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/components/shell/app-shell.tsx#L215"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/midnight/adapter.ts",
+        "line": 1,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/midnight/adapter.ts#L1"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-chain/src/index.ts",
+        "line": 35,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-chain/src/index.ts#L35"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/ownership.ts",
+        "line": 36,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/ownership.ts#L36"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme_core/read_api/app.py",
+        "line": 122,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme_core/read_api/app.py#L122"
+      }
+    ],
+    "highest_risk_alternatives": "Idempotency/reconciliation/reorg/recovery reviewed statically by security reviewer; full failure recovery not executed.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  },
+  {
+    "id": "J-016",
+    "actor_preconditions": "Signed-in development member on shared browser",
+    "intended_steps_outcome": "Sign out → revoke session → clear opted-in guest data",
+    "actual_steps_outcome": "Server session revocation exists, and UI invalidates account resources. Clear guest data checkbox only removes two onboarding localStorage keys; closet, outfits and saved preview-media IndexedDB remain.",
+    "trace": "Connections signout → DELETE /session → IdentityStore.revokeSession → clearGuest → accountChanged → UI refresh",
+    "persistence_external_effects": "Session invalidation code + partial device cleanup; privacy expectation gap for retained guest photos/items.",
+    "checks_performed": "Static source tracing only in this audit; no application execution",
+    "blockers": [
+      "F-UX-002"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/privacy/connections.tsx",
+        "line": 19,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/privacy/connections.tsx#L19"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/persona/onboarding.tsx",
+        "line": 37,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/persona/onboarding.tsx#L37"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 120,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L120"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-frontend/features/spatial/previewMedia.ts",
+        "line": 10,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-frontend/features/spatial/previewMedia.ts#L10"
+      }
+    ],
+    "highest_risk_alternatives": "Logout failure does not clear state; shared-browser cleanup and re-login not executed in audit.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence",
+    "additional_historical_execution_evidence": {
+      "path": "CI_JOURNEY_EVIDENCE.md",
+      "ui_sha": "d657103ee21674ef14d6182572a78d75d0241b29",
+      "domain_sha": "dafd3b169da777ec3e3a7fc2c3f0cab573358e2b",
+      "qualification": "Selected parts verified in historical composite CI. Does not upgrade current-main verification. Item intake was API-seeded."
+    }
+  },
+  {
+    "id": "J-017",
+    "actor_preconditions": "Authorized moderator/provider operator with separately configured console identity",
+    "intended_steps_outcome": "Review moderation/reward disputes or provider status → authorized correction → audit record and visible result",
+    "actual_steps_outcome": "Console surfaces and gateway clients exist. Moderation requests /api/v1/ops, which main gateway does not mount; no working operator correction path established. Provider administration uses a separate bearer-only client.",
+    "trace": "Console moderation/reward pages → opsFetch (cookie or bearer; BRANDME_GATEWAY_INTERNAL_URL) → /api/v1/ops → absent gateway mount. Provider console → bearer-only client (BRANDME_GATEWAY_URL) → provider/commerce route not mounted.",
+    "persistence_external_effects": "No operator write or external provider operation was executed. Real audit trail/role enforcement cannot be established through an unreachable path.",
+    "checks_performed": "Static console client and gateway composition read; no runtime administrative action",
+    "blockers": [
+      "CAP-017: ops domain/router composition absent",
+      "F-ARCH-001: provider/commerce routes unmounted"
+    ],
+    "evidence": [
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-console/app/(ops)/moderation/_lib/ops-gateway.ts",
+        "line": 31,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-console/app/(ops)/moderation/_lib/ops-gateway.ts#L31"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-console/app/(ops)/providers/_data/gateway.ts",
+        "line": 51,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-console/app/(ops)/providers/_data/gateway.ts#L51"
+      },
+      {
+        "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+        "path": "brandme-gateway/src/routes/v1/index.ts",
+        "line": 131,
+        "url": "https://github.com/brandmeonline/Brand-Me-Labs/blob/ed19dc151d103b108cf972e6d37971c55d5dcf60/brandme-gateway/src/routes/v1/index.ts#L131"
+      }
+    ],
+    "highest_risk_alternatives": "Missing/expired operator token, non-admin access, duplicate correction and audit-log failure require runtime role/tenant tests after mounting.",
+    "sha": "ed19dc151d103b108cf972e6d37971c55d5dcf60",
+    "deployment": "unknown",
+    "verification": "static evidence"
+  }
+]
