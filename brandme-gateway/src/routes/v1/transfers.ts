@@ -2,8 +2,8 @@
  * Copyright (c) Brand.Me, Inc. All rights reserved.
  *
  * /v1/transfers/:transferId — a transfer intent's status and the recipient's binding.
- * Shipped unmounted: the mount file is foundation's (routes/v1/index.ts). Mount it
- * under /api/v1/transfers behind the gateway principal boundary.
+ * Mounted under /api/v1/transfers by routes/v1/index.ts (foundation's mount file) behind
+ * the gateway principal boundary, beside /assets and /ownership.
  *
  * Accepting here binds the recipient's commitment, which their wallet computed
  * locally for the next epoch. The transfer is final only when the recipient's

@@ -97,14 +97,12 @@ def _refusal(database: Any, ctx: Any, category: str) -> Optional[tuple[str, bool
     category is already done: then this call is a restore re-applying the
     tombstone (run_deletion only calls a step that is not done, privacy.py:295).
 
-    No job row at all can only be a restore whose backup predates the job and
-    that carried the tombstone ledger without DeletionJobs (run_deletion always
-    has its job). Scope is then unknowable, because every category of a job gets
-    a tombstone, refused ones included (privacy.py:307-308). Privacy wins: the
-    tombstone is re-applied as an erasure. The cost is that a category-only
-    request on a still-active member, restored this way, also erases that
-    member's undelivered events and replay records. Carry DeletionJobs with
-    the tombstones to keep refusals as no-ops.
+    No job row at all cannot come from a restore any more: a backup that carried
+    the tombstone ledger without DeletionJobs is refused before any handler runs
+    (privacy.py reapply_tombstones_after_restore, midnight-rights packet Q13),
+    because every category of a job gets a tombstone, refused ones included
+    (privacy.py:307-308), so the scope would be unknowable. A direct call with an
+    unknown job still lets privacy win: the tombstone is applied as an erasure.
     """
     from google.cloud.spanner_v1 import param_types
 

@@ -26,7 +26,22 @@ export function parseIfMatch(header: string | undefined): number {
   return Number(m[1]);
 }
 
-export function capabilitySummary(principal: Principal) {
+export type CapabilityConfig = Pick<GatewayConfig, 'rightsCommandServiceUrl' | 'rightsCommandServiceToken' | 'chainUrlExplicit'>;
+
+/** Reported from the gateway's own configuration, never from an upstream call on the request path. */
+export function rightsTransferCapability(cfg: CapabilityConfig) {
+  // Transfers need the rights command service (routes/v1/transfers.ts, assets.ts) and the chain service that
+  // answers /chain/capability, which the UI consults for the network badge and live status before proving.
+  const configured = Boolean(cfg.rightsCommandServiceUrl && cfg.rightsCommandServiceToken && cfg.chainUrlExplicit);
+  return {
+    name: 'rights.transfer',
+    state: configured ? 'available' : 'unconfigured',
+    reason_code: configured ? 'rights_commands_configured' : 'rights_commands_unconfigured',
+    simulation_label: null,
+  };
+}
+
+export function capabilitySummary(principal: Principal, cfg: CapabilityConfig) {
   return [
     {
       name: 'auth.identity',
@@ -35,10 +50,10 @@ export function capabilitySummary(principal: Principal) {
       simulation_label: principal.assuranceLevel === 'simulated' ? DEV_IDENTITY_LABEL : null,
     },
     { name: 'profile.persistence', state: 'available', reason_code: 'spanner', simulation_label: null },
-    // Commerce, rights and try-on are reported by their owning lanes' registries;
+    // Commerce and try-on are reported by their owning lanes' registries;
     // until those merge they are unconfigured, not implied available.
     { name: 'commerce.checkout', state: 'unconfigured', reason_code: 'lane_not_integrated', simulation_label: null },
-    { name: 'rights.transfer', state: 'unconfigured', reason_code: 'lane_not_integrated', simulation_label: null },
+    rightsTransferCapability(cfg),
     { name: 'tryon.photo', state: 'unconfigured', reason_code: 'lane_not_integrated', simulation_label: null },
   ];
 }
@@ -76,7 +91,7 @@ async function loadMe(store: IdentityStore, cfg: GatewayConfig, principal: Princ
         identity_provider: principal.identityProvider,
         expires_at: principal.expiresAt.toISOString(),
       },
-      capabilities: capabilitySummary(principal),
+      capabilities: capabilitySummary(principal, cfg),
     },
     version: member.version,
   };

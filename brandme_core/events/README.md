@@ -58,8 +58,7 @@ subscribers filter by the `event_type` attribute.
 - **Adding a catalog** is a foundation PR: add a `Catalog` entry, pin its
   contract count in `tests/foundation/test_outbox_lane_catalogs.py`, and keep the
   module importable without services, providers or credentials. Nothing is read
-  from the environment. A lane needs no private worker:
-  `brandme_core/domains/persona/outbox_worker.py` is now redundant.
+  from the environment. A lane needs no private worker.
 - **`absent`** applies only to an entry with `until_merged` whose module does not
   exist at all. No entry on main sets it: every listed catalog must load. Any
   other failure (a missing required module, an import error in a present module
@@ -218,11 +217,11 @@ uses the V013 index `OutboxByEnvironmentStatus`.
   The scope comes from `DeletionJobs`, which the tombstone does not record:
   every category of a job gets a tombstone, refused ones included
   (`domains/privacy/privacy.py:307-308`). A restore that carried only
-  `DeletionTombstones` has no job row, and then privacy wins: the tombstone is
-  re-applied as an erasure and the restore completes. The cost is that a refused
-  category-only request on a still-active member, restored this way, also erases
-  that member's undelivered events and replay records. Carry `DeletionJobs` (and
-  `DeletionSteps`) with the tombstones to keep refusals as no-ops.
+  `DeletionTombstones` is therefore refused before any handler runs and the
+  serving barrier stays up until `DeletionJobs` (and `DeletionSteps`) are
+  restored with the tombstones and the run is resumed (midnight-rights packet
+  Q13; `tests/foundation/test_outbox_retention.py`
+  `test_restore_without_the_job_ledger_refuses_to_serve`).
 - **Not recalled.** A delivery already in flight when the deletion runs can
   still reach the broker. The dispatcher read the payload when it claimed the
   row, and publishes it before its `stale` finish. Copies accepted by Pub/Sub

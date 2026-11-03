@@ -85,10 +85,11 @@ export const ENDPOINTS = [
   E('get', '/rights/entitlements', 'listMyEntitlements', 'rights', 'midnight-rights', { paginated: true, cursorPattern: '^[0-9a-f]{64}$', response: 'RightsEntitlementsRead', status: 'implemented' }),
   E('get', '/rights/reprint-jobs/{jobId}', 'getMyReprintJob', 'rights', 'midnight-rights', { response: 'ReprintJobRead', status: 'implemented' }),
   E('post', '/assets/{assetId}/claims', 'submitClaim', 'rights', 'midnight-rights', { idempotent: true, accepted: true }),
-  E('post', '/assets/{assetId}/transfers', 'createTransfer', 'rights', 'midnight-rights', { idempotent: true, created: true }),
-  E('post', '/transfers/{transferId}/accept', 'acceptTransfer', 'rights', 'midnight-rights', { idempotent: true }),
+  E('post', '/assets/{assetId}/transfers', 'createTransfer', 'rights', 'midnight-rights', { idempotent: true, created: true, body: 'TransferCreateRequest', response: 'TransferIntentRead', status: 'implemented', errors: [400], summary: 'Offer a controlled, transferable right to whoever holds the invite; recent authentication required' }),
+  E('get', '/transfers/{transferId}', 'getTransfer', 'rights', 'midnight-rights', { response: 'TransferIntentRead', status: 'implemented', errors: [400], summary: 'A transfer intent as its sender or recipient; the sender\'s view carries the proving arguments once a recipient is bound' }),
+  E('post', '/transfers/{transferId}/accept', 'acceptTransfer', 'rights', 'midnight-rights', { idempotent: true, body: 'TransferAcceptRequest', response: 'TransferIntentRead', status: 'implemented', errors: [400, 410], summary: 'Bind the recipient\'s commitment to an open intent; recent authentication required' }),
   E('get', '/chain/operations/{operationId}', 'getChainOperation', 'rights', 'midnight-rights', { response: 'ChainOperation' }),
-  E('post', '/assets/{assetId}/reprint-quotes', 'createReprintQuote', 'rights', 'midnight-rights', { idempotent: true }),
+  E('post', '/assets/{assetId}/reprint-quotes', 'createReprintQuote', 'rights', 'midnight-rights', { body: 'ReprintQuoteRequest', response: 'ReprintQuoteRead', status: 'implemented', errors: [400], summary: 'Read-only eligibility for a personal reprint or the conditions still missing; nothing is reserved, so no Idempotency-Key' }),
   E('post', '/reprint-jobs', 'createReprintJob', 'rights', 'midnight-rights', { idempotent: true, accepted: true }),
 
   // Try-on

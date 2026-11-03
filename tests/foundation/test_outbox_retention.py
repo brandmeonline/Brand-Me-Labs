@@ -16,7 +16,7 @@ from brandme_core.domains.base import CommandContext, Principal, run_idempotent_
 from brandme_core.domains.media.store import MemoryMediaStore
 from brandme_core.domains.persona.lane import register_consumer_domains
 from brandme_core.domains.privacy import deletion as pd
-from brandme_core.domains.privacy.privacy import MyDataService
+from brandme_core.domains.privacy.privacy import MyDataService, RestoreNotServing
 from brandme_core.events import EventEnvelope, registry, write_events
 from brandme_core.events import erasure, retention
 from brandme_core.events.catalogs import load_catalogs
@@ -474,7 +474,7 @@ def test_platform_handler_exports_metadata_only_and_refuses_what_it_cannot_erase
         (erasure.ACCOUNT_SCOPE_REFUSED, pd.SubjectContext(
             subject_ref=m, job_id=job(db, m, "category", erasure.CATEGORIES), requested_at=now())),
         (erasure.UNMATCHABLE_REFUSED, odd_ctx),
-    ]  # no job row at all is a restore that lost the job ledger: test_restore_without_the_job_ledger_reerases_and_serves
+    ]  # no job row at all: a restore that lost the job ledger is refused first (test_restore_without_the_job_ledger_refuses_to_serve)
     before = (rows(db), replays(db))
     for reason, narrowed in refused:
         for key in erasure.CATEGORIES:
@@ -516,11 +516,12 @@ def test_foundation_catalog_delete_callbacks_fail_loudly_through_the_bridge(db):
 
 
 @requires_spanner
-def test_restore_without_the_job_ledger_reerases_and_serves(db):
-    """Second Q9 review (probe_restore): a backup restored with only DeletionTombstones never finished.
+def test_restore_without_the_job_ledger_refuses_to_serve(db):
+    """Midnight-rights packet Q13 (second Q9 review before it): a backup restored with only DeletionTombstones.
 
-    Without the job row the scope is unknowable (every category of a job gets a tombstone, refused ones too),
-    so the platform handler re-applies the tombstone as an erasure and the restore completes.
+    Without the job rows the account barrier and the scope of every refused category request are lost, so the
+    restore replays nothing, keeps its serving barrier and names the missing ledger. Once DeletionJobs and
+    DeletionSteps are back the same run resumes, re-erases and serves.
     """
     m = uid()
     svc = service(db)
@@ -528,6 +529,13 @@ def test_restore_without_the_job_ledger_reerases_and_serves(db):
     replay(db, f"member:{m}", {"ok": True})
     receipt = svc.run_deletion(svc.request_deletion(m, now()))
     assert {k: r["status"] for k, r in receipt["categories"].items()} == dict.fromkeys(erasure.CATEGORIES, "deleted")
+    ledger = {}
+    with db.snapshot(multi_use=True) as snap:
+        for table in ("DeletionJobs", "DeletionSteps"):
+            result = snap.execute_sql(f"SELECT * FROM {table}")
+            values = [list(r) for r in result]
+            ledger[table] = ([f.name for f in result.fields], values)
+    assert ledger["DeletionJobs"][1] and ledger["DeletionSteps"][1]
     # The restore keeps the tombstone ledger only: DeletionJobs (DeletionSteps cascades) and freezes are gone,
     # and the member's rows are back from the backup.
     with db.batch() as batch:
@@ -535,7 +543,20 @@ def test_restore_without_the_job_ledger_reerases_and_serves(db):
             batch.delete(table, KeySet(all_=True))
     back = put(db, actor=f"member:{m}", payload={"member_id": m})
     replay(db, f"member:{m}", {"ok": True})
-    restored = svc.reapply_tombstones_after_restore("dev-backup-before-deletion", now() - DAY)
+    taken_at = now() - DAY  # one backup identity: the refused run is resumed, not replaced
+    with pytest.raises(RestoreNotServing, match="deletion ledger is incomplete") as refused:
+        svc.reapply_tombstones_after_restore("dev-backup-before-deletion", taken_at)
+    restore_id = refused.value.restore_id
+    with pytest.raises(RestoreNotServing):
+        svc.assert_serving()  # the barrier stays up
+    assert rows(db)[back]["status"] == "pending" and len(replays(db)) == 1  # nothing was replayed
+    # The operator restores the deletion ledger with the tombstones and resumes the same run.
+    with db.batch() as batch:
+        for table in ("DeletionJobs", "DeletionSteps"):
+            columns, values = ledger[table]
+            batch.insert(table, columns, values)
+    restored = svc.reapply_tombstones_after_restore("dev-backup-before-deletion", taken_at, restore_id=restore_id)
+    assert restored["restore_id"] == restore_id
     assert restored["tombstones_applied"] == len(erasure.CATEGORIES) and restored["rows_redeleted"] >= 2
     svc.assert_serving()
     row = rows(db)[back]  # withdrawn in place: empty payload, neutral actor

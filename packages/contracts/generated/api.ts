@@ -43,7 +43,7 @@ export type paths = {
         };
         get?: never;
         put?: never;
-        /** createReprintQuote */
+        /** Read-only eligibility for a personal reprint or the conditions still missing; nothing is reserved, so no Idempotency-Key */
         post: operations["createReprintQuote"];
         delete?: never;
         options?: never;
@@ -60,7 +60,7 @@ export type paths = {
         };
         get?: never;
         put?: never;
-        /** createTransfer */
+        /** Offer a controlled, transferable right to whoever holds the invite; recent authentication required */
         post: operations["createTransfer"];
         delete?: never;
         options?: never;
@@ -1113,6 +1113,23 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/transfers/{transferId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A transfer intent as its sender or recipient; the sender's view carries the proving arguments once a recipient is bound */
+        get: operations["getTransfer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/transfers/{transferId}/accept": {
         parameters: {
             query?: never;
@@ -1122,7 +1139,7 @@ export type paths = {
         };
         get?: never;
         put?: never;
-        /** acceptTransfer */
+        /** Bind the recipient's commitment to an open intent; recent authentication required */
         post: operations["acceptTransfer"];
         delete?: never;
         options?: never;
@@ -1613,6 +1630,33 @@ export type components = {
             /** Format: date-time */
             updated_at: string;
         };
+        /** @description Eligibility for a personal reprint, or the conditions still missing. Read-only: browsing never reserves or consumes quota; no price source exists yet, so price is null and price_status is unavailable. */
+        ReprintQuoteRead: {
+            allowance_id: string | null;
+            eligible: boolean;
+            entitlement_id: string;
+            /** Format: date-time */
+            license_valid_until: string | null;
+            manufacturer_id: string;
+            missing: ("entitlement_not_reprintable" | "license_missing" | "territory_not_licensed" | "quota_exceeded" | "manufacturer_not_capable")[];
+            /** @enum {string} */
+            network: "undeployed" | "preview" | "preprod";
+            price: components["schemas"]["Money"] | null;
+            /** @enum {string} */
+            price_status: "unavailable" | "quoted";
+            quantity: string;
+            quota_remaining: string | null;
+            territory: string;
+        };
+        ReprintQuoteRequest: {
+            manufacturer_id: string;
+            /** @default {} */
+            modifications: {
+                [key: string]: string;
+            };
+            quantity: number;
+            territory: string;
+        };
         Revision: string;
         RightsEntitlementRead: {
             /** Format: uuid */
@@ -1851,6 +1895,51 @@ export type components = {
             /** @enum {string} */
             status: "ok" | "degraded";
         };
+        TransferAcceptRequest: {
+            /** @description Computed by the recipient's wallet for the next epoch; the all-zero commitment is refused. */
+            recipient_commitment: string;
+            recipient_invite: string;
+        };
+        TransferCreateRequest: {
+            expires_in_seconds: number;
+            /** @default [] */
+            include_documents: string[];
+            /** @description A bearer secret the sender's app generates and gives the recipient privately (256+ bits); the service stores only its SHA-256 digest. Never an email address or handle. */
+            recipient_invite: string;
+            rights_scope: components["schemas"]["TransferRightsScope"][];
+        };
+        /** @description A transfer intent as its sender or recipient sees it: no subject references and no invite. Expiry of an unproven intent is reported without a write. */
+        TransferIntentRead: {
+            contract_address: string;
+            entitlement_id: string;
+            expected_epoch: string;
+            /** Format: date-time */
+            expires_at: string;
+            include_documents: string[];
+            intent_id: components["schemas"]["Identifier"];
+            /** @enum {string} */
+            network: "undeployed" | "preview" | "preprod";
+            proving: components["schemas"]["TransferProvingArguments"] | null;
+            rights_scope: components["schemas"]["TransferRightsScope"][];
+            /** @enum {string} */
+            role: "sender" | "recipient";
+            /** @enum {string} */
+            state: "Draft" | "AwaitingRecipient" | "ReadyToProve" | "Proving" | "Submitted" | "Reconciling" | "Observed" | "Finalized" | "Expired" | "Cancelled" | "Failed";
+            terms_digest: string;
+        };
+        /** @description The offerTransfer circuit arguments the sender's wallet proves locally once a recipient is bound; present only in the sender's view of a ReadyToProve intent. */
+        TransferProvingArguments: {
+            /** @constant */
+            circuit: "offerTransfer";
+            entitlement_id: string;
+            /** @description Unix seconds, decimal string */
+            expiry: string;
+            nonce: string;
+            recipient_commitment: string;
+            terms_digest: string;
+        };
+        /** @enum {string} */
+        TransferRightsScope: "display" | "transfer" | "personal_manufacture" | "repair_parts" | "commercial_reproduction";
         WardrobeItem: {
             asset_instance_id: string | null;
             /** @enum {string} */
@@ -2025,15 +2114,17 @@ export interface operations {
     createReprintQuote: {
         parameters: {
             query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
+            header?: never;
             path: {
                 assetId: components["schemas"]["Identifier"];
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReprintQuoteRequest"];
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -2041,7 +2132,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ReprintQuoteRead"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not authenticated */
@@ -2071,8 +2171,8 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Idempotency key reused with a different request */
-            409: {
+            /** @description Invalid domain transition or field */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2111,7 +2211,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferCreateRequest"];
+            };
+        };
         responses: {
             /** @description Success */
             201: {
@@ -2119,7 +2223,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["TransferIntentRead"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not authenticated */
@@ -2151,6 +2264,15 @@ export interface operations {
             };
             /** @description Idempotency key reused with a different request */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid domain transition or field */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7044,12 +7166,10 @@ export interface operations {
             };
         };
     };
-    acceptTransfer: {
+    getTransfer: {
         parameters: {
             query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
+            header?: never;
             path: {
                 transferId: components["schemas"]["Identifier"];
             };
@@ -7063,7 +7183,98 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["TransferIntentRead"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden by object policy or mode */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not found or not visible to caller */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Throttled */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Provider or dependency unavailable; safe retry or handoff */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    acceptTransfer: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                transferId: components["schemas"]["Identifier"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferAcceptRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferIntentRead"];
+                };
+            };
+            /** @description Request rejected or export restricted/not ready */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not authenticated */
@@ -7095,6 +7306,24 @@ export interface operations {
             };
             /** @description Idempotency key reused with a different request */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Export expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid domain transition or field */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

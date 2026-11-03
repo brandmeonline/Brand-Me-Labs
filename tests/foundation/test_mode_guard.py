@@ -48,6 +48,8 @@ CONFIGURED = {
     "read-api": {"READ_API_NETWORK": "preview"},
     "privacy_exports": {"EXPORT_NETWORK": "preprod"},
     "privacy-exports": {"EXPORT_NETWORK": "undeployed"},
+    "rights_commands": {"RIGHTS_COMMAND_NETWORK": "preprod"},
+    "rights-commands": {"RIGHTS_COMMAND_NETWORK": "preview"},
     "events_worker": {},
     "events-worker": {},
     "events_retention": {},
@@ -147,7 +149,7 @@ def test_configured_foundation_process_is_allowed_in_sandbox(service):
     assert enforce_boot_guard(service, env=_configured(service, "sandbox")) is Mode.SANDBOX
 
 
-@pytest.mark.parametrize("service", ["chain", "read_api", "privacy_exports"])
+@pytest.mark.parametrize("service", ["chain", "read_api", "privacy_exports", "rights_commands"])
 def test_test_network_only_processes_are_refused_in_production(service):
     """No Mainnet support exists, so Midnight test-network data is SANDBOX, never production."""
     with pytest.raises(TrustPathViolation) as exc:
@@ -161,13 +163,24 @@ def test_processes_without_test_network_scope_are_allowed_in_production(service)
 
 
 @pytest.mark.parametrize("service,variable", [("chain", "MIDNIGHT_NETWORK"), ("read_api", "READ_API_NETWORK"),
-                                              ("privacy_exports", "EXPORT_NETWORK")])
+                                              ("privacy_exports", "EXPORT_NETWORK"),
+                                              ("rights_commands", "RIGHTS_COMMAND_NETWORK")])
 @pytest.mark.parametrize("network", ["mainnet", "", "testnet-02"])
 def test_unauthorized_midnight_network_is_required_but_unconfigured(service, variable, network):
     env = _configured(service, "sandbox", **{variable: network})
     with pytest.raises(TrustPathViolation) as exc:
         enforce_boot_guard(service, env=env)
     assert any("required but unconfigured" in v for v in exc.value.violations)
+
+
+def test_rights_commands_inventory_matches_its_config_loader():
+    """The command process refuses the Spanner emulator in strict modes (rights_commands/config.py:31-33); so does the guard."""
+    with pytest.raises(TrustPathViolation) as exc:
+        enforce_boot_guard("rights_commands", env=_configured("rights_commands", "sandbox", SPANNER_EMULATOR_HOST="localhost:9010"))
+    assert any("SPANNER_EMULATOR_HOST points at a local emulator" in v for v in exc.value.violations)
+    regs = service_registrations("rights_commands", Mode.SANDBOX, {"RIGHTS_COMMAND_NETWORK": "preprod"})
+    assert [r.kind for r in regs] == [AdapterKind.SANDBOX] and regs[0].component is TrustComponent.CHAIN_MIDNIGHT
+    assert "brandme_core/domains/rights/commands.py" in regs[0].implementation and "no Mainnet mode" in regs[0].implementation
 
 
 def test_chain_inventory_is_current():
@@ -187,7 +200,8 @@ def _all_registrations():
     for regs in LEGACY_SIMULATED_ADAPTERS.values():
         yield from regs
     env = {**CONFIGURED["gateway"], **CONFIGURED["consumer_domains"], "BRANDME_TRYON_PROVIDER": "simulated",
-           "MIDNIGHT_NETWORK": "preprod", "READ_API_NETWORK": "preprod", "EXPORT_NETWORK": "preprod"}
+           "MIDNIGHT_NETWORK": "preprod", "READ_API_NETWORK": "preprod", "EXPORT_NETWORK": "preprod",
+           "RIGHTS_COMMAND_NETWORK": "preprod"}
     for name, process in AUDITED_PROCESSES.items():
         for mode in Mode:
             yield from process.registrations(mode, env)
@@ -342,7 +356,8 @@ def test_conflicting_environment_refuses_every_service(service):
         enforce_boot_guard(service, env=_env("development", ENVIRONMENT="production"))
 
 
-@pytest.mark.parametrize("service", ["read_api", "privacy_exports", "events_worker", "events_retention", "consumer_domains"])
+@pytest.mark.parametrize("service", ["read_api", "privacy_exports", "events_worker", "events_retention", "consumer_domains",
+                                     "rights_commands"])
 @pytest.mark.parametrize("mode", ["sandbox", "development"])
 def test_processes_that_read_environment_need_it_set(service, mode):
     with pytest.raises(TrustPathViolation, match="ENVIRONMENT is unset"):
@@ -402,6 +417,6 @@ def test_inventory_cli_lists_legacy_and_audited_processes():
                          env={"PATH": "", "BRANDME_MODE": "sandbox"}, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     for name in ("orchestrator", "chain", "read_api", "privacy_exports", "events_worker", "events_retention", "gateway",
-                 "consumer_domains"):
+                 "consumer_domains", "rights_commands"):
         assert f'"{name}"' in out.stdout
     assert "services/midnight-client.ts" not in out.stdout

@@ -1,0 +1,92 @@
+{
+  "$comment": "Request and response shapes of the rights command service (brandme_core/domains/rights/commands.py, brandme_core/rights_commands/app.py) as the gateway relays them (brandme-gateway/src/routes/v1/assets.ts, transfers.ts). Read from the code on 2026-11-03 (midnight-rights packet Q11). Identifiers are lowercase; Int64 values are decimal strings; proving arguments are exactly what the sender's wallet proves locally, witnesses never leave the wallet.",
+  "TransferRightsScope": {
+    "type": "string",
+    "enum": ["display", "transfer", "personal_manufacture", "repair_parts", "commercial_reproduction"]
+  },
+  "TransferCreateRequest": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "rights_scope": { "type": "array", "items": { "$ref": "#/components/schemas/TransferRightsScope" }, "minItems": 1, "maxItems": 5, "uniqueItems": true },
+      "recipient_invite": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43,128}$", "description": "A bearer secret the sender's app generates and gives the recipient privately (256+ bits); the service stores only its SHA-256 digest. Never an email address or handle." },
+      "expires_in_seconds": { "type": "integer", "minimum": 300, "maximum": 604800 },
+      "include_documents": { "type": "array", "items": { "type": "string", "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$" }, "maxItems": 20, "uniqueItems": true, "default": [] }
+    },
+    "required": ["rights_scope", "recipient_invite", "expires_in_seconds"]
+  },
+  "TransferAcceptRequest": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "recipient_invite": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43,128}$" },
+      "recipient_commitment": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Computed by the recipient's wallet for the next epoch; the all-zero commitment is refused." }
+    },
+    "required": ["recipient_invite", "recipient_commitment"]
+  },
+  "TransferProvingArguments": {
+    "type": "object",
+    "additionalProperties": false,
+    "description": "The offerTransfer circuit arguments the sender's wallet proves locally once a recipient is bound; present only in the sender's view of a ReadyToProve intent.",
+    "properties": {
+      "circuit": { "type": "string", "const": "offerTransfer" },
+      "entitlement_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "nonce": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "recipient_commitment": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "expiry": { "type": "string", "pattern": "^[0-9]{1,19}$", "description": "Unix seconds, decimal string" },
+      "terms_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+    },
+    "required": ["circuit", "entitlement_id", "nonce", "recipient_commitment", "expiry", "terms_digest"]
+  },
+  "TransferIntentRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "description": "A transfer intent as its sender or recipient sees it: no subject references and no invite. Expiry of an unproven intent is reported without a write.",
+    "properties": {
+      "intent_id": { "$ref": "#/components/schemas/Identifier" },
+      "network": { "type": "string", "enum": ["undeployed", "preview", "preprod"] },
+      "contract_address": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "entitlement_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "terms_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "rights_scope": { "type": "array", "items": { "$ref": "#/components/schemas/TransferRightsScope" }, "minItems": 1, "maxItems": 5, "uniqueItems": true },
+      "include_documents": { "type": "array", "items": { "type": "string", "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$" }, "maxItems": 20 },
+      "state": { "type": "string", "enum": ["Draft", "AwaitingRecipient", "ReadyToProve", "Proving", "Submitted", "Reconciling", "Observed", "Finalized", "Expired", "Cancelled", "Failed"] },
+      "role": { "type": "string", "enum": ["sender", "recipient"] },
+      "expected_epoch": { "type": "string", "pattern": "^[0-9]{1,19}$" },
+      "expires_at": { "type": "string", "format": "date-time" },
+      "proving": { "oneOf": [{ "$ref": "#/components/schemas/TransferProvingArguments" }, { "type": "null" }] }
+    },
+    "required": ["intent_id", "network", "contract_address", "entitlement_id", "terms_digest", "rights_scope", "include_documents", "state", "role", "expected_epoch", "expires_at", "proving"]
+  },
+  "ReprintQuoteRequest": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "quantity": { "type": "integer", "minimum": 1, "maximum": 100 },
+      "manufacturer_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "territory": { "type": "string", "pattern": "^[A-Z]{2}$" },
+      "modifications": { "type": "object", "propertyNames": { "maxLength": 64 }, "additionalProperties": { "type": "string", "maxLength": 256 }, "maxProperties": 20, "default": {} }
+    },
+    "required": ["quantity", "manufacturer_id", "territory"]
+  },
+  "ReprintQuoteRead": {
+    "type": "object",
+    "additionalProperties": false,
+    "description": "Eligibility for a personal reprint, or the conditions still missing. Read-only: browsing never reserves or consumes quota; no price source exists yet, so price is null and price_status is unavailable.",
+    "properties": {
+      "eligible": { "type": "boolean" },
+      "missing": { "type": "array", "items": { "type": "string", "enum": ["entitlement_not_reprintable", "license_missing", "territory_not_licensed", "quota_exceeded", "manufacturer_not_capable"] }, "uniqueItems": true },
+      "entitlement_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "network": { "type": "string", "enum": ["undeployed", "preview", "preprod"] },
+      "quantity": { "type": "string", "pattern": "^[0-9]{1,3}$" },
+      "territory": { "type": "string", "pattern": "^[A-Z]{2}$" },
+      "manufacturer_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "allowance_id": { "type": ["string", "null"], "maxLength": 128 },
+      "quota_remaining": { "type": ["string", "null"], "pattern": "^[0-9]{1,19}$" },
+      "license_valid_until": { "type": ["string", "null"], "format": "date-time" },
+      "price": { "oneOf": [{ "$ref": "#/components/schemas/Money" }, { "type": "null" }] },
+      "price_status": { "type": "string", "enum": ["unavailable", "quoted"] }
+    },
+    "required": ["eligible", "missing", "entitlement_id", "network", "quantity", "territory", "manufacturer_id", "allowance_id", "quota_remaining", "license_valid_until", "price", "price_status"]
+  }
+}

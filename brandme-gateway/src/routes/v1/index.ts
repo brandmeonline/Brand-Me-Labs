@@ -21,6 +21,7 @@ import { createChainRouter, type V1Deps } from './chain';
 import { createRightsRouter } from './rights';
 import { createOwnershipRouter } from './ownership';
 import { createAssetsRouter } from './assets';
+import { createTransfersRouter } from './transfers';
 import { createPrivacyRouter } from './privacy';
 import { consumerDomainClient } from '../../services/domains';
 import { personaRouter, type DomainClient } from './persona';
@@ -135,6 +136,7 @@ export function apiV1(deps: ApiV1Deps): Router {
   router.use('/rights', createRightsRouter(rights));
   router.use('/ownership', createOwnershipRouter(rights));
   router.use('/assets', createAssetsRouter(rights));
+  router.use('/transfers', createTransfersRouter(rights));
   router.use('/me', createPrivacyRouter(rights));
   router.use('/me', meRouter(cfg, store));
 
