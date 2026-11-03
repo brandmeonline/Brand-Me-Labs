@@ -347,7 +347,7 @@ LEGACY_SIMULATED_ADAPTERS: Mapping[str, tuple[AdapterRegistration, ...]] = {
 
 # ---------------------------------------------------------------------------
 # Audited foundation-era processes (read 2026-10-23 at the cited files;
-# events_retention and consumer_domains read 2026-10-25).
+# events_retention and consumer_domains read 2026-10-25; rights_commands read 2026-11-03).
 #
 # These processes fabricate no trust evidence. Their registrations describe
 # what they actually serve, classified from the configuration they will run
@@ -428,6 +428,19 @@ def _read_api(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, 
             "brandme_core/read_api/reads.py ReadService: read-only Spanner reads of persisted rights "
             "projections scoped to READ_API_NETWORK + READ_API_CONTRACT_ADDRESS (read_api/config.py:37-38); "
             "no chain calls, no Mainnet mode",
+            _NO_PREPROD_EVIDENCE,
+        ),
+    )
+
+
+def _rights_commands(mode: Mode, env: Mapping[str, str]) -> tuple[AdapterRegistration, ...]:
+    return (
+        _midnight_scope(
+            env, "RIGHTS_COMMAND_NETWORK",
+            "brandme_core/domains/rights/commands.py: transfer intents, invite binding, reprint quotes and "
+            "challenge authorization as Spanner writes scoped to RIGHTS_COMMAND_NETWORK + "
+            "RIGHTS_COMMAND_CONTRACT_ADDRESS (rights_commands/config.py:40-42); proofs stay in the member's "
+            "wallet, no chain calls, no Mainnet mode",
             _NO_PREPROD_EVIDENCE,
         ),
     )
@@ -564,6 +577,16 @@ AUDITED_PROCESSES: Mapping[str, AuditedProcess] = {
         "Authenticated rights and My Data read API (python -m brandme_core.read_api).",
         _read_api,
         environment_source="brandme_core/read_api/config.py:26 (must equal BRANDME_MODE)",
+    ),
+    "rights_commands": AuditedProcess(
+        "Authenticated rights command API (python -m brandme_core.rights_commands): transfer intents, invite "
+        "binding, reprint quotes and challenge authorization behind the gateway's service credential and "
+        "principal headers (rights_commands/app.py); writes TransferIntents, IdempotencyRecords and OutboxEvents, "
+        "reads the rights projections and the privacy ledger. Spanner via SPANNER_* only: the emulator is "
+        "required in demo/development and refused in sandbox/production (rights_commands/config.py:31-33).",
+        _rights_commands,
+        environment_source="brandme_core/rights_commands/config.py:29 (must equal BRANDME_MODE)",
+        strict_refused_env=("SPANNER_EMULATOR_HOST",),
     ),
     "privacy_exports": AuditedProcess(
         "Selected-category export API and leased worker (python -m brandme_core.privacy_exports [--worker]).",

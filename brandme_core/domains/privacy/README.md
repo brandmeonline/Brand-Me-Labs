@@ -70,8 +70,9 @@ they were processed by an older executor.
    `DeletionTombstones`, not the tombstones alone. The permanent account barrier
    in `assert_processing_allowed` reads `DeletionJobs` and the `*` freeze, and
    foundation's platform handler needs the job to keep a refused category request
-   a no-op. A tombstone-only restore re-applies the erasures and serves, but it
-   loses both.
+   a no-op. A tombstone-only restore is refused: `reapply_tombstones_after_restore`
+   replays nothing, keeps its `restoring` barrier and asks for the ledger; restore
+   it and resume the run with its `restore_id`.
 2. Run `reapply_tombstones_after_restore(backup_ref, backup_taken_at)`. It records
    a durable `restoring` barrier before invoking handlers. Native transactional
    handlers must raise if record removal is unfinished; their count must be a

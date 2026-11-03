@@ -10,7 +10,7 @@ Reserved by the opus-foundation lane; implemented by the midnight-rights lane. S
   (My Data handler).
 - **Reads:** served by `brandme_core/read_api/` behind the gateway; see its README.
 - **Tests:** `tests/test_rights*.py` and the chain suites in `brandme-chain/tests/`.
-- **Note:** the authenticated rights command backend (`brandme_core.rights_commands`) is in PR #70, not yet on `main`.
+- **Commands:** the authenticated rights command backend (`brandme_core/rights_commands/`, via #81) serves transfer intents, invite binding, reprint quotes and challenge authorization behind the gateway's `/assets`, `/transfers` and `/ownership` routers; see its README.
 
 Foundation contract every domain follows: commands through `run_command` / `run_idempotent_command` with rows and
 events in one transaction; `authorize` deny-by-default; events registered with closed schemas; data categories

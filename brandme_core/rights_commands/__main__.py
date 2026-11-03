@@ -23,8 +23,9 @@ def main(argv=None):
         from .app import create_app, verify_schema
 
         config = CommandConfig.from_env(os.environ)
-        # Shared trust-path inventory, in-process. This service has no audited
-        # entry yet, so strict modes refuse it (exit 3, not caught here).
+        # Shared trust-path inventory, in-process (AUDITED_PROCESSES["rights_commands"] in
+        # brandme_core/config.py): a test network is sandbox-grade, so production refuses
+        # it (exit 3, not caught here); there is no Mainnet mode.
         from brandme_core.boot import guard
 
         guard("rights_commands")

@@ -39,15 +39,17 @@ function setup(options: { configured?: boolean; upstream?: (url: string) => Resp
 }
 
 describe('mounted rights and My Data authentication boundary', () => {
-  it('mounts all five routers and requires a verified principal for private reads', async () => {
+  it('mounts all six routers and requires a verified principal for private reads', async () => {
     const { app, fetchImpl } = setup();
-    for (const path of ['/rights/entitlements', `/chain/operations/${jobId}`, `/rights/reprint-jobs/${jobId}`, '/me/data']) {
+    for (const path of ['/rights/entitlements', `/chain/operations/${jobId}`, `/rights/reprint-jobs/${jobId}`, '/me/data',
+      `/transfers/${jobId}`]) {
       expect((await request(app).get(`/api/v1${path}`).set('x-subject-ref', memberId)).status).toBe(401);
     }
     expect(fetchImpl).not.toHaveBeenCalled();
     expect((await request(app).get('/api/v1/chain/capability')).body.badge).toBe('Preprod test network');
     expect((await request(app).post('/api/v1/ownership/challenges').send({})).status).toBe(401);
     expect((await request(app).post(`/api/v1/assets/${jobId}/transfers`).send({})).status).toBe(401);
+    expect((await request(app).post(`/api/v1/transfers/${jobId}/accept`).send({})).status).toBe(401);
   });
 
   it('uses verified internal member identity and service credentials, ignoring caller subject headers', async () => {

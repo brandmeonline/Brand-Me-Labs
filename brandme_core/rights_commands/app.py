@@ -30,7 +30,7 @@ MAX_BODY_BYTES = 16 * 1024
 #: Same window as My Data export and deletion (privacy.py REAUTH_WINDOW).
 RECENT_AUTH = timedelta(minutes=10)
 SCOPES = frozenset({"rights:read", "rights:transfer", "rights:reprint", "privacy:manage"})
-REQUIRED_MIGRATIONS = set(range(1, 17)) - {3, 4, 5}  # V003–V005 are reserved and have no files
+REQUIRED_MIGRATIONS = set(range(1, 18))  # V001–V017 (rights_commands/README.md: migrations through V017)
 
 
 class Refused(Exception):

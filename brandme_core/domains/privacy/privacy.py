@@ -77,6 +77,14 @@ class RestoreNotServing(Exception):
         self.restore_id = restore_id
 
 
+class _DeletionLedgerMissing(Exception):
+    """A tombstone names a deletion job the restored backup does not hold."""
+
+    def __init__(self, count: int):
+        super().__init__(count)
+        self.count = count
+
+
 class ObjectStore(Protocol):
     def put(self, key: str, data: bytes, content_type: str) -> str: ...
     def delete(self, key: str) -> None: ...
@@ -446,10 +454,20 @@ class MyDataService:
         applied = 0
         rows_deleted = 0
         try:
-            with self.db.snapshot() as snap:
+            with self.db.snapshot(multi_use=True) as snap:
                 tombs = [Tombstone(subject_ref=r[0], category=r[1], tombstone_id=r[2], deletion_job_id=r[3],
                                    record_keys=tuple(r[4] or ()), created_at=r[5])
                          for r in snap.execute_sql("SELECT subject_ref, category, tombstone_id, deletion_job_id, record_keys, created_at FROM DeletionTombstones")]
+                # A backup that carried the tombstones without their jobs loses the permanent account barrier
+                # (deletion.py, assert_processing_allowed reads DeletionJobs) and the scope of every refused
+                # category request (events/erasure.py). Nothing is replayed and the run stays a serving barrier
+                # until the deletion ledger is restored and this run is resumed (midnight-rights packet Q13).
+                job_ids = sorted({t.deletion_job_id for t in tombs})
+                present = {r[0] for r in snap.execute_sql(
+                    "SELECT job_id FROM DeletionJobs WHERE job_id IN UNNEST(@ids)",
+                    params={"ids": job_ids}, param_types={"ids": pt.Array(pt.STRING)})} if job_ids else set()
+            if set(job_ids) - present:
+                raise _DeletionLedgerMissing(len(set(job_ids) - present))
             tombs.sort(key=lambda t: runs_last(self.reg.handler_for(t.category)))  # contract item 9
             for tombstone in tombs:
                 handler = self.reg.handler_for(tombstone.category)
@@ -473,6 +491,12 @@ class MyDataService:
             with self.db.batch() as b:
                 b.update("RestoreRuns", ["restore_id", "state", "tombstones_applied", "completed_at"],
                          [[restore_id, "tombstones_reapplied", applied, _now()]])
+        except _DeletionLedgerMissing as missing:
+            # Same durable barrier; the operator restores DeletionJobs, DeletionSteps and the deletion freezes
+            # with the tombstones, then resumes this run.
+            raise RestoreNotServing(f"deletion ledger is incomplete: {missing.count} tombstone job(s) are not in "
+                                    "DeletionJobs; restore the ledger with the tombstones, then resume this run",
+                                    restore_id) from None
         except Exception:
             # The existing restoring row remains a durable serving barrier.
             # Do not persist or expose arbitrary handler/provider exception text.

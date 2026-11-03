@@ -1,6 +1,7 @@
 /**
- * Unmounted v1 rights/privacy routers, exercised in an isolated test app with
- * injected auth and upstream fakes.
+ * The v1 rights/privacy routers, exercised in an isolated test app with
+ * injected auth and upstream fakes (index.ts mounts them; integration.test.ts
+ * covers the mounted boundary).
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import express from 'express';

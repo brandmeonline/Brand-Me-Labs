@@ -130,19 +130,20 @@ def test_refusal_is_not_swallowed_by_except_exception():
 
 
 @pytest.mark.production_refusal
-@pytest.mark.parametrize("module,service,network_var", [
-    ("brandme_core.read_api", "read_api", "READ_API_NETWORK"),
-    ("brandme_core.privacy_exports", "privacy_exports", "EXPORT_NETWORK"),
+@pytest.mark.parametrize("module,service,prefix", [
+    ("brandme_core.read_api", "read_api", "READ_API"),
+    ("brandme_core.privacy_exports", "privacy_exports", "EXPORT"),
+    ("brandme_core.rights_commands", "rights_commands", "RIGHTS_COMMAND"),
 ])
-def test_valid_config_on_a_test_network_is_refused_in_production(module, service, network_var):
+def test_valid_config_on_a_test_network_is_refused_in_production(module, service, prefix):
     """The config validators accept Preprod; the shared inventory refuses it in production (exit 3)."""
-    prefix = "READ_API" if service == "read_api" else "EXPORT"
     env = _env("production") | {
         "ENVIRONMENT": "production",
         "SPANNER_PROJECT_ID": "p", "SPANNER_INSTANCE_ID": "i", "SPANNER_DATABASE_ID": "d",
-        network_var: "preprod", f"{prefix}_CONTRACT_ADDRESS": "a" * 64,
+        f"{prefix}_NETWORK": "preprod", f"{prefix}_CONTRACT_ADDRESS": "a" * 64,
         "RIGHTS_SERVICE_TOKEN": "r" * 40, "PRIVACY_SERVICE_TOKEN": "p" * 40,
-        "PRIVACY_EXPORT_SERVICE_TOKEN": "e" * 40, "EXPORT_BUCKET": "brandme-production-exports-a1",
+        "PRIVACY_EXPORT_SERVICE_TOKEN": "e" * 40, "RIGHTS_COMMAND_SERVICE_TOKEN": "c" * 40,
+        "EXPORT_BUCKET": "brandme-production-exports-a1",
     }
     result = subprocess.run([sys.executable, "-W", "ignore", "-m", module, "--check"], cwd=REPO, env=env,
                             capture_output=True, text=True, timeout=120)

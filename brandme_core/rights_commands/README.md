@@ -78,10 +78,12 @@ python -m brandme_core.rights_commands --check
 python -m brandme_core.rights_commands
 ```
 
-**Strict modes refuse this process.** It has no audited entry in the shared
-trust-path inventory (`brandme_core/config.py`), which is foundation's mode-guard
-policy; `brandme_core.boot.guard("rights_commands")` therefore refuses sandbox
-and production until that entry exists. There is no Mainnet mode.
+**Modes.** The shared trust-path inventory (`AUDITED_PROCESSES["rights_commands"]`
+in `brandme_core/config.py`) classifies the configured test network as
+sandbox-grade: `brandme_core.boot.guard("rights_commands")` allows
+demo/development and sandbox and refuses production (exit 3), the emulator in
+strict modes, and any `RIGHTS_COMMAND_NETWORK` outside `undeployed`, `preview`
+and `preprod`. There is no Mainnet mode.
 
 ## Verification
 

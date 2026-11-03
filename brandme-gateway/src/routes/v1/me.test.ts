@@ -17,6 +17,8 @@ import addFormats from 'ajv-formats';
 import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
 import { loadConfig } from '../../config';
 import { createApp } from '../../index';
+import { capabilitySummary } from './me';
+import type { Principal } from '../../types';
 import { IdentityStore } from '../../middleware/identity/store';
 
 const REPO = resolve(__dirname, '../../../..');
@@ -51,6 +53,25 @@ const expectSpecProblem = (r: request.Response, status: number, code: string) =>
   expect(isSpecProblem(r.body), `${status}: ${JSON.stringify(isSpecProblem.errors)}`).toBe(true);
   expect(r.body).toMatchObject({ status, code, request_id: r.headers['x-request-id'] });
 };
+
+describe('capability summary', () => {
+  const principal = { memberId: '11111111-1111-4111-8111-111111111111', assuranceLevel: 'aal1', identityProvider: 'oidc',
+    expiresAt: new Date(Date.now() + 60_000), via: 'bearer', scopes: new Set<string>() } as unknown as Principal;
+
+  it('reports rights.transfer from the gateway configuration, never as lane_not_integrated', () => {
+    const unconfigured = capabilitySummary(principal, loadConfig(baseEnv)).find((c) => c.name === 'rights.transfer');
+    expect(unconfigured).toEqual({ name: 'rights.transfer', state: 'unconfigured', reason_code: 'rights_commands_unconfigured', simulation_label: null });
+    const configured = capabilitySummary(principal, loadConfig({ ...baseEnv, RIGHTS_COMMAND_SERVICE_URL: 'http://commands.internal',
+      RIGHTS_COMMAND_SERVICE_TOKEN: 'c'.repeat(40), CHAIN_SERVICE_URL: 'http://chain.internal' })).find((c) => c.name === 'rights.transfer');
+    expect(configured).toEqual({ name: 'rights.transfer', state: 'available', reason_code: 'rights_commands_configured', simulation_label: null });
+    // Without the chain service the UI could not show the network badge or live status, so a half configuration stays unconfigured.
+    const noChain = capabilitySummary(principal, loadConfig({ ...baseEnv, RIGHTS_COMMAND_SERVICE_URL: 'http://commands.internal',
+      RIGHTS_COMMAND_SERVICE_TOKEN: 'c'.repeat(40) })).find((c) => c.name === 'rights.transfer');
+    expect(noChain?.state).toBe('unconfigured');
+    expect(capabilitySummary(principal, loadConfig(baseEnv)).map((c) => c.name)).toEqual(
+      ['auth.identity', 'profile.persistence', 'commerce.checkout', 'rights.transfer', 'tryon.photo']);
+  });
+});
 
 describe.skipIf(!up)('api/v1 identity + me (emulator)', () => {
   const stores: IdentityStore[] = [];

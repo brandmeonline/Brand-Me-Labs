@@ -31,7 +31,9 @@ row below. Last refresh: **2026-11-02** (close of the 2026-11 repository cleanup
 | #82 | `eb0b60ce` | `consumer-ui.yml` `live-domains` runs the domain sources of the job's own checkout at the same SHA as the UI (audit WP-01); the dev composition's drifted `OutboxDispatcher` call fixed; ten browser journeys pass in CI |
 | #81 | `9b19ca19` | PR #70 integrated (midnight-rights round 03) with the migration renumbered to V017 plus three Codex-found fixes with tests (consumed reprint quota stays charged after failure or cancellation; every grant evaluated, not only the newest; `reprint.attested` emitted even when a later operation projected the child first); #70 closed |
 | #84 | `652b77a4` | Kernel retry wrapper re-runs the emulator's one-writer `ABORTED` (the `test_concurrent_replays_one_response_one_close` failure on run 41523044806); `node_modules` symlinks ignored |
-| this PR | — | This refresh; `CLAUDE.md` rows for the integrated lanes and the rights command process; archive-ref wording; the providers redaction masks whole hex identifiers of 16+ characters before the card scan (the merchant's 24-character `demo-order-` reference failed this PR's Test Core on run 41531446288 with a Luhn-valid 15-digit run: the same S2-OBS-008 false positive as #74 on a shorter id), with regression tests in `tests/test_providers_redaction_digest.py` |
+| #85 | `b756bde0` | This refresh; `CLAUDE.md` rows for the integrated lanes and the rights command process; archive-ref wording; the providers redaction masks whole hex identifiers of 16+ characters before the card scan (the merchant's 24-character `demo-order-` reference failed this PR's Test Core on run 41531446288 with a Luhn-valid 15-digit run: the same S2-OBS-008 false positive as #74 on a shorter id), with regression tests in `tests/test_providers_redaction_digest.py` |
+| #86 | `67049f31` | The `shell` visual gate captures only settled pages (`lib/testing/settle.mjs`; the cut `consumer-1440x900-light.png` explained and reproduced); the payments flow's leak check blanks identifiers before its `4242` search |
+| this PR | — | Midnight rights foundation items (packet Q9–Q11, Q13 and the `/me` capability): audited `rights_commands` entry, `/transfers` mounted, public command shapes, `rights.transfer` reported from configuration, tombstone-only restores refused; `REQUIRED_MIGRATIONS` covers V001–V017; the events README no longer names the lane worker PR #83 deletes |
 
 Preserved then retired: `archive/lux-foundation-lift-2026-08-31` (PR #29, closed) and `archive/design-audit-skill-2026-06-11`.
 Parked by owner decision: PR #71 (Stripe Connect brands flow; test-mode run pending). Still open and not part of the
@@ -78,7 +80,7 @@ close: 2194 passed, 20 skipped, 17 xfailed (run 41523044806, before the #84 fix 
 | Member-aware wardrobe repository and guest migration in the browser: re-verify against #66/#78 (audit WP-04 predates them; the same-SHA journeys cover guest migration and wardrobe intake through the gateway) | audit WP-04; `status/astra-consumer-ui.md` |
 | Helm `consumerDomains.enabled: false` and unset `BRAIN_SERVICE_URL`; readiness on an always-200 route | audit S2-OBS-004; packet |
 | Image publishing uses a service-account key and a hardcoded project (`lux-realestate-app`) that the owner has not confirmed | audit F-SEC-004 / S2-SEC-001, dispute D-5; packet C-checklist |
-| Midnight rights round 03, five foundation items: trust-path entry for `rights_commands` (`brandme_core/config.py` audited-process inventory), `/transfers` mount, contract shapes, `/me` capability `rights.transfer`, Q9 restore guard. Until then accept/status ship unmounted and strict modes refuse the process | `status/opus-midnight-rights.md` Stage 15 (Q9–Q13) and Stage 16 |
+| Midnight rights: the command process is not in `docker-compose.yml` or Helm (emulator evidence only); the wallet-side operation journal (packet Q16) is the lane's next stage | `status/opus-midnight-rights.md` Stage 17; `CLAUDE.md` row |
 | Midnight Preprod finality: Blockfrost token and funded seeds | `status/opus-midnight-rights.md` |
 | Stripe Connect: no run against Stripe test mode | PR #71 (parked) |
 
@@ -86,8 +88,9 @@ close: 2194 passed, 20 skipped, 17 xfailed (run 41523044806, before the #84 fix 
 
 1. Owner: apply the rulesets in `docs/build/security/branch-protection.md`, run the ref retirement hand-off (tags,
    then branch deletions), confirm the publish project (D-5) and move image publishing to workload identity.
-2. Foundation: land the five midnight-rights round-03 items with the lane's defaults in one PR, then re-run the
-   rights end-to-end against the mounted gateway; answer PR #83's foundation flags.
+2. Foundation: done; the five midnight-rights round-03 items landed with the lane's defaults (`status/opus-midnight-rights.md`
+   Stage 17) and the gateway's `commands-backend.test.ts` now drives create, status and accept through the mounted
+   `/transfers` routes in CI. PR #83's README flag is answered there; its deletion-test note is answered in Stage 17.
 3. Consumer UI: done; the visual gate waits for the settled page before every capture (`lib/testing/settle.mjs`,
    `status/astra-consumer-ui.md` integration note). The next `shell` failure on an unrelated PR is a new finding.
 4. Then the round-03 plans in `docs/build/orchestration/` resume on the clean baseline, one change per PR.

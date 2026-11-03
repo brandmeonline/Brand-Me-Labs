@@ -26,6 +26,7 @@ describe.skipIf(!up)('gateway and running rights command service', () => {
   let privateKey: KeyLike;
   let logs = '';
   let upstreamCalls = 0;
+  let intentId = '';
   const member = '11111111-1111-4111-8111-111111111111';
   const other = '22222222-2222-4222-8222-222222222222';
   const asset = '33333333-3333-4333-8333-333333333333';
@@ -101,6 +102,7 @@ describe.skipIf(!up)('gateway and running rights command service', () => {
     expect(created.body).toMatchObject({ state: 'AwaitingRecipient', role: 'sender', expected_epoch: '2', network: 'preprod',
       entitlement_id: 'cd'.repeat(32), proving: null });
     expect(JSON.stringify(created.body)).not.toContain(invite);
+    intentId = created.body.intent_id;
     const replay = await request(app).post(path).auth(await signed(), { type: 'bearer' }).set('Idempotency-Key', key).send(body);
     expect(replay.status).toBe(201); expect(replay.body.intent_id).toBe(created.body.intent_id);
     const second = await request(app).post(path).auth(await signed(), { type: 'bearer' })
@@ -110,6 +112,46 @@ describe.skipIf(!up)('gateway and running rights command service', () => {
     const stranger = await request(app).post(path).auth(await signed('other'), { type: 'bearer' })
       .set('Idempotency-Key', `transfer-${randomUUID()}`).send(body);
     expect(stranger.status).toBe(404);
+  });
+
+  it('serves the intent to its parties through the mounted /transfers routes and binds the recipient', async () => {
+    expect(intentId).toMatch(/^[0-9a-f-]{36}$/);
+    const path = `/api/v1/transfers/${intentId}`;
+    const sender = await request(app).get(path).auth(await signed('owner', 'rights:read'), { type: 'bearer' });
+    expect(sender.status).toBe(200);
+    expect(sender.body).toMatchObject({ intent_id: intentId, state: 'AwaitingRecipient', role: 'sender', proving: null, network: 'preprod' });
+    // Before binding, the recipient is only an invite digest: anyone else gets 404, the invite never appears.
+    expect((await request(app).get(path).auth(await signed('other', 'rights:read'), { type: 'bearer' })).status).toBe(404);
+    const commitment = 'c0'.repeat(32);
+    const accept = { recipient_invite: invite, recipient_commitment: commitment };
+    const stale = await request(app).post(`${path}/accept`).auth(await signed('other', 'rights:transfer', false), { type: 'bearer' })
+      .set('Idempotency-Key', `accept-${randomUUID()}`).send(accept);
+    expect(stale.status).toBe(401); expect(stale.body.code).toBe('reauth_required');
+    const wrongInvite = await request(app).post(`${path}/accept`).auth(await signed('other', 'rights:transfer'), { type: 'bearer' })
+      .set('Idempotency-Key', `accept-${randomUUID()}`).send({ ...accept, recipient_invite: 'B'.repeat(43) });
+    expect(wrongInvite.status).toBe(404);
+    const self = await request(app).post(`${path}/accept`).auth(await signed('owner', 'rights:transfer'), { type: 'bearer' })
+      .set('Idempotency-Key', `accept-${randomUUID()}`).send(accept);
+    expect(self.status).toBe(409); expect(self.body.code).toBe('recipient_is_sender');
+    const key = `accept-${randomUUID()}`;
+    const bound = await request(app).post(`${path}/accept`).auth(await signed('other', 'rights:transfer'), { type: 'bearer' })
+      .set('Idempotency-Key', key).send(accept);
+    expect(bound.status).toBe(200);
+    expect(bound.body).toMatchObject({ intent_id: intentId, state: 'ReadyToProve', role: 'recipient', proving: null });
+    expect(JSON.stringify(bound.body)).not.toContain(invite);
+    const replay = await request(app).post(`${path}/accept`).auth(await signed('other', 'rights:transfer'), { type: 'bearer' })
+      .set('Idempotency-Key', key).send(accept);
+    expect(replay.status).toBe(200); expect(replay.body.state).toBe('ReadyToProve');
+    // The sender's view now carries exactly the offerTransfer arguments; the recipient's view never does.
+    const proving = await request(app).get(path).auth(await signed('owner', 'rights:read'), { type: 'bearer' });
+    expect(proving.status).toBe(200);
+    expect(proving.body).toMatchObject({ state: 'ReadyToProve', role: 'sender',
+      proving: { circuit: 'offerTransfer', entitlement_id: 'cd'.repeat(32), recipient_commitment: commitment } });
+    expect(proving.body.proving.nonce).toMatch(/^[0-9a-f]{64}$/);
+    expect(proving.body.proving.expiry).toMatch(/^[0-9]{1,19}$/);
+    const recipient = await request(app).get(path).auth(await signed('other', 'rights:read'), { type: 'bearer' });
+    expect(recipient.status).toBe(200); expect(recipient.body).toMatchObject({ role: 'recipient', proving: null });
+    expect(JSON.stringify(proving.body) + JSON.stringify(recipient.body)).not.toContain(invite);
   });
 
   it('authorizes ownership challenges and evaluates reprint quotes without consuming anything', async () => {

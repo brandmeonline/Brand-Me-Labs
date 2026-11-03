@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Generates the OpenAPI 3.1 document, TypeScript types and Python models from
 // docs/design/brandme/contracts/domain.schema.json (read-only spec input) plus
-// packages/contracts/src/foundation-schemas.json (lane extensions).
+// packages/contracts/src/{foundation,read,rights-command}-schemas.json (lane extensions).
 //
 //   node scripts/generate.mjs           write generated/ + python/
 //   node scripts/generate.mjs --check   regenerate into memory; exit 1 on drift
@@ -19,13 +19,16 @@ const repo = resolve(pkg, '../..');
 const SPEC = join(repo, 'docs/design/brandme/contracts/domain.schema.json');
 const EXT = join(pkg, 'src/foundation-schemas.json');
 const READ_EXT = join(pkg, 'src/read-schemas.json');
+const COMMAND_EXT = join(pkg, 'src/rights-command-schemas.json');
 const check = process.argv.includes('--check');
 
 const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
 const ext = JSON.parse(readFileSync(EXT, 'utf8'));
 const readExt = JSON.parse(readFileSync(READ_EXT, 'utf8'));
+const commandExt = JSON.parse(readFileSync(COMMAND_EXT, 'utf8'));
 delete ext.$comment;
 delete readExt.$comment;
+delete commandExt.$comment;
 
 const rewriteRefs = (node) => {
   if (Array.isArray(node)) return node.map(rewriteRefs);
@@ -41,7 +44,7 @@ const rewriteRefs = (node) => {
 
 const schemas = {};
 for (const [name, def] of Object.entries(spec.$defs)) schemas[name] = rewriteRefs(def);
-for (const [name, def] of [...Object.entries(ext), ...Object.entries(readExt)]) {
+for (const [name, def] of [...Object.entries(ext), ...Object.entries(readExt), ...Object.entries(commandExt)]) {
   if (schemas[name]) throw new Error(`extension ${name} would shadow a spec definition`);
   schemas[name] = def;
 }

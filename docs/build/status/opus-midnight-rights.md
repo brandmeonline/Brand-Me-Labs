@@ -733,3 +733,47 @@ Round 03 (Stages 11–15, PR #70, head `a05f2e0`) was integrated through a fresh
 - **The five "Needs foundation" items are still open** and are recorded in `docs/build/implementation-status.md` as the lane's next action, with this packet's defaults: trust-path entry for `rights_commands` (Q9), the `/transfers` mount (Q10), contract shapes (Q11), the `/me` capability for `rights.transfer`, and the Q9 restore guard (Q13). Until they land, accept and status ship unmounted and strict modes refuse the `rights_commands` process, exactly as Stage 15 states.
 
 Verified on the integration branch with the Spanner emulator: `tests/foundation/test_migrations.py`, `tests/test_rights_commands.py`, `tests/test_rights.py` and `tests/test_persona_lane_mydata.py` (31 passed, so V016 `consumer_design` and V017 apply together and the consumer lane's My Data scan still covers its own V016); CI runs the full gate on the merge with current `main`.
+
+## Stage 17 — the five foundation items landed (2026-11-03; foundation's change, not a lane stage)
+
+Applied with the packet's defaults (Stage 15) in one PR, each verified on the Spanner emulator:
+
+- **Q9, trust path.** `AUDITED_PROCESSES["rights_commands"]` in `brandme_core/config.py` registers one sandbox-grade
+  `chain.midnight` adapter citing `brandme_core/domains/rights/commands.py`, scoped by `RIGHTS_COMMAND_NETWORK`
+  (test networks only; Mainnet and anything else are refused as "required but unconfigured"), with
+  `ENVIRONMENT` echo and the emulator refused in strict modes, like `read_api`. `guard("rights_commands")`
+  now allows demo/development/sandbox and refuses production with exit 3 (`tests/foundation/test_mode_guard.py`,
+  `test_boot_guard.py` run the real `--check` entrypoint). The README's "strict modes refuse this process" paragraph
+  and the `__main__.py` comment say so.
+- **Q10, mount.** `router.use('/transfers', createTransfersRouter(rights))` in `routes/v1/index.ts`, beside `/assets`
+  and `/ownership`. `integration.test.ts` checks the mounted boundary (401 without a principal);
+  `commands-backend.test.ts` now drives status and accept through the mounted routes into the real process: sender
+  view, 404 for a stranger before binding, stale re-authentication refused, wrong invite indistinguishable from a
+  missing intent, the sender cannot accept, binding once with a replayed Idempotency-Key, the sender's proving
+  arguments afterwards, the recipient's view without them, the invite never in a response.
+- **Q11, contract shapes.** `packages/contracts/src/rights-command-schemas.json` (read from `commands.py` and the
+  gateway routers): `TransferCreateRequest`, `TransferAcceptRequest`, `TransferIntentRead` with
+  `TransferProvingArguments`, `ReprintQuoteRequest`, `ReprintQuoteRead`; `createTransfer`, `acceptTransfer` and
+  `createReprintQuote` carry bodies and responses and are `implemented`; a `getTransfer` read is added. The
+  quote is read-only and takes no Idempotency-Key, so its inventory entry no longer declares one (the route and
+  the process never asked for it). Left as a flag for the lane: these routes answer invalid input with a plain
+  `{error}` 400 body like `getPassport`, while the contract's error type is Problem.
+- **`/me` capability.** The packet recorded no default. `rights.transfer` is now reported from the gateway's own
+  configuration, never from an upstream call on the request path: `available` / `rights_commands_configured`
+  when `RIGHTS_COMMAND_SERVICE_URL`, its token and an explicit `CHAIN_SERVICE_URL` are set, else `unconfigured` /
+  `rights_commands_unconfigured`. The live network badge and status stay on `/chain/capability`.
+- **Q13, restore guard.** `reapply_tombstones_after_restore` reads the tombstones' `deletion_job_id`s against
+  `DeletionJobs` before replaying anything; a missing job refuses with "deletion ledger is incomplete", keeps the
+  `restoring` barrier and the run resumes once the ledger is restored. Foundation's test is now
+  `test_restore_without_the_job_ledger_refuses_to_serve` (refusal, barrier, nothing replayed, then resume with the
+  ledger back). `events/erasure.py`, `events/README.md` and `domains/privacy/README.md` describe the new behaviour.
+- **Also.** `REQUIRED_MIGRATIONS` in `rights_commands/app.py` now requires V001–V017 (V003–V005 have files; the
+  README said "through V017"). `brandme_core/domains/rights/README.md` no longer says the backend is "in PR #70".
+
+PR #83's foundation flags: the `events/README.md` sentence naming the lane worker is gone (the README now says only
+that a lane needs no private worker). Its note on `tests/foundation/test_deletion_leaves_no_member_rows.py` is
+recorded as accepted: that test pins the deletion-written events of the seed it builds; a seed with a
+selected-member share or friendship extends the expected set in the same change, as the flag says.
+
+Still open for the lane: the wallet-side operation journal (Q16), Preprod finality credentials, and the process in
+compose/Helm (foundation, when a deployment target exists).
