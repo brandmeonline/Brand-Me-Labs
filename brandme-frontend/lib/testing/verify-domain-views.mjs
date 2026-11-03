@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto'
 import {createRequire} from 'node:module'
 import {mkdir,writeFile} from 'node:fs/promises'
 import path from 'node:path'
+import {settled} from './settle.mjs'
 const require=createRequire(new URL('../../package.json',import.meta.url))
 const {chromium}=require('playwright')
 const AxeBuilder=require('@axe-core/playwright').default
@@ -60,7 +61,7 @@ try{
           assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name}: horizontal overflow`)
           // Functional focus checks run before this capture. Normalize scroll/focus for stable page baselines.
           await page.evaluate(()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur();window.scrollTo(0,0)})
-          await page.evaluate(()=>document.fonts.ready)
+          await settled(page)
           await page.screenshot({path:path.join(output,`${name}-${width}-${theme}.png`),fullPage:true,animations:'disabled'})
         }
       }

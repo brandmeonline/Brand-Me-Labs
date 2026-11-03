@@ -81,7 +81,6 @@ close: 2194 passed, 20 skipped, 17 xfailed (run 41523044806, before the #84 fix 
 | Midnight rights round 03, five foundation items: trust-path entry for `rights_commands` (`brandme_core/config.py` audited-process inventory), `/transfers` mount, contract shapes, `/me` capability `rights.transfer`, Q9 restore guard. Until then accept/status ship unmounted and strict modes refuse the process | `status/opus-midnight-rights.md` Stage 15 (Q9–Q13) and Stage 16 |
 | Midnight Preprod finality: Blockfrost token and funded seeds | `status/opus-midnight-rights.md` |
 | Stripe Connect: no run against Stripe test mode | PR #71 (parked) |
-| Visual gate: full-page capture height in `verify-visual.mjs` comparisons is not deterministic (`consumer-1440x900-light.png` "dimensions changed" on docs-only PR #76 and on #66's `babb360`, PR #83 Q11) | `status/astra-consumer-ui.md` integration note; fix belongs in the capture step |
 
 ## Exact next action
 
@@ -89,6 +88,6 @@ close: 2194 passed, 20 skipped, 17 xfailed (run 41523044806, before the #84 fix 
    then branch deletions), confirm the publish project (D-5) and move image publishing to workload identity.
 2. Foundation: land the five midnight-rights round-03 items with the lane's defaults in one PR, then re-run the
    rights end-to-end against the mounted gateway; answer PR #83's foundation flags.
-3. Consumer UI: make the full-page capture height deterministic in `verify-shell.mjs` (wait for a stable
-   `scrollHeight`, reduced motion) so the `shell` gate stops failing on unrelated PRs.
+3. Consumer UI: done; the visual gate waits for the settled page before every capture (`lib/testing/settle.mjs`,
+   `status/astra-consumer-ui.md` integration note). The next `shell` failure on an unrelated PR is a new finding.
 4. Then the round-03 plans in `docs/build/orchestration/` resume on the clean baseline, one change per PR.

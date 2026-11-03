@@ -7,6 +7,7 @@
 import { createRequire } from 'node:module'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
+import { settled } from './settle.mjs'
 
 const require = createRequire(
   process.env.BRANDME_TEST_PACKAGE_JSON ||
@@ -83,7 +84,7 @@ try {
             const errors = []
             page.on('pageerror', (error) => errors.push(error.message))
             await page.goto(base + route, { waitUntil: 'networkidle' })
-            await page.evaluate(() => document.fonts.ready)
+            await settled(page)
             assert(
               (await page.locator('main').count()) === 1,
               'Expected one main landmark',
@@ -102,6 +103,7 @@ try {
             await page.screenshot({
               path: path.join(output, `${app}-${width}x${height}-light.png`),
               fullPage: true,
+              animations: 'disabled',
             })
             await audit(page)
             await page.emulateMedia({ colorScheme: 'dark' })
@@ -111,10 +113,12 @@ try {
                   .getPropertyValue('--bm-canvas')
                   .trim() === '#161817',
             )
+            await settled(page)
             await noOverflow(page)
             await page.screenshot({
               path: path.join(output, `${app}-${width}x${height}-dark.png`),
               fullPage: true,
+              animations: 'disabled',
             })
             await audit(page)
             assert(errors.length === 0, errors.join('\n'))
@@ -144,7 +148,7 @@ try {
               await page.evaluate((scale) => {
                 document.documentElement.style.fontSize = `${scale}%`
               }, scale)
-              await page.evaluate(() => document.fonts.ready)
+              await settled(page)
               await page.waitForFunction(() => {
                 const bar = document.querySelector('.bm-bottom-nav')
                 const measured = parseFloat(
@@ -320,9 +324,11 @@ try {
             .evaluate((e) => getComputedStyle(e).animationName)) === 'none',
           'OS reduction was overridden',
         )
+        await settled(page)
         await page.screenshot({
           path: path.join(output, 'consumer-reduced-motion.png'),
           fullPage: true,
+          animations: 'disabled',
         })
         assert(
           (await page.locator('canvas, video').count()) === 0,
@@ -358,8 +364,7 @@ try {
         })
         async function ready(route) {
           await page.goto(consumer + route, { waitUntil: 'networkidle' })
-          await page.waitForFunction(() => document.documentElement.dataset.bmPreferencesReady === 'true')
-          await page.evaluate(() => document.fonts.ready)
+          await settled(page)
           assert(errors.length === 0, errors.join('\n'))
         }
         for (const route of ['/today', '/me', '/settings']) {
@@ -369,6 +374,7 @@ try {
           await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%'
           })
+          await settled(page)
           await noOverflow(page)
           await page.screenshot({
             path: path.join(
