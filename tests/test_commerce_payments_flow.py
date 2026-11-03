@@ -12,6 +12,7 @@ itself is ``test_commerce_stripe_live.py`` (``not_run`` without ``STRIPE_TEST_SE
 """
 
 import json
+import re
 import os
 from datetime import timedelta
 
@@ -650,8 +651,6 @@ def test_simulator_purchase_through_stripe_adapter_on_semantics_double(commerce_
 
 
 def _assert_no_processor_ids(w):
-    import re
-
     from brandme_core.domains.commerce.http_api import operation_wire, order_wire
     from brandme_core.mcp.authz import ExecutorAssertionVerifier
     from brandme_core.mcp.tools import McpToolExecutor
@@ -666,11 +665,28 @@ def _assert_no_processor_ids(w):
     blobs += [json.dumps(order_wire(o)) for o in w.store.rows("orders")]
     blobs += [repr(o.evidence_refs) for o in w.store.rows("orders")]
     from brandme_core.domains.providers.redaction import contains_card_number
-    # A bare "4242" also occurs inside random hex ids, so the last-four check is anchored.
-    leak = re.compile(r"(?<![A-Za-z0-9])(pi|pm|ch|re|evt)_[A-Za-z0-9]{6,}|simpay_|_secret_"
-                      r"|(?<![0-9A-Za-z])4242(?![0-9A-Za-z])")
     for b in blobs:
-        assert not leak.search(b) and not contains_card_number(b), b[:300]
+        assert not _leaks(b) and not contains_card_number(b), b[:300]
+
+
+_UUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+# A bare "4242" also occurs inside random hex ids, so the last-four check is anchored; a version-4 UUID's third
+# group is "4" plus three random hex digits, so "-4242-" appears in one id out of 4096 (run 41549896748:
+# "dd051ab3-e5b1-4242-9c00-a7efef6a4ff9"). Identifiers are blanked first, as contains_card_number does.
+_LEAK = re.compile(r"(?<![A-Za-z0-9])(pi|pm|ch|re|evt)_[A-Za-z0-9]{6,}|simpay_|_secret_"
+                   r"|(?<![0-9A-Za-z])4242(?![0-9A-Za-z])")
+
+
+def _leaks(blob: str) -> bool:
+    """True when a processor object id, a simulator id, a client secret or the test card's last four appear."""
+    return bool(_LEAK.search(_UUID.sub(lambda m: "u" * len(m.group()), blob)))
+
+
+def test_leak_check_ignores_identifier_segments_but_not_processor_ids_or_the_test_card():
+    assert not _leaks('{"order_id": "dd051ab3-e5b1-4242-9c00-a7efef6a4ff9", "operation_id": "30c41d86-6eb8-4006-9bb2-3f5060690973"}')
+    assert not _leaks('"ref": "demo-order-bbd530430084332061fd9484"')
+    assert _leaks('{"last4": "4242"}') and _leaks("card ending 4242.") and _leaks('"pi_3MtwBwLkdIwHu7ix28a3tqPa"')
+    assert _leaks("simpay_0123456789abcdef") and _leaks("pi_abc_secret_def") and _leaks("evt_1234567")
 
 
 def test_processor_response_lost_reconciles_to_one_payment(w):
