@@ -5,7 +5,9 @@ payment status. Tests on the ``w`` fixture run on both stores and on both rails:
 
 * ``simulated``: the deterministic simulated processor (deterministic app behaviour);
 * ``stripe_double``: the real ``StripeTestPaymentProcessor`` over ``StripeSemanticsDouble`` —
-  FIXTURE DOUBLE, NOT STRIPE (adapter logic, not Stripe behaviour).
+  FIXTURE DOUBLE, NOT STRIPE (adapter logic, not Stripe behaviour);
+* ``stripe_connect``: the same processor paying a brand by Connect direct charges on an active
+  connected account (``stripe_connect.ConnectedMerchant``), over the same double.
 
 stripe-mock (wire shape only) is ``test_providers_stripe_wire.py``; Stripe test mode
 itself is ``test_commerce_stripe_live.py`` (``not_run`` without ``STRIPE_TEST_SECRET_KEY``).
@@ -36,12 +38,20 @@ STRIPE_METHOD = {"authorize": "create_payment_intent", "capture": "capture_payme
                  "void": "cancel_payment_intent", "refund": "create_refund"}
 
 
-def stripe_double_rail(clock, *, secret=None, double=None):
+def stripe_double_rail(clock, *, secret=None, double=None, connect=False):
     """The real Stripe processor over the semantics double (fixture double, not Stripe)."""
+    from brandme_core.domains.providers.payments.stripe_connect import ConnectedMerchant
     from brandme_core.domains.providers.payments.stripe_test import StripeTestConfig, StripeTestPaymentProcessor
     double = double or StripeSemanticsDouble(clock)
-    rail = StripeTestPaymentProcessor(StripeTestConfig(SK_TEST, webhook_secrets=(secret,) if secret else ()),
-                                      wire=double, environment="development", clock=clock, log=lambda r: None)
+    secrets_ = (secret,) if secret else ()
+    connected = None
+    if connect:
+        cfg = StripeTestConfig(SK_TEST, connect_webhook_secrets=secrets_)
+        connected = ConnectedMerchant(cfg.payee_ref, double.add_account(), application_fee_bps=1000)
+    else:
+        cfg = StripeTestConfig(SK_TEST, webhook_secrets=secrets_)
+    rail = StripeTestPaymentProcessor(cfg, wire=double, environment="development", clock=clock, log=lambda r: None,
+                                      connected=connected)
     rail.double = double  # test handle only
     return rail
 
@@ -51,13 +61,14 @@ def rail_world(rail, store=None, secret=None):
         w = world(store=store)
     else:
         secret = secret or stripe_events.webhook_secret()
-        w = world(store=store, payments=lambda clock: stripe_double_rail(clock, secret=secret))
+        w = world(store=store, payments=lambda clock: stripe_double_rail(clock, secret=secret,
+                                                                         connect=rail == "stripe_connect"))
         w.secret = secret
     w.rail = rail
     return w
 
 
-@pytest.fixture(params=["simulated", "stripe_double"])
+@pytest.fixture(params=["simulated", "stripe_double", "stripe_connect"])
 def w(request, commerce_store):
     return rail_world(request.param, commerce_store)
 
@@ -606,7 +617,14 @@ def _base(w, res):
 
 def _signed_pi_event(w, order_ref, event_type="payment_intent.amount_capturable_updated", **kw):
     (pi,) = w.provider.payments.double.intents_for(order_ref)
-    return stripe_events.payment_intent_event(pi, event_type, w.secret, int(w.clock.now.timestamp()), **kw)
+    return stripe_events.payment_intent_event(pi, event_type, w.secret, int(w.clock.now.timestamp()),
+                                              **_account(w), **kw)
+
+
+def _account(w):
+    """Connect events carry the connected account; platform events carry none."""
+    c = getattr(w.provider.payments, "connected", None)
+    return {"account": c.account_id} if c else {}
 
 
 def test_simulator_purchase_through_stripe_adapter_on_semantics_double(commerce_store):
@@ -741,8 +759,10 @@ def test_orphan_hold_voided_when_payment_surfaces_after_rejection(w):
         assert w.provider.lookup_by_idempotency_key(base) is None  # the merchant's sweep releases it
     else:
         double = w.provider.payments.double
-        _, params, key = double.calls[0]
-        double.create_payment_intent(params, idempotency_key=key)
+        i = next(i for i, c in enumerate(double.calls) if c[0] == "create_payment_intent")
+        _, params, key = double.calls[i]
+        acct = double.call_accounts[i]
+        double.create_payment_intent(params, idempotency_key=key, **({"stripe_account": acct} if acct else {}))
         receipt = w.svc.handle_webhook("demo_atelier", *_signed_pi_event(w, ref))
         assert receipt.state == "ignored"  # acknowledged, not applied: no order holds it
     late = w.provider.payments.find(ref, settled=True)
@@ -1056,9 +1076,9 @@ def test_an_authorization_echoing_another_binding_is_voided_and_rejected(w, echo
         double = w.provider.payments.double
         real = double.create_payment_intent
 
-        def create(params, *, idempotency_key):
+        def create(params, *, idempotency_key, **kw):
             double.corrupt_next_create(metadata={**params["metadata"], metadata_key: wrong})
-            return real(params, idempotency_key=idempotency_key)
+            return real(params, idempotency_key=idempotency_key, **kw)
         monkeypatch.setattr(double, "create_payment_intent", create)
     _, res = _buy(w, w.member)
     assert (res.state, res.reason_code) == ("rejected", "payment_binding_mismatch")

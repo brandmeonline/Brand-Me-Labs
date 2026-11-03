@@ -28,6 +28,14 @@ Guards, in order of importance:
 Webhooks: ``stripe-signature`` over the raw body with the configured
 ``whsec_…`` secrets (current, then previous, for rotation), and an explicit
 replay window that refuses stale **and** future timestamps.
+
+Connect direct charges (``stripe_connect.ConnectedMerchant``; plan ``docs/build/stripe-connect-plan.md``):
+built with ``connected=``, the processor acts on that brand's connected account for every
+PaymentIntent and refund call, adds Brand.Me's ``application_fee_amount`` to the authorization
+(and recomputes it on the captured amount), returns the fee pro rata on refunds, and sends no
+authorization unless the account's v2 ``card_payments`` capability is ``active`` and its
+configuration matches the plan. Its webhooks come from the Connect endpoint
+(``connect_webhook_secrets``); an event for any other account is acknowledged and ignored.
 """
 
 from __future__ import annotations
@@ -46,12 +54,14 @@ from ..contracts import ProviderError, ProviderErrorKind
 from ..redaction import PaymentLogSink, default_payment_log, payment_log_record
 from . import (DECLINE_CODES, TEST_CARD, TEST_CARD_DECLINED, PaymentAuthorization, PaymentEvent,
                PaymentRailDescriptor, PaymentState, base_of)
+from .stripe_connect import ConnectedMerchant, read_readiness
 from .stripe_wire import StripeWire, WireError
 
 STRIPE_API_VERSION = "2026-09-30.endive"  # the version stripe==16.0.0 pins; set explicitly on every request
 STRIPE_API_BASE = "https://api.stripe.com"
 STRIPE_TEST_LABEL = "Stripe test mode — no real money moves."
 ENV_NAMES = ("STRIPE_TEST_SECRET_KEY", "STRIPE_TEST_WEBHOOK_SECRET", "STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS",
+             "STRIPE_TEST_CONNECT_WEBHOOK_SECRET", "STRIPE_TEST_CONNECT_WEBHOOK_SECRET_PREVIOUS",
              "BRANDME_STRIPE_EGRESS_PROXY", "BRANDME_STRIPE_CA_BUNDLE")
 _TEST_SECRET = re.compile(r"^(?:sk|rk)_test_[0-9A-Za-z]{16,247}$")
 _WHSEC = re.compile(r"^whsec_[0-9A-Za-z]{16,256}$")
@@ -121,6 +131,8 @@ def require_loopback_api_base(url: str) -> str:
 class StripeTestConfig:
     secret_key: str = field(repr=False)
     webhook_secrets: Tuple[str, ...] = field(default=(), repr=False)  # current, then previous (rotation)
+    # The Connect webhook endpoint's secrets: events from connected accounts (direct charges).
+    connect_webhook_secrets: Tuple[str, ...] = field(default=(), repr=False)
     payment_method: str = TEST_CARD
     decline_payment_method: str = TEST_CARD_DECLINED
     payee_ref: str = "demo-atelier-stripe-test"  # the Stripe test account standing in for the fictional merchant
@@ -136,7 +148,7 @@ class StripeTestConfig:
 
     def __post_init__(self) -> None:
         require_test_secret_key(self.secret_key)
-        for s in self.webhook_secrets:
+        for s in (*self.webhook_secrets, *self.connect_webhook_secrets):
             require_webhook_secret(s)
         for pm in (self.payment_method, self.decline_payment_method):
             if not TEST_INSTRUMENT.match(pm):
@@ -159,7 +171,9 @@ class StripeTestConfig:
         view = {k: env[k] for k in ENV_NAMES if k in env}
         secrets_ = tuple(s for s in (view.get("STRIPE_TEST_WEBHOOK_SECRET"),
                                      view.get("STRIPE_TEST_WEBHOOK_SECRET_PREVIOUS")) if s)
-        return cls(view.get("STRIPE_TEST_SECRET_KEY") or "", webhook_secrets=secrets_,
+        connect = tuple(s for s in (view.get("STRIPE_TEST_CONNECT_WEBHOOK_SECRET"),
+                                    view.get("STRIPE_TEST_CONNECT_WEBHOOK_SECRET_PREVIOUS")) if s)
+        return cls(view.get("STRIPE_TEST_SECRET_KEY") or "", webhook_secrets=secrets_, connect_webhook_secrets=connect,
                    egress_proxy=view.get("BRANDME_STRIPE_EGRESS_PROXY") or None,
                    ca_bundle=view.get("BRANDME_STRIPE_CA_BUNDLE") or None)
 
@@ -179,17 +193,24 @@ class StripeTestPaymentProcessor:
 
     def __init__(self, config: StripeTestConfig, *, wire: StripeWire, environment: str,
                  clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
-                 log: Optional[PaymentLogSink] = None):
+                 log: Optional[PaymentLogSink] = None, connected: Optional[ConnectedMerchant] = None):
         if environment not in ("demo", "development", "sandbox"):
             raise ValueError("stripe_test_not_allowed")
+        if connected is not None and not isinstance(connected, ConnectedMerchant):
+            raise ValueError("stripe_connect_config_refused")
         self.config = config
+        self.connected = connected
+        self._acct: Optional[str] = connected.account_id if connected else None  # None: the platform account
+        # Passed to the wire only for a connected account, so platform calls are exactly what they were.
+        self._on: Dict[str, str] = {"stripe_account": self._acct} if self._acct else {}
+        self._webhook_secrets = config.connect_webhook_secrets if connected else config.webhook_secrets
         self._wire = wire
         self._env = environment
         self._clock = clock
         self._log = log or default_payment_log
         self.descriptor = PaymentRailDescriptor("stripe_test", "sandbox", environment, STRIPE_TEST_LABEL,
-                                                config.payee_ref, config.currencies, STRIPE_API_VERSION,
-                                                bool(config.webhook_secrets))
+                                                connected.payee_ref if connected else config.payee_ref,
+                                                config.currencies, STRIPE_API_VERSION, bool(self._webhook_secrets))
         self.test_instruments: Tuple[str, str] = (config.payment_method, config.decline_payment_method)
         self._lock = threading.Lock()
         self._latched = False  # set by any live-mode object: the processor refuses everything after it
@@ -366,8 +387,8 @@ class StripeTestPaymentProcessor:
     # -- reads ---------------------------------------------------------------
     def _read_pi(self, payment_ref: str) -> PaymentState:
         try:
-            pi = self._wire.retrieve_payment_intent(payment_ref)
-            refunds = self._wire.list_refunds(payment_ref)
+            pi = self._wire.retrieve_payment_intent(payment_ref, **self._on)
+            refunds = self._wire.list_refunds(payment_ref, **self._on)
         except Exception as e:
             raise self._read_error(e) from None
         return self._observe_read(pi, refunds)
@@ -389,7 +410,8 @@ class StripeTestPaymentProcessor:
             if hit:
                 return self._read_pi(hit)
             try:  # Search is eventually consistent: it only speeds things up
-                rows = self._wire.search_payment_intents(f"metadata['brandme_purpose_ref']:'{purpose_ref}'")
+                rows = self._wire.search_payment_intents(f"metadata['brandme_purpose_ref']:'{purpose_ref}'",
+                                                         **self._on)
             except Exception as e:
                 raise self._read_error(e) from None
             mine = [r for r in rows if self._is_for(r, purpose_ref)]
@@ -404,7 +426,8 @@ class StripeTestPaymentProcessor:
             more = False
             for _ in range(self.config.max_list_pages):
                 try:
-                    page, more = self._wire.list_payment_intents(created_gte=gte, starting_after=cursor)
+                    page, more = self._wire.list_payment_intents(created_gte=gte, starting_after=cursor,
+                                                                 **self._on)
                 except Exception as e:
                     raise self._read_error(e) from None
                 found += [r for r in page if self._is_for(r, purpose_ref)]
@@ -434,8 +457,8 @@ class StripeTestPaymentProcessor:
             self._check_key(idempotency_key)
             op = idempotency_key.split(":")[1]
             try:
-                pi = self._wire.retrieve_payment_intent(payment_ref)
-                refunds = self._wire.list_refunds(payment_ref) if op == "refund" else []
+                pi = self._wire.retrieve_payment_intent(payment_ref, **self._on)
+                refunds = self._wire.list_refunds(payment_ref, **self._on) if op == "refund" else []
             except Exception:
                 raise _err(ProviderErrorKind.TRANSIENT, "payment effect unreadable") from None
             if not isinstance(pi, Mapping) or pi.get("livemode") is not False:
@@ -454,11 +477,25 @@ class StripeTestPaymentProcessor:
             raise _err(ProviderErrorKind.CONTRACT_RESTRICTED, "an authorization has no separate effect")
         return self._run("effect", _do)
 
+    def _require_ready(self) -> None:
+        r = read_readiness(self._wire, self._acct)  # type: ignore[arg-type]
+        if not r.configured_as_planned:
+            raise _err(ProviderErrorKind.NOT_CONFIGURED, "connected_account_misconfigured")
+        if r.card_payments != "active":
+            raise _err(ProviderErrorKind.NOT_CONFIGURED, "connected_account_not_ready")
+
+    def readiness(self):
+        """The connected account's v2 readiness (operators); ``None`` on the platform account."""
+        def _do():
+            self._open()
+            return read_readiness(self._wire, self._acct) if self._acct else None  # type: ignore[arg-type]
+        return self._run("lookup", _do)
+
     # -- mutating calls --------------------------------------------------------
     def _create_params(self, r: PaymentAuthorization) -> Dict[str, Any]:
         if r.capture != "manual":
             raise _err(ProviderErrorKind.UNSUPPORTED, "only manual capture is supported")
-        if r.payee_ref != self.config.payee_ref:
+        if r.payee_ref != self.descriptor.payee_ref:
             raise _err(ProviderErrorKind.CONTRACT_RESTRICTED, "payee_mismatch")
         if r.environment != self._env:
             raise _err(ProviderErrorKind.CONTRACT_RESTRICTED, "environment_mismatch")
@@ -477,7 +514,9 @@ class StripeTestPaymentProcessor:
                     "brandme_payee_ref": r.payee_ref}
         if self.config.run_tag:
             metadata["brandme_run"] = self.config.run_tag
-        return {
+        fee = ({"application_fee_amount": self.connected.application_fee(r.amount.amount_minor)}
+               if self.connected else {})
+        return {**fee,
             "amount": r.amount.amount_minor, "currency": r.amount.currency.lower(), "capture_method": "manual",
             "confirm": True, "payment_method": r.payment_token_ref,
             # No redirects: a hosted continuation is never treated as payment (BM-COM-012).
@@ -490,8 +529,11 @@ class StripeTestPaymentProcessor:
         def _do():
             self._open()
             params = self._create_params(request)
+            if self._acct is not None:
+                self._require_ready()  # a read: nothing is sent to an account that cannot take the charge
             try:
-                pi = self._wire.create_payment_intent(params, idempotency_key=request.idempotency_key)
+                pi = self._wire.create_payment_intent(params, idempotency_key=request.idempotency_key,
+                                                      **self._on)
             except WireError as e:
                 if e.kind != "card_error":
                     raise self._mutating_error(e) from None
@@ -537,8 +579,11 @@ class StripeTestPaymentProcessor:
             self._check_pi(payment_ref)
             self._check_key(idempotency_key)
             n = self._check_amount(amount)
+            params: Dict[str, Any] = {"amount_to_capture": n}
+            if self.connected:  # the fee follows what is actually taken, so a partial capture is charged pro rata
+                params["application_fee_amount"] = self.connected.application_fee(n)
             return self._send("capture", payment_ref, lambda: self._wire.capture_payment_intent(
-                payment_ref, {"amount_to_capture": n}, idempotency_key=idempotency_key),
+                payment_ref, params, idempotency_key=idempotency_key, **self._on),
                 frozenset({"charge_expired_for_capture", "payment_intent_unexpected_state"}))
         return self._run("capture", _do)
 
@@ -551,7 +596,8 @@ class StripeTestPaymentProcessor:
                 self._release_reasons.setdefault(payment_ref, reason)
             return self._send("void", payment_ref, lambda: self._wire.cancel_payment_intent(
                 payment_ref, {"cancellation_reason": "abandoned" if reason in _ABANDONED else "requested_by_customer"},
-                idempotency_key=idempotency_key), frozenset({"payment_intent_unexpected_state"}))
+                idempotency_key=idempotency_key, **self._on),
+                frozenset({"payment_intent_unexpected_state"}))
         return self._run("void", _do)
 
     def refund(self, payment_ref: str, amount: Money, *, idempotency_key: str) -> PaymentState:
@@ -569,8 +615,10 @@ class StripeTestPaymentProcessor:
             params = {"payment_intent": payment_ref, "amount": n, "reason": "requested_by_customer",
                       "metadata": {"brandme_env": self._env, "brandme_purpose_ref": purpose,
                                    "brandme_idem": idempotency_key}}
+            if self.connected:
+                params["refund_application_fee"] = self.connected.refund_application_fee
             return self._send("refund", payment_ref, lambda: self._wire.create_refund(
-                params, idempotency_key=idempotency_key), frozenset())
+                params, idempotency_key=idempotency_key, **self._on), frozenset())
         return self._run("refund", _do)
 
     # -- webhooks --------------------------------------------------------------
@@ -581,11 +629,11 @@ class StripeTestPaymentProcessor:
             return None
 
         def _do():
-            if not self.config.webhook_secrets:
+            if not self._webhook_secrets:
                 raise _err(ProviderErrorKind.NOT_CONFIGURED, "Stripe webhooks are not configured")
             from stripe import WebhookSignature  # lazy: only a configured Stripe rail verifies Stripe events
 
-            for secret in self.config.webhook_secrets:  # current first, then previous (rotation)
+            for secret in self._webhook_secrets:  # current first, then previous (rotation)
                 try:
                     WebhookSignature.verify_header(body, sig, secret, tolerance=None)
                     break
@@ -609,7 +657,8 @@ class StripeTestPaymentProcessor:
                 raise _err(ProviderErrorKind.UNAUTHORIZED, "live-mode event refused")
             etype = str(evt.get("type") or "")[:80]
             occurred = self._at(evt.get("created")) or self._clock()
-            if etype not in HANDLED_EVENT_TYPES:
+            # Connect events name the connected account; platform events name none. Only this processor's own count.
+            if etype not in HANDLED_EVENT_TYPES or evt.get("account") != self._acct:
                 return PaymentEvent(self.processor_id, str(evt["id"]), etype, None, None, None, None, occurred)
             obj = (evt.get("data") or {}).get("object") or {}
             if not isinstance(obj, Mapping):
@@ -621,7 +670,7 @@ class StripeTestPaymentProcessor:
                 if isinstance(ref, str) and _PI_ID.match(ref) and not (
                         isinstance(md, Mapping) and md.get("brandme_purpose_ref")):
                     try:
-                        md = self._wire.retrieve_payment_intent(ref).get("metadata") or {}
+                        md = self._wire.retrieve_payment_intent(ref, **self._on).get("metadata") or {}
                     except Exception as e:
                         raise self._read_error(e) from None
             ref = ref if isinstance(ref, str) and _PI_ID.match(ref) else None
